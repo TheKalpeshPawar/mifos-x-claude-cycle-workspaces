@@ -1,25 +1,26 @@
-# Claude Cycle Workspaces
+# Mifos X Claude Cycle Workspaces
 
-Example project workspaces for [claude-product-cycle](https://github.com/mobilebytesensei/claude-product-cycle) framework.
+Project workspaces for Mifos X ecosystem projects using [claude-product-cycle](https://github.com/mobilebytesensei/claude-product-cycle) framework.
 
-## What's Included
+## Projects
 
 | Project | Description | Status |
 |---------|-------------|:------:|
-| `mifos-mobile/` | KMP mobile banking app | Complete |
+| `mifos-mobile/` | KMP Self-Service Mobile Banking App | Active |
 
 ## Usage
 
-### Option 1: Clone as your workspace
-
 ```bash
 # In your claude-product-cycle directory
-git clone git@github.com:mobilebytesensei/claude-cycle-workspaces.git workspaces
+git clone git@github.com:therajanmaurya/mifos-x-claude-cycle-workspaces.git workspaces
+
+# Set active project
+echo "mifos-mobile" > ACTIVE_PROJECT
+
+# Start working
+/session-start
+/gap-analysis
 ```
-
-### Option 2: Use as reference
-
-Browse the `mifos-mobile/` example to see how to structure your own projects.
 
 ## Structure
 
@@ -29,17 +30,19 @@ Each project follows the 5-layer lifecycle:
 project-name/
 ├── PROJECT.md              # Project configuration
 ├── design-spec-layer/      # Feature specifications, mockups
-├── server-layer/           # API documentation
+├── server-layer/           # API documentation (Fineract)
 ├── client-layer/           # Network/data layer tracking
 ├── feature-layer/          # UI layer tracking
-├── platform-layer/         # Platform-specific tracking
+├── platform-layer/         # Platform-specific (Android, iOS, Desktop, Web)
 └── testing-layer/          # Test tracking
 ```
 
-## Contributing
+## Related Projects
 
-Want to add your public project as an example? Submit a PR!
+- [mifos-mobile](https://github.com/openMF/mifos-mobile) - Source code
+- [Fineract](https://github.com/apache/fineract) - Backend API
+- [claude-product-cycle](https://github.com/mobilebytesensei/claude-product-cycle) - Framework
 
 ## License
 
-MIT License
+Apache 2.0 License (aligned with Mifos Initiative)
