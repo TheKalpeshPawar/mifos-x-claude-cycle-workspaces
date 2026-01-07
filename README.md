@@ -4,37 +4,97 @@ Project workspaces for Mifos X ecosystem projects using [claude-product-cycle](h
 
 ## Projects
 
-| Project | Description | Status |
-|---------|-------------|:------:|
-| `mifos-mobile/` | KMP Self-Service Mobile Banking App | Active |
+| Project | Description | Source | Status |
+|---------|-------------|--------|:------:|
+| `mifos-mobile/` | KMP Self-Service Mobile Banking App | [openMF/mifos-mobile](https://github.com/openMF/mifos-mobile) | Active |
 
-## Usage
+## Quick Start
+
+### Option 1: Via Framework (Recommended)
 
 ```bash
-# In your claude-product-cycle directory
-git clone git@github.com:therajanmaurya/mifos-x-claude-cycle-workspaces.git workspaces
+# Clone framework with all workspaces
+git clone --recursive git@github.com:mobilebytesensei/claude-product-cycle.git
+cd claude-product-cycle
 
-# Set active project
-echo "mifos-mobile" > ACTIVE_PROJECT
+# Run setup script
+./setup.sh
+```
 
-# Start working
-/session-start
-/gap-analysis
+### Option 2: Clone This Workspace Directly
+
+```bash
+# Clone with submodules
+git clone --recursive git@github.com:therajanmaurya/mifos-x-claude-cycle-workspaces.git
+
+# Or clone and init submodules separately
+git clone git@github.com:therajanmaurya/mifos-x-claude-cycle-workspaces.git
+cd mifos-x-claude-cycle-workspaces
+git submodule update --init --recursive
 ```
 
 ## Structure
 
-Each project follows the 5-layer lifecycle:
-
 ```
-project-name/
-├── PROJECT.md              # Project configuration
-├── design-spec-layer/      # Feature specifications, mockups
-├── server-layer/           # API documentation (Fineract)
-├── client-layer/           # Network/data layer tracking
-├── feature-layer/          # UI layer tracking
-├── platform-layer/         # Platform-specific (Android, iOS, Desktop, Web)
-└── testing-layer/          # Test tracking
+mifos-x-claude-cycle-workspaces/
+├── README.md
+├── WORKSPACES_INDEX.md
+└── mifos-mobile/
+    ├── PROJECT.md                 # Project configuration
+    ├── design-spec-layer/         # Feature specifications, mockups
+    │   └── features/
+    │       ├── auth/
+    │       ├── home/
+    │       └── ...
+    ├── server-layer/              # API documentation (Fineract)
+    ├── client-layer/              # Network/data layer tracking
+    ├── feature-layer/             # UI layer tracking
+    ├── platform-layer/            # Platform-specific tracking
+    ├── testing-layer/             # Test tracking
+    └── source/                    # ← Git submodule (openMF/mifos-mobile)
+```
+
+## Working with Submodules
+
+### Update Source to Latest
+
+```bash
+cd mifos-mobile/source
+git checkout development
+git pull origin development
+cd ../..
+git add mifos-mobile/source
+git commit -m "chore: update mifos-mobile source to latest"
+```
+
+### Switch Source Branch
+
+```bash
+cd mifos-mobile/source
+git checkout feature/my-branch
+```
+
+### After Cloning (if submodules not initialized)
+
+```bash
+git submodule update --init --recursive
+```
+
+## Daily Workflow
+
+```bash
+# Start session
+/session-start
+
+# Check what needs work
+/gap-analysis
+
+# Work on features
+/design auth
+/implement auth
+
+# End session
+/session-end
 ```
 
 ## Related Projects
