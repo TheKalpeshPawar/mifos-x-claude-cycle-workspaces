@@ -1,129 +1,152 @@
 # mifos-x-open-banking — Features
 
-> Auto-generated from `idea-plan.yaml` §features + §requirements + §screens + §flows on 2026-05-20.
-> Edit `idea-plan.yaml` and run `/idea sync` to regenerate.
+> **Empty-slate state** — product scope is not yet defined. Only architectural scaffolding (home / profile / settings) is in scope.
+> Last updated: 2026-05-22
+
+## Active Scaffolding
 
 | Feature | Priority | Maturity | Screens | Requirements |
 |---|---|---|---|---|
-| [home](#home) | must | production | TasksList · EditTask | FR-001…FR-005 |
-| [profile](#profile) | should | stub | Profile | — |
-| [settings](#settings) | should | partial | Settings · Notification | FR-006 |
+| [home](#home) | must | bootstrap | Home | FR-001 |
+| [profile](#profile) | should | stub | Profile | FR-002 |
+| [settings](#settings) | must | partial | Settings · Notification · LanguageDialog · SettingsDialog | FR-003…FR-005 |
+
+## Pending Removal (template residue)
+
+These source modules came from `kmp-project-template` and are **not** part of this product's scope. They remain in the source tree until removal:
+
+| Source module | Reason in tree |
+|---|---|
+| `feature/crypto` | Template demo: Store5 + external HTTP — to be removed |
+| `feature/currency-rates` | Template demo: streaming repository pattern — to be removed |
+| `feature/emi-calculator` | Template demo: pure-derived state — to be removed |
+
+> The idea-layer does NOT describe these as product features. When removed, also delete `idea-layer/screens/{crypto,currency-rates,emi-calculator}/` directories.
 
 ---
 
 ## home
 
-> 🟢 **production** — the core feature of the app, fully implemented.
+> ⚪ **bootstrap** — entry hub. Will route to real features once product scope is defined.
 
-TaskMinder core — displays task list with calendar-based date filtering (year/month/day pickers), task creation/editing, completion tracking, and priority visualization.
+App entry after Splash. Currently a minimal landing surface; final composition depends on product feature roster.
 
 ### Screens
 
-#### `TasksList` (dashboard)
-Primary entry point. Calendar pickers at the top let you slice tasks by year → month → day. Tasks render in a `LazyColumn` with checkbox + delete actions. FAB launches `EditTask` in create mode.
-
-**State**: `TasksViewModel` (MVI) · 5 actions · 2 events · states `Loading | Empty | Success`
-**Data**: `StorageService.{getTasksByDate, updateTask, deleteTask}`
-
-#### `EditTask` (form)
-Create or edit a single task. Fields: title, description, priority (`FilterChip` low/med/high), due date (`DatePickerDialog`), due time (`TimePicker`). Save persists via `StorageService`; cancel shows `AlertDialog` to confirm discard.
-
-**State**: `EditTaskViewModel` (MVI) · 7 actions · 1 event · states `Loading | Empty | Success`
-**Data**: `StorageService.{addTask, updateTask, getTaskById}`
+#### `Home` (dashboard archetype — placeholder)
+**Composition**: `KptScaffold` · top app bar · scaffolding-only body
+**State**: `HomeViewModel` (Stream-First) — minimal until features added
+**Data**: `UserDataRepository` (user identity if any)
+**Source**: `feature/home/src/commonMain/kotlin/org/mifos/feature/home/HomeScreen.kt`
 
 ### Requirements
 
 | ID | Description | Source |
 |---|---|---|
-| **FR-001** | User can create a new task with title, description, priority, and due date/time via EditTask. | `task/EditTaskViewModel.kt:95-110` |
-| **FR-002** | User can view all tasks for a selected calendar date in a filterable list. | `tasks/TasksViewModel.kt:75-88` |
-| **FR-003** | User can toggle task completion via checkbox; state persists. | `tasks/TasksScreen.kt:125-140` |
-| **FR-004** | User can delete a task. | `tasks/TasksViewModel.kt deleteTask` |
-| **FR-005** | User can filter tasks by year/month/day via interactive picker UI. | `tasks/TasksViewModel.kt:100-125` |
+| **FR-001** | User lands on Home after Splash. Specific tiles/destinations to be defined once feature scope is set. | `HomeScreen.kt`, `HomeDestination.kt` |
 
-### Flows
+### Next steps
 
-- **create_task_flow**: TasksList → tap FAB → EditTask form → Save → StorageService.addTask → back to TasksList with new task
-- **filter_tasks_by_date_flow**: TasksList → pick year/month/day → TasksFlow filters → LazyColumn updates
-- **mark_task_complete_flow**: TasksList → tap checkbox → flagTask → StorageService.updateTask → visual update
+- [ ] Decide product feature roster (run `/idea add` for each)
+- [ ] Add tiles or navigation entries from Home to real features
 
 ---
 
 ## profile
 
-> ⚪ **stub** — placeholder scaffold, no ViewModel yet.
+> ⚪ **stub** — placeholder. Currently a static Compose surface with no state.
 
-User profile dashboard. Currently a static Compose screen with no state. Designed to integrate with user account / preference data.
+User profile dashboard. Designed to integrate with user account / preferences when auth is added.
 
 ### Screens
 
 #### `Profile` (profile archetype)
-**Composition**: `KptScaffold` · `Column` · `Text`
-**State**: stateless — no ViewModel
-**Data**: none
-
-### Next steps (recommended before /kmp-implement)
-
-- [ ] Define profile data model + persistence
-- [ ] Add `ProfileViewModel` with state for `{avatar, name, email, preferences}`
-- [ ] Wire avatar upload + edit-profile flow
-- [ ] Approve scope via `/idea approve profile`
-
----
-
-## settings
-
-> 🟡 **partial** — Settings screen functional (theme toggle), Notification subscreen is a stub.
-
-App settings — theme customization, notification preferences (placeholder).
-
-### Screens
-
-#### `Settings` (settings archetype)
-Stateless. Each setting category is an `OutlinedCard` with icon + label + chevron. The theme card opens an `AlertDialog` that updates app-scope theme via `AppViewModel.updateAppTheme`.
-
-**State**: stateless-with-dialog (theme state lives in `AppViewModel`, app-scope)
-**Data**: `AppViewModel.updateAppTheme`
-
-#### `Notification` (settings archetype)
-**Composition**: `KptScaffold` · `Column` · `Text`
-**State**: stateless — stub
-**Data**: none
+**Composition**: `KptScaffold` · avatar header · profile-card list
+**State**: stateless
+**Data**: none yet
+**Source**: `feature/profile/src/commonMain/kotlin/org/mifos/feature/profile/ProfileScreen.kt`
 
 ### Requirements
 
 | ID | Description | Source |
 |---|---|---|
-| **FR-006** | User can toggle application theme (light/dark) via SettingsDialog. | `SettingsScreen.kt:40-70` |
-
-### Flows
-
-- **settings_theme_toggle_flow**: Settings → tap ThemeCard → SettingsDialog → toggle → AppViewModel.updateAppTheme → handleThemeMode → app recomposes
+| **FR-002** | User sees their profile placeholder on Profile screen. | `ProfileScreen.kt`, `ProfileRoute.kt` |
 
 ### Next steps
 
-- [ ] Implement `NotificationViewModel` + `UserNotificationPreferences`
-- [ ] Add settings: language, account, privacy, about
-- [ ] Consider moving theme to a dedicated `SettingsViewModel` for SoC
+- [ ] Define user-data model + auth provider
+- [ ] Add `ProfileViewModel` once auth backend chosen
+- [ ] Wire avatar + display-name + preferences
 
 ---
 
-## Cross-cutting
+## settings
 
-### Splash (cmp-shared, not feature-bound)
-Bootstrap screen — `RootNavViewModel.bootstrap` loads theme prefs, determines initial destination, then navigates to `TasksList`. Android uses the System SplashScreen API.
+> 🟡 **partial** — theme + language toggles functional; notification is a stub.
 
-### Repositories observed
+App settings — theme (light/dark/system), language picker, notification preferences (placeholder).
+
+### Screens
+
+#### `Settings` (settings archetype)
+Each setting category is an `OutlinedCard` with icon + label + chevron. Theme card opens `SettingsDialog`. Language card opens `LanguageDialog`. Notification card routes to `Notification` screen.
+
+**State**: `SettingsViewmodel` (Stream-First) — theme + language state
+**Data**: `UserDataRepository.{setThemeBrand, setDarkThemeConfig, setLanguage}`
+**Source**: `feature/settings/src/commonMain/kotlin/org/mifos/feature/settings/SettingsScreen.kt`
+
+#### `Notification` (settings sub-screen)
+**Composition**: `KptScaffold` · `Column` · placeholder text
+**State**: stateless — stub
+**Source**: `feature/settings/src/commonMain/kotlin/org/mifos/feature/settings/NotificationScreen.kt`
+
+#### `SettingsDialog` (dialog)
+Theme picker (light / dark / system) + brand color selector.
+**Source**: `feature/settings/src/commonMain/kotlin/org/mifos/feature/settings/SettingsDialog.kt`
+
+#### `LanguageDialog` (dialog)
+Locale picker — driven by `Platform.kt` expect/actual locale source.
+**Source**: `feature/settings/src/commonMain/kotlin/org/mifos/feature/settings/LanguageDialog.kt`
+
+### Requirements
+
+| ID | Description | Source |
+|---|---|---|
+| **FR-003** | User can toggle application theme (light / dark / system) via SettingsDialog. | `SettingsDialog.kt` |
+| **FR-004** | User can switch app language via LanguageDialog. | `LanguageDialog.kt`, `Platform.kt` |
+| **FR-005** | User sees Notification placeholder screen (preferences UI not yet implemented). | `NotificationScreen.kt` |
+
+### Flows
+
+- **settings_theme_flow**: Settings → tap ThemeCard → SettingsDialog → pick theme → SettingsViewmodel updates
+- **settings_language_flow**: Settings → tap LanguageCard → LanguageDialog → pick locale → SettingsViewmodel updates
+- **settings_notification_flow**: Settings → tap NotificationCard → Notification screen (stub)
+
+### Next steps
+
+- [ ] Implement `NotificationViewModel` + `UserNotificationPreferences` once notification strategy is set
+- [ ] Add settings rows once product scope is set: about, privacy, version, OSS licenses
+
+---
+
+## Cross-cutting (scaffolding)
+
+### Splash (cmp-shared)
+Bootstrap screen — `RootNavViewModel.bootstrap` loads theme + language prefs, then routes to `Home`.
+
+### Repositories observed (source-derived)
 
 | Repository | Purpose |
 |---|---|
-| `StorageService` (+ `StorageServiceImpl`) | Task persistence — add / update / delete / query by date |
-| `UserDataRepository` | User preferences and app configuration |
-| `NetworkMonitor` | Connectivity status via `Flow<Boolean>` |
+| `UserDataRepository` | User preferences (theme, language, brand color) — `core/data` |
+| `NetworkMonitor` | Connectivity status via `Flow<Boolean>` — `core/data` |
+
+> Template repositories (`CryptoRepository`, `CurrencyRatesRepository`) will be removed with their feature modules.
 
 ### Database (Room KMP)
 
-| Entity | Key fields |
+| Entity | Module |
 |---|---|
-| `TaskEntity` | `id`, `title`, `priority`, `dueDate`, `dueTime`, `description`, `completed`, `alert`, `userId` |
-| `SampleEntity` | `id`, `name` |
+| `UserPreferencesEntity` | `core/datastore` |
+
+> Template entities will be removed alongside template modules.

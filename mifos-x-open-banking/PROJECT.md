@@ -26,22 +26,22 @@ cmp-android    cmp-desktop    cmp-ios    cmp-web       ← platform entry points
         ┌──────────────┼──────────────┐
    core/*         core-base/*      feature/*
    (data, db,    (analytics,    (home, profile,
-    domain,       common,        settings, crypto,
-    network,…)    network,…)     currency-rates,
-                                 emi-calculator)
+    domain,       common,        settings)
+    network,…)    network,…)
+                                 [crypto, currency-rates,
+                                  emi-calculator scheduled
+                                  for removal — template residue]
 ```
 
 ## Layer Status
 
-All 8 layers enabled. Idea-layer is being bootstrapped from source via 4 parallel Explore agents (see `idea-layer/idea-plan.yaml` for live state).
+Empty-slate scaffold (post-template-sync 2026-05-22). Architecture + brand are set; product feature scope is undefined. See `idea-layer/LAYER_STATUS.md` for per-layer detail.
 
 ## Next Steps
 
-1. Complete `/idea-plan --from-source` deep analysis (4 agents in parallel).
-2. Review draft sections in `idea-layer/idea-plan.yaml`, mark approved.
-3. Run `/idea sync` to enrich generated screen YAMLs.
-4. `/gap-analysis-project` to surface mismatches between source and idea-layer.
-5. `/kmp-implement {feature}` for new work going forward.
+1. **Remove template residue from source**: `feature/crypto`, `feature/currency-rates`, `feature/emi-calculator` — drop from `settings.gradle.kts` and delete directories.
+2. **Define product scope**: run `/idea-plan` to draft vision + features.
+3. **Per-feature work**: `/idea add` for each declared feature, then `/idea-enrich` → `/idea export` → `/kmp-implement`.
 
 ## Configuration
 

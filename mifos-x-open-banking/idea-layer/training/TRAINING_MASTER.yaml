@@ -1,0 +1,109 @@
+# TRAINING_MASTER.yaml — project-specific intelligence for mifos-x-open-banking
+# Floor for /idea-enrich, /implement, /design, and all generation commands.
+# Generated 2026-05-22 (empty-slate scaffold).
+# Grows automatically per RULE-TRAINING-EVOLVE-001 as commands extract new patterns.
+
+schema_version: "1.0"
+generated_at: "2026-05-22"
+project: mifos-x-open-banking
+generation_mode: bootstrap
+
+# ─── Architecture intelligence (Stream-First baseline) ───────────────────────
+architecture:
+  pattern: stream-first
+  reference_files:
+    base_viewmodel: "core/common/src/commonMain/kotlin/org/mifos/core/common/viewmodel/BaseViewModel.kt"
+    screen_data_stream: "core/common/src/commonMain/kotlin/org/mifos/core/common/stream/ScreenDataStream.kt"
+    store5_module: "core/data/src/commonMain/kotlin/org/mifos/core/data/store/"
+  rules:
+    - "Every ViewModel extends BaseViewModel"
+    - "State is exposed via ScreenDataStream<S>"
+    - "Network-backed repos use Store5 (cache-then-network)"
+    - "DI uses Koin module scoped per feature"
+
+# ─── Component intelligence (M3 + project wrappers) ─────────────────────────
+components:
+  app_shell:
+    scaffold: MifosScaffold
+    top_app_bar: MifosTopAppBar
+    bottom_nav: MifosBottomNavigation
+    snackbar: MifosSnackbar
+    error_banner: MifosErrorBanner
+  buttons:
+    primary: MifosButton (FilledButton)
+    secondary: MifosTonalButton (FilledTonalButton)
+    tertiary: MifosOutlinedButton
+  inputs:
+    text_field: MifosOutlinedTextField
+    filter_chip: MifosFilterChip
+    slider: MifosSlider
+  content:
+    card_in_list: MifosCard (no elevation)
+    card_standalone: MifosElevatedCard (level1)
+    list_item: MifosListItem
+  feedback:
+    loading_full: MifosLoadingIndicator
+    skeleton: MifosSkeleton
+    empty: MifosEmptyState
+    error_banner: MifosErrorBanner
+
+# ─── Design tokens (mirror of design-system/design-tokens.yaml) ─────────────
+design_tokens:
+  primary_color: "#1800B1"
+  accent: "#575899"
+  secondary: "#5C0068"
+  tertiary: "#7E5260"
+  font_body: Inter
+  font_display: Space Grotesk
+  spacing_grid: 8
+
+# ─── Content intelligence (used by /idea generate-demo-data) ────────────────
+content_intelligence:
+  empty_slate_note: |
+    Project is in empty-slate state. No product-specific demo data exists yet.
+    When real features are added, /idea generate-demo-data will populate this section.
+  user_display_name_default: "Mifos User"
+  language_default_pool:
+    - en-US
+    - es-ES
+    - fr-FR
+    - de-DE
+    - hi-IN
+    - pt-BR
+    - ar-SA
+
+# ─── State model patterns ────────────────────────────────────────────────────
+state_model_patterns:
+  simple_viewmodel:
+    name: "Stream-First simple state"
+    structure: |
+      data class FooState(
+        val loading: Boolean = false,
+        val items: List<Foo> = emptyList(),
+        val error: String? = null
+      )
+      class FooViewModel(repo: FooRepo) : BaseViewModel<FooState>(FooState()) {
+        override val dataStream: ScreenDataStream<FooState> = ScreenDataStream { ... }
+      }
+
+  parameterized_detail:
+    name: "Stream-First detail with route param"
+    structure: |
+      class FooDetailViewModel(savedStateHandle: SavedStateHandle, repo: FooRepo)
+        : BaseViewModel<FooDetailState>(FooDetailState()) {
+          private val id = savedStateHandle.get<String>("id")!!
+          override val dataStream = ScreenDataStream { repo.detailStream(id) }
+        }
+
+# ─── API contract patterns ───────────────────────────────────────────────────
+api_contract_patterns:
+  empty_slate_note: |
+    No project-specific APIs declared. Will populate as features are added.
+
+# ─── Captured patterns (grows over time) ─────────────────────────────────────
+captured_patterns: []
+
+# ─── References to framework training (floor) ────────────────────────────────
+framework_training_ref:
+  path: "training-layer/TRAINING_MASTER.yaml"
+  override_policy: "project-specific entries here OVERRIDE framework defaults"
