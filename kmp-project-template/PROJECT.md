@@ -1,128 +1,81 @@
-# Project: kmp-project-template
+# kmp-project-template
 
-**Created**: 2026-03-27
-**Status**: Active
-**Type**: Multi-platform App (KMP)
+> openMF's official Kotlin Multiplatform / Compose Multiplatform starter template — the canonical scaffold that powers Mifos-X consumer apps (Open Banking, Field Officer, Group Banking, Mobile Wallet, …).
+> Imported via `/project-import` on 2026-05-22 as a reference exemplar for KMP project structure, build-logic conventions, and the Effect-based MVI pattern.
 
-project_type: kmp
-
----
-
-## Framework Version
-
-| Status | Version | Date |
-|--------|:-------:|:----:|
-| Generated With | v2.86.0 | 2026-03-27 |
-| Last Migrated | v2.86.0 | 2026-03-27 |
-| Migration Status | Up to date |
-
----
-
-## Idea & Purpose
-
-KMP Multi-Module Project Generator — production-ready Kotlin Multiplatform template with comprehensive CI/CD infrastructure spanning 5 platforms and 9 deployment targets. Enables shared business logic and UI components across Android, iOS, Desktop, and Web.
-
-**Target Users**: Kotlin developers building cross-platform applications with shared code.
-
----
-
-## Repository
-
-| Setting | Value |
-|---------|-------|
-| GitHub | [openMF/kmp-project-template](https://github.com/openMF/kmp-project-template) |
-| Mode | Existing Repository (Import) |
-| Default Branch | dev |
-
----
+| Attribute | Value |
+|-----------|-------|
+| Workspace | `mifos-x` |
+| Slug | `mifos-x-kmp-project-template` |
+| Type | `kmp` (subtype: `kmp-template`) |
+| Status | `planning` — idea-layer drafted, not yet approved |
+| Source | `~/OpenSource/Mifos/kmp-project-template` (symlinked) |
+| Fork | `TheKalpeshPawar/kmp-project-template` (origin) |
+| Upstream | `openMF/kmp-project-template` |
+| Branch | `dev` |
+| Created | 2026-05-22 |
 
 ## Tech Stack
 
-| Component | Choice |
-|-----------|--------|
-| Language | Kotlin |
-| UI Framework | Compose Multiplatform |
-| Architecture | MVI (Model-View-Intent) |
-| DI | Koin |
-| Navigation | Compose Navigation |
-| Networking | Ktor |
-| Database | Room / SQLDelight |
-| DataStore | Multiplatform DataStore |
-| CI/CD | GitHub Actions + Fastlane |
-
----
+- **Kotlin** 2.3.20 + **Compose Multiplatform** (via build-logic conventions)
+- **Architecture**: MVI with `Effect.kt` + `EventsEffect` (standard MBS/Mifos pattern)
+- **DI**: Koin 4.1.1 + koin-annotations 2.1.0 + kotlinInject 0.7.2
+- **Network**: Ktor 3.3.3 + Ktorfit 2.7.3
+- **Database**: Room 3.0.0-alpha03 + sqlite-bundled 2.6.2 (sqlite-web 2.6.2 for browser)
+- **Observability**: Firebase BOM 34.7.0 (Crashlytics + Performance plugins)
 
 ## Platforms
 
-| Platform | Module | Status |
-|----------|--------|:------:|
-| Android | cmp-android | ✅ |
-| iOS | cmp-ios | ✅ |
-| Desktop | cmp-desktop | ✅ |
-| Web | cmp-web | ✅ |
+| Platform | Status |
+|----------|--------|
+| Android  | ✅ active (`cmp-android` in settings.gradle.kts) |
+| Desktop  | ✅ active (`cmp-desktop`) |
+| Web      | ✅ active (`cmp-web`) |
+| iOS      | ⚠️ scaffolded (`cmp-ios` directory exists but is NOT in `settings.gradle.kts include()` — present for SwiftUI/Xcode integration when consumed) |
 
----
+## Module Map
 
-## Modules
+| Group | Modules |
+|-------|---------|
+| **Apps** | `cmp-android`, `cmp-desktop`, `cmp-web` |
+| **Shared** | `cmp-shared`, `cmp-navigation` |
+| **Core** | `core:analytics`, `core:common`, `core:data`, `core:database`, `core:datastore`, `core:designsystem`, `core:domain`, `core:model`, `core:network`, `core:store`, `core:ui` (11 modules) |
+| **Core-base** | `core-base:analytics`, `core-base:common`, `core-base:database`, `core-base:datastore`, `core-base:designsystem`, `core-base:network`, `core-base:platform`, `core-base:security`, `core-base:store`, `core-base:ui` (10 modules) |
+| **Feature** | `feature:home`, `feature:profile`, `feature:settings`, `feature:crypto`, `feature:currency-rates`, `feature:emi-calculator` (6 features) |
 
-### Feature Modules (3)
-- `feature:home` — Home screen
-- `feature:profile` — User profile
-- `feature:settings` — App settings
+## Feature Inventory (idea-layer scope)
 
-### Core Modules (10)
-- `core:analytics`, `core:common`, `core:data`, `core:database`
-- `core:datastore`, `core:designsystem`, `core:domain`, `core:model`
-- `core:network`, `core:ui`
+The template ships with 6 reference features that demonstrate the architecture end-to-end:
 
-### Core-Base Modules (7)
-- `core-base:analytics`, `core-base:common`, `core-base:database`
-- `core-base:designsystem`, `core-base:network`, `core-base:platform`, `core-base:ui`
+1. **home** — landing/dashboard scaffold
+2. **profile** — user profile screen
+3. **settings** — preferences (theme, language, etc.)
+4. **crypto** — cryptocurrency list/detail (demonstrates network + Room offline cache)
+5. **currency-rates** — FX rates table (demonstrates Ktorfit consumption)
+6. **emi-calculator** — pure-Kotlin compute (demonstrates a no-network feature)
 
-### Platform Modules (5)
-- `cmp-android`, `cmp-ios`, `cmp-desktop`, `cmp-web`, `cmp-shared`, `cmp-navigation`
+Per-feature screen YAMLs live at `idea-layer/screens/{feature}.yaml` once `/idea-plan --from-source` STEP 2.5 runs.
 
----
+## Status / Workflow
 
-## Layers Configuration
+| Step | Status | Notes |
+|------|--------|-------|
+| Workspace scaffolded | ✅ | `PROJECT.md`, `PROJECT_CONFIG.yaml`, `source/` symlink, `idea-layer/` skeleton |
+| Source symlinked | ✅ | `source/kmp-project-template/ → ~/OpenSource/Mifos/kmp-project-template` |
+| `idea-plan.yaml` drafted | ⏳ | Pending STEP 1–2 deep analysis |
+| Per-screen YAMLs | ⏳ | Pending STEP 2.5 |
+| MATRIX MODE approval | ⏳ | Pending user review of draft sections |
+| `/idea sync` enrichment | — | Run after MATRIX approval |
+| `/server init` | n/a | Firebase observability-only; no real backend |
 
-| Layer | Status |
-|-------|:------:|
-| idea-layer | ✅ Enabled |
-| design-spec-layer | ✅ Enabled |
-| server-layer | ✅ Enabled |
-| client-layer | ✅ Enabled |
-| feature-layer | ✅ Enabled |
-| infrastructure-layer | ✅ Enabled |
-| platform-layer | ✅ Enabled |
-| testing-layer | ✅ Enabled |
-| plan-layer | ✅ Enabled |
+## Next
 
-### Release Configuration
+1. Review draft `idea-layer/idea-plan.yaml` (sections all `_status: draft`).
+2. Approve sections via MATRIX MODE; bump to `_status: approved` per section.
+3. Optional: `/idea-enrich` to deepen screen YAMLs from source.
+4. Optional: `/gap-analysis-project` to surface source ↔ idea-layer drift.
 
-```yaml
-# ═══════════════════════════════════════════════════════════════════════════════
-# Release Configuration
-# ═══════════════════════════════════════════════════════════════════════════════
-release:
-  strategy: kmp-fastlane
-  predefined_template: kmp-fastlane
-  release_type: beta
-  shared_keys: secrets/shared_keys.env  # TODO: add your credentials here
-  platforms:
-    android:
-      enabled: true
-      track: production
-      secrets: secrets/playStorePublishServiceCredentialsFile.json  # TODO: add your credentials here
-      fastlane_lane: deployToPlayStore
-    ios_testflight:
-      enabled: true
-      secrets: secrets/AuthKey.p8  # TODO: add your credentials here
-      fastlane_lane: beta
-      distribute: testflight
-    ios_appstore:
-      enabled: false
-      secrets: secrets/AuthKey.p8  # TODO: add your credentials here
-      fastlane_lane: release
-      distribute: appstore
-```
+## Related
+
+- Sister project (consumer of this template): `mifos-x/mifos-x-open-banking` — same architecture, ships Open Banking flows.
+- Framework references: `references/kmp-project-template/` (if registered as a `/ref-add` submodule for cross-project lookup).
