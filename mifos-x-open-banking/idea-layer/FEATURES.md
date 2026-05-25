@@ -1,152 +1,152 @@
-# mifos-x-open-banking — Features
+# Features — Mifos X Open Banking
 
-> **Empty-slate state** — product scope is not yet defined. Only architectural scaffolding (home / profile / settings) is in scope.
-> Last updated: 2026-05-22
-
-## Active Scaffolding
-
-| Feature | Priority | Maturity | Screens | Requirements |
-|---|---|---|---|---|
-| [home](#home) | must | bootstrap | Home | FR-001 |
-| [profile](#profile) | should | stub | Profile | FR-002 |
-| [settings](#settings) | must | partial | Settings · Notification · LanguageDialog · SettingsDialog | FR-003…FR-005 |
-
-## Pending Removal (template residue)
-
-These source modules came from `kmp-project-template` and are **not** part of this product's scope. They remain in the source tree until removal:
-
-| Source module | Reason in tree |
-|---|---|
-| `feature/crypto` | Template demo: Store5 + external HTTP — to be removed |
-| `feature/currency-rates` | Template demo: streaming repository pattern — to be removed |
-| `feature/emi-calculator` | Template demo: pure-derived state — to be removed |
-
-> The idea-layer does NOT describe these as product features. When removed, also delete `idea-layer/screens/{crypto,currency-rates,emi-calculator}/` directories.
+All 30+ features organized by flavor and OBP API integration points.
 
 ---
 
-## home
+## Consumer Persona Features
 
-> ⚪ **bootstrap** — entry hub. Will route to real features once product scope is defined.
+### Core Banking (9 features)
 
-App entry after Splash. Currently a minimal landing surface; final composition depends on product feature roster.
+| Feature | Screen | OBP API Endpoint | Description |
+|---|---|---|---|
+| **splash** | Splash | — | App startup animation, branding |
+| **login** | Login | `POST /v4.0.0/banks/{bank}/direct_login` | DirectLogin authentication |
+| **home** | Home | Accounts, Transactions | Account overview, balance, recent transactions |
+| **accounts** | Accounts, Account Detail | `GET /v3.0.0/banks/{bank}/accounts` | List and view account details |
+| **transactions** | Transactions, Transaction Detail | `GET /accounts/{account_id}/transactions` | View transaction history, filtering |
+| **send-money** | Send Money, Send Confirm | `POST /accounts/{account_id}/transaction-request-types/SEPA` | Initiate payments (SEPA, ACH) |
+| **beneficiaries** | Beneficiaries | `GET /banks/{bank}/counterparties` | Manage payee list |
+| **cards** | Cards, Card Detail | `GET /accounts/{account_id}/cards` | View card details, transactions |
+| **standing-orders** | Standing Orders | `GET /accounts/{account_id}/standing-orders` | Create & manage recurring payments |
 
-### Screens
+### Enhancement Features (4 features)
 
-#### `Home` (dashboard archetype — placeholder)
-**Composition**: `KptScaffold` · top app bar · scaffolding-only body
-**State**: `HomeViewModel` (Stream-First) — minimal until features added
-**Data**: `UserDataRepository` (user identity if any)
-**Source**: `feature/home/src/commonMain/kotlin/org/mifos/feature/home/HomeScreen.kt`
-
-### Requirements
-
-| ID | Description | Source |
-|---|---|---|
-| **FR-001** | User lands on Home after Splash. Specific tiles/destinations to be defined once feature scope is set. | `HomeScreen.kt`, `HomeDestination.kt` |
-
-### Next steps
-
-- [ ] Decide product feature roster (run `/idea add` for each)
-- [ ] Add tiles or navigation entries from Home to real features
-
----
-
-## profile
-
-> ⚪ **stub** — placeholder. Currently a static Compose surface with no state.
-
-User profile dashboard. Designed to integrate with user account / preferences when auth is added.
-
-### Screens
-
-#### `Profile` (profile archetype)
-**Composition**: `KptScaffold` · avatar header · profile-card list
-**State**: stateless
-**Data**: none yet
-**Source**: `feature/profile/src/commonMain/kotlin/org/mifos/feature/profile/ProfileScreen.kt`
-
-### Requirements
-
-| ID | Description | Source |
-|---|---|---|
-| **FR-002** | User sees their profile placeholder on Profile screen. | `ProfileScreen.kt`, `ProfileRoute.kt` |
-
-### Next steps
-
-- [ ] Define user-data model + auth provider
-- [ ] Add `ProfileViewModel` once auth backend chosen
-- [ ] Wire avatar + display-name + preferences
+| Feature | Screen | OBP API Endpoint | Description |
+|---|---|---|---|
+| **fx-rates** | FX Rates | `GET /banks/{bank}/fx` | Live currency rates, conversion calculator |
+| **atm-locator** | ATM Finder | `GET /banks/{bank}/atms` | Map-based ATM finder |
+| **notifications** | — | Firebase Cloud Messaging | Transaction alerts, KYC status updates |
+| **profile** | Profile, Settings | — | User preferences, security settings |
 
 ---
 
-## settings
+## Field Officer Persona Features
 
-> 🟡 **partial** — theme + language toggles functional; notification is a stub.
+### Core Agent Banking (7 features)
 
-App settings — theme (light/dark/system), language picker, notification preferences (placeholder).
+| Feature | Screen | OBP API Endpoint | Description |
+|---|---|---|---|
+| **fo-dashboard** | FO Dashboard | `GET /customers`, Consolidated | Agent's active customer list, pending applications |
+| **customer-search** | Customer Search | `GET /banks/{bank}/customers` | Find customers by name, email, ID |
+| **customer-detail** | Customer Detail, Customer Profile | `GET /customers/{customer_id}` | View customer demographics, accounts, status |
+| **onboarding** | Onboarding, Corporate Onboarding | `POST /customers` | Collect customer info, create account requests |
+| **kyc** | KYC Review | `GET /customers/{customer_id}/kyc_documents`, `PUT` | Upload, verify KYC documents |
+| **account-applications** | Account Applications, Application Detail | `GET /banks/{bank}/account-applications` | Manage new account requests |
+| **customer-messages** | Customer Messages | `GET /customers/{customer_id}/messages` | Thread-based customer messaging |
 
-### Screens
+### Enhancement Features (2 features)
 
-#### `Settings` (settings archetype)
-Each setting category is an `OutlinedCard` with icon + label + chevron. Theme card opens `SettingsDialog`. Language card opens `LanguageDialog`. Notification card routes to `Notification` screen.
-
-**State**: `SettingsViewmodel` (Stream-First) — theme + language state
-**Data**: `UserDataRepository.{setThemeBrand, setDarkThemeConfig, setLanguage}`
-**Source**: `feature/settings/src/commonMain/kotlin/org/mifos/feature/settings/SettingsScreen.kt`
-
-#### `Notification` (settings sub-screen)
-**Composition**: `KptScaffold` · `Column` · placeholder text
-**State**: stateless — stub
-**Source**: `feature/settings/src/commonMain/kotlin/org/mifos/feature/settings/NotificationScreen.kt`
-
-#### `SettingsDialog` (dialog)
-Theme picker (light / dark / system) + brand color selector.
-**Source**: `feature/settings/src/commonMain/kotlin/org/mifos/feature/settings/SettingsDialog.kt`
-
-#### `LanguageDialog` (dialog)
-Locale picker — driven by `Platform.kt` expect/actual locale source.
-**Source**: `feature/settings/src/commonMain/kotlin/org/mifos/feature/settings/LanguageDialog.kt`
-
-### Requirements
-
-| ID | Description | Source |
-|---|---|---|
-| **FR-003** | User can toggle application theme (light / dark / system) via SettingsDialog. | `SettingsDialog.kt` |
-| **FR-004** | User can switch app language via LanguageDialog. | `LanguageDialog.kt`, `Platform.kt` |
-| **FR-005** | User sees Notification placeholder screen (preferences UI not yet implemented). | `NotificationScreen.kt` |
-
-### Flows
-
-- **settings_theme_flow**: Settings → tap ThemeCard → SettingsDialog → pick theme → SettingsViewmodel updates
-- **settings_language_flow**: Settings → tap LanguageCard → LanguageDialog → pick locale → SettingsViewmodel updates
-- **settings_notification_flow**: Settings → tap NotificationCard → Notification screen (stub)
-
-### Next steps
-
-- [ ] Implement `NotificationViewModel` + `UserNotificationPreferences` once notification strategy is set
-- [ ] Add settings rows once product scope is set: about, privacy, version, OSS licenses
+| Feature | Screen | OBP API Endpoint | Description |
+|---|---|---|---|
+| **meetings** | Meetings | `POST /customers/{customer_id}/meetings` | Schedule & track customer meetings |
+| **corporate-customers** | Corporate Onboarding, Customer Detail | `GET /customers/{customer_id}/corporate_location` | Manage corporate customer structures |
 
 ---
 
-## Cross-cutting (scaffolding)
+## Shared Features (4 features)
 
-### Splash (cmp-shared)
-Bootstrap screen — `RootNavViewModel.bootstrap` loads theme + language prefs, then routes to `Home`.
+| Feature | Screen | OBP API Endpoint | Description |
+|---|---|---|---|
+| **splash** | Splash | — | Startup animation (shared) |
+| **login** | Login | `POST /v4.0.0/banks/{bank}/direct_login` | DirectLogin (shared) |
+| **profile** | Profile | — | User info editing, flavor-independent |
+| **settings** | Settings, More | — | App theme, language, notifications |
 
-### Repositories observed (source-derived)
+---
 
-| Repository | Purpose |
-|---|---|
-| `UserDataRepository` | User preferences (theme, language, brand color) — `core/data` |
-| `NetworkMonitor` | Connectivity status via `Flow<Boolean>` — `core/data` |
+## Complete Screen List (30 Screens)
 
-> Template repositories (`CryptoRepository`, `CurrencyRatesRepository`) will be removed with their feature modules.
+### Consumer Screens (13)
 
-### Database (Room KMP)
+1. **splash** — `consumer`
+2. **login** — shared
+3. **home** — `consumer`
+4. **accounts** — `consumer`
+5. **account-detail** — `consumer`
+6. **transactions** — `consumer`
+7. **transaction-detail** — `consumer`
+8. **send-money** — `consumer`
+9. **send-money-confirm** — `consumer`
+10. **beneficiaries** — `consumer`
+11. **cards** — `consumer`
+12. **card-detail** — `consumer`
+13. **standing-orders** — `consumer`
 
-| Entity | Module |
-|---|---|
-| `UserPreferencesEntity` | `core/datastore` |
+### Field Officer Screens (11)
 
-> Template entities will be removed alongside template modules.
+1. **fo-dashboard** — `fieldOfficer`
+2. **customer-search** — `fieldOfficer`
+3. **customer-detail** — `fieldOfficer`
+4. **customer-profile** — `fieldOfficer`
+5. **customer-onboarding** — `fieldOfficer`
+6. **corporate-onboarding** — `fieldOfficer`
+7. **kyc-review** — `fieldOfficer`
+8. **account-applications** — `fieldOfficer`
+9. **application-detail** — `fieldOfficer`
+10. **customer-messages** — `fieldOfficer`
+11. **meetings** — `fieldOfficer`
+
+### Shared Screens (4)
+
+1. **splash** — both
+2. **login** — both
+3. **profile** — both
+4. **settings** — both
+
+### Additional Screens (2)
+
+1. **fx-rates** — `consumer` enhancement
+2. **atm-locator** — `consumer` enhancement
+
+---
+
+## Feature Quality Baseline
+
+All features start at quality score **50/100** (scaffold). Progression:
+
+- **≥50:** Scaffolded (template-generated)
+- **≥70:** Enriched (design tokens, state models, navigation edges)
+- **≥85:** Fully specced (SPEC.md, API contract, mockups)
+- **≥95:** Implemented (Kotlin code, tests passing)
+
+---
+
+## OBP API Coverage
+
+| API Tag | Consumer | Field Officer | Endpoints |
+|---|---|---|---|
+| Accounts | ✓ | ✓ | 89 |
+| Transactions | ✓ | ✓ | 33 |
+| TransactionRequests | ✓ | — | 14 |
+| Cards | ✓ | — | 18 |
+| Counterparties | ✓ | — | 39 |
+| ATM | ✓ | — | 12 |
+| Branch | — | ✓ | 11 |
+| FX | ✓ | — | 6 |
+| Customers | — | ✓ | 89 |
+| KYC | — | ✓ | 15 |
+| Customer-Messages | — | ✓ | 11 |
+| Meetings | — | ✓ | 8 |
+| Standing-Orders | ✓ | — | 8 |
+| Consolidated | ✓ | ✓ | 6 |
+
+---
+
+## Notes
+
+- All features use **KMP Product Flavors** to enable/disable screens per flavor
+- **DirectLogin** is the sole authentication method (no OAuth complexity in MVP)
+- **Navigation** is flavor-aware: Consumer bottom-nav ≠ Field Officer bottom-nav
+- **Shared layers:** DTOs, domain models, API client, local storage schema — all KMP
+- **State management:** Store5 repositories + ViewModels per feature
