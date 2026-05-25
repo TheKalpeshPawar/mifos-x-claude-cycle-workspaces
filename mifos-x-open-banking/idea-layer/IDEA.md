@@ -194,7 +194,30 @@ fun FieldOfficerApp() {
 ### Open Bank Project API v7.0.0
 
 **Base URL:** `https://apisandbox.openbankproject.com`  
-**Authentication:** DirectLogin (Direct API token auth — no OAuth required for sandbox)
+**API Version:** v5.1.0 (primary), v4.0.0 (DirectLogin compat)
+
+### Authentication (Dual Method)
+
+**1. DirectLogin** — Form-based, sandbox-friendly
+- `POST /obp/v4.0.0/my/logins/direct`
+- Header: `Authorization: DirectLogin username="...", password="...", consumer_key="..."`
+- Returns session token
+- Best for: development, testing, sandbox
+
+**2. OAuth/OIDC** — Production-grade, authorization_code + PKCE
+- OIDC Provider: `obp-oidc`
+- Discovery: `GET /obp/v5.1.0/well-known`
+- Authorization: `https://apisandbox-oidc.openbankproject.com/obp-oidc/auth`
+- Token: `https://apisandbox-oidc.openbankproject.com/obp-oidc/token`
+- UserInfo: `https://apisandbox-oidc.openbankproject.com/obp-oidc/userinfo`
+- JWKS: `https://apisandbox-oidc.openbankproject.com/obp-oidc/jwks`
+- Revocation: `https://apisandbox-oidc.openbankproject.com/obp-oidc/revoke`
+- Grant types: `authorization_code`, `refresh_token`, `client_credentials`
+- Scopes: `openid`, `profile`, `email`
+- Signing: RS256
+- Claims: `sub`, `name`, `email`, `email_verified`
+- Redirect URI: `org.mifos.openbanking://oauth/callback`
+- Best for: production, secure multi-device auth, token refresh
 
 **Available Endpoints** (118+ across 89 tags):
 - **Accounts** (89 endpoints): Account creation, listing, detail, balance, permissions
@@ -213,9 +236,10 @@ fun FieldOfficerApp() {
 - **Consolidated** (6 endpoints): Multi-account views, activity aggregation
 
 **Credential Storage:**
-- Consumer Key: Public in `.env.local` (sandbox)
-- Username/Password: `.env.local` only (sandbox)
-- Token: Obtained at runtime via DirectLogin POST to `/obp/v4.0.0/banks/{bank}/direct_login`
+- Consumer Key: `.env.local` (sandbox), `.env.production` (production)
+- DirectLogin creds: `.env.local` only (sandbox development)
+- OAuth tokens: Encrypted local storage via `CredentialStore` (at runtime)
+- Refresh tokens: Encrypted local storage, auto-refresh on 401
 
 ---
 

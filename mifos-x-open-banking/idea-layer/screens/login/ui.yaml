@@ -230,23 +230,115 @@ components:
     loading_when: "uiState == Authenticating"
     a11y:
       role: button
-      label: "Sign In"
+      label: "Sign In with DirectLogin"
     test_context:
       purpose: "Submits DirectLogin credentials to OBP API; disabled when fields are empty"
       interaction_type: action
       data_driven: false
 
+  - type: stack
+    id: login_or_divider_row
+    variant: row
+    style:
+      padding_top: spacing.lg
+      padding_bottom: spacing.lg
+      alignment: center
+    children:
+      - login_or_line_left
+      - login_or_text
+      - login_or_line_right
+
   - type: divider
-    id: login_divider
+    id: login_or_line_left
     style:
       color: "#E0E0E0"
-      margin_top: spacing.lg
-      margin_bottom: spacing.lg
+      flex: 1
     a11y:
       role: separator
-      label: "Section divider"
     test_context:
-      purpose: "Visual separator between primary CTA and secondary actions"
+      purpose: "Left half of the OR divider between DirectLogin and OAuth"
+      interaction_type: display
+      data_driven: false
+
+  - type: text
+    id: login_or_text
+    content: "OR"
+    variant: label_medium
+    style:
+      typography: "Manrope/label_medium"
+      color: "#9E9E9E"
+      padding_horizontal: spacing.md
+    a11y:
+      role: text
+      label: "Or sign in with a different method"
+    test_context:
+      purpose: "Visual separator text between DirectLogin form and OAuth button"
+      interaction_type: display
+      data_driven: false
+
+  - type: divider
+    id: login_or_line_right
+    style:
+      color: "#E0E0E0"
+      flex: 1
+    a11y:
+      role: separator
+    test_context:
+      purpose: "Right half of the OR divider"
+      interaction_type: display
+      data_driven: false
+
+  - type: button
+    id: login_oauth_button
+    label: "Sign in with OBP Account"
+    variant: outlined
+    style:
+      border_color: "#1800B1"
+      typography: "Inter/label_large"
+      color: "#1800B1"
+      border_radius: "8dp"
+      padding: spacing.md
+      width: "match_parent"
+      icon_start: "open_in_browser"
+    on_click:
+      action: oauth_login
+      target: obp_oidc_authorize
+    a11y:
+      role: button
+      label: "Sign in using your Open Bank Project account via OAuth"
+    test_context:
+      purpose: "Initiates OAuth/OIDC authorization_code flow — opens system browser to OBP OIDC auth endpoint"
+      interaction_type: action
+      data_driven: false
+
+  - type: text
+    id: login_oauth_hint
+    content: "Redirects to Open Bank Project for secure authentication"
+    variant: body_small
+    style:
+      typography: "Manrope/body_small"
+      color: "#9E9E9E"
+      alignment: center
+      padding_top: spacing.xs
+      padding_bottom: spacing.md
+    a11y:
+      role: text
+      label: "OAuth login opens a browser for secure authentication"
+    test_context:
+      purpose: "Hint text explaining the OAuth redirect flow to set expectations"
+      interaction_type: display
+      data_driven: false
+
+  - type: divider
+    id: login_bottom_divider
+    style:
+      color: "#E0E0E0"
+      margin_top: spacing.md
+      margin_bottom: spacing.md
+    a11y:
+      role: separator
+    test_context:
+      purpose: "Divider above forgot password link"
       interaction_type: display
       data_driven: false
 
@@ -272,14 +364,21 @@ components:
 states:
   idle:
     layout: { type: column, padding: spacing.lg }
-    visible_components: [login_header_logo, login_header_title, login_header_subtitle, login_username_input, login_password_input, login_remember_me_row, login_cta_button, login_divider, login_forgot_password_link]
+    visible_components: [login_header_logo, login_header_title, login_header_subtitle, login_username_input, login_password_input, login_remember_me_row, login_cta_button, login_or_divider_row, login_oauth_button, login_oauth_hint, login_bottom_divider, login_forgot_password_link]
   authenticating:
     layout: { type: column, padding: spacing.lg }
-    visible_components: [login_header_logo, login_header_title, login_header_subtitle, login_username_input, login_password_input, login_remember_me_row, login_cta_button, login_divider, login_forgot_password_link]
-    note: "login_cta_button shows loading spinner; inputs are disabled"
+    visible_components: [login_header_logo, login_header_title, login_header_subtitle, login_username_input, login_password_input, login_remember_me_row, login_cta_button, login_or_divider_row, login_oauth_button, login_oauth_hint, login_bottom_divider, login_forgot_password_link]
+    note: "login_cta_button shows loading spinner; inputs disabled; oauth button disabled"
+  oauth_redirecting:
+    layout: { type: column, padding: spacing.lg }
+    visible_components: [login_header_logo, login_header_title, login_header_subtitle, login_username_input, login_password_input, login_remember_me_row, login_cta_button, login_or_divider_row, login_oauth_button, login_oauth_hint, login_bottom_divider, login_forgot_password_link]
+    note: "login_oauth_button shows loading spinner; system browser opens to OBP OIDC auth endpoint; inputs disabled"
+  oauth_exchanging:
+    layout: { type: column, padding: spacing.lg }
+    note: "App returned from browser with auth code; exchanging code for token via token endpoint; full-screen loading overlay"
   error:
     layout: { type: column, padding: spacing.lg }
-    visible_components: [login_header_logo, login_header_title, login_header_subtitle, login_username_input, login_password_input, login_remember_me_row, login_error_banner, login_cta_button, login_divider, login_forgot_password_link]
+    visible_components: [login_header_logo, login_header_title, login_header_subtitle, login_username_input, login_password_input, login_remember_me_row, login_error_banner, login_cta_button, login_or_divider_row, login_oauth_button, login_oauth_hint, login_bottom_divider, login_forgot_password_link]
 
 state_model:
   LoginViewModel:
@@ -303,10 +402,22 @@ state_model:
       - field: isLoading
         type: Boolean
         default: "false"
-    errors: [NETWORK_ERROR, INVALID_CREDENTIALS, UNAUTHORIZED, SERVER_ERROR]
-    events: [OnUsernameChanged, OnPasswordChanged, OnRememberMeToggled, OnPasswordVisibilityToggled, OnLoginClicked, OnForgotPasswordClicked, OnLoginSuccess, OnLoginError]
-    actions: [onUsernameChanged(value: String), onPasswordChanged(value: String), onRememberMeToggled(), onPasswordVisibilityToggled(), onLoginClicked(), onForgotPasswordClicked()]
-    di: [ObpAuthRepository, SessionManager, CredentialStore]
+      - field: authMethod
+        type: "AuthMethod"
+        default: "AuthMethod.NONE"
+        note: "NONE | DIRECT_LOGIN | OAUTH_OIDC — tracks which auth flow is active"
+      - field: oauthState
+        type: "String?"
+        default: "null"
+        note: "CSRF state parameter for OAuth authorization_code flow"
+      - field: oauthCodeVerifier
+        type: "String?"
+        default: "null"
+        note: "PKCE code_verifier for OAuth PKCE flow"
+    errors: [NETWORK_ERROR, INVALID_CREDENTIALS, UNAUTHORIZED, SERVER_ERROR, OAUTH_CANCELLED, OAUTH_TOKEN_EXCHANGE_FAILED, OAUTH_STATE_MISMATCH]
+    events: [OnUsernameChanged, OnPasswordChanged, OnRememberMeToggled, OnPasswordVisibilityToggled, OnDirectLoginClicked, OnOAuthLoginClicked, OnOAuthCallback, OnForgotPasswordClicked, OnLoginSuccess, OnLoginError]
+    actions: [onUsernameChanged(value: String), onPasswordChanged(value: String), onRememberMeToggled(), onPasswordVisibilityToggled(), onDirectLoginClicked(), onOAuthLoginClicked(), onOAuthCallback(code: String, state: String), onForgotPasswordClicked()]
+    di: [ObpAuthRepository, ObpOidcClient, SessionManager, CredentialStore]
 
 navigation:
   - id: nav_to_consumer_home
@@ -331,21 +442,16 @@ navigation:
       target: forgot-password
 
 api:
+  # ── DirectLogin (form-based, sandbox-friendly) ───────────────────────
   - id: obp_direct_login
-    endpoint: "POST /obp/v4.0.0/banks/{bankId}/direct_login"
+    endpoint: "POST /obp/v4.0.0/my/logins/direct"
     tag: Authentication
-    trigger: on_login_clicked
+    trigger: on_direct_login_clicked
+    description: "DirectLogin sends credentials in Authorization header"
     request:
-      fields:
-        - name: username
-          type: String
-          source: login_username_input
-        - name: password
-          type: String
-          source: login_password_input
-        - name: consumer_key
-          type: String
-          source: OBP_CONSUMER_KEY
+      headers:
+        Authorization: 'DirectLogin username="{username}", password="{password}", consumer_key="{consumer_key}"'
+      content_type: none
     response:
       fields:
         - name: token
@@ -362,6 +468,154 @@ api:
         name: SERVER_ERROR
         ui_message: "Something went wrong on our end. Please try again in a moment."
 
+  # ── OAuth/OIDC (authorization_code + PKCE) ───────────────────────────
+  - id: obp_oidc_discovery
+    endpoint: "GET https://apisandbox.openbankproject.com/obp/v5.1.0/well-known"
+    tag: Authentication
+    trigger: app_startup
+    description: "Discover OIDC provider from OBP well-known endpoint"
+    response:
+      fields:
+        - name: provider_id
+          type: String
+          example: "obp-oidc"
+        - name: well_known_url
+          type: String
+          example: "https://apisandbox-oidc.openbankproject.com/obp-oidc/.well-known/openid-configuration"
+
+  - id: obp_oidc_authorize
+    endpoint: "GET https://apisandbox-oidc.openbankproject.com/obp-oidc/auth"
+    tag: Authentication
+    trigger: on_oauth_login_clicked
+    description: "Opens system browser for OAuth authorization_code flow with PKCE"
+    request:
+      params:
+        response_type: "code"
+        client_id: "{consumer_key}"
+        redirect_uri: "org.mifos.openbanking://oauth/callback"
+        scope: "openid profile email"
+        state: "{csrf_state}"
+        code_challenge: "{pkce_code_challenge}"
+        code_challenge_method: "S256"
+    response:
+      redirect_params:
+        - name: code
+          type: String
+        - name: state
+          type: String
+    errors:
+      - code: 302
+        name: OAUTH_CANCELLED
+        ui_message: "Sign-in was cancelled. You can try again or use DirectLogin."
+
+  - id: obp_oidc_token
+    endpoint: "POST https://apisandbox-oidc.openbankproject.com/obp-oidc/token"
+    tag: Authentication
+    trigger: on_oauth_callback
+    description: "Exchange authorization code for access_token + id_token + refresh_token"
+    request:
+      content_type: "application/x-www-form-urlencoded"
+      fields:
+        - name: grant_type
+          type: String
+          value: "authorization_code"
+        - name: code
+          type: String
+          source: oauth_callback_code
+        - name: redirect_uri
+          type: String
+          value: "org.mifos.openbanking://oauth/callback"
+        - name: client_id
+          type: String
+          source: OBP_CONSUMER_KEY
+        - name: code_verifier
+          type: String
+          source: pkce_code_verifier
+    response:
+      fields:
+        - name: access_token
+          type: String
+          stored_as: session_token
+        - name: id_token
+          type: String
+          note: "JWT signed with RS256; contains sub, name, email, email_verified"
+        - name: refresh_token
+          type: String
+          stored_as: refresh_token
+        - name: token_type
+          type: String
+          example: "Bearer"
+        - name: expires_in
+          type: Int
+          example: 3600
+    errors:
+      - code: 400
+        name: OAUTH_TOKEN_EXCHANGE_FAILED
+        ui_message: "Authentication failed. Please try signing in again."
+      - code: 401
+        name: UNAUTHORIZED
+        ui_message: "Invalid authorization. Please try again."
+
+  - id: obp_oidc_userinfo
+    endpoint: "GET https://apisandbox-oidc.openbankproject.com/obp-oidc/userinfo"
+    tag: Authentication
+    trigger: after_token_exchange
+    description: "Fetch user profile after successful OAuth login"
+    request:
+      headers:
+        Authorization: "Bearer {access_token}"
+    response:
+      fields:
+        - name: sub
+          type: String
+        - name: name
+          type: String
+        - name: email
+          type: String
+        - name: email_verified
+          type: Boolean
+
+  - id: obp_oidc_refresh
+    endpoint: "POST https://apisandbox-oidc.openbankproject.com/obp-oidc/token"
+    tag: Authentication
+    trigger: token_expired
+    description: "Refresh access_token using refresh_token (silent re-auth)"
+    request:
+      content_type: "application/x-www-form-urlencoded"
+      fields:
+        - name: grant_type
+          type: String
+          value: "refresh_token"
+        - name: refresh_token
+          type: String
+          source: stored_refresh_token
+        - name: client_id
+          type: String
+          source: OBP_CONSUMER_KEY
+    response:
+      fields:
+        - name: access_token
+          type: String
+        - name: refresh_token
+          type: String
+        - name: expires_in
+          type: Int
+
+  - id: obp_oidc_revoke
+    endpoint: "POST https://apisandbox-oidc.openbankproject.com/obp-oidc/revoke"
+    tag: Authentication
+    trigger: on_logout
+    description: "Revoke tokens on logout"
+    request:
+      content_type: "application/x-www-form-urlencoded"
+      fields:
+        - name: token
+          type: String
+          source: session_token
+        - name: client_id
+          type: String
+          source: OBP_CONSUMER_KEY
+
 dependencies:
   tier: feature
-  features: [shared-core, obp-auth]
+  features: [shared-core, obp-auth, obp-oidc-client]
