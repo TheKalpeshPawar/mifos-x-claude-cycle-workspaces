@@ -39,33 +39,153 @@
 
 | Layer | Tech | Notes |
 |---|---|---|
-| UI | Compose Multiplatform | Single KMP UI codebase |
-| Networking | Ktor Client | OBP API v7.0.0 REST client |
-| State Management | Store5 / BaseViewModel | Reactive, error-resilient |
-| Local Storage | SQLDelight | Cross-platform persistence |
-| Serialization | Kotlinx Serialization | Type-safe JSON |
-| Dependency Injection | Koin | Lightweight, multiplatform |
-| Build System | Gradle (KMP plugins) | Kotlin Multiplatform Plugin v0.11+ |
+| UI | Compose Multiplatform 1.8.2 | Single KMP UI codebase |
+| Networking | Ktor 3.2.0 + Ktorfit 2.5.2 | OBP API v7.0.0 REST client |
+| State Management | Store5 + BaseViewModel + ScreenDataStream | Stream-First reactive architecture |
+| Local Storage | Room KMP 2.7.2 | Cross-platform persistence |
+| Serialization | Kotlinx Serialization | Type-safe JSON, `@Serializable` routes |
+| Dependency Injection | Koin 4.1.0 | Lightweight, multiplatform |
+| Navigation | Jetpack Navigation Compose | Type-safe `@Serializable` route objects |
+| Build System | Gradle 8.0+ + kmp-product-flavors 2.4.3 | Variant matrix + source set gating |
 
-### Product Flavors (KMP Product Flavors)
+### Product Flavors (kmp-product-flavors v2.4.3)
 
-Single source code tree compiles to **two distinct apps**:
+**Plugin:** `io.github.mobilebytelabs.kmp-product-flavors`
 
-**Flavor: `consumer`**
-- Navigation: Home → Accounts → Pay → Cards → More
-- Feature set: Account mgmt, transactions, payments, cards, beneficiaries, ATM locator
-- API subset: Accounts, Transactions, TransactionRequests, Cards, Counterparties, ATM, FX
+Applied in `cmp-navigation/build.gradle.kts`:
+```kotlin
+plugins {
+    id("com.google.devtools.ksp")
+    id("io.github.mobilebytelabs.kmp-product-flavors") version "2.4.3"
+}
 
-**Flavor: `fieldOfficer`**
-- Navigation: Dashboard → Customers → Applications → Messages → More
-- Feature set: Customer search, onboarding, KYC, applications, messaging, meetings
-- API subset: Customers, KYC, Account-Applications, Customer-Messages, Meetings, Retail/Corporate
+kmpFlavors {
+    flavors {
+        register("consumer") { isDefault.set(true) }
+        register("fieldOfficer")
+    }
+    buildTypes {
+        register("debug")   { isDefault.set(true) }
+        register("release")
+    }
+}
+```
 
-Both flavors share:
-- Authentication layer (DirectLogin)
-- Core domain models (Account, Transaction, Customer, KYC, etc.)
-- Persistence layer (SQLDelight schema)
-- Navigation router (flavor-specific implementation)
+Build a variant: `./gradlew :cmp-android:assembleConsumerDebug` or `./gradlew :cmp-android:assembleFieldOfficerRelease`  
+Or via properties: `-PkmpFlavor=fieldOfficerDebug`
+
+The plugin generates `FlavorConfig.VARIANT_NAME` + per-flavor source sets:
+
+| Source Set | Used By |
+|---|---|
+| `src/commonMain/` | Both flavors — shared navigation scaffold (splash, login, auth gate) |
+| `src/commonConsumer/` | Consumer flavor — wires consumer navigation graph |
+| `src/commonFieldOfficer/` | Field Officer flavor — wires field officer navigation graph |
+
+### Module Structure
+
+Based on **kmp-project-template** conventions (reusing its module layout):
+
+```
+cmp-android / cmp-ios / cmp-desktop / cmp-web   ← platform entry points
+cmp-navigation                                   ← navigation hub (flavor-gated)
+cmp-shared                                       ← SharedApp() + theme host
+
+core:analytics · core:common · core:data         ← unchanged from template
+core:database · core:datastore · core:designsystem
+core:domain · core:model · core:network · core:ui
+
+# Shared feature modules (both flavors)
+feature:splash · feature:login
+feature:profile · feature:settings
+
+# Consumer-only feature modules
+feature:home · feature:accounts · feature:transactions
+feature:send-money · feature:beneficiaries · feature:cards
+feature:standing-orders · feature:atm-locator · feature:fx-rates
+
+# Field Officer-only feature modules
+feature:fo-dashboard · feature:customer-search · feature:customer-detail
+feature:customer-onboarding · feature:corporate-onboarding
+feature:kyc-review · feature:account-applications
+feature:customer-messages · feature:meetings
+```
+
+### VARIANT_DEPENDENCY_EXCLUDES
+
+`cmp-navigation/VARIANT_DEPENDENCY_EXCLUDES.yaml`:
+```yaml
+# Consumer excludes all FO feature modules
+consumer:
+  exclude:
+    - :feature:fo-dashboard
+    - :feature:customer-search
+    - :feature:customer-detail
+    - :feature:customer-onboarding
+    - :feature:corporate-onboarding
+    - :feature:kyc-review
+    - :feature:account-applications
+    - :feature:customer-messages
+    - :feature:meetings
+
+# Field Officer excludes all consumer-specific modules
+fieldOfficer:
+  exclude:
+    - :feature:home
+    - :feature:accounts
+    - :feature:transactions
+    - :feature:send-money
+    - :feature:beneficiaries
+    - :feature:cards
+    - :feature:standing-orders
+    - :feature:atm-locator
+    - :feature:fx-rates
+```
+
+### Navigation Assembly
+
+Each flavor wires its own navigation graph inside `cmp-navigation`:
+
+**`src/commonConsumer/ConsumerNavigation.kt`**
+```kotlin
+@Composable
+fun ConsumerApp() {
+    NavHost(startDestination = SplashRoute) {
+        splashGraph()
+        loginGraph()
+        // consumer bottom nav host:
+        composable<ConsumerNavbarRoute> {
+            ConsumerBottomNavHost {
+                homeGraph()
+                accountsGraph()
+                sendMoneyGraph()
+                cardsGraph()
+                moreGraph() // profile, settings, standing-orders, ATM, FX
+            }
+        }
+    }
+}
+```
+
+**`src/commonFieldOfficer/FieldOfficerNavigation.kt`**
+```kotlin
+@Composable
+fun FieldOfficerApp() {
+    NavHost(startDestination = SplashRoute) {
+        splashGraph()
+        loginGraph()
+        composable<FoDashboardNavbarRoute> {
+            FoBottomNavHost {
+                foDashboardGraph()
+                customerSearchGraph()
+                accountApplicationsGraph()
+                customerMessagesGraph()
+                moreGraph() // profile, settings, meetings
+            }
+        }
+    }
+}
+```
 
 ---
 
