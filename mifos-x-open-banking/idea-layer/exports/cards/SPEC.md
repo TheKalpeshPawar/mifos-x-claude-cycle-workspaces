@@ -1,0 +1,128 @@
+# My Cards — Feature Specification
+
+| Field | Value |
+|---|---|
+| Feature | cards |
+| Flavor | consumer |
+| Status | enriched |
+| Quality Score | 80 |
+
+---
+
+## Overview
+
+The My Cards screen is the central hub for payment card management in the Mifos X Open Banking consumer app. It presents all of the user's cards in a horizontally scrollable carousel with contextual status chips (Active, Frozen), provides quick-action shortcuts (Freeze, Set Limit, View PIN, Report Lost), and displays a chronological card transaction list beneath. Users can tap any card to navigate to the full card detail view.
+
+---
+
+## Screens
+
+| Screen ID | Route | Layout | Scroll |
+|---|---|---|---|
+| cards | /cards | index_list | vertical |
+
+**Shell:** Bottom navigation visible. Top bar shows "My Cards" with notifications action (`notifications_outlined`).
+
+---
+
+## Components
+
+| ID | Type | Description |
+|---|---|---|
+| cards_title | text | Headline "My Cards" in primary #1800B1 |
+| card_carousel | stack | Horizontal scroll container for card visuals |
+| card_debit_visa | box | Debit Visa card visual — gradient #1800B1→#4B35E8, 320×200dp |
+| card_debit_number | text | "•••• •••• •••• 4521", white monospace |
+| card_debit_name | text | "Alex Johnson", uppercase, #E0DDFF |
+| card_debit_active_chip | box | "Active" badge — #4CAF50 background |
+| visa_logo_debit | image | Visa logo, white tinted, 56×20dp |
+| card_business_mastercard | box | Business Mastercard — gradient #008B8B→#005F5F |
+| card_business_number | text | "•••• •••• •••• 7834", white monospace |
+| card_business_frozen_chip | box | "Frozen" badge — #9E9E9E background |
+| mastercard_logo | image | Mastercard logo, 48×30dp |
+| quick_actions_row | stack | Horizontal evenly-spaced quick action buttons |
+| freeze_unfreeze_action | button | Text button — "Freeze" with ac_unit icon, #1800B1 |
+| set_limit_action | button | Text button — "Set Limit" with tune icon, #1800B1 |
+| view_pin_action | button | Text button — "View PIN" with password icon, #1800B1 |
+| report_lost_action | button | Text button — "Report Lost" with report_problem icon, #FF5252 |
+| card_transactions_header | text | Section header "Card Transactions", title_large |
+| card_tx_netflix | box | Transaction row — "Netflix", -£15.99, 20 May 2026 |
+| card_tx_tesco | box | Transaction row — "Tesco Express", -£34.56 |
+| card_tx_uber | box | Transaction row — "Uber", -£12.40, 18 May 2026 |
+| card_tx_amazon | box | Transaction row — "Amazon.co.uk", -£67.99, 17 May 2026 |
+| card_tx_starbucks | box | Transaction row — "Starbucks", -£5.85, 17 May 2026 |
+| order_new_card_button | button | Outlined full-width — "Order New Card" |
+
+---
+
+## States
+
+| State ID | Trigger | Description |
+|---|---|---|
+| loading | Screen entry | Skeleton carousel + skeleton actions + skeleton list (3 items) |
+| content | API data loaded | Full carousel, quick actions, transaction list, order button |
+| empty | No cards returned | Empty state: credit_card_off icon, "No cards yet", order button |
+| error | API failure | Error state: cloud_off icon, "Unable to load cards", retry button |
+
+---
+
+## State Model
+
+**ViewModel:** `CardsViewModel`
+
+| Field | Type | Default |
+|---|---|---|
+| cards | List\<Card\> | emptyList() |
+| selectedCardId | String | "" |
+| cardTransactions | List\<Transaction\> | emptyList() |
+| uiState | CardsUiState | Loading |
+
+**Events:** CardSelected, FreezeCardClicked, SetLimitClicked, ViewPinClicked, ReportLostClicked, OrderNewCardClicked, TransactionClicked
+
+**Actions:** navigate, toggle_freeze_card, open_set_limit_sheet, reveal_pin, report_card_lost, order_card
+
+**DI Dependencies:** CardRepository, TransactionRepository, BiometricAuthUseCase
+
+**Error Codes:**
+
+| Field | Code | Message |
+|---|---|---|
+| global | LOAD_FAILED | "Unable to load your cards. Please try again." |
+| freeze | FREEZE_FAILED | "Card freeze operation failed. Please contact support." |
+
+---
+
+## Navigation
+
+| From | To | Trigger | Type |
+|---|---|---|---|
+| cards | card-detail | Tap card_debit_visa or card_business_mastercard | push |
+| cards | transaction-detail | Tap any transaction row | push |
+
+---
+
+## API Endpoints
+
+| Endpoint | Auth | Purpose |
+|---|---|---|
+| GET /obp/v5.1.0/cards | DirectLogin | Load all user cards for carousel display |
+
+---
+
+## Design Tokens
+
+| Token | Value | Usage |
+|---|---|---|
+| primary | #1800B1 | Title, quick action icons, card gradient start |
+| card_gradient_end | #4B35E8 | Debit card gradient end |
+| teal_gradient_start | #008B8B | Business card gradient start |
+| teal_gradient_end | #005F5F | Business card gradient end |
+| active_badge | #4CAF50 | Active status chip |
+| frozen_badge | #9E9E9E | Frozen status chip |
+| report_lost | #FF5252 | Report Lost button and debit amount color |
+| surface | #FFFFFF | Transaction row background |
+| surface_container | #F0EDF7 | Screen background |
+
+---
+
+*Generated by /idea export | 2026-05-25*

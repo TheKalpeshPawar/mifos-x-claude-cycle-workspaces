@@ -1,0 +1,128 @@
+# Feature Specification — Connected Apps (Consent Manager)
+
+| Field | Value |
+|---|---|
+| Feature | consent-manager |
+| Name | Connected Apps |
+| Flavor | consumer |
+| Status | enriched |
+| Quality Score | 78 |
+
+---
+
+## Overview
+
+The Connected Apps screen gives consumers visibility and control over which third-party applications have been granted PSD2 consent to access their account data. Two consents are shown in the enriched state: MoneyDash Finance (ACCEPTED, granted 12 March 2026, scopes: Accounts / Balances / Transactions) with a red "Revoke Access" button, and SavingWise Pro (EXPIRED, granted 3 January 2026, scope: Balances) with a greyed-out "Remove" button. Each consent card shows the app logo, name, grant date, status badge, and data scope chips. The screen navigates back to Settings and includes an informational sheet about PSD2 consent via the top app bar info button.
+
+---
+
+## Screens
+
+| Screen ID | Name | Route | Archetype | Scroll |
+|---|---|---|---|---|
+| consent-manager | Connected Apps | /consent-manager | index_list | vertical |
+
+---
+
+## Components
+
+| ID | Type | Description |
+|---|---|---|
+| consent_title | text | "Connected Apps" headline_large, #1800B1, bold |
+| consent_subtitle | text | "These apps have access to your account data" body_medium, #666666 |
+| consent_monzo_plus | box | Card for MoneyDash Finance — active consent |
+| moneydash_logo | image | App logo (40x40, radius 10, #E3F2FD bg) |
+| moneydash_name | text | "MoneyDash Finance" title_medium, semi-bold, #111111 |
+| moneydash_granted_date | text | "Granted 12 Mar 2026" body_small, #888888 |
+| moneydash_accepted_badge | box | "ACCEPTED" badge — #E8F5E9 bg, #4CAF50 text, radius 10 |
+| moneydash_scope_accounts | box | "Accounts" scope chip — #EDE7F6 bg, #4527A0 text |
+| moneydash_scope_balances | box | "Balances" scope chip — #EDE7F6 bg, #4527A0 text |
+| moneydash_scope_transactions | box | "Transactions" scope chip — #EDE7F6 bg, #4527A0 text |
+| moneydash_revoke_button | button | "Revoke Access" outlined, #FF5252 border/text, radius 10 |
+| consent_savingwise | box | Card for SavingWise Pro — expired consent |
+| savingwise_logo | image | App logo (40x40, radius 10, #F3E5F5 bg) |
+| savingwise_name | text | "SavingWise Pro" title_medium, semi-bold, #888888 (dimmed — expired) |
+| savingwise_granted_date | text | "Granted 3 Jan 2026 · Expired" body_small, #BBBBBB |
+| savingwise_expired_badge | box | "EXPIRED" badge — #F5F5F5 bg, #9E9E9E text |
+| savingwise_scope_balances | box | "Balances" scope chip — #F0F0F0 bg, #9E9E9E text (dimmed) |
+| savingwise_remove_button | button | "Remove" text variant, #9E9E9E, radius 10 |
+
+---
+
+## States
+
+| ID | Trigger | Description |
+|---|---|---|
+| loading | Screen enters; API call in flight | Title and subtitle visible; 2 skeleton cards |
+| content | API returns consent list | Active and expired consent cards rendered |
+| empty | User has no consents | Title, subtitle; empty state "No apps connected" with link_off icon |
+| error | Network or API failure | Title, subtitle; error state with cloud_off and retry button |
+
+---
+
+## State Model
+
+**ViewModel:** `ConsentManagerViewModel`
+
+### State Fields
+
+| Name | Type | Default |
+|---|---|---|
+| consents | List\<ConsentItem\> | emptyList() |
+| uiState | ConsentManagerUiState | Loading |
+| revokingConsentId | String? | null |
+| error | UiError? | null |
+
+### Error Codes
+
+| Field | Code | Message |
+|---|---|---|
+| global | LOAD_FAILED | Unable to load connected apps. Please try again. |
+| revoke | REVOKE_FAILED | Could not revoke consent. Please try again. |
+
+### Events
+`ConsentsLoaded`, `RevokeConsentClicked(consentId: String)`, `RevokeConsentConfirmed(consentId: String)`, `RevokeConsentComplete`, `RetryLoad`
+
+### Actions
+`revoke_consent`, `open_consent_info`
+
+### DI Dependencies
+`ConsentRepository`
+
+---
+
+## Navigation
+
+| From | To | Trigger | Type |
+|---|---|---|---|
+| top app bar back | settings | Back arrow | pop |
+| moneydash_revoke_button | (confirmation dialog) | Revoke tap | dialog |
+| savingwise_remove_button | (confirmation dialog) | Remove tap | dialog |
+| top app bar info icon | (info sheet) | Info tap | bottom sheet |
+
+---
+
+## API Endpoints
+
+| Endpoint | Auth | Purpose |
+|---|---|---|
+| GET /obp/v5.1.0/my/consents | DirectLogin | List all PSD2 consents granted by the authenticated user |
+
+---
+
+## Design Tokens
+
+| Token | Value | Usage |
+|---|---|---|
+| primary | #1800B1 | Title heading |
+| surface | #FFFFFF | Active consent card |
+| surface_variant | #FAFAFA | Expired consent card (slightly dimmed surface) |
+| error | #FF5252 | Revoke Access button border/text |
+| success | #4CAF50 | ACCEPTED badge text |
+| neutral | #9E9E9E | EXPIRED badge text, dimmed scope chips, Remove button |
+| purple_scope | #EDE7F6 / #4527A0 | Active scope chips |
+| green_badge | #E8F5E9 / #4CAF50 | Accepted status badge |
+
+---
+
+*Generated by /idea export | 2026-05-25*

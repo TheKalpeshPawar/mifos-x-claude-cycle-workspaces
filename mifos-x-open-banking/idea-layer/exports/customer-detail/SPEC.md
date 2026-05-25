@@ -1,0 +1,101 @@
+# Feature Specification: Customer 360 Profile
+
+| Field | Value |
+|---|---|
+| Feature | customer-detail |
+| Flavor | fieldOfficer |
+| Status | enriched |
+| Quality Score | 84 |
+
+## Overview
+
+The Customer 360 Profile provides field officers with a complete, consolidated view of a single customer's financial and personal data. A colored header displays the customer's name, tenure, and KYC badge, followed by a quick-stats bar (accounts, total balance, last activity). Five tabs — Overview, KYC, Accounts, Applications, and Messages — partition the detailed content into focused views. A fixed FAB enables account application creation, and a Send Message button opens the customer messaging flow.
+
+## Screens
+
+| Screen ID | Name | Route | Layout | Scroll |
+|---|---|---|---|---|
+| customer_detail_main | Customer 360 Profile | /customer-detail/{customerId} | detail_screen | vertical |
+
+## Components
+
+| ID | Type | Description |
+|---|---|---|
+| customer_header_box | box | Full-width deep-purple (#1800B1) header with avatar, name, tenure, and KYC badge |
+| customer_avatar | box | 60px circular avatar with white background and initials "JM" in #1800B1 |
+| customer_full_name | text | "John Mwangi" headline_small white bold |
+| customer_since_text | text | "Customer since Jan 2024" body_medium #C5CAE9 |
+| kyc_verified_badge | box | "KYC Verified" green (#4CAF50) pill badge |
+| quick_stats_row | stack | Horizontal bar with 3 stats: 2 Accounts / KES 145,200 / 3 days ago |
+| tab_bar | stack | 5-tab horizontal bar: Overview, KYC, Accounts, Applications, Messages |
+| personal_info_card | box | White card with name, DOB, National ID, phone, email |
+| address_card | box | White card with "123 Moi Avenue, Nairobi, Kenya" |
+| relationship_manager_card | box | Row: "Assigned to: Priya Sharma" + "Reassign" link |
+| kyc_status_banner_verified | box | Green banner: "KYC Verified · Last checked 15 Apr 2026" (conditional on kyc_verified) |
+| kyc_status_banner_pending | box | Amber banner: "KYC Pending — Action Required" (conditional on kyc_pending) |
+| create_application_fab | button | Fixed FAB bottom-right: "Create Application" filled #1800B1 with add icon |
+| send_message_button | button | Outlined full-width "Send Message" with message icon |
+| view_full_profile_link | link | "View Full Profile →" link to customer-profile screen |
+
+## States
+
+| ID | Trigger | Description |
+|---|---|---|
+| loading | Screen mount / customerId received | Header visible; avatar, name, stats, tabs, cards show skeleton |
+| content | API responds successfully | All data populated; kyc_status_banner_verified shown; kyc_status_banner_pending hidden (for verified customers) |
+| error | API fails | Only header shown; all tabs, cards, FAB, and send button hidden; error message displayed |
+
+## State Model
+
+**ViewModel:** `CustomerDetailViewModel`
+
+| Field | Type | Default |
+|---|---|---|
+| customerId | String | "" |
+| customer | Customer? | null |
+| accounts | List\<Account\> | emptyList() |
+| selectedTab | CustomerDetailTab | CustomerDetailTab.OVERVIEW |
+| kycStatus | KycStatus | KycStatus.UNKNOWN |
+| totalBalance | Double | 0.0 |
+| isLoading | Boolean | true |
+| networkError | String? | null |
+| customerNotFound | String? | null |
+
+**Events:** `TabSwitchedEvent`, `CreateApplicationEvent`, `SendMessageEvent`, `ReassignOfficerEvent`, `ReviewKycEvent`
+
+**Actions:** `switch_tab`, `navigate`, `reassign_officer`
+
+**DI Dependencies:** `CustomerRepository`, `AccountRepository`, `NavigationService`
+
+## Navigation
+
+| From | To | Trigger | Type |
+|---|---|---|---|
+| customer-detail | kyc-review | tab_kyc | tab switch |
+| customer-detail | account-applications | create_application_fab | push |
+| customer-detail | customer-messages | send_message_button | push |
+| customer-detail | customer-profile | view_full_profile_link | push |
+
+## API Endpoints
+
+| Endpoint | Auth | Purpose |
+|---|---|---|
+| GET /obp/v5.1.0/banks/{bankId}/customers/{customerId} | DirectLogin token | Load full customer record including personal details, KYC status, credit info |
+| GET /obp/v5.1.0/banks/{bankId}/customers/{customerId}/accounts | DirectLogin token | Load linked accounts for account count and balance aggregation |
+| GET /obp/v5.0.0/banks/{bankId}/customers/{customerId}/customer-account-links | DirectLogin token | Fetch account-link records for accounts tab |
+
+## Design Tokens
+
+| Token | Value | Usage |
+|---|---|---|
+| primary | #1800B1 | Header background, avatar initials color, tab indicator, FAB |
+| header_text | #FFFFFF | Name and KYC badge text on purple header |
+| header_subtitle | #C5CAE9 | "Customer since" text on purple header |
+| kyc_verified_green | #4CAF50 | KYC badge background, verified banner accent |
+| kyc_pending_amber | #FF8F00 | KYC pending banner accent |
+| stats_bg | #F5F5F5 | Quick stats row background |
+| card_bg | #FFFFFF | All content cards |
+| background | #FCF8FF | Screen background |
+
+---
+_Generated by /idea export | 2026-05-25_

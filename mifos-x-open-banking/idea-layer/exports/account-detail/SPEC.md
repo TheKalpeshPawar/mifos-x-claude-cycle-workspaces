@@ -1,0 +1,116 @@
+# Feature Specification — Account Detail
+**Feature:** account-detail | **Flavor:** consumer | **Status:** enriched | **Quality Score:** 81
+
+---
+
+## Overview
+
+The Account Detail screen provides a deep-dive view into a single bank account, combining a full-bleed branded hero header showing the account name and live balance, a surface-elevated routing card with copyable IBAN and BIC/SWIFT values, and a three-action row for Send Money, Request, and Statement download. Below the actions, the five most recent transactions are listed with merchant name, date, and signed amount. A "View All" link navigates directly to the full transaction history.
+
+---
+
+## Screens
+
+| Screen ID | Label | Route | Layout | Scroll |
+|---|---|---|---|---|
+| account_detail_content | Account Detail | /accounts/{accountId} | Vertical scroll, top app bar with back | vertical |
+
+---
+
+## Components
+
+| ID | Type | Description |
+|---|---|---|
+| account_header_card | box | Full-width hero, background #1800B1, shows account label, balance, GBP + type badges |
+| account_header_label | text | "Primary Checking" — label_large, #FFFFFFB3 |
+| account_header_balance | text | "£4,250.00" — display_large, #FFFFFF, weight 700 |
+| account_currency_badge | box | "GBP" pill — #FFFFFF1A background, white text |
+| account_type_badge | box | "CHECKING" pill — #FFFFFF1A background, white text |
+| account_info_card | box | Elevated card (margin_top: -16 overlap) with IBAN + BIC rows |
+| iban_value | text | "DE89 3704 0044 0532 0130 00" — monospace, body_medium |
+| copy_iban_button | icon | content_copy, 22px, #1800B1 — copies IBAN to clipboard |
+| bic_value | text | "COBADEFFXXX" — monospace, body_medium |
+| copy_bic_button | icon | content_copy, 22px, #1800B1 — copies BIC to clipboard |
+| action_row | stack | Horizontal row: Send Money / Request / Statement buttons (flex 1 each) |
+| btn_send_money | button | Tonal, #E8E4FF background, #1800B1 text, send icon |
+| btn_request_payment | button | Outlined #1800B1, request_quote icon |
+| btn_download_statement | button | Outlined #1800B1, download icon |
+| transactions_header_row | stack | "Recent Transactions" title + "View All" link |
+| detail_txn_row_1..5 | box | Compact transaction rows: icon avatar + merchant + date + signed amount |
+
+---
+
+## States
+
+| ID | Trigger | Description |
+|---|---|---|
+| loading | ScreenOpened / RetryLoad | Skeleton: hero block (160px), info card overlap, actions bar, single txn row |
+| content | Account + transactions loaded | Full hero, info card, action row, 5 transaction rows |
+| error | Network/404 failure | Error card: "Could not load account", Retry CTA |
+
+---
+
+## State Model
+
+**ViewModel:** `AccountDetailViewModel`
+**ScreenState:** `AccountDetailScreenState`
+
+| Field | Type | Default |
+|---|---|---|
+| isLoading | Boolean | true |
+| account | BankAccount? | null |
+| recentTransactions | List\<TransactionSummary\> | emptyList() |
+| error | UiError? | null |
+| ibanCopied | Boolean | false |
+| bicCopied | Boolean | false |
+| isDownloadingStatement | Boolean | false |
+
+**Events:** RetryLoad · CopyIban · CopyBic · RequestPayment · DownloadStatement · NavigateToSendMoney · NavigateToTransactions
+
+**Actions:** loadAccountDetail(accountId, triggers: ScreenOpened/RetryLoad) · copyToClipboard(text) · downloadStatement · navigateTo(screen_id)
+
+**DI:** AccountsRepository · TransactionsRepository · ClipboardManager · StatementDownloader
+
+---
+
+## Navigation
+
+| From | To | Trigger | Type |
+|---|---|---|---|
+| account-detail | accounts | Top app bar back arrow | pop |
+| account-detail | send-money | Tap "Send Money" button | push |
+| account-detail | transactions | Tap "View All" link | push |
+| account-detail | send-money | Bottom nav "Pay" | replace |
+| account-detail | cards | Bottom nav "Cards" | replace |
+
+---
+
+## API Endpoints
+
+| Endpoint | Auth | Purpose |
+|---|---|---|
+| GET /obp/v5.1.0/banks/{bankId}/accounts/{accountId}/owner/account | DirectLogin | Fetch full account data (balance, routings) |
+| GET /obp/v5.1.0/my/banks/{bankId}/accounts/{accountId}/transactions | DirectLogin | Fetch 5 most recent transactions (limit=5, sort=DESC) |
+
+---
+
+## Design Tokens
+
+| Token | Value | Usage |
+|---|---|---|
+| color.primary | #1800B1 | Hero background, copy icons, tonal button text, outlined borders |
+| color.on_primary | #FFFFFF | Hero text, badge text |
+| color.primary_container | #E8E4FF | Send Money tonal button background |
+| color.surface | #FFFFFF | Info card + transaction row backgrounds |
+| color.debit | #FF5252 | Negative transaction amounts |
+| color.credit | #4CAF50 | Positive transaction amounts |
+| color.secondary_text | #666666 | Field labels (IBAN, BIC/SWIFT) |
+| typography.display_large | — | Hero balance (£4,250.00) |
+| typography.label_large | — | Hero account name label |
+| typography.title_large | — | Recent Transactions section heading |
+| typography.body_medium / monospace | — | IBAN and BIC values |
+| elevation.card | 3 | Info card overlap shadow |
+
+---
+
+_Generated by /idea export | 2026-05-25_
