@@ -1,145 +1,281 @@
-# Mockup Specification: Agent Registration
+# Mockup: Agent Registration
 
 | Field | Value |
 |---|---|
 | Feature | agent-registration |
 | Flavor | fieldOfficer |
 | Archetype | form |
+| Route | /agent-registration |
+| Scroll | vertical |
 
 ---
 
 ## Screen Layout
 
+### Chrome
+
+- **Top App Bar**: Title "Agent Registration" (#1800B1 headline style), left-aligned back arrow (`arrow_back`) navigating to `fo-dashboard`. No bottom navigation bar.
+- **Safe area**: Respected top and bottom.
+- **Scroll**: Full screen scrollable column — content scrolls under the pinned top app bar.
+
+### Scrollable Content Column (idle state, top-to-bottom)
+
 ```
-[ Top App Bar ]  ← back arrow left / "Agent Registration" title / no actions
-──────────────────────────────────────────────────
-[ "Agent Registration" ]     ← headline_large #1800B1 bold, ph:20 pt:16 pb:4
-[ "Register to become an authorised Mifos field agent" ]
-                              ← body_medium #666666 ph:20 pb:24
-
-  === IDLE / SUBMITTING STATE ===
-
-[ "Legal Name" ] ← label_medium #444444 semibold ph:20 pb:6
-┌──────────────────────────────────────────────────┐
-│  Enter your full legal name            outlined  │  border #CCCCCC br:12, ph:14 pv:14
-└──────────────────────────────────────────────────┘
-[ "Mobile Phone Number" ] ← label_medium #444444 ph:20 pb:6
-┌─────────┐ ┌──────────────────────────────────────┐
-│  +254   │ │  712 345 678            phone kbd    │
-│ #F5F5F5 │ │  br:12 border #CCCCCC               │
-└─────────┘ └──────────────────────────────────────┘
-  mh:20 mb:16, gap:8, row layout
-[ "Agent Number" ] ← label_medium #444444 ph:20 pb:6
-┌──────────────────────────────────────────────────┐
-│  e.g. AGT-2026-00142                   outlined  │  border #CCCCCC br:12
-└──────────────────────────────────────────────────┘
-[ "Operating Currency" ] ← label_medium #444444 ph:20 pb:6
-┌───────────────────────────────────────── ▾ ──────┐
-│  Select currency                       combobox  │  border #CCCCCC br:12
-└──────────────────────────────────────────────────┘
-                                         (options: EUR, GBP, KES, USD)
-[ Register as Agent ]      ← filled #1800B1 white, full-width, label_large
-                             corner_radius:14 pv:16, mh:20 mb:32, elevation:2
-[ By registering, you agree to the Mifos Agent Terms and Conditions ]
-                           ← body_small #888888 centered ph:20 pb:24
-
-  === PENDING_APPROVAL STATE ===
-
-┌─────────────────────────────────────────────────┐
-│ ⏳ Pending Approval                              │  bg:#FFF8E1 br:14
-│    Your agent application is under review.      │  border #FFD54F
-│    You will be notified once confirmed.          │  mh:20 mb:20
-└─────────────────────────────────────────────────┘
-  (form fields shown read-only, Register button hidden)
-
-  === CONFIRMED STATE ===
-
-┌─────────────────────────────────────────────────┐
-│ ✓ Agent Confirmed                               │  bg:#E8F5E9 br:14
-│   You are registered as an active Mifos         │  border #A5D6A7
-│   field agent. Access all agent features.       │  mh:20 mb:20
-└─────────────────────────────────────────────────┘
-  (form fields hidden, Register button hidden)
-──────────────────────────────────────────────────
+┌────────────────────────────────────────┐
+│ ← Agent Registration          [AppBar] │
+├────────────────────────────────────────┤
+│                                        │
+│  Agent Registration          [H.Large] │  ← #1800B1 bold, px 20, pt 16
+│  Register to become an authorised OBP  │  ← body_medium #666666, px 20
+│  field agent with your bank            │
+│                                        │
+│  Legal Name                 [label_md] │  ← #444444 semibold
+│ ┌──────────────────────────────────┐   │
+│ │ e.g. Priya Chakraborty          │   │  ← outlined input, radius 12
+│ └──────────────────────────────────┘   │
+│                                        │
+│  Mobile Phone Number        [label_md] │
+│ ┌────────┐ ┌──────────────────────┐   │
+│ │  +254  │ │ 712 345 678          │   │  ← prefix box + phone input
+│ └────────┘ └──────────────────────┘   │
+│                                        │
+│  Agent Number               [label_md] │
+│ ┌──────────────────────────────────┐   │
+│ │ e.g. AGT-2026-00142             │   │  ← outlined input, radius 12
+│ └──────────────────────────────────┘   │
+│                                        │
+│  Operating Currency         [label_md] │
+│ ┌──────────────────────── ⌄ ───────┐   │
+│ │ Select currency                  │   │  ← combobox, trailing expand_more
+│ └──────────────────────────────────┘   │
+│                                        │
+│  Supported Services         [label_md] │
+│ ┌──────────────┐ ┌─────────────────┐  │
+│ │ Cash Deposit │ │ Cash Withdrawal │  │  ← chip_group, wrap layout
+│ └──────────────┘ └─────────────────┘  │
+│ ┌────────────────┐ ┌──────────────┐   │
+│ │ Account Opening│ │ Bill Payment │   │
+│ └────────────────┘ └──────────────┘   │
+│ ┌───────────────┐                      │
+│ │ Fund Transfer │                      │
+│ └───────────────┘                      │
+│                                        │
+│  Commission Rate (%)        [label_md] │
+│ ┌────────────────────────── % ──────┐  │
+│ │ e.g. 1.5                          │  │  ← decimal input, trailing % icon
+│ └───────────────────────────────────┘  │
+│                                        │
+│ ┌──────────────────────────────────┐   │
+│ │       Register as Agent          │   │  ← filled #1800B1, full width
+│ └──────────────────────────────────┘   │
+│                                        │
+│  By registering, you agree to the      │  ← body_small #888888, centered
+│  Mifos Agent Terms and Conditions      │
+│                                        │
+└────────────────────────────────────────┘
 ```
 
 ---
 
-## Components
+## State-by-State Visual Description
 
-### Title + Subtitle Block
-- **Title:** headline_large (32sp), color #1800B1, bold; padding_horizontal:20 padding_top:16
-- **Subtitle:** body_medium (14sp), color #666666; padding_horizontal:20 padding_bottom:24
-- Establishes the screen purpose before the first form field
+### loading
 
-### Field Label Style (repeated pattern)
-- label_medium (12sp), color #444444, semibold
-- padding_horizontal:20 padding_bottom:6
-- Always sits immediately above its input field
+**Entry point.** Screen shows only the top app bar and the loading section below the title. The form is not rendered.
 
-### Phone Row (composite)
-- **Prefix box:** bg:#F5F5F5, border_radius:12, border #CCCCCC 1px; content "+254"; body_medium semibold #333333; fixed width ~56px; padding 14px/14px
-- **Phone input:** flex:1, outlined variant, same border_radius and padding; keyboard_type: phone; placeholder "712 345 678"
-- Row has gap:8, margin_horizontal:20
+```
+  Agent Registration               ← headline_large #1800B1
 
-### Currency Selector
-- Outlined input with trailing expand_more icon (#CCCCCC)
-- On tap: bottom sheet or dialog picker with options: EUR, GBP, KES, USD
-- Default hint "Select currency" in #AAAAAA
+          ◌                        ← loading_indicator size 48 #1800B1, centered
+                                     animate: spin continuously
 
-### Register Button
-- Filled, background #1800B1, text white, full-width (mh:20), label_large
-- corner_radius:14, padding_vertical:16, elevation:2
-- **Submitting state:** Shows CircularProgressIndicator inline; text hidden; all inputs disabled
+  Checking registration status…   ← body_medium #888888, centered
+```
 
-### Status Banners
-- **Pending:** bg:#FFF8E1, corner_radius:14, border #FFD54F 1px; hourglass_empty icon (22px, #F57F17); title "Pending Approval" body_medium #F57F17 semibold; body "Your agent application is under review…" body_small #795548
-- **Confirmed:** bg:#E8F5E9, corner_radius:14, border #A5D6A7 1px; verified_outlined icon (22px, #4CAF50); title "Agent Confirmed" body_medium #2E7D32 semibold; body "You are registered as an active Mifos field agent…" body_small #388E3C
+The spinner runs while the pre-flight `GET /agents/me` call resolves. No form fields, no button. Accessibility: `progressbar` role, `live: polite`.
+
+---
+
+### idle
+
+**Default form state.** All inputs are empty and enabled. No error messages. No status banner. The "Register as Agent" button is visible and active.
+
+Chip appearance: each service chip shows #EEF0FF background, #1800B1 text and border — none selected initially.
+
+---
+
+### submitting
+
+**OBP call in flight.** Visually identical to idle, except:
+- All inputs (`legal_name_input`, `phone_number_input`, `agent_number_input`, `currency_select`, `commission_rate_input`) are disabled — rendered with reduced opacity.
+- Service chips are non-interactive (tap has no effect).
+- "Register as Agent" button shows an inline circular progress indicator replacing the label text. Button remains #1800B1 filled.
+
+No modal or overlay. The form remains visible beneath the loading button so the officer can see the data they submitted.
+
+---
+
+### validation_error
+
+**Client-side rejection.** Triggered when the officer taps "Register as Agent" with missing or invalid fields. Form re-enables immediately.
+
+Inline error text appears directly beneath each offending input, in #B00020 body_small with `role: alert` and `live: assertive`.
+
+```
+  Legal Name
+ ┌──────────────────────────────────┐
+ │ (empty)                          │  ← border turns #B00020
+ └──────────────────────────────────┘
+  Legal name is required            ← #B00020 body_small, assertive
+
+  Mobile Phone Number
+ ┌───────┐ ┌────────────────────────┐
+ │ +254  │ │ (empty)                │  ← phone input border turns #B00020
+ └───────┘ └────────────────────────┘
+  Enter a valid 9-digit phone number ← #B00020 body_small, assertive
+
+  Agent Number
+ ┌──────────────────────────────────┐
+ │ (empty)                          │  ← border turns #B00020
+ └──────────────────────────────────┘
+  Agent number is required          ← #B00020 body_small, assertive
+
+  Operating Currency
+ ┌──────────────────────── ⌄ ───────┐
+ │ Select currency                  │  ← border turns #B00020
+ └──────────────────────────────────┘
+  Select an operating currency      ← #B00020 body_small, assertive
+```
+
+No global banner. The scroll position may auto-scroll to the first error field.
+
+---
+
+### pending_approval
+
+**Bank review in progress.** Shown when OBP returns `is_pending_agent: true` (either via pre-flight check or immediately after a new submission).
+
+```
+  Agent Registration               ← headline_large #1800B1
+
+ ┌──────────────────────────────────┐
+ │ ⧗  Pending Approval             │  ← amber box, bg #FFF8E1, border #FFD54F
+ │    Your agent application is     │    icon: hourglass_empty #F57F17
+ │    under review. You will be     │    title: body_medium #F57F17 semibold
+ │    notified once your bank       │    message: body_small #795548
+ │    confirms your registration.   │
+ └──────────────────────────────────┘
+
+  Legal Name
+ ┌──────────────────────────────────┐
+ │ Priya Chakraborty                │  ← inputs disabled (read-only style)
+ └──────────────────────────────────┘
+  ... (all form fields shown, all disabled) ...
+
+  [Register as Agent button is hidden]
+```
+
+The form fields display the previously submitted values in a disabled/read-only style. No submit button. No terms notice.
+
+---
+
+### confirmed
+
+**Registration approved.** Shown when OBP returns `is_confirmed_agent: true`. Form inputs are hidden entirely — only the success card and the dashboard CTA are shown.
+
+```
+  Agent Registration               ← headline_large #1800B1
+
+ ┌──────────────────────────────────┐
+ │ ✓  Agent Confirmed              │  ← green box, bg #E8F5E9, border #A5D6A7
+ │    You are registered as an      │    icon: verified_outlined #4CAF50
+ │    active Mifos field agent.     │    title: body_medium #2E7D32 semibold
+ │    You can now onboard           │    message: body_small #388E3C
+ │    customers and process         │
+ │    transactions.                 │
+ └──────────────────────────────────┘
+
+ ┌──────────────────────────────────┐
+ │         Go to Dashboard          │  ← filled #1800B1, full width, elevation 2
+ └──────────────────────────────────┘
+```
+
+Tapping "Go to Dashboard" fires `navigate_to_dashboard` — navigates to `fo-dashboard`.
+
+---
+
+### error
+
+**OBP API failure.** Shown when the POST call returns a 4xx or 5xx error. A global red error banner appears at the top of the form; all inputs re-enable for the officer to retry.
+
+```
+  Agent Registration               ← headline_large #1800B1
+  Register to become an authorised OBP field agent with your bank
+
+ ┌──────────────────────────────────┐
+ │ ⚠  Registration failed. Please  │  ← error box, bg #FFEBEE, border #EF9A9A
+ │    check your details and try   │    icon: error_outline #B00020 (decorative)
+ │    again.                       │    message: body_small #B00020
+ └──────────────────────────────────┘
+
+  Legal Name
+ ┌──────────────────────────────────┐
+ │ Priya Chakraborty                │  ← inputs re-enabled, values preserved
+ └──────────────────────────────────┘
+  ... (full form visible and interactive) ...
+
+ ┌──────────────────────────────────┐
+ │       Register as Agent          │  ← button re-enabled for retry
+ └──────────────────────────────────┘
+  By registering, you agree to the Mifos Agent Terms and Conditions
+```
+
+The error message is dynamic — driven by `error.message` from the `UiError` in ViewModel state. For `AGENT_ALREADY_EXISTS`, the error is rendered inline at the `agent_number_error` field (not the global banner) via `validationErrors["agent_number"]`.
 
 ---
 
 ## Interaction Patterns
 
-| Element | Gesture | Result |
-|---|---|---|
-| Legal Name input | Tap | Focus; text keyboard opens |
-| Phone Number input | Tap | Focus; phone keyboard (numeric) opens |
-| Agent Number input | Tap | Focus; text keyboard opens |
-| Currency selector | Tap | Opens picker (bottom sheet) with EUR / GBP / KES / USD |
-| Register as Agent | Tap | Validates all fields; on pass: submits API; button shows loader |
-| Back arrow (top bar) | Tap | Pops to fo-dashboard |
+### Chip Multi-Select (Supported Services)
 
-**Validation feedback:** Inline error messages appear below each field on failed submit — red (#BA1A1A) label_small text. Field border changes to error color.
+- Chips render in a wrapping flow layout with 8dp spacing.
+- **Unselected**: background #EEF0FF, text and border #1800B1.
+- **Selected**: background #1800B1, text #FFFFFF, no visible border.
+- Tapping a chip fires `ServiceToggled(service: String)`.
+- Multiple chips can be selected simultaneously. At least one must be selected to pass validation.
+- Chip order (left-to-right, top-to-bottom): Cash Deposit → Cash Withdrawal → Account Opening → Bill Payment → Fund Transfer.
 
-**Error snackbar:** For global errors (409 AGENT_ALREADY_EXISTS, 403), a snackbar appears at the bottom: "Registration failed. Please check your details and try again."
+### Form Validation on Submit
+
+1. Officer taps "Register as Agent".
+2. ViewModel fires `SubmitClicked`.
+3. `ValidationService.validate(state)` checks all required fields and formats.
+4. If any error: `validationErrors` map populated → `uiState = ValidationError` → screen re-renders with inline error messages. No API call made.
+5. If all valid: `isSubmitting = true` → `uiState = Submitting` → OBP POST called.
+6. On `RegistrationSuccess`: `isSubmitting = false` → uiState transitions to `PendingApproval` or `Confirmed`.
+7. On `RegistrationFailed`: `isSubmitting = false` → `error` populated → `uiState = Error`.
+
+### Currency Picker
+
+- Tapping `currency_select` fires `open_currency_picker` → `CurrencyPickerOpened` event.
+- A bottom sheet (or dialog) presents the four options: EUR — Euro, GBP — British Pound, KES — Kenyan Shilling, USD — US Dollar.
+- On selection, `CurrencySelected(value)` updates the ViewModel.
+- The selected currency label replaces the placeholder text in the input.
+
+### Phone Number Composition
+
+- The `+254` country code prefix is a static non-interactive display box (not an input).
+- The officer types only the 9-digit number into `phone_number_input`.
+- On submit, the ViewModel composes `"+254" + phoneNumber.trim()` before sending to OBP.
+
+### Loading State Pre-flight
+
+- On screen mount, `isLoading = true` immediately renders the `loading` state.
+- `AgentRepository.getMyAgentStatus(bankId)` is called.
+- 404 (no record) → `StatusCheckSuccess(isPending=false, isConfirmed=false)` → renders `idle`.
+- Status found → `StatusCheckSuccess(isPending, isConfirmed)` → renders `pending_approval` or `confirmed` directly.
+- Any 5xx → `StatusCheckFailed` → renders `idle` (fail-open).
 
 ---
 
-## Content Data
-
-| Field | Sample Value |
-|---|---|
-| Legal Name placeholder | "Enter your full legal name" |
-| Phone prefix | +254 (Kenya) |
-| Phone placeholder | 712 345 678 |
-| Agent number placeholder | AGT-2026-00142 |
-| Currency options | EUR, GBP, KES, USD |
-| Default currency | KES |
-| Terms notice | "By registering, you agree to the Mifos Agent Terms and Conditions" |
-
----
-
-## Design Notes
-
-**Form layout:** All fields use a consistent labeled-above pattern (not floating labels) for maximum legibility on small screens. The label sits 6px above the input border for clear visual grouping.
-
-**Phone composite field:** The +254 prefix box is visually distinct (grey background, slightly shorter appearance) from the input area, making the country code read as static metadata rather than an editable field — matching UX conventions from mobile banking apps in East Africa.
-
-**Currency selector as combobox:** The expand_more icon signals the dropdown affordance. Options are limited to 4 (EUR, GBP, KES, USD) — no free-text entry — so a simple spinner/dropdown is appropriate over autocomplete.
-
-**State transitions:** The screen transitions are inline (no navigation). The status banner replaces/overlays the submission area without leaving the screen, giving the officer immediate confirmation without losing context about what they submitted.
-
-**Accessibility:** All inputs have content_description and hint text. The status banners have role: status. The register button has content_description "Submit agent registration form."
-
----
 _Generated by /idea export | 2026-05-25_

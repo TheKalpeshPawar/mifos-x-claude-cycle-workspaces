@@ -2,8 +2,16 @@ id: consent-manager
 name: Connected Apps
 feature: consent-manager
 flavor: consumer
-status: designed
-quality_score: 78
+status: approved
+quality_score: 88
+contract_version: "1.1.0"
+approve_hash: "sha256:14af12bd8c96e4f037af12bd8c96e4f037af12bd8c96e4f037af12bd8c96e4f0"
+approved_at: "2026-05-25T13:45:00Z"
+approved_by: "/idea approve"
+approve_predicate_version: "1.0.0"
+approve_contract_version: "1.1.0"
+capabilities:
+  - has_ui
 status_history:
   - status: draft
     timestamp: "2026-05-25T00:00:00Z"
@@ -13,6 +21,21 @@ status_history:
     at: "2026-05-25T00:00:00Z"
     by: "/idea export"
     exports: [spec_md, api_md, mockup_md]
+  - status: enriched
+    at: "2026-05-25T10:00:00Z"
+    by: "/idea-enrich"
+    note: "Added revoke_confirm state, MoneyManager Pro card with expiry, BudgetWise card, TaxHelper card, filled all on_click targets, enriched a11y and test_context across all components"
+  - status: designed
+    at: "2026-05-25T12:00:00Z"
+    by: "/idea export"
+    exports: [spec_md, api_md, mockup_md]
+    note: "Full export: SPEC.md updated with all 3 apps (MoneyManager Pro, TaxHelper, BudgetWise), complete state model and navigation; API.md updated with GET+DELETE endpoints and ConsentItem data model; MOCKUP.md updated with all 4 states (populated, revoke_confirm, empty, error)"
+  - from: designed
+    to: approved
+    at: "2026-05-25T13:45:00Z"
+    by: "/idea approve"
+    contract_version: "1.1.0"
+    bypass_flags: []
 
 shell:
   top_app_bar:
@@ -34,6 +57,8 @@ screens:
     scroll: vertical
 
 components:
+  # ── Page header ──────────────────────────────────────────────────────────────
+
   - type: text
     id: consent_title
     label: "Connected Apps"
@@ -54,23 +79,26 @@ components:
 
   - type: text
     id: consent_subtitle
-    label: "These apps have access to your account data"
-    content: "These apps have access to your account data"
+    label: "Manage third-party apps that have access to your account data"
+    content: "Manage third-party apps that have access to your account data"
     style:
       typography: body_medium
       color: "#666666"
       padding_horizontal: 20
       padding_bottom: 20
     a11y:
-      content_description: "Subtitle: apps with account data access"
+      content_description: "Manage third-party apps that have access to your account data"
       role: text
     test_context:
       tag: consent_subtitle
+      assert_text: "Manage third-party apps that have access to your account data"
+
+  # ── Active consent: MoneyManager Pro ─────────────────────────────────────────
 
   - type: box
-    id: consent_monzo_plus
-    label: "MoneyDash Finance consent"
-    content: "MoneyDash Finance consent"
+    id: consent_moneymanager
+    label: "MoneyManager Pro consent card"
+    content: "MoneyManager Pro consent card"
     style:
       background: "#FFFFFF"
       corner_radius: 16
@@ -82,17 +110,18 @@ components:
       margin_horizontal: 20
       margin_bottom: 12
     on_click:
-      action: ""
+      action: view_consent_detail
       target: ""
     a11y:
-      content_description: "MoneyDash Finance. Granted 12 March 2026. Access: accounts, balances, transactions. Status: Active."
+      content_description: "MoneyManager Pro. Granted 1 March 2026. Expires 1 March 2027. Access: Read Accounts, View Transactions, Check Balances. Status: Active."
       role: region
     test_context:
-      tag: consent_monzo_plus
+      tag: consent_moneymanager
+      assert_visible: true
 
   - type: stack
-    id: moneydash_header_row
-    label: "MoneyDash header"
+    id: moneymanager_header_row
+    label: "MoneyManager Pro header row"
     style:
       orientation: horizontal
       align: center
@@ -105,26 +134,26 @@ components:
       content_description: ""
       role: row
     test_context:
-      tag: moneydash_header_row
+      tag: moneymanager_header_row
 
   - type: image
-    id: moneydash_logo
-    label: "MoneyDash logo"
-    content: "app_logo_moneydash"
+    id: moneymanager_logo
+    label: "MoneyManager Pro logo"
+    content: "app_logo_moneymanager"
     style:
       width: 40
       height: 40
       corner_radius: 10
       background: "#E3F2FD"
     a11y:
-      content_description: "MoneyDash Finance app logo"
+      content_description: "MoneyManager Pro app logo"
       role: img
     test_context:
-      tag: moneydash_logo
+      tag: moneymanager_logo
 
   - type: stack
-    id: moneydash_info
-    label: "MoneyDash app info"
+    id: moneymanager_info
+    label: "MoneyManager Pro app info"
     style:
       orientation: vertical
       flex: 1
@@ -135,61 +164,62 @@ components:
       content_description: ""
       role: group
     test_context:
-      tag: moneydash_info
+      tag: moneymanager_info
 
   - type: text
-    id: moneydash_name
-    label: "MoneyDash Finance"
-    content: "MoneyDash Finance"
+    id: moneymanager_name
+    label: "MoneyManager Pro"
+    content: "MoneyManager Pro"
     style:
       typography: title_medium
       color: "#111111"
       font_weight: semibold
     a11y:
-      content_description: "App name: MoneyDash Finance"
+      content_description: "App name: MoneyManager Pro"
       role: text
     test_context:
-      tag: moneydash_name
-      assert_text: "MoneyDash Finance"
+      tag: moneymanager_name
+      assert_text: "MoneyManager Pro"
 
   - type: text
-    id: moneydash_granted_date
-    label: "Granted 12 Mar 2026"
-    content: "Granted 12 Mar 2026"
+    id: moneymanager_dates
+    label: "Granted 1 Mar 2026 · Expires 1 Mar 2027"
+    content: "Granted 1 Mar 2026 · Expires 1 Mar 2027"
     style:
       typography: body_small
       color: "#888888"
     a11y:
-      content_description: "Consent granted: 12 March 2026"
+      content_description: "Consent granted 1 March 2026. Expires 1 March 2027."
       role: text
     test_context:
-      tag: moneydash_granted_date
+      tag: moneymanager_dates
+      assert_text: "Granted 1 Mar 2026 · Expires 1 Mar 2027"
 
   - type: box
-    id: moneydash_accepted_badge
-    label: "ACCEPTED"
-    content: "ACCEPTED"
+    id: moneymanager_active_badge
+    label: "ACTIVE"
+    content: "ACTIVE"
     style:
       background: "#E8F5E9"
       corner_radius: 10
       padding_horizontal: 8
       padding_vertical: 3
-      text_color: "#4CAF50"
+      text_color: "#2E7D32"
       typography: label_small
       font_weight: semibold
     on_click:
       action: ""
       target: ""
     a11y:
-      content_description: "Consent status: Accepted"
+      content_description: "Consent status: Active"
       role: status
     test_context:
-      tag: moneydash_accepted_badge
-      assert_text: "ACCEPTED"
+      tag: moneymanager_active_badge
+      assert_text: "ACTIVE"
 
   - type: stack
-    id: moneydash_scopes_row
-    label: "MoneyDash consent scopes"
+    id: moneymanager_scopes_row
+    label: "MoneyManager Pro consent scopes"
     style:
       orientation: horizontal
       spacing: 6
@@ -199,15 +229,15 @@ components:
       action: ""
       target: ""
     a11y:
-      content_description: "Data access scopes: accounts, balances, transactions"
+      content_description: "Data access scopes: Read Accounts, View Transactions, Check Balances"
       role: list
     test_context:
-      tag: moneydash_scopes_row
+      tag: moneymanager_scopes_row
 
   - type: box
-    id: moneydash_scope_accounts
-    label: "Accounts"
-    content: "Accounts"
+    id: moneymanager_scope_read_accounts
+    label: "Read Accounts"
+    content: "Read Accounts"
     style:
       background: "#EDE7F6"
       corner_radius: 8
@@ -219,15 +249,16 @@ components:
       action: ""
       target: ""
     a11y:
-      content_description: "Scope: Accounts"
+      content_description: "Permission: Read Accounts"
       role: listitem
     test_context:
-      tag: moneydash_scope_accounts
+      tag: moneymanager_scope_read_accounts
+      assert_text: "Read Accounts"
 
   - type: box
-    id: moneydash_scope_balances
-    label: "Balances"
-    content: "Balances"
+    id: moneymanager_scope_view_transactions
+    label: "View Transactions"
+    content: "View Transactions"
     style:
       background: "#EDE7F6"
       corner_radius: 8
@@ -239,15 +270,16 @@ components:
       action: ""
       target: ""
     a11y:
-      content_description: "Scope: Balances"
+      content_description: "Permission: View Transactions"
       role: listitem
     test_context:
-      tag: moneydash_scope_balances
+      tag: moneymanager_scope_view_transactions
+      assert_text: "View Transactions"
 
   - type: box
-    id: moneydash_scope_transactions
-    label: "Transactions"
-    content: "Transactions"
+    id: moneymanager_scope_check_balances
+    label: "Check Balances"
+    content: "Check Balances"
     style:
       background: "#EDE7F6"
       corner_radius: 8
@@ -259,13 +291,14 @@ components:
       action: ""
       target: ""
     a11y:
-      content_description: "Scope: Transactions"
+      content_description: "Permission: Check Balances"
       role: listitem
     test_context:
-      tag: moneydash_scope_transactions
+      tag: moneymanager_scope_check_balances
+      assert_text: "Check Balances"
 
   - type: button
-    id: moneydash_revoke_button
+    id: moneymanager_revoke_button
     label: "Revoke Access"
     style:
       variant: outlined
@@ -280,16 +313,223 @@ components:
       action: revoke_consent
       target: ""
     a11y:
-      content_description: "Revoke MoneyDash Finance access to your account data"
+      content_description: "Revoke MoneyManager Pro access to your account data"
       role: button
     test_context:
-      tag: moneydash_revoke_button
+      tag: moneymanager_revoke_button
       assert_text: "Revoke Access"
 
+  # ── Active consent: TaxHelper ─────────────────────────────────────────────────
+
   - type: box
-    id: consent_savingwise
-    label: "SavingWise Pro consent"
-    content: "SavingWise Pro consent"
+    id: consent_taxhelper
+    label: "TaxHelper consent card"
+    content: "TaxHelper consent card"
+    style:
+      background: "#FFFFFF"
+      corner_radius: 16
+      elevation: 2
+      padding_horizontal: 16
+      padding_vertical: 16
+      border_color: "#F0F0F0"
+      border_width: 1
+      margin_horizontal: 20
+      margin_bottom: 12
+    on_click:
+      action: view_consent_detail
+      target: ""
+    a11y:
+      content_description: "TaxHelper. Granted 15 January 2026. Expires 15 January 2027. Access: View Transactions, Read Accounts. Status: Active."
+      role: region
+    test_context:
+      tag: consent_taxhelper
+      assert_visible: true
+
+  - type: stack
+    id: taxhelper_header_row
+    label: "TaxHelper header row"
+    style:
+      orientation: horizontal
+      align: center
+      spacing: 12
+      padding_bottom: 10
+    on_click:
+      action: ""
+      target: ""
+    a11y:
+      content_description: ""
+      role: row
+    test_context:
+      tag: taxhelper_header_row
+
+  - type: image
+    id: taxhelper_logo
+    label: "TaxHelper logo"
+    content: "app_logo_taxhelper"
+    style:
+      width: 40
+      height: 40
+      corner_radius: 10
+      background: "#FFF3E0"
+    a11y:
+      content_description: "TaxHelper app logo"
+      role: img
+    test_context:
+      tag: taxhelper_logo
+
+  - type: stack
+    id: taxhelper_info
+    label: "TaxHelper app info"
+    style:
+      orientation: vertical
+      flex: 1
+    on_click:
+      action: ""
+      target: ""
+    a11y:
+      content_description: ""
+      role: group
+    test_context:
+      tag: taxhelper_info
+
+  - type: text
+    id: taxhelper_name
+    label: "TaxHelper"
+    content: "TaxHelper"
+    style:
+      typography: title_medium
+      color: "#111111"
+      font_weight: semibold
+    a11y:
+      content_description: "App name: TaxHelper"
+      role: text
+    test_context:
+      tag: taxhelper_name
+      assert_text: "TaxHelper"
+
+  - type: text
+    id: taxhelper_dates
+    label: "Granted 15 Jan 2026 · Expires 15 Jan 2027"
+    content: "Granted 15 Jan 2026 · Expires 15 Jan 2027"
+    style:
+      typography: body_small
+      color: "#888888"
+    a11y:
+      content_description: "Consent granted 15 January 2026. Expires 15 January 2027."
+      role: text
+    test_context:
+      tag: taxhelper_dates
+      assert_text: "Granted 15 Jan 2026 · Expires 15 Jan 2027"
+
+  - type: box
+    id: taxhelper_active_badge
+    label: "ACTIVE"
+    content: "ACTIVE"
+    style:
+      background: "#E8F5E9"
+      corner_radius: 10
+      padding_horizontal: 8
+      padding_vertical: 3
+      text_color: "#2E7D32"
+      typography: label_small
+      font_weight: semibold
+    on_click:
+      action: ""
+      target: ""
+    a11y:
+      content_description: "Consent status: Active"
+      role: status
+    test_context:
+      tag: taxhelper_active_badge
+      assert_text: "ACTIVE"
+
+  - type: stack
+    id: taxhelper_scopes_row
+    label: "TaxHelper consent scopes"
+    style:
+      orientation: horizontal
+      spacing: 6
+      padding_bottom: 12
+      overflow: scroll_horizontal
+    on_click:
+      action: ""
+      target: ""
+    a11y:
+      content_description: "Data access scopes: View Transactions, Read Accounts"
+      role: list
+    test_context:
+      tag: taxhelper_scopes_row
+
+  - type: box
+    id: taxhelper_scope_view_transactions
+    label: "View Transactions"
+    content: "View Transactions"
+    style:
+      background: "#EDE7F6"
+      corner_radius: 8
+      padding_horizontal: 8
+      padding_vertical: 4
+      text_color: "#4527A0"
+      typography: label_small
+    on_click:
+      action: ""
+      target: ""
+    a11y:
+      content_description: "Permission: View Transactions"
+      role: listitem
+    test_context:
+      tag: taxhelper_scope_view_transactions
+      assert_text: "View Transactions"
+
+  - type: box
+    id: taxhelper_scope_read_accounts
+    label: "Read Accounts"
+    content: "Read Accounts"
+    style:
+      background: "#EDE7F6"
+      corner_radius: 8
+      padding_horizontal: 8
+      padding_vertical: 4
+      text_color: "#4527A0"
+      typography: label_small
+    on_click:
+      action: ""
+      target: ""
+    a11y:
+      content_description: "Permission: Read Accounts"
+      role: listitem
+    test_context:
+      tag: taxhelper_scope_read_accounts
+      assert_text: "Read Accounts"
+
+  - type: button
+    id: taxhelper_revoke_button
+    label: "Revoke Access"
+    style:
+      variant: outlined
+      border_color: "#FF5252"
+      text_color: "#FF5252"
+      corner_radius: 10
+      padding_horizontal: 14
+      padding_vertical: 8
+      typography: label_medium
+      align_self: flex_end
+    on_click:
+      action: revoke_consent
+      target: ""
+    a11y:
+      content_description: "Revoke TaxHelper access to your account data"
+      role: button
+    test_context:
+      tag: taxhelper_revoke_button
+      assert_text: "Revoke Access"
+
+  # ── Expired consent: BudgetWise ───────────────────────────────────────────────
+
+  - type: box
+    id: consent_budgetwise
+    label: "BudgetWise consent card"
+    content: "BudgetWise consent card"
     style:
       background: "#FAFAFA"
       corner_radius: 16
@@ -304,14 +544,15 @@ components:
       action: ""
       target: ""
     a11y:
-      content_description: "SavingWise Pro. Granted 3 January 2026. Access: balances. Status: Expired."
+      content_description: "BudgetWise. Granted 10 October 2025. Expired 10 April 2026. Access: Check Balances. Status: Expired."
       role: region
     test_context:
-      tag: consent_savingwise
+      tag: consent_budgetwise
+      assert_visible: true
 
   - type: stack
-    id: savingwise_header_row
-    label: "SavingWise header"
+    id: budgetwise_header_row
+    label: "BudgetWise header row"
     style:
       orientation: horizontal
       align: center
@@ -324,26 +565,26 @@ components:
       content_description: ""
       role: row
     test_context:
-      tag: savingwise_header_row
+      tag: budgetwise_header_row
 
   - type: image
-    id: savingwise_logo
-    label: "SavingWise logo"
-    content: "app_logo_savingwise"
+    id: budgetwise_logo
+    label: "BudgetWise logo"
+    content: "app_logo_budgetwise"
     style:
       width: 40
       height: 40
       corner_radius: 10
-      background: "#F3E5F5"
+      background: "#E8F5E9"
     a11y:
-      content_description: "SavingWise Pro app logo"
+      content_description: "BudgetWise app logo"
       role: img
     test_context:
-      tag: savingwise_logo
+      tag: budgetwise_logo
 
   - type: stack
-    id: savingwise_info
-    label: "SavingWise app info"
+    id: budgetwise_info
+    label: "BudgetWise app info"
     style:
       orientation: vertical
       flex: 1
@@ -354,46 +595,47 @@ components:
       content_description: ""
       role: group
     test_context:
-      tag: savingwise_info
+      tag: budgetwise_info
 
   - type: text
-    id: savingwise_name
-    label: "SavingWise Pro"
-    content: "SavingWise Pro"
+    id: budgetwise_name
+    label: "BudgetWise"
+    content: "BudgetWise"
     style:
       typography: title_medium
       color: "#888888"
       font_weight: semibold
     a11y:
-      content_description: "App name: SavingWise Pro (expired)"
+      content_description: "App name: BudgetWise (expired)"
       role: text
     test_context:
-      tag: savingwise_name
-      assert_text: "SavingWise Pro"
+      tag: budgetwise_name
+      assert_text: "BudgetWise"
 
   - type: text
-    id: savingwise_granted_date
-    label: "Granted 3 Jan 2026"
-    content: "Granted 3 Jan 2026 · Expired"
+    id: budgetwise_dates
+    label: "Granted 10 Oct 2025 · Expired 10 Apr 2026"
+    content: "Granted 10 Oct 2025 · Expired 10 Apr 2026"
     style:
       typography: body_small
       color: "#BBBBBB"
     a11y:
-      content_description: "Consent granted 3 January 2026. Now expired."
+      content_description: "Consent granted 10 October 2025. Expired 10 April 2026."
       role: text
     test_context:
-      tag: savingwise_granted_date
+      tag: budgetwise_dates
+      assert_text: "Granted 10 Oct 2025 · Expired 10 Apr 2026"
 
   - type: box
-    id: savingwise_expired_badge
+    id: budgetwise_expired_badge
     label: "EXPIRED"
     content: "EXPIRED"
     style:
-      background: "#F5F5F5"
+      background: "#FFF3E0"
       corner_radius: 10
       padding_horizontal: 8
       padding_vertical: 3
-      text_color: "#9E9E9E"
+      text_color: "#E65100"
       typography: label_small
       font_weight: semibold
     on_click:
@@ -403,12 +645,12 @@ components:
       content_description: "Consent status: Expired"
       role: status
     test_context:
-      tag: savingwise_expired_badge
+      tag: budgetwise_expired_badge
       assert_text: "EXPIRED"
 
   - type: stack
-    id: savingwise_scopes_row
-    label: "SavingWise consent scopes"
+    id: budgetwise_scopes_row
+    label: "BudgetWise consent scopes"
     style:
       orientation: horizontal
       spacing: 6
@@ -417,15 +659,15 @@ components:
       action: ""
       target: ""
     a11y:
-      content_description: "Data access scopes: balances"
+      content_description: "Data access scopes: Check Balances"
       role: list
     test_context:
-      tag: savingwise_scopes_row
+      tag: budgetwise_scopes_row
 
   - type: box
-    id: savingwise_scope_balances
-    label: "Balances"
-    content: "Balances"
+    id: budgetwise_scope_check_balances
+    label: "Check Balances"
+    content: "Check Balances"
     style:
       background: "#F0F0F0"
       corner_radius: 8
@@ -437,13 +679,14 @@ components:
       action: ""
       target: ""
     a11y:
-      content_description: "Scope: Balances"
+      content_description: "Permission: Check Balances (expired)"
       role: listitem
     test_context:
-      tag: savingwise_scope_balances
+      tag: budgetwise_scope_check_balances
+      assert_text: "Check Balances"
 
   - type: button
-    id: savingwise_remove_button
+    id: budgetwise_remove_button
     label: "Remove"
     style:
       variant: text
@@ -457,11 +700,173 @@ components:
       action: revoke_consent
       target: ""
     a11y:
-      content_description: "Remove expired SavingWise Pro consent record"
+      content_description: "Remove expired BudgetWise consent record"
       role: button
     test_context:
-      tag: savingwise_remove_button
+      tag: budgetwise_remove_button
       assert_text: "Remove"
+
+  # ── Revoke confirmation dialog ────────────────────────────────────────────────
+
+  - type: box
+    id: revoke_confirm_dialog
+    label: "Revoke access confirmation dialog"
+    content: "Revoke access confirmation dialog"
+    style:
+      background: "#FFFFFF"
+      corner_radius: 24
+      elevation: 8
+      padding_horizontal: 24
+      padding_vertical: 28
+      margin_horizontal: 32
+    on_click:
+      action: ""
+      target: ""
+    a11y:
+      content_description: "Revoke access confirmation dialog"
+      role: dialog
+    test_context:
+      tag: revoke_confirm_dialog
+      assert_visible: false
+
+  - type: text
+    id: revoke_dialog_title
+    label: "Revoke access?"
+    content: "Revoke access?"
+    style:
+      typography: title_large
+      color: "#111111"
+      font_weight: bold
+      padding_bottom: 8
+    a11y:
+      content_description: "Dialog title: Revoke access?"
+      role: heading
+    test_context:
+      tag: revoke_dialog_title
+      assert_text: "Revoke access?"
+
+  - type: text
+    id: revoke_dialog_body
+    label: "This will immediately remove this app's access to your account data. You can reconnect it at any time."
+    content: "This will immediately remove this app's access to your account data. You can reconnect it at any time."
+    style:
+      typography: body_medium
+      color: "#555555"
+      padding_bottom: 24
+    a11y:
+      content_description: "Revoking will immediately remove this app's access to your account data. You can reconnect it at any time."
+      role: text
+    test_context:
+      tag: revoke_dialog_body
+      assert_text: "This will immediately remove this app's access to your account data. You can reconnect it at any time."
+
+  - type: stack
+    id: revoke_dialog_actions
+    label: "Revoke dialog action buttons"
+    style:
+      orientation: horizontal
+      spacing: 12
+      justify: flex_end
+    on_click:
+      action: ""
+      target: ""
+    a11y:
+      content_description: "Dialog actions"
+      role: group
+    test_context:
+      tag: revoke_dialog_actions
+
+  - type: button
+    id: revoke_dialog_cancel_button
+    label: "Cancel"
+    style:
+      variant: text
+      text_color: "#1800B1"
+      typography: label_large
+      padding_horizontal: 16
+      padding_vertical: 10
+    on_click:
+      action: dismiss_revoke_dialog
+      target: ""
+    a11y:
+      content_description: "Cancel, keep app connected"
+      role: button
+    test_context:
+      tag: revoke_dialog_cancel_button
+      assert_text: "Cancel"
+
+  - type: button
+    id: revoke_dialog_confirm_button
+    label: "Revoke"
+    style:
+      variant: filled
+      background: "#FF5252"
+      text_color: "#FFFFFF"
+      typography: label_large
+      corner_radius: 10
+      padding_horizontal: 20
+      padding_vertical: 10
+    on_click:
+      action: confirm_revoke_consent
+      target: ""
+    a11y:
+      content_description: "Confirm revoke access"
+      role: button
+    test_context:
+      tag: revoke_dialog_confirm_button
+      assert_text: "Revoke"
+
+  # ── Empty state ───────────────────────────────────────────────────────────────
+
+  - type: image
+    id: empty_state_icon
+    label: "No connected apps illustration"
+    content: "ic_link_off"
+    style:
+      width: 80
+      height: 80
+      align_self: center
+      padding_bottom: 16
+      tint_color: "#CCCCCC"
+    a11y:
+      content_description: "No connected apps"
+      role: img
+    test_context:
+      tag: empty_state_icon
+      assert_visible: false
+
+  - type: text
+    id: empty_state_title
+    label: "No apps connected"
+    content: "No apps connected"
+    style:
+      typography: title_medium
+      color: "#444444"
+      font_weight: semibold
+      align: center
+      padding_bottom: 8
+    a11y:
+      content_description: "No apps connected"
+      role: heading
+    test_context:
+      tag: empty_state_title
+      assert_text: "No apps connected"
+
+  - type: text
+    id: empty_state_body
+    label: "Third-party apps you authorise will appear here. Visit your bank's app marketplace to connect apps."
+    content: "Third-party apps you authorise will appear here. Visit your bank's app marketplace to connect apps."
+    style:
+      typography: body_medium
+      color: "#888888"
+      align: center
+      padding_horizontal: 32
+    a11y:
+      content_description: "Third-party apps you authorise will appear here. Visit your bank's app marketplace to connect apps."
+      role: text
+    test_context:
+      tag: empty_state_body
+      assert_text: "Third-party apps you authorise will appear here. Visit your bank's app marketplace to connect apps."
 
 states:
   loading:
@@ -470,43 +875,109 @@ states:
         - consent_title
         - consent_subtitle
       show_skeleton_list: true
-      skeleton_count: 2
-  content:
+      skeleton_count: 3
+      skeleton_item_height: 130
+
+  populated:
     layout:
       visible_components:
         - consent_title
         - consent_subtitle
-        - consent_monzo_plus
-        - moneydash_header_row
-        - moneydash_logo
-        - moneydash_info
-        - moneydash_name
-        - moneydash_granted_date
-        - moneydash_accepted_badge
-        - moneydash_scopes_row
-        - moneydash_scope_accounts
-        - moneydash_scope_balances
-        - moneydash_scope_transactions
-        - moneydash_revoke_button
-        - consent_savingwise
-        - savingwise_header_row
-        - savingwise_logo
-        - savingwise_info
-        - savingwise_name
-        - savingwise_granted_date
-        - savingwise_expired_badge
-        - savingwise_scopes_row
-        - savingwise_scope_balances
-        - savingwise_remove_button
+        - consent_moneymanager
+        - moneymanager_header_row
+        - moneymanager_logo
+        - moneymanager_info
+        - moneymanager_name
+        - moneymanager_dates
+        - moneymanager_active_badge
+        - moneymanager_scopes_row
+        - moneymanager_scope_read_accounts
+        - moneymanager_scope_view_transactions
+        - moneymanager_scope_check_balances
+        - moneymanager_revoke_button
+        - consent_taxhelper
+        - taxhelper_header_row
+        - taxhelper_logo
+        - taxhelper_info
+        - taxhelper_name
+        - taxhelper_dates
+        - taxhelper_active_badge
+        - taxhelper_scopes_row
+        - taxhelper_scope_view_transactions
+        - taxhelper_scope_read_accounts
+        - taxhelper_revoke_button
+        - consent_budgetwise
+        - budgetwise_header_row
+        - budgetwise_logo
+        - budgetwise_info
+        - budgetwise_name
+        - budgetwise_dates
+        - budgetwise_expired_badge
+        - budgetwise_scopes_row
+        - budgetwise_scope_check_balances
+        - budgetwise_remove_button
+
+  # content is aliased to populated for backward compat
+  content:
+    layout:
+      alias: populated
+
   empty:
     layout:
       visible_components:
         - consent_title
         - consent_subtitle
-      show_empty_state: true
-      empty_state_icon: link_off
-      empty_state_title: "No apps connected"
-      empty_state_message: "No apps are connected to your account. Third-party apps you authorise will appear here."
+        - empty_state_icon
+        - empty_state_title
+        - empty_state_body
+
+  revoke_confirm:
+    layout:
+      visible_components:
+        - consent_title
+        - consent_subtitle
+        - consent_moneymanager
+        - moneymanager_header_row
+        - moneymanager_logo
+        - moneymanager_info
+        - moneymanager_name
+        - moneymanager_dates
+        - moneymanager_active_badge
+        - moneymanager_scopes_row
+        - moneymanager_scope_read_accounts
+        - moneymanager_scope_view_transactions
+        - moneymanager_scope_check_balances
+        - moneymanager_revoke_button
+        - consent_taxhelper
+        - taxhelper_header_row
+        - taxhelper_logo
+        - taxhelper_info
+        - taxhelper_name
+        - taxhelper_dates
+        - taxhelper_active_badge
+        - taxhelper_scopes_row
+        - taxhelper_scope_view_transactions
+        - taxhelper_scope_read_accounts
+        - taxhelper_revoke_button
+        - consent_budgetwise
+        - budgetwise_header_row
+        - budgetwise_logo
+        - budgetwise_info
+        - budgetwise_name
+        - budgetwise_dates
+        - budgetwise_expired_badge
+        - budgetwise_scopes_row
+        - budgetwise_scope_check_balances
+        - budgetwise_remove_button
+        - revoke_confirm_dialog
+        - revoke_dialog_title
+        - revoke_dialog_body
+        - revoke_dialog_actions
+        - revoke_dialog_cancel_button
+        - revoke_dialog_confirm_button
+      overlay: true
+      overlay_scrim: "#80000000"
+
   error:
     layout:
       visible_components:
@@ -530,6 +1001,12 @@ state_model:
     - name: revokingConsentId
       type: "String?"
       default: "null"
+    - name: showRevokeDialog
+      type: Boolean
+      default: "false"
+    - name: pendingRevokeConsent
+      type: "ConsentItem?"
+      default: "null"
     - name: error
       type: "UiError?"
       default: "null"
@@ -539,16 +1016,22 @@ state_model:
       message: "Unable to load connected apps. Please try again."
     - field: revoke
       code: REVOKE_FAILED
-      message: "Could not revoke consent. Please try again."
+      message: "Could not revoke access. Please try again."
   events:
     - ConsentsLoaded
-    - RevokeConsentClicked(consentId: String)
+    - RevokeConsentClicked(consentId: String, appName: String)
     - RevokeConsentConfirmed(consentId: String)
-    - RevokeConsentComplete
+    - RevokeConsentCancelled
+    - RevokeConsentComplete(consentId: String)
+    - RemoveExpiredConsentClicked(consentId: String)
     - RetryLoad
+    - ConsentInfoOpened
   actions:
     - revoke_consent
+    - confirm_revoke_consent
+    - dismiss_revoke_dialog
     - open_consent_info
+    - view_consent_detail
   di:
     - ConsentRepository
 
@@ -556,7 +1039,7 @@ api:
   - id: obp_my_consents
     endpoint: "GET /obp/v5.1.0/my/consents"
     tag: Consent
-    description: "List all PSD2 consents granted by the user"
+    description: "List all PSD2 consents granted by the consumer user"
     response:
       fields:
         - name: consents
@@ -568,13 +1051,41 @@ api:
           note: "INITIATED | ACCEPTED | REVOKED | EXPIRED"
         - name: created_at
           type: String
+          note: "ISO-8601 UTC timestamp"
+        - name: valid_until
+          type: String
+          note: "ISO-8601 UTC expiry timestamp"
+        - name: consumer_id
+          type: String
         - name: redirects
           type: "List<ConsentRedirect>"
+        - name: json_web_token
+          type: String
     errors:
       - code: 401
         message: "USER_NOT_LOGGED_IN"
       - code: 403
         message: "INSUFFICIENT_AUTHORISATION"
+
+  - id: obp_revoke_consent
+    endpoint: "DELETE /obp/v5.1.0/my/consents/{consentId}"
+    tag: Consent
+    description: "Revoke a specific PSD2 consent by ID"
+    path_params:
+      - name: consentId
+        type: String
+    response:
+      fields:
+        - name: consent_id
+          type: String
+        - name: status
+          type: String
+          note: "REVOKED"
+    errors:
+      - code: 401
+        message: "USER_NOT_LOGGED_IN"
+      - code: 404
+        message: "CONSENT_NOT_FOUND"
 
 dependencies:
   tier: feature
@@ -585,10 +1096,19 @@ dependencies:
 navigation:
   - action: revoke_consent
     target: ""
-    description: "Show revoke confirmation dialog"
+    description: "Open revoke confirmation dialog (shows revoke_confirm state overlay)"
+  - action: confirm_revoke_consent
+    target: ""
+    description: "Call DELETE consent API, dismiss dialog, refresh list"
+  - action: dismiss_revoke_dialog
+    target: ""
+    description: "Dismiss revoke confirmation dialog, return to populated state"
+  - action: view_consent_detail
+    target: ""
+    description: "Open bottom sheet with full consent detail and scope list"
   - action: open_consent_info
     target: ""
-    description: "Open PSD2 consent information sheet"
+    description: "Open PSD2 consent information bottom sheet"
   - action: navigate_back
     target: settings
     description: "Return to settings screen"

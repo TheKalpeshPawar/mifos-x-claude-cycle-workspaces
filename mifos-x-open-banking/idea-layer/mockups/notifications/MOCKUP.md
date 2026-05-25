@@ -5,108 +5,259 @@
 | Feature | notifications |
 | Flavor | consumer |
 | Archetype | index_list |
+| States | loading, populated, empty, error |
 
 ---
 
-## Screen Layout
+## Screen Layout (Populated State)
 
-Top app bar: "Notifications" title, back arrow, done_all "Mark all as read" icon, tune "Notification settings" icon. No bottom navigation. Scrollable single-column content (background #FCF8FF):
+Top app bar: "Notifications" title, arrow_back navigation icon, done_all action ("Mark all as read"), tune action ("Notification settings"). No bottom navigation bar. Scrollable single-column list on background #FCF8FF (soft off-white).
 
-1. **Header row** — "Notifications" title (headline_large #1800B1) + "Mark All Read" text button (#008B8B teal), space-between, padding horizontal 20, top 16
-2. **Payment received card** — Unread, #F0EDFF background, #D4C8FF border (radius 16, margin horizontal 20, bottom 8)
-3. **Direct debit reminder card** — Read, white background, #F0F0F0 border (radius 16, margin horizontal 20, bottom 8)
-4. **Budget alert card** — Read, white background, #F0F0F0 border (radius 16, margin horizontal 20, bottom 8)
-5. **Bottom spacer** — 24dp
+```
+┌─────────────────────────────────────────────┐
+│  ← Notifications                  ✓✓  ⚙    │  ← Top app bar
+├─────────────────────────────────────────────┤
+│                                             │
+│  Notifications                Mark All Read │  ← Header row
+│                                             │
+│  TODAY                                      │  ← Section header
+│                                             │
+│ ┌─────────────────────────────────────────┐ │
+│ │ ●  [↓]  Payment received           ● ● │ │  ← Unread card
+│ │         Payment of £50.00 received      │ │     (purple bg)
+│ │         from James Wilson               │ │
+│ │         10 min ago                      │ │
+│ └─────────────────────────────────────────┘ │
+│                                             │
+│ ┌─────────────────────────────────────────┐ │
+│ │ ●  [✓]  KYC verification approved  ● ● │ │  ← Unread card
+│ │         Your identity has been verified. │ │     (purple bg)
+│ │         You now have full access.        │ │
+│ │         1 hr ago                         │ │
+│ └─────────────────────────────────────────┘ │
+│                                             │
+│  EARLIER                                    │  ← Section header
+│                                             │
+│ ┌─────────────────────────────────────────┐ │
+│ │    [↻]  Direct debit mandate created    │ │  ← Read card
+│ │         Direct debit mandate created for│ │     (white bg)
+│ │         Netflix — £15.99/month from     │ │
+│ │         your Current Account. 3 hr ago  │ │
+│ └─────────────────────────────────────────┘ │
+│                                             │
+│ ┌─────────────────────────────────────────┐ │
+│ │    [↓]  Salary credited                 │ │  ← Read card
+│ │         £3,200.00 from Acme Ltd has     │ │     (white bg)
+│ │         been credited to your Current   │ │
+│ │         Account. Yesterday              │ │
+│ └─────────────────────────────────────────┘ │
+│                                             │  ← 24dp bottom spacer
+└─────────────────────────────────────────────┘
+```
+
+Legend: `● ●` = unread dot (10x10, #1800B1) | `[↓]` = payment icon (green circle) | `[✓]` = verified_user icon (blue circle) | `[↻]` = autorenew icon (teal circle)
 
 ---
 
 ## Components
 
 ### Header Row
-- **Layout:** Horizontal, space-between, center-aligned, padding horizontal 20, top 16, bottom 8
-- **Title:** "Notifications" headline_large, #1800B1, bold
-- **"Mark All Read" button:** Text variant, #008B8B, label_medium, no padding horizontal
+- **Layout:** Horizontal, space-between, center-aligned
+- **Padding:** horizontal 20dp, top 16dp, bottom 8dp
+- **Title:** "Notifications" — headline_large, #1800B1, bold
+- **Button:** "Mark All Read" — text variant, #008B8B teal, label_medium, no horizontal padding
 
-### Payment Received Notification Card (Unread)
-- **Container:** Background #F0EDFF (purple-tinted unread), border #D4C8FF 1dp, corner_radius 16, padding 16, margin horizontal 20, bottom 8
-- **Internal layout (horizontal row, spacing 12, align flex_start):**
-  - **Icon circle:** 44x44, background #4CAF50 (green), radius 22, centered; arrow_downward icon 22dp white
-  - **Text column (flex 1):**
-    - "Payment received" — body_medium, #111111, semi-bold
-    - "Your salary of £3,200.00 from Acme Ltd has been credited to your account." — body_small, #444444, top 2, bottom 4
-    - "2 min ago" — label_small, #888888
-  - **Unread dot:** 10x10 circle, #1800B1, align_self flex_start, margin_top 4
-- **Visual cue:** The purple-tinted background is the primary unread indicator at the card level
+### Section Headers
 
-### Direct Debit Reminder Card (Read)
-- **Container:** Background #FFFFFF, border #F0F0F0 1dp, corner_radius 16, padding 16
-- **Internal layout:**
-  - **Icon circle:** 44x44, background #008B8B (teal), radius 22; schedule icon 22dp white
-  - **Text column:**
-    - "Direct debit reminder" — body_medium, **#555555** (dimmed vs unread), semi-bold
-    - "Your Council Tax direct debit of £148.00 will be collected on 1 June 2026." — body_small, #777777
-    - "3 hr ago" — label_small, #AAAAAA
-  - No unread dot
+**Today**
+- typography: label_medium, #888888, semi-bold
+- padding: horizontal 20dp, top 8dp, bottom 4dp
 
-### Budget Alert Card (Read)
-- **Container:** Same style as direct debit card
-- **Internal layout:**
-  - **Icon circle:** 44x44, background #FF9800 (orange/amber), radius 22; warning_amber_outlined icon 22dp white
-  - **Text column:**
-    - "Budget alert" — body_medium, #555555, semi-bold
-    - "Your Dining Out budget is 97% used. Only £5.00 remaining this month." — body_small, #777777
-    - "Yesterday" — label_small, #AAAAAA
-  - No unread dot
+**Earlier**
+- typography: label_medium, #888888, semi-bold
+- padding: horizontal 20dp, top 12dp, bottom 4dp
+
+---
+
+### Notification Card — Payment of £50.00 from James Wilson (Unread, payment)
+
+**Container**
+- Background: #F0EDFF (soft purple — unread signal)
+- Border: #D4C8FF, 1dp
+- Corner radius: 16dp
+- Padding: horizontal 16dp, vertical 14dp
+- Margin: horizontal 20dp, bottom 8dp
+- Tap action: open_notification → transaction-detail
+
+**Internal row (horizontal, spacing 12dp, align: flex_start)**
+
+Icon circle
+- Size: 44x44dp, radius 22dp
+- Background: #4CAF50 (green — incoming money)
+- Icon: arrow_downward, 22dp, #FFFFFF
+
+Text column (flex: 1)
+- Title: "Payment received" — body_medium, #111111, semi-bold (maximum contrast = unread)
+- Body: "Payment of £50.00 received from James Wilson" — body_small, #444444, top 2dp, bottom 4dp
+- Timestamp: "10 min ago" — label_small, #888888
+
+Unread dot
+- Size: 10x10dp, radius 5dp
+- Color: #1800B1 (primary)
+- Align: flex_start, margin_top 4dp
+- Accessibility role: status, content_description: "Unread notification"
+
+---
+
+### Notification Card — KYC Verification Approved (Unread, security)
+
+**Container**
+- Background: #F0EDFF, border #D4C8FF — same unread style
+- Tap action: open_notification → kyc-review (cross-persona deep link)
+
+**Internal row**
+
+Icon circle
+- Background: #1800B1 (primary blue — identity/trust)
+- Icon: verified_user, 22dp, #FFFFFF
+
+Text column
+- Title: "KYC verification approved" — body_medium, #111111, semi-bold
+- Body: "Your identity has been verified. You now have full access to all account features." — body_small, #444444
+- Timestamp: "1 hr ago" — label_small, #888888
+
+Unread dot: same as above
+
+---
+
+### Notification Card — Netflix Direct Debit Mandate (Read, system)
+
+**Container**
+- Background: #FFFFFF (white — read signal)
+- Border: #F0F0F0, 1dp
+- Corner radius: 16dp
+- Padding: horizontal 16dp, vertical 14dp
+- Margin: horizontal 20dp, bottom 8dp
+- Tap action: open_notification → accounts
+
+**Internal row**
+
+Icon circle
+- Background: #008B8B (teal — recurring/scheduled action)
+- Icon: autorenew, 22dp, #FFFFFF
+
+Text column
+- Title: "Direct debit mandate created" — body_medium, #555555, semi-bold (reduced contrast = read)
+- Body: "Direct debit mandate created for Netflix — £15.99/month from your Current Account." — body_small, #777777
+- Timestamp: "3 hr ago" — label_small, #AAAAAA
+- No unread dot
+
+---
+
+### Notification Card — Acme Ltd Salary Credited (Read, payment)
+
+**Container**
+- Same read card style as Netflix card
+- Tap action: open_notification → transaction-detail
+
+**Internal row**
+
+Icon circle
+- Background: #4CAF50 (green — incoming money)
+- Icon: arrow_downward, 22dp, #FFFFFF
+
+Text column
+- Title: "Salary credited" — body_medium, #555555, semi-bold
+- Body: "£3,200.00 from Acme Ltd has been credited to your Current Account." — body_small, #777777
+- Timestamp: "Yesterday" — label_small, #AAAAAA
+- No unread dot
+
+---
+
+## State Variants
+
+### Loading State
+
+Top app bar visible. Header row (title only, no "Mark All Read" button). Four shimmer skeleton cards stacked vertically, each with:
+- Gray rectangle (44x44dp) for icon circle
+- Two gray rounded rectangles for title + body lines
+- One short gray line for timestamp
+
+### Empty State
+
+Top app bar visible. Header row (title only). Centered column:
+- Icon: notifications_none_outlined, 64dp, #AAAAAA
+- Title: "You're all caught up" — headline_small, #333333
+- Message: "No new notifications. We'll let you know about payments, alerts and updates." — body_medium, #777777, centered, max_width 280dp
+
+### Error State
+
+Top app bar visible. Header row (title only). Centered column:
+- Icon: cloud_off, 64dp, #AAAAAA
+- Title: "Unable to load notifications" — headline_small, #333333
+- Message: "Check your connection and try again" — body_medium, #777777
+- Retry button: "Try again" — outlined, #1800B1, margin_top 16dp, tap → RetryLoad
 
 ---
 
 ## Interaction Patterns
 
-| Target | Gesture | Result |
-|---|---|---|
-| notification_payment_received | Tap | open_notification → navigates to transactions screen |
-| notification_direct_debit | Tap | open_notification → navigates to direct-debits screen |
-| notification_budget_alert | Tap | open_notification → navigates to pfm-dashboard screen |
-| mark_all_read_button | Tap | mark_all_read action — all unread dots removed; card backgrounds normalise to white |
-| top app bar done_all icon | Tap | mark_all_read action — same as inline button |
-| top app bar tune icon | Tap | open_notification_settings action — notification preferences screen |
-| top app bar back arrow | Tap | navigate_back to home |
+| Target | Gesture | Action | Navigation |
+|---|---|---|---|
+| notification_payment_james | Tap | open_notification | → transaction-detail |
+| notification_kyc_approved | Tap | open_notification | → kyc-review (cross-persona) |
+| notification_netflix_mandate | Tap | open_notification | → accounts |
+| notification_salary_credited | Tap | open_notification | → transaction-detail |
+| mark_all_read_button | Tap | mark_all_read | All unread dots removed; card backgrounds → white |
+| Top app bar done_all | Tap | mark_all_read | Same as button |
+| Top app bar tune | Tap | open_notification_settings | → settings |
+| Top app bar back arrow | Tap | navigate_back | → home |
 
 ---
 
 ## Content Data
 
-| Notification | Icon Color | Title | Message | Time | Read State |
-|---|---|---|---|---|---|
-| Payment received | #4CAF50 green | "Payment received" | "Your salary of £3,200.00 from Acme Ltd has been credited to your account." | 2 min ago | Unread |
-| Direct debit reminder | #008B8B teal | "Direct debit reminder" | "Your Council Tax direct debit of £148.00 will be collected on 1 June 2026." | 3 hr ago | Read |
-| Budget alert | #FF9800 orange | "Budget alert" | "Your Dining Out budget is 97% used. Only £5.00 remaining this month." | Yesterday | Read |
+| # | Category | Icon | Icon Colour | Title | Body | Time | State |
+|---|---|---|---|---|---|---|---|
+| 1 | payment | arrow_downward | #4CAF50 green | "Payment received" | "Payment of £50.00 received from James Wilson" | 10 min ago | Unread |
+| 2 | security | verified_user | #1800B1 blue | "KYC verification approved" | "Your identity has been verified. You now have full access to all account features." | 1 hr ago | Unread |
+| 3 | system | autorenew | #008B8B teal | "Direct debit mandate created" | "Direct debit mandate created for Netflix — £15.99/month from your Current Account." | 3 hr ago | Read |
+| 4 | payment | arrow_downward | #4CAF50 green | "Salary credited" | "£3,200.00 from Acme Ltd has been credited to your Current Account." | Yesterday | Read |
 
 ---
 
 ## Design Notes
 
-**Unread vs Read Visual System:**
-- Unread cards: #F0EDFF background + #D4C8FF border + #1800B1 unread dot + #111111 text — three simultaneous signals ensure no ambiguity for colour-blind users
-- Read cards: #FFFFFF background + #F0F0F0 border + no dot + #555555 text — lower visual weight to indicate consumed state
-- This dual-signal approach (background AND dot AND text colour) ensures accessibility even when one channel is not perceived
+**Unread vs Read Visual System — triple signal for accessibility:**
+- Unread: #F0EDFF background + #D4C8FF border + #1800B1 unread dot + #111111 text
+- Read: #FFFFFF background + #F0F0F0 border + no dot + #555555 text
+- Three simultaneous signals ensure the read/unread distinction is perceived even when one channel (colour alone) is unavailable
 
-**Icon Circle Colour Semantics:**
-- Green (#4CAF50): money in — salary, credits, received funds — positive financial event
-- Teal (#008B8B): upcoming action needed — direct debits, reminders, things to watch
-- Orange (#FF9800): warning — budget alerts, approaching limits — same colour as the PFM budget warning bar
+**Section grouping rationale:**
+- "Today" = notifications received since midnight — drives urgency; user expects to act on these
+- "Earlier" = older read notifications — reference only; lower visual weight confirms no action needed
 
-**Typography:**
-- Unread notification title: body_medium semi-bold **#111111** — maximum contrast
-- Read notification title: body_medium semi-bold **#555555** — same weight but lower contrast signals "already seen"
-- All timestamps: label_small — smallest readable text size, positioned bottom to not compete with message
+**Category icon colour semantics:**
+- Green (#4CAF50): money in — payment received, salary credited — positive financial event
+- Primary blue (#1800B1): trust/identity — KYC, security events — importance signal
+- Teal (#008B8B): scheduled/system — direct debit mandates, recurring actions — informational
 
-**"Mark All Read" button:**
-- Uses teal #008B8B rather than primary #1800B1 — distinct from destructive actions and from the primary CTA, appropriate for a helpful utility action
+**Typography hierarchy:**
+- Unread title: body_medium semi-bold #111111 — maximum contrast, priority reading
+- Read title: body_medium semi-bold #555555 — same weight, lower contrast = consumed state
+- All body text: body_small — compact to show full notification message without truncation
+- All timestamps: label_small at right-aligned bottom — minimal visual weight
+
+**"Mark All Read" placement:**
+- Inline text button (teal, not primary) to signal utility rather than primary CTA
+- Mirrored in top app bar done_all icon for thumb-reach accessibility on large screens
 
 **Accessibility:**
-- Each notification card has a comprehensive a11y label including read state, title, message, and age
-- Unread dot has role="status" with content_description "Unread notification"
-- Card tap targets are full-width for easy thumb reach
+- Each card has a comprehensive a11y content_description including read state, title, message, and relative age
+- Unread dot: role="status" with "Unread notification" description
+- All card tap targets span full card width for thumb reach
+- Minimum touch target: 48x48dp (card padding ensures this)
+
+---
 
 *Generated by /idea export | 2026-05-25*

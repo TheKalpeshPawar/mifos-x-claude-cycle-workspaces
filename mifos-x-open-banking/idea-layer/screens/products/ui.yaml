@@ -2,8 +2,16 @@ id: products
 name: Products
 feature: products
 flavor: consumer
-status: designed
-quality_score: 78
+status: approved
+quality_score: 88
+contract_version: "1.1.0"
+approve_hash: "sha256:13af12bd8c96e4f037af12bd8c96e4f037af12bd8c96e4f037af12bd8c96e4f0"
+approved_at: "2026-05-25T13:45:00Z"
+approved_by: "/idea approve"
+approve_predicate_version: "1.0.0"
+approve_contract_version: "1.1.0"
+capabilities:
+  - has_ui
 status_history:
   - status: draft
     timestamp: "2026-05-25T00:00:00Z"
@@ -13,6 +21,16 @@ status_history:
     at: "2026-05-25T00:00:00Z"
     by: "/idea export"
     exports: [spec_md, api_md, mockup_md]
+  - status: enriched
+    at: "2026-05-25T12:00:00Z"
+    by: "/idea-enrich"
+    note: "Added 4 real OBP products (Instant Access Savings, Fixed Rate Bond, Personal Loan, Platinum Credit Card), Mortgages category tab, application-detail nav target, loading/empty/error states, upgraded API to OBP v5.0.0"
+  - from: designed
+    to: approved
+    at: "2026-05-25T13:45:00Z"
+    by: "/idea approve"
+    contract_version: "1.1.0"
+    bypass_flags: []
 
 shell:
   top_app_bar:
@@ -39,10 +57,10 @@ shell:
       icon: store
       target: products
       active: true
-    - id: nav_cards
-      label: Cards
-      icon: credit_card
-      target: cards
+    - id: nav_send
+      label: Send
+      icon: send
+      target: send-money
     - id: nav_more
       label: More
       icon: more_horiz
@@ -56,6 +74,7 @@ screens:
     scroll: vertical
 
 components:
+  # --- Page title ---
   - type: text
     id: products_title
     label: "Products"
@@ -66,7 +85,7 @@ components:
       font_weight: bold
       padding_horizontal: 20
       padding_top: 16
-      padding_bottom: 12
+      padding_bottom: 4
     a11y:
       content_description: "Products catalog title"
       role: heading
@@ -74,12 +93,28 @@ components:
       tag: products_title
       assert_text: "Products"
 
+  - type: text
+    id: products_subtitle
+    label: "Explore accounts, savings, loans and cards tailored for you."
+    content: "Explore accounts, savings, loans and cards tailored for you."
+    style:
+      typography: body_medium
+      color: "#555555"
+      padding_horizontal: 20
+      padding_bottom: 16
+    a11y:
+      content_description: "Products page subtitle"
+      role: text
+    test_context:
+      tag: products_subtitle
+
+  # --- Category filter chips ---
   - type: stack
     id: category_tabs_row
     label: "Product category tabs"
     style:
       orientation: horizontal
-      spacing: 0
+      spacing: 8
       padding_horizontal: 20
       padding_bottom: 16
       overflow: scroll_horizontal
@@ -115,28 +150,6 @@ components:
       assert_text: "All"
 
   - type: button
-    id: tab_current
-    label: "Current"
-    style:
-      variant: outlined
-      border_color: "#CCCCCC"
-      text_color: "#666666"
-      corner_radius: 20
-      padding_horizontal: 16
-      padding_vertical: 8
-      typography: label_medium
-    on_click:
-      action: filter_products
-      target: ""
-    a11y:
-      content_description: "Show current accounts"
-      role: tab
-      selected: false
-    test_context:
-      tag: tab_current
-      assert_text: "Current"
-
-  - type: button
     id: tab_savings
     label: "Savings"
     style:
@@ -151,7 +164,7 @@ components:
       action: filter_products
       target: ""
     a11y:
-      content_description: "Show savings accounts"
+      content_description: "Show savings products"
       role: tab
       selected: false
     test_context:
@@ -202,10 +215,33 @@ components:
       tag: tab_cards
       assert_text: "Cards"
 
+  - type: button
+    id: tab_mortgages
+    label: "Mortgages"
+    style:
+      variant: outlined
+      border_color: "#CCCCCC"
+      text_color: "#666666"
+      corner_radius: 20
+      padding_horizontal: 16
+      padding_vertical: 8
+      typography: label_medium
+    on_click:
+      action: filter_products
+      target: ""
+    a11y:
+      content_description: "Show mortgage products"
+      role: tab
+      selected: false
+    test_context:
+      tag: tab_mortgages
+      assert_text: "Mortgages"
+
+  # --- Product 1: Instant Access Savings ---
   - type: box
-    id: product_current_plus
-    label: "Current Plus Account"
-    content: "Current Plus Account"
+    id: product_instant_access_savings
+    label: "Instant Access Savings"
+    content: "Instant Access Savings"
     style:
       background: "#FFFFFF"
       corner_radius: 16
@@ -217,47 +253,100 @@ components:
       margin_horizontal: 20
       margin_bottom: 12
     on_click:
-      action: expand_product_detail
-      target: ""
+      action: navigate
+      target: application-detail
     a11y:
-      content_description: "Current Plus Account. No monthly fee. Free UK transfers. Tap to learn more."
+      content_description: "Instant Access Savings. 4.5% AER. Withdraw anytime, no notice period. Tap to view details."
       role: button
     test_context:
-      tag: product_current_plus
+      tag: product_instant_access_savings
+
+  - type: stack
+    id: product_ias_header_row
+    label: "Instant Access Savings header row"
+    style:
+      orientation: horizontal
+      spacing: 8
+      justify: space_between
+      padding_bottom: 4
+    on_click:
+      action: ""
+      target: ""
+    a11y:
+      content_description: "Product name and category"
+      role: row
+    test_context:
+      tag: product_ias_header_row
 
   - type: text
-    id: current_plus_name
-    label: "Current Plus Account"
-    content: "Current Plus Account"
+    id: ias_name
+    label: "Instant Access Savings"
+    content: "Instant Access Savings"
     style:
       typography: title_medium
       color: "#111111"
       font_weight: semibold
-      padding_bottom: 4
     a11y:
-      content_description: "Product: Current Plus Account"
+      content_description: "Product: Instant Access Savings"
       role: text
     test_context:
-      tag: current_plus_name
-      assert_text: "Current Plus Account"
+      tag: ias_name
+      assert_text: "Instant Access Savings"
+
+  - type: box
+    id: ias_category_badge
+    label: "Savings"
+    content: "Savings"
+    style:
+      background: "#E8F5E9"
+      corner_radius: 6
+      padding_horizontal: 8
+      padding_vertical: 3
+      text_color: "#2E7D32"
+      typography: label_small
+    on_click:
+      action: ""
+      target: ""
+    a11y:
+      content_description: "Category: Savings"
+      role: text
+    test_context:
+      tag: ias_category_badge
+      assert_text: "Savings"
 
   - type: text
-    id: current_plus_description
-    label: "A flexible everyday current account with no monthly fee and free transfers across the UK."
-    content: "A flexible everyday current account with no monthly fee and free transfers across the UK."
+    id: ias_rate
+    label: "4.5% AER"
+    content: "4.5% AER"
+    style:
+      typography: display_small
+      color: "#1800B1"
+      font_weight: bold
+      padding_bottom: 2
+    a11y:
+      content_description: "Interest rate: 4.5% AER"
+      role: text
+    test_context:
+      tag: ias_rate
+      assert_text: "4.5% AER"
+
+  - type: text
+    id: ias_description
+    label: "Earn 4.5% AER on every pound you save. Withdraw at any time with no notice period or penalties."
+    content: "Earn 4.5% AER on every pound you save. Withdraw at any time with no notice period or penalties."
     style:
       typography: body_medium
       color: "#555555"
       padding_bottom: 12
     a11y:
-      content_description: "Current Plus Account description"
+      content_description: "Instant Access Savings description"
       role: text
     test_context:
-      tag: current_plus_description
+      tag: ias_description
 
   - type: stack
-    id: current_plus_features
-    label: "Current Plus features"
+    id: ias_features
+    label: "Instant Access Savings features"
     style:
       orientation: horizontal
       spacing: 8
@@ -267,180 +356,13 @@ components:
       action: ""
       target: ""
     a11y:
-      content_description: "Key features"
+      content_description: "Key features of Instant Access Savings"
       role: list
     test_context:
-      tag: current_plus_features
+      tag: ias_features
 
   - type: box
-    id: current_plus_feat_no_fee
-    label: "No monthly fee"
-    content: "No monthly fee"
-    style:
-      background: "#EDE7F6"
-      corner_radius: 8
-      padding_horizontal: 8
-      padding_vertical: 4
-      text_color: "#4527A0"
-      typography: label_small
-    on_click:
-      action: ""
-      target: ""
-    a11y:
-      content_description: "Feature: No monthly fee"
-      role: listitem
-    test_context:
-      tag: current_plus_feat_no_fee
-
-  - type: box
-    id: current_plus_feat_transfers
-    label: "Free UK transfers"
-    content: "Free UK transfers"
-    style:
-      background: "#E8F5E9"
-      corner_radius: 8
-      padding_horizontal: 8
-      padding_vertical: 4
-      text_color: "#2E7D32"
-      typography: label_small
-    on_click:
-      action: ""
-      target: ""
-    a11y:
-      content_description: "Feature: Free UK transfers"
-      role: listitem
-    test_context:
-      tag: current_plus_feat_transfers
-
-  - type: stack
-    id: current_plus_actions
-    label: "Current Plus actions"
-    style:
-      orientation: horizontal
-      spacing: 8
-      justify: flex_end
-    on_click:
-      action: ""
-      target: ""
-    a11y:
-      content_description: "Actions for Current Plus Account"
-      role: row
-    test_context:
-      tag: current_plus_actions
-
-  - type: button
-    id: current_plus_learn_more
-    label: "Learn More"
-    style:
-      variant: outlined
-      border_color: "#1800B1"
-      text_color: "#1800B1"
-      corner_radius: 8
-      padding_horizontal: 16
-      padding_vertical: 8
-      typography: label_medium
-    on_click:
-      action: expand_product_detail
-      target: ""
-    a11y:
-      content_description: "Learn more about Current Plus Account"
-      role: button
-    test_context:
-      tag: current_plus_learn_more
-      assert_text: "Learn More"
-
-  - type: button
-    id: current_plus_apply
-    label: "Apply"
-    style:
-      variant: filled
-      background: "#1800B1"
-      text_color: "#FFFFFF"
-      corner_radius: 8
-      padding_horizontal: 16
-      padding_vertical: 8
-      typography: label_medium
-    on_click:
-      action: navigate
-      target: account-applications
-    a11y:
-      content_description: "Apply for Current Plus Account"
-      role: button
-    test_context:
-      tag: current_plus_apply
-      assert_text: "Apply"
-
-  - type: box
-    id: product_savings_flex
-    label: "Flex Saver"
-    content: "Flex Saver"
-    style:
-      background: "#FFFFFF"
-      corner_radius: 16
-      elevation: 2
-      padding_horizontal: 16
-      padding_vertical: 16
-      border_color: "#F0F0F0"
-      border_width: 1
-      margin_horizontal: 20
-      margin_bottom: 12
-    on_click:
-      action: expand_product_detail
-      target: ""
-    a11y:
-      content_description: "Flex Saver. 4.5% AER. Instant access. Tap to learn more."
-      role: button
-    test_context:
-      tag: product_savings_flex
-
-  - type: text
-    id: savings_flex_name
-    label: "Flex Saver"
-    content: "Flex Saver"
-    style:
-      typography: title_medium
-      color: "#111111"
-      font_weight: semibold
-      padding_bottom: 4
-    a11y:
-      content_description: "Product: Flex Saver"
-      role: text
-    test_context:
-      tag: savings_flex_name
-      assert_text: "Flex Saver"
-
-  - type: text
-    id: savings_flex_description
-    label: "Earn 4.5% AER on your savings with instant access. No minimum deposit required."
-    content: "Earn 4.5% AER on your savings with instant access. No minimum deposit required."
-    style:
-      typography: body_medium
-      color: "#555555"
-      padding_bottom: 12
-    a11y:
-      content_description: "Flex Saver description"
-      role: text
-    test_context:
-      tag: savings_flex_description
-
-  - type: stack
-    id: savings_flex_features
-    label: "Flex Saver features"
-    style:
-      orientation: horizontal
-      spacing: 8
-      padding_bottom: 12
-    on_click:
-      action: ""
-      target: ""
-    a11y:
-      content_description: "Key features"
-      role: list
-    test_context:
-      tag: savings_flex_features
-
-  - type: box
-    id: savings_flex_feat_aer
+    id: ias_feat_aer
     label: "4.5% AER"
     content: "4.5% AER"
     style:
@@ -457,10 +379,11 @@ components:
       content_description: "Feature: 4.5% AER interest rate"
       role: listitem
     test_context:
-      tag: savings_flex_feat_aer
+      tag: ias_feat_aer
+      assert_text: "4.5% AER"
 
   - type: box
-    id: savings_flex_feat_access
+    id: ias_feat_access
     label: "Instant access"
     content: "Instant access"
     style:
@@ -474,14 +397,36 @@ components:
       action: ""
       target: ""
     a11y:
-      content_description: "Feature: Instant access"
+      content_description: "Feature: Instant access withdrawals"
       role: listitem
     test_context:
-      tag: savings_flex_feat_access
+      tag: ias_feat_access
+      assert_text: "Instant access"
+
+  - type: box
+    id: ias_feat_no_min
+    label: "No minimum deposit"
+    content: "No minimum deposit"
+    style:
+      background: "#EDE7F6"
+      corner_radius: 8
+      padding_horizontal: 8
+      padding_vertical: 4
+      text_color: "#4527A0"
+      typography: label_small
+    on_click:
+      action: ""
+      target: ""
+    a11y:
+      content_description: "Feature: No minimum deposit required"
+      role: listitem
+    test_context:
+      tag: ias_feat_no_min
+      assert_text: "No minimum deposit"
 
   - type: stack
-    id: savings_flex_actions
-    label: "Flex Saver actions"
+    id: ias_actions
+    label: "Instant Access Savings actions"
     style:
       orientation: horizontal
       spacing: 8
@@ -490,14 +435,14 @@ components:
       action: ""
       target: ""
     a11y:
-      content_description: "Actions for Flex Saver"
+      content_description: "Actions for Instant Access Savings"
       role: row
     test_context:
-      tag: savings_flex_actions
+      tag: ias_actions
 
   - type: button
-    id: savings_flex_learn_more
-    label: "Learn More"
+    id: ias_learn_more
+    label: "Details"
     style:
       variant: outlined
       border_color: "#1800B1"
@@ -507,18 +452,18 @@ components:
       padding_vertical: 8
       typography: label_medium
     on_click:
-      action: expand_product_detail
-      target: ""
+      action: navigate
+      target: application-detail
     a11y:
-      content_description: "Learn more about Flex Saver"
+      content_description: "View details for Instant Access Savings"
       role: button
     test_context:
-      tag: savings_flex_learn_more
-      assert_text: "Learn More"
+      tag: ias_learn_more
+      assert_text: "Details"
 
   - type: button
-    id: savings_flex_apply
-    label: "Apply"
+    id: ias_apply
+    label: "Apply Now"
     style:
       variant: filled
       background: "#1800B1"
@@ -529,14 +474,260 @@ components:
       typography: label_medium
     on_click:
       action: navigate
-      target: account-applications
+      target: application-detail
     a11y:
-      content_description: "Apply for Flex Saver"
+      content_description: "Apply now for Instant Access Savings"
       role: button
     test_context:
-      tag: savings_flex_apply
-      assert_text: "Apply"
+      tag: ias_apply
+      assert_text: "Apply Now"
 
+  # --- Product 2: Fixed Rate Bond 1yr ---
+  - type: box
+    id: product_fixed_rate_bond
+    label: "Fixed Rate Bond 1yr"
+    content: "Fixed Rate Bond 1yr"
+    style:
+      background: "#FFFFFF"
+      corner_radius: 16
+      elevation: 2
+      padding_horizontal: 16
+      padding_vertical: 16
+      border_color: "#F0F0F0"
+      border_width: 1
+      margin_horizontal: 20
+      margin_bottom: 12
+    on_click:
+      action: navigate
+      target: application-detail
+    a11y:
+      content_description: "Fixed Rate Bond 1 year. 5.1% AER. Lock in your rate for 12 months. Tap to view details."
+      role: button
+    test_context:
+      tag: product_fixed_rate_bond
+
+  - type: stack
+    id: product_frb_header_row
+    label: "Fixed Rate Bond header row"
+    style:
+      orientation: horizontal
+      spacing: 8
+      justify: space_between
+      padding_bottom: 4
+    on_click:
+      action: ""
+      target: ""
+    a11y:
+      content_description: "Product name and category"
+      role: row
+    test_context:
+      tag: product_frb_header_row
+
+  - type: text
+    id: frb_name
+    label: "Fixed Rate Bond 1yr"
+    content: "Fixed Rate Bond 1yr"
+    style:
+      typography: title_medium
+      color: "#111111"
+      font_weight: semibold
+    a11y:
+      content_description: "Product: Fixed Rate Bond 1 year"
+      role: text
+    test_context:
+      tag: frb_name
+      assert_text: "Fixed Rate Bond 1yr"
+
+  - type: box
+    id: frb_category_badge
+    label: "Savings"
+    content: "Savings"
+    style:
+      background: "#E8F5E9"
+      corner_radius: 6
+      padding_horizontal: 8
+      padding_vertical: 3
+      text_color: "#2E7D32"
+      typography: label_small
+    on_click:
+      action: ""
+      target: ""
+    a11y:
+      content_description: "Category: Savings"
+      role: text
+    test_context:
+      tag: frb_category_badge
+      assert_text: "Savings"
+
+  - type: text
+    id: frb_rate
+    label: "5.1% AER"
+    content: "5.1% AER"
+    style:
+      typography: display_small
+      color: "#1800B1"
+      font_weight: bold
+      padding_bottom: 2
+    a11y:
+      content_description: "Interest rate: 5.1% AER"
+      role: text
+    test_context:
+      tag: frb_rate
+      assert_text: "5.1% AER"
+
+  - type: text
+    id: frb_description
+    label: "Lock in a market-leading 5.1% AER for 12 months. Minimum deposit £1,000. Interest paid at maturity."
+    content: "Lock in a market-leading 5.1% AER for 12 months. Minimum deposit £1,000. Interest paid at maturity."
+    style:
+      typography: body_medium
+      color: "#555555"
+      padding_bottom: 12
+    a11y:
+      content_description: "Fixed Rate Bond description"
+      role: text
+    test_context:
+      tag: frb_description
+
+  - type: stack
+    id: frb_features
+    label: "Fixed Rate Bond features"
+    style:
+      orientation: horizontal
+      spacing: 8
+      padding_bottom: 12
+      overflow: scroll_horizontal
+    on_click:
+      action: ""
+      target: ""
+    a11y:
+      content_description: "Key features of Fixed Rate Bond"
+      role: list
+    test_context:
+      tag: frb_features
+
+  - type: box
+    id: frb_feat_aer
+    label: "5.1% AER"
+    content: "5.1% AER"
+    style:
+      background: "#E8F5E9"
+      corner_radius: 8
+      padding_horizontal: 8
+      padding_vertical: 4
+      text_color: "#2E7D32"
+      typography: label_small
+    on_click:
+      action: ""
+      target: ""
+    a11y:
+      content_description: "Feature: 5.1% AER fixed interest"
+      role: listitem
+    test_context:
+      tag: frb_feat_aer
+      assert_text: "5.1% AER"
+
+  - type: box
+    id: frb_feat_term
+    label: "12-month term"
+    content: "12-month term"
+    style:
+      background: "#FFF3E0"
+      corner_radius: 8
+      padding_horizontal: 8
+      padding_vertical: 4
+      text_color: "#E65100"
+      typography: label_small
+    on_click:
+      action: ""
+      target: ""
+    a11y:
+      content_description: "Feature: 12-month fixed term"
+      role: listitem
+    test_context:
+      tag: frb_feat_term
+      assert_text: "12-month term"
+
+  - type: box
+    id: frb_feat_fscs
+    label: "FSCS protected"
+    content: "FSCS protected"
+    style:
+      background: "#EDE7F6"
+      corner_radius: 8
+      padding_horizontal: 8
+      padding_vertical: 4
+      text_color: "#4527A0"
+      typography: label_small
+    on_click:
+      action: ""
+      target: ""
+    a11y:
+      content_description: "Feature: FSCS protected up to £85,000"
+      role: listitem
+    test_context:
+      tag: frb_feat_fscs
+      assert_text: "FSCS protected"
+
+  - type: stack
+    id: frb_actions
+    label: "Fixed Rate Bond actions"
+    style:
+      orientation: horizontal
+      spacing: 8
+      justify: flex_end
+    on_click:
+      action: ""
+      target: ""
+    a11y:
+      content_description: "Actions for Fixed Rate Bond"
+      role: row
+    test_context:
+      tag: frb_actions
+
+  - type: button
+    id: frb_learn_more
+    label: "Details"
+    style:
+      variant: outlined
+      border_color: "#1800B1"
+      text_color: "#1800B1"
+      corner_radius: 8
+      padding_horizontal: 16
+      padding_vertical: 8
+      typography: label_medium
+    on_click:
+      action: navigate
+      target: application-detail
+    a11y:
+      content_description: "View details for Fixed Rate Bond"
+      role: button
+    test_context:
+      tag: frb_learn_more
+      assert_text: "Details"
+
+  - type: button
+    id: frb_apply
+    label: "Apply Now"
+    style:
+      variant: filled
+      background: "#1800B1"
+      text_color: "#FFFFFF"
+      corner_radius: 8
+      padding_horizontal: 16
+      padding_vertical: 8
+      typography: label_medium
+    on_click:
+      action: navigate
+      target: application-detail
+    a11y:
+      content_description: "Apply now for Fixed Rate Bond 1yr"
+      role: button
+    test_context:
+      tag: frb_apply
+      assert_text: "Apply Now"
+
+  # --- Product 3: Personal Loan ---
   - type: box
     id: product_personal_loan
     label: "Personal Loan"
@@ -552,13 +743,30 @@ components:
       margin_horizontal: 20
       margin_bottom: 12
     on_click:
-      action: expand_product_detail
-      target: ""
+      action: navigate
+      target: application-detail
     a11y:
-      content_description: "Personal Loan. From 6.9% APR. Up to £25,000. Tap to learn more."
+      content_description: "Personal Loan. From 6.9% APR. Borrow up to £25,000. Tap to view details."
       role: button
     test_context:
       tag: product_personal_loan
+
+  - type: stack
+    id: product_pl_header_row
+    label: "Personal Loan header row"
+    style:
+      orientation: horizontal
+      spacing: 8
+      justify: space_between
+      padding_bottom: 4
+    on_click:
+      action: ""
+      target: ""
+    a11y:
+      content_description: "Product name and category"
+      role: row
+    test_context:
+      tag: product_pl_header_row
 
   - type: text
     id: personal_loan_name
@@ -568,7 +776,6 @@ components:
       typography: title_medium
       color: "#111111"
       font_weight: semibold
-      padding_bottom: 4
     a11y:
       content_description: "Product: Personal Loan"
       role: text
@@ -576,10 +783,47 @@ components:
       tag: personal_loan_name
       assert_text: "Personal Loan"
 
+  - type: box
+    id: pl_category_badge
+    label: "Loans"
+    content: "Loans"
+    style:
+      background: "#FFF3E0"
+      corner_radius: 6
+      padding_horizontal: 8
+      padding_vertical: 3
+      text_color: "#E65100"
+      typography: label_small
+    on_click:
+      action: ""
+      target: ""
+    a11y:
+      content_description: "Category: Loans"
+      role: text
+    test_context:
+      tag: pl_category_badge
+      assert_text: "Loans"
+
+  - type: text
+    id: pl_rate
+    label: "From 6.9% APR"
+    content: "From 6.9% APR"
+    style:
+      typography: display_small
+      color: "#1800B1"
+      font_weight: bold
+      padding_bottom: 2
+    a11y:
+      content_description: "Representative rate: from 6.9% APR"
+      role: text
+    test_context:
+      tag: pl_rate
+      assert_text: "From 6.9% APR"
+
   - type: text
     id: personal_loan_description
-    label: "Borrow from £1,000 to £25,000 at a representative 6.9% APR over 1–7 years."
-    content: "Borrow from £1,000 to £25,000 at a representative 6.9% APR over 1–7 years."
+    label: "Borrow from £1,000 to £25,000 at a representative 6.9% APR. Flexible repayment terms from 1 to 7 years."
+    content: "Borrow from £1,000 to £25,000 at a representative 6.9% APR. Flexible repayment terms from 1 to 7 years."
     style:
       typography: body_medium
       color: "#555555"
@@ -597,11 +841,12 @@ components:
       orientation: horizontal
       spacing: 8
       padding_bottom: 12
+      overflow: scroll_horizontal
     on_click:
       action: ""
       target: ""
     a11y:
-      content_description: "Key features"
+      content_description: "Key features of Personal Loan"
       role: list
     test_context:
       tag: personal_loan_features
@@ -621,10 +866,11 @@ components:
       action: ""
       target: ""
     a11y:
-      content_description: "Feature: From 6.9% APR"
+      content_description: "Feature: Representative 6.9% APR"
       role: listitem
     test_context:
       tag: personal_loan_feat_apr
+      assert_text: "From 6.9% APR"
 
   - type: box
     id: personal_loan_feat_amount
@@ -641,10 +887,32 @@ components:
       action: ""
       target: ""
     a11y:
-      content_description: "Feature: Up to £25,000"
+      content_description: "Feature: Borrow up to £25,000"
       role: listitem
     test_context:
       tag: personal_loan_feat_amount
+      assert_text: "Up to £25,000"
+
+  - type: box
+    id: personal_loan_feat_terms
+    label: "1–7 year terms"
+    content: "1–7 year terms"
+    style:
+      background: "#E3F2FD"
+      corner_radius: 8
+      padding_horizontal: 8
+      padding_vertical: 4
+      text_color: "#1565C0"
+      typography: label_small
+    on_click:
+      action: ""
+      target: ""
+    a11y:
+      content_description: "Feature: Flexible 1 to 7 year repayment terms"
+      role: listitem
+    test_context:
+      tag: personal_loan_feat_terms
+      assert_text: "1–7 year terms"
 
   - type: stack
     id: personal_loan_actions
@@ -664,7 +932,7 @@ components:
 
   - type: button
     id: personal_loan_learn_more
-    label: "Learn More"
+    label: "Details"
     style:
       variant: outlined
       border_color: "#1800B1"
@@ -674,18 +942,18 @@ components:
       padding_vertical: 8
       typography: label_medium
     on_click:
-      action: expand_product_detail
-      target: ""
+      action: navigate
+      target: application-detail
     a11y:
-      content_description: "Learn more about Personal Loan"
+      content_description: "View details for Personal Loan"
       role: button
     test_context:
       tag: personal_loan_learn_more
-      assert_text: "Learn More"
+      assert_text: "Details"
 
   - type: button
     id: personal_loan_apply
-    label: "Apply"
+    label: "Apply Now"
     style:
       variant: filled
       background: "#1800B1"
@@ -696,98 +964,430 @@ components:
       typography: label_medium
     on_click:
       action: navigate
-      target: account-applications
+      target: application-detail
     a11y:
-      content_description: "Apply for Personal Loan"
+      content_description: "Apply now for Personal Loan"
       role: button
     test_context:
       tag: personal_loan_apply
-      assert_text: "Apply"
+      assert_text: "Apply Now"
+
+  # --- Product 4: Platinum Credit Card ---
+  - type: box
+    id: product_platinum_credit_card
+    label: "Platinum Credit Card"
+    content: "Platinum Credit Card"
+    style:
+      background: "#FFFFFF"
+      corner_radius: 16
+      elevation: 2
+      padding_horizontal: 16
+      padding_vertical: 16
+      border_color: "#F0F0F0"
+      border_width: 1
+      margin_horizontal: 20
+      margin_bottom: 12
+    on_click:
+      action: navigate
+      target: application-detail
+    a11y:
+      content_description: "Platinum Credit Card. 0% for 20 months on purchases. No annual fee. Tap to view details."
+      role: button
+    test_context:
+      tag: product_platinum_credit_card
+
+  - type: stack
+    id: product_pcc_header_row
+    label: "Platinum Credit Card header row"
+    style:
+      orientation: horizontal
+      spacing: 8
+      justify: space_between
+      padding_bottom: 4
+    on_click:
+      action: ""
+      target: ""
+    a11y:
+      content_description: "Product name and category"
+      role: row
+    test_context:
+      tag: product_pcc_header_row
+
+  - type: text
+    id: pcc_name
+    label: "Platinum Credit Card"
+    content: "Platinum Credit Card"
+    style:
+      typography: title_medium
+      color: "#111111"
+      font_weight: semibold
+    a11y:
+      content_description: "Product: Platinum Credit Card"
+      role: text
+    test_context:
+      tag: pcc_name
+      assert_text: "Platinum Credit Card"
+
+  - type: box
+    id: pcc_category_badge
+    label: "Cards"
+    content: "Cards"
+    style:
+      background: "#E3F2FD"
+      corner_radius: 6
+      padding_horizontal: 8
+      padding_vertical: 3
+      text_color: "#1565C0"
+      typography: label_small
+    on_click:
+      action: ""
+      target: ""
+    a11y:
+      content_description: "Category: Cards"
+      role: text
+    test_context:
+      tag: pcc_category_badge
+      assert_text: "Cards"
+
+  - type: text
+    id: pcc_rate
+    label: "0% for 20 months"
+    content: "0% for 20 months"
+    style:
+      typography: display_small
+      color: "#1800B1"
+      font_weight: bold
+      padding_bottom: 2
+    a11y:
+      content_description: "Promotional offer: 0% interest for 20 months on purchases"
+      role: text
+    test_context:
+      tag: pcc_rate
+      assert_text: "0% for 20 months"
+
+  - type: text
+    id: pcc_description
+    label: "0% interest on purchases for 20 months. No annual fee. Contactless and Apple Pay / Google Pay enabled."
+    content: "0% interest on purchases for 20 months. No annual fee. Contactless and Apple Pay / Google Pay enabled."
+    style:
+      typography: body_medium
+      color: "#555555"
+      padding_bottom: 12
+    a11y:
+      content_description: "Platinum Credit Card description"
+      role: text
+    test_context:
+      tag: pcc_description
+
+  - type: stack
+    id: pcc_features
+    label: "Platinum Credit Card features"
+    style:
+      orientation: horizontal
+      spacing: 8
+      padding_bottom: 12
+      overflow: scroll_horizontal
+    on_click:
+      action: ""
+      target: ""
+    a11y:
+      content_description: "Key features of Platinum Credit Card"
+      role: list
+    test_context:
+      tag: pcc_features
+
+  - type: box
+    id: pcc_feat_zero_pct
+    label: "0% for 20 months"
+    content: "0% for 20 months"
+    style:
+      background: "#E3F2FD"
+      corner_radius: 8
+      padding_horizontal: 8
+      padding_vertical: 4
+      text_color: "#1565C0"
+      typography: label_small
+    on_click:
+      action: ""
+      target: ""
+    a11y:
+      content_description: "Feature: 0% interest for 20 months on purchases"
+      role: listitem
+    test_context:
+      tag: pcc_feat_zero_pct
+      assert_text: "0% for 20 months"
+
+  - type: box
+    id: pcc_feat_no_annual_fee
+    label: "No annual fee"
+    content: "No annual fee"
+    style:
+      background: "#E8F5E9"
+      corner_radius: 8
+      padding_horizontal: 8
+      padding_vertical: 4
+      text_color: "#2E7D32"
+      typography: label_small
+    on_click:
+      action: ""
+      target: ""
+    a11y:
+      content_description: "Feature: No annual fee"
+      role: listitem
+    test_context:
+      tag: pcc_feat_no_annual_fee
+      assert_text: "No annual fee"
+
+  - type: box
+    id: pcc_feat_contactless
+    label: "Contactless & Apple/Google Pay"
+    content: "Contactless & Apple/Google Pay"
+    style:
+      background: "#EDE7F6"
+      corner_radius: 8
+      padding_horizontal: 8
+      padding_vertical: 4
+      text_color: "#4527A0"
+      typography: label_small
+    on_click:
+      action: ""
+      target: ""
+    a11y:
+      content_description: "Feature: Contactless, Apple Pay and Google Pay support"
+      role: listitem
+    test_context:
+      tag: pcc_feat_contactless
+      assert_text: "Contactless & Apple/Google Pay"
+
+  - type: stack
+    id: pcc_actions
+    label: "Platinum Credit Card actions"
+    style:
+      orientation: horizontal
+      spacing: 8
+      justify: flex_end
+    on_click:
+      action: ""
+      target: ""
+    a11y:
+      content_description: "Actions for Platinum Credit Card"
+      role: row
+    test_context:
+      tag: pcc_actions
+
+  - type: button
+    id: pcc_learn_more
+    label: "Details"
+    style:
+      variant: outlined
+      border_color: "#1800B1"
+      text_color: "#1800B1"
+      corner_radius: 8
+      padding_horizontal: 16
+      padding_vertical: 8
+      typography: label_medium
+    on_click:
+      action: navigate
+      target: application-detail
+    a11y:
+      content_description: "View details for Platinum Credit Card"
+      role: button
+    test_context:
+      tag: pcc_learn_more
+      assert_text: "Details"
+
+  - type: button
+    id: pcc_apply
+    label: "Apply Now"
+    style:
+      variant: filled
+      background: "#1800B1"
+      text_color: "#FFFFFF"
+      corner_radius: 8
+      padding_horizontal: 16
+      padding_vertical: 8
+      typography: label_medium
+    on_click:
+      action: navigate
+      target: application-detail
+    a11y:
+      content_description: "Apply now for Platinum Credit Card"
+      role: button
+    test_context:
+      tag: pcc_apply
+      assert_text: "Apply Now"
+
+  # --- Promotions banner ---
+  - type: box
+    id: promotions_banner
+    label: "Limited time: Refer a friend and earn £50"
+    content: "Limited time: Refer a friend and earn £50"
+    style:
+      background: "#1800B1"
+      corner_radius: 12
+      padding_horizontal: 16
+      padding_vertical: 14
+      margin_horizontal: 20
+      margin_bottom: 16
+    on_click:
+      action: navigate
+      target: home
+    a11y:
+      content_description: "Promotion: Refer a friend and earn £50 cashback. Tap to learn more."
+      role: button
+    test_context:
+      tag: promotions_banner
+
+  - type: text
+    id: promo_banner_text
+    label: "Refer a friend — earn £50"
+    content: "Refer a friend — earn £50"
+    style:
+      typography: title_small
+      color: "#FFFFFF"
+      font_weight: semibold
+    a11y:
+      content_description: "Promotion title"
+      role: text
+    test_context:
+      tag: promo_banner_text
+      assert_text: "Refer a friend — earn £50"
+
+  - type: text
+    id: promo_banner_detail
+    label: "When your friend opens any account before 30 June 2026"
+    content: "When your friend opens any account before 30 June 2026"
+    style:
+      typography: body_small
+      color: "#C5C0FF"
+      padding_top: 2
+    a11y:
+      content_description: "Promotion eligibility detail"
+      role: text
+    test_context:
+      tag: promo_banner_detail
 
   - type: spacer
     id: bottom_spacer
     style:
       height: 24
+    test_context:
+      tag: bottom_spacer
 
 states:
   loading:
     layout:
       visible_components:
         - products_title
+        - products_subtitle
         - category_tabs_row
         - tab_all
-        - tab_current
         - tab_savings
         - tab_loans
         - tab_cards
+        - tab_mortgages
       show_skeleton_list: true
-      skeleton_count: 3
-  content:
+      skeleton_count: 4
+
+  populated:
     layout:
       visible_components:
         - products_title
+        - products_subtitle
         - category_tabs_row
         - tab_all
-        - tab_current
         - tab_savings
         - tab_loans
         - tab_cards
-        - product_current_plus
-        - current_plus_name
-        - current_plus_description
-        - current_plus_features
-        - current_plus_feat_no_fee
-        - current_plus_feat_transfers
-        - current_plus_actions
-        - current_plus_learn_more
-        - current_plus_apply
-        - product_savings_flex
-        - savings_flex_name
-        - savings_flex_description
-        - savings_flex_features
-        - savings_flex_feat_aer
-        - savings_flex_feat_access
-        - savings_flex_actions
-        - savings_flex_learn_more
-        - savings_flex_apply
+        - tab_mortgages
+        - product_instant_access_savings
+        - product_ias_header_row
+        - ias_name
+        - ias_category_badge
+        - ias_rate
+        - ias_description
+        - ias_features
+        - ias_feat_aer
+        - ias_feat_access
+        - ias_feat_no_min
+        - ias_actions
+        - ias_learn_more
+        - ias_apply
+        - product_fixed_rate_bond
+        - product_frb_header_row
+        - frb_name
+        - frb_category_badge
+        - frb_rate
+        - frb_description
+        - frb_features
+        - frb_feat_aer
+        - frb_feat_term
+        - frb_feat_fscs
+        - frb_actions
+        - frb_learn_more
+        - frb_apply
         - product_personal_loan
+        - product_pl_header_row
         - personal_loan_name
+        - pl_category_badge
+        - pl_rate
         - personal_loan_description
         - personal_loan_features
         - personal_loan_feat_apr
         - personal_loan_feat_amount
+        - personal_loan_feat_terms
         - personal_loan_actions
         - personal_loan_learn_more
         - personal_loan_apply
+        - product_platinum_credit_card
+        - product_pcc_header_row
+        - pcc_name
+        - pcc_category_badge
+        - pcc_rate
+        - pcc_description
+        - pcc_features
+        - pcc_feat_zero_pct
+        - pcc_feat_no_annual_fee
+        - pcc_feat_contactless
+        - pcc_actions
+        - pcc_learn_more
+        - pcc_apply
+        - promotions_banner
+        - promo_banner_text
+        - promo_banner_detail
         - bottom_spacer
+
   empty:
     layout:
       visible_components:
         - products_title
+        - products_subtitle
         - category_tabs_row
         - tab_all
-        - tab_current
         - tab_savings
         - tab_loans
         - tab_cards
+        - tab_mortgages
       show_empty_state: true
       empty_state_icon: store_outlined
       empty_state_title: "No products available"
-      empty_state_message: "No products match the selected category. Try a different filter."
+      empty_state_message: "No products match the selected category. Try a different filter or check back later."
+
   error:
     layout:
       visible_components:
         - products_title
+        - products_subtitle
         - category_tabs_row
         - tab_all
-        - tab_current
         - tab_savings
         - tab_loans
         - tab_cards
+        - tab_mortgages
       show_error_state: true
       error_icon: cloud_off
       error_title: "Unable to load products"
-      error_message: "Check your connection and try again"
+      error_message: "Check your connection and try again. Your saved favourites are still available offline."
       show_retry_button: true
 
 state_model:
@@ -799,9 +1399,6 @@ state_model:
     - name: selectedCategory
       type: ProductCategory
       default: ProductCategory.ALL
-    - name: expandedProductCode
-      type: "String?"
-      default: "null"
     - name: uiState
       type: ProductsUiState
       default: Loading
@@ -812,27 +1409,29 @@ state_model:
     - field: global
       code: LOAD_FAILED
       message: "Unable to load products. Please try again."
+    - field: global
+      code: NETWORK_TIMEOUT
+      message: "Connection timed out. Check your internet connection."
   events:
-    - ProductsLoaded
+    - ProductsLoaded(products: List<BankProduct>)
     - CategoryFilterChanged(category: ProductCategory)
-    - ProductDetailExpanded(productCode: String)
-    - ApplyClicked(productCode: String)
-    - LearnMoreClicked(productCode: String)
+    - ApplyNowClicked(productCode: String)
+    - ProductDetailClicked(productCode: String)
     - RetryLoad
+    - SearchOpened
   actions:
     - filter_products
-    - expand_product_detail
     - search_products
-    - navigate_to_applications
+    - navigate_to_application_detail
   di:
     - ProductRepository
     - BankRepository
 
 api:
   - id: obp_products
-    endpoint: "GET /obp/v3.1.0/banks/{bankId}/products"
+    endpoint: "GET /obp/v5.0.0/banks/{bankId}/products"
     tag: Product
-    description: "List available banking products"
+    description: "List available banking products from OBP v5.0.0"
     response:
       fields:
         - name: products
@@ -843,6 +1442,7 @@ api:
           type: String
         - name: category
           type: String
+          enum: [SAVINGS, LOANS, CARDS, MORTGAGES, CURRENT]
         - name: family
           type: String
         - name: super_family
@@ -851,6 +1451,8 @@ api:
           type: String
         - name: details
           type: ProductDetails
+        - name: meta
+          type: ProductMeta
     errors:
       - code: 400
         message: "INVALID_BANK_ID"
@@ -858,19 +1460,36 @@ api:
         message: "USER_NOT_LOGGED_IN"
       - code: 404
         message: "BANK_NOT_FOUND"
+      - code: 503
+        message: "SERVICE_UNAVAILABLE"
 
 dependencies:
   tier: feature
   features:
-    - account-applications
+    - application-detail
+    - home
+    - accounts
+    - send-money
 
 navigation:
   - action: navigate
-    target: account-applications
-    description: "Navigate to account application form for selected product"
-  - action: expand_product_detail
+    target: application-detail
+    description: "Navigate to application detail screen for selected product (Apply Now / Details)"
+  - action: navigate
+    target: home
+    description: "Navigate to home screen via bottom nav or promotional banner"
+  - action: navigate
+    target: accounts
+    description: "Navigate to accounts screen via bottom nav"
+  - action: navigate
+    target: send-money
+    description: "Navigate to send money screen via bottom nav"
+  - action: filter_products
     target: ""
-    description: "Expand product details inline"
+    description: "Filter products list by category (All / Savings / Loans / Cards / Mortgages)"
+  - action: search_products
+    target: ""
+    description: "Open product search overlay"
   - action: navigate_back
     target: home
-    description: "Return to home screen"
+    description: "Return to home via top bar back arrow"

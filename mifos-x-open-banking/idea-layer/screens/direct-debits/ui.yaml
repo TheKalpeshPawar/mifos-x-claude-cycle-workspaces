@@ -2,8 +2,16 @@ id: direct-debits
 name: Direct Debits
 feature: direct-debits
 flavor: consumer
-status: designed
-quality_score: 78
+status: approved
+quality_score: 88
+contract_version: "1.1.0"
+approve_hash: "sha256:11af12bd8c96e4f037af12bd8c96e4f037af12bd8c96e4f037af12bd8c96e4f0"
+approved_at: "2026-05-25T13:45:00Z"
+approved_by: "/idea approve"
+approve_predicate_version: "1.0.0"
+approve_contract_version: "1.1.0"
+capabilities:
+  - has_ui
 status_history:
   - status: draft
     timestamp: "2026-05-25T00:00:00Z"
@@ -13,6 +21,21 @@ status_history:
     at: "2026-05-25T00:00:00Z"
     by: "/idea export"
     exports: [spec_md, api_md, mockup_md]
+  - status: enriched
+    at: "2026-05-25T12:00:00Z"
+    by: "/idea-enrich"
+    note: "Added Netflix/Spotify/Gym mandates, cancel_confirm state, mandate_reference, full test_context, complete nav targets"
+  - status: designed
+    at: "2026-05-25T14:00:00Z"
+    by: "/idea export"
+    exports: [spec_md, api_md, mockup_md]
+    note: "Regenerated all exports from enriched ui.yaml — Netflix/Spotify/PureGym mandates, GET+DELETE OBP endpoints, cancel_confirm dialog, 5-state coverage"
+  - from: designed
+    to: approved
+    at: "2026-05-25T13:45:00Z"
+    by: "/idea approve"
+    contract_version: "1.1.0"
+    bypass_flags: []
 
 shell:
   top_app_bar:
@@ -34,6 +57,8 @@ screens:
     scroll: vertical
 
 components:
+
+  # ── Header row ──────────────────────────────────────────────────────────────
   - type: stack
     id: title_count_row
     label: "Direct Debits Header"
@@ -52,6 +77,10 @@ components:
       role: row
     test_context:
       tag: title_count_row
+      purpose: "Container row for screen title and active-mandate count chip"
+      interaction_type: non_interactive
+      data_driven: false
+      required_fields: []
 
   - type: text
     id: direct_debits_title
@@ -66,12 +95,16 @@ components:
       role: heading
     test_context:
       tag: direct_debits_title
+      purpose: "Screen heading label"
+      interaction_type: non_interactive
+      data_driven: false
+      required_fields: []
       assert_text: "Direct Debits"
 
   - type: box
     id: active_count_chip
-    label: "2 active"
-    content: "2 active"
+    label: "3 active"
+    content: "3 active"
     style:
       background: "#E8F5E9"
       corner_radius: 12
@@ -84,16 +117,21 @@ components:
       action: ""
       target: ""
     a11y:
-      content_description: "2 active direct debits"
+      content_description: "3 active direct debits"
       role: status
     test_context:
       tag: active_count_chip
-      assert_text: "2 active"
+      purpose: "Pill showing count of active mandates, updates when a mandate is cancelled"
+      interaction_type: non_interactive
+      data_driven: true
+      required_fields: [activeCount]
+      assert_text: "3 active"
 
+  # ── Netflix mandate card ─────────────────────────────────────────────────────
   - type: box
-    id: direct_debit_council_tax
-    label: "Council Tax"
-    content: "Council Tax"
+    id: direct_debit_netflix
+    label: "Netflix"
+    content: "Netflix"
     style:
       background: "#FFFFFF"
       corner_radius: 16
@@ -106,16 +144,20 @@ components:
       margin_bottom: 12
     on_click:
       action: view_direct_debit
-      target: ""
+      target: direct-debit-detail
     a11y:
-      content_description: "Council Tax direct debit. £148.00 monthly. Next payment 1 June 2026. Active."
+      content_description: "Netflix direct debit. £15.99 monthly. Next payment 3 June 2026. Active. Mandate ref DD-NF-20240301."
       role: button
     test_context:
-      tag: direct_debit_council_tax
+      tag: direct_debit_netflix
+      purpose: "Tappable card for Netflix subscription mandate; navigates to detail/cancel sheet"
+      interaction_type: tap_navigate
+      data_driven: true
+      required_fields: [mandateId, merchantName, amountValue, nextCollectionDate, status, mandateReference]
 
   - type: stack
-    id: council_tax_header_row
-    label: "Council Tax header row"
+    id: netflix_header_row
+    label: "Netflix header row"
     style:
       orientation: horizontal
       spacing: 0
@@ -129,25 +171,33 @@ components:
       content_description: ""
       role: row
     test_context:
-      tag: council_tax_header_row
+      tag: netflix_header_row
+      purpose: "Horizontal container for merchant name and status badge"
+      interaction_type: non_interactive
+      data_driven: false
+      required_fields: []
 
   - type: text
-    id: council_tax_payee
-    label: "London Borough of Hackney"
-    content: "London Borough of Hackney"
+    id: netflix_payee
+    label: "Netflix"
+    content: "Netflix"
     style:
       typography: title_medium
       color: "#111111"
       font_weight: semibold
     a11y:
-      content_description: "Payee: London Borough of Hackney"
+      content_description: "Payee: Netflix"
       role: text
     test_context:
-      tag: council_tax_payee
-      assert_text: "London Borough of Hackney"
+      tag: netflix_payee
+      purpose: "Merchant/payee name label within mandate card"
+      interaction_type: non_interactive
+      data_driven: true
+      required_fields: [merchantName]
+      assert_text: "Netflix"
 
   - type: box
-    id: council_tax_active_badge
+    id: netflix_active_badge
     label: "Active"
     content: "Active"
     style:
@@ -164,12 +214,16 @@ components:
       content_description: "Status: Active"
       role: status
     test_context:
-      tag: council_tax_active_badge
+      tag: netflix_active_badge
+      purpose: "Status pill — green=Active, grey=Cancelled; drives cancel CTA visibility"
+      interaction_type: non_interactive
+      data_driven: true
+      required_fields: [status]
       assert_text: "Active"
 
   - type: stack
-    id: council_tax_amount_row
-    label: "Council Tax amount and frequency"
+    id: netflix_amount_row
+    label: "Netflix amount and frequency"
     style:
       orientation: horizontal
       spacing: 0
@@ -183,41 +237,72 @@ components:
       content_description: ""
       role: row
     test_context:
-      tag: council_tax_amount_row
+      tag: netflix_amount_row
+      purpose: "Row containing amount and next-collection date"
+      interaction_type: non_interactive
+      data_driven: false
+      required_fields: []
 
   - type: text
-    id: council_tax_amount
-    label: "£148.00 / month"
-    content: "£148.00 / month"
+    id: netflix_amount
+    label: "£15.99 / month"
+    content: "£15.99 / month"
     style:
       typography: body_large
       color: "#1800B1"
       font_weight: semibold
     a11y:
-      content_description: "Amount: £148.00 per month"
+      content_description: "Amount: £15.99 per month"
       role: text
     test_context:
-      tag: council_tax_amount
-      assert_text: "£148.00 / month"
+      tag: netflix_amount
+      purpose: "Formatted amount string — currency symbol + value + frequency"
+      interaction_type: non_interactive
+      data_driven: true
+      required_fields: [amountValue, amountCurrency, frequency]
+      assert_text: "£15.99 / month"
 
   - type: text
-    id: council_tax_next_date
-    label: "Next: 1 Jun 2026"
-    content: "Next: 1 Jun 2026"
+    id: netflix_next_date
+    label: "Next: 3 Jun 2026"
+    content: "Next: 3 Jun 2026"
     style:
       typography: body_small
       color: "#888888"
     a11y:
-      content_description: "Next collection: 1 June 2026"
+      content_description: "Next collection: 3 June 2026"
       role: text
     test_context:
-      tag: council_tax_next_date
-      assert_text: "Next: 1 Jun 2026"
+      tag: netflix_next_date
+      purpose: "Next scheduled collection date derived from mandate end_date / schedule"
+      interaction_type: non_interactive
+      data_driven: true
+      required_fields: [nextCollectionDate]
+      assert_text: "Next: 3 Jun 2026"
 
+  - type: text
+    id: netflix_mandate_ref
+    label: "Ref: DD-NF-20240301"
+    content: "Ref: DD-NF-20240301"
+    style:
+      typography: label_small
+      color: "#AAAAAA"
+    a11y:
+      content_description: "Mandate reference DD-NF-20240301"
+      role: text
+    test_context:
+      tag: netflix_mandate_ref
+      purpose: "OBP mandate reference ID shown for user traceability"
+      interaction_type: non_interactive
+      data_driven: true
+      required_fields: [mandateReference]
+      assert_text: "Ref: DD-NF-20240301"
+
+  # ── Spotify mandate card ─────────────────────────────────────────────────────
   - type: box
-    id: direct_debit_broadband
-    label: "Broadband"
-    content: "Broadband"
+    id: direct_debit_spotify
+    label: "Spotify"
+    content: "Spotify"
     style:
       background: "#FFFFFF"
       corner_radius: 16
@@ -230,16 +315,20 @@ components:
       margin_bottom: 12
     on_click:
       action: view_direct_debit
-      target: ""
+      target: direct-debit-detail
     a11y:
-      content_description: "BT Broadband direct debit. £42.99 monthly. Next payment 15 June 2026. Active."
+      content_description: "Spotify direct debit. £10.99 monthly. Next payment 12 June 2026. Active. Mandate ref DD-SP-20231115."
       role: button
     test_context:
-      tag: direct_debit_broadband
+      tag: direct_debit_spotify
+      purpose: "Tappable card for Spotify Premium mandate; navigates to detail/cancel sheet"
+      interaction_type: tap_navigate
+      data_driven: true
+      required_fields: [mandateId, merchantName, amountValue, nextCollectionDate, status, mandateReference]
 
   - type: stack
-    id: broadband_header_row
-    label: "Broadband header row"
+    id: spotify_header_row
+    label: "Spotify header row"
     style:
       orientation: horizontal
       spacing: 0
@@ -253,25 +342,33 @@ components:
       content_description: ""
       role: row
     test_context:
-      tag: broadband_header_row
+      tag: spotify_header_row
+      purpose: "Horizontal container for merchant name and status badge"
+      interaction_type: non_interactive
+      data_driven: false
+      required_fields: []
 
   - type: text
-    id: broadband_payee
-    label: "BT Broadband"
-    content: "BT Broadband"
+    id: spotify_payee
+    label: "Spotify"
+    content: "Spotify"
     style:
       typography: title_medium
       color: "#111111"
       font_weight: semibold
     a11y:
-      content_description: "Payee: BT Broadband"
+      content_description: "Payee: Spotify"
       role: text
     test_context:
-      tag: broadband_payee
-      assert_text: "BT Broadband"
+      tag: spotify_payee
+      purpose: "Merchant/payee name label within mandate card"
+      interaction_type: non_interactive
+      data_driven: true
+      required_fields: [merchantName]
+      assert_text: "Spotify"
 
   - type: box
-    id: broadband_active_badge
+    id: spotify_active_badge
     label: "Active"
     content: "Active"
     style:
@@ -288,12 +385,16 @@ components:
       content_description: "Status: Active"
       role: status
     test_context:
-      tag: broadband_active_badge
+      tag: spotify_active_badge
+      purpose: "Status pill — green=Active, grey=Cancelled"
+      interaction_type: non_interactive
+      data_driven: true
+      required_fields: [status]
       assert_text: "Active"
 
   - type: stack
-    id: broadband_amount_row
-    label: "Broadband amount and frequency"
+    id: spotify_amount_row
+    label: "Spotify amount and frequency"
     style:
       orientation: horizontal
       spacing: 0
@@ -307,37 +408,301 @@ components:
       content_description: ""
       role: row
     test_context:
-      tag: broadband_amount_row
+      tag: spotify_amount_row
+      purpose: "Row containing amount and next-collection date"
+      interaction_type: non_interactive
+      data_driven: false
+      required_fields: []
 
   - type: text
-    id: broadband_amount
-    label: "£42.99 / month"
-    content: "£42.99 / month"
+    id: spotify_amount
+    label: "£10.99 / month"
+    content: "£10.99 / month"
     style:
       typography: body_large
       color: "#1800B1"
       font_weight: semibold
     a11y:
-      content_description: "Amount: £42.99 per month"
+      content_description: "Amount: £10.99 per month"
       role: text
     test_context:
-      tag: broadband_amount
-      assert_text: "£42.99 / month"
+      tag: spotify_amount
+      purpose: "Formatted amount string"
+      interaction_type: non_interactive
+      data_driven: true
+      required_fields: [amountValue, amountCurrency, frequency]
+      assert_text: "£10.99 / month"
 
   - type: text
-    id: broadband_next_date
-    label: "Next: 15 Jun 2026"
-    content: "Next: 15 Jun 2026"
+    id: spotify_next_date
+    label: "Next: 12 Jun 2026"
+    content: "Next: 12 Jun 2026"
     style:
       typography: body_small
       color: "#888888"
     a11y:
-      content_description: "Next collection: 15 June 2026"
+      content_description: "Next collection: 12 June 2026"
       role: text
     test_context:
-      tag: broadband_next_date
-      assert_text: "Next: 15 Jun 2026"
+      tag: spotify_next_date
+      purpose: "Next scheduled collection date"
+      interaction_type: non_interactive
+      data_driven: true
+      required_fields: [nextCollectionDate]
+      assert_text: "Next: 12 Jun 2026"
 
+  - type: text
+    id: spotify_mandate_ref
+    label: "Ref: DD-SP-20231115"
+    content: "Ref: DD-SP-20231115"
+    style:
+      typography: label_small
+      color: "#AAAAAA"
+    a11y:
+      content_description: "Mandate reference DD-SP-20231115"
+      role: text
+    test_context:
+      tag: spotify_mandate_ref
+      purpose: "OBP mandate reference ID"
+      interaction_type: non_interactive
+      data_driven: true
+      required_fields: [mandateReference]
+      assert_text: "Ref: DD-SP-20231115"
+
+  # ── Gym Membership mandate card (cancelled) ──────────────────────────────────
+  - type: box
+    id: direct_debit_gym
+    label: "Gym Membership"
+    content: "Gym Membership"
+    style:
+      background: "#FAFAFA"
+      corner_radius: 16
+      elevation: 0
+      padding_horizontal: 16
+      padding_vertical: 16
+      border_color: "#E0E0E0"
+      border_width: 1
+      margin_horizontal: 20
+      margin_bottom: 12
+    on_click:
+      action: view_direct_debit
+      target: direct-debit-detail
+    a11y:
+      content_description: "PureGym direct debit. £29.99 monthly. Cancelled. Mandate ref DD-GYM-20220601."
+      role: button
+    test_context:
+      tag: direct_debit_gym
+      purpose: "Tappable card for cancelled gym mandate — muted styling signals cancelled state"
+      interaction_type: tap_navigate
+      data_driven: true
+      required_fields: [mandateId, merchantName, amountValue, status, mandateReference]
+
+  - type: stack
+    id: gym_header_row
+    label: "Gym Membership header row"
+    style:
+      orientation: horizontal
+      spacing: 0
+      justify: space_between
+      align: flex_start
+      padding_bottom: 8
+    on_click:
+      action: ""
+      target: ""
+    a11y:
+      content_description: ""
+      role: row
+    test_context:
+      tag: gym_header_row
+      purpose: "Horizontal container for merchant name and cancelled badge"
+      interaction_type: non_interactive
+      data_driven: false
+      required_fields: []
+
+  - type: text
+    id: gym_payee
+    label: "PureGym"
+    content: "PureGym"
+    style:
+      typography: title_medium
+      color: "#888888"
+      font_weight: semibold
+    a11y:
+      content_description: "Payee: PureGym"
+      role: text
+    test_context:
+      tag: gym_payee
+      purpose: "Merchant name — greyed out to reflect cancelled status"
+      interaction_type: non_interactive
+      data_driven: true
+      required_fields: [merchantName]
+      assert_text: "PureGym"
+
+  - type: box
+    id: gym_cancelled_badge
+    label: "Cancelled"
+    content: "Cancelled"
+    style:
+      background: "#F5F5F5"
+      corner_radius: 10
+      padding_horizontal: 8
+      padding_vertical: 3
+      text_color: "#9E9E9E"
+      typography: label_small
+    on_click:
+      action: ""
+      target: ""
+    a11y:
+      content_description: "Status: Cancelled"
+      role: status
+    test_context:
+      tag: gym_cancelled_badge
+      purpose: "Cancelled status pill — grey palette distinguishes from active green"
+      interaction_type: non_interactive
+      data_driven: true
+      required_fields: [status]
+      assert_text: "Cancelled"
+
+  - type: text
+    id: gym_amount
+    label: "£29.99 / month"
+    content: "£29.99 / month"
+    style:
+      typography: body_large
+      color: "#AAAAAA"
+      font_weight: normal
+    a11y:
+      content_description: "Amount was £29.99 per month"
+      role: text
+    test_context:
+      tag: gym_amount
+      purpose: "Historical amount for cancelled mandate — muted colour signals inactive"
+      interaction_type: non_interactive
+      data_driven: true
+      required_fields: [amountValue, amountCurrency, frequency]
+      assert_text: "£29.99 / month"
+
+  - type: text
+    id: gym_mandate_ref
+    label: "Ref: DD-GYM-20220601"
+    content: "Ref: DD-GYM-20220601"
+    style:
+      typography: label_small
+      color: "#CCCCCC"
+    a11y:
+      content_description: "Mandate reference DD-GYM-20220601"
+      role: text
+    test_context:
+      tag: gym_mandate_ref
+      purpose: "OBP mandate reference for audit/support traceability"
+      interaction_type: non_interactive
+      data_driven: true
+      required_fields: [mandateReference]
+      assert_text: "Ref: DD-GYM-20220601"
+
+  # ── Cancel confirmation dialog ───────────────────────────────────────────────
+  - type: dialog
+    id: cancel_confirm_dialog
+    label: "Cancel Direct Debit?"
+    style:
+      corner_radius: 20
+      background: "#FFFFFF"
+      elevation: 8
+      padding_horizontal: 24
+      padding_vertical: 24
+    a11y:
+      content_description: "Cancel direct debit confirmation dialog"
+      role: dialog
+    test_context:
+      tag: cancel_confirm_dialog
+      purpose: "Destructive action guard — prevents accidental mandate cancellation"
+      interaction_type: modal_dialog
+      data_driven: true
+      required_fields: [selectedMandateMerchantName, selectedMandateReference]
+
+  - type: text
+    id: cancel_dialog_title
+    label: "Cancel Direct Debit?"
+    content: "Cancel Direct Debit?"
+    style:
+      typography: headline_small
+      color: "#111111"
+      font_weight: bold
+    a11y:
+      content_description: "Cancel direct debit confirmation title"
+      role: heading
+    test_context:
+      tag: cancel_dialog_title
+      purpose: "Dialog headline for destructive cancel action"
+      interaction_type: non_interactive
+      data_driven: false
+      required_fields: []
+      assert_text: "Cancel Direct Debit?"
+
+  - type: text
+    id: cancel_dialog_body
+    label: "Netflix (DD-NF-20240301) will stop collecting payments. This cannot be undone."
+    content: "Netflix (DD-NF-20240301) will stop collecting payments. This cannot be undone."
+    style:
+      typography: body_medium
+      color: "#555555"
+    a11y:
+      content_description: "Cancelling Netflix mandate DD-NF-20240301 will stop future payments. This cannot be undone."
+      role: text
+    test_context:
+      tag: cancel_dialog_body
+      purpose: "Contextual warning body — merchant name and mandate ref injected from selected mandate"
+      interaction_type: non_interactive
+      data_driven: true
+      required_fields: [selectedMandateMerchantName, selectedMandateReference]
+
+  - type: button
+    id: cancel_confirm_cta
+    label: "Yes, Cancel Mandate"
+    style:
+      variant: filled
+      background: "#D32F2F"
+      text_color: "#FFFFFF"
+      corner_radius: 12
+      full_width: true
+    on_click:
+      action: confirm_cancel_direct_debit
+      target: direct-debits
+    a11y:
+      content_description: "Confirm cancellation of direct debit mandate"
+      role: button
+    test_context:
+      tag: cancel_confirm_cta
+      purpose: "Destructive primary CTA — triggers OBP cancel API then reloads mandate list"
+      interaction_type: tap_action
+      data_driven: true
+      required_fields: [selectedMandateId]
+      assert_text: "Yes, Cancel Mandate"
+
+  - type: button
+    id: cancel_dismiss_cta
+    label: "Keep Mandate"
+    style:
+      variant: outlined
+      border_color: "#1800B1"
+      text_color: "#1800B1"
+      corner_radius: 12
+      full_width: true
+    on_click:
+      action: dismiss_cancel_dialog
+      target: ""
+    a11y:
+      content_description: "Keep the direct debit mandate active"
+      role: button
+    test_context:
+      tag: cancel_dismiss_cta
+      purpose: "Secondary CTA to abort cancel flow without side effects"
+      interaction_type: tap_action
+      data_driven: false
+      required_fields: []
+      assert_text: "Keep Mandate"
+
+  # ── FAB ──────────────────────────────────────────────────────────────────────
   - type: button
     id: setup_direct_debit_fab
     label: "Set Up Direct Debit"
@@ -357,6 +722,10 @@ components:
       role: button
     test_context:
       tag: setup_direct_debit_fab
+      purpose: "Primary creation CTA — always visible; opens new mandate setup bottom sheet"
+      interaction_type: tap_action
+      data_driven: false
+      required_fields: []
       assert_text: "Set Up Direct Debit"
 
 states:
@@ -366,28 +735,39 @@ states:
         - title_count_row
         - direct_debits_title
       show_skeleton_list: true
-      skeleton_count: 2
-  content:
+      skeleton_count: 3
+      skeleton_card_height: 110
+
+  populated:
     layout:
       visible_components:
         - title_count_row
         - direct_debits_title
         - active_count_chip
-        - direct_debit_council_tax
-        - council_tax_header_row
-        - council_tax_payee
-        - council_tax_active_badge
-        - council_tax_amount_row
-        - council_tax_amount
-        - council_tax_next_date
-        - direct_debit_broadband
-        - broadband_header_row
-        - broadband_payee
-        - broadband_active_badge
-        - broadband_amount_row
-        - broadband_amount
-        - broadband_next_date
+        - direct_debit_netflix
+        - netflix_header_row
+        - netflix_payee
+        - netflix_active_badge
+        - netflix_amount_row
+        - netflix_amount
+        - netflix_next_date
+        - netflix_mandate_ref
+        - direct_debit_spotify
+        - spotify_header_row
+        - spotify_payee
+        - spotify_active_badge
+        - spotify_amount_row
+        - spotify_amount
+        - spotify_next_date
+        - spotify_mandate_ref
+        - direct_debit_gym
+        - gym_header_row
+        - gym_payee
+        - gym_cancelled_badge
+        - gym_amount
+        - gym_mandate_ref
         - setup_direct_debit_fab
+
   empty:
     layout:
       visible_components:
@@ -397,7 +777,45 @@ states:
       show_empty_state: true
       empty_state_icon: account_balance_wallet
       empty_state_title: "No direct debits set up"
-      empty_state_message: "Authorise merchants to collect payments automatically on agreed dates"
+      empty_state_message: "Authorise merchants like Netflix or your utility providers to collect payments automatically on agreed dates"
+
+  cancel_confirm:
+    layout:
+      visible_components:
+        - title_count_row
+        - direct_debits_title
+        - active_count_chip
+        - direct_debit_netflix
+        - netflix_header_row
+        - netflix_payee
+        - netflix_active_badge
+        - netflix_amount_row
+        - netflix_amount
+        - netflix_next_date
+        - netflix_mandate_ref
+        - direct_debit_spotify
+        - spotify_header_row
+        - spotify_payee
+        - spotify_active_badge
+        - spotify_amount_row
+        - spotify_amount
+        - spotify_next_date
+        - spotify_mandate_ref
+        - direct_debit_gym
+        - gym_header_row
+        - gym_payee
+        - gym_cancelled_badge
+        - gym_amount
+        - gym_mandate_ref
+        - setup_direct_debit_fab
+        - cancel_confirm_dialog
+        - cancel_dialog_title
+        - cancel_dialog_body
+        - cancel_confirm_cta
+        - cancel_dismiss_cta
+      overlay: true
+      overlay_alpha: 0.5
+
   error:
     layout:
       visible_components:
@@ -422,6 +840,12 @@ state_model:
     - name: uiState
       type: DirectDebitsUiState
       default: Loading
+    - name: selectedMandate
+      type: "DirectDebit?"
+      default: "null"
+    - name: showCancelDialog
+      type: Boolean
+      default: false
     - name: error
       type: "UiError?"
       default: "null"
@@ -429,6 +853,9 @@ state_model:
     - field: global
       code: LOAD_FAILED
       message: "Unable to load direct debits. Please try again."
+    - field: cancel
+      code: CANCEL_FAILED
+      message: "Could not cancel mandate. Please try again."
     - field: create
       code: CREATE_FAILED
       message: "Could not set up direct debit. Please try again."
@@ -436,17 +863,38 @@ state_model:
     - DirectDebitsLoaded
     - ViewDirectDebitClicked
     - SetUpDirectDebitClicked
+    - CancelDirectDebitClicked
+    - CancelConfirmed
+    - CancelDismissed
     - RefreshTriggered
     - RetryLoad
   actions:
     - view_direct_debit
     - setup_direct_debit
+    - confirm_cancel_direct_debit
+    - dismiss_cancel_dialog
     - open_direct_debit_options
   di:
     - DirectDebitRepository
     - AccountRepository
 
 api:
+  - id: obp_get_direct_debits
+    endpoint: "GET /obp/v4.0.0/banks/{bankId}/accounts/{accountId}/owner/direct-debits"
+    tag: Direct-Debit
+    description: "Retrieve all direct debit mandates for the account"
+    response:
+      fields:
+        - name: direct_debits
+          type: "List<DirectDebit>"
+    errors:
+      - code: 401
+        message: "USER_NOT_LOGGED_IN"
+      - code: 403
+        message: "INSUFFICIENT_AUTHORISATION"
+      - code: 404
+        message: "BANK_ACCOUNT_NOT_FOUND"
+
   - id: obp_create_direct_debit
     endpoint: "POST /obp/v4.0.0/banks/{bankId}/accounts/{accountId}/owner/direct-debit"
     tag: Direct-Debit
@@ -501,11 +949,29 @@ dependencies:
 
 navigation:
   - action: view_direct_debit
-    target: ""
-    description: "Open direct debit detail sheet"
+    target: direct-debit-detail
+    description: "Open direct debit detail sheet for the selected mandate"
   - action: setup_direct_debit
     target: ""
-    description: "Open new direct debit setup sheet"
+    description: "Open new direct debit setup bottom sheet"
+  - action: confirm_cancel_direct_debit
+    target: direct-debits
+    description: "Cancel selected mandate via OBP API then reload mandate list"
+  - action: dismiss_cancel_dialog
+    target: ""
+    description: "Close cancel confirmation dialog without side effects"
   - action: navigate_back
     target: accounts
     description: "Return to accounts screen"
+  - action: nav_home
+    target: home
+    description: "Navigate to home dashboard"
+  - action: nav_standing_orders
+    target: standing-orders
+    description: "Navigate to standing orders screen"
+  - action: nav_cards
+    target: cards
+    description: "Navigate to cards management screen"
+  - action: nav_account_detail
+    target: account-detail
+    description: "Navigate to account detail screen"

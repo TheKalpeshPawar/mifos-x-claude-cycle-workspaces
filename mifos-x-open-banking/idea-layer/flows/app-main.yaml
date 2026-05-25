@@ -1,97 +1,68 @@
-# flows/app-main.yaml — Main app navigation flow (empty-slate scaffold)
-# Generated 2026-05-22 post-template-sync.
-# Reflects ONLY home / profile / settings — template features intentionally excluded.
+# flows/app-main.yaml — Entry point / persona router
+# Updated 2026-05-25 by /idea sync STEP 4f
+# Routes to consumer-banking.yaml or field-officer.yaml based on login role
 
-schema_version: 1
+schema_version: "1.0"
+id: app-main
+name: "App Entry & Persona Router"
+description: "Bootstrap flow — Splash → Login → routes to Consumer Home or Field Officer Dashboard based on user role"
+created_at: "2026-05-22"
+updated_at: "2026-05-25"
+status: active
 
-metadata:
-  name: app-main
-  description: "Main app navigation flow — scaffolding only (home/profile/settings). Real feature flows added once product scope is defined."
-  created_at: 2026-05-22
-  status: draft
+entry_screen: splash
+screens:
+  - splash
+  - login
+  - profile
+  - settings
 
-# Entry point — app launch
-entry_point: splash
+connections:
+  - from: splash
+    to: login
+    type: replace
+    label: "unauthenticated"
+  - from: splash
+    to: home
+    type: replace
+    label: "consumer session restored"
+  - from: splash
+    to: fo-dashboard
+    type: replace
+    label: "field officer session restored"
+  - from: login
+    to: home
+    type: replace
+    label: "consumer login success"
+  - from: login
+    to: fo-dashboard
+    type: replace
+    label: "field officer login success"
+  - from: profile
+    to: login
+    type: replace
+    label: "logout"
 
-# Node definitions
-nodes:
-  splash:
-    label: Splash
-    feature_module: cmp-shared
-    description: Bootstrap — load theme + language prefs, route to Home
-    transitions:
-      - to: home
-        trigger: bootstrap_complete
+sub_flows:
+  - id: consumer-banking
+    file: "flows/consumer-banking.yaml"
+    persona: consumer
+    entry: home
+  - id: field-officer
+    file: "flows/field-officer.yaml"
+    persona: fieldOfficer
+    entry: fo-dashboard
 
-  home:
-    label: Home
-    feature_module: feature:home
-    description: Entry hub. Specific destinations TBD once product scope is defined.
-    transitions:
-      - to: profile
-        trigger: tap_profile
-      - to: settings
-        trigger: tap_settings
-
-  profile:
-    label: User Profile
-    feature_module: feature:profile
-    description: User profile placeholder. Awaits auth + user-data integration.
-    transitions:
-      - to: home
-        trigger: tap_back_or_home
-
-  settings:
-    label: Settings
-    feature_module: feature:settings
-    description: App configuration — theme, language, notification preferences (placeholder).
-    transitions:
-      - to: settings_theme_dialog
-        trigger: tap_theme_card
-      - to: settings_language_dialog
-        trigger: tap_language_card
-      - to: settings_notification_screen
-        trigger: tap_notification_card
-      - to: home
-        trigger: tap_back
-
-  settings_theme_dialog:
-    label: SettingsDialog (Theme picker)
-    feature_module: feature:settings
-    description: Modal — light/dark/system + brand color
-    transitions:
-      - to: settings
-        trigger: dismiss
-
-  settings_language_dialog:
-    label: LanguageDialog (Locale picker)
-    feature_module: feature:settings
-    description: Modal — pick from platform-supported locales
-    transitions:
-      - to: settings
-        trigger: dismiss
-
-  settings_notification_screen:
-    label: Notification (stub)
-    feature_module: feature:settings
-    description: Placeholder for notification preferences UI
-    transitions:
-      - to: settings
-        trigger: tap_back
-
-# Bottom navigation structure (scaffolding — refine when feature scope set)
-bottom_navigation:
-  - label: Home
-    target: home
-    icon: home
-  - label: Profile
-    target: profile
-    icon: account_circle
-  - label: Settings
-    target: settings
-    icon: settings
-
-notes:
-  - "Empty-slate scaffold — only home/profile/settings are real."
-  - "Template features (crypto/currency-rates/emi-calculator) are NOT represented here — they will be removed from source."
-  - "Update this flow once /idea-plan defines actual product features."
+bottom_nav:
+  consumer:
+    - { label: Home, target: home, icon: home }
+    - { label: Accounts, target: accounts, icon: account_balance }
+    - { label: Pay, target: send-money, icon: send }
+    - { label: Cards, target: cards, icon: credit_card }
+    - { label: More, target: more, icon: more_horiz }
+  fieldOfficer:
+    - { label: Dashboard, target: fo-dashboard, icon: dashboard }
+    - { label: Customers, target: customer-search, icon: people }
+    - { label: Applications, target: account-applications, icon: assignment }
+    - { label: Meetings, target: meetings, icon: calendar_today }
+    - { label: More, target: more, icon: more_horiz }

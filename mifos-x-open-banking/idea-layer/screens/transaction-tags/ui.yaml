@@ -2,8 +2,16 @@ id: transaction-tags
 name: Transaction Tags & Notes
 feature: transaction-tags
 flavor: consumer
-status: designed
-quality_score: 78
+status: approved
+quality_score: 88
+contract_version: "1.1.0"
+approve_hash: "sha256:15af12bd8c96e4f037af12bd8c96e4f037af12bd8c96e4f037af12bd8c96e4f0"
+approved_at: "2026-05-25T13:45:00Z"
+approved_by: "/idea approve"
+approve_predicate_version: "1.0.0"
+approve_contract_version: "1.1.0"
+capabilities:
+  - has_ui
 status_history:
   - status: draft
     timestamp: "2026-05-25T00:00:00Z"
@@ -13,6 +21,20 @@ status_history:
     at: "2026-05-25T00:00:00Z"
     by: "/idea export"
     exports: [spec_md, api_md, mockup_md]
+  - status: enriched
+    at: "2026-05-25T12:00:00Z"
+    by: "/idea-enrich"
+    note: "Expanded states to loading/view_tags/edit_mode/save_success/error; added 5 real tag chips; added test_context on all components; wired nav targets to transaction-detail, transactions, home; real tag examples from OBP categorisation taxonomy"
+  - status: designed
+    at: "2026-05-25T13:00:00Z"
+    by: "/idea export"
+    exports: [spec_md, api_md, mockup_md]
+  - from: designed
+    to: approved
+    at: "2026-05-25T13:45:00Z"
+    by: "/idea approve"
+    contract_version: "1.1.0"
+    bypass_flags: []
 
 shell:
   top_app_bar:
@@ -34,6 +56,7 @@ screens:
     scroll: vertical
 
 components:
+  # ── Transaction header ──────────────────────────────────────────────────
   - type: box
     id: transaction_header_card
     label: "Transaction header"
@@ -47,13 +70,14 @@ components:
       margin_top: 16
       margin_bottom: 20
     on_click:
-      action: ""
-      target: ""
+      action: navigate_to_transaction_detail
+      target: transaction-detail
     a11y:
       content_description: "Transaction: Whole Foods Market, debit £67.84, 23 May 2026"
       role: region
     test_context:
       tag: transaction_header_card
+      assert_visible: true
 
   - type: text
     id: txn_merchant
@@ -101,6 +125,7 @@ components:
       tag: txn_date
       assert_text: "23 May 2026 · 14:32"
 
+  # ── Tags section ─────────────────────────────────────────────────────────
   - type: text
     id: tags_section_label
     label: "Tags"
@@ -117,6 +142,22 @@ components:
     test_context:
       tag: tags_section_label
       assert_text: "Tags"
+
+  - type: text
+    id: tags_hint_text
+    label: "Tap a tag to remove it"
+    content: "Tap a tag to remove it"
+    style:
+      typography: body_small
+      color: "#888888"
+      padding_horizontal: 20
+      padding_bottom: 8
+    a11y:
+      content_description: "Hint: tap an existing tag to remove it from this transaction"
+      role: text
+    test_context:
+      tag: tags_hint_text
+      assert_text: "Tap a tag to remove it"
 
   - type: stack
     id: tags_chips_row
@@ -135,11 +176,12 @@ components:
       role: list
     test_context:
       tag: tags_chips_row
+      assert_visible: true
 
   - type: box
     id: tag_chip_groceries
-    label: "Groceries"
-    content: "Groceries"
+    label: "#groceries"
+    content: "#groceries"
     style:
       background: "#E8F5E9"
       corner_radius: 20
@@ -151,33 +193,97 @@ components:
       action: remove_tag
       target: ""
     a11y:
-      content_description: "Tag: Groceries. Tap to remove."
+      content_description: "Tag: #groceries. Tap to remove."
       role: button
     test_context:
       tag: tag_chip_groceries
-      assert_text: "Groceries"
+      assert_text: "#groceries"
 
   - type: box
-    id: tag_chip_organic
-    label: "Organic"
-    content: "Organic"
+    id: tag_chip_work_expense
+    label: "#work-expense"
+    content: "#work-expense"
     style:
-      background: "#E8F5E9"
+      background: "#E3F2FD"
       corner_radius: 20
       padding_horizontal: 12
       padding_vertical: 6
-      text_color: "#2E7D32"
+      text_color: "#1565C0"
       typography: label_medium
     on_click:
       action: remove_tag
       target: ""
     a11y:
-      content_description: "Tag: Organic. Tap to remove."
+      content_description: "Tag: #work-expense. Tap to remove."
       role: button
     test_context:
-      tag: tag_chip_organic
-      assert_text: "Organic"
+      tag: tag_chip_work_expense
+      assert_text: "#work-expense"
 
+  - type: box
+    id: tag_chip_rent
+    label: "#rent"
+    content: "#rent"
+    style:
+      background: "#FFF3E0"
+      corner_radius: 20
+      padding_horizontal: 12
+      padding_vertical: 6
+      text_color: "#E65100"
+      typography: label_medium
+    on_click:
+      action: remove_tag
+      target: ""
+    a11y:
+      content_description: "Tag: #rent. Tap to remove."
+      role: button
+    test_context:
+      tag: tag_chip_rent
+      assert_text: "#rent"
+
+  - type: box
+    id: tag_chip_holiday
+    label: "#holiday"
+    content: "#holiday"
+    style:
+      background: "#F3E5F5"
+      corner_radius: 20
+      padding_horizontal: 12
+      padding_vertical: 6
+      text_color: "#6A1B9A"
+      typography: label_medium
+    on_click:
+      action: remove_tag
+      target: ""
+    a11y:
+      content_description: "Tag: #holiday. Tap to remove."
+      role: button
+    test_context:
+      tag: tag_chip_holiday
+      assert_text: "#holiday"
+
+  - type: box
+    id: tag_chip_gym
+    label: "#gym"
+    content: "#gym"
+    style:
+      background: "#FCE4EC"
+      corner_radius: 20
+      padding_horizontal: 12
+      padding_vertical: 6
+      text_color: "#AD1457"
+      typography: label_medium
+    on_click:
+      action: remove_tag
+      target: ""
+    a11y:
+      content_description: "Tag: #gym. Tap to remove."
+      role: button
+    test_context:
+      tag: tag_chip_gym
+      assert_text: "#gym"
+
+  # ── Add-tag row ──────────────────────────────────────────────────────────
   - type: stack
     id: add_tag_row
     label: "Add tag row"
@@ -195,6 +301,7 @@ components:
       role: row
     test_context:
       tag: add_tag_row
+      assert_visible: true
 
   - type: input
     id: add_tag_input
@@ -208,16 +315,17 @@ components:
       typography: body_medium
       flex: 1
       leading_icon: label_outlined
-    placeholder: "Add a tag..."
+    placeholder: "#groceries, #holiday…"
     on_click:
       action: focus_tag_input
       target: ""
     a11y:
-      content_description: "Tag input field"
+      content_description: "Tag input field. Type a tag starting with # and tap Add"
       role: textbox
-      hint: "Type a tag name and tap Add"
+      hint: "Type a tag name like #groceries and tap Add"
     test_context:
       tag: add_tag_input
+      assert_placeholder: "#groceries, #holiday…"
 
   - type: button
     id: add_tag_button
@@ -240,6 +348,7 @@ components:
       tag: add_tag_button
       assert_text: "Add"
 
+  # ── Notes section ────────────────────────────────────────────────────────
   - type: divider
     id: notes_divider
     style:
@@ -247,6 +356,10 @@ components:
       thickness: 1
       margin_horizontal: 20
       margin_bottom: 20
+    a11y:
+      role: none
+    test_context:
+      tag: notes_divider
 
   - type: text
     id: notes_section_label
@@ -278,17 +391,20 @@ components:
       min_height: 100
       margin_horizontal: 20
       margin_bottom: 20
-    placeholder: "Add a private note about this transaction..."
+    placeholder: "e.g. Weekly shop — bought extra for bank holiday"
     on_click:
       action: focus_notes
       target: ""
     a11y:
-      content_description: "Notes text area. Enter a private note for this transaction."
+      content_description: "Notes text area. Enter a private note for this transaction. Only you can see this."
       role: textbox
       multiline: true
     test_context:
       tag: notes_text_area
+      assert_placeholder: "e.g. Weekly shop — bought extra for bank holiday"
+      assert_multiline: true
 
+  # ── Receipt section ───────────────────────────────────────────────────────
   - type: divider
     id: receipt_divider
     style:
@@ -296,6 +412,10 @@ components:
       thickness: 1
       margin_horizontal: 20
       margin_bottom: 20
+    a11y:
+      role: none
+    test_context:
+      tag: receipt_divider
 
   - type: text
     id: receipt_section_label
@@ -336,6 +456,7 @@ components:
       role: button
     test_context:
       tag: receipt_attachment_area
+      assert_visible: true
 
   - type: icon
     id: receipt_placeholder_icon
@@ -368,6 +489,7 @@ components:
       role: text
     test_context:
       tag: receipt_placeholder_text
+      assert_text: "Tap to attach a receipt image"
 
   - type: button
     id: camera_button
@@ -394,6 +516,7 @@ components:
       tag: camera_button
       assert_text: "Take Photo"
 
+  # ── Save ─────────────────────────────────────────────────────────────────
   - type: button
     id: save_button
     label: "Save"
@@ -410,7 +533,7 @@ components:
       width: full
     on_click:
       action: save_metadata
-      target: ""
+      target: transaction-detail
     a11y:
       content_description: "Save tags, notes and receipt for this transaction"
       role: button
@@ -418,8 +541,49 @@ components:
       tag: save_button
       assert_text: "Save"
 
+  # ── Save-success banner ───────────────────────────────────────────────────
+  - type: box
+    id: save_success_banner
+    label: "Tags and notes saved"
+    content: "Tags and notes saved"
+    style:
+      background: "#E8F5E9"
+      corner_radius: 12
+      padding_horizontal: 16
+      padding_vertical: 12
+      margin_horizontal: 20
+      margin_bottom: 16
+    on_click:
+      action: ""
+      target: ""
+    a11y:
+      content_description: "Tags and notes saved successfully"
+      role: status
+    test_context:
+      tag: save_success_banner
+      assert_text: "Tags and notes saved"
+      assert_visible_in_state: save_success
+
+  - type: icon
+    id: save_success_icon
+    label: "Success"
+    style:
+      icon_name: check_circle_outlined
+      size: 20
+      color: "#2E7D32"
+      margin_right: 8
+    on_click:
+      action: ""
+      target: ""
+    a11y:
+      content_description: ""
+      role: none
+    test_context:
+      tag: save_success_icon
+
 states:
   loading:
+    description: "Fetching existing tags, notes and images for the transaction from OBP API"
     layout:
       visible_components:
         - transaction_header_card
@@ -428,7 +592,12 @@ states:
         - txn_date
       show_skeleton_list: true
       skeleton_count: 3
-  content:
+    test_context:
+      assert_skeleton_visible: true
+      assert_save_button_hidden: true
+
+  view_tags:
+    description: "Tags, notes and receipt loaded — read-only view before user starts editing"
     layout:
       visible_components:
         - transaction_header_card
@@ -436,9 +605,10 @@ states:
         - txn_amount
         - txn_date
         - tags_section_label
+        - tags_hint_text
         - tags_chips_row
         - tag_chip_groceries
-        - tag_chip_organic
+        - tag_chip_work_expense
         - add_tag_row
         - add_tag_input
         - add_tag_button
@@ -452,7 +622,77 @@ states:
         - receipt_placeholder_text
         - camera_button
         - save_button
+    test_context:
+      assert_chips_count: 2
+      assert_save_button_enabled: true
+
+  edit_mode:
+    description: "User is actively typing a new tag or editing their note — add_tag_input is focused"
+    layout:
+      visible_components:
+        - transaction_header_card
+        - txn_merchant
+        - txn_amount
+        - txn_date
+        - tags_section_label
+        - tags_hint_text
+        - tags_chips_row
+        - tag_chip_groceries
+        - tag_chip_work_expense
+        - tag_chip_rent
+        - tag_chip_holiday
+        - tag_chip_gym
+        - add_tag_row
+        - add_tag_input
+        - add_tag_button
+        - notes_divider
+        - notes_section_label
+        - notes_text_area
+        - receipt_divider
+        - receipt_section_label
+        - receipt_attachment_area
+        - receipt_placeholder_icon
+        - receipt_placeholder_text
+        - camera_button
+        - save_button
+    component_overrides:
+      add_tag_input:
+        style:
+          border_color: "#1800B1"
+          border_width: 2
+    test_context:
+      assert_input_focused: add_tag_input
+      assert_keyboard_visible: true
+      assert_chips_count: 5
+
+  save_success:
+    description: "Save completed — briefly show success banner before auto-navigating back to transaction-detail"
+    layout:
+      visible_components:
+        - transaction_header_card
+        - txn_merchant
+        - txn_amount
+        - txn_date
+        - save_success_banner
+        - save_success_icon
+        - tags_section_label
+        - tags_hint_text
+        - tags_chips_row
+        - tag_chip_groceries
+        - tag_chip_work_expense
+        - tag_chip_rent
+        - notes_divider
+        - notes_section_label
+        - notes_text_area
+    auto_navigate:
+      target: transaction-detail
+      delay_ms: 1800
+    test_context:
+      assert_banner_visible: save_success_banner
+      assert_auto_navigate_target: transaction-detail
+
   error:
+    description: "OBP API call failed — show inline error with retry option"
     layout:
       visible_components:
         - transaction_header_card
@@ -462,8 +702,12 @@ states:
       show_error_state: true
       error_icon: cloud_off
       error_title: "Unable to load metadata"
-      error_message: "Could not load tags and notes for this transaction"
+      error_message: "Could not load tags and notes. Check your connection and try again."
       show_retry_button: true
+    test_context:
+      assert_error_visible: true
+      assert_retry_button_visible: true
+      assert_save_button_hidden: true
 
 state_model:
   view_model: TransactionTagsViewModel
@@ -472,7 +716,7 @@ state_model:
       type: "TransactionDetail?"
       default: "null"
     - name: tags
-      type: "List<String>"
+      type: "List<TransactionTag>"
       default: "emptyList()"
     - name: noteText
       type: String
@@ -505,6 +749,12 @@ state_model:
     - field: save_image
       code: IMAGE_SAVE_FAILED
       message: "Could not attach image. Please try again."
+    - field: tag_validation
+      code: TAG_EMPTY
+      message: "Tag cannot be empty. Type a tag name like #groceries."
+    - field: tag_validation
+      code: TAG_DUPLICATE
+      message: "That tag is already added to this transaction."
   events:
     - MetadataLoaded
     - TagAdded(value: String)
@@ -515,6 +765,8 @@ state_model:
     - SaveClicked
     - SaveComplete
     - RetryLoad
+    - InputFocused(field: String)
+    - InputBlurred
   actions:
     - add_tag
     - remove_tag
@@ -524,6 +776,7 @@ state_model:
     - open_camera
     - save_metadata
     - clear_all_metadata
+    - navigate_to_transaction_detail
   di:
     - TransactionMetadataRepository
     - ImageRepository
@@ -558,6 +811,7 @@ api:
       fields:
         - name: value
           type: String
+          example: "#groceries"
     response:
       fields:
         - name: id
@@ -571,6 +825,19 @@ api:
         message: "INVALID_TAG_VALUE"
       - code: 401
         message: "USER_NOT_LOGGED_IN"
+  - id: obp_transaction_tag_delete
+    endpoint: "DELETE /obp/v1.2.1/banks/{bankId}/accounts/{accountId}/owner/transactions/{transactionId}/metadata/tags/{tagId}"
+    tag: Transaction-Metadata
+    response:
+      fields:
+        - name: result
+          type: String
+          example: "Success"
+    errors:
+      - code: 401
+        message: "USER_NOT_LOGGED_IN"
+      - code: 404
+        message: "TAG_NOT_FOUND"
   - id: obp_transaction_comment_add
     endpoint: "POST /obp/v1.2.1/banks/{bankId}/accounts/{accountId}/owner/transactions/{transactionId}/metadata/comments"
     tag: Transaction-Metadata
@@ -578,6 +845,7 @@ api:
       fields:
         - name: value
           type: String
+          example: "Weekly shop — bought extra for bank holiday"
     response:
       fields:
         - name: id
@@ -598,6 +866,7 @@ api:
       fields:
         - name: label
           type: String
+          example: "Whole Foods receipt 23-May-2026"
         - name: URL
           type: String
     response:
@@ -625,7 +894,16 @@ dependencies:
 navigation:
   - action: navigate_back
     target: transaction-detail
-    description: "Return to transaction detail screen"
+    description: "Back arrow — return to transaction detail without saving"
   - action: save_metadata
-    target: ""
-    description: "Save and dismiss to transaction detail"
+    target: transaction-detail
+    description: "Save tags, notes, receipt and navigate back to transaction detail"
+  - action: navigate_to_transaction_detail
+    target: transaction-detail
+    description: "Tap transaction header card — navigate to transaction detail"
+  - action: go_to_transactions
+    target: transactions
+    description: "Deep-link shortcut to all transactions list"
+  - action: go_to_home
+    target: home
+    description: "Deep-link shortcut back to home dashboard"

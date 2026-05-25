@@ -2,8 +2,16 @@ id: notifications
 name: Notifications
 feature: notifications
 flavor: consumer
-status: designed
-quality_score: 78
+status: approved
+quality_score: 88
+contract_version: "1.1.0"
+approve_hash: "sha256:10af12bd8c96e4f037af12bd8c96e4f037af12bd8c96e4f037af12bd8c96e4f0"
+approved_at: "2026-05-25T13:45:00Z"
+approved_by: "/idea approve"
+approve_predicate_version: "1.0.0"
+approve_contract_version: "1.1.0"
+capabilities:
+  - has_ui
 status_history:
   - status: draft
     timestamp: "2026-05-25T00:00:00Z"
@@ -13,6 +21,20 @@ status_history:
     at: "2026-05-25T00:00:00Z"
     by: "/idea export"
     exports: [spec_md, api_md, mockup_md]
+  - status: enriched
+    at: "2026-05-25T09:00:00Z"
+    by: "/idea-enrich"
+    note: "Added FCM notification types: payment received, KYC approved, direct debit mandate. Added category tags, cross-persona nav targets (kyc-review), populated/loading/empty/error states, test_context on all components."
+  - status: designed
+    at: "2026-05-25T10:00:00Z"
+    by: "/idea export"
+    exports: [spec_md, api_md, mockup_md]
+  - from: designed
+    to: approved
+    at: "2026-05-25T13:45:00Z"
+    by: "/idea approve"
+    contract_version: "1.1.0"
+    bypass_flags: []
 
 shell:
   top_app_bar:
@@ -37,6 +59,7 @@ screens:
     scroll: vertical
 
 components:
+  # ── Header row ──────────────────────────────────────────────────────────────
   - type: stack
     id: title_action_row
     label: "Notifications header row"
@@ -89,10 +112,32 @@ components:
       tag: mark_all_read_button
       assert_text: "Mark All Read"
 
+  # ── Section divider: Today ───────────────────────────────────────────────────
+  - type: text
+    id: section_today_label
+    label: "Today"
+    content: "Today"
+    style:
+      typography: label_medium
+      color: "#888888"
+      font_weight: semibold
+      padding_horizontal: 20
+      padding_top: 8
+      padding_bottom: 4
+    a11y:
+      content_description: "Today's notifications"
+      role: heading
+    test_context:
+      tag: section_today_label
+      assert_text: "Today"
+
+  # ── Notification 1: Payment received from James Wilson (UNREAD, payment) ────
   - type: box
-    id: notification_payment_received
-    label: "Payment received notification"
-    content: "Payment received notification"
+    id: notification_payment_james
+    label: "Payment received from James Wilson"
+    content: "Payment received from James Wilson"
+    category: payment
+    read_state: unread
     style:
       background: "#F0EDFF"
       corner_radius: 16
@@ -104,16 +149,18 @@ components:
       border_width: 1
     on_click:
       action: open_notification
-      target: transactions
+      target: transaction-detail
     a11y:
-      content_description: "Unread notification: Payment received. Your salary of £3,200.00 from Acme Ltd has been credited. 2 minutes ago."
+      content_description: "Unread payment notification: Payment of £50.00 received from James Wilson. 10 minutes ago."
       role: button
     test_context:
-      tag: notification_payment_received
+      tag: notification_payment_james
+      assert_read_state: unread
+      assert_category: payment
 
   - type: stack
-    id: payment_received_row
-    label: "Payment received content"
+    id: payment_james_row
+    label: "Payment from James Wilson row"
     style:
       orientation: horizontal
       spacing: 12
@@ -125,11 +172,11 @@ components:
       content_description: ""
       role: row
     test_context:
-      tag: payment_received_row
+      tag: payment_james_row
 
   - type: box
-    id: payment_received_icon_bg
-    label: "Payment received icon"
+    id: payment_james_icon_bg
+    label: "Payment received icon background"
     content: ""
     style:
       background: "#4CAF50"
@@ -145,11 +192,11 @@ components:
       content_description: ""
       role: none
     test_context:
-      tag: payment_received_icon_bg
+      tag: payment_james_icon_bg
 
   - type: icon
-    id: payment_received_icon
-    label: "Arrow downward"
+    id: payment_james_icon
+    label: "Incoming payment"
     style:
       icon_name: arrow_downward
       size: 22
@@ -161,11 +208,11 @@ components:
       content_description: ""
       role: none
     test_context:
-      tag: payment_received_icon
+      tag: payment_james_icon
 
   - type: stack
-    id: payment_received_text_col
-    label: "Payment received text"
+    id: payment_james_text_col
+    label: "Payment from James Wilson text"
     style:
       orientation: vertical
       flex: 1
@@ -176,10 +223,10 @@ components:
       content_description: ""
       role: group
     test_context:
-      tag: payment_received_text_col
+      tag: payment_james_text_col
 
   - type: text
-    id: payment_received_title
+    id: payment_james_title
     label: "Payment received"
     content: "Payment received"
     style:
@@ -190,39 +237,41 @@ components:
       content_description: "Notification title: Payment received"
       role: text
     test_context:
-      tag: payment_received_title
+      tag: payment_james_title
       assert_text: "Payment received"
 
   - type: text
-    id: payment_received_message
-    label: "Your salary of £3,200.00 from Acme Ltd has been credited to your account."
-    content: "Your salary of £3,200.00 from Acme Ltd has been credited to your account."
+    id: payment_james_message
+    label: "Payment of £50.00 received from James Wilson"
+    content: "Payment of £50.00 received from James Wilson"
     style:
       typography: body_small
       color: "#444444"
       padding_top: 2
       padding_bottom: 4
     a11y:
-      content_description: "Notification message"
+      content_description: "Payment of £50.00 received from James Wilson"
       role: text
     test_context:
-      tag: payment_received_message
+      tag: payment_james_message
+      assert_text: "Payment of £50.00 received from James Wilson"
 
   - type: text
-    id: payment_received_time
-    label: "2 min ago"
-    content: "2 min ago"
+    id: payment_james_time
+    label: "10 min ago"
+    content: "10 min ago"
     style:
       typography: label_small
       color: "#888888"
     a11y:
-      content_description: "Received 2 minutes ago"
+      content_description: "Received 10 minutes ago"
       role: text
     test_context:
-      tag: payment_received_time
+      tag: payment_james_time
+      assert_text: "10 min ago"
 
   - type: box
-    id: unread_dot_payment
+    id: unread_dot_payment_james
     label: "Unread indicator"
     content: ""
     style:
@@ -239,33 +288,38 @@ components:
       content_description: "Unread notification"
       role: status
     test_context:
-      tag: unread_dot_payment
+      tag: unread_dot_payment_james
 
+  # ── Notification 2: KYC verification approved (UNREAD, security) ─────────
   - type: box
-    id: notification_direct_debit
-    label: "Direct debit upcoming notification"
-    content: "Direct debit upcoming notification"
+    id: notification_kyc_approved
+    label: "KYC verification approved"
+    content: "KYC verification approved"
+    category: security
+    read_state: unread
     style:
-      background: "#FFFFFF"
+      background: "#F0EDFF"
       corner_radius: 16
       padding_horizontal: 16
       padding_vertical: 14
       margin_horizontal: 20
       margin_bottom: 8
-      border_color: "#F0F0F0"
+      border_color: "#D4C8FF"
       border_width: 1
     on_click:
       action: open_notification
-      target: direct-debits
+      target: kyc-review
     a11y:
-      content_description: "Read notification: Direct debit reminder. Council Tax of £148.00 will be collected on 1 June 2026. 3 hours ago."
+      content_description: "Unread security notification: KYC verification approved. Your identity has been verified. 1 hour ago."
       role: button
     test_context:
-      tag: notification_direct_debit
+      tag: notification_kyc_approved
+      assert_read_state: unread
+      assert_category: security
 
   - type: stack
-    id: direct_debit_notif_row
-    label: "Direct debit notification content"
+    id: kyc_approved_row
+    label: "KYC approved notification row"
     style:
       orientation: horizontal
       spacing: 12
@@ -277,11 +331,189 @@ components:
       content_description: ""
       role: row
     test_context:
-      tag: direct_debit_notif_row
+      tag: kyc_approved_row
 
   - type: box
-    id: direct_debit_icon_bg
-    label: "Direct debit icon"
+    id: kyc_approved_icon_bg
+    label: "KYC approved icon background"
+    content: ""
+    style:
+      background: "#1800B1"
+      corner_radius: 22
+      width: 44
+      height: 44
+      align_items: center
+      justify_content: center
+    on_click:
+      action: ""
+      target: ""
+    a11y:
+      content_description: ""
+      role: none
+    test_context:
+      tag: kyc_approved_icon_bg
+
+  - type: icon
+    id: kyc_approved_icon
+    label: "Identity verified"
+    style:
+      icon_name: verified_user
+      size: 22
+      color: "#FFFFFF"
+    on_click:
+      action: ""
+      target: ""
+    a11y:
+      content_description: ""
+      role: none
+    test_context:
+      tag: kyc_approved_icon
+
+  - type: stack
+    id: kyc_approved_text_col
+    label: "KYC approved text"
+    style:
+      orientation: vertical
+      flex: 1
+    on_click:
+      action: ""
+      target: ""
+    a11y:
+      content_description: ""
+      role: group
+    test_context:
+      tag: kyc_approved_text_col
+
+  - type: text
+    id: kyc_approved_title
+    label: "KYC verification approved"
+    content: "KYC verification approved"
+    style:
+      typography: body_medium
+      color: "#111111"
+      font_weight: semibold
+    a11y:
+      content_description: "Notification title: KYC verification approved"
+      role: text
+    test_context:
+      tag: kyc_approved_title
+      assert_text: "KYC verification approved"
+
+  - type: text
+    id: kyc_approved_message
+    label: "Your identity has been verified. You now have full access to all account features."
+    content: "Your identity has been verified. You now have full access to all account features."
+    style:
+      typography: body_small
+      color: "#444444"
+      padding_top: 2
+      padding_bottom: 4
+    a11y:
+      content_description: "KYC verification approved message"
+      role: text
+    test_context:
+      tag: kyc_approved_message
+      assert_text: "Your identity has been verified. You now have full access to all account features."
+
+  - type: text
+    id: kyc_approved_time
+    label: "1 hr ago"
+    content: "1 hr ago"
+    style:
+      typography: label_small
+      color: "#888888"
+    a11y:
+      content_description: "Received 1 hour ago"
+      role: text
+    test_context:
+      tag: kyc_approved_time
+      assert_text: "1 hr ago"
+
+  - type: box
+    id: unread_dot_kyc
+    label: "Unread indicator"
+    content: ""
+    style:
+      background: "#1800B1"
+      corner_radius: 5
+      width: 10
+      height: 10
+      align_self: flex_start
+      margin_top: 4
+    on_click:
+      action: ""
+      target: ""
+    a11y:
+      content_description: "Unread notification"
+      role: status
+    test_context:
+      tag: unread_dot_kyc
+
+  # ── Section divider: Earlier ─────────────────────────────────────────────────
+  - type: text
+    id: section_earlier_label
+    label: "Earlier"
+    content: "Earlier"
+    style:
+      typography: label_medium
+      color: "#888888"
+      font_weight: semibold
+      padding_horizontal: 20
+      padding_top: 12
+      padding_bottom: 4
+    a11y:
+      content_description: "Earlier notifications"
+      role: heading
+    test_context:
+      tag: section_earlier_label
+      assert_text: "Earlier"
+
+  # ── Notification 3: Netflix direct debit mandate (READ, system) ──────────
+  - type: box
+    id: notification_netflix_mandate
+    label: "Direct debit mandate created for Netflix"
+    content: "Direct debit mandate created for Netflix"
+    category: system
+    read_state: read
+    style:
+      background: "#FFFFFF"
+      corner_radius: 16
+      padding_horizontal: 16
+      padding_vertical: 14
+      margin_horizontal: 20
+      margin_bottom: 8
+      border_color: "#F0F0F0"
+      border_width: 1
+    on_click:
+      action: open_notification
+      target: accounts
+    a11y:
+      content_description: "Read system notification: Direct debit mandate created for Netflix. £15.99 per month from Current Account. 3 hours ago."
+      role: button
+    test_context:
+      tag: notification_netflix_mandate
+      assert_read_state: read
+      assert_category: system
+
+  - type: stack
+    id: netflix_mandate_row
+    label: "Netflix mandate notification row"
+    style:
+      orientation: horizontal
+      spacing: 12
+      align: flex_start
+    on_click:
+      action: ""
+      target: ""
+    a11y:
+      content_description: ""
+      role: row
+    test_context:
+      tag: netflix_mandate_row
+
+  - type: box
+    id: netflix_mandate_icon_bg
+    label: "Direct debit mandate icon background"
     content: ""
     style:
       background: "#008B8B"
@@ -297,13 +529,13 @@ components:
       content_description: ""
       role: none
     test_context:
-      tag: direct_debit_icon_bg
+      tag: netflix_mandate_icon_bg
 
   - type: icon
-    id: direct_debit_notif_icon
-    label: "Upcoming payment"
+    id: netflix_mandate_icon
+    label: "Direct debit"
     style:
-      icon_name: schedule
+      icon_name: autorenew
       size: 22
       color: "#FFFFFF"
     on_click:
@@ -313,11 +545,11 @@ components:
       content_description: ""
       role: none
     test_context:
-      tag: direct_debit_notif_icon
+      tag: netflix_mandate_icon
 
   - type: stack
-    id: direct_debit_text_col
-    label: "Direct debit notification text"
+    id: netflix_mandate_text_col
+    label: "Netflix mandate notification text"
     style:
       orientation: vertical
       flex: 1
@@ -328,40 +560,41 @@ components:
       content_description: ""
       role: group
     test_context:
-      tag: direct_debit_text_col
+      tag: netflix_mandate_text_col
 
   - type: text
-    id: direct_debit_notif_title
-    label: "Direct debit reminder"
-    content: "Direct debit reminder"
+    id: netflix_mandate_title
+    label: "Direct debit mandate created"
+    content: "Direct debit mandate created"
     style:
       typography: body_medium
       color: "#555555"
       font_weight: semibold
     a11y:
-      content_description: "Notification title: Direct debit reminder"
+      content_description: "Notification title: Direct debit mandate created"
       role: text
     test_context:
-      tag: direct_debit_notif_title
-      assert_text: "Direct debit reminder"
+      tag: netflix_mandate_title
+      assert_text: "Direct debit mandate created"
 
   - type: text
-    id: direct_debit_notif_message
-    label: "Your Council Tax direct debit of £148.00 will be collected on 1 June 2026."
-    content: "Your Council Tax direct debit of £148.00 will be collected on 1 June 2026."
+    id: netflix_mandate_message
+    label: "Direct debit mandate created for Netflix — £15.99/month from your Current Account."
+    content: "Direct debit mandate created for Netflix — £15.99/month from your Current Account."
     style:
       typography: body_small
       color: "#777777"
       padding_top: 2
       padding_bottom: 4
     a11y:
-      content_description: "Notification message"
+      content_description: "Direct debit mandate created for Netflix message"
       role: text
     test_context:
-      tag: direct_debit_notif_message
+      tag: netflix_mandate_message
+      assert_text: "Direct debit mandate created for Netflix — £15.99/month from your Current Account."
 
   - type: text
-    id: direct_debit_notif_time
+    id: netflix_mandate_time
     label: "3 hr ago"
     content: "3 hr ago"
     style:
@@ -371,12 +604,16 @@ components:
       content_description: "Received 3 hours ago"
       role: text
     test_context:
-      tag: direct_debit_notif_time
+      tag: netflix_mandate_time
+      assert_text: "3 hr ago"
 
+  # ── Notification 4: Payment confirmation (READ, payment) ──────────────────
   - type: box
-    id: notification_budget_alert
-    label: "Budget limit alert notification"
-    content: "Budget limit alert notification"
+    id: notification_salary_credited
+    label: "Salary credited notification"
+    content: "Salary credited notification"
+    category: payment
+    read_state: read
     style:
       background: "#FFFFFF"
       corner_radius: 16
@@ -388,16 +625,18 @@ components:
       border_width: 1
     on_click:
       action: open_notification
-      target: pfm-dashboard
+      target: transaction-detail
     a11y:
-      content_description: "Read notification: Budget alert. Dining Out budget is 97% used — £5.00 remaining. Yesterday."
+      content_description: "Read payment notification: Salary credited. £3,200.00 from Acme Ltd has been credited to your account. Yesterday."
       role: button
     test_context:
-      tag: notification_budget_alert
+      tag: notification_salary_credited
+      assert_read_state: read
+      assert_category: payment
 
   - type: stack
-    id: budget_alert_notif_row
-    label: "Budget alert notification content"
+    id: salary_credited_row
+    label: "Salary credited notification row"
     style:
       orientation: horizontal
       spacing: 12
@@ -409,14 +648,14 @@ components:
       content_description: ""
       role: row
     test_context:
-      tag: budget_alert_notif_row
+      tag: salary_credited_row
 
   - type: box
-    id: budget_alert_icon_bg
-    label: "Budget alert icon"
+    id: salary_credited_icon_bg
+    label: "Salary credited icon background"
     content: ""
     style:
-      background: "#FF9800"
+      background: "#4CAF50"
       corner_radius: 22
       width: 44
       height: 44
@@ -429,13 +668,13 @@ components:
       content_description: ""
       role: none
     test_context:
-      tag: budget_alert_icon_bg
+      tag: salary_credited_icon_bg
 
   - type: icon
-    id: budget_alert_icon
-    label: "Warning"
+    id: salary_credited_icon
+    label: "Incoming payment"
     style:
-      icon_name: warning_amber_outlined
+      icon_name: arrow_downward
       size: 22
       color: "#FFFFFF"
     on_click:
@@ -445,11 +684,11 @@ components:
       content_description: ""
       role: none
     test_context:
-      tag: budget_alert_icon
+      tag: salary_credited_icon
 
   - type: stack
-    id: budget_alert_text_col
-    label: "Budget alert notification text"
+    id: salary_credited_text_col
+    label: "Salary credited text"
     style:
       orientation: vertical
       flex: 1
@@ -460,40 +699,41 @@ components:
       content_description: ""
       role: group
     test_context:
-      tag: budget_alert_text_col
+      tag: salary_credited_text_col
 
   - type: text
-    id: budget_alert_title
-    label: "Budget alert"
-    content: "Budget alert"
+    id: salary_credited_title
+    label: "Salary credited"
+    content: "Salary credited"
     style:
       typography: body_medium
       color: "#555555"
       font_weight: semibold
     a11y:
-      content_description: "Notification title: Budget alert"
+      content_description: "Notification title: Salary credited"
       role: text
     test_context:
-      tag: budget_alert_title
-      assert_text: "Budget alert"
+      tag: salary_credited_title
+      assert_text: "Salary credited"
 
   - type: text
-    id: budget_alert_message
-    label: "Your Dining Out budget is 97% used. Only £5.00 remaining this month."
-    content: "Your Dining Out budget is 97% used. Only £5.00 remaining this month."
+    id: salary_credited_message
+    label: "£3,200.00 from Acme Ltd has been credited to your Current Account."
+    content: "£3,200.00 from Acme Ltd has been credited to your Current Account."
     style:
       typography: body_small
       color: "#777777"
       padding_top: 2
       padding_bottom: 4
     a11y:
-      content_description: "Notification message"
+      content_description: "Salary credited message"
       role: text
     test_context:
-      tag: budget_alert_message
+      tag: salary_credited_message
+      assert_text: "£3,200.00 from Acme Ltd has been credited to your Current Account."
 
   - type: text
-    id: budget_alert_time
+    id: salary_credited_time
     label: "Yesterday"
     content: "Yesterday"
     style:
@@ -503,12 +743,15 @@ components:
       content_description: "Received yesterday"
       role: text
     test_context:
-      tag: budget_alert_time
+      tag: salary_credited_time
+      assert_text: "Yesterday"
 
   - type: spacer
     id: bottom_spacer
     style:
       height: 24
+    test_context:
+      tag: bottom_spacer
 
 states:
   loading:
@@ -518,38 +761,56 @@ states:
         - notifications_title
       show_skeleton_list: true
       skeleton_count: 4
-  content:
+
+  populated:
+    description: "Mixed read/unread notifications with section headers"
     layout:
       visible_components:
         - title_action_row
         - notifications_title
         - mark_all_read_button
-        - notification_payment_received
-        - payment_received_row
-        - payment_received_icon_bg
-        - payment_received_icon
-        - payment_received_text_col
-        - payment_received_title
-        - payment_received_message
-        - payment_received_time
-        - unread_dot_payment
-        - notification_direct_debit
-        - direct_debit_notif_row
-        - direct_debit_icon_bg
-        - direct_debit_notif_icon
-        - direct_debit_text_col
-        - direct_debit_notif_title
-        - direct_debit_notif_message
-        - direct_debit_notif_time
-        - notification_budget_alert
-        - budget_alert_notif_row
-        - budget_alert_icon_bg
-        - budget_alert_icon
-        - budget_alert_text_col
-        - budget_alert_title
-        - budget_alert_message
-        - budget_alert_time
+        - section_today_label
+        # Unread: payment from James Wilson
+        - notification_payment_james
+        - payment_james_row
+        - payment_james_icon_bg
+        - payment_james_icon
+        - payment_james_text_col
+        - payment_james_title
+        - payment_james_message
+        - payment_james_time
+        - unread_dot_payment_james
+        # Unread: KYC approved
+        - notification_kyc_approved
+        - kyc_approved_row
+        - kyc_approved_icon_bg
+        - kyc_approved_icon
+        - kyc_approved_text_col
+        - kyc_approved_title
+        - kyc_approved_message
+        - kyc_approved_time
+        - unread_dot_kyc
+        - section_earlier_label
+        # Read: Netflix mandate
+        - notification_netflix_mandate
+        - netflix_mandate_row
+        - netflix_mandate_icon_bg
+        - netflix_mandate_icon
+        - netflix_mandate_text_col
+        - netflix_mandate_title
+        - netflix_mandate_message
+        - netflix_mandate_time
+        # Read: Salary credited
+        - notification_salary_credited
+        - salary_credited_row
+        - salary_credited_icon_bg
+        - salary_credited_icon
+        - salary_credited_text_col
+        - salary_credited_title
+        - salary_credited_message
+        - salary_credited_time
         - bottom_spacer
+
   empty:
     layout:
       visible_components:
@@ -559,6 +820,7 @@ states:
       empty_state_icon: notifications_none_outlined
       empty_state_title: "You're all caught up"
       empty_state_message: "No new notifications. We'll let you know about payments, alerts and updates."
+
   error:
     layout:
       visible_components:
@@ -591,10 +853,11 @@ state_model:
       message: "Unable to load notifications. Please try again."
   events:
     - NotificationsLoaded
-    - NotificationOpened(notificationId: String)
+    - NotificationOpened(notificationId: String, category: NotificationCategory)
     - MarkAllReadClicked
     - MarkAllReadComplete
     - RetryLoad
+    - NotificationSettingsOpened
   actions:
     - open_notification
     - mark_all_read
@@ -607,7 +870,7 @@ api:
   - id: obp_signal_channels
     endpoint: "GET /obp/v6.0.0/signal/channels"
     tag: Signal
-    description: "List real-time push notification channels"
+    description: "List real-time push notification channels (FCM)"
     response:
       fields:
         - name: channels
@@ -630,22 +893,26 @@ dependencies:
   tier: feature
   features:
     - transactions
-    - direct-debits
-    - pfm-dashboard
+    - accounts
+    - transaction-detail
+    - kyc-review
 
 navigation:
   - action: open_notification
-    target: transactions
-    description: "Navigate to transactions for payment notification"
+    target: transaction-detail
+    description: "Navigate to transaction detail for payment-category notifications"
+    category: payment
   - action: open_notification
-    target: direct-debits
-    description: "Navigate to direct debits for payment reminder"
+    target: kyc-review
+    description: "Navigate to KYC review screen for security/identity notifications (cross-persona deep link)"
+    category: security
   - action: open_notification
-    target: pfm-dashboard
-    description: "Navigate to spending insights for budget alert"
+    target: accounts
+    description: "Navigate to accounts for system notifications (mandates, direct debits)"
+    category: system
   - action: open_notification_settings
     target: settings
-    description: "Open notification preferences"
+    description: "Open notification preferences screen"
   - action: navigate_back
     target: home
     description: "Return to home screen"

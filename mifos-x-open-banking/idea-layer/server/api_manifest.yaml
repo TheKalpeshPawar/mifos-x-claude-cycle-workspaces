@@ -1,0 +1,259 @@
+# server/api_manifest.yaml — OBP API manifest for mifos-x-open-banking
+# Generated 2026-05-25 by /idea sync STEP 4g
+# API: Open Bank Project Sandbox — https://apisandbox.openbankproject.com
+
+schema_version: "1.0"
+generated_at: "2026-05-25"
+base_url: "https://apisandbox.openbankproject.com/obp"
+default_version: "v4.0.0"
+auth_scheme: "DirectLogin"
+sandbox_bank_id: "rbs" # OBP sandbox default
+
+api_groups:
+  - id: auth
+    name: Authentication
+    screens: [login, splash]
+    spec_file: "server/apis/auth.yaml"
+    endpoints:
+      - method: POST
+        path: "/v4.0.0/banks/{bank_id}/direct_login"
+        description: "DirectLogin — exchange credentials for token"
+        request_fields: [username, password, consumer_key]
+        response_fields: [token]
+      - method: GET
+        path: "/v4.0.0/oauth2/authorize"
+        description: "OIDC authorization code flow (alternative)"
+
+  - id: accounts
+    name: Accounts
+    screens: [home, accounts, account-detail]
+    spec_file: "server/apis/accounts.yaml"
+    endpoints:
+      - method: GET
+        path: "/v3.0.0/banks/{bank_id}/accounts"
+        description: "List all accounts for authenticated user"
+        response_fields: [id, label, bank_id, account_type, balance, currency]
+      - method: GET
+        path: "/v3.0.0/banks/{bank_id}/accounts/{account_id}/account"
+        description: "Get account detail"
+        response_fields: [id, label, number, swift_bic, iban, owners, balance, currency, account_routings]
+      - method: GET
+        path: "/v4.0.0/banks/{bank_id}/balances"
+        description: "Get balances for all accounts"
+
+  - id: transactions
+    name: Transactions
+    screens: [transactions, transaction-detail, transaction-tags]
+    spec_file: "server/apis/transactions.yaml"
+    endpoints:
+      - method: GET
+        path: "/v3.0.0/banks/{bank_id}/accounts/{account_id}/transactions"
+        description: "List transactions for account"
+        query_params: [limit, offset, from_date, to_date, sort_direction]
+        response_fields: [id, this_account, other_account, details, metadata]
+      - method: GET
+        path: "/v3.0.0/banks/{bank_id}/accounts/{account_id}/transactions/{transaction_id}/transaction"
+        description: "Get transaction detail"
+      - method: POST
+        path: "/v3.0.0/banks/{bank_id}/accounts/{account_id}/transactions/{transaction_id}/metadata/tags"
+        description: "Add tag to transaction"
+        request_fields: [value]
+      - method: DELETE
+        path: "/v3.0.0/banks/{bank_id}/accounts/{account_id}/transactions/{transaction_id}/metadata/tags/{tag_id}"
+        description: "Remove tag from transaction"
+      - method: POST
+        path: "/v3.0.0/banks/{bank_id}/accounts/{account_id}/transactions/{transaction_id}/metadata/comments"
+        description: "Add comment/note to transaction"
+
+  - id: payments
+    name: Payments & Transaction Requests
+    screens: [send-money, send-money-confirm, beneficiaries]
+    spec_file: "server/apis/payments.yaml"
+    endpoints:
+      - method: POST
+        path: "/v4.0.0/banks/{bank_id}/accounts/{account_id}/transaction-request-types/SEPA/transaction-requests"
+        description: "Initiate SEPA payment"
+        request_fields: [to.iban, value.amount, value.currency, description]
+      - method: POST
+        path: "/v4.0.0/banks/{bank_id}/accounts/{account_id}/transaction-request-types/SANDBOX_TAN/transaction-requests"
+        description: "Initiate sandbox transfer"
+      - method: GET
+        path: "/v3.0.0/banks/{bank_id}/accounts/{account_id}/counterparties"
+        description: "List beneficiaries/counterparties"
+      - method: POST
+        path: "/v3.0.0/banks/{bank_id}/accounts/{account_id}/counterparties"
+        description: "Create beneficiary"
+        request_fields: [name, description, other_bank_id, other_account_id, other_account_secondary_routing_scheme, other_account_secondary_routing_address, other_account_routing_scheme, other_account_routing_address, other_branch_routing_scheme, other_branch_routing_address, is_beneficiary]
+
+  - id: cards
+    name: Cards
+    screens: [cards, card-detail]
+    spec_file: "server/apis/cards.yaml"
+    endpoints:
+      - method: GET
+        path: "/v3.0.0/banks/{bank_id}/accounts/{account_id}/cards"
+        description: "List cards for account"
+        response_fields: [id, bank_id, bank_card_number, name_on_card, issue_number, serial_number, valid_from_date, expires_date, enabled, cancelled, technology_type, networks, allows]
+      - method: GET
+        path: "/v3.0.0/banks/{bank_id}/accounts/{account_id}/cards/{card_id}"
+        description: "Get card detail"
+
+  - id: standing_orders
+    name: Standing Orders
+    screens: [standing-orders]
+    spec_file: "server/apis/standing-orders.yaml"
+    endpoints:
+      - method: GET
+        path: "/v3.0.0/banks/{bank_id}/accounts/{account_id}/standing-orders"
+        description: "List standing orders"
+        response_fields: [id, start_date, next_execution_date, amount, to]
+      - method: POST
+        path: "/v3.0.0/banks/{bank_id}/accounts/{account_id}/standing-orders"
+        description: "Create standing order"
+      - method: DELETE
+        path: "/v3.0.0/banks/{bank_id}/accounts/{account_id}/standing-orders/{standing_order_id}"
+        description: "Cancel standing order"
+
+  - id: direct_debits
+    name: Direct Debits
+    screens: [direct-debits]
+    spec_file: "server/apis/direct-debits.yaml"
+    endpoints:
+      - method: GET
+        path: "/v3.0.0/banks/{bank_id}/accounts/{account_id}/direct-debits"
+        description: "List direct debit mandates"
+        response_fields: [id, bank_id, date_signed, active, date_cancelled]
+      - method: DELETE
+        path: "/v3.0.0/banks/{bank_id}/accounts/{account_id}/direct-debits/{direct_debit_id}"
+        description: "Cancel direct debit mandate"
+
+  - id: fx
+    name: Foreign Exchange
+    screens: [fx-rates]
+    spec_file: "server/apis/fx-rates.yaml"
+    endpoints:
+      - method: GET
+        path: "/v3.0.0/banks/{bank_id}/fx/{from_currency_code}/{to_currency_code}"
+        description: "Get exchange rate between two currencies"
+        response_fields: [bank_id, from_currency_code, to_currency_code, conversion_value, inverse_conversion_value, effective_date]
+
+  - id: atm
+    name: ATM & Branches
+    screens: [atm-locator]
+    spec_file: "server/apis/atm-locator.yaml"
+    endpoints:
+      - method: GET
+        path: "/v3.0.0/banks/{bank_id}/atms"
+        description: "List ATMs for bank"
+        response_fields: [id, bank_id, name, address, location, meta]
+      - method: GET
+        path: "/v3.0.0/banks/{bank_id}/branches"
+        description: "List bank branches"
+
+  - id: consents
+    name: Consents / Connected Apps
+    screens: [consent-manager]
+    spec_file: "server/apis/consents.yaml"
+    endpoints:
+      - method: GET
+        path: "/v4.0.0/consumers/{consumer_id}/consents"
+        description: "List active consents for consumer"
+        response_fields: [consent_id, jwt, status, valid_until, consumer_id]
+      - method: DELETE
+        path: "/v4.0.0/consumers/{consumer_id}/consents/{consent_id}"
+        description: "Revoke consent (connected app access)"
+
+  - id: customers
+    name: Customers (Field Officer)
+    screens: [customer-search, customer-detail, customer-profile, customer-onboarding, corporate-onboarding]
+    spec_file: "server/apis/customers.yaml"
+    endpoints:
+      - method: GET
+        path: "/v3.0.0/banks/{bank_id}/customers"
+        description: "Search customers"
+        query_params: [customer_number, email, mobile_phone_number, legal_name]
+      - method: GET
+        path: "/v3.0.0/banks/{bank_id}/customers/{customer_id}"
+        description: "Get customer detail"
+        response_fields: [customer_id, legal_name, mobile_phone_number, email, face_image, date_of_birth, relationship_status, dependants, dob_of_dependants, highest_education_attained, employment_status, credit_rating, credit_limit, title, branch_id]
+      - method: POST
+        path: "/v3.0.0/banks/{bank_id}/customers"
+        description: "Create new customer"
+        request_fields: [legal_name, mobile_phone_number, email, face_image, date_of_birth, relationship_status, employment_status, credit_rating, credit_limit, title, branch_id]
+      - method: PUT
+        path: "/v3.0.0/banks/{bank_id}/customers/{customer_id}"
+        description: "Update customer information"
+
+  - id: kyc
+    name: KYC
+    screens: [kyc-review]
+    spec_file: "server/apis/kyc.yaml"
+    endpoints:
+      - method: GET
+        path: "/v3.0.0/banks/{bank_id}/customers/{customer_id}/kyc_documents"
+        description: "List KYC documents for customer"
+        response_fields: [id, customer_id, type, number, issue_date, issue_place, expiry_date]
+      - method: PUT
+        path: "/v3.0.0/banks/{bank_id}/customers/{customer_id}/kyc_documents/{kyc_document_id}"
+        description: "Update KYC document status"
+      - method: GET
+        path: "/v3.0.0/banks/{bank_id}/customers/{customer_id}/kyc_checks"
+        description: "List KYC checks"
+      - method: POST
+        path: "/v3.0.0/banks/{bank_id}/customers/{customer_id}/kyc_checks"
+        description: "Submit KYC check result"
+        request_fields: [customer_id, date, how, staff_user_id, staff_name, satisfied, comments]
+
+  - id: account_applications
+    name: Account Applications
+    screens: [account-applications, application-detail]
+    spec_file: "server/apis/account-applications.yaml"
+    endpoints:
+      - method: GET
+        path: "/v4.0.0/banks/{bank_id}/account-applications"
+        description: "List account applications"
+        response_fields: [account_application_id, product_code, user, date_of_application, status]
+      - method: GET
+        path: "/v4.0.0/banks/{bank_id}/account-applications/{account_application_id}"
+        description: "Get application detail"
+      - method: PUT
+        path: "/v4.0.0/banks/{bank_id}/account-applications/{account_application_id}"
+        description: "Update application status"
+        request_fields: [status]
+
+  - id: customer_messages
+    name: Customer Messages
+    screens: [customer-messages]
+    spec_file: "server/apis/customer-messages.yaml"
+    endpoints:
+      - method: GET
+        path: "/v3.0.0/banks/{bank_id}/customers/{customer_id}/messages"
+        description: "List messages for customer"
+        response_fields: [id, date, description, message, from_department, from_person]
+      - method: POST
+        path: "/v3.0.0/banks/{bank_id}/customers/{customer_id}/messages"
+        description: "Send message to customer"
+        request_fields: [message, from_department, from_person]
+
+  - id: meetings
+    name: Meetings
+    screens: [meetings]
+    spec_file: "server/apis/meetings.yaml"
+    endpoints:
+      - method: POST
+        path: "/v4.0.0/banks/{bank_id}/meetings"
+        description: "Schedule a meeting"
+        request_fields: [provider, provider_id, date, date_string, purpose_message, staff_user_id, customer_token]
+      - method: GET
+        path: "/v4.0.0/banks/{bank_id}/meetings"
+        description: "List meetings for bank staff"
+
+  - id: products
+    name: Bank Products
+    screens: [products]
+    spec_file: "server/apis/products.yaml"
+    endpoints:
+      - method: GET
+        path: "/v3.0.0/banks/{bank_id}/products"
+        description: "List bank products"
+        response_fields: [code, parent_product_code, bank_id, label, category, family, super_family, more_info_url, details, description, meta]

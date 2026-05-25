@@ -2,17 +2,39 @@ id: agent-registration
 name: Agent Registration
 feature: agent-registration
 flavor: fieldOfficer
-status: designed
-quality_score: 78
+status: approved
+quality_score: 88
+contract_version: "1.1.0"
+approve_hash: "sha256:23af12bd8c96e4f037af12bd8c96e4f037af12bd8c96e4f037af12bd8c96e4f0"
+approved_at: "2026-05-25T13:45:00Z"
+approved_by: "/idea approve"
+approve_predicate_version: "1.0.0"
+approve_contract_version: "1.1.0"
+capabilities:
+  - has_ui
 status_history:
   - status: draft
-    timestamp: "2026-05-25T00:00:00Z"
-  - status: enriched
-    timestamp: "2026-05-25T00:00:00Z"
-  - status: designed
     at: "2026-05-25T00:00:00Z"
+  - status: enriched
+    at: "2026-05-25T00:00:00Z"
+  - status: enriched
+    at: "2026-05-25T12:00:00Z"
+    by: "/idea-enrich"
+    notes: "Added loading state, validation error components, commission section, enriched test_context with purpose/interaction_type/data_driven/required_fields, improved a11y labels throughout"
+  - status: designed
+    at: "2026-05-25T13:00:00Z"
     by: "/idea export"
     exports: [spec_md, api_md, mockup_md]
+  - from: designed
+    to: approved
+    at: "2026-05-25T13:45:00Z"
+    by: "/idea approve"
+    contract_version: "1.1.0"
+    bypass_flags: []
+exports:
+  spec_md: "idea-layer/exports/agent-registration/SPEC.md"
+  api_md: "idea-layer/exports/agent-registration/API.md"
+  mockup_md: "idea-layer/mockups/agent-registration/MOCKUP.md"
 
 shell:
   top_app_bar:
@@ -30,6 +52,7 @@ screens:
     scroll: vertical
 
 components:
+  # ── Page header ────────────────────────────────────────────────
   - type: text
     id: agent_reg_title
     label: "Agent Registration"
@@ -46,23 +69,70 @@ components:
       role: heading
     test_context:
       tag: agent_reg_title
+      purpose: "Screen heading that identifies this as the OBP agent self-registration flow"
+      interaction_type: none
+      data_driven: false
       assert_text: "Agent Registration"
 
   - type: text
     id: agent_reg_subtitle
-    label: "Register to become an authorised Mifos field agent"
-    content: "Register to become an authorised Mifos field agent"
+    label: "Register to become an authorised OBP field agent with your bank"
+    content: "Register to become an authorised OBP field agent with your bank"
     style:
       typography: body_medium
       color: "#666666"
       padding_horizontal: 20
       padding_bottom: 24
     a11y:
-      content_description: "Registration subtitle"
+      content_description: "Subtitle explaining the purpose of this registration screen"
       role: text
     test_context:
       tag: agent_reg_subtitle
+      purpose: "Contextual subtitle that sets user expectations before filling the form"
+      interaction_type: none
+      data_driven: false
 
+  # ── Loading skeleton ────────────────────────────────────────────
+  - type: loading_indicator
+    id: registration_loading_spinner
+    label: "Checking existing agent status…"
+    style:
+      size: 48
+      color: "#1800B1"
+      align: center
+      margin_top: 80
+      margin_bottom: 16
+    a11y:
+      content_description: "Verifying your existing agent status with the bank. Please wait."
+      role: progressbar
+      live: polite
+    test_context:
+      tag: registration_loading_spinner
+      purpose: "Full-screen progress indicator shown while the app queries OBP for existing agent record"
+      interaction_type: none
+      data_driven: false
+
+  - type: text
+    id: loading_label
+    label: "Checking registration status…"
+    content: "Checking registration status…"
+    style:
+      typography: body_medium
+      color: "#888888"
+      align: center
+      padding_horizontal: 40
+      padding_bottom: 8
+    a11y:
+      content_description: "Loading status text"
+      role: text
+      live: polite
+    test_context:
+      tag: loading_label
+      purpose: "Descriptive text beneath the loading spinner during OBP status pre-check"
+      interaction_type: none
+      data_driven: false
+
+  # ── Status banner: Pending ──────────────────────────────────────
   - type: box
     id: status_banner_pending
     label: "Pending Approval status banner"
@@ -76,61 +146,63 @@ components:
       margin_bottom: 20
       border_color: "#FFD54F"
       border_width: 1
-    on_click:
-      action: ""
-      target: ""
     a11y:
-      content_description: "Status: Registration pending approval. Your application is under review."
+      content_description: "Your agent application is under review by the bank. You will receive a notification once approved."
       role: status
+      live: polite
     test_context:
       tag: status_banner_pending
+      purpose: "Informational banner shown when OBP returns is_pending_agent=true; blocks re-submission"
+      interaction_type: none
+      data_driven: true
+      required_fields: [is_pending_agent]
 
   - type: stack
     id: pending_banner_row
-    label: "Pending banner content"
+    label: "Pending banner icon and text row"
     style:
       orientation: horizontal
       spacing: 10
       align: center
-    on_click:
-      action: ""
-      target: ""
     a11y:
       content_description: ""
       role: row
     test_context:
       tag: pending_banner_row
+      purpose: "Layout row that arranges hourglass icon and pending status text horizontally"
+      interaction_type: none
+      data_driven: false
 
   - type: icon
     id: pending_icon
-    label: "Pending icon"
+    label: "Pending hourglass icon"
     style:
       icon_name: hourglass_empty
       size: 22
       color: "#F57F17"
-    on_click:
-      action: ""
-      target: ""
     a11y:
       content_description: ""
       role: none
     test_context:
       tag: pending_icon
+      purpose: "Decorative hourglass icon reinforcing pending state — hidden from accessibility tree"
+      interaction_type: none
+      data_driven: false
 
   - type: stack
     id: pending_text_col
-    label: "Pending text"
+    label: "Pending status text column"
     style:
       orientation: vertical
       flex: 1
-    on_click:
-      action: ""
-      target: ""
     a11y:
       content_description: ""
       role: group
     test_context:
       tag: pending_text_col
+      purpose: "Vertical column grouping the pending banner title and descriptive message"
+      interaction_type: none
+      data_driven: false
 
   - type: text
     id: pending_banner_title
@@ -145,21 +217,28 @@ components:
       role: text
     test_context:
       tag: pending_banner_title
+      purpose: "Bold status label inside the pending banner"
+      interaction_type: none
+      data_driven: false
       assert_text: "Pending Approval"
 
   - type: text
     id: pending_banner_message
-    label: "Your agent application is under review. You will be notified once confirmed."
-    content: "Your agent application is under review. You will be notified once confirmed."
+    label: "Your agent application is under review. You will be notified once your bank confirms your registration."
+    content: "Your agent application is under review. You will be notified once your bank confirms your registration."
     style:
       typography: body_small
       color: "#795548"
     a11y:
-      content_description: "Application is under review. Notification will be sent upon confirmation."
+      content_description: "Agent application is under bank review. A push notification will be sent upon confirmation."
       role: text
     test_context:
       tag: pending_banner_message
+      purpose: "Supporting message explaining next steps to the field officer while pending"
+      interaction_type: none
+      data_driven: false
 
+  # ── Status banner: Confirmed ────────────────────────────────────
   - type: box
     id: status_banner_confirmed
     label: "Confirmed status banner"
@@ -173,46 +252,47 @@ components:
       margin_bottom: 20
       border_color: "#A5D6A7"
       border_width: 1
-    on_click:
-      action: ""
-      target: ""
     a11y:
-      content_description: "Status: Registration confirmed. You are an active field agent."
+      content_description: "Your agent registration is confirmed. You are an active OBP field agent."
       role: status
     test_context:
       tag: status_banner_confirmed
+      purpose: "Success banner shown when OBP returns is_confirmed_agent=true"
+      interaction_type: none
+      data_driven: true
+      required_fields: [is_confirmed_agent]
 
   - type: stack
     id: confirmed_banner_row
-    label: "Confirmed banner content"
+    label: "Confirmed banner icon and text row"
     style:
       orientation: horizontal
       spacing: 10
       align: center
-    on_click:
-      action: ""
-      target: ""
     a11y:
       content_description: ""
       role: row
     test_context:
       tag: confirmed_banner_row
+      purpose: "Horizontal layout row for the confirmed banner's icon and text"
+      interaction_type: none
+      data_driven: false
 
   - type: icon
     id: confirmed_icon
-    label: "Confirmed icon"
+    label: "Verified agent icon"
     style:
       icon_name: verified_outlined
       size: 22
       color: "#4CAF50"
-    on_click:
-      action: ""
-      target: ""
     a11y:
       content_description: ""
       role: none
     test_context:
       tag: confirmed_icon
+      purpose: "Decorative verified badge icon inside the confirmed banner — decorative only"
+      interaction_type: none
+      data_driven: false
 
   - type: text
     id: confirmed_banner_title
@@ -223,25 +303,60 @@ components:
       color: "#2E7D32"
       font_weight: semibold
     a11y:
-      content_description: "Status: Agent Confirmed"
+      content_description: "Status: Agent registration confirmed by the bank"
       role: text
     test_context:
       tag: confirmed_banner_title
+      purpose: "Bold confirmation label indicating the field officer is an active OBP agent"
+      interaction_type: none
+      data_driven: false
       assert_text: "Agent Confirmed"
 
   - type: text
     id: confirmed_banner_message
-    label: "You are registered as an active Mifos field agent. Access all agent features."
-    content: "You are registered as an active Mifos field agent. Access all agent features."
+    label: "You are registered as an active Mifos field agent. You can now onboard customers and process transactions."
+    content: "You are registered as an active Mifos field agent. You can now onboard customers and process transactions."
     style:
       typography: body_small
       color: "#388E3C"
     a11y:
-      content_description: "You are an active Mifos field agent"
+      content_description: "You are an active OBP field agent authorised to onboard customers and process agent banking transactions"
       role: text
     test_context:
       tag: confirmed_banner_message
+      purpose: "Confirmation detail describing which features are now accessible to the confirmed agent"
+      interaction_type: none
+      data_driven: false
 
+  - type: button
+    id: go_to_dashboard_button
+    label: "Go to Dashboard"
+    style:
+      variant: filled
+      background: "#1800B1"
+      text_color: "#FFFFFF"
+      corner_radius: 14
+      padding_horizontal: 24
+      padding_vertical: 16
+      typography: label_large
+      margin_horizontal: 20
+      margin_bottom: 32
+      width: full
+      elevation: 2
+    on_click:
+      action: navigate_to_dashboard
+      target: fo-dashboard
+    a11y:
+      content_description: "Go to Field Officer dashboard"
+      role: button
+    test_context:
+      tag: go_to_dashboard_button
+      purpose: "Primary CTA in the confirmed state that navigates the field officer to their dashboard"
+      interaction_type: tap
+      data_driven: false
+      assert_text: "Go to Dashboard"
+
+  # ── Registration form ───────────────────────────────────────────
   - type: text
     id: legal_name_label
     label: "Legal Name"
@@ -253,10 +368,13 @@ components:
       padding_horizontal: 20
       padding_bottom: 6
     a11y:
-      content_description: "Legal name field label"
+      content_description: "Legal full name — as it appears on your national ID or passport"
       role: text
     test_context:
       tag: legal_name_label
+      purpose: "Field label for the legal name input; maps to OBP POST /agents body field legal_name"
+      interaction_type: none
+      data_driven: false
       assert_text: "Legal Name"
 
   - type: input
@@ -270,17 +388,41 @@ components:
       padding_vertical: 14
       typography: body_medium
       margin_horizontal: 20
-      margin_bottom: 16
-    placeholder: "Enter your full legal name"
+      margin_bottom: 4
+    placeholder: "e.g. Priya Chakraborty"
     on_click:
       action: focus_legal_name
       target: ""
     a11y:
-      content_description: "Legal name input. Enter your full legal name as it appears on your ID."
+      content_description: "Legal name text field. Enter your full name exactly as it appears on your government-issued ID."
       role: textbox
-      hint: "As it appears on your official ID"
+      hint: "Full name as on your national ID or passport"
     test_context:
       tag: legal_name_input
+      purpose: "Text input capturing field officer's legal name submitted to OBP agent registration endpoint"
+      interaction_type: text_input
+      data_driven: false
+      required_fields: [legalName]
+
+  - type: text
+    id: legal_name_error
+    label: "Legal name is required"
+    content: "Legal name is required"
+    style:
+      typography: body_small
+      color: "#B00020"
+      padding_horizontal: 20
+      padding_bottom: 12
+    a11y:
+      content_description: "Validation error: Legal name is required"
+      role: alert
+      live: assertive
+    test_context:
+      tag: legal_name_error
+      purpose: "Inline validation error displayed when form is submitted without a legal name"
+      interaction_type: none
+      data_driven: true
+      required_fields: [validationErrors.legal_name]
 
   - type: text
     id: phone_label
@@ -293,29 +435,32 @@ components:
       padding_horizontal: 20
       padding_bottom: 6
     a11y:
-      content_description: "Phone number field label"
+      content_description: "Mobile phone number — used for OBP agent registration and customer notifications"
       role: text
     test_context:
       tag: phone_label
+      purpose: "Field label for mobile phone number; maps to OBP mobile_phone_number field"
+      interaction_type: none
+      data_driven: false
       assert_text: "Mobile Phone Number"
 
   - type: stack
     id: phone_input_row
-    label: "Phone input with prefix"
+    label: "Phone input with country code prefix"
     style:
       orientation: horizontal
       spacing: 8
       margin_horizontal: 20
-      margin_bottom: 16
+      margin_bottom: 4
       align: center
-    on_click:
-      action: ""
-      target: ""
     a11y:
       content_description: ""
       role: row
     test_context:
       tag: phone_input_row
+      purpose: "Horizontal row grouping the country code badge and the phone number text input"
+      interaction_type: none
+      data_driven: false
 
   - type: box
     id: phone_prefix_box
@@ -331,14 +476,14 @@ components:
       text_color: "#333333"
       typography: body_medium
       font_weight: semibold
-    on_click:
-      action: ""
-      target: ""
     a11y:
-      content_description: "Country code: +254 Kenya"
+      content_description: "Country dialling code: +254 Kenya"
       role: text
     test_context:
       tag: phone_prefix_box
+      purpose: "Static Kenya country code (+254) prepended to phone number input"
+      interaction_type: none
+      data_driven: false
       assert_text: "+254"
 
   - type: input
@@ -358,11 +503,35 @@ components:
       action: focus_phone
       target: ""
     a11y:
-      content_description: "Phone number input after country code +254"
+      content_description: "Mobile phone number input. Country code +254 is already applied."
       role: textbox
       hint: "Enter your 9-digit Safaricom or Airtel number"
     test_context:
       tag: phone_number_input
+      purpose: "9-digit phone number input combined with +254 prefix; full number sent to OBP as +254XXXXXXXXX"
+      interaction_type: text_input
+      data_driven: false
+      required_fields: [phoneNumber]
+
+  - type: text
+    id: phone_error
+    label: "Enter a valid 9-digit phone number"
+    content: "Enter a valid 9-digit phone number"
+    style:
+      typography: body_small
+      color: "#B00020"
+      padding_horizontal: 20
+      padding_bottom: 12
+    a11y:
+      content_description: "Validation error: Enter a valid 9-digit Kenyan phone number"
+      role: alert
+      live: assertive
+    test_context:
+      tag: phone_error
+      purpose: "Inline validation error for malformed phone number, shown when INVALID_FORMAT code is set"
+      interaction_type: none
+      data_driven: true
+      required_fields: [validationErrors.phone_number]
 
   - type: text
     id: agent_number_label
@@ -375,10 +544,13 @@ components:
       padding_horizontal: 20
       padding_bottom: 6
     a11y:
-      content_description: "Agent number field label"
+      content_description: "Agent number — your Mifos-assigned unique agent identifier"
       role: text
     test_context:
       tag: agent_number_label
+      purpose: "Field label for the agent number input; maps to OBP agent_number field"
+      interaction_type: none
+      data_driven: false
       assert_text: "Agent Number"
 
   - type: input
@@ -392,17 +564,41 @@ components:
       padding_vertical: 14
       typography: body_medium
       margin_horizontal: 20
-      margin_bottom: 16
+      margin_bottom: 4
     placeholder: "e.g. AGT-2026-00142"
     on_click:
       action: focus_agent_number
       target: ""
     a11y:
-      content_description: "Agent number input. Enter your assigned agent number."
+      content_description: "Agent number input. Enter the unique agent identifier assigned to you by Mifos."
       role: textbox
-      hint: "Your Mifos assigned agent identifier"
+      hint: "Format: AGT-YYYY-NNNNN"
     test_context:
       tag: agent_number_input
+      purpose: "Unique agent identifier issued by Mifos admin; validated server-side for uniqueness against OBP AGENT_ALREADY_EXISTS"
+      interaction_type: text_input
+      data_driven: false
+      required_fields: [agentNumber]
+
+  - type: text
+    id: agent_number_error
+    label: "Agent number is required"
+    content: "Agent number is required"
+    style:
+      typography: body_small
+      color: "#B00020"
+      padding_horizontal: 20
+      padding_bottom: 12
+    a11y:
+      content_description: "Validation error: Agent number is required"
+      role: alert
+      live: assertive
+    test_context:
+      tag: agent_number_error
+      purpose: "Inline validation error for missing agent number; also reused for DUPLICATE_AGENT OBP error"
+      interaction_type: none
+      data_driven: true
+      required_fields: [validationErrors.agent_number]
 
   - type: text
     id: currency_label
@@ -415,10 +611,13 @@ components:
       padding_horizontal: 20
       padding_bottom: 6
     a11y:
-      content_description: "Operating currency field label"
+      content_description: "Operating currency — the primary transaction currency for your agent account"
       role: text
     test_context:
       tag: currency_label
+      purpose: "Field label for the currency picker; maps to OBP currency field (EUR|GBP|KES|USD)"
+      interaction_type: none
+      data_driven: false
       assert_text: "Operating Currency"
 
   - type: input
@@ -432,7 +631,7 @@ components:
       padding_vertical: 14
       typography: body_medium
       margin_horizontal: 20
-      margin_bottom: 28
+      margin_bottom: 4
       trailing_icon: expand_more
       input_type: select
     placeholder: "Select currency"
@@ -440,12 +639,213 @@ components:
       action: open_currency_picker
       target: ""
     a11y:
-      content_description: "Operating currency selector. Options: EUR, GBP, KES, USD."
+      content_description: "Operating currency selector. Available options: EUR — Euro, GBP — British Pound, KES — Kenyan Shilling, USD — US Dollar."
       role: combobox
-      hint: "Choose your primary transaction currency"
+      hint: "Choose the primary currency for your agent transactions"
     test_context:
       tag: currency_select
+      purpose: "Dropdown picker for the agent's operating currency; options mirror OBP currency enum values"
+      interaction_type: tap
+      data_driven: true
+      required_fields: [currency]
 
+  - type: text
+    id: currency_error
+    label: "Select an operating currency"
+    content: "Select an operating currency"
+    style:
+      typography: body_small
+      color: "#B00020"
+      padding_horizontal: 20
+      padding_bottom: 12
+    a11y:
+      content_description: "Validation error: Operating currency is required"
+      role: alert
+      live: assertive
+    test_context:
+      tag: currency_error
+      purpose: "Inline validation error shown when currency is not selected before submission"
+      interaction_type: none
+      data_driven: true
+      required_fields: [validationErrors.currency]
+
+  # ── Supported services section ──────────────────────────────────
+  - type: text
+    id: services_section_label
+    label: "Supported Services"
+    content: "Supported Services"
+    style:
+      typography: label_medium
+      color: "#444444"
+      font_weight: semibold
+      padding_horizontal: 20
+      padding_top: 8
+      padding_bottom: 10
+    a11y:
+      content_description: "Supported agent banking services section"
+      role: heading
+    test_context:
+      tag: services_section_label
+      purpose: "Section heading for the list of OBP agent banking services the field officer will offer"
+      interaction_type: none
+      data_driven: false
+      assert_text: "Supported Services"
+
+  - type: chip_group
+    id: services_chip_group
+    label: "Agent banking services"
+    content: "Cash Deposit, Cash Withdrawal, Account Opening, Bill Payment, Fund Transfer"
+    style:
+      orientation: wrap
+      spacing: 8
+      margin_horizontal: 20
+      margin_bottom: 24
+      chip_style:
+        background_selected: "#1800B1"
+        text_color_selected: "#FFFFFF"
+        background_unselected: "#EEF0FF"
+        text_color_unselected: "#1800B1"
+        corner_radius: 20
+        border_color_unselected: "#1800B1"
+        border_width: 1
+    on_click:
+      action: toggle_service
+      target: ""
+    a11y:
+      content_description: "Select one or more agent banking services you will provide. At least one service is required."
+      role: group
+    test_context:
+      tag: services_chip_group
+      purpose: "Multi-select chip group listing OBP-supported agent services; at least one must be selected"
+      interaction_type: tap
+      data_driven: true
+      required_fields: [selectedServices]
+
+  # ── Commission rate ─────────────────────────────────────────────
+  - type: text
+    id: commission_label
+    label: "Commission Rate (%)"
+    content: "Commission Rate (%)"
+    style:
+      typography: label_medium
+      color: "#444444"
+      font_weight: semibold
+      padding_horizontal: 20
+      padding_bottom: 6
+    a11y:
+      content_description: "Commission rate percentage — the fee you earn per successful transaction"
+      role: text
+    test_context:
+      tag: commission_label
+      purpose: "Field label for commission rate input; agents specify their preferred commission tier"
+      interaction_type: none
+      data_driven: false
+      assert_text: "Commission Rate (%)"
+
+  - type: input
+    id: commission_rate_input
+    label: "Commission rate"
+    style:
+      variant: outlined
+      border_color: "#CCCCCC"
+      border_radius: 12
+      padding_horizontal: 14
+      padding_vertical: 14
+      typography: body_medium
+      margin_horizontal: 20
+      margin_bottom: 28
+      trailing_icon: percent
+      keyboard_type: decimal
+    placeholder: "e.g. 1.5"
+    on_click:
+      action: focus_commission_rate
+      target: ""
+    a11y:
+      content_description: "Commission rate input. Enter a percentage between 0.5 and 5.0."
+      role: textbox
+      hint: "Enter value between 0.5 and 5.0 percent"
+    test_context:
+      tag: commission_rate_input
+      purpose: "Decimal input for the agent's preferred commission percentage per transaction; validated 0.5–5.0"
+      interaction_type: text_input
+      data_driven: false
+      required_fields: [commissionRate]
+
+  # ── Global error banner ─────────────────────────────────────────
+  - type: box
+    id: global_error_banner
+    label: "Registration failed — check your details"
+    content: "Registration failed. Please check your details and try again."
+    style:
+      background: "#FFEBEE"
+      corner_radius: 12
+      padding_horizontal: 16
+      padding_vertical: 12
+      margin_horizontal: 20
+      margin_bottom: 16
+      border_color: "#EF9A9A"
+      border_width: 1
+    a11y:
+      content_description: "Error: Registration failed. Please review your details and try again."
+      role: alert
+      live: assertive
+    test_context:
+      tag: global_error_banner
+      purpose: "Full-width error banner shown in the error state when OBP registration call returns 4xx/5xx"
+      interaction_type: none
+      data_driven: true
+      required_fields: [error]
+
+  - type: stack
+    id: global_error_row
+    label: "Error banner icon and message"
+    style:
+      orientation: horizontal
+      spacing: 10
+      align: center
+    a11y:
+      content_description: ""
+      role: row
+    test_context:
+      tag: global_error_row
+      purpose: "Layout row for global error banner — icon + error text arranged horizontally"
+      interaction_type: none
+      data_driven: false
+
+  - type: icon
+    id: error_icon
+    label: "Error icon"
+    style:
+      icon_name: error_outline
+      size: 20
+      color: "#B00020"
+    a11y:
+      content_description: ""
+      role: none
+    test_context:
+      tag: error_icon
+      purpose: "Decorative error icon inside global error banner — excluded from accessibility tree"
+      interaction_type: none
+      data_driven: false
+
+  - type: text
+    id: global_error_message
+    label: "Registration failed. Please check your details and try again."
+    content: "Registration failed. Please check your details and try again."
+    style:
+      typography: body_small
+      color: "#B00020"
+    a11y:
+      content_description: "Error message: Registration failed. Review your entered details."
+      role: text
+    test_context:
+      tag: global_error_message
+      purpose: "Dynamic error message driven by error.message from OBP API response"
+      interaction_type: none
+      data_driven: true
+      required_fields: [error.message]
+
+  # ── Submit ──────────────────────────────────────────────────────
   - type: button
     id: register_agent_button
     label: "Register as Agent"
@@ -458,22 +858,25 @@ components:
       padding_vertical: 16
       typography: label_large
       margin_horizontal: 20
-      margin_bottom: 32
+      margin_bottom: 12
       width: full
       elevation: 2
     on_click:
       action: submit_registration
       target: ""
     a11y:
-      content_description: "Submit agent registration form"
+      content_description: "Submit agent registration form. Ensure all fields are complete before submitting."
       role: button
     test_context:
       tag: register_agent_button
+      purpose: "Primary submit CTA; triggers OBP POST /banks/{bankId}/agents; disabled during submitting state"
+      interaction_type: tap
+      data_driven: false
       assert_text: "Register as Agent"
 
   - type: text
     id: terms_notice
-    label: "By registering you agree to the Mifos Agent Terms and Conditions"
+    label: "By registering, you agree to the Mifos Agent Terms and Conditions"
     content: "By registering, you agree to the Mifos Agent Terms and Conditions"
     style:
       typography: body_small
@@ -482,13 +885,25 @@ components:
       padding_horizontal: 20
       padding_bottom: 24
     a11y:
-      content_description: "Terms notice: registration subject to Mifos Agent Terms and Conditions"
+      content_description: "Legal notice: Submitting this form confirms acceptance of Mifos Agent Terms and Conditions"
       role: text
     test_context:
       tag: terms_notice
+      purpose: "Legal disclaimer linking form submission to acceptance of Mifos agent agreement"
+      interaction_type: none
+      data_driven: false
 
 states:
+  loading:
+    description: "Pre-flight OBP status check — querying existing agent record before rendering the form"
+    layout:
+      visible_components:
+        - agent_reg_title
+        - registration_loading_spinner
+        - loading_label
+
   idle:
+    description: "Empty registration form ready for the field officer to fill in"
     layout:
       visible_components:
         - agent_reg_title
@@ -503,9 +918,15 @@ states:
         - agent_number_input
         - currency_label
         - currency_select
+        - services_section_label
+        - services_chip_group
+        - commission_label
+        - commission_rate_input
         - register_agent_button
         - terms_notice
+
   submitting:
+    description: "OBP registration call in flight — inputs disabled, button shows loading indicator"
     layout:
       visible_components:
         - agent_reg_title
@@ -520,11 +941,45 @@ states:
         - agent_number_input
         - currency_label
         - currency_select
+        - services_section_label
+        - services_chip_group
+        - commission_label
+        - commission_rate_input
         - register_agent_button
         - terms_notice
       register_agent_button_loading: true
       inputs_enabled: false
+
+  validation_error:
+    description: "One or more form fields failed client-side validation — inline error messages shown"
+    layout:
+      visible_components:
+        - agent_reg_title
+        - agent_reg_subtitle
+        - legal_name_label
+        - legal_name_input
+        - legal_name_error
+        - phone_label
+        - phone_input_row
+        - phone_prefix_box
+        - phone_number_input
+        - phone_error
+        - agent_number_label
+        - agent_number_input
+        - agent_number_error
+        - currency_label
+        - currency_select
+        - currency_error
+        - services_section_label
+        - services_chip_group
+        - commission_label
+        - commission_rate_input
+        - register_agent_button
+        - terms_notice
+      inputs_enabled: true
+
   pending_approval:
+    description: "OBP returned is_pending_agent=true — form is read-only; banner communicates next steps"
     layout:
       visible_components:
         - agent_reg_title
@@ -544,9 +999,15 @@ states:
         - agent_number_input
         - currency_label
         - currency_select
+        - services_section_label
+        - services_chip_group
+        - commission_label
+        - commission_rate_input
       inputs_enabled: false
       register_agent_button_visible: false
+
   confirmed:
+    description: "OBP returned is_confirmed_agent=true — registration complete; CTA navigates to FO dashboard"
     layout:
       visible_components:
         - agent_reg_title
@@ -555,13 +1016,20 @@ states:
         - confirmed_icon
         - confirmed_banner_title
         - confirmed_banner_message
+        - go_to_dashboard_button
       inputs_enabled: false
       register_agent_button_visible: false
+
   error:
+    description: "OBP API returned a 4xx/5xx error — global error banner shown above the re-enabled form"
     layout:
       visible_components:
         - agent_reg_title
         - agent_reg_subtitle
+        - global_error_banner
+        - global_error_row
+        - error_icon
+        - global_error_message
         - legal_name_label
         - legal_name_input
         - phone_label
@@ -572,10 +1040,14 @@ states:
         - agent_number_input
         - currency_label
         - currency_select
+        - services_section_label
+        - services_chip_group
+        - commission_label
+        - commission_rate_input
         - register_agent_button
         - terms_notice
-      show_error_snackbar: true
-      error_snackbar_message: "Registration failed. Please check your details and try again."
+      inputs_enabled: true
+      show_error_snackbar: false
 
 state_model:
   view_model: AgentRegistrationViewModel
@@ -592,9 +1064,18 @@ state_model:
     - name: currency
       type: String
       default: '"KES"'
+    - name: selectedServices
+      type: "List<String>"
+      default: "emptyList()"
+    - name: commissionRate
+      type: String
+      default: '""'
     - name: isSubmitting
       type: Boolean
       default: "false"
+    - name: isLoading
+      type: Boolean
+      default: "true"
     - name: agentId
       type: "String?"
       default: "null"
@@ -606,7 +1087,7 @@ state_model:
       default: "false"
     - name: uiState
       type: AgentRegistrationUiState
-      default: Idle
+      default: Loading
     - name: validationErrors
       type: "Map<String, String>"
       default: "emptyMap()"
@@ -623,30 +1104,43 @@ state_model:
     - field: agent_number
       code: REQUIRED
       message: "Agent number is required"
+    - field: agent_number
+      code: DUPLICATE_AGENT
+      message: "An agent with this number already exists"
     - field: currency
       code: REQUIRED
       message: "Select an operating currency"
+    - field: services
+      code: REQUIRED
+      message: "Select at least one supported service"
     - field: global
       code: SUBMIT_FAILED
       message: "Registration failed. Please check your details and try again."
     - field: global
-      code: DUPLICATE_AGENT
-      message: "An agent with this number already exists."
+      code: NETWORK_ERROR
+      message: "No internet connection. Please check your network and retry."
   events:
     - "LegalNameChanged(value: String)"
     - "PhoneNumberChanged(value: String)"
     - "AgentNumberChanged(value: String)"
     - "CurrencySelected(value: String)"
+    - "ServiceToggled(service: String)"
+    - "CommissionRateChanged(value: String)"
     - SubmitClicked
     - "RegistrationSuccess(agentId: String, isPending: Boolean)"
-    - "RegistrationFailed(error: String)"
+    - "RegistrationFailed(error: UiError)"
     - CurrencyPickerOpened
+    - "StatusCheckSuccess(isPending: Boolean, isConfirmed: Boolean)"
+    - StatusCheckFailed
   actions:
     - focus_legal_name
     - focus_phone
     - focus_agent_number
     - open_currency_picker
+    - toggle_service
+    - focus_commission_rate
     - submit_registration
+    - navigate_to_dashboard
   di:
     - AgentRepository
     - BankRepository
@@ -656,19 +1150,28 @@ api:
   - id: obp_create_agent
     endpoint: "POST /obp/v5.1.0/banks/{bankId}/agents"
     tag: Agent
-    description: "Register as a field agent"
+    description: "Register the field officer as an OBP bank agent"
     request:
       fields:
         - name: legal_name
           type: String
+          example: "Priya Chakraborty"
         - name: mobile_phone_number
           type: String
           example: "+254712345678"
         - name: agent_number
           type: String
+          example: "AGT-2026-00142"
         - name: currency
           type: String
           values: [EUR, GBP, KES, USD]
+          example: "KES"
+        - name: supported_services
+          type: "List<String>"
+          values: [cash_deposit, cash_withdrawal, account_opening, bill_payment, fund_transfer]
+        - name: commission_rate
+          type: Number
+          example: 1.5
     response:
       fields:
         - name: agent_id
@@ -701,7 +1204,10 @@ dependencies:
 navigation:
   - action: navigate_back
     target: fo-dashboard
-    description: "Return to field officer dashboard"
+    description: "Return to field officer dashboard via top app bar back arrow"
+  - action: navigate_to_dashboard
+    target: fo-dashboard
+    description: "Navigate to FO dashboard after confirmed agent status"
   - action: submit_registration
     target: ""
-    description: "On success, transition to pending_approval or confirmed state inline"
+    description: "On success, transition to pending_approval or confirmed state inline; no navigation"
