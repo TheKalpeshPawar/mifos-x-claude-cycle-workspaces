@@ -1,15 +1,684 @@
-type: atm_locator
-title: "ATM Locator"
+id: atm-locator
+name: "ATM & Branch Locator"
+feature: atm-locator
 flavor: consumer
+status: enriched
+quality_score: 82
+
+screens:
+  - id: atm_locator_main
+    name: "ATM & Branch Locator"
+    archetype: index_list
+    route: /atm-locator
+
 components:
-  - type: map
-    id: atm_map
-    show_current_location: true
-  - type: atm_list
-    id: nearby_atms
-    on_item_click:
-      target: atm_detail
+  - type: text
+    id: atm_locator_title
+    content: "ATM & Branches"
+    style:
+      typography: headline_large
+      color: "#1800B1"
+      padding_top: 24
+      padding_horizontal: 16
+    a11y:
+      role: heading
+      level: 1
+      label: "ATM and Branches screen"
+    test_context:
+      test_id: atm_locator_title
+      assert: text_visible
+
+  - type: input
+    id: location_search_input
+    label: "Search location"
+    content: ""
+    style:
+      variant: search
+      placeholder: "Enter city, postcode or address..."
+      background: "#F5F5F5"
+      border_radius: 28
+      padding_horizontal: 16
+      padding_vertical: 12
+      margin_horizontal: 16
+      margin_top: 12
+      icon_leading: "search"
+    on_click:
+      action: search_location
+      target: atm_locator_main
+    a11y:
+      role: searchbox
+      label: "Search for ATMs and branches by location"
+      hint: "Enter city, postcode or address"
+    test_context:
+      test_id: location_search_input
+      assert: input_focusable
+
+  - type: box
+    id: location_permission_banner
+    content: "Use my location for nearby ATMs"
+    style:
+      background: "#E8F4FD"
+      border_color: "#1800B1"
+      border_width: 1
+      border_radius: 8
+      padding: 12
+      margin_horizontal: 16
+      margin_top: 8
+      direction: row
+      align_items: center
+      conditional: location_not_granted
+    a11y:
+      role: region
+      label: "Location permission request banner"
+    test_context:
+      test_id: location_permission_banner
+      assert: visible_when_location_denied
+
+  - type: button
+    id: enable_location_button
+    label: "Enable"
+    style:
+      variant: text
+      color: "#1800B1"
+      typography: label_medium
+      padding_horizontal: 8
+    on_click:
+      action: request_location_permission
+      target: atm_locator_main
+    a11y:
+      role: button
+      label: "Enable location access to find nearby ATMs"
+    test_context:
+      test_id: enable_location_button
+      assert: triggers_permission_request
+
+  - type: image
+    id: atm_map_area
+    content: "Map loading..."
+    style:
+      background: "#E8E8E8"
+      height: 240
+      margin_horizontal: 16
+      margin_top: 12
+      border_radius: 12
+      object_fit: cover
+    a11y:
+      role: img
+      label: "ATM map showing nearby locations"
+      alt: "ATM map showing nearby locations"
+    test_context:
+      test_id: atm_map_area
+      assert: map_renders_when_content
+
+  - type: stack
+    id: filter_chips_row
+    style:
+      direction: horizontal
+      spacing: 8
+      padding_horizontal: 16
+      padding_vertical: 12
+      overflow_x: scroll
+    a11y:
+      role: group
+      label: "Filter ATMs and branches by type"
+    test_context:
+      test_id: filter_chips_row
+      assert: all_chips_visible
+
+  - type: input
+    id: filter_all
+    label: "All"
+    content: "all"
+    style:
+      variant: radio
+      chip_style: true
+      selected: true
+      background_selected: "#1800B1"
+      color_selected: "#FFFFFF"
+      border_radius: 16
+      padding_horizontal: 16
+      padding_vertical: 8
+    on_click:
+      action: filter_type
+      target: atm_locator_main
+    a11y:
+      role: radio
+      label: "Show all ATMs and branches"
+    test_context:
+      test_id: filter_all
+      assert: default_selected
+
+  - type: input
+    id: filter_atms
+    label: "ATMs"
+    content: "atm"
+    style:
+      variant: radio
+      chip_style: true
+      border_radius: 16
+      padding_horizontal: 16
+      padding_vertical: 8
+    on_click:
+      action: filter_type
+      target: atm_locator_main
+    a11y:
+      role: radio
+      label: "Show ATMs only"
+    test_context:
+      test_id: filter_atms
+      assert: filters_to_atm_type
+
+  - type: input
+    id: filter_branches
+    label: "Branches"
+    content: "branch"
+    style:
+      variant: radio
+      chip_style: true
+      border_radius: 16
+      padding_horizontal: 16
+      padding_vertical: 8
+    on_click:
+      action: filter_type
+      target: atm_locator_main
+    a11y:
+      role: radio
+      label: "Show branches only"
+    test_context:
+      test_id: filter_branches
+      assert: filters_to_branch_type
+
+  - type: input
+    id: filter_24_7
+    label: "24/7"
+    content: "24_7"
+    style:
+      variant: radio
+      chip_style: true
+      border_radius: 16
+      padding_horizontal: 16
+      padding_vertical: 8
+    on_click:
+      action: filter_type
+      target: atm_locator_main
+    a11y:
+      role: radio
+      label: "Show 24/7 locations only"
+    test_context:
+      test_id: filter_24_7
+      assert: filters_to_24_7
+
+  - type: text
+    id: nearby_results_header
+    content: "3 ATMs found within 500m"
+    style:
+      typography: title_medium
+      color: "#212121"
+      padding_horizontal: 16
+      padding_top: 8
+      padding_bottom: 4
+    a11y:
+      role: heading
+      level: 2
+      label: "Nearby results: 3 ATMs found within 500 metres"
+    test_context:
+      test_id: nearby_results_header
+      assert: count_updates_on_filter
+
+  - type: box
+    id: atm_result_oxford_street
+    content: ""
+    style:
+      background: "#FFFFFF"
+      border_radius: 12
+      elevation: 2
+      padding: 16
+      margin_horizontal: 16
+      margin_bottom: 8
+    on_click:
+      action: view_atm_detail
+      target: atm_locator_main
+    a11y:
+      role: listitem
+      label: "Mifos ATM Oxford Street, 0.2 kilometres away, Open 24/7"
+    test_context:
+      test_id: atm_result_oxford_street
+      assert: navigates_to_detail_on_tap
+
+  - type: text
+    id: atm_oxford_name
+    content: "Mifos ATM — Oxford Street"
+    style:
+      typography: title_small
+      color: "#212121"
+      font_weight: 600
+    a11y:
+      role: text
+      label: "Mifos ATM Oxford Street"
+    test_context:
+      test_id: atm_oxford_name
+      assert: text_visible
+
+  - type: text
+    id: atm_oxford_distance
+    content: "0.2km away"
+    style:
+      typography: body_small
+      color: "#757575"
+    a11y:
+      role: text
+      label: "0.2 kilometres away"
+    test_context:
+      test_id: atm_oxford_distance
+      assert: text_visible
+
+  - type: text
+    id: atm_oxford_hours
+    content: "Open 24/7"
+    style:
+      typography: body_small
+      color: "#4CAF50"
+      font_weight: 500
+    a11y:
+      role: text
+      label: "Open 24 hours, 7 days a week"
+    test_context:
+      test_id: atm_oxford_hours
+      assert: text_visible
+
+  - type: text
+    id: atm_oxford_limit
+    content: "£300 max withdrawal"
+    style:
+      typography: body_small
+      color: "#616161"
+    a11y:
+      role: text
+      label: "Maximum withdrawal limit £300"
+    test_context:
+      test_id: atm_oxford_limit
+      assert: text_visible
+
+  - type: link
+    id: atm_oxford_directions
+    label: "Get Directions"
+    content: ""
+    style:
+      color: "#1800B1"
+      typography: label_medium
+      icon_trailing: "directions"
+    on_click:
+      action: open_directions
+      target: atm_locator_main
+    a11y:
+      role: link
+      label: "Get directions to Mifos ATM Oxford Street"
+    test_context:
+      test_id: atm_oxford_directions
+      assert: opens_maps_app
+
+  - type: box
+    id: atm_result_bond_street
+    content: ""
+    style:
+      background: "#FFFFFF"
+      border_radius: 12
+      elevation: 2
+      padding: 16
+      margin_horizontal: 16
+      margin_bottom: 8
+    on_click:
+      action: view_atm_detail
+      target: atm_locator_main
+    a11y:
+      role: listitem
+      label: "Mifos ATM Bond Street Station, 0.5 kilometres away, Open 24/7"
+    test_context:
+      test_id: atm_result_bond_street
+      assert: navigates_to_detail_on_tap
+
+  - type: text
+    id: atm_bond_name
+    content: "Mifos ATM — Bond Street Station"
+    style:
+      typography: title_small
+      color: "#212121"
+      font_weight: 600
+    a11y:
+      role: text
+      label: "Mifos ATM Bond Street Station"
+    test_context:
+      test_id: atm_bond_name
+      assert: text_visible
+
+  - type: text
+    id: atm_bond_distance
+    content: "0.5km away"
+    style:
+      typography: body_small
+      color: "#757575"
+    a11y:
+      role: text
+      label: "0.5 kilometres away"
+    test_context:
+      test_id: atm_bond_distance
+      assert: text_visible
+
+  - type: text
+    id: atm_bond_hours
+    content: "Open 24/7"
+    style:
+      typography: body_small
+      color: "#4CAF50"
+      font_weight: 500
+    a11y:
+      role: text
+      label: "Open 24 hours, 7 days a week"
+    test_context:
+      test_id: atm_bond_hours
+      assert: text_visible
+
+  - type: link
+    id: atm_bond_directions
+    label: "Get Directions"
+    content: ""
+    style:
+      color: "#1800B1"
+      typography: label_medium
+      icon_trailing: "directions"
+    on_click:
+      action: open_directions
+      target: atm_locator_main
+    a11y:
+      role: link
+      label: "Get directions to Mifos ATM Bond Street Station"
+    test_context:
+      test_id: atm_bond_directions
+      assert: opens_maps_app
+
+  - type: box
+    id: atm_result_mayfair_branch
+    content: ""
+    style:
+      background: "#FFFFFF"
+      border_radius: 12
+      elevation: 2
+      padding: 16
+      margin_horizontal: 16
+      margin_bottom: 8
+    on_click:
+      action: view_atm_detail
+      target: atm_locator_main
+    a11y:
+      role: listitem
+      label: "Mifos Branch Mayfair, 0.8 kilometres away, Monday to Friday 9am to 5pm"
+    test_context:
+      test_id: atm_result_mayfair_branch
+      assert: navigates_to_detail_on_tap
+
+  - type: text
+    id: branch_mayfair_name
+    content: "Mifos Branch — Mayfair"
+    style:
+      typography: title_small
+      color: "#212121"
+      font_weight: 600
+    a11y:
+      role: text
+      label: "Mifos Branch Mayfair"
+    test_context:
+      test_id: branch_mayfair_name
+      assert: text_visible
+
+  - type: text
+    id: branch_mayfair_distance
+    content: "0.8km away"
+    style:
+      typography: body_small
+      color: "#757575"
+    a11y:
+      role: text
+      label: "0.8 kilometres away"
+    test_context:
+      test_id: branch_mayfair_distance
+      assert: text_visible
+
+  - type: text
+    id: branch_mayfair_hours
+    content: "Mon–Fri 9am–5pm"
+    style:
+      typography: body_small
+      color: "#FF8F00"
+      font_weight: 500
+    a11y:
+      role: text
+      label: "Open Monday to Friday 9am to 5pm"
+    test_context:
+      test_id: branch_mayfair_hours
+      assert: text_visible
+
+  - type: text
+    id: branch_mayfair_services
+    content: "Services: Cashier · FX · Safe Deposit"
+    style:
+      typography: body_small
+      color: "#616161"
+    a11y:
+      role: text
+      label: "Available services: Cashier, Foreign Exchange, Safe Deposit"
+    test_context:
+      test_id: branch_mayfair_services
+      assert: text_visible
+
+  - type: link
+    id: branch_mayfair_directions
+    label: "Get Directions"
+    content: ""
+    style:
+      color: "#1800B1"
+      typography: label_medium
+      icon_trailing: "directions"
+    on_click:
+      action: open_directions
+      target: atm_locator_main
+    a11y:
+      role: link
+      label: "Get directions to Mifos Branch Mayfair"
+    test_context:
+      test_id: branch_mayfair_directions
+      assert: opens_maps_app
+
+  - type: divider
+    id: results_divider
+    style:
+      margin_horizontal: 16
+      color: "#E0E0E0"
+    a11y:
+      role: separator
+      label: ""
+    test_context:
+      test_id: results_divider
+      assert: visible
+
 states:
-  - loading
-  - content
-navigation: []
+  loading:
+    layout:
+      show_components:
+        - atm_locator_title
+        - location_search_input
+        - filter_chips_row
+        - filter_all
+        - filter_atms
+        - filter_branches
+        - filter_24_7
+      skeleton_components:
+        - atm_map_area
+        - nearby_results_header
+        - atm_result_oxford_street
+        - atm_result_bond_street
+        - atm_result_mayfair_branch
+      hide_components:
+        - location_permission_banner
+        - enable_location_button
+  content:
+    layout:
+      show_components:
+        - atm_locator_title
+        - location_search_input
+        - atm_map_area
+        - filter_chips_row
+        - filter_all
+        - filter_atms
+        - filter_branches
+        - filter_24_7
+        - nearby_results_header
+        - atm_result_oxford_street
+        - atm_oxford_name
+        - atm_oxford_distance
+        - atm_oxford_hours
+        - atm_oxford_limit
+        - atm_oxford_directions
+        - atm_result_bond_street
+        - atm_bond_name
+        - atm_bond_distance
+        - atm_bond_hours
+        - atm_bond_directions
+        - atm_result_mayfair_branch
+        - branch_mayfair_name
+        - branch_mayfair_distance
+        - branch_mayfair_hours
+        - branch_mayfair_services
+        - branch_mayfair_directions
+        - results_divider
+      hide_components:
+        - location_permission_banner
+        - enable_location_button
+  error:
+    layout:
+      show_components:
+        - atm_locator_title
+        - location_search_input
+      hide_components:
+        - atm_map_area
+        - nearby_results_header
+        - atm_result_oxford_street
+        - atm_result_bond_street
+        - atm_result_mayfair_branch
+      error_message: "Unable to load ATMs. Check your connection and try again."
+  empty:
+    layout:
+      show_components:
+        - atm_locator_title
+        - location_search_input
+        - filter_chips_row
+      hide_components:
+        - atm_map_area
+        - nearby_results_header
+        - atm_result_oxford_street
+        - atm_result_bond_street
+        - atm_result_mayfair_branch
+      empty_message: "No ATMs or branches found in this area"
+  location_denied:
+    layout:
+      show_components:
+        - atm_locator_title
+        - location_search_input
+        - location_permission_banner
+        - enable_location_button
+        - filter_chips_row
+      hide_components:
+        - atm_map_area
+
+state_model:
+  view_model: AtmLocatorViewModel
+  state_fields:
+    - name: atmList
+      type: "List<AtmLocation>"
+      default: "emptyList()"
+    - name: searchQuery
+      type: String
+      default: '""'
+    - name: selectedFilter
+      type: AtmFilter
+      default: "AtmFilter.ALL"
+    - name: userLocation
+      type: "LatLng?"
+      default: "null"
+    - name: locationPermissionGranted
+      type: Boolean
+      default: "false"
+    - name: isLoading
+      type: Boolean
+      default: "true"
+    - name: resultCount
+      type: Int
+      default: "0"
+  errors:
+    - name: networkError
+      type: "String?"
+      default: "null"
+    - name: locationError
+      type: "String?"
+      default: "null"
+  events:
+    - SearchLocationEvent
+    - FilterChangedEvent
+    - RequestLocationPermissionEvent
+    - AtmSelectedEvent
+    - DirectionsRequestedEvent
+  actions:
+    - search_location
+    - filter_type
+    - request_location_permission
+    - view_atm_detail
+    - open_directions
+  di:
+    - AtmRepository
+    - LocationService
+    - NavigationService
+
+api:
+  - endpoint: "GET /obp/v5.1.0/banks/{bankId}/atms"
+    tag: ATM
+    params:
+      - latitude
+      - longitude
+      - limit: 10
+    response:
+      fields:
+        - id: String
+        - name: String
+        - address: Address
+        - location: LatLng
+        - open_24_hours: Boolean
+        - cash_withdrawal_national_amount: String
+        - supported_languages: "List<String>"
+        - services: "List<String>"
+    errors:
+      - 401: "Unauthorized — missing or invalid token"
+      - 404: "Bank not found"
+      - 500: "Internal server error"
+
+  - endpoint: "GET /obp/v5.1.0/banks/{bankId}/branches"
+    tag: Branch
+    params:
+      - latitude
+      - longitude
+    response:
+      fields:
+        - id: String
+        - name: String
+        - address: Address
+        - location: LatLng
+        - lobby: LobbyHours
+        - drive_up: DriveUpHours
+        - branch_routings: "List<BranchRouting>"
+    errors:
+      - 401: "Unauthorized — missing or invalid token"
+      - 404: "Bank not found"
+      - 500: "Internal server error"
+
+dependencies:
+  tier: consumer
+  features:
+    - atm-locator

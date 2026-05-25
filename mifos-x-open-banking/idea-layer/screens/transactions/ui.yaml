@@ -1,18 +1,1005 @@
-type: transactions
-title: "Transactions"
+id: transactions
+name: Transaction History
+feature: transactions
 flavor: consumer
+status: enriched
+quality_score: 80
+
+shell:
+  bottom_nav: true
+  top_app_bar:
+    show: true
+    title: "Transactions"
+    navigation_icon: arrow_back
+    navigation_action: navigate_back
+    actions:
+      - icon: filter_list
+        action: open_advanced_filter
+        label: "Advanced filter"
+  nav_items:
+    - id: nav_home
+      label: Home
+      icon: home
+      target: home
+    - id: nav_accounts
+      label: Accounts
+      icon: account_balance
+      target: accounts
+      active: true
+    - id: nav_pay
+      label: Pay
+      icon: send
+      target: send-money
+    - id: nav_cards
+      label: Cards
+      icon: credit_card
+      target: cards
+    - id: nav_more
+      label: More
+      icon: more_horiz
+      target: more
+
+screens:
+  - id: transactions_content
+    label: Transaction History
+    route: /transactions
+    scroll: vertical
+
 components:
-  - type: filter_chip_group
-    id: transaction_filters
-    options: ["All", "Debit", "Credit", "Pending"]
-  - type: transaction_list
-    id: transactions_list
-    on_item_click:
-      target: transaction_detail
+  - type: input
+    id: search_bar
+    style:
+      variant: search
+      background: "#F5F5F5"
+      border_radius: 12
+      padding_horizontal: 16
+      padding_vertical: 12
+      margin_horizontal: 20
+      margin_top: 16
+      margin_bottom: 12
+      leading_icon: search
+      trailing_icon: mic
+      leading_icon_color: "#666666"
+    placeholder: "Search by merchant, amount, date..."
+    on_click:
+      action: search_transactions
+    a11y:
+      role: searchbox
+      label: "Search transactions"
+      hint: "Search by merchant name, amount, or date"
+    test_context:
+      tag: search_bar
+      assert_visible: true
+      assert_placeholder: "Search by merchant, amount, date..."
+
+  - type: box
+    id: date_range_picker
+    style:
+      background: "#F5F5F5"
+      border_radius: 12
+      padding_horizontal: 16
+      padding_vertical: 12
+      margin_horizontal: 20
+      margin_bottom: 12
+    on_click:
+      action: filter_date
+    a11y:
+      role: button
+      label: "Select date range: currently showing Last 30 Days"
+      hint: "Opens date range picker"
+    test_context:
+      tag: date_range_picker
+      assert_clickable: true
+    children:
+      - type: stack
+        id: date_range_row
+        style:
+          direction: horizontal
+          align: center
+          justify: space_between
+        children:
+          - type: stack
+            id: date_range_label_col
+            style:
+              direction: horizontal
+              align: center
+              spacing: 8
+            children:
+              - type: icon
+                id: date_range_icon
+                content: "date_range"
+                style:
+                  size: 18
+                  color: "#1800B1"
+                a11y:
+                  role: img
+                  label: "Calendar icon"
+                test_context:
+                  tag: date_range_icon
+
+              - type: text
+                id: date_range_label
+                content: "Last 30 Days"
+                style:
+                  typography: body_medium
+                  color: "#1A1A1A"
+                a11y:
+                  role: text
+                test_context:
+                  tag: date_range_label
+                  assert_content: "Last 30 Days"
+
+          - type: icon
+            id: date_range_chevron
+            content: "expand_more"
+            style:
+              size: 20
+              color: "#666666"
+            a11y:
+              role: img
+              label: "Expand"
+            test_context:
+              tag: date_range_chevron
+
+  - type: stack
+    id: filter_chips_row
+    style:
+      direction: horizontal
+      spacing: 8
+      padding_horizontal: 20
+      padding_bottom: 12
+      overflow: scroll_horizontal
+    a11y:
+      role: group
+      label: "Transaction type filters"
+    test_context:
+      tag: filter_chips_row
+    children:
+      - type: button
+        id: filter_all
+        label: "All"
+        style:
+          variant: filled
+          background: "#1800B1"
+          text_color: "#FFFFFF"
+          border_radius: 20
+          padding_horizontal: 16
+          padding_vertical: 8
+          typography: label_medium
+        on_click:
+          action: filter_type
+          params:
+            type: all
+        a11y:
+          role: radio
+          selected: true
+          label: "Show all transactions"
+        test_context:
+          tag: filter_all
+          assert_clickable: true
+
+      - type: button
+        id: filter_debit
+        label: "Debit"
+        style:
+          variant: outlined
+          border_color: "#CCCCCC"
+          text_color: "#666666"
+          border_radius: 20
+          padding_horizontal: 16
+          padding_vertical: 8
+          typography: label_medium
+        on_click:
+          action: filter_type
+          params:
+            type: DEBIT
+        a11y:
+          role: radio
+          selected: false
+          label: "Show debit transactions only"
+        test_context:
+          tag: filter_debit
+          assert_clickable: true
+
+      - type: button
+        id: filter_credit
+        label: "Credit"
+        style:
+          variant: outlined
+          border_color: "#CCCCCC"
+          text_color: "#666666"
+          border_radius: 20
+          padding_horizontal: 16
+          padding_vertical: 8
+          typography: label_medium
+        on_click:
+          action: filter_type
+          params:
+            type: CREDIT
+        a11y:
+          role: radio
+          selected: false
+          label: "Show credit transactions only"
+        test_context:
+          tag: filter_credit
+          assert_clickable: true
+
+      - type: button
+        id: filter_pending
+        label: "Pending"
+        style:
+          variant: outlined
+          border_color: "#CCCCCC"
+          text_color: "#666666"
+          border_radius: 20
+          padding_horizontal: 16
+          padding_vertical: 8
+          typography: label_medium
+        on_click:
+          action: filter_type
+          params:
+            type: PENDING
+        a11y:
+          role: radio
+          selected: false
+          label: "Show pending transactions only"
+        test_context:
+          tag: filter_pending
+          assert_clickable: true
+
+  - type: box
+    id: monthly_summary_card
+    style:
+      background: "#F8F4FF"
+      border_radius: 16
+      padding: 16
+      margin_horizontal: 20
+      margin_bottom: 16
+    a11y:
+      role: region
+      label: "Monthly spending summary"
+    test_context:
+      tag: monthly_summary_card
+    children:
+      - type: stack
+        id: monthly_summary_row
+        style:
+          direction: horizontal
+          align: center
+        children:
+          - type: stack
+            id: spent_col
+            style:
+              direction: vertical
+              flex: 1
+            children:
+              - type: text
+                id: spent_label
+                content: "Spent this month"
+                style:
+                  typography: label_small
+                  color: "#666666"
+                  letter_spacing: 0.4
+                a11y:
+                  role: text
+                test_context:
+                  tag: spent_label
+
+              - type: text
+                id: spent_amount
+                content: "£1,240.30"
+                style:
+                  typography: title_large
+                  color: "#FF5252"
+                  font_weight: 700
+                a11y:
+                  role: text
+                  label: "Spent this month: one thousand two hundred forty pounds thirty"
+                test_context:
+                  tag: spent_amount
+                  assert_content: "£1,240.30"
+
+          - type: box
+            id: summary_divider_v
+            style:
+              width: 1
+              height: 40
+              background: "#DDDDDD"
+              margin_horizontal: 16
+            a11y:
+              role: separator
+            test_context:
+              tag: summary_divider_v
+
+          - type: stack
+            id: received_col
+            style:
+              direction: vertical
+              flex: 1
+            children:
+              - type: text
+                id: received_label
+                content: "Received"
+                style:
+                  typography: label_small
+                  color: "#666666"
+                  letter_spacing: 0.4
+                a11y:
+                  role: text
+                test_context:
+                  tag: received_label
+
+              - type: text
+                id: received_amount
+                content: "£3,200.00"
+                style:
+                  typography: title_large
+                  color: "#4CAF50"
+                  font_weight: 700
+                a11y:
+                  role: text
+                  label: "Received this month: three thousand two hundred pounds"
+                test_context:
+                  tag: received_amount
+                  assert_content: "£3,200.00"
+
+  - type: text
+    id: transactions_date_group_header
+    content: "25 May 2026"
+    style:
+      typography: label_medium
+      color: "#666666"
+      letter_spacing: 0.5
+      padding_horizontal: 20
+      padding_top: 4
+      padding_bottom: 8
+    a11y:
+      role: heading
+      level: 3
+      label: "Transactions on 25 May 2026"
+    test_context:
+      tag: transactions_date_group_header
+
+  - type: box
+    id: txn_list_row_1
+    style:
+      background: "#FFFFFF"
+      border_radius: 12
+      padding: 14
+      margin_horizontal: 20
+      margin_bottom: 8
+      elevation: 1
+    on_click:
+      action: navigate
+      target: transaction-detail
+      params:
+        transaction_id: "txn_20260525_001"
+    a11y:
+      role: button
+      label: "Tesco Supermarket, debit forty-two pounds fifty, Groceries, 25 May 2026. Tap for details."
+    test_context:
+      tag: txn_list_row_1
+      assert_clickable: true
+    children:
+      - type: stack
+        id: txn1_main_row
+        style:
+          direction: horizontal
+          align: center
+          spacing: 12
+        children:
+          - type: image
+            id: txn1_merchant_logo
+            content: "merchant_tesco"
+            style:
+              width: 40
+              height: 40
+              border_radius: 20
+              background: "#E8F5E9"
+            a11y:
+              role: img
+              label: "Tesco logo"
+            test_context:
+              tag: txn1_merchant_logo
+
+          - type: stack
+            id: txn1_info
+            style:
+              direction: vertical
+              flex: 1
+            children:
+              - type: text
+                id: txn1_name
+                content: "Tesco Supermarket"
+                style:
+                  typography: body_medium
+                  color: "#1A1A1A"
+                  font_weight: 500
+                a11y:
+                  role: text
+                test_context:
+                  tag: txn1_name
+                  assert_content: "Tesco Supermarket"
+
+              - type: stack
+                id: txn1_meta_row
+                style:
+                  direction: horizontal
+                  align: center
+                  spacing: 6
+                children:
+                  - type: text
+                    id: txn1_date_meta
+                    content: "25 May 2026"
+                    style:
+                      typography: body_small
+                      color: "#888888"
+                    a11y:
+                      role: text
+                    test_context:
+                      tag: txn1_date_meta
+
+                  - type: text
+                    id: txn1_dot
+                    content: "·"
+                    style:
+                      typography: body_small
+                      color: "#CCCCCC"
+                    a11y:
+                      role: none
+                    test_context:
+                      tag: txn1_dot
+
+                  - type: box
+                    id: txn1_category_badge
+                    style:
+                      background: "#E8F5E9"
+                      border_radius: 4
+                      padding_horizontal: 6
+                      padding_vertical: 2
+                    children:
+                      - type: text
+                        id: txn1_category
+                        content: "Groceries"
+                        style:
+                          typography: label_small
+                          color: "#2E7D32"
+                        a11y:
+                          role: text
+                          label: "Category: Groceries"
+                        test_context:
+                          tag: txn1_category
+
+          - type: text
+            id: txn1_amount_col
+            content: "-£42.50"
+            style:
+              typography: body_large
+              color: "#FF5252"
+              font_weight: 600
+            a11y:
+              role: text
+              label: "Debit: forty-two pounds fifty"
+            test_context:
+              tag: txn1_amount_col
+              assert_content: "-£42.50"
+
+  - type: box
+    id: txn_list_row_2
+    style:
+      background: "#FFFFFF"
+      border_radius: 12
+      padding: 14
+      margin_horizontal: 20
+      margin_bottom: 8
+      elevation: 1
+    on_click:
+      action: navigate
+      target: transaction-detail
+      params:
+        transaction_id: "txn_20260524_001"
+    a11y:
+      role: button
+      label: "Salary Payment, credit three thousand two hundred pounds, Income, 24 May 2026. Tap for details."
+    test_context:
+      tag: txn_list_row_2
+      assert_clickable: true
+    children:
+      - type: stack
+        id: txn2_main_row
+        style:
+          direction: horizontal
+          align: center
+          spacing: 12
+        children:
+          - type: image
+            id: txn2_merchant_logo
+            content: "merchant_bank_transfer"
+            style:
+              width: 40
+              height: 40
+              border_radius: 20
+              background: "#E8F5E9"
+            a11y:
+              role: img
+              label: "Bank transfer icon"
+            test_context:
+              tag: txn2_merchant_logo
+
+          - type: stack
+            id: txn2_info
+            style:
+              direction: vertical
+              flex: 1
+            children:
+              - type: text
+                id: txn2_name
+                content: "Salary Payment"
+                style:
+                  typography: body_medium
+                  color: "#1A1A1A"
+                  font_weight: 500
+                a11y:
+                  role: text
+                test_context:
+                  tag: txn2_name
+
+              - type: stack
+                id: txn2_meta_row
+                style:
+                  direction: horizontal
+                  align: center
+                  spacing: 6
+                children:
+                  - type: text
+                    id: txn2_date_meta
+                    content: "24 May 2026"
+                    style:
+                      typography: body_small
+                      color: "#888888"
+                    a11y:
+                      role: text
+                    test_context:
+                      tag: txn2_date_meta
+
+                  - type: text
+                    id: txn2_dot
+                    content: "·"
+                    style:
+                      typography: body_small
+                      color: "#CCCCCC"
+                    a11y:
+                      role: none
+                    test_context:
+                      tag: txn2_dot
+
+                  - type: box
+                    id: txn2_category_badge
+                    style:
+                      background: "#E8F5E9"
+                      border_radius: 4
+                      padding_horizontal: 6
+                      padding_vertical: 2
+                    children:
+                      - type: text
+                        id: txn2_category
+                        content: "Income"
+                        style:
+                          typography: label_small
+                          color: "#2E7D32"
+                        a11y:
+                          role: text
+                          label: "Category: Income"
+                        test_context:
+                          tag: txn2_category
+
+          - type: text
+            id: txn2_amount_col
+            content: "+£3,200.00"
+            style:
+              typography: body_large
+              color: "#4CAF50"
+              font_weight: 600
+            a11y:
+              role: text
+              label: "Credit: three thousand two hundred pounds"
+            test_context:
+              tag: txn2_amount_col
+              assert_content: "+£3,200.00"
+
+  - type: box
+    id: txn_list_row_3
+    style:
+      background: "#FFFFFF"
+      border_radius: 12
+      padding: 14
+      margin_horizontal: 20
+      margin_bottom: 8
+      elevation: 1
+    on_click:
+      action: navigate
+      target: transaction-detail
+      params:
+        transaction_id: "txn_20260523_001"
+    a11y:
+      role: button
+      label: "EDF Energy, debit ninety-four pounds twenty, Utilities, 23 May 2026. Tap for details."
+    test_context:
+      tag: txn_list_row_3
+      assert_clickable: true
+    children:
+      - type: stack
+        id: txn3_main_row
+        style:
+          direction: horizontal
+          align: center
+          spacing: 12
+        children:
+          - type: image
+            id: txn3_merchant_logo
+            content: "merchant_edf"
+            style:
+              width: 40
+              height: 40
+              border_radius: 20
+              background: "#FFF3E0"
+            a11y:
+              role: img
+              label: "EDF Energy logo"
+            test_context:
+              tag: txn3_merchant_logo
+
+          - type: stack
+            id: txn3_info
+            style:
+              direction: vertical
+              flex: 1
+            children:
+              - type: text
+                id: txn3_name
+                content: "EDF Energy"
+                style:
+                  typography: body_medium
+                  color: "#1A1A1A"
+                  font_weight: 500
+                a11y:
+                  role: text
+                test_context:
+                  tag: txn3_name
+
+              - type: stack
+                id: txn3_meta_row
+                style:
+                  direction: horizontal
+                  align: center
+                  spacing: 6
+                children:
+                  - type: text
+                    id: txn3_date_meta
+                    content: "23 May 2026"
+                    style:
+                      typography: body_small
+                      color: "#888888"
+                    a11y:
+                      role: text
+                    test_context:
+                      tag: txn3_date_meta
+
+                  - type: text
+                    id: txn3_dot
+                    content: "·"
+                    style:
+                      typography: body_small
+                      color: "#CCCCCC"
+                    a11y:
+                      role: none
+                    test_context:
+                      tag: txn3_dot
+
+                  - type: box
+                    id: txn3_category_badge
+                    style:
+                      background: "#FFF3E0"
+                      border_radius: 4
+                      padding_horizontal: 6
+                      padding_vertical: 2
+                    children:
+                      - type: text
+                        id: txn3_category
+                        content: "Utilities"
+                        style:
+                          typography: label_small
+                          color: "#E65100"
+                        a11y:
+                          role: text
+                          label: "Category: Utilities"
+                        test_context:
+                          tag: txn3_category
+
+          - type: text
+            id: txn3_amount_col
+            content: "-£94.20"
+            style:
+              typography: body_large
+              color: "#FF5252"
+              font_weight: 600
+            a11y:
+              role: text
+              label: "Debit: ninety-four pounds twenty"
+            test_context:
+              tag: txn3_amount_col
+              assert_content: "-£94.20"
+
+  - type: button
+    id: load_more_button
+    label: "Load More Transactions"
+    style:
+      variant: text
+      text_color: "#1800B1"
+      padding_vertical: 16
+      typography: label_medium
+      align_self: center
+    on_click:
+      action: load_more
+    a11y:
+      role: button
+      label: "Load more transactions"
+      hint: "Loads the next page of transactions"
+    test_context:
+      tag: load_more_button
+      assert_clickable: true
+
+  - type: spacer
+    id: bottom_spacer
+    style:
+      height: 24
+
 states:
-  - loading
-  - content
-  - empty
-navigation:
-  - target: transaction_detail
-    label: "transaction_detail"
+  loading:
+    layout:
+      components_visible:
+        - search_bar
+        - filter_chips_row
+      skeleton:
+        - id: skel_summary
+          type: box
+          style:
+            background: "#E0E0E0"
+            border_radius: 16
+            height: 80
+            margin_horizontal: 20
+            margin_bottom: 12
+        - id: skel_row_1
+          type: box
+          style:
+            background: "#E0E0E0"
+            border_radius: 12
+            height: 68
+            margin_horizontal: 20
+            margin_bottom: 8
+        - id: skel_row_2
+          type: box
+          style:
+            background: "#E0E0E0"
+            border_radius: 12
+            height: 68
+            margin_horizontal: 20
+            margin_bottom: 8
+        - id: skel_row_3
+          type: box
+          style:
+            background: "#E0E0E0"
+            border_radius: 12
+            height: 68
+            margin_horizontal: 20
+            margin_bottom: 8
+
+  content:
+    layout:
+      components_visible:
+        - search_bar
+        - date_range_picker
+        - filter_chips_row
+        - monthly_summary_card
+        - transactions_date_group_header
+        - txn_list_row_1
+        - txn_list_row_2
+        - txn_list_row_3
+        - load_more_button
+
+  empty:
+    layout:
+      components_visible:
+        - search_bar
+        - date_range_picker
+        - filter_chips_row
+      empty_card:
+        id: empty_state_card
+        illustration: no_transactions
+        title: "No transactions found"
+        message: "No transactions match your current filters. Try adjusting your search or date range."
+        action_label: "Clear Filters"
+        action: clear_filters
+
+  error:
+    layout:
+      components_visible:
+        - search_bar
+      error_card:
+        id: error_state_card
+        title: "Could not load transactions"
+        message: "We were unable to load your transactions. Check your connection and try again."
+        action_label: "Retry"
+        action: retry_load
+        icon: error_outline
+
+  searching:
+    layout:
+      components_visible:
+        - search_bar
+        - filter_chips_row
+      skeleton:
+        - id: skel_search_1
+          type: box
+          style:
+            background: "#E0E0E0"
+            border_radius: 12
+            height: 68
+            margin_horizontal: 20
+            margin_bottom: 8
+        - id: skel_search_2
+          type: box
+          style:
+            background: "#E0E0E0"
+            border_radius: 12
+            height: 68
+            margin_horizontal: 20
+            margin_bottom: 8
+
+state_model:
+  view_model: TransactionsViewModel
+  screen_state: TransactionsScreenState
+  state_fields:
+    - name: isLoading
+      type: Boolean
+      default: "true"
+    - name: transactions
+      type: "List<TransactionSummary>"
+      default: "emptyList()"
+    - name: activeFilter
+      type: TransactionTypeFilter
+      default: TransactionTypeFilter.ALL
+    - name: dateRange
+      type: DateRange
+      default: "DateRange.LAST_30_DAYS"
+    - name: searchQuery
+      type: String
+      default: '""'
+    - name: totalSpent
+      type: "BigDecimal"
+      default: "BigDecimal.ZERO"
+    - name: totalReceived
+      type: "BigDecimal"
+      default: "BigDecimal.ZERO"
+    - name: currentPage
+      type: Int
+      default: "0"
+    - name: hasMore
+      type: Boolean
+      default: "true"
+    - name: error
+      type: "UiError?"
+      default: "null"
+    - name: isSearching
+      type: Boolean
+      default: "false"
+  errors:
+    - id: network_error
+      message: "Network unavailable. Please check your connection."
+    - id: auth_error
+      message: "Session expired. Please log in again."
+  events:
+    - RetryLoad
+    - SearchQueryChanged(query: String)
+    - FilterTypeChanged(filter: TransactionTypeFilter)
+    - DateRangeChanged(range: DateRange)
+    - LoadMore
+    - TransactionSelected(transactionId: String)
+    - ClearFilters
+  actions:
+    - name: loadTransactions
+      triggers: [ScreenOpened, RetryLoad, ClearFilters]
+    - name: searchTransactions
+      param: query
+    - name: filterByType
+      param: TransactionTypeFilter
+    - name: filterByDateRange
+      param: DateRange
+    - name: loadNextPage
+    - name: navigateToDetail
+      param: transactionId
+  di:
+    - TransactionsRepository
+    - AccountsRepository
+
+api:
+  - endpoint: "GET /obp/v5.1.0/my/accounts/{accountId}/transactions"
+    tag: Transactions
+    auth: DirectLogin
+    params:
+      - name: accountId
+        type: path
+      - name: limit
+        type: query
+        value: "20"
+      - name: offset
+        type: query
+        value: "0"
+      - name: from_date
+        type: query
+        example: "2026-04-25T00:00:00.000Z"
+      - name: to_date
+        type: query
+        example: "2026-05-25T23:59:59.999Z"
+      - name: type
+        type: query
+        optional: true
+        values: [DEBIT, CREDIT, SEPA_CREDIT_TRANSFERS, UK_FASTER_PAYMENTS_SEND]
+      - name: sort_direction
+        type: query
+        value: "DESC"
+    response:
+      fields:
+        - name: id
+          type: String
+        - name: this_account
+          type: object
+        - name: other_account
+          type: object
+          children:
+            - name: holder
+              type: object
+            - name: metadata
+              type: object
+        - name: details
+          type: object
+          children:
+            - name: type
+              type: String
+            - name: description
+              type: String
+            - name: posted
+              type: String
+            - name: completed
+              type: String
+            - name: new_balance
+              type: object
+              children:
+                - name: currency
+                  type: String
+                - name: amount
+                  type: String
+            - name: value
+              type: object
+              children:
+                - name: currency
+                  type: String
+                - name: amount
+                  type: String
+        - name: metadata
+          type: object
+    errors:
+      - code: 400
+        message: "Invalid date range or filter parameters"
+      - code: 401
+        message: "Unauthorized"
+      - code: 404
+        message: "Account not found"
+      - code: 500
+        message: "OBP server error"
+
+dependencies:
+  tier: feature
+  features:
+    - transaction-detail
+    - account-detail

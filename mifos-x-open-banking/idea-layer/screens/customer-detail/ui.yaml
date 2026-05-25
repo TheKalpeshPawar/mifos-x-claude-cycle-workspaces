@@ -1,29 +1,821 @@
-type: customer_detail
-title: "Customer Profile"
+id: customer-detail
+name: "Customer 360 Profile"
+feature: customer-detail
 flavor: fieldOfficer
+status: enriched
+quality_score: 84
+
+screens:
+  - id: customer_detail_main
+    name: "Customer 360 Profile"
+    archetype: detail_screen
+    route: /customer-detail/{customerId}
+
 components:
-  - type: customer_header
-    id: customer_header
-    show_name: true
-    show_status: true
-  - type: tab_group
-    id: detail_tabs
-    tabs:
-      - label: "Overview"
-        content: customer_overview
-      - label: "KYC"
-        content: kyc_status
-      - label: "Applications"
-        content: applications_list
+  - type: box
+    id: customer_header_box
+    content: ""
+    style:
+      background: "#1800B1"
+      padding_horizontal: 16
+      padding_top: 20
+      padding_bottom: 24
+      direction: row
+      align_items: center
+    a11y:
+      role: region
+      label: "Customer header: John Kamau Mwangi"
+    test_context:
+      test_id: customer_header_box
+      assert: header_visible_in_content_state
+
+  - type: box
+    id: customer_avatar
+    content: "JM"
+    style:
+      shape: circle
+      size: 60
+      background: "#FFFFFF"
+      color: "#1800B1"
+      typography: headline_small
+      font_weight: 700
+      text_align: center
+      margin_right: 16
+      flex_shrink: 0
+    a11y:
+      role: img
+      label: "John Mwangi profile initials"
+    test_context:
+      test_id: customer_avatar
+      assert: initials_from_name
+
+  - type: text
+    id: customer_full_name
+    content: "John Mwangi"
+    style:
+      typography: headline_small
+      color: "#FFFFFF"
+      font_weight: 700
+    a11y:
+      role: heading
+      level: 1
+      label: "John Mwangi"
+    test_context:
+      test_id: customer_full_name
+      assert: name_from_api
+
+  - type: text
+    id: customer_since_text
+    content: "Customer since Jan 2024"
+    style:
+      typography: body_medium
+      color: "#C5CAE9"
+    a11y:
+      role: text
+      label: "Customer since January 2024"
+    test_context:
+      test_id: customer_since_text
+      assert: date_from_api
+
+  - type: box
+    id: kyc_verified_badge
+    content: "KYC Verified"
+    style:
+      background: "#4CAF50"
+      border_radius: 12
+      padding_horizontal: 10
+      padding_vertical: 4
+      typography: label_small
+      color: "#FFFFFF"
+      font_weight: 600
+      align_self: flex_start
+      margin_top: 6
+    a11y:
+      role: text
+      label: "KYC Verified status badge"
+    test_context:
+      test_id: kyc_verified_badge
+      assert: visible_when_kyc_verified
+
+  - type: stack
+    id: quick_stats_row
+    style:
+      direction: horizontal
+      spacing: 0
+      background: "#F5F5F5"
+      padding_vertical: 12
+      justify_content: space_around
+    a11y:
+      role: group
+      label: "Customer quick stats"
+    test_context:
+      test_id: quick_stats_row
+      assert: three_stats_visible
+
+  - type: text
+    id: stat_accounts_count
+    content: "2 Accounts"
+    style:
+      typography: title_small
+      color: "#1800B1"
+      font_weight: 600
+      text_align: center
+    a11y:
+      role: text
+      label: "2 Accounts"
+    test_context:
+      test_id: stat_accounts_count
+      assert: count_from_api
+
+  - type: text
+    id: stat_total_balance
+    content: "KES 145,200"
+    style:
+      typography: title_small
+      color: "#212121"
+      font_weight: 600
+      text_align: center
+    a11y:
+      role: text
+      label: "Total balance KES 145,200"
+    test_context:
+      test_id: stat_total_balance
+      assert: balance_from_api
+
+  - type: text
+    id: stat_last_activity
+    content: "3 days ago"
+    style:
+      typography: title_small
+      color: "#757575"
+      font_weight: 500
+      text_align: center
+    a11y:
+      role: text
+      label: "Last activity 3 days ago"
+    test_context:
+      test_id: stat_last_activity
+      assert: relative_timestamp
+
+  - type: stack
+    id: tab_bar
+    style:
+      direction: horizontal
+      background: "#FFFFFF"
+      border_bottom_width: 1
+      border_bottom_color: "#E0E0E0"
+      padding_horizontal: 0
+    a11y:
+      role: tablist
+      label: "Customer detail tabs"
+    test_context:
+      test_id: tab_bar
+      assert: five_tabs_visible
+
+  - type: input
+    id: tab_overview
+    label: "Overview"
+    content: "overview"
+    style:
+      variant: radio
+      tab_style: true
+      selected: true
+      color_selected: "#1800B1"
+      border_bottom_selected_color: "#1800B1"
+      border_bottom_selected_width: 3
+      padding_horizontal: 16
+      padding_vertical: 12
+      typography: label_medium
+    on_click:
+      action: switch_tab
+      target: customer_detail_main
+    a11y:
+      role: tab
+      label: "Overview tab"
+      selected: true
+    test_context:
+      test_id: tab_overview
+      assert: shows_overview_content
+
+  - type: input
+    id: tab_kyc
+    label: "KYC"
+    content: "kyc"
+    style:
+      variant: radio
+      tab_style: true
+      color_selected: "#1800B1"
+      border_bottom_selected_color: "#1800B1"
+      border_bottom_selected_width: 3
+      padding_horizontal: 16
+      padding_vertical: 12
+      typography: label_medium
+    on_click:
+      action: switch_tab
+      target: customer_detail_main
+    a11y:
+      role: tab
+      label: "KYC documents tab"
+    test_context:
+      test_id: tab_kyc
+      assert: shows_kyc_content
+
+  - type: input
+    id: tab_accounts
+    label: "Accounts"
+    content: "accounts"
+    style:
+      variant: radio
+      tab_style: true
+      color_selected: "#1800B1"
+      border_bottom_selected_color: "#1800B1"
+      border_bottom_selected_width: 3
+      padding_horizontal: 16
+      padding_vertical: 12
+      typography: label_medium
+    on_click:
+      action: switch_tab
+      target: customer_detail_main
+    a11y:
+      role: tab
+      label: "Accounts tab"
+    test_context:
+      test_id: tab_accounts
+      assert: shows_accounts_content
+
+  - type: input
+    id: tab_applications
+    label: "Applications"
+    content: "applications"
+    style:
+      variant: radio
+      tab_style: true
+      color_selected: "#1800B1"
+      border_bottom_selected_color: "#1800B1"
+      border_bottom_selected_width: 3
+      padding_horizontal: 16
+      padding_vertical: 12
+      typography: label_medium
+    on_click:
+      action: switch_tab
+      target: customer_detail_main
+    a11y:
+      role: tab
+      label: "Applications tab"
+    test_context:
+      test_id: tab_applications
+      assert: shows_applications_content
+
+  - type: input
+    id: tab_messages
+    label: "Messages"
+    content: "messages"
+    style:
+      variant: radio
+      tab_style: true
+      color_selected: "#1800B1"
+      border_bottom_selected_color: "#1800B1"
+      border_bottom_selected_width: 3
+      padding_horizontal: 16
+      padding_vertical: 12
+      typography: label_medium
+    on_click:
+      action: switch_tab
+      target: customer_detail_main
+    a11y:
+      role: tab
+      label: "Messages tab"
+    test_context:
+      test_id: tab_messages
+      assert: shows_messages_content
+
+  - type: box
+    id: personal_info_card
+    content: ""
+    style:
+      background: "#FFFFFF"
+      border_radius: 12
+      elevation: 1
+      padding: 16
+      margin_horizontal: 16
+      margin_top: 16
+      margin_bottom: 8
+    a11y:
+      role: region
+      label: "Personal information"
+    test_context:
+      test_id: personal_info_card
+      assert: visible_in_overview_tab
+
+  - type: text
+    id: personal_info_label
+    content: "Personal Information"
+    style:
+      typography: title_small
+      color: "#1800B1"
+      font_weight: 600
+      padding_bottom: 10
+    a11y:
+      role: heading
+      level: 3
+      label: "Personal Information"
+    test_context:
+      test_id: personal_info_label
+      assert: text_visible
+
+  - type: text
+    id: personal_info_name
+    content: "John Kamau Mwangi"
+    style:
+      typography: body_medium
+      color: "#212121"
+      font_weight: 500
+      padding_bottom: 4
+    a11y:
+      role: text
+      label: "Full name: John Kamau Mwangi"
+    test_context:
+      test_id: personal_info_name
+      assert: full_name_from_api
+
+  - type: text
+    id: personal_info_dob
+    content: "DOB: 14 Mar 1985"
+    style:
+      typography: body_small
+      color: "#616161"
+      padding_bottom: 4
+    a11y:
+      role: text
+      label: "Date of birth: 14 March 1985"
+    test_context:
+      test_id: personal_info_dob
+      assert: dob_from_api
+
+  - type: text
+    id: personal_info_id
+    content: "National ID: KE12345678"
+    style:
+      typography: body_small
+      color: "#616161"
+      padding_bottom: 4
+    a11y:
+      role: text
+      label: "National ID: KE12345678"
+    test_context:
+      test_id: personal_info_id
+      assert: id_from_api
+
+  - type: text
+    id: personal_info_phone
+    content: "Phone: +254 722 123 456"
+    style:
+      typography: body_small
+      color: "#616161"
+      padding_bottom: 4
+    a11y:
+      role: text
+      label: "Phone: plus 254 722 123 456"
+    test_context:
+      test_id: personal_info_phone
+      assert: phone_from_api
+
+  - type: text
+    id: personal_info_email
+    content: "Email: john.mwangi@gmail.com"
+    style:
+      typography: body_small
+      color: "#1800B1"
+      padding_bottom: 0
+    a11y:
+      role: text
+      label: "Email: john.mwangi at gmail.com"
+    test_context:
+      test_id: personal_info_email
+      assert: email_from_api
+
+  - type: box
+    id: address_card
+    content: ""
+    style:
+      background: "#FFFFFF"
+      border_radius: 12
+      elevation: 1
+      padding: 16
+      margin_horizontal: 16
+      margin_bottom: 8
+    a11y:
+      role: region
+      label: "Customer address"
+    test_context:
+      test_id: address_card
+      assert: visible_in_overview_tab
+
+  - type: text
+    id: address_label
+    content: "Address"
+    style:
+      typography: title_small
+      color: "#1800B1"
+      font_weight: 600
+      padding_bottom: 8
+    a11y:
+      role: heading
+      level: 3
+      label: "Address"
+    test_context:
+      test_id: address_label
+      assert: text_visible
+
+  - type: text
+    id: address_value
+    content: "123 Moi Avenue, Nairobi, Kenya"
+    style:
+      typography: body_medium
+      color: "#424242"
+    a11y:
+      role: text
+      label: "Address: 123 Moi Avenue, Nairobi, Kenya"
+    test_context:
+      test_id: address_value
+      assert: address_from_api
+
+  - type: box
+    id: relationship_manager_card
+    content: ""
+    style:
+      background: "#FFFFFF"
+      border_radius: 12
+      elevation: 1
+      padding: 16
+      margin_horizontal: 16
+      margin_bottom: 8
+      direction: row
+      justify_content: space_between
+      align_items: center
+    a11y:
+      role: region
+      label: "Relationship manager assignment"
+    test_context:
+      test_id: relationship_manager_card
+      assert: visible_in_overview_tab
+
+  - type: text
+    id: relationship_manager_label
+    content: "Assigned to: Priya Sharma"
+    style:
+      typography: body_medium
+      color: "#424242"
+      font_weight: 500
+    a11y:
+      role: text
+      label: "Assigned to Priya Sharma"
+    test_context:
+      test_id: relationship_manager_label
+      assert: officer_name_from_api
+
+  - type: link
+    id: reassign_link
+    label: "Reassign"
+    content: ""
+    style:
+      color: "#1800B1"
+      typography: label_medium
+    on_click:
+      action: reassign_officer
+      target: customer_detail_main
+    a11y:
+      role: link
+      label: "Reassign relationship manager"
+    test_context:
+      test_id: reassign_link
+      assert: opens_reassign_dialog
+
+  - type: box
+    id: kyc_status_banner_verified
+    content: ""
+    style:
+      background: "#E8F5E9"
+      border_radius: 10
+      border_left_width: 4
+      border_left_color: "#4CAF50"
+      padding: 14
+      margin_horizontal: 16
+      margin_bottom: 8
+      direction: row
+      align_items: center
+      conditional: kyc_verified
+    a11y:
+      role: region
+      label: "KYC status: Verified"
+    test_context:
+      test_id: kyc_status_banner_verified
+      assert: visible_when_kyc_verified
+
+  - type: text
+    id: kyc_verified_text
+    content: "KYC Verified · Last checked 15 Apr 2026"
+    style:
+      typography: body_medium
+      color: "#2E7D32"
+      font_weight: 500
+    a11y:
+      role: text
+      label: "KYC Verified, last checked 15 April 2026"
+    test_context:
+      test_id: kyc_verified_text
+      assert: last_checked_date_from_api
+
+  - type: box
+    id: kyc_status_banner_pending
+    content: ""
+    style:
+      background: "#FFF8E1"
+      border_radius: 10
+      border_left_width: 4
+      border_left_color: "#FF8F00"
+      padding: 14
+      margin_horizontal: 16
+      margin_bottom: 8
+      direction: row
+      align_items: center
+      conditional: kyc_pending
+    a11y:
+      role: alert
+      label: "KYC Pending — action required"
+    test_context:
+      test_id: kyc_status_banner_pending
+      assert: visible_when_kyc_pending
+
+  - type: text
+    id: kyc_pending_text
+    content: "KYC Pending — Action Required"
+    style:
+      typography: body_medium
+      color: "#E65100"
+      font_weight: 600
+    a11y:
+      role: text
+      label: "KYC Pending — action required to complete verification"
+    test_context:
+      test_id: kyc_pending_text
+      assert: text_visible_when_kyc_pending
+
+  - type: spacer
+    id: bottom_actions_spacer
+    style:
+      height: 80
+    a11y:
+      role: presentation
+      label: ""
+    test_context:
+      test_id: bottom_actions_spacer
+      assert: provides_scroll_clearance_for_fab
+
   - type: button
-    id: create_application_button
+    id: create_application_fab
     label: "Create Application"
-    variant: fab
+    content: ""
+    style:
+      variant: filled
+      background: "#1800B1"
+      color: "#FFFFFF"
+      border_radius: 16
+      padding_horizontal: 20
+      padding_vertical: 14
+      icon_leading: "add"
+      position: fixed
+      bottom: 88
+      right: 16
+      elevation: 6
+      typography: label_large
+    on_click:
+      action: navigate
+      target: account-applications
+    a11y:
+      role: button
+      label: "Create a new account application for John Mwangi"
+    test_context:
+      test_id: create_application_fab
+      assert: navigates_to_account_applications
+
+  - type: button
+    id: send_message_button
+    label: "Send Message"
+    content: ""
+    style:
+      variant: outlined
+      border_color: "#1800B1"
+      color: "#1800B1"
+      border_radius: 12
+      padding_horizontal: 16
+      padding_vertical: 12
+      margin_horizontal: 16
+      margin_bottom: 16
+      full_width: true
+      icon_leading: "message"
+      typography: label_large
+    on_click:
+      action: navigate
+      target: customer-messages
+    a11y:
+      role: button
+      label: "Send a message to John Mwangi"
+    test_context:
+      test_id: send_message_button
+      assert: navigates_to_customer_messages
+
 states:
-  - loading
-  - content
+  loading:
+    layout:
+      show_components:
+        - customer_header_box
+      skeleton_components:
+        - customer_avatar
+        - customer_full_name
+        - customer_since_text
+        - kyc_verified_badge
+        - quick_stats_row
+        - stat_accounts_count
+        - stat_total_balance
+        - stat_last_activity
+        - tab_bar
+        - tab_overview
+        - tab_kyc
+        - tab_accounts
+        - tab_applications
+        - tab_messages
+        - personal_info_card
+        - address_card
+        - relationship_manager_card
+  content:
+    layout:
+      show_components:
+        - customer_header_box
+        - customer_avatar
+        - customer_full_name
+        - customer_since_text
+        - kyc_verified_badge
+        - quick_stats_row
+        - stat_accounts_count
+        - stat_total_balance
+        - stat_last_activity
+        - tab_bar
+        - tab_overview
+        - tab_kyc
+        - tab_accounts
+        - tab_applications
+        - tab_messages
+        - personal_info_card
+        - personal_info_label
+        - personal_info_name
+        - personal_info_dob
+        - personal_info_id
+        - personal_info_phone
+        - personal_info_email
+        - address_card
+        - address_label
+        - address_value
+        - relationship_manager_card
+        - relationship_manager_label
+        - reassign_link
+        - kyc_status_banner_verified
+        - kyc_verified_text
+        - spacer: bottom_actions_spacer
+        - create_application_fab
+        - send_message_button
+      hide_components:
+        - kyc_status_banner_pending
+        - kyc_pending_text
+  error:
+    layout:
+      show_components:
+        - customer_header_box
+      hide_components:
+        - quick_stats_row
+        - tab_bar
+        - personal_info_card
+        - address_card
+        - relationship_manager_card
+        - kyc_status_banner_verified
+        - kyc_status_banner_pending
+        - create_application_fab
+        - send_message_button
+      error_message: "Unable to load customer details. Check your connection and try again."
+
+state_model:
+  view_model: CustomerDetailViewModel
+  state_fields:
+    - name: customerId
+      type: String
+      default: '""'
+    - name: customer
+      type: "Customer?"
+      default: "null"
+    - name: accounts
+      type: "List<Account>"
+      default: "emptyList()"
+    - name: selectedTab
+      type: CustomerDetailTab
+      default: "CustomerDetailTab.OVERVIEW"
+    - name: kycStatus
+      type: KycStatus
+      default: "KycStatus.UNKNOWN"
+    - name: totalBalance
+      type: Double
+      default: "0.0"
+    - name: isLoading
+      type: Boolean
+      default: "true"
+  errors:
+    - name: networkError
+      type: "String?"
+      default: "null"
+    - name: customerNotFound
+      type: "String?"
+      default: "null"
+  events:
+    - TabSwitchedEvent
+    - CreateApplicationEvent
+    - SendMessageEvent
+    - ReassignOfficerEvent
+    - ReviewKycEvent
+  actions:
+    - switch_tab
+    - navigate
+    - reassign_officer
+  di:
+    - CustomerRepository
+    - AccountRepository
+    - NavigationService
+
+api:
+  - endpoint: "GET /obp/v5.1.0/banks/{bankId}/customers/{customerId}"
+    tag: Customers
+    params:
+      - bankId: String
+      - customerId: String
+    response:
+      fields:
+        - bank_id: String
+        - customer_id: String
+        - customer_number: String
+        - legal_name: String
+        - mobile_phone_number: String
+        - email: String
+        - face_image: FaceImage
+        - date_of_birth: String
+        - relationship_status: String
+        - dependants: Int
+        - dob_of_dependants: "List<String>"
+        - credit_rating: CreditRating
+        - credit_limit: Amount
+        - highest_education_attained: String
+        - employment_status: String
+        - kyc_status: Boolean
+        - last_ok_date: String
+        - title: String
+        - branch_id: String
+        - name_suffix: String
+    errors:
+      - 401: "Unauthorized — missing or invalid token"
+      - 403: "Forbidden — insufficient permissions"
+      - 404: "Customer not found"
+      - 500: "Internal server error"
+
+  - endpoint: "GET /obp/v5.1.0/banks/{bankId}/customers/{customerId}/accounts"
+    tag: Accounts
+    params:
+      - bankId: String
+      - customerId: String
+    response:
+      fields:
+        - accounts: "List<Account>"
+        - id: String
+        - label: String
+        - number: String
+        - bank_id: String
+        - account_routings: "List<AccountRouting>"
+        - balance: Amount
+        - account_type: String
+    errors:
+      - 401: "Unauthorized — missing or invalid token"
+      - 403: "Forbidden — insufficient permissions"
+      - 404: "Customer or bank not found"
+      - 500: "Internal server error"
+
 navigation:
-  - target: kyc_review
-    label: "kyc_review"
-  - target: account_applications
-    label: "account_applications"
+  - target: kyc-review
+    label: "KYC Review"
+    trigger: tab_kyc
+  - target: account-applications
+    label: "Account Applications"
+    trigger: create_application_fab
+  - target: customer-messages
+    label: "Customer Messages"
+    trigger: send_message_button
+
+dependencies:
+  tier: fieldOfficer
+  features:
+    - customer-detail

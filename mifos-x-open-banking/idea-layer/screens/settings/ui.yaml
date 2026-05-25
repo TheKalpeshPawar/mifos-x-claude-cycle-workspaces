@@ -1,22 +1,681 @@
-type: settings
-title: "Settings"
+id: settings
+name: "Settings"
+feature: settings
 flavor: shared
+status: enriched
+quality_score: 78
+status_history:
+  - { from: draft, to: enriched, at: "2026-05-25", by: "/idea enrich" }
+
+screens:
+  - id: settings
+    name: "Settings"
+    viewmodel: "SettingsViewModel"
+
 components:
-  - type: switch
-    id: dark_mode_toggle
+  - type: stack
+    id: settings_root
+    variant: column
+    style:
+      background: "#F5F5F5"
+      padding: spacing.lg
+    children:
+      - settings_appearance_group
+      - settings_notifications_group
+      - settings_security_group
+      - settings_about_group
+
+  # ── Appearance Section ──────────────────────────────────────────────────────
+
+  - type: text
+    id: settings_appearance_header
+    content: "Appearance"
+    variant: title_medium
+    style:
+      typography: "Inter/title_medium"
+      color: "#1800B1"
+      padding_bottom: spacing.sm
+      padding_top: spacing.lg
+    a11y:
+      role: heading
+      label: "Appearance settings section"
+    test_context:
+      purpose: "Section header grouping display-related preferences"
+      interaction_type: display
+      data_driven: false
+
+  - type: card
+    id: settings_appearance_group
+    variant: filled
+    style:
+      background: "#FFFFFF"
+      border_radius: "12dp"
+      padding: spacing.md
+      margin_bottom: spacing.md
+    children:
+      - settings_appearance_header
+      - settings_dark_mode_row
+      - settings_divider_1
+      - settings_language_row
+
+  - type: stack
+    id: settings_dark_mode_row
+    variant: row
+    style:
+      alignment: center_space_between
+      padding_top: spacing.sm
+      padding_bottom: spacing.sm
+    children:
+      - settings_dark_mode_label_group
+      - settings_dark_mode_toggle
+
+  - type: stack
+    id: settings_dark_mode_label_group
+    variant: column
+    children:
+      - settings_dark_mode_label
+      - settings_dark_mode_description
+
+  - type: text
+    id: settings_dark_mode_label
+    content: "Dark Mode"
+    variant: body_large
+    style:
+      typography: "Manrope/body_large"
+      color: "#212121"
+    a11y:
+      role: text
+      label: "Dark Mode"
+    test_context:
+      purpose: "Row label for the dark mode theme toggle"
+      interaction_type: display
+      data_driven: false
+
+  - type: text
+    id: settings_dark_mode_description
+    content: "Switch to a darker color scheme"
+    variant: body_small
+    style:
+      typography: "Manrope/body_small"
+      color: "#757575"
+    a11y:
+      role: text
+      label: "Switch to a darker color scheme"
+    test_context:
+      purpose: "Supplemental description below dark mode label"
+      interaction_type: display
+      data_driven: false
+
+  - type: input
+    id: settings_dark_mode_toggle
     label: "Dark Mode"
-  - type: select
-    id: language_select
+    variant: switch
+    style:
+      color_active: "#1800B1"
+      color_inactive: "#BDBDBD"
+    prefill: "isDarkModeEnabled"
+    on_click:
+      action: toggle
+      target: settings
+    a11y:
+      role: switch
+      label: "Toggle dark mode"
+    test_context:
+      purpose: "Persists dark mode preference to DataStore; triggers app-wide theme recomposition"
+      interaction_type: action
+      data_driven: true
+
+  - type: divider
+    id: settings_divider_1
+    style:
+      color: "#E0E0E0"
+      margin_top: spacing.xs
+      margin_bottom: spacing.xs
+    a11y:
+      role: separator
+      label: "Divider"
+    test_context:
+      purpose: "Visual separator between preference rows within the Appearance card"
+      interaction_type: display
+      data_driven: false
+
+  - type: stack
+    id: settings_language_row
+    variant: row
+    style:
+      alignment: center_space_between
+      padding_top: spacing.sm
+      padding_bottom: spacing.sm
+    children:
+      - settings_language_label_group
+      - settings_language_select
+
+  - type: stack
+    id: settings_language_label_group
+    variant: column
+    children:
+      - settings_language_label
+      - settings_language_description
+
+  - type: text
+    id: settings_language_label
+    content: "Language"
+    variant: body_large
+    style:
+      typography: "Manrope/body_large"
+      color: "#212121"
+    a11y:
+      role: text
+      label: "Language"
+    test_context:
+      purpose: "Row label for the language selection dropdown"
+      interaction_type: display
+      data_driven: false
+
+  - type: text
+    id: settings_language_description
+    content: "Choose your preferred display language"
+    variant: body_small
+    style:
+      typography: "Manrope/body_small"
+      color: "#757575"
+    a11y:
+      role: text
+      label: "Choose your preferred display language"
+    test_context:
+      purpose: "Supplemental description below language label"
+      interaction_type: display
+      data_driven: false
+
+  - type: input
+    id: settings_language_select
     label: "Language"
-    options: ["English", "Spanish", "French"]
-  - type: switch
-    id: notifications_toggle
-    label: "Enable Notifications"
-  - type: button
-    id: logout_button
-    label: "Logout"
-    variant: text
-    color: error
+    variant: select
+    options:
+      - { label: "English", value: "en" }
+      - { label: "Spanish", value: "es" }
+      - { label: "French", value: "fr" }
+      - { label: "Hindi", value: "hi" }
+      - { label: "Arabic", value: "ar" }
+    prefill: "selectedLanguage"
+    style:
+      border_color: "#BDBDBD"
+      focused_border_color: "#1800B1"
+      typography: "Manrope/body_medium"
+      color: "#212121"
+      min_width: "140dp"
+    on_click:
+      action: toggle
+      target: settings
+    a11y:
+      role: combobox
+      label: "Select language"
+    test_context:
+      purpose: "Language picker; selection triggers LocaleManager update and full UI recomposition"
+      interaction_type: action
+      data_driven: true
+
+  # ── Notifications Section ────────────────────────────────────────────────────
+
+  - type: card
+    id: settings_notifications_group
+    variant: filled
+    style:
+      background: "#FFFFFF"
+      border_radius: "12dp"
+      padding: spacing.md
+      margin_bottom: spacing.md
+    children:
+      - settings_notifications_header
+      - settings_push_notifications_row
+      - settings_divider_2
+      - settings_transaction_alerts_row
+
+  - type: text
+    id: settings_notifications_header
+    content: "Notifications"
+    variant: title_medium
+    style:
+      typography: "Inter/title_medium"
+      color: "#1800B1"
+      padding_bottom: spacing.sm
+    a11y:
+      role: heading
+      label: "Notifications settings section"
+    test_context:
+      purpose: "Section header grouping notification preferences"
+      interaction_type: display
+      data_driven: false
+
+  - type: stack
+    id: settings_push_notifications_row
+    variant: row
+    style:
+      alignment: center_space_between
+      padding_top: spacing.sm
+      padding_bottom: spacing.sm
+    children:
+      - settings_push_notifications_label_group
+      - settings_push_notifications_toggle
+
+  - type: stack
+    id: settings_push_notifications_label_group
+    variant: column
+    children:
+      - settings_push_notifications_label
+      - settings_push_notifications_description
+
+  - type: text
+    id: settings_push_notifications_label
+    content: "Push Notifications"
+    variant: body_large
+    style:
+      typography: "Manrope/body_large"
+      color: "#212121"
+    a11y:
+      role: text
+      label: "Push Notifications"
+    test_context:
+      purpose: "Row label for the push notifications master toggle"
+      interaction_type: display
+      data_driven: false
+
+  - type: text
+    id: settings_push_notifications_description
+    content: "Receive alerts and updates from Mifos X"
+    variant: body_small
+    style:
+      typography: "Manrope/body_small"
+      color: "#757575"
+    a11y:
+      role: text
+      label: "Receive alerts and updates from Mifos X"
+    test_context:
+      purpose: "Supplemental description below push notifications label"
+      interaction_type: display
+      data_driven: false
+
+  - type: input
+    id: settings_push_notifications_toggle
+    label: "Push Notifications"
+    variant: switch
+    style:
+      color_active: "#1800B1"
+      color_inactive: "#BDBDBD"
+    prefill: "isPushNotificationsEnabled"
+    on_click:
+      action: toggle
+      target: settings
+    a11y:
+      role: switch
+      label: "Toggle push notifications"
+    test_context:
+      purpose: "Master switch for push notifications; disabling cascades to hide sub-toggles"
+      interaction_type: action
+      data_driven: true
+
+  - type: divider
+    id: settings_divider_2
+    style:
+      color: "#E0E0E0"
+      margin_top: spacing.xs
+      margin_bottom: spacing.xs
+    a11y:
+      role: separator
+      label: "Divider"
+    test_context:
+      purpose: "Visual separator between push notification and transaction alert rows"
+      interaction_type: display
+      data_driven: false
+
+  - type: stack
+    id: settings_transaction_alerts_row
+    variant: row
+    style:
+      alignment: center_space_between
+      padding_top: spacing.sm
+      padding_bottom: spacing.sm
+    children:
+      - settings_transaction_alerts_label_group
+      - settings_transaction_alerts_toggle
+
+  - type: stack
+    id: settings_transaction_alerts_label_group
+    variant: column
+    children:
+      - settings_transaction_alerts_label
+      - settings_transaction_alerts_description
+
+  - type: text
+    id: settings_transaction_alerts_label
+    content: "Transaction Alerts"
+    variant: body_large
+    style:
+      typography: "Manrope/body_large"
+      color: "#212121"
+    a11y:
+      role: text
+      label: "Transaction Alerts"
+    test_context:
+      purpose: "Row label for the transaction notification sub-toggle"
+      interaction_type: display
+      data_driven: false
+
+  - type: text
+    id: settings_transaction_alerts_description
+    content: "Notify me for every debit and credit activity"
+    variant: body_small
+    style:
+      typography: "Manrope/body_small"
+      color: "#757575"
+    a11y:
+      role: text
+      label: "Notify me for every debit and credit activity"
+    test_context:
+      purpose: "Supplemental description below transaction alerts label"
+      interaction_type: display
+      data_driven: false
+
+  - type: input
+    id: settings_transaction_alerts_toggle
+    label: "Transaction Alerts"
+    variant: switch
+    style:
+      color_active: "#008B8B"
+      color_inactive: "#BDBDBD"
+    prefill: "isTransactionAlertsEnabled"
+    disabled_when: "!isPushNotificationsEnabled"
+    on_click:
+      action: toggle
+      target: settings
+    a11y:
+      role: switch
+      label: "Toggle transaction alerts"
+    test_context:
+      purpose: "Transaction-specific notification toggle; disabled when push notifications are off"
+      interaction_type: action
+      data_driven: true
+
+  # ── Security Section ─────────────────────────────────────────────────────────
+
+  - type: card
+    id: settings_security_group
+    variant: filled
+    style:
+      background: "#FFFFFF"
+      border_radius: "12dp"
+      padding: spacing.md
+      margin_bottom: spacing.md
+    children:
+      - settings_security_header
+      - settings_biometric_row
+
+  - type: text
+    id: settings_security_header
+    content: "Security"
+    variant: title_medium
+    style:
+      typography: "Inter/title_medium"
+      color: "#1800B1"
+      padding_bottom: spacing.sm
+    a11y:
+      role: heading
+      label: "Security settings section"
+    test_context:
+      purpose: "Section header grouping security-related preferences"
+      interaction_type: display
+      data_driven: false
+
+  - type: stack
+    id: settings_biometric_row
+    variant: row
+    style:
+      alignment: center_space_between
+      padding_top: spacing.sm
+      padding_bottom: spacing.sm
+    children:
+      - settings_biometric_label_group
+      - settings_biometric_toggle
+
+  - type: stack
+    id: settings_biometric_label_group
+    variant: column
+    children:
+      - settings_biometric_label
+      - settings_biometric_description
+
+  - type: text
+    id: settings_biometric_label
+    content: "Biometric Login"
+    variant: body_large
+    style:
+      typography: "Manrope/body_large"
+      color: "#212121"
+    a11y:
+      role: text
+      label: "Biometric Login"
+    test_context:
+      purpose: "Row label for fingerprint or face unlock authentication toggle"
+      interaction_type: display
+      data_driven: false
+
+  - type: text
+    id: settings_biometric_description
+    content: "Use fingerprint or face ID to sign in faster"
+    variant: body_small
+    style:
+      typography: "Manrope/body_small"
+      color: "#757575"
+    a11y:
+      role: text
+      label: "Use fingerprint or face ID to sign in faster"
+    test_context:
+      purpose: "Supplemental description below biometric login label"
+      interaction_type: display
+      data_driven: false
+
+  - type: input
+    id: settings_biometric_toggle
+    label: "Biometric Login"
+    variant: switch
+    style:
+      color_active: "#1800B1"
+      color_inactive: "#BDBDBD"
+    prefill: "isBiometricLoginEnabled"
+    disabled_when: "!isBiometricAvailableOnDevice"
+    on_click:
+      action: toggle
+      target: settings
+    a11y:
+      role: switch
+      label: "Toggle biometric login"
+    test_context:
+      purpose: "Enables BiometricPrompt-backed login; disabled on devices without biometric hardware"
+      interaction_type: action
+      data_driven: true
+
+  # ── About Section ────────────────────────────────────────────────────────────
+
+  - type: card
+    id: settings_about_group
+    variant: filled
+    style:
+      background: "#FFFFFF"
+      border_radius: "12dp"
+      padding: spacing.md
+      margin_bottom: spacing.md
+    children:
+      - settings_about_header
+      - settings_about_link_row
+      - settings_divider_3
+      - settings_app_version_row
+
+  - type: text
+    id: settings_about_header
+    content: "About"
+    variant: title_medium
+    style:
+      typography: "Inter/title_medium"
+      color: "#1800B1"
+      padding_bottom: spacing.sm
+    a11y:
+      role: heading
+      label: "About section"
+    test_context:
+      purpose: "Section header grouping app information and legal links"
+      interaction_type: display
+      data_driven: false
+
+  - type: stack
+    id: settings_about_link_row
+    variant: row
+    style:
+      alignment: center_space_between
+      padding_top: spacing.sm
+      padding_bottom: spacing.sm
+    children:
+      - settings_about_link
+      - settings_about_chevron
+
+  - type: link
+    id: settings_about_link
+    label: "About Mifos X Open Banking"
+    variant: inline
+    style:
+      typography: "Manrope/body_large"
+      color: "#212121"
+    on_click:
+      action: navigate
+      target: about
+    a11y:
+      role: link
+      label: "Navigate to About Mifos X Open Banking"
+    test_context:
+      purpose: "Links to the About screen showing open-source credits, OBP API version, licenses"
+      interaction_type: navigate
+      data_driven: false
+
+  - type: icon
+    id: settings_about_chevron
+    content: "chevron_right"
+    variant: default
+    style:
+      color: "#BDBDBD"
+      size: "20dp"
+    a11y:
+      role: image
+      label: ""
+    test_context:
+      purpose: "Trailing affordance icon indicating the About row is tappable"
+      interaction_type: display
+      data_driven: false
+
+  - type: divider
+    id: settings_divider_3
+    style:
+      color: "#E0E0E0"
+      margin_top: spacing.xs
+      margin_bottom: spacing.xs
+    a11y:
+      role: separator
+      label: "Divider"
+    test_context:
+      purpose: "Visual separator between About link and app version rows"
+      interaction_type: display
+      data_driven: false
+
+  - type: stack
+    id: settings_app_version_row
+    variant: row
+    style:
+      alignment: center_space_between
+      padding_top: spacing.sm
+      padding_bottom: spacing.sm
+    children:
+      - settings_app_version_label
+      - settings_app_version_value
+
+  - type: text
+    id: settings_app_version_label
+    content: "App Version"
+    variant: body_large
+    style:
+      typography: "Manrope/body_large"
+      color: "#212121"
+    a11y:
+      role: text
+      label: "App Version"
+    test_context:
+      purpose: "Label for the current build version row"
+      interaction_type: display
+      data_driven: false
+
+  - type: text
+    id: settings_app_version_value
+    content: "v1.0.0"
+    variant: body_small
+    style:
+      typography: "Manrope/body_small"
+      color: "#757575"
+    a11y:
+      role: text
+      label: "Version 1.0.0"
+    test_context:
+      purpose: "Displays the current app version string from BuildConfig.VERSION_NAME"
+      interaction_type: display
+      data_driven: true
+
 states:
-  - content
-navigation: []
+  loading:
+    layout: { type: column, padding: spacing.lg }
+    visible_components: []
+    note: "Skeleton shimmer shown while preferences load from DataStore"
+  content:
+    layout: { type: column, padding: spacing.lg }
+    visible_components: [settings_appearance_group, settings_notifications_group, settings_security_group, settings_about_group]
+
+state_model:
+  SettingsViewModel:
+    screen_state: SettingsUiState
+    state:
+      - field: isDarkModeEnabled
+        type: Boolean
+        default: "false"
+      - field: selectedLanguage
+        type: String
+        default: "\"en\""
+      - field: isPushNotificationsEnabled
+        type: Boolean
+        default: "true"
+      - field: isTransactionAlertsEnabled
+        type: Boolean
+        default: "true"
+      - field: isBiometricLoginEnabled
+        type: Boolean
+        default: "false"
+      - field: isBiometricAvailableOnDevice
+        type: Boolean
+        default: "false"
+      - field: appVersion
+        type: String
+        default: "\"v1.0.0\""
+      - field: isLoading
+        type: Boolean
+        default: "true"
+    errors: [NETWORK_ERROR]
+    events: [LoadSettings, OnDarkModeToggled, OnLanguageSelected, OnPushNotificationsToggled, OnTransactionAlertsToggled, OnBiometricToggled, OnAboutClicked]
+    actions: [onLoadSettings(), onDarkModeToggled(), onLanguageSelected(language: String), onPushNotificationsToggled(), onTransactionAlertsToggled(), onBiometricToggled(), onAboutClicked()]
+    di: [SettingsRepository, BiometricManager, NotificationManager, LocaleManager]
+
+navigation:
+  - id: nav_to_about
+    target: about
+    on_click:
+      action: navigate
+      target: about
+
+api: []
+
+dependencies:
+  tier: feature
+  features: [shared-core, obp-auth]

@@ -1,32 +1,527 @@
-type: send_money
-title: "Send Money"
+id: send-money
+name: Send Money
+feature: send-money
 flavor: consumer
+status: enriched
+quality_score: 82
+
+screens:
+  - id: send-money
+    name: Send Money
+    archetype: form
+    shell:
+      top_bar:
+        title: "Send Money"
+        navigation_icon: arrow_back
+        actions: []
+      bottom_nav: false
+
 components:
-  - type: text_field
+  - type: text
+    id: send_money_title
+    label: "Send Money"
+    style:
+      typography: headline_large
+      color: "#1800B1"
+      padding_bottom: 8
+    a11y:
+      content_description: "Send Money screen title"
+      role: heading
+    test_context:
+      tag: send_money_title
+      assert_text: "Send Money"
+
+  - type: input
+    id: from_account_selector
+    label: "From Account"
+    content: "Primary Checking — £4,250.00 available"
+    style:
+      variant: outlined
+      leading_icon: account_balance
+      trailing_icon: expand_more
+      corner_radius: 12
+      background: "#F5F5FF"
+    on_click:
+      action: select_account
+      target: ""
+    a11y:
+      content_description: "Select source account. Currently: Primary Checking with £4,250.00 available"
+      role: button
+    test_context:
+      tag: from_account_selector
+      assert_text: "Primary Checking — £4,250.00 available"
+
+  - type: input
     id: amount_input
     label: "Amount"
-    input_type: decimal
-  - type: select
-    id: account_select
-    label: "From Account"
-  - type: autocomplete
-    id: beneficiary_autocomplete
-    label: "To (Beneficiary)"
-    on_select:
-      target: send_money_confirm
-  - type: text_field
+    content: ""
+    style:
+      variant: outlined
+      input_type: number
+      placeholder: "0.00"
+      corner_radius: 12
+      prefix_text: "£"
+      keyboard_type: decimal
+    on_click:
+      action: focus_amount
+      target: ""
+    a11y:
+      content_description: "Enter payment amount in pounds"
+      role: text_field
+    test_context:
+      tag: amount_input
+      assert_hint: "0.00"
+
+  - type: input
+    id: currency_selector
+    label: "Currency"
+    content: "GBP ▾"
+    style:
+      variant: chip
+      chip_style: filter
+      corner_radius: 8
+      padding_horizontal: 12
+      padding_vertical: 6
+    on_click:
+      action: select_currency
+      target: ""
+    a11y:
+      content_description: "Select currency. Currently: British Pound Sterling"
+      role: button
+    test_context:
+      tag: currency_selector
+      assert_text: "GBP ▾"
+
+  - type: input
+    id: beneficiary_search
+    label: "To"
+    content: ""
+    style:
+      variant: outlined
+      input_type: search
+      placeholder: "Search beneficiary or enter account..."
+      leading_icon: search
+      corner_radius: 12
+    on_click:
+      action: search_beneficiary
+      target: ""
+    a11y:
+      content_description: "Search for a beneficiary by name or enter an account number"
+      role: search_field
+    test_context:
+      tag: beneficiary_search
+      assert_hint: "Search beneficiary or enter account..."
+
+  - type: stack
+    id: recent_beneficiaries_row
+    label: "Recent Beneficiaries"
+    style:
+      orientation: horizontal
+      spacing: 12
+      padding_top: 8
+      padding_bottom: 8
+      overflow: scroll_horizontal
+    on_click:
+      action: ""
+      target: ""
+    a11y:
+      content_description: "Recently used beneficiaries"
+      role: list
+    test_context:
+      tag: recent_beneficiaries_row
+
+  - type: box
+    id: recent_beneficiary_john
+    label: "John Smith"
+    content: "John Smith · Barclays UK"
+    style:
+      corner_radius: 12
+      background: "#F0F0FF"
+      padding_horizontal: 12
+      padding_vertical: 8
+      border_color: "#E0E0FF"
+      border_width: 1
+    on_click:
+      action: select_beneficiary
+      target: ""
+    a11y:
+      content_description: "Select John Smith at Barclays UK as beneficiary"
+      role: button
+    test_context:
+      tag: recent_beneficiary_john
+      assert_text: "John Smith"
+
+  - type: box
+    id: recent_beneficiary_sarah
+    label: "Sarah Williams"
+    content: "Sarah Williams · HSBC UK"
+    style:
+      corner_radius: 12
+      background: "#F0F0FF"
+      padding_horizontal: 12
+      padding_vertical: 8
+      border_color: "#E0E0FF"
+      border_width: 1
+    on_click:
+      action: select_beneficiary
+      target: ""
+    a11y:
+      content_description: "Select Sarah Williams at HSBC UK as beneficiary"
+      role: button
+    test_context:
+      tag: recent_beneficiary_sarah
+      assert_text: "Sarah Williams"
+
+  - type: input
     id: reference_input
-    label: "Reference/Description"
+    label: "Reference"
+    content: ""
+    style:
+      variant: outlined
+      input_type: text
+      placeholder: "Payment for invoice #1234"
+      corner_radius: 12
+      max_length: 35
+      helper_text: "Max 35 characters"
+    on_click:
+      action: focus_reference
+      target: ""
+    a11y:
+      content_description: "Enter payment reference, maximum 35 characters"
+      role: text_field
+    test_context:
+      tag: reference_input
+      assert_hint: "Payment for invoice #1234"
+
+  - type: stack
+    id: payment_type_selector
+    label: "Payment Type"
+    style:
+      orientation: horizontal
+      spacing: 8
+      padding_top: 4
+      padding_bottom: 4
+    on_click:
+      action: ""
+      target: ""
+    a11y:
+      content_description: "Select payment type"
+      role: radio_group
+    test_context:
+      tag: payment_type_selector
+
+  - type: input
+    id: payment_type_sepa
+    label: "SEPA"
+    content: "SEPA"
+    style:
+      variant: chip
+      chip_style: filter
+      selected: true
+      selected_color: "#1800B1"
+      selected_text_color: "#FFFFFF"
+      corner_radius: 20
+      padding_horizontal: 16
+      padding_vertical: 8
+    on_click:
+      action: select_payment_type_sepa
+      target: ""
+    a11y:
+      content_description: "SEPA payment type, currently selected"
+      role: radio_button
+    test_context:
+      tag: payment_type_sepa
+      assert_selected: true
+
+  - type: input
+    id: payment_type_domestic
+    label: "Domestic"
+    content: "Domestic"
+    style:
+      variant: chip
+      chip_style: filter
+      selected: false
+      corner_radius: 20
+      padding_horizontal: 16
+      padding_vertical: 8
+    on_click:
+      action: select_payment_type_domestic
+      target: ""
+    a11y:
+      content_description: "Domestic payment type"
+      role: radio_button
+    test_context:
+      tag: payment_type_domestic
+      assert_selected: false
+
+  - type: input
+    id: payment_type_international
+    label: "International"
+    content: "International"
+    style:
+      variant: chip
+      chip_style: filter
+      selected: false
+      corner_radius: 20
+      padding_horizontal: 16
+      padding_vertical: 8
+    on_click:
+      action: select_payment_type_international
+      target: ""
+    a11y:
+      content_description: "International payment type"
+      role: radio_button
+    test_context:
+      tag: payment_type_international
+      assert_selected: false
+
+  - type: box
+    id: fee_estimate_banner
+    label: "Fee Estimate"
+    content: "Estimated fee: Free (SEPA)"
+    style:
+      background: "#E8F5E9"
+      corner_radius: 8
+      padding_horizontal: 16
+      padding_vertical: 12
+      border_color: "#4CAF50"
+      border_width: 1
+      leading_icon: info_outline
+      leading_icon_color: "#4CAF50"
+    on_click:
+      action: view_fee_details
+      target: ""
+    a11y:
+      content_description: "Fee information: Estimated fee is Free for SEPA payments"
+      role: status
+    test_context:
+      tag: fee_estimate_banner
+      assert_text: "Estimated fee: Free (SEPA)"
+
   - type: button
     id: continue_button
     label: "Continue"
-    variant: contained
+    style:
+      variant: filled
+      background: "#1800B1"
+      text_color: "#FFFFFF"
+      corner_radius: 12
+      padding_vertical: 16
+      full_width: true
+      typography: label_large
     on_click:
-      target: send_money_confirm
+      action: validate
+      target: send-money-confirm
+    a11y:
+      content_description: "Continue to payment confirmation"
+      role: button
+    test_context:
+      tag: continue_button
+      assert_text: "Continue"
+      assert_enabled: true
+
 states:
-  - draft
-  - validating
-  - error
-navigation:
-  - target: send_money_confirm
-    label: "send_money_confirm"
+  draft:
+    layout:
+      visible_components:
+        - send_money_title
+        - from_account_selector
+        - amount_input
+        - currency_selector
+        - beneficiary_search
+        - recent_beneficiaries_row
+        - recent_beneficiary_john
+        - recent_beneficiary_sarah
+        - reference_input
+        - payment_type_selector
+        - payment_type_sepa
+        - payment_type_domestic
+        - payment_type_international
+        - fee_estimate_banner
+        - continue_button
+      continue_button_enabled: false
+      fee_banner_text: "Estimated fee: Free (SEPA)"
+  validating:
+    layout:
+      visible_components:
+        - send_money_title
+        - from_account_selector
+        - amount_input
+        - currency_selector
+        - beneficiary_search
+        - reference_input
+        - payment_type_selector
+        - payment_type_sepa
+        - payment_type_domestic
+        - payment_type_international
+        - fee_estimate_banner
+        - continue_button
+      continue_button_loading: true
+      progress_indicator: linear
+  error:
+    layout:
+      visible_components:
+        - send_money_title
+        - from_account_selector
+        - amount_input
+        - currency_selector
+        - beneficiary_search
+        - reference_input
+        - payment_type_selector
+        - payment_type_sepa
+        - payment_type_domestic
+        - payment_type_international
+        - fee_estimate_banner
+        - continue_button
+      amount_input_error: "Please enter a valid amount greater than £0.01"
+      beneficiary_search_error: "Please select a valid beneficiary"
+      continue_button_enabled: false
+
+state_model:
+  view_model: SendMoneyViewModel
+  state_fields:
+    - name: selectedAccountId
+      type: String
+      default: ""
+    - name: selectedAccountLabel
+      type: String
+      default: "Primary Checking — £4,250.00 available"
+    - name: amount
+      type: String
+      default: ""
+    - name: currency
+      type: String
+      default: "GBP"
+    - name: beneficiaryId
+      type: String
+      default: ""
+    - name: beneficiaryName
+      type: String
+      default: ""
+    - name: reference
+      type: String
+      default: ""
+    - name: paymentType
+      type: PaymentType
+      default: SEPA
+    - name: estimatedFee
+      type: String
+      default: "Free"
+    - name: uiState
+      type: SendMoneyUiState
+      default: Draft
+  errors:
+    - field: amount
+      code: AMOUNT_REQUIRED
+      message: "Please enter a valid amount greater than £0.01"
+    - field: beneficiary
+      code: BENEFICIARY_REQUIRED
+      message: "Please select a valid beneficiary"
+    - field: account
+      code: ACCOUNT_REQUIRED
+      message: "Please select a source account"
+    - field: reference
+      code: REFERENCE_TOO_LONG
+      message: "Reference must be 35 characters or fewer"
+  events:
+    - AccountSelected
+    - AmountChanged
+    - CurrencyChanged
+    - BeneficiarySelected
+    - ReferenceChanged
+    - PaymentTypeChanged
+    - ContinueClicked
+    - ValidationFailed
+    - ValidationSucceeded
+  actions:
+    - select_account
+    - search_beneficiary
+    - select_beneficiary
+    - select_currency
+    - select_payment_type_sepa
+    - select_payment_type_domestic
+    - select_payment_type_international
+    - validate
+    - focus_amount
+    - focus_reference
+  di:
+    - AccountRepository
+    - BeneficiaryRepository
+    - PaymentRepository
+    - FeeCalculatorUseCase
+
+api:
+  - endpoint: "GET /obp/v5.1.0/banks/{bankId}/accounts"
+    tag: Accounts
+    response:
+      fields:
+        - name: accounts
+          type: List<Account>
+        - name: id
+          type: String
+        - name: label
+          type: String
+        - name: balance
+          type: Amount
+        - name: currency
+          type: String
+    errors:
+      - code: 400
+        message: "INVALID_BANK_ID"
+      - code: 401
+        message: "USER_NOT_LOGGED_IN"
+      - code: 404
+        message: "BANK_NOT_FOUND"
+  - endpoint: "GET /obp/v5.1.0/banks/{bankId}/counterparties"
+    tag: Counterparties
+    response:
+      fields:
+        - name: counterparties
+          type: List<Counterparty>
+        - name: id
+          type: String
+        - name: name
+          type: String
+        - name: other_bank_routing_address
+          type: String
+        - name: other_account_routing_address
+          type: String
+    errors:
+      - code: 400
+        message: "INVALID_BANK_ID"
+      - code: 401
+        message: "USER_NOT_LOGGED_IN"
+  - endpoint: "POST /obp/v5.1.0/banks/{bankId}/accounts/{accountId}/transaction-request-types/SEPA/transaction-requests"
+    tag: TransactionRequests
+    response:
+      fields:
+        - name: id
+          type: String
+        - name: type
+          type: String
+        - name: status
+          type: String
+        - name: start_date
+          type: DateTime
+        - name: end_date
+          type: DateTime
+        - name: challenge
+          type: Challenge
+        - name: charge
+          type: Charge
+    errors:
+      - code: 400
+        message: "INVALID_JSON_FORMAT"
+      - code: 403
+        message: "INSUFFICIENT_AUTHORISATION"
+      - code: 404
+        message: "BANK_ACCOUNT_NOT_FOUND"
+      - code: 422
+        message: "INSUFFICIENT_FUNDS"
+
+dependencies:
+  tier: feature
+  features:
+    - accounts
+    - beneficiaries
+    - send-money-confirm

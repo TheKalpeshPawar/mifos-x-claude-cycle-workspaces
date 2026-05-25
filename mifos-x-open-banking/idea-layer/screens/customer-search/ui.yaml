@@ -1,22 +1,731 @@
-type: customer_search
-title: "Search Customers"
+id: customer-search
+name: "Find Customer"
+feature: customer-search
 flavor: fieldOfficer
+status: enriched
+quality_score: 80
+
+screens:
+  - id: customer_search_main
+    name: "Find Customer"
+    archetype: search
+    route: /customer-search
+
 components:
-  - type: search_field
+  - type: text
+    id: customer_search_title
+    content: "Find Customer"
+    style:
+      typography: headline_large
+      color: "#1800B1"
+      padding_top: 24
+      padding_horizontal: 16
+      font_weight: 700
+    a11y:
+      role: heading
+      level: 1
+      label: "Find Customer screen"
+    test_context:
+      test_id: customer_search_title
+      assert: text_visible
+
+  - type: input
     id: customer_search_input
-    placeholder: "Search by name, email, or ID..."
-  - type: filter_chip_group
-    id: customer_filters
-    options: ["All", "Active", "Prospect", "Dormant"]
-  - type: customer_list
-    id: search_results
-    on_item_click:
-      target: customer_detail
+    label: "Search customers"
+    content: ""
+    style:
+      variant: search
+      placeholder: "Search by name, ID, phone or email..."
+      background: "#F5F5F5"
+      border_radius: 28
+      padding_horizontal: 16
+      padding_vertical: 12
+      margin_horizontal: 16
+      margin_top: 12
+      icon_leading: "search"
+      icon_trailing_clearable: true
+    on_click:
+      action: search
+      target: customer_search_main
+    a11y:
+      role: searchbox
+      label: "Search customers by name, ID, phone or email"
+      hint: "Enter at least 2 characters to start searching"
+    test_context:
+      test_id: customer_search_input
+      assert: triggers_search_on_type
+
+  - type: stack
+    id: filter_chips_row
+    style:
+      direction: horizontal
+      spacing: 8
+      padding_horizontal: 16
+      padding_top: 12
+      padding_bottom: 4
+      overflow_x: scroll
+    a11y:
+      role: group
+      label: "Filter customers by status"
+    test_context:
+      test_id: filter_chips_row
+      assert: all_chips_visible
+
+  - type: input
+    id: filter_all
+    label: "All"
+    content: "all"
+    style:
+      variant: radio
+      chip_style: true
+      selected: true
+      background_selected: "#1800B1"
+      color_selected: "#FFFFFF"
+      border_radius: 16
+      padding_horizontal: 16
+      padding_vertical: 8
+    on_click:
+      action: filter
+      target: customer_search_main
+    a11y:
+      role: radio
+      label: "Show all customers"
+    test_context:
+      test_id: filter_all
+      assert: default_selected
+
+  - type: input
+    id: filter_active
+    label: "Active"
+    content: "active"
+    style:
+      variant: radio
+      chip_style: true
+      border_radius: 16
+      padding_horizontal: 16
+      padding_vertical: 8
+    on_click:
+      action: filter
+      target: customer_search_main
+    a11y:
+      role: radio
+      label: "Show active customers only"
+    test_context:
+      test_id: filter_active
+      assert: filters_to_active_status
+
+  - type: input
+    id: filter_prospect
+    label: "Prospect"
+    content: "prospect"
+    style:
+      variant: radio
+      chip_style: true
+      border_radius: 16
+      padding_horizontal: 16
+      padding_vertical: 8
+    on_click:
+      action: filter
+      target: customer_search_main
+    a11y:
+      role: radio
+      label: "Show prospect customers only"
+    test_context:
+      test_id: filter_prospect
+      assert: filters_to_prospect_status
+
+  - type: input
+    id: filter_dormant
+    label: "Dormant"
+    content: "dormant"
+    style:
+      variant: radio
+      chip_style: true
+      border_radius: 16
+      padding_horizontal: 16
+      padding_vertical: 8
+    on_click:
+      action: filter
+      target: customer_search_main
+    a11y:
+      role: radio
+      label: "Show dormant customers only"
+    test_context:
+      test_id: filter_dormant
+      assert: filters_to_dormant_status
+
+  - type: button
+    id: scan_qr_button
+    label: "Scan Customer ID"
+    content: ""
+    style:
+      variant: outlined
+      border_color: "#1800B1"
+      color: "#1800B1"
+      border_radius: 12
+      padding_horizontal: 16
+      padding_vertical: 10
+      margin_horizontal: 16
+      margin_top: 8
+      margin_bottom: 8
+      icon_leading: "qr_code"
+      full_width: false
+      align_self: flex_start
+    on_click:
+      action: scan_qr
+      target: customer_search_main
+    a11y:
+      role: button
+      label: "Scan customer ID QR code"
+      hint: "Opens camera to scan a customer's QR code ID"
+    test_context:
+      test_id: scan_qr_button
+      assert: opens_camera_scanner
+
+  - type: box
+    id: customer_result_john_mwangi
+    content: ""
+    style:
+      background: "#FFFFFF"
+      border_radius: 12
+      elevation: 2
+      padding: 14
+      margin_horizontal: 16
+      margin_bottom: 8
+      direction: row
+      align_items: center
+    on_click:
+      action: navigate
+      target: customer-detail
+    a11y:
+      role: listitem
+      label: "John Mwangi, KYC verified, checking account, last interaction 3 days ago"
+    test_context:
+      test_id: customer_result_john_mwangi
+      assert: navigates_to_customer_detail
+
+  - type: box
+    id: avatar_john
+    content: "JM"
+    style:
+      shape: circle
+      size: 44
+      background: "#1800B1"
+      color: "#FFFFFF"
+      typography: title_small
+      font_weight: 700
+      text_align: center
+      margin_right: 12
+      flex_shrink: 0
+    a11y:
+      role: img
+      label: "John Mwangi initials"
+    test_context:
+      test_id: avatar_john
+      assert: initials_derived_from_name
+
+  - type: text
+    id: customer_john_name
+    content: "John Mwangi"
+    style:
+      typography: title_small
+      color: "#212121"
+      font_weight: 600
+    a11y:
+      role: text
+      label: "John Mwangi"
+    test_context:
+      test_id: customer_john_name
+      assert: text_visible
+
+  - type: text
+    id: customer_john_kyc_status
+    content: "KYC Verified ✓"
+    style:
+      typography: body_small
+      color: "#4CAF50"
+      font_weight: 500
+    a11y:
+      role: text
+      label: "KYC Verified"
+    test_context:
+      test_id: customer_john_kyc_status
+      assert: green_when_verified
+
+  - type: text
+    id: customer_john_account
+    content: "Checking Account · KES 45,200"
+    style:
+      typography: body_small
+      color: "#616161"
+    a11y:
+      role: text
+      label: "Checking Account, balance KES 45,200"
+    test_context:
+      test_id: customer_john_account
+      assert: text_visible
+
+  - type: text
+    id: customer_john_last_interaction
+    content: "3 days ago"
+    style:
+      typography: body_small
+      color: "#9E9E9E"
+      align_self: flex_start
+    a11y:
+      role: text
+      label: "Last interaction 3 days ago"
+    test_context:
+      test_id: customer_john_last_interaction
+      assert: relative_timestamp_displayed
+
+  - type: box
+    id: customer_result_sarah_odhiambo
+    content: ""
+    style:
+      background: "#FFFFFF"
+      border_radius: 12
+      elevation: 2
+      padding: 14
+      margin_horizontal: 16
+      margin_bottom: 8
+      direction: row
+      align_items: center
+    on_click:
+      action: navigate
+      target: customer-detail
+    a11y:
+      role: listitem
+      label: "Sarah Odhiambo, KYC pending, application in review, last interaction 7 days ago"
+    test_context:
+      test_id: customer_result_sarah_odhiambo
+      assert: navigates_to_customer_detail
+
+  - type: box
+    id: avatar_sarah
+    content: "SO"
+    style:
+      shape: circle
+      size: 44
+      background: "#FF8F00"
+      color: "#FFFFFF"
+      typography: title_small
+      font_weight: 700
+      text_align: center
+      margin_right: 12
+      flex_shrink: 0
+    a11y:
+      role: img
+      label: "Sarah Odhiambo initials"
+    test_context:
+      test_id: avatar_sarah
+      assert: initials_derived_from_name
+
+  - type: text
+    id: customer_sarah_name
+    content: "Sarah Odhiambo"
+    style:
+      typography: title_small
+      color: "#212121"
+      font_weight: 600
+    a11y:
+      role: text
+      label: "Sarah Odhiambo"
+    test_context:
+      test_id: customer_sarah_name
+      assert: text_visible
+
+  - type: text
+    id: customer_sarah_kyc_status
+    content: "KYC Pending ⚠"
+    style:
+      typography: body_small
+      color: "#FF8F00"
+      font_weight: 500
+    a11y:
+      role: text
+      label: "KYC Pending — action required"
+    test_context:
+      test_id: customer_sarah_kyc_status
+      assert: amber_when_pending
+
+  - type: text
+    id: customer_sarah_account
+    content: "Application in Review"
+    style:
+      typography: body_small
+      color: "#616161"
+    a11y:
+      role: text
+      label: "Application in Review"
+    test_context:
+      test_id: customer_sarah_account
+      assert: text_visible
+
+  - type: text
+    id: customer_sarah_last_interaction
+    content: "7 days ago"
+    style:
+      typography: body_small
+      color: "#9E9E9E"
+      align_self: flex_start
+    a11y:
+      role: text
+      label: "Last interaction 7 days ago"
+    test_context:
+      test_id: customer_sarah_last_interaction
+      assert: relative_timestamp_displayed
+
+  - type: box
+    id: customer_result_peter_kamau
+    content: ""
+    style:
+      background: "#FFFFFF"
+      border_radius: 12
+      elevation: 2
+      padding: 14
+      margin_horizontal: 16
+      margin_bottom: 8
+      direction: row
+      align_items: center
+    on_click:
+      action: navigate
+      target: customer-detail
+    a11y:
+      role: listitem
+      label: "Peter Kamau, new prospect, no account yet, added today"
+    test_context:
+      test_id: customer_result_peter_kamau
+      assert: navigates_to_customer_detail
+
+  - type: box
+    id: avatar_peter
+    content: "PK"
+    style:
+      shape: circle
+      size: 44
+      background: "#008B8B"
+      color: "#FFFFFF"
+      typography: title_small
+      font_weight: 700
+      text_align: center
+      margin_right: 12
+      flex_shrink: 0
+    a11y:
+      role: img
+      label: "Peter Kamau initials"
+    test_context:
+      test_id: avatar_peter
+      assert: initials_derived_from_name
+
+  - type: text
+    id: customer_peter_name
+    content: "Peter Kamau"
+    style:
+      typography: title_small
+      color: "#212121"
+      font_weight: 600
+    a11y:
+      role: text
+      label: "Peter Kamau"
+    test_context:
+      test_id: customer_peter_name
+      assert: text_visible
+
+  - type: text
+    id: customer_peter_kyc_status
+    content: "New Prospect"
+    style:
+      typography: body_small
+      color: "#008B8B"
+      font_weight: 500
+    a11y:
+      role: text
+      label: "New Prospect"
+    test_context:
+      test_id: customer_peter_kyc_status
+      assert: teal_color_for_prospect
+
+  - type: text
+    id: customer_peter_account
+    content: "No account yet"
+    style:
+      typography: body_small
+      color: "#9E9E9E"
+    a11y:
+      role: text
+      label: "No account yet"
+    test_context:
+      test_id: customer_peter_account
+      assert: text_visible
+
+  - type: text
+    id: customer_peter_last_interaction
+    content: "Today"
+    style:
+      typography: body_small
+      color: "#1800B1"
+      font_weight: 500
+    a11y:
+      role: text
+      label: "Added today"
+    test_context:
+      test_id: customer_peter_last_interaction
+      assert: highlighted_for_today
+
+  - type: button
+    id: onboard_new_customer_button
+    label: "Onboard New Customer"
+    content: ""
+    style:
+      variant: filled
+      background: "#1800B1"
+      color: "#FFFFFF"
+      border_radius: 12
+      padding_vertical: 14
+      margin_horizontal: 16
+      margin_top: 8
+      margin_bottom: 24
+      full_width: true
+      icon_leading: "person_add"
+      typography: label_large
+    on_click:
+      action: navigate
+      target: customer-onboarding
+    a11y:
+      role: button
+      label: "Onboard a new customer — start customer registration"
+    test_context:
+      test_id: onboard_new_customer_button
+      assert: navigates_to_customer_onboarding
+
+  - type: box
+    id: empty_state_box
+    content: ""
+    style:
+      background: "#FAFAFA"
+      border_radius: 12
+      padding: 32
+      margin_horizontal: 16
+      margin_top: 16
+      align_items: center
+      conditional: no_results
+    a11y:
+      role: region
+      label: "No customers found"
+    test_context:
+      test_id: empty_state_box
+      assert: visible_when_no_results
+
+  - type: text
+    id: empty_state_message
+    content: "No customers found for this search"
+    style:
+      typography: body_large
+      color: "#757575"
+      text_align: center
+      padding_bottom: 16
+    a11y:
+      role: text
+      label: "No customers found for this search"
+    test_context:
+      test_id: empty_state_message
+      assert: text_visible_in_no_results_state
+
+  - type: button
+    id: try_different_search_button
+    label: "Try Different Search"
+    content: ""
+    style:
+      variant: outlined
+      border_color: "#1800B1"
+      color: "#1800B1"
+      border_radius: 8
+      padding_horizontal: 16
+      padding_vertical: 10
+    on_click:
+      action: clear_search
+      target: customer_search_main
+    a11y:
+      role: button
+      label: "Clear search and try different terms"
+    test_context:
+      test_id: try_different_search_button
+      assert: clears_search_field
+
 states:
-  - idle
-  - searching
-  - results
-  - no_results
+  idle:
+    layout:
+      show_components:
+        - customer_search_title
+        - customer_search_input
+        - filter_chips_row
+        - filter_all
+        - filter_active
+        - filter_prospect
+        - filter_dormant
+        - scan_qr_button
+        - onboard_new_customer_button
+      hide_components:
+        - customer_result_john_mwangi
+        - customer_result_sarah_odhiambo
+        - customer_result_peter_kamau
+        - empty_state_box
+  searching:
+    layout:
+      show_components:
+        - customer_search_title
+        - customer_search_input
+        - filter_chips_row
+        - filter_all
+        - filter_active
+        - filter_prospect
+        - filter_dormant
+        - scan_qr_button
+      skeleton_components:
+        - customer_result_john_mwangi
+        - customer_result_sarah_odhiambo
+        - customer_result_peter_kamau
+      hide_components:
+        - empty_state_box
+        - onboard_new_customer_button
+  results:
+    layout:
+      show_components:
+        - customer_search_title
+        - customer_search_input
+        - filter_chips_row
+        - filter_all
+        - filter_active
+        - filter_prospect
+        - filter_dormant
+        - scan_qr_button
+        - customer_result_john_mwangi
+        - avatar_john
+        - customer_john_name
+        - customer_john_kyc_status
+        - customer_john_account
+        - customer_john_last_interaction
+        - customer_result_sarah_odhiambo
+        - avatar_sarah
+        - customer_sarah_name
+        - customer_sarah_kyc_status
+        - customer_sarah_account
+        - customer_sarah_last_interaction
+        - customer_result_peter_kamau
+        - avatar_peter
+        - customer_peter_name
+        - customer_peter_kyc_status
+        - customer_peter_account
+        - customer_peter_last_interaction
+        - onboard_new_customer_button
+      hide_components:
+        - empty_state_box
+  no_results:
+    layout:
+      show_components:
+        - customer_search_title
+        - customer_search_input
+        - filter_chips_row
+        - filter_all
+        - filter_active
+        - filter_prospect
+        - filter_dormant
+        - empty_state_box
+        - empty_state_message
+        - try_different_search_button
+        - onboard_new_customer_button
+      hide_components:
+        - customer_result_john_mwangi
+        - customer_result_sarah_odhiambo
+        - customer_result_peter_kamau
+        - scan_qr_button
+  error:
+    layout:
+      show_components:
+        - customer_search_title
+        - customer_search_input
+      hide_components:
+        - customer_result_john_mwangi
+        - customer_result_sarah_odhiambo
+        - customer_result_peter_kamau
+        - empty_state_box
+      error_message: "Search failed. Check your connection and try again."
+
+state_model:
+  view_model: CustomerSearchViewModel
+  state_fields:
+    - name: searchQuery
+      type: String
+      default: '""'
+    - name: selectedFilter
+      type: CustomerFilter
+      default: "CustomerFilter.ALL"
+    - name: searchResults
+      type: "List<Customer>"
+      default: "emptyList()"
+    - name: isSearching
+      type: Boolean
+      default: "false"
+    - name: hasSearched
+      type: Boolean
+      default: "false"
+  errors:
+    - name: networkError
+      type: "String?"
+      default: "null"
+    - name: searchError
+      type: "String?"
+      default: "null"
+  events:
+    - SearchQueryChangedEvent
+    - FilterSelectedEvent
+    - ScanQrEvent
+    - CustomerSelectedEvent
+    - ClearSearchEvent
+    - OnboardNewCustomerEvent
+  actions:
+    - search
+    - filter
+    - scan_qr
+    - navigate
+    - clear_search
+  di:
+    - CustomerRepository
+    - QrScannerService
+    - NavigationService
+
+api:
+  - endpoint: "GET /obp/v5.1.0/banks/{bankId}/customers"
+    tag: Customers
+    params:
+      - query: String
+      - status: String
+    response:
+      fields:
+        - customers: "List<Customer>"
+        - customer_id: String
+        - legal_name: String
+        - kyc_status: String
+        - customer_number: String
+        - mobile_phone_number: String
+        - email: String
+        - date_of_birth: String
+        - last_ok_date: String
+    errors:
+      - 401: "Unauthorized — missing or invalid token"
+      - 400: "Invalid search parameters"
+      - 500: "Internal server error"
+
 navigation:
-  - target: customer_detail
-    label: "customer_detail"
+  - target: customer-detail
+    label: "Customer Detail"
+    trigger: customer_row_click
+  - target: customer-onboarding
+    label: "Customer Onboarding"
+    trigger: onboard_new_customer_button
+
+dependencies:
+  tier: fieldOfficer
+  features:
+    - customer-search

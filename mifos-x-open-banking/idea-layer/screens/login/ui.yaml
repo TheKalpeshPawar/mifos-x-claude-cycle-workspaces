@@ -1,34 +1,367 @@
-type: login
-title: "Login"
+id: login
+name: "Login"
+feature: login
 flavor: shared
+status: enriched
+quality_score: 78
+status_history:
+  - { from: draft, to: enriched, at: "2026-05-25", by: "/idea enrich" }
+
+screens:
+  - id: login
+    name: "Login"
+    viewmodel: "LoginViewModel"
+
 components:
-  - type: text_field
-    id: username_input
+  - type: stack
+    id: login_root
+    variant: column
+    style:
+      background: "#F5F5F5"
+      padding: spacing.lg
+    children:
+      - login_header_logo
+      - login_header_title
+      - login_header_subtitle
+      - login_username_input
+      - login_password_input
+      - login_remember_me_row
+      - login_error_banner
+      - login_cta_button
+      - login_divider
+      - login_forgot_password_link
+
+  - type: image
+    id: login_header_logo
+    content: "mifos_logo"
+    label: "Mifos X logo"
+    style:
+      width: "80dp"
+      height: "80dp"
+      tint: "#1800B1"
+      alignment: center
+      padding_bottom: spacing.md
+    a11y:
+      role: image
+      label: "Mifos X Open Banking logo"
+    test_context:
+      purpose: "Brand logo at the top of the login form for trust and recognition"
+      interaction_type: display
+      data_driven: false
+
+  - type: text
+    id: login_header_title
+    content: "Welcome Back"
+    variant: headline_large
+    style:
+      typography: "Inter/headline_large"
+      color: "#1800B1"
+      alignment: center
+      padding_bottom: spacing.xs
+    a11y:
+      role: heading
+      label: "Welcome Back"
+    test_context:
+      purpose: "Login screen headline for context and persona warmth"
+      interaction_type: display
+      data_driven: false
+
+  - type: text
+    id: login_header_subtitle
+    content: "Sign in to your Mifos X account"
+    variant: body_medium
+    style:
+      typography: "Manrope/body_medium"
+      color: "#757575"
+      alignment: center
+      padding_bottom: spacing.xl
+    a11y:
+      role: text
+      label: "Sign in to your Mifos X account"
+    test_context:
+      purpose: "Supporting copy below headline to orient the user"
+      interaction_type: display
+      data_driven: false
+
+  - type: input
+    id: login_username_input
     label: "Username"
-    placeholder: "Enter username"
-  - type: text_field
-    id: password_input
-    label: "Password"
-    placeholder: "Enter password"
-    secure: true
-  - type: checkbox
-    id: remember_me
-    label: "Remember me"
-  - type: button
-    id: login_button
-    label: "Login"
-    variant: contained
-    on_click:
-      target: home
-      condition: "success"
-  - type: button
-    id: help_button
-    label: "Need help?"
     variant: text
+    style:
+      background: "#FFFFFF"
+      typography: "Manrope/body_large"
+      border_color: "#BDBDBD"
+      focused_border_color: "#1800B1"
+      padding: spacing.md
+    placeholder: "Enter your username"
+    keyboard_type: text
+    ime_action: next
+    a11y:
+      role: textbox
+      label: "Username"
+    test_context:
+      purpose: "Primary credential input — username or customer ID"
+      interaction_type: input
+      data_driven: false
+
+  - type: input
+    id: login_password_input
+    label: "Password"
+    variant: password
+    style:
+      background: "#FFFFFF"
+      typography: "Manrope/body_large"
+      border_color: "#BDBDBD"
+      focused_border_color: "#1800B1"
+      padding: spacing.md
+    placeholder: "Enter your password"
+    keyboard_type: text
+    ime_action: done
+    trailing_icon: "visibility_toggle"
+    a11y:
+      role: textbox
+      label: "Password, hidden"
+    test_context:
+      purpose: "Password credential input with visibility toggle"
+      interaction_type: input
+      data_driven: false
+
+  - type: stack
+    id: login_remember_me_row
+    variant: row
+    style:
+      padding_top: spacing.sm
+      padding_bottom: spacing.sm
+      alignment: center_start
+    children:
+      - login_remember_me_checkbox
+      - login_remember_me_label
+
+  - type: input
+    id: login_remember_me_checkbox
+    label: "Remember me"
+    variant: checkbox
+    style:
+      color: "#1800B1"
+    a11y:
+      role: checkbox
+      label: "Remember me on this device"
+    test_context:
+      purpose: "Persist session token across app restarts to skip re-authentication"
+      interaction_type: action
+      data_driven: false
+
+  - type: text
+    id: login_remember_me_label
+    content: "Keep me signed in"
+    variant: body_medium
+    style:
+      typography: "Manrope/body_medium"
+      color: "#424242"
+      padding_start: spacing.sm
+    a11y:
+      role: text
+      label: "Keep me signed in"
+    test_context:
+      purpose: "Label text paired with the remember-me checkbox"
+      interaction_type: display
+      data_driven: false
+
+  - type: card
+    id: login_error_banner
+    variant: filled
+    style:
+      background: "#FFEBEE"
+      border_color: "#FF5252"
+      border_radius: "8dp"
+      padding: spacing.md
+      margin_bottom: spacing.md
+    visible_when: "uiState == Error"
+    children:
+      - login_error_icon
+      - login_error_message
+
+  - type: icon
+    id: login_error_icon
+    content: "error_outline"
+    variant: default
+    style:
+      color: "#FF5252"
+      size: "20dp"
+    a11y:
+      role: image
+      label: "Error"
+    test_context:
+      purpose: "Error icon in the authentication failure banner"
+      interaction_type: display
+      data_driven: false
+
+  - type: text
+    id: login_error_message
+    content: "Invalid username or password. Please check your credentials and try again."
+    variant: body_small
+    style:
+      typography: "Manrope/body_small"
+      color: "#B71C1C"
+      padding_start: spacing.sm
+    a11y:
+      role: alert
+      label: "Authentication error message"
+    test_context:
+      purpose: "Descriptive error message shown when DirectLogin returns 400 or 401"
+      interaction_type: display
+      data_driven: true
+
+  - type: button
+    id: login_cta_button
+    label: "Sign In"
+    variant: filled
+    style:
+      background: "#1800B1"
+      typography: "Inter/label_large"
+      color: "#FFFFFF"
+      border_radius: "8dp"
+      padding: spacing.md
+      margin_top: spacing.lg
+      width: "match_parent"
+    on_click:
+      action: submit
+      target: login
+    loading_when: "uiState == Authenticating"
+    a11y:
+      role: button
+      label: "Sign In"
+    test_context:
+      purpose: "Submits DirectLogin credentials to OBP API; disabled when fields are empty"
+      interaction_type: action
+      data_driven: false
+
+  - type: divider
+    id: login_divider
+    style:
+      color: "#E0E0E0"
+      margin_top: spacing.lg
+      margin_bottom: spacing.lg
+    a11y:
+      role: separator
+      label: "Section divider"
+    test_context:
+      purpose: "Visual separator between primary CTA and secondary actions"
+      interaction_type: display
+      data_driven: false
+
+  - type: link
+    id: login_forgot_password_link
+    label: "Forgot Password?"
+    variant: inline
+    style:
+      typography: "Manrope/body_medium"
+      color: "#008B8B"
+      alignment: center
+    on_click:
+      action: navigate
+      target: forgot-password
+    a11y:
+      role: link
+      label: "Forgot Password? Navigate to password reset"
+    test_context:
+      purpose: "Secondary CTA for users who cannot recall their credentials"
+      interaction_type: navigate
+      data_driven: false
+
 states:
-  - idle
-  - authenticating
-  - error
+  idle:
+    layout: { type: column, padding: spacing.lg }
+    visible_components: [login_header_logo, login_header_title, login_header_subtitle, login_username_input, login_password_input, login_remember_me_row, login_cta_button, login_divider, login_forgot_password_link]
+  authenticating:
+    layout: { type: column, padding: spacing.lg }
+    visible_components: [login_header_logo, login_header_title, login_header_subtitle, login_username_input, login_password_input, login_remember_me_row, login_cta_button, login_divider, login_forgot_password_link]
+    note: "login_cta_button shows loading spinner; inputs are disabled"
+  error:
+    layout: { type: column, padding: spacing.lg }
+    visible_components: [login_header_logo, login_header_title, login_header_subtitle, login_username_input, login_password_input, login_remember_me_row, login_error_banner, login_cta_button, login_divider, login_forgot_password_link]
+
+state_model:
+  LoginViewModel:
+    screen_state: LoginUiState
+    state:
+      - field: username
+        type: String
+        default: "\"\""
+      - field: password
+        type: String
+        default: "\"\""
+      - field: rememberMe
+        type: Boolean
+        default: "false"
+      - field: isPasswordVisible
+        type: Boolean
+        default: "false"
+      - field: errorMessage
+        type: "String?"
+        default: "null"
+      - field: isLoading
+        type: Boolean
+        default: "false"
+    errors: [NETWORK_ERROR, INVALID_CREDENTIALS, UNAUTHORIZED, SERVER_ERROR]
+    events: [OnUsernameChanged, OnPasswordChanged, OnRememberMeToggled, OnPasswordVisibilityToggled, OnLoginClicked, OnForgotPasswordClicked, OnLoginSuccess, OnLoginError]
+    actions: [onUsernameChanged(value: String), onPasswordChanged(value: String), onRememberMeToggled(), onPasswordVisibilityToggled(), onLoginClicked(), onForgotPasswordClicked()]
+    di: [ObpAuthRepository, SessionManager, CredentialStore]
+
 navigation:
-  - target: home
-    label: "home"
+  - id: nav_to_consumer_home
+    target: consumer-home
+    trigger: on_login_success
+    condition: "userRole == CONSUMER"
+    on_click:
+      action: navigate
+      target: consumer-home
+  - id: nav_to_fo_dashboard
+    target: fo-dashboard
+    trigger: on_login_success
+    condition: "userRole == FIELD_OFFICER"
+    on_click:
+      action: navigate
+      target: fo-dashboard
+  - id: nav_to_forgot_password
+    target: forgot-password
+    trigger: forgot_password_click
+    on_click:
+      action: navigate
+      target: forgot-password
+
+api:
+  - id: obp_direct_login
+    endpoint: "POST /obp/v4.0.0/banks/{bankId}/direct_login"
+    tag: Authentication
+    trigger: on_login_clicked
+    request:
+      fields:
+        - name: username
+          type: String
+          source: login_username_input
+        - name: password
+          type: String
+          source: login_password_input
+        - name: consumer_key
+          type: String
+          source: OBP_CONSUMER_KEY
+    response:
+      fields:
+        - name: token
+          type: String
+          stored_as: session_token
+    errors:
+      - code: 400
+        name: INVALID_CREDENTIALS
+        ui_message: "Invalid username or password. Please check your credentials and try again."
+      - code: 401
+        name: UNAUTHORIZED
+        ui_message: "You are not authorized to access this account."
+      - code: 500
+        name: SERVER_ERROR
+        ui_message: "Something went wrong on our end. Please try again in a moment."
+
+dependencies:
+  tier: feature
+  features: [shared-core, obp-auth]

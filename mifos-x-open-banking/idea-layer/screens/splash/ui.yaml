@@ -1,17 +1,142 @@
-type: splash
-title: "Mifos X Open Banking"
+id: splash
+name: "Splash Screen"
+feature: splash
 flavor: shared
+status: enriched
+quality_score: 78
+status_history:
+  - { from: draft, to: enriched, at: "2026-05-25", by: "/idea enrich" }
+
+screens:
+  - id: splash
+    name: "Splash"
+    viewmodel: "SplashViewModel"
+
 components:
-  - type: logo
-    id: mifos_logo
-    size: 120
+  - type: stack
+    id: splash_root
+    variant: column
+    style:
+      background: surface
+      alignment: center
+    children:
+      - splash_logo
+      - splash_app_name
+      - splash_tagline
+      - splash_loading_indicator
+
+  - type: image
+    id: splash_logo
+    content: "mifos_logo"
+    label: "Mifos X logo"
+    style:
+      width: "120dp"
+      height: "120dp"
+      tint: "#1800B1"
+    a11y:
+      role: image
+      label: "Mifos X application logo"
+    test_context:
+      purpose: "Brand logo displayed at app launch"
+      interaction_type: display
+      data_driven: false
+
   - type: text
-    id: app_title
+    id: splash_app_name
     content: "Mifos X Open Banking"
-    variant: display-md
-  - type: progress_indicator
-    id: loading_progress
-    type: circular
+    variant: display_medium
+    style:
+      typography: "Inter/display_medium"
+      color: "#1800B1"
+      padding_top: spacing.lg
+    a11y:
+      role: heading
+      label: "Mifos X Open Banking"
+    test_context:
+      purpose: "Application name shown at startup"
+      interaction_type: display
+      data_driven: false
+
+  - type: text
+    id: splash_tagline
+    content: "Banking for Everyone"
+    variant: body_large
+    style:
+      typography: "Manrope/body_large"
+      color: "#008B8B"
+      padding_top: spacing.sm
+    a11y:
+      role: text
+      label: "Banking for Everyone"
+    test_context:
+      purpose: "App tagline displayed below app name"
+      interaction_type: display
+      data_driven: false
+
+  - type: icon
+    id: splash_loading_indicator
+    content: "loading_circular"
+    variant: circular_progress
+    style:
+      color: "#1800B1"
+      size: "40dp"
+      padding_top: spacing.xl
+    a11y:
+      role: progressbar
+      label: "Loading, please wait"
+    test_context:
+      purpose: "Animated loading indicator during session check and initialization"
+      interaction_type: display
+      data_driven: false
+
 states:
-  - loading
-navigation: []
+  loading:
+    layout: { type: column, padding: spacing.lg, horizontal_alignment: center, vertical_alignment: center }
+    visible_components: [splash_logo, splash_app_name, splash_tagline, splash_loading_indicator]
+  navigating:
+    layout: { type: column, padding: spacing.lg, horizontal_alignment: center, vertical_alignment: center }
+    visible_components: [splash_logo, splash_app_name, splash_tagline, splash_loading_indicator]
+    note: "Auto-navigates after session check completes"
+
+state_model:
+  SplashViewModel:
+    screen_state: SplashUiState
+    state:
+      - field: sessionCheckComplete
+        type: Boolean
+        default: "false"
+      - field: hasValidToken
+        type: Boolean
+        default: "false"
+      - field: isNavigating
+        type: Boolean
+        default: "false"
+    errors: [NETWORK_ERROR]
+    events: [CheckSession, NavigateToLogin, NavigateToHome]
+    actions: [onCheckSession(), onNavigateToLogin(), onNavigateToHome()]
+    di: [ObpAuthRepository, SessionManager]
+
+navigation:
+  - id: nav_to_login
+    target: login
+    condition: "hasValidToken == false"
+    trigger: auto
+    delay_ms: 2000
+    a11y:
+      label: "Proceeding to login"
+  - id: nav_to_consumer_home
+    target: consumer-home
+    condition: "hasValidToken == true && userRole == CONSUMER"
+    trigger: auto
+    delay_ms: 0
+  - id: nav_to_fo_dashboard
+    target: fo-dashboard
+    condition: "hasValidToken == true && userRole == FIELD_OFFICER"
+    trigger: auto
+    delay_ms: 0
+
+api: []
+
+dependencies:
+  tier: feature
+  features: [shared-core, obp-auth]

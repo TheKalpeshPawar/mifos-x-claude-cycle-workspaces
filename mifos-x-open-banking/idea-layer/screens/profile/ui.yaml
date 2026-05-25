@@ -1,25 +1,436 @@
-type: profile
-title: "Profile"
+id: profile
+name: "User Profile"
+feature: profile
 flavor: shared
+status: enriched
+quality_score: 78
+status_history:
+  - { from: draft, to: enriched, at: "2026-05-25", by: "/idea enrich" }
+
+screens:
+  - id: profile
+    name: "Profile"
+    viewmodel: "ProfileViewModel"
+
 components:
-  - type: text_field
-    id: full_name_input
+  - type: stack
+    id: profile_root
+    variant: column
+    style:
+      background: "#F5F5F5"
+      padding: spacing.lg
+    children:
+      - profile_avatar_section
+      - profile_form_section
+      - profile_action_section
+      - profile_danger_section
+
+  - type: stack
+    id: profile_avatar_section
+    variant: column
+    style:
+      alignment: center
+      padding_bottom: spacing.xl
+    children:
+      - profile_avatar_image
+      - profile_avatar_edit_icon
+      - profile_display_name
+
+  - type: image
+    id: profile_avatar_image
+    content: "user_avatar_placeholder"
+    label: "Profile avatar"
+    variant: circle
+    style:
+      width: "96dp"
+      height: "96dp"
+      border_color: "#1800B1"
+      border_width: "2dp"
+      background: "#E8EAF6"
+    a11y:
+      role: image
+      label: "Your profile photo"
+    test_context:
+      purpose: "User avatar fetched from profile data; falls back to initials placeholder"
+      interaction_type: display
+      data_driven: true
+
+  - type: icon
+    id: profile_avatar_edit_icon
+    content: "edit_photo"
+    variant: filled_circle
+    style:
+      background: "#1800B1"
+      color: "#FFFFFF"
+      size: "28dp"
+      offset: "{ x: 32dp, y: -16dp }"
+    on_click:
+      action: submit
+      target: profile
+    a11y:
+      role: button
+      label: "Change profile photo"
+    test_context:
+      purpose: "Overlaid edit icon on avatar; tapping opens photo picker"
+      interaction_type: action
+      data_driven: false
+
+  - type: text
+    id: profile_display_name
+    content: "Maria Santos"
+    variant: headline_small
+    style:
+      typography: "Inter/headline_small"
+      color: "#1800B1"
+      alignment: center
+      padding_top: spacing.sm
+    a11y:
+      role: heading
+      label: "Profile name"
+    test_context:
+      purpose: "Displays the current full name from profile state — real data, not placeholder"
+      interaction_type: display
+      data_driven: true
+
+  - type: stack
+    id: profile_form_section
+    variant: column
+    style:
+      background: "#FFFFFF"
+      border_radius: "12dp"
+      padding: spacing.lg
+      margin_bottom: spacing.md
+    children:
+      - profile_section_header
+      - profile_full_name_input
+      - profile_email_input
+      - profile_phone_input
+
+  - type: text
+    id: profile_section_header
+    content: "Personal Information"
+    variant: title_medium
+    style:
+      typography: "Inter/title_medium"
+      color: "#1800B1"
+      padding_bottom: spacing.md
+    a11y:
+      role: heading
+      label: "Personal Information section"
+    test_context:
+      purpose: "Section header to organize the editable profile fields"
+      interaction_type: display
+      data_driven: false
+
+  - type: input
+    id: profile_full_name_input
     label: "Full Name"
-  - type: text_field
-    id: email_input
-    label: "Email"
-  - type: text_field
-    id: phone_input
-    label: "Phone"
+    variant: text
+    style:
+      background: "#F5F5F5"
+      typography: "Manrope/body_large"
+      border_color: "#BDBDBD"
+      focused_border_color: "#1800B1"
+      padding: spacing.md
+      margin_bottom: spacing.md
+    placeholder: "e.g. Maria Santos"
+    keyboard_type: text
+    ime_action: next
+    prefill: "fullName"
+    a11y:
+      role: textbox
+      label: "Full Name"
+    test_context:
+      purpose: "Editable full name field pre-filled from ProfileUiState.fullName"
+      interaction_type: input
+      data_driven: true
+
+  - type: input
+    id: profile_email_input
+    label: "Email Address"
+    variant: email
+    style:
+      background: "#F5F5F5"
+      typography: "Manrope/body_large"
+      border_color: "#BDBDBD"
+      focused_border_color: "#1800B1"
+      padding: spacing.md
+      margin_bottom: spacing.md
+    placeholder: "e.g. maria.santos@example.com"
+    keyboard_type: email
+    ime_action: next
+    prefill: "email"
+    a11y:
+      role: textbox
+      label: "Email Address"
+    test_context:
+      purpose: "Editable email field; validated against RFC-5322 format before save"
+      interaction_type: input
+      data_driven: true
+
+  - type: input
+    id: profile_phone_input
+    label: "Phone Number"
+    variant: text
+    style:
+      background: "#F5F5F5"
+      typography: "Manrope/body_large"
+      border_color: "#BDBDBD"
+      focused_border_color: "#1800B1"
+      padding: spacing.md
+    placeholder: "e.g. +63 917 123 4567"
+    keyboard_type: tel
+    ime_action: done
+    prefill: "phoneNumber"
+    a11y:
+      role: textbox
+      label: "Phone Number"
+    test_context:
+      purpose: "Editable phone field with tel keyboard; validated for E.164 format"
+      interaction_type: input
+      data_driven: true
+
+  - type: stack
+    id: profile_action_section
+    variant: column
+    style:
+      padding_bottom: spacing.md
+    children:
+      - profile_save_button
+      - profile_change_password_button
+
   - type: button
-    id: save_button
+    id: profile_save_button
     label: "Save Changes"
-    variant: contained
+    variant: filled
+    style:
+      background: "#1800B1"
+      typography: "Inter/label_large"
+      color: "#FFFFFF"
+      border_radius: "8dp"
+      padding: spacing.md
+      margin_bottom: spacing.sm
+      width: "match_parent"
+    on_click:
+      action: submit
+      target: profile
+    loading_when: "uiState == Saving"
+    disabled_when: "uiState == Viewing || !hasUnsavedChanges"
+    a11y:
+      role: button
+      label: "Save profile changes"
+    test_context:
+      purpose: "Submits edited profile fields to API; enabled only when unsaved changes exist"
+      interaction_type: action
+      data_driven: false
+
   - type: button
-    id: change_password_button
+    id: profile_change_password_button
     label: "Change Password"
     variant: outlined
+    style:
+      border_color: "#1800B1"
+      typography: "Inter/label_large"
+      color: "#1800B1"
+      border_radius: "8dp"
+      padding: spacing.md
+      width: "match_parent"
+    on_click:
+      action: navigate
+      target: change-password
+    a11y:
+      role: button
+      label: "Navigate to change password screen"
+    test_context:
+      purpose: "Secondary CTA to update password separately from profile info"
+      interaction_type: navigate
+      data_driven: false
+
+  - type: stack
+    id: profile_danger_section
+    variant: column
+    style:
+      background: "#FFFFFF"
+      border_radius: "12dp"
+      padding: spacing.lg
+      margin_top: spacing.md
+    children:
+      - profile_logout_button
+
+  - type: button
+    id: profile_logout_button
+    label: "Log Out"
+    variant: text
+    style:
+      typography: "Inter/label_large"
+      color: "#FF5252"
+      padding: spacing.md
+      width: "match_parent"
+    on_click:
+      action: submit
+      target: login
+    a11y:
+      role: button
+      label: "Log out of your account"
+    test_context:
+      purpose: "Clears session token and navigates to login; presented in danger zone"
+      interaction_type: action
+      data_driven: false
+
+  - type: card
+    id: profile_save_success_banner
+    variant: filled
+    style:
+      background: "#E8F5E9"
+      border_color: "#4CAF50"
+      border_radius: "8dp"
+      padding: spacing.md
+      margin_bottom: spacing.md
+    visible_when: "uiState == Saved"
+    children:
+      - profile_success_icon
+      - profile_success_message
+
+  - type: icon
+    id: profile_success_icon
+    content: "check_circle"
+    variant: default
+    style:
+      color: "#4CAF50"
+      size: "20dp"
+    a11y:
+      role: image
+      label: "Success"
+    test_context:
+      purpose: "Success icon in the save confirmation banner"
+      interaction_type: display
+      data_driven: false
+
+  - type: text
+    id: profile_success_message
+    content: "Your profile has been updated successfully."
+    variant: body_small
+    style:
+      typography: "Manrope/body_small"
+      color: "#1B5E20"
+      padding_start: spacing.sm
+    a11y:
+      role: alert
+      label: "Profile saved successfully"
+    test_context:
+      purpose: "Inline confirmation after successful profile save API response"
+      interaction_type: display
+      data_driven: false
+
 states:
-  - viewing
-  - editing
-navigation: []
+  viewing:
+    layout: { type: column, padding: spacing.lg }
+    visible_components: [profile_avatar_section, profile_form_section, profile_action_section, profile_danger_section]
+    note: "Fields are read-only; Save button disabled"
+  editing:
+    layout: { type: column, padding: spacing.lg }
+    visible_components: [profile_avatar_section, profile_form_section, profile_action_section, profile_danger_section]
+    note: "Fields are editable; Save button enabled"
+  saving:
+    layout: { type: column, padding: spacing.lg }
+    visible_components: [profile_avatar_section, profile_form_section, profile_action_section, profile_danger_section]
+    note: "Save button shows loading spinner; inputs disabled"
+  saved:
+    layout: { type: column, padding: spacing.lg }
+    visible_components: [profile_save_success_banner, profile_avatar_section, profile_form_section, profile_action_section, profile_danger_section]
+    note: "Success banner visible at top; auto-transitions to viewing after 2s"
+  error:
+    layout: { type: column, padding: spacing.lg }
+    visible_components: [profile_avatar_section, profile_form_section, profile_action_section, profile_danger_section]
+
+state_model:
+  ProfileViewModel:
+    screen_state: ProfileUiState
+    state:
+      - field: fullName
+        type: String
+        default: "\"\""
+      - field: email
+        type: String
+        default: "\"\""
+      - field: phoneNumber
+        type: String
+        default: "\"\""
+      - field: avatarUrl
+        type: "String?"
+        default: "null"
+      - field: hasUnsavedChanges
+        type: Boolean
+        default: "false"
+      - field: isLoading
+        type: Boolean
+        default: "false"
+      - field: errorMessage
+        type: "String?"
+        default: "null"
+    errors: [NETWORK_ERROR, VALIDATION_ERROR, AUTH_ERROR]
+    events: [LoadProfile, OnFullNameChanged, OnEmailChanged, OnPhoneChanged, OnSaveClicked, OnChangePasswordClicked, OnLogoutClicked, OnProfileSaved, OnProfileError]
+    actions: [onLoadProfile(), onFullNameChanged(value: String), onEmailChanged(value: String), onPhoneChanged(value: String), onSaveClicked(), onChangePasswordClicked(), onLogoutClicked()]
+    di: [ObpAuthRepository, UserProfileRepository, SessionManager]
+
+navigation:
+  - id: nav_to_change_password
+    target: change-password
+    on_click:
+      action: navigate
+      target: change-password
+  - id: nav_to_login_on_logout
+    target: login
+    trigger: on_logout_confirmed
+    on_click:
+      action: navigate
+      target: login
+
+api:
+  - id: obp_get_user_profile
+    endpoint: "GET /obp/v4.0.0/users/current"
+    tag: UserProfile
+    trigger: on_screen_load
+    response:
+      fields:
+        - name: user_id
+          type: String
+        - name: email
+          type: String
+        - name: username
+          type: String
+    errors:
+      - code: 401
+        name: AUTH_ERROR
+        ui_message: "Session expired. Please sign in again."
+      - code: 500
+        name: NETWORK_ERROR
+        ui_message: "Could not load your profile. Please check your connection."
+
+  - id: obp_update_user_profile
+    endpoint: "PUT /obp/v4.0.0/users/current"
+    tag: UserProfile
+    trigger: on_save_clicked
+    request:
+      fields:
+        - name: email
+          type: String
+          source: profile_email_input
+        - name: phone_number
+          type: String
+          source: profile_phone_input
+    response:
+      fields:
+        - name: user_id
+          type: String
+    errors:
+      - code: 400
+        name: VALIDATION_ERROR
+        ui_message: "Please correct the errors in the form before saving."
+      - code: 401
+        name: AUTH_ERROR
+        ui_message: "Session expired. Please sign in again."
+
+dependencies:
+  tier: feature
+  features: [shared-core, obp-auth]

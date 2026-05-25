@@ -1,23 +1,616 @@
-type: card_detail
-title: "Card Details"
+id: card-detail
+name: Card Detail
+feature: card-detail
 flavor: consumer
+status: enriched
+quality_score: 79
+
+screens:
+  - id: card-detail
+    name: Card Detail
+    archetype: detail_screen
+    shell:
+      top_bar:
+        title: "Card Details"
+        navigation_icon: arrow_back
+        actions:
+          - icon: more_vert
+            action: open_card_options_menu
+      bottom_nav: false
+
 components:
-  - type: card_display
-    id: card_display
-    show_sensitive: false
-  - type: switch
-    id: card_active_toggle
+  - type: box
+    id: card_visual
+    label: "Card Visual"
+    style:
+      background_gradient:
+        start: "#1800B1"
+        end: "#4B35E8"
+        direction: diagonal
+      corner_radius: 20
+      elevation: 12
+      width: 340
+      height: 210
+      padding: 24
+      margin_horizontal: auto
+      margin_top: 8
+      margin_bottom: 24
+    on_click:
+      action: ""
+      target: ""
+    a11y:
+      content_description: "Mifos Debit Visa card ending in 4521. Expiry September 2029."
+      role: image
+    test_context:
+      tag: card_visual
+
+  - type: text
+    id: card_number_display
+    label: "•••• •••• •••• 4521"
+    content: "•••• •••• •••• 4521"
+    style:
+      typography: title_large
+      color: "#FFFFFF"
+      font_family: monospace
+      letter_spacing: 4
+    a11y:
+      content_description: "Card number ending in 4521"
+      role: text
+    test_context:
+      tag: card_number_display
+
+  - type: text
+    id: cardholder_name
+    label: "Alex Johnson"
+    content: "ALEX JOHNSON"
+    style:
+      typography: body_large
+      color: "#E0DDFF"
+      text_transform: uppercase
+      letter_spacing: 1
+    a11y:
+      content_description: "Cardholder name: Alex Johnson"
+      role: text
+    test_context:
+      tag: cardholder_name
+
+  - type: text
+    id: card_expiry
+    label: "09/29"
+    content: "09/29"
+    style:
+      typography: body_medium
+      color: "#C5BFFF"
+      font_family: monospace
+    a11y:
+      content_description: "Card expiry: September 2029"
+      role: text
+    test_context:
+      tag: card_expiry
+
+  - type: image
+    id: card_network_logo
+    label: "Visa"
+    style:
+      width: 60
+      height: 22
+      content_scale: fit
+      tint_color: "#FFFFFF"
+    on_click:
+      action: ""
+      target: ""
+    a11y:
+      content_description: "Visa card network"
+      role: image
+    test_context:
+      tag: card_network_logo
+
+  - type: link
+    id: reveal_card_details_link
+    label: "Show card details"
+    content: "Show card details"
+    style:
+      typography: label_large
+      color: "#1800B1"
+      underline: true
+      text_align: center
+      padding_vertical: 4
+    on_click:
+      action: reveal_card_details
+      target: ""
+    a11y:
+      content_description: "Reveal full card number, CVV and expiry. Requires biometric authentication."
+      role: button
+    test_context:
+      tag: reveal_card_details_link
+      assert_text: "Show card details"
+
+  - type: stack
+    id: card_status_row
+    label: "Card Status"
+    style:
+      orientation: horizontal
+      spacing: 0
+      padding_vertical: 16
+      padding_horizontal: 20
+      justify: space_between
+      align: center
+      background: "#FFFFFF"
+      corner_radius: 12
+      elevation: 1
+    on_click:
+      action: ""
+      target: ""
+    a11y:
+      content_description: "Card status toggle"
+      role: row
+    test_context:
+      tag: card_status_row
+
+  - type: text
+    id: card_status_label
     label: "Card Active"
+    content: "Card Active"
+    style:
+      typography: body_large
+      color: "#111111"
+      font_weight: medium
+    a11y:
+      content_description: "Card active status label"
+      role: text
+    test_context:
+      tag: card_status_label
+      assert_text: "Card Active"
+
+  - type: input
+    id: card_status_switch
+    label: "Toggle card active state"
+    content: "true"
+    style:
+      variant: switch
+      checked_color: "#4CAF50"
+      unchecked_color: "#9E9E9E"
+    on_click:
+      action: toggle_card_status
+      target: ""
+    a11y:
+      content_description: "Toggle to activate or deactivate your card. Currently active."
+      role: switch
+    test_context:
+      tag: card_status_switch
+      assert_checked: true
+
+  - type: box
+    id: limits_section
+    label: "Spending Limits"
+    style:
+      background: "#FFFFFF"
+      corner_radius: 12
+      elevation: 1
+      padding_horizontal: 20
+      padding_vertical: 16
+      margin_top: 12
+      border_color: "#F0F0F0"
+      border_width: 1
+    on_click:
+      action: ""
+      target: ""
+    a11y:
+      content_description: "Spending limits section"
+      role: group
+    test_context:
+      tag: limits_section
+
+  - type: text
+    id: limits_section_title
+    label: "Spending Limits"
+    content: "Spending Limits"
+    style:
+      typography: title_medium
+      color: "#111111"
+      font_weight: semibold
+      padding_bottom: 12
+    a11y:
+      content_description: "Spending limits section title"
+      role: heading
+    test_context:
+      tag: limits_section_title
+
+  - type: stack
+    id: daily_limit_row
+    label: "Daily Limit"
+    style:
+      orientation: horizontal
+      spacing: 0
+      padding_vertical: 10
+      justify: space_between
+      align: center
+    on_click:
+      action: edit_limit
+      target: ""
+    a11y:
+      content_description: "Daily spending limit: £2,500. Tap to edit."
+      role: button
+    test_context:
+      tag: daily_limit_row
+
+  - type: text
+    id: daily_limit_label
+    label: "Daily limit"
+    content: "Daily limit"
+    style:
+      typography: body_medium
+      color: "#888888"
+    a11y:
+      content_description: "Daily limit label"
+      role: text
+    test_context:
+      tag: daily_limit_label
+
+  - type: text
+    id: daily_limit_value
+    label: "£2,500"
+    content: "£2,500"
+    style:
+      typography: body_large
+      color: "#111111"
+      font_weight: medium
+    a11y:
+      content_description: "Daily limit: £2,500"
+      role: text
+    test_context:
+      tag: daily_limit_value
+      assert_text: "£2,500"
+
+  - type: icon
+    id: daily_limit_edit_icon
+    label: "Edit daily limit"
+    style:
+      icon_name: edit
+      size: 20
+      color: "#1800B1"
+    on_click:
+      action: edit_limit
+      target: ""
+    a11y:
+      content_description: "Edit daily spending limit"
+      role: button
+    test_context:
+      tag: daily_limit_edit_icon
+
+  - type: divider
+    id: limits_divider
+    style:
+      color: "#F0F0F0"
+      thickness: 1
+      padding_vertical: 2
+    a11y:
+      content_description: ""
+      role: separator
+    test_context:
+      tag: limits_divider
+
+  - type: stack
+    id: monthly_limit_row
+    label: "Monthly Limit"
+    style:
+      orientation: horizontal
+      spacing: 0
+      padding_vertical: 10
+      justify: space_between
+      align: center
+    on_click:
+      action: edit_limit
+      target: ""
+    a11y:
+      content_description: "Monthly spending limit: £10,000. Tap to edit."
+      role: button
+    test_context:
+      tag: monthly_limit_row
+
+  - type: text
+    id: monthly_limit_label
+    label: "Monthly limit"
+    content: "Monthly limit"
+    style:
+      typography: body_medium
+      color: "#888888"
+    a11y:
+      content_description: "Monthly limit label"
+      role: text
+    test_context:
+      tag: monthly_limit_label
+
+  - type: text
+    id: monthly_limit_value
+    label: "£10,000"
+    content: "£10,000"
+    style:
+      typography: body_large
+      color: "#111111"
+      font_weight: medium
+    a11y:
+      content_description: "Monthly limit: £10,000"
+      role: text
+    test_context:
+      tag: monthly_limit_value
+      assert_text: "£10,000"
+
+  - type: icon
+    id: monthly_limit_edit_icon
+    label: "Edit monthly limit"
+    style:
+      icon_name: edit
+      size: 20
+      color: "#1800B1"
+    on_click:
+      action: edit_limit
+      target: ""
+    a11y:
+      content_description: "Edit monthly spending limit"
+      role: button
+    test_context:
+      tag: monthly_limit_edit_icon
+
+  - type: spacer
+    id: action_buttons_spacer
+    style:
+      height: 16
+    a11y:
+      content_description: ""
+      role: none
+    test_context:
+      tag: action_buttons_spacer
+
+  - type: button
+    id: freeze_card_button
+    label: "Freeze Card"
+    style:
+      variant: outlined
+      border_color: "#FF9800"
+      text_color: "#FF9800"
+      corner_radius: 12
+      padding_vertical: 14
+      full_width: true
+      leading_icon: ac_unit
+      typography: label_large
+    on_click:
+      action: freeze_card
+      target: ""
+    a11y:
+      content_description: "Freeze this card to temporarily block all transactions"
+      role: button
+    test_context:
+      tag: freeze_card_button
+      assert_text: "Freeze Card"
+
+  - type: button
+    id: report_lost_button
+    label: "Report Lost/Stolen"
+    style:
+      variant: outlined
+      border_color: "#FF5252"
+      text_color: "#FF5252"
+      corner_radius: 12
+      padding_vertical: 14
+      full_width: true
+      leading_icon: report_problem
+      typography: label_large
+    on_click:
+      action: report_lost
+      target: ""
+    a11y:
+      content_description: "Report this card as lost or stolen. This will permanently block the card."
+      role: button
+    test_context:
+      tag: report_lost_button
+      assert_text: "Report Lost/Stolen"
+
   - type: button
     id: view_transactions_button
     label: "View Transactions"
-    variant: outlined
-  - type: button
-    id: lock_card_button
-    label: "Lock Card"
-    variant: outlined
-    color: error
+    style:
+      variant: text
+      text_color: "#1800B1"
+      corner_radius: 12
+      padding_vertical: 12
+      full_width: true
+      leading_icon: receipt_long
+      typography: label_large
+    on_click:
+      action: navigate
+      target: transactions
+    a11y:
+      content_description: "View all transactions for this card"
+      role: button
+    test_context:
+      tag: view_transactions_button
+      assert_text: "View Transactions"
+
 states:
-  - content
-  - disabled
-navigation: []
+  loading:
+    layout:
+      visible_components: []
+      show_skeleton_card_visual: true
+      show_skeleton_fields: true
+      skeleton_count: 4
+  content:
+    layout:
+      visible_components:
+        - card_visual
+        - card_number_display
+        - cardholder_name
+        - card_expiry
+        - card_network_logo
+        - reveal_card_details_link
+        - card_status_row
+        - card_status_label
+        - card_status_switch
+        - limits_section
+        - limits_section_title
+        - daily_limit_row
+        - daily_limit_label
+        - daily_limit_value
+        - daily_limit_edit_icon
+        - limits_divider
+        - monthly_limit_row
+        - monthly_limit_label
+        - monthly_limit_value
+        - monthly_limit_edit_icon
+        - action_buttons_spacer
+        - freeze_card_button
+        - report_lost_button
+        - view_transactions_button
+      card_status_switch_checked: true
+      freeze_card_button_label: "Freeze Card"
+  frozen:
+    layout:
+      visible_components:
+        - card_visual
+        - card_number_display
+        - cardholder_name
+        - card_expiry
+        - card_network_logo
+        - card_status_row
+        - card_status_label
+        - card_status_switch
+        - limits_section
+        - limits_section_title
+        - action_buttons_spacer
+        - freeze_card_button
+        - report_lost_button
+        - view_transactions_button
+      card_visual_overlay: "FROZEN"
+      card_visual_overlay_color: "#9E9E9E80"
+      card_status_switch_checked: false
+      freeze_card_button_label: "Unfreeze Card"
+      freeze_card_button_icon: lock_open
+      freeze_card_button_border_color: "#4CAF50"
+      freeze_card_button_text_color: "#4CAF50"
+      reveal_card_details_link_visible: false
+  error:
+    layout:
+      visible_components: []
+      show_error_state: true
+      error_icon: credit_card_off
+      error_title: "Unable to load card details"
+      error_message: "Please try again or contact support"
+      show_retry_button: true
+
+state_model:
+  view_model: CardDetailViewModel
+  state_fields:
+    - name: cardId
+      type: String
+      default: ""
+    - name: cardNumber
+      type: String
+      default: ""
+    - name: cardholderName
+      type: String
+      default: ""
+    - name: expiryDate
+      type: String
+      default: ""
+    - name: cardNetwork
+      type: CardNetwork
+      default: Visa
+    - name: isActive
+      type: Boolean
+      default: true
+    - name: isFrozen
+      type: Boolean
+      default: false
+    - name: dailyLimit
+      type: String
+      default: "£2,500"
+    - name: monthlyLimit
+      type: String
+      default: "£10,000"
+    - name: isRevealed
+      type: Boolean
+      default: false
+    - name: uiState
+      type: CardDetailUiState
+      default: Loading
+  errors:
+    - field: global
+      code: LOAD_FAILED
+      message: "Unable to load card details. Please try again."
+    - field: freeze
+      code: FREEZE_FAILED
+      message: "Failed to freeze card. Please contact support."
+    - field: report_lost
+      code: REPORT_FAILED
+      message: "Failed to report card. Please call 0800 123 456."
+  events:
+    - CardLoaded
+    - RevealCardDetailsRequested
+    - BiometricAuthSucceeded
+    - BiometricAuthFailed
+    - CardStatusToggled
+    - EditLimitClicked
+    - FreezeCardClicked
+    - ReportLostClicked
+    - ViewTransactionsClicked
+  actions:
+    - reveal_card_details
+    - toggle_card_status
+    - edit_limit
+    - freeze_card
+    - report_lost
+    - navigate
+    - open_card_options_menu
+  di:
+    - CardRepository
+    - BiometricAuthUseCase
+    - CardLimitRepository
+
+api:
+  - endpoint: "GET /obp/v5.1.0/banks/{bankId}/cards/{cardId}"
+    tag: Cards
+    response:
+      fields:
+        - name: id
+          type: String
+        - name: bank_id
+          type: String
+        - name: bank_card_number
+          type: String
+        - name: name_on_card
+          type: String
+        - name: card_type
+          type: String
+        - name: card_description
+          type: String
+        - name: card_network
+          type: String
+        - name: allows
+          type: List<String>
+        - name: enabled
+          type: Boolean
+        - name: cancelled
+          type: Boolean
+        - name: on_hot_list
+          type: Boolean
+        - name: technology
+          type: String
+        - name: expires
+          type: String
+        - name: replacement
+          type: CardReplacement
+    errors:
+      - code: 400
+        message: "INVALID_CARD_ID"
+      - code: 401
+        message: "USER_NOT_LOGGED_IN"
+      - code: 403
+        message: "INSUFFICIENT_AUTHORISATION"
+      - code: 404
+        message: "CARD_NOT_FOUND"
+
+dependencies:
+  tier: feature
+  features:
+    - cards
+    - transactions
