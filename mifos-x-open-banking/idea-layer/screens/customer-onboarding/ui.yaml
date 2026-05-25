@@ -703,18 +703,46 @@ state_model:
     - FormValidator
 
 api:
-  - endpoint: "POST /obp/v5.1.0/banks/{bankId}/customers"
-    tag: Customers
-    response:
-      fields:
-        - customer_id
-        - legal_name
-        - customer_number
-        - kyc_status
-    errors:
-      - 400: VALIDATION_FAILED
-      - 401: UNAUTHORIZED
-      - 409: CUSTOMER_ALREADY_EXISTS
+  - id: obp_create_customer
+    endpoint: "POST /obp/v5.0.0/banks/{bankId}/customers"
+    tag: Customer
+    description: "Step 1: Create customer record"
+  - id: obp_customer_address
+    endpoint: "POST /obp/v3.1.0/banks/{bankId}/customers/{customerId}/address"
+    tag: Customer
+    description: "Step 2: Add customer address (singular path)"
+  - id: obp_tax_residence
+    endpoint: "POST /obp/v3.1.0/banks/{bankId}/customers/{customerId}/tax-residence"
+    tag: Customer
+    description: "Step 3: Add tax residence"
+  - id: obp_kyc_document
+    endpoint: "PUT /obp/v2.0.0/banks/{bankId}/customers/{customerId}/kyc_documents/{kycDocumentId}"
+    tag: KYC
+    description: "Step 4: Upload KYC document (caller-supplied ID)"
+  - id: obp_kyc_check
+    endpoint: "PUT /obp/v2.0.0/banks/{bankId}/customers/{customerId}/kyc_check/{kycCheckId}"
+    tag: KYC
+    description: "Step 5: Record KYC check result"
+  - id: obp_kyc_status
+    endpoint: "PUT /obp/v2.0.0/banks/{bankId}/customers/{customerId}/kyc_statuses"
+    tag: KYC
+    description: "Step 6: Set KYC status (no ID, appends)"
+  - id: obp_customer_attribute
+    endpoint: "POST /obp/v4.0.0/banks/{bankId}/customers/{customerId}/attribute"
+    tag: Customer-Attribute
+    description: "Step 7: Add customer attribute (singular path!)"
+  - id: obp_user_customer_link
+    endpoint: "POST /obp/v4.0.0/banks/{bankId}/user_customer_links"
+    tag: Customer
+    description: "Step 8: Link user to customer (underscore path)"
+  - id: obp_account_application
+    endpoint: "POST /obp/v3.1.0/banks/{bankId}/account-applications"
+    tag: Account-Application
+    description: "Step 9: Create account application"
+  - id: obp_customer_account_link
+    endpoint: "POST /obp/v5.0.0/banks/{bankId}/customer-account-links"
+    tag: Customer
+    description: "Step 10: Link customer to account (hyphen path)"
 
 dependencies:
   tier: feature

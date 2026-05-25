@@ -693,7 +693,7 @@ state_model:
     - CustomerMessagingService
 
 api:
-  - endpoint: "GET /obp/v5.1.0/banks/{bankId}/customers/{customerId}/kyc_documents"
+  - endpoint: "GET /obp/v5.1.0/customers/{customerId}/kyc_documents"
     tag: KYC
     response:
       fields:
@@ -707,7 +707,7 @@ api:
       - 400: BAD_REQUEST
       - 401: UNAUTHORIZED
       - 404: CUSTOMER_NOT_FOUND
-  - endpoint: "PUT /obp/v5.1.0/banks/{bankId}/customers/{customerId}/kyc_documents/{documentId}"
+  - endpoint: "PUT /obp/v2.0.0/banks/{bankId}/customers/{customerId}/kyc_documents/{documentId}"
     tag: KYC
     response:
       fields:
@@ -719,6 +719,51 @@ api:
       - 400: VALIDATION_FAILED
       - 401: UNAUTHORIZED
       - 404: DOCUMENT_NOT_FOUND
+
+  - id: obp_kyc_check
+    endpoint: "PUT /obp/v2.0.0/banks/{bankId}/customers/{customerId}/kyc_check/{kycCheckId}"
+    tag: KYC
+    description: "Record KYC check result (caller-supplied check ID)"
+    request:
+      fields:
+        - name: customer_number
+          type: String
+        - name: date
+          type: String
+        - name: how
+          type: String
+          note: "in_person | online | postal"
+        - name: staff_user_id
+          type: String
+        - name: staff_name
+          type: String
+        - name: satisfied
+          type: Boolean
+        - name: comments
+          type: String
+    response:
+      fields:
+        - name: id
+          type: String
+        - name: satisfied
+          type: Boolean
+
+  - id: obp_kyc_status
+    endpoint: "PUT /obp/v2.0.0/banks/{bankId}/customers/{customerId}/kyc_statuses"
+    tag: KYC
+    description: "Set KYC status (appends to timeline, no ID in path)"
+    request:
+      fields:
+        - name: customer_number
+          type: String
+        - name: ok
+          type: Boolean
+        - name: date
+          type: String
+    response:
+      fields:
+        - name: ok
+          type: Boolean
 
 dependencies:
   tier: feature
