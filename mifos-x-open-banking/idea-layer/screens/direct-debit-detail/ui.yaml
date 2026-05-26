@@ -1,0 +1,975 @@
+id: direct-debit-detail
+name: "Direct Debit Detail"
+feature: direct-debit-detail
+flavor: consumer
+status: draft
+capabilities:
+  - has_ui
+  - has_api
+
+screens:
+  - id: direct-debit-detail
+    name: "Direct Debit Detail"
+    viewmodel: "DirectDebitDetailViewModel"
+
+archetype: detail_screen
+
+shell:
+  top_app_bar:
+    show: true
+    title: "Direct Debit"
+    navigation_icon: arrow_back
+    navigation_action: navigate_back
+    actions:
+      - icon: more_vert
+        action: open_mandate_options
+        label: "More options"
+  bottom_nav: false
+
+components:
+  - type: stack
+    id: ddd_root
+    variant: column
+    style:
+      background: "#F9FAEF"
+      padding: spacing.lg
+    children:
+      - ddd_merchant_hero
+      - ddd_mandate_details_card
+      - ddd_payment_history_card
+      - ddd_action_row
+
+  # ── Merchant Hero ─────────────────────────────────────────────────────────────
+
+  - type: box
+    id: ddd_merchant_hero
+    style:
+      background: "#4C662B"
+      padding_horizontal: spacing.lg
+      padding_top: spacing.xl
+      padding_bottom: "36dp"
+      border_radius_bottom_left: "24dp"
+      border_radius_bottom_right: "24dp"
+      margin_bottom: spacing.lg
+    a11y:
+      role: region
+      label: "Mandate merchant summary"
+    children:
+      - ddd_merchant_logo
+      - ddd_merchant_name
+      - ddd_mandate_status_badge
+      - ddd_mandate_amount_row
+
+  - type: image
+    id: ddd_merchant_logo
+    content: "merchant_logo_placeholder"
+    label: "Merchant logo"
+    style:
+      width: "56dp"
+      height: "56dp"
+      border_radius: "12dp"
+      background: "#FFFFFF"
+      alignment: center
+      margin_bottom: spacing.sm
+    a11y:
+      role: image
+      label: "Merchant logo"
+    test_context:
+      purpose: "Merchant logo fetched by domain; falls back to initials avatar on error"
+      interaction_type: display
+      data_driven: true
+
+  - type: text
+    id: ddd_merchant_name
+    content: "Netflix Entertainment"
+    variant: headline_small
+    style:
+      typography: "Outfit/headline_small"
+      color: "#FFFFFF"
+      alignment: center
+      padding_bottom: spacing.xs
+    prefill: "merchantName"
+    a11y:
+      role: heading
+      label: "Merchant name"
+    test_context:
+      purpose: "Merchant name from the mandate object; primary identifier in the hero"
+      interaction_type: display
+      data_driven: true
+
+  - type: badge
+    id: ddd_mandate_status_badge
+    content: "Active"
+    variant: status
+    style:
+      background: "#CDEDA3"
+      color: "#4C662B"
+      typography: "Outfit/label_small"
+      border_radius: "20dp"
+      padding_horizontal: "12dp"
+      padding_vertical: "4dp"
+      alignment: center
+      margin_bottom: spacing.sm
+    prefill: "mandateStatus"
+    a11y:
+      role: status
+      label: "Mandate status: Active"
+    test_context:
+      purpose: "Status chip; colour-coded: Active=#CDEDA3, Paused=#FFF3CD, Cancelled=#FFDAD6"
+      interaction_type: display
+      data_driven: true
+
+  - type: stack
+    id: ddd_mandate_amount_row
+    variant: column
+    style:
+      alignment: center
+    children:
+      - ddd_mandate_amount_value
+      - ddd_mandate_frequency_text
+
+  - type: text
+    id: ddd_mandate_amount_value
+    content: "£15.99"
+    variant: display_small
+    style:
+      typography: "Outfit/display_small"
+      color: "#FFFFFF"
+      alignment: center
+      font_weight: 700
+    prefill: "mandateAmount"
+    a11y:
+      role: text
+      label: "Mandate amount: £15.99"
+    test_context:
+      purpose: "Formatted mandate amount; the primary financial value in the hero"
+      interaction_type: display
+      data_driven: true
+
+  - type: text
+    id: ddd_mandate_frequency_text
+    content: "Monthly"
+    variant: body_medium
+    style:
+      typography: "Outfit/body_medium"
+      color: "#CDEDA3"
+      alignment: center
+    prefill: "mandateFrequency"
+    a11y:
+      role: text
+      label: "Payment frequency: Monthly"
+    test_context:
+      purpose: "Frequency label beneath amount (Monthly / Weekly / Quarterly / Annual)"
+      interaction_type: display
+      data_driven: true
+
+  # ── Mandate Details Card ──────────────────────────────────────────────────────
+
+  - type: card
+    id: ddd_mandate_details_card
+    variant: filled
+    style:
+      background: "#FFFFFF"
+      border_radius: "12dp"
+      padding: spacing.md
+      margin_bottom: spacing.md
+    children:
+      - ddd_details_header
+      - ddd_next_payment_row
+      - ddd_divider_1
+      - ddd_account_row
+      - ddd_divider_2
+      - ddd_mandate_ref_row
+      - ddd_divider_3
+      - ddd_start_date_row
+
+  - type: text
+    id: ddd_details_header
+    content: "Mandate Details"
+    variant: title_medium
+    style:
+      typography: "Outfit/title_medium"
+      color: "#4C662B"
+      padding_bottom: spacing.sm
+    a11y:
+      role: heading
+      label: "Mandate details section"
+    test_context:
+      purpose: "Section header for the mandate metadata card"
+      interaction_type: display
+      data_driven: false
+
+  - type: stack
+    id: ddd_next_payment_row
+    variant: row
+    style:
+      alignment: center_space_between
+      padding_vertical: spacing.sm
+    children:
+      - ddd_next_payment_label
+      - ddd_next_payment_value
+
+  - type: text
+    id: ddd_next_payment_label
+    content: "Next Payment"
+    variant: body_medium
+    style:
+      typography: "Outfit/body_medium"
+      color: "#75796C"
+    a11y:
+      role: text
+      label: "Next payment label"
+    test_context:
+      purpose: "Row label for the upcoming payment date"
+      interaction_type: display
+      data_driven: false
+
+  - type: text
+    id: ddd_next_payment_value
+    content: "15 Jun 2026"
+    variant: body_medium
+    style:
+      typography: "Outfit/body_medium"
+      color: "#1A1C16"
+      font_weight: 600
+    prefill: "nextPaymentDate"
+    a11y:
+      role: text
+      label: "Next payment date"
+    test_context:
+      purpose: "Next scheduled collection date from the mandate; formatted as 'dd MMM yyyy'"
+      interaction_type: display
+      data_driven: true
+
+  - type: divider
+    id: ddd_divider_1
+    style:
+      color: "#E1E4D5"
+      margin_top: spacing.xs
+      margin_bottom: spacing.xs
+    a11y:
+      role: separator
+      label: "Divider"
+    test_context:
+      purpose: "Visual separator between next payment and linked account rows"
+      interaction_type: display
+      data_driven: false
+
+  - type: stack
+    id: ddd_account_row
+    variant: row
+    style:
+      alignment: center_space_between
+      padding_vertical: spacing.sm
+    children:
+      - ddd_account_label
+      - ddd_account_value_group
+
+  - type: text
+    id: ddd_account_label
+    content: "Account"
+    variant: body_medium
+    style:
+      typography: "Outfit/body_medium"
+      color: "#75796C"
+    a11y:
+      role: text
+      label: "Linked account label"
+    test_context:
+      purpose: "Row label for the account from which the direct debit is collected"
+      interaction_type: display
+      data_driven: false
+
+  - type: stack
+    id: ddd_account_value_group
+    variant: column
+    style:
+      alignment: end
+    children:
+      - ddd_account_name
+      - ddd_account_number
+
+  - type: text
+    id: ddd_account_name
+    content: "Current Account"
+    variant: body_medium
+    style:
+      typography: "Outfit/body_medium"
+      color: "#1A1C16"
+      font_weight: 600
+    prefill: "linkedAccountName"
+    a11y:
+      role: text
+      label: "Linked account name"
+    test_context:
+      purpose: "Display name of the account funding this mandate"
+      interaction_type: display
+      data_driven: true
+
+  - type: text
+    id: ddd_account_number
+    content: "****4521"
+    variant: body_small
+    style:
+      typography: "Outfit/body_small"
+      color: "#75796C"
+    prefill: "linkedAccountMasked"
+    a11y:
+      role: text
+      label: "Masked account number"
+    test_context:
+      purpose: "Last 4 digits of the linked sort-code/account shown for recognition"
+      interaction_type: display
+      data_driven: true
+
+  - type: divider
+    id: ddd_divider_2
+    style:
+      color: "#E1E4D5"
+      margin_top: spacing.xs
+      margin_bottom: spacing.xs
+    a11y:
+      role: separator
+      label: "Divider"
+    test_context:
+      purpose: "Visual separator between account row and mandate reference row"
+      interaction_type: display
+      data_driven: false
+
+  - type: stack
+    id: ddd_mandate_ref_row
+    variant: row
+    style:
+      alignment: center_space_between
+      padding_vertical: spacing.sm
+    children:
+      - ddd_mandate_ref_label
+      - ddd_mandate_ref_value
+
+  - type: text
+    id: ddd_mandate_ref_label
+    content: "Mandate Ref"
+    variant: body_medium
+    style:
+      typography: "Outfit/body_medium"
+      color: "#75796C"
+    a11y:
+      role: text
+      label: "Mandate reference label"
+    test_context:
+      purpose: "Row label for the unique mandate identifier"
+      interaction_type: display
+      data_driven: false
+
+  - type: text
+    id: ddd_mandate_ref_value
+    content: "MDT-2024-00947"
+    variant: body_medium
+    style:
+      typography: "Outfit/body_medium"
+      color: "#1A1C16"
+      font_family: monospace
+    prefill: "mandateReference"
+    a11y:
+      role: text
+      label: "Mandate reference number"
+    test_context:
+      purpose: "Unique mandate reference from the OBP mandate object; monospace for readability"
+      interaction_type: display
+      data_driven: true
+
+  - type: divider
+    id: ddd_divider_3
+    style:
+      color: "#E1E4D5"
+      margin_top: spacing.xs
+      margin_bottom: spacing.xs
+    a11y:
+      role: separator
+      label: "Divider"
+    test_context:
+      purpose: "Visual separator between mandate reference and start date rows"
+      interaction_type: display
+      data_driven: false
+
+  - type: stack
+    id: ddd_start_date_row
+    variant: row
+    style:
+      alignment: center_space_between
+      padding_vertical: spacing.sm
+    children:
+      - ddd_start_date_label
+      - ddd_start_date_value
+
+  - type: text
+    id: ddd_start_date_label
+    content: "Start Date"
+    variant: body_medium
+    style:
+      typography: "Outfit/body_medium"
+      color: "#75796C"
+    a11y:
+      role: text
+      label: "Mandate start date label"
+    test_context:
+      purpose: "Row label for when the mandate first became active"
+      interaction_type: display
+      data_driven: false
+
+  - type: text
+    id: ddd_start_date_value
+    content: "12 Jan 2024"
+    variant: body_medium
+    style:
+      typography: "Outfit/body_medium"
+      color: "#1A1C16"
+      font_weight: 600
+    prefill: "mandateStartDate"
+    a11y:
+      role: text
+      label: "Mandate start date"
+    test_context:
+      purpose: "Date the mandate was first authorised; formatted as 'dd MMM yyyy'"
+      interaction_type: display
+      data_driven: true
+
+  # ── Payment History Card ──────────────────────────────────────────────────────
+
+  - type: card
+    id: ddd_payment_history_card
+    variant: filled
+    style:
+      background: "#FFFFFF"
+      border_radius: "12dp"
+      padding: spacing.md
+      margin_bottom: spacing.md
+    children:
+      - ddd_history_header_row
+      - ddd_history_item_1
+      - ddd_history_divider_1
+      - ddd_history_item_2
+      - ddd_history_divider_2
+      - ddd_history_item_3
+
+  - type: stack
+    id: ddd_history_header_row
+    variant: row
+    style:
+      alignment: center_space_between
+      padding_bottom: spacing.sm
+    children:
+      - ddd_history_header
+      - ddd_history_view_all_link
+
+  - type: text
+    id: ddd_history_header
+    content: "Recent Payments"
+    variant: title_medium
+    style:
+      typography: "Outfit/title_medium"
+      color: "#4C662B"
+    a11y:
+      role: heading
+      label: "Recent payments section"
+    test_context:
+      purpose: "Section header for the last 3 payment history items"
+      interaction_type: display
+      data_driven: false
+
+  - type: link
+    id: ddd_history_view_all_link
+    label: "View all"
+    variant: inline
+    style:
+      typography: "Outfit/label_medium"
+      color: "#386663"
+    on_click:
+      action: navigate
+      target: transactions
+    a11y:
+      role: link
+      label: "View all transactions for this mandate"
+    keyboard:
+      focusable: true
+    test_context:
+      purpose: "Deep links to the transactions screen filtered by this mandate's reference"
+      interaction_type: navigate
+      data_driven: false
+
+  - type: stack
+    id: ddd_history_item_1
+    variant: row
+    style:
+      alignment: center_space_between
+      padding_vertical: spacing.sm
+    children:
+      - ddd_history_item_1_info
+      - ddd_history_item_1_amount
+
+  - type: stack
+    id: ddd_history_item_1_info
+    variant: column
+    children:
+      - ddd_history_item_1_date
+      - ddd_history_item_1_status
+
+  - type: text
+    id: ddd_history_item_1_date
+    content: "15 May 2026"
+    variant: body_medium
+    style:
+      typography: "Outfit/body_medium"
+      color: "#1A1C16"
+    a11y:
+      role: text
+      label: "Payment date 15 May 2026"
+    test_context:
+      purpose: "Date of the most recent collected payment"
+      interaction_type: display
+      data_driven: true
+
+  - type: text
+    id: ddd_history_item_1_status
+    content: "Collected"
+    variant: body_small
+    style:
+      typography: "Outfit/body_small"
+      color: "#4C662B"
+    a11y:
+      role: text
+      label: "Payment status: Collected"
+    test_context:
+      purpose: "Status of the payment (Collected / Failed / Pending)"
+      interaction_type: display
+      data_driven: true
+
+  - type: text
+    id: ddd_history_item_1_amount
+    content: "−£15.99"
+    variant: body_medium
+    style:
+      typography: "Outfit/body_medium"
+      color: "#1A1C16"
+      font_weight: 600
+    a11y:
+      role: text
+      label: "Amount: negative £15.99"
+    test_context:
+      purpose: "Amount debited on 15 May 2026"
+      interaction_type: display
+      data_driven: true
+
+  - type: divider
+    id: ddd_history_divider_1
+    style:
+      color: "#E1E4D5"
+      margin_top: spacing.xs
+      margin_bottom: spacing.xs
+    a11y:
+      role: separator
+      label: "Divider"
+    test_context:
+      purpose: "Separator between payment history rows"
+      interaction_type: display
+      data_driven: false
+
+  - type: stack
+    id: ddd_history_item_2
+    variant: row
+    style:
+      alignment: center_space_between
+      padding_vertical: spacing.sm
+    children:
+      - ddd_history_item_2_info
+      - ddd_history_item_2_amount
+
+  - type: stack
+    id: ddd_history_item_2_info
+    variant: column
+    children:
+      - ddd_history_item_2_date
+      - ddd_history_item_2_status
+
+  - type: text
+    id: ddd_history_item_2_date
+    content: "15 Apr 2026"
+    variant: body_medium
+    style:
+      typography: "Outfit/body_medium"
+      color: "#1A1C16"
+    a11y:
+      role: text
+      label: "Payment date 15 Apr 2026"
+    test_context:
+      purpose: "Date of the second most recent payment"
+      interaction_type: display
+      data_driven: true
+
+  - type: text
+    id: ddd_history_item_2_status
+    content: "Collected"
+    variant: body_small
+    style:
+      typography: "Outfit/body_small"
+      color: "#4C662B"
+    a11y:
+      role: text
+      label: "Payment status: Collected"
+    test_context:
+      purpose: "Status of the April payment"
+      interaction_type: display
+      data_driven: true
+
+  - type: text
+    id: ddd_history_item_2_amount
+    content: "−£15.99"
+    variant: body_medium
+    style:
+      typography: "Outfit/body_medium"
+      color: "#1A1C16"
+      font_weight: 600
+    a11y:
+      role: text
+      label: "Amount: negative £15.99"
+    test_context:
+      purpose: "Amount debited on 15 Apr 2026"
+      interaction_type: display
+      data_driven: true
+
+  - type: divider
+    id: ddd_history_divider_2
+    style:
+      color: "#E1E4D5"
+      margin_top: spacing.xs
+      margin_bottom: spacing.xs
+    a11y:
+      role: separator
+      label: "Divider"
+    test_context:
+      purpose: "Separator between second and third payment history rows"
+      interaction_type: display
+      data_driven: false
+
+  - type: stack
+    id: ddd_history_item_3
+    variant: row
+    style:
+      alignment: center_space_between
+      padding_vertical: spacing.sm
+    children:
+      - ddd_history_item_3_info
+      - ddd_history_item_3_amount
+
+  - type: stack
+    id: ddd_history_item_3_info
+    variant: column
+    children:
+      - ddd_history_item_3_date
+      - ddd_history_item_3_status
+
+  - type: text
+    id: ddd_history_item_3_date
+    content: "15 Mar 2026"
+    variant: body_medium
+    style:
+      typography: "Outfit/body_medium"
+      color: "#1A1C16"
+    a11y:
+      role: text
+      label: "Payment date 15 Mar 2026"
+    test_context:
+      purpose: "Date of the third most recent payment"
+      interaction_type: display
+      data_driven: true
+
+  - type: text
+    id: ddd_history_item_3_status
+    content: "Failed"
+    variant: body_small
+    style:
+      typography: "Outfit/body_small"
+      color: "#BA1A1A"
+    a11y:
+      role: text
+      label: "Payment status: Failed"
+    test_context:
+      purpose: "March payment failed; colour-coded red to draw attention"
+      interaction_type: display
+      data_driven: true
+
+  - type: text
+    id: ddd_history_item_3_amount
+    content: "−£15.99"
+    variant: body_medium
+    style:
+      typography: "Outfit/body_medium"
+      color: "#BA1A1A"
+      font_weight: 600
+    a11y:
+      role: text
+      label: "Amount: negative £15.99, failed"
+    test_context:
+      purpose: "Amount for the failed March debit; shown in error colour"
+      interaction_type: display
+      data_driven: true
+
+  # ── Action Row ────────────────────────────────────────────────────────────────
+
+  - type: stack
+    id: ddd_action_row
+    variant: row
+    style:
+      alignment: center_space_between
+      padding_top: spacing.md
+      spacing: spacing.md
+    children:
+      - ddd_cancel_button
+      - ddd_edit_button
+
+  - type: button
+    id: ddd_cancel_button
+    label: "Cancel Mandate"
+    variant: outlined_error
+    style:
+      border_color: "#BA1A1A"
+      color: "#BA1A1A"
+      typography: "Outfit/label_large"
+      border_radius: "12dp"
+      padding_horizontal: spacing.lg
+    on_click:
+      action: confirm_cancel_mandate
+      target: direct-debit-detail
+    a11y:
+      role: button
+      label: "Cancel this direct debit mandate"
+    keyboard:
+      focusable: true
+    test_context:
+      purpose: "Opens a confirmation bottom sheet before sending DELETE to the OBP mandate endpoint"
+      interaction_type: action
+      data_driven: false
+
+  - type: button
+    id: ddd_edit_button
+    label: "Edit Mandate"
+    variant: filled
+    style:
+      background: "#386663"
+      color: "#FFFFFF"
+      typography: "Outfit/label_large"
+      border_radius: "12dp"
+      padding_horizontal: spacing.lg
+    on_click:
+      action: navigate
+      target: direct-debits
+    a11y:
+      role: button
+      label: "Edit direct debit mandate details"
+    keyboard:
+      focusable: true
+    test_context:
+      purpose: "Navigates back to direct-debits list after updating; full edit flow TBD in future"
+      interaction_type: navigate
+      data_driven: false
+
+  # ── Loading Skeleton ──────────────────────────────────────────────────────────
+
+  - type: skeleton
+    id: ddd_loading_skeleton
+    variant: detail_screen
+    style:
+      background: "#F9FAEF"
+      padding: spacing.lg
+    a11y:
+      role: progressbar
+      label: "Loading mandate details"
+    test_context:
+      purpose: "Shimmer skeleton shown while fetching the mandate from the OBP API"
+      interaction_type: display
+      data_driven: false
+
+  # ── Error State ───────────────────────────────────────────────────────────────
+
+  - type: stack
+    id: ddd_error_state
+    variant: column
+    style:
+      alignment: center
+      padding: spacing.xl
+    children:
+      - ddd_error_icon
+      - ddd_error_message
+      - ddd_retry_button
+
+  - type: icon
+    id: ddd_error_icon
+    content: "error_outline"
+    style:
+      color: "#BA1A1A"
+      size: "48dp"
+      alignment: center
+      padding_bottom: spacing.md
+    a11y:
+      role: image
+      label: "Error loading mandate"
+    test_context:
+      purpose: "Error state icon when the mandate cannot be fetched"
+      interaction_type: display
+      data_driven: false
+
+  - type: text
+    id: ddd_error_message
+    content: "Couldn't load mandate details. Please try again."
+    variant: body_medium
+    style:
+      typography: "Outfit/body_medium"
+      color: "#75796C"
+      alignment: center
+      padding_bottom: spacing.md
+    a11y:
+      role: text
+      label: "Error message: Couldn't load mandate details"
+    test_context:
+      purpose: "User-facing error copy for API failure on mandate fetch"
+      interaction_type: display
+      data_driven: false
+
+  - type: button
+    id: ddd_retry_button
+    label: "Try Again"
+    variant: filled
+    style:
+      background: "#4C662B"
+      color: "#FFFFFF"
+      typography: "Outfit/label_large"
+      border_radius: "12dp"
+      padding_horizontal: spacing.xl
+    on_click:
+      action: retry_load
+      target: direct-debit-detail
+    a11y:
+      role: button
+      label: "Retry loading mandate details"
+    keyboard:
+      focusable: true
+    test_context:
+      purpose: "Re-triggers DirectDebitDetailViewModel.loadMandate(mandateId)"
+      interaction_type: action
+      data_driven: false
+
+states:
+  loading:
+    layout: { type: column, padding: spacing.lg }
+    visible_components: [ddd_loading_skeleton]
+  content:
+    layout: { type: column, padding: spacing.lg }
+    visible_components:
+      - ddd_merchant_hero
+      - ddd_mandate_details_card
+      - ddd_payment_history_card
+      - ddd_action_row
+  error:
+    layout: { type: column, padding: spacing.lg }
+    visible_components: [ddd_error_state]
+
+state_model:
+  DirectDebitDetailViewModel:
+    screen_state: DirectDebitDetailUiState
+    state:
+      - field: mandateId
+        type: String
+        default: "\"\""
+      - field: merchantName
+        type: "String?"
+        default: "null"
+      - field: merchantLogoUrl
+        type: "String?"
+        default: "null"
+      - field: mandateStatus
+        type: "String?"
+        default: "null"
+      - field: mandateAmount
+        type: "String?"
+        default: "null"
+      - field: mandateFrequency
+        type: "String?"
+        default: "null"
+      - field: nextPaymentDate
+        type: "String?"
+        default: "null"
+      - field: linkedAccountName
+        type: "String?"
+        default: "null"
+      - field: linkedAccountMasked
+        type: "String?"
+        default: "null"
+      - field: mandateReference
+        type: "String?"
+        default: "null"
+      - field: mandateStartDate
+        type: "String?"
+        default: "null"
+      - field: recentPayments
+        type: "List<PaymentHistoryItem>"
+        default: "emptyList()"
+      - field: isLoading
+        type: Boolean
+        default: "true"
+      - field: errorMessage
+        type: "String?"
+        default: "null"
+    errors: [NETWORK_ERROR, MANDATE_NOT_FOUND, CANCEL_FAILED]
+    events: [LoadMandate, OnCancelClicked, OnEditClicked, OnRetryClicked]
+    actions:
+      - loadMandate(mandateId: String)
+      - onCancelClicked()
+      - onEditClicked()
+      - onRetryClicked()
+    di: [DirectDebitRepository, AccountRepository]
+
+navigation:
+  - id: nav_back_to_direct_debits
+    target: direct-debits
+    on_click:
+      action: navigate
+      target: direct-debits
+  - id: nav_to_accounts
+    target: accounts
+    on_click:
+      action: navigate
+      target: accounts
+  - id: nav_to_transactions
+    target: transactions
+    on_click:
+      action: navigate
+      target: transactions
+
+api:
+  - id: get_direct_debit_mandate
+    method: GET
+    path: "/obp/v5.0.0/banks/{bankId}/accounts/{accountId}/direct-debit/{directDebitId}"
+    response:
+      direct_debit_id: String
+      bank_id: String
+      account_id: String
+      date_signed: String
+      date_starts: String
+      date_expires: "String?"
+      date_cancelled: "String?"
+      date_updated: String
+      date_of_next_payment: String
+      period: String
+      amount: Object
+      virtual_account: Object
+    errors: [404, 403]
+  - id: delete_direct_debit_mandate
+    method: DELETE
+    path: "/obp/v5.0.0/banks/{bankId}/accounts/{accountId}/direct-debit/{directDebitId}"
+    response:
+      success: Boolean
+    errors: [404, 403, 409]
+
+dependencies:
+  tier: feature
+  features: [accounts, direct-debits, shared-core, obp-auth]

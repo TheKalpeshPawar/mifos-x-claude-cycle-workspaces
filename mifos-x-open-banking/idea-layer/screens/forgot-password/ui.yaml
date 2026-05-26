@@ -1,0 +1,352 @@
+id: forgot-password
+name: "Forgot Password"
+feature: forgot-password
+flavor: shared
+status: draft
+capabilities:
+  - has_ui
+  - has_api
+
+screens:
+  - id: forgot-password
+    name: "Forgot Password"
+    viewmodel: "ForgotPasswordViewModel"
+
+archetype: form
+
+shell:
+  top_app_bar:
+    show: true
+    title: "Reset Password"
+    navigation_icon: arrow_back
+    navigation_action: navigate_back
+  bottom_nav: false
+
+components:
+  - type: stack
+    id: fpw_root
+    variant: column
+    style:
+      background: "#F9FAEF"
+      padding: spacing.lg
+    children:
+      - fpw_illustration
+      - fpw_header_title
+      - fpw_header_subtitle
+      - fpw_form_section
+      - fpw_error_banner
+      - fpw_success_section
+      - fpw_submit_button
+      - fpw_back_to_login_link
+
+  # ── Illustration ──────────────────────────────────────────────────────────────
+
+  - type: image
+    id: fpw_illustration
+    content: "ic_lock_reset"
+    label: "Lock reset illustration"
+    style:
+      width: "72dp"
+      height: "72dp"
+      tint: "#4C662B"
+      alignment: center
+      padding_bottom: spacing.lg
+    a11y:
+      role: image
+      label: "Password reset illustration"
+    test_context:
+      purpose: "Decorative illustration providing visual context for the reset flow"
+      interaction_type: display
+      data_driven: false
+
+  # ── Header ────────────────────────────────────────────────────────────────────
+
+  - type: text
+    id: fpw_header_title
+    content: "Forgot your password?"
+    variant: headline_small
+    style:
+      typography: "Outfit/headline_small"
+      color: "#4C662B"
+      alignment: center
+      padding_bottom: spacing.xs
+    a11y:
+      role: heading
+      label: "Forgot your password?"
+    test_context:
+      purpose: "Screen headline identifying the purpose of this flow"
+      interaction_type: display
+      data_driven: false
+
+  - type: text
+    id: fpw_header_subtitle
+    content: "Enter your username or email address and we'll send you a link to reset your password."
+    variant: body_medium
+    style:
+      typography: "Outfit/body_medium"
+      color: "#75796C"
+      alignment: center
+      padding_bottom: spacing.xl
+    a11y:
+      role: text
+      label: "Enter your username or email address and we'll send you a link to reset your password."
+    test_context:
+      purpose: "Instruction copy describing the reset link delivery mechanism"
+      interaction_type: display
+      data_driven: false
+
+  # ── Form ──────────────────────────────────────────────────────────────────────
+
+  - type: stack
+    id: fpw_form_section
+    variant: column
+    style:
+      padding_bottom: spacing.md
+    visible_when: "uiState != success"
+    children:
+      - fpw_identifier_input
+
+  - type: input
+    id: fpw_identifier_input
+    label: "Username or Email"
+    placeholder: "e.g. john.doe or john@example.com"
+    variant: text
+    style:
+      border_color: "#C5C8BA"
+      focused_border_color: "#4C662B"
+      error_border_color: "#BA1A1A"
+      typography: "Outfit/body_medium"
+      color: "#1A1C16"
+    prefill: ""
+    on_click:
+      action: focus_field
+      target: fpw_identifier_input
+    a11y:
+      role: textbox
+      label: "Username or email address"
+    keyboard:
+      focusable: true
+      ime_action: done
+      input_type: email_or_text
+    test_context:
+      purpose: "Accepts either a username or email; passed to the OBP reset endpoint"
+      interaction_type: action
+      data_driven: false
+
+  # ── Banners ───────────────────────────────────────────────────────────────────
+
+  - type: banner
+    id: fpw_error_banner
+    variant: error
+    content: "We couldn't find an account with that username or email. Please try again."
+    style:
+      background: "#FFDAD6"
+      color: "#BA1A1A"
+      border_radius: "8dp"
+      padding: spacing.sm
+      margin_bottom: spacing.md
+    visible_when: "uiState == error"
+    a11y:
+      role: alert
+      label: "Reset request error"
+    test_context:
+      purpose: "Error feedback when the identifier does not match a known account"
+      interaction_type: display
+      data_driven: true
+
+  # ── Success Section ───────────────────────────────────────────────────────────
+
+  - type: stack
+    id: fpw_success_section
+    variant: column
+    style:
+      alignment: center
+      padding_vertical: spacing.xl
+    visible_when: "uiState == success"
+    children:
+      - fpw_success_icon
+      - fpw_success_title
+      - fpw_success_body
+
+  - type: icon
+    id: fpw_success_icon
+    content: "mark_email_read"
+    variant: default
+    style:
+      color: "#4C662B"
+      size: "48dp"
+      alignment: center
+      padding_bottom: spacing.md
+    a11y:
+      role: image
+      label: "Email sent successfully"
+    test_context:
+      purpose: "Confirmation icon displayed after a successful reset request"
+      interaction_type: display
+      data_driven: false
+
+  - type: text
+    id: fpw_success_title
+    content: "Check your inbox"
+    variant: title_large
+    style:
+      typography: "Outfit/title_large"
+      color: "#4C662B"
+      alignment: center
+      padding_bottom: spacing.xs
+    a11y:
+      role: heading
+      label: "Check your inbox"
+    test_context:
+      purpose: "Success state headline confirming the reset email was dispatched"
+      interaction_type: display
+      data_driven: false
+
+  - type: text
+    id: fpw_success_body
+    content: "If an account exists for that email, you'll receive a password reset link within a few minutes."
+    variant: body_medium
+    style:
+      typography: "Outfit/body_medium"
+      color: "#75796C"
+      alignment: center
+    a11y:
+      role: text
+      label: "If an account exists for that email, you'll receive a password reset link within a few minutes."
+    test_context:
+      purpose: "Non-enumeration copy — avoids confirming whether the account exists"
+      interaction_type: display
+      data_driven: false
+
+  # ── Submit Button ─────────────────────────────────────────────────────────────
+
+  - type: button
+    id: fpw_submit_button
+    label: "Send Reset Link"
+    variant: filled
+    style:
+      background: "#4C662B"
+      color: "#FFFFFF"
+      typography: "Outfit/label_large"
+      padding_horizontal: spacing.xl
+      border_radius: "12dp"
+      loading_when: "uiState == submitting"
+      margin_bottom: spacing.md
+    visible_when: "uiState != success"
+    on_click:
+      action: submit_forgot_password
+      target: forgot-password
+    a11y:
+      role: button
+      label: "Send password reset link"
+    keyboard:
+      focusable: true
+    test_context:
+      purpose: "Triggers ForgotPasswordViewModel.onSubmit(); disabled while submitting"
+      interaction_type: action
+      data_driven: false
+
+  # ── Back to Login ─────────────────────────────────────────────────────────────
+
+  - type: link
+    id: fpw_back_to_login_link
+    label: "Back to Login"
+    variant: inline
+    style:
+      typography: "Outfit/body_medium"
+      color: "#386663"
+      alignment: center
+    on_click:
+      action: navigate
+      target: login
+    a11y:
+      role: link
+      label: "Return to the login screen"
+    keyboard:
+      focusable: true
+    test_context:
+      purpose: "Allows users to abandon the reset flow and return to login"
+      interaction_type: navigate
+      data_driven: false
+
+states:
+  idle:
+    layout: { type: column, padding: spacing.lg }
+    visible_components:
+      - fpw_illustration
+      - fpw_header_title
+      - fpw_header_subtitle
+      - fpw_form_section
+      - fpw_submit_button
+      - fpw_back_to_login_link
+  submitting:
+    layout: { type: column, padding: spacing.lg }
+    visible_components:
+      - fpw_illustration
+      - fpw_header_title
+      - fpw_header_subtitle
+      - fpw_form_section
+      - fpw_submit_button
+      - fpw_back_to_login_link
+    note: "Submit button shows loading spinner; input disabled"
+  success:
+    layout: { type: column, padding: spacing.lg }
+    visible_components:
+      - fpw_success_section
+      - fpw_back_to_login_link
+  error:
+    layout: { type: column, padding: spacing.lg }
+    visible_components:
+      - fpw_illustration
+      - fpw_header_title
+      - fpw_header_subtitle
+      - fpw_form_section
+      - fpw_error_banner
+      - fpw_submit_button
+      - fpw_back_to_login_link
+
+state_model:
+  ForgotPasswordViewModel:
+    screen_state: ForgotPasswordUiState
+    state:
+      - field: identifier
+        type: String
+        default: "\"\""
+      - field: isSubmitting
+        type: Boolean
+        default: "false"
+      - field: isSuccess
+        type: Boolean
+        default: "false"
+      - field: errorMessage
+        type: "String?"
+        default: "null"
+    errors: [ACCOUNT_NOT_FOUND, NETWORK_ERROR, RATE_LIMITED]
+    events: [OnIdentifierChanged, OnSubmitClicked, OnBackToLoginClicked]
+    actions:
+      - onIdentifierChanged(value: String)
+      - onSubmitClicked()
+      - onBackToLoginClicked()
+    di: [AuthRepository]
+
+navigation:
+  - id: nav_back_to_login
+    target: login
+    on_click:
+      action: navigate
+      target: login
+
+api:
+  - id: request_password_reset
+    method: POST
+    path: "/obp/v5.0.0/users/password-reset"
+    request:
+      username: "String?"
+      email: "String?"
+    response:
+      message: String
+    errors: [400, 404, 429]
+
+dependencies:
+  tier: feature
+  features: [shared-core, obp-auth]
