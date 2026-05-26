@@ -1,374 +1,537 @@
-<!DOCTYPE html>
-<html lang="en">
+<!doctype html>
+<html lang="en" data-screen="transactions" data-state="content">
 <head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=390px, initial-scale=1">
-<title>Transactions — Mifos X</title>
-<link rel="preconnect" href="https://fonts.googleapis.com">
-<link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;500;600;700&display=swap" rel="stylesheet">
-<link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet">
-<style>
-:root{
-  --primary:#4C662B;
-  --on-primary:#FFF;
-  --primary-container:#CDEDA3;
-  --background:#F9FAEF;
-  --surface:#FFF;
-  --surface-variant:#E1E4D5;
-  --outline:#75796C;
-  --outline-variant:#C5C8BA;
-  --text-primary:#1A1C16;
-  --text-secondary:#44483D;
-  --tertiary:#386663;
-  --error:#BA1A1A;
-  --pending:#E8A317;
-  --nav-active:#DCE7C8;
-  --font:'Outfit',system-ui,sans-serif;
-}
-*{box-sizing:border-box;margin:0;padding:0;}
-body{
-  width:390px;
-  min-height:844px;
-  position:relative;
-  overflow-x:hidden;
-  background:var(--background);
-  font-family:var(--font);
-  color:var(--text-primary);
-}
-.mi{font-family:'Material Icons';font-style:normal;}
-.top-bar{
-  width:390px;
-  height:56px;
-  background:var(--surface);
-  display:flex;
-  align-items:center;
-  padding:0 8px;
-  border-bottom:1px solid var(--surface-variant);
-}
-.top-bar-back{
-  width:40px;height:40px;
-  display:flex;align-items:center;justify-content:center;
-  cursor:pointer;
-}
-.top-bar-title{flex:1;font-size:18px;font-weight:600;color:var(--text-primary);}
-.top-bar-action{
-  width:40px;height:40px;
-  display:flex;align-items:center;justify-content:center;
-  cursor:pointer;
-}
-.screen-content{
-  height:calc(844px - 56px - 80px);
-  overflow-y:auto;
-  scrollbar-width:none;
-}
-.screen-content::-webkit-scrollbar{display:none;}
-/* Search bar */
-.search-bar{
-  display:flex;
-  align-items:center;
-  background:var(--background);
-  border:1px solid var(--surface-variant);
-  border-radius:12px;
-  padding:10px 14px;
-  margin:14px 20px 12px;
-  gap:8px;
-}
-.search-icon{font-size:20px;color:var(--text-secondary);}
-.search-input{
-  flex:1;
-  border:none;
-  background:transparent;
-  font-family:var(--font);
-  font-size:14px;
-  color:var(--text-primary);
-  outline:none;
-}
-.search-input::placeholder{color:var(--outline);}
-/* Date range picker */
-.date-picker{
-  display:flex;
-  align-items:center;
-  justify-content:space-between;
-  background:var(--background);
-  border:1px solid var(--surface-variant);
-  border-radius:12px;
-  padding:10px 14px;
-  margin:0 20px 12px;
-  cursor:pointer;
-}
-.date-picker-left{
-  display:flex;
-  align-items:center;
-  gap:8px;
-}
-.date-picker-label{font-size:14px;color:var(--text-primary);font-weight:500;}
-.date-cal-icon{font-size:18px;color:var(--primary);}
-.date-expand-icon{font-size:20px;color:var(--text-secondary);}
-/* Filter chips */
-.filter-chips{
-  display:flex;
-  gap:8px;
-  padding:0 20px 12px;
-  overflow-x:auto;
-  scrollbar-width:none;
-}
-.filter-chips::-webkit-scrollbar{display:none;}
-.chip{
-  border-radius:20px;
-  padding:7px 16px;
-  font-size:13px;
-  font-weight:500;
-  font-family:var(--font);
-  cursor:pointer;
-  white-space:nowrap;
-  border:none;
-}
-.chip.active{
-  background:var(--primary);
-  color:var(--on-primary);
-}
-.chip.inactive{
-  background:transparent;
-  color:var(--text-secondary);
-  border:1.5px solid var(--surface-variant);
-}
-/* Monthly summary card */
-.summary-card{
-  background:var(--primary-container);
-  border-radius:16px;
-  padding:16px;
-  margin:0 20px 16px;
-  display:flex;
-  align-items:center;
-}
-.summary-col{flex:1;display:flex;flex-direction:column;gap:4px;}
-.summary-field-label{
-  font-size:11px;
-  font-weight:500;
-  color:var(--text-secondary);
-  letter-spacing:0.4px;
-  text-transform:uppercase;
-}
-.summary-amount{
-  font-size:20px;
-  font-weight:700;
-  letter-spacing:-0.3px;
-}
-.summary-amount.spent{color:var(--error);}
-.summary-amount.received{color:var(--primary);}
-.summary-divider-v{
-  width:1px;
-  height:40px;
-  background:var(--surface-variant);
-  margin:0 16px;
-}
-/* Date group header */
-.date-group-header{
-  font-size:12px;
-  font-weight:600;
-  color:var(--text-secondary);
-  letter-spacing:0.5px;
-  text-transform:uppercase;
-  padding:4px 20px 8px;
-}
-/* Transaction rows */
-.txn-row{
-  background:var(--surface);
-  border-radius:12px;
-  padding:14px 16px;
-  margin:0 20px 8px;
-  display:flex;
-  align-items:center;
-  gap:12px;
-  box-shadow:0 1px 4px rgba(0,0,0,0.06);
-  cursor:pointer;
-}
-.txn-merchant-logo{
-  width:40px;height:40px;
-  border-radius:20px;
-  background:var(--primary-container);
-  display:flex;align-items:center;justify-content:center;
-  flex-shrink:0;
-  font-size:18px;
-  color:var(--primary);
-}
-.txn-info{flex:1;}
-.txn-name{font-size:14px;font-weight:500;color:var(--text-primary);}
-.txn-meta-row{
-  display:flex;align-items:center;gap:6px;margin-top:3px;
-}
-.txn-date{font-size:12px;color:var(--outline);}
-.txn-dot{font-size:12px;color:var(--surface-variant);}
-.txn-cat-badge{
-  background:var(--primary-container);
-  border-radius:4px;
-  padding:2px 6px;
-  font-size:11px;
-}
-.txn-cat-text{color:var(--primary);}
-.txn-cat-text.utility{color:var(--pending);}
-.txn-amount{font-size:15px;font-weight:600;}
-.txn-amount.debit{color:var(--error);}
-.txn-amount.credit{color:var(--primary);}
-/* Load more */
-.load-more-btn{
-  display:flex;
-  align-items:center;
-  justify-content:center;
-  padding:14px;
-  font-size:13px;
-  font-weight:600;
-  color:var(--primary);
-  font-family:var(--font);
-  cursor:pointer;
-  background:none;
-  border:none;
-  width:100%;
-}
-/* Bottom nav */
-.bottom-nav{
-  position:absolute;bottom:0;left:0;
-  width:390px;height:80px;
-  background:var(--surface);border-top:1px solid var(--surface-variant);
-  display:flex;align-items:flex-start;padding:12px 12px 16px;gap:8px;
-}
-.nav-tab{display:flex;flex-direction:column;align-items:center;width:80px;gap:4px;text-decoration:none;cursor:pointer;}
-.nav-pill{display:flex;align-items:center;justify-content:center;width:64px;height:28px;border-radius:14px;}
-.nav-tab.active .nav-pill{background:var(--nav-active);}
-.nav-icon{font-size:22px;color:var(--outline);font-family:'Material Icons';font-style:normal;}
-.nav-tab.active .nav-icon{color:var(--primary);}
-.nav-label{font-size:11px;color:var(--outline);font-family:var(--font);}
-.nav-tab.active .nav-label{color:var(--primary);font-weight:600;}
-</style>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Transactions</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet">
+  <style>
+    :root {
+      --primary: #4C662B;
+      --on-primary: #FFFFFF;
+      --primary-container: #CDEDA3;
+      --secondary: #386663;
+      --error: #BA1A1A;
+      --background: #F9FAEF;
+      --on-background: #1A1C16;
+      --surface: #FFFFFF;
+      --on-surface: #1A1C16;
+      --surface-variant: #E1E4D5;
+      --on-surface-variant: #44483D;
+      --outline: #75796C;
+      --outline-variant: #C5C8BA;
+      --warning: #E8A317;
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      font-family: 'Outfit', sans-serif;
+      background: var(--background);
+      color: var(--on-background);
+      min-height: 100vh;
+    }
+    .screen-root {
+      max-width: 390px;
+      margin: 0 auto;
+      background: var(--background);
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+    }
+    .top-app-bar {
+      display: flex; align-items: center;
+      padding: 12px 16px;
+      background: var(--surface);
+      gap: 12px;
+      position: sticky; top: 0; z-index: 10;
+      border-bottom: 1px solid var(--outline-variant);
+    }
+    .top-app-bar .nav-icon { cursor: pointer; color: var(--on-surface); font-size: 24px; }
+    .top-app-bar .bar-title { font-size: 20px; font-weight: 600; color: var(--on-surface); flex: 1; }
+    .top-app-bar .action-icon { cursor: pointer; color: var(--on-surface); font-size: 24px; }
+    .scroll-content { flex: 1; overflow-y: auto; padding-bottom: 80px; }
+    /* Search bar */
+    .search-bar {
+      display: flex; align-items: center; gap: 10px;
+      background: var(--background);
+      border-radius: 12px;
+      border: 1.5px solid var(--outline-variant);
+      padding: 12px 16px;
+      margin: 16px 20px 12px;
+      cursor: pointer;
+    }
+    .search-bar .material-icons { color: var(--on-surface-variant); font-size: 20px; }
+    .search-placeholder { flex: 1; font-size: 14px; color: var(--outline); }
+    /* Date range picker */
+    .date-range-box {
+      display: flex; align-items: center; justify-content: space-between;
+      background: var(--background);
+      border-radius: 12px;
+      border: 1.5px solid var(--outline-variant);
+      padding: 12px 16px;
+      margin: 0 20px 12px;
+      cursor: pointer;
+    }
+    .date-range-left { display: flex; align-items: center; gap: 8px; }
+    .date-range-left .material-icons { color: var(--primary); font-size: 18px; }
+    .date-range-text { font-size: 14px; color: var(--on-surface); }
+    .date-expand { color: var(--on-surface-variant); font-size: 20px; }
+    /* Filter chips row */
+    .filter-chips-row {
+      display: flex; gap: 8px;
+      padding: 0 20px 12px;
+      overflow-x: auto;
+      scrollbar-width: none;
+    }
+    .filter-chips-row::-webkit-scrollbar { display: none; }
+    .filter-chip {
+      border-radius: 20px;
+      padding: 8px 16px;
+      font-size: 13px; font-weight: 500;
+      cursor: pointer;
+      white-space: nowrap;
+      font-family: 'Outfit', sans-serif;
+      flex-shrink: 0;
+    }
+    .filter-chip.active {
+      background: var(--primary); color: var(--on-primary); border: none;
+    }
+    .filter-chip.inactive {
+      background: transparent; color: var(--on-surface-variant);
+      border: 1.5px solid var(--surface-variant);
+    }
+    /* Monthly summary card */
+    .summary-card {
+      background: var(--primary-container);
+      border-radius: 16px;
+      padding: 16px;
+      margin: 0 20px 16px;
+    }
+    .summary-row { display: flex; align-items: center; }
+    .summary-col { flex: 1; display: flex; flex-direction: column; gap: 4px; }
+    .summary-label { font-size: 11px; color: var(--on-surface-variant); letter-spacing: 0.4px; text-transform: uppercase; }
+    .summary-amount { font-size: 20px; font-weight: 700; }
+    .summary-amount.spent { color: var(--error); }
+    .summary-amount.received { color: var(--primary); }
+    .summary-vdivider { width: 1px; height: 40px; background: var(--surface-variant); margin: 0 16px; }
+    /* Date group header */
+    .date-group-header {
+      font-size: 12px; font-weight: 500; color: var(--on-surface-variant);
+      letter-spacing: 0.5px; text-transform: uppercase;
+      padding: 4px 20px 8px;
+    }
+    /* Transaction row */
+    .txn-row {
+      background: var(--surface);
+      border-radius: 12px;
+      padding: 14px;
+      margin: 0 20px 8px;
+      box-shadow: 0 1px 3px rgba(0,0,0,0.06);
+      cursor: pointer;
+    }
+    .txn-row:hover { box-shadow: 0 2px 8px rgba(0,0,0,0.1); }
+    .txn-main-row { display: flex; align-items: center; gap: 12px; }
+    .txn-logo {
+      width: 40px; height: 40px;
+      border-radius: 20px;
+      background: var(--primary-container);
+      display: flex; align-items: center; justify-content: center;
+      font-size: 14px; font-weight: 700; color: var(--primary);
+      flex-shrink: 0;
+    }
+    .txn-info { flex: 1; display: flex; flex-direction: column; gap: 4px; }
+    .txn-name { font-size: 14px; font-weight: 500; color: var(--on-surface); }
+    .txn-meta-row { display: flex; align-items: center; gap: 6px; }
+    .txn-date { font-size: 12px; color: var(--outline); }
+    .txn-dot { font-size: 12px; color: var(--surface-variant); }
+    .txn-cat-badge {
+      background: var(--primary-container);
+      border-radius: 4px;
+      padding: 2px 6px;
+    }
+    .txn-cat-text { font-size: 11px; color: var(--primary); }
+    .txn-cat-text.utility { color: var(--warning); }
+    .txn-amount {
+      font-size: 15px; font-weight: 600;
+      flex-shrink: 0;
+    }
+    .txn-amount.debit { color: var(--error); }
+    .txn-amount.credit { color: var(--primary); }
+    /* Load more */
+    .load-more-btn {
+      display: block; width: 100%;
+      background: none; border: none;
+      color: var(--primary);
+      font-size: 14px; font-weight: 500;
+      font-family: 'Outfit', sans-serif;
+      padding: 16px;
+      cursor: pointer;
+      text-align: center;
+    }
+    /* Bottom nav */
+    .bottom-nav {
+      position: sticky; bottom: 0;
+      background: var(--surface);
+      border-top: 1px solid var(--outline-variant);
+      display: flex;
+      z-index: 10;
+    }
+    .nav-item {
+      flex: 1; display: flex; flex-direction: column; align-items: center;
+      padding: 8px 4px 10px;
+      cursor: pointer;
+      gap: 3px;
+    }
+    .nav-item .material-icons { font-size: 22px; color: var(--outline); }
+    .nav-item .nav-label { font-size: 11px; color: var(--outline); }
+    .nav-item.active .material-icons { color: var(--primary); }
+    .nav-item.active .nav-label { color: var(--primary); font-weight: 600; }
+  </style>
 </head>
 <body>
-
-<header class="top-bar">
-  <div class="top-bar-back" data-action="navigate_back" aria-label="Go back">
-    <span class="mi" style="font-size:24px;color:var(--text-primary);">arrow_back</span>
+<div class="screen-root">
+  <div class="top-app-bar" data-component-type="top_app_bar" data-component-id="top_app_bar_transactions">
+    <span class="material-icons nav-icon"
+          role="button" tabindex="0"
+          aria-label="Go back"
+          data-action="navigate_back">arrow_back</span>
+    <span class="bar-title">Transactions</span>
+    <span class="material-icons action-icon"
+          role="button" tabindex="0"
+          aria-label="Advanced filter"
+          data-action="open_advanced_filter">filter_list</span>
   </div>
-  <span class="top-bar-title">Transactions</span>
-  <div class="top-bar-action" data-action="open_advanced_filter" aria-label="Advanced filter">
-    <span class="mi" style="font-size:24px;color:var(--text-primary);">filter_list</span>
-  </div>
-</header>
 
-<main data-screen="transactions" data-state="content" role="main">
-  <div class="screen-content">
-
-    <!-- Search bar -->
-    <div class="search-bar" role="search">
-      <span class="mi search-icon">search</span>
-      <input class="search-input" type="search" placeholder="Search by merchant, amount, date..." aria-label="Search transactions" data-action="search_transactions">
-      <span class="mi" style="font-size:20px;color:var(--outline);">mic</span>
+  <div class="scroll-content">
+    <!-- Search -->
+    <div class="search-bar"
+         data-component-type="input"
+         data-component-id="search_bar"
+         role="searchbox" tabindex="0"
+         aria-label="Search transactions"
+         data-action="search_transactions">
+      <span class="material-icons">search</span>
+      <span class="search-placeholder">Search by merchant, amount, date...</span>
+      <span class="material-icons">mic</span>
     </div>
 
-    <!-- Date range picker -->
-    <div class="date-picker" role="button" aria-label="Select date range: currently showing Last 30 Days" data-action="filter_date">
-      <div class="date-picker-left">
-        <span class="mi date-cal-icon">date_range</span>
-        <span class="date-picker-label">Last 30 Days</span>
+    <!-- Date Range -->
+    <div class="date-range-box"
+         data-component-type="box"
+         data-component-id="date_range_picker"
+         role="button" tabindex="0"
+         aria-label="Select date range: currently showing Last 30 Days"
+         data-action="filter_date">
+      <div class="date-range-left"
+           data-component-type="stack"
+           data-component-id="date_range_label_col">
+        <span class="material-icons"
+              data-component-type="icon"
+              data-component-id="date_range_icon"
+              aria-label="Calendar icon">date_range</span>
+        <span class="date-range-text"
+              data-component-type="text"
+              data-component-id="date_range_label">Last 30 Days</span>
       </div>
-      <span class="mi date-expand-icon">expand_more</span>
+      <span class="material-icons date-expand"
+            data-component-type="icon"
+            data-component-id="date_range_chevron"
+            aria-label="Expand">expand_more</span>
     </div>
 
     <!-- Filter chips -->
-    <div class="filter-chips" role="group" aria-label="Transaction type filters">
-      <button class="chip active" role="radio" aria-selected="true" aria-label="Show all transactions" data-action="filter_type">All</button>
-      <button class="chip inactive" role="radio" aria-selected="false" aria-label="Show debit transactions only" data-action="filter_type">Debit</button>
-      <button class="chip inactive" role="radio" aria-selected="false" aria-label="Show credit transactions only" data-action="filter_type">Credit</button>
-      <button class="chip inactive" role="radio" aria-selected="false" aria-label="Show pending transactions only" data-action="filter_type">Pending</button>
+    <div class="filter-chips-row"
+         data-component-type="stack"
+         data-component-id="filter_chips_row"
+         role="group"
+         aria-label="Transaction type filters">
+      <button class="filter-chip active"
+              data-component-type="button"
+              data-component-id="filter_all"
+              role="radio" aria-selected="true" tabindex="0"
+              aria-label="Show all transactions"
+              data-action="filter_type">All</button>
+      <button class="filter-chip inactive"
+              data-component-type="button"
+              data-component-id="filter_debit"
+              role="radio" aria-selected="false" tabindex="0"
+              aria-label="Show debit transactions only"
+              data-action="filter_type">Debit</button>
+      <button class="filter-chip inactive"
+              data-component-type="button"
+              data-component-id="filter_credit"
+              role="radio" aria-selected="false" tabindex="0"
+              aria-label="Show credit transactions only"
+              data-action="filter_type">Credit</button>
+      <button class="filter-chip inactive"
+              data-component-type="button"
+              data-component-id="filter_pending"
+              role="radio" aria-selected="false" tabindex="0"
+              aria-label="Show pending transactions only"
+              data-action="filter_type">Pending</button>
     </div>
 
-    <!-- Monthly summary -->
-    <section class="summary-card" aria-label="Monthly spending summary">
-      <div class="summary-col">
-        <span class="summary-field-label">Spent this month</span>
-        <span class="summary-amount spent" aria-label="Spent this month: one thousand two hundred forty pounds thirty">£1,240.30</span>
-      </div>
-      <div class="summary-divider-v" role="separator"></div>
-      <div class="summary-col">
-        <span class="summary-field-label">Received</span>
-        <span class="summary-amount received" aria-label="Received this month: three thousand two hundred pounds">£3,200.00</span>
-      </div>
-    </section>
-
-    <!-- Date group header -->
-    <div class="date-group-header" role="heading" aria-level="3" aria-label="Transactions on 25 May 2026">25 May 2026</div>
-
-    <!-- Transaction 1 -->
-    <article class="txn-row" data-nav-to="transaction-detail" aria-label="Tesco Supermarket, debit forty-two pounds fifty, Groceries, 25 May 2026. Tap for details.">
-      <div class="txn-merchant-logo" aria-label="Tesco logo">
-        <span class="mi">shopping_basket</span>
-      </div>
-      <div class="txn-info">
-        <div class="txn-name">Tesco Supermarket</div>
-        <div class="txn-meta-row">
-          <span class="txn-date">25 May 2026</span>
-          <span class="txn-dot" aria-hidden="true">·</span>
-          <span class="txn-cat-badge"><span class="txn-cat-text" aria-label="Category: Groceries">Groceries</span></span>
+    <!-- Monthly Summary -->
+    <div class="summary-card"
+         data-component-type="box"
+         data-component-id="monthly_summary_card"
+         role="region"
+         aria-label="Monthly spending summary">
+      <div class="summary-row"
+           data-component-type="stack"
+           data-component-id="monthly_summary_row">
+        <div class="summary-col"
+             data-component-type="stack"
+             data-component-id="spent_col">
+          <span class="summary-label"
+                data-component-type="text"
+                data-component-id="spent_label">Spent this month</span>
+          <span class="summary-amount spent"
+                data-component-type="text"
+                data-component-id="spent_amount"
+                aria-label="Spent this month: £1,240.30">£1,240.30</span>
+        </div>
+        <div class="summary-vdivider"
+             data-component-type="box"
+             data-component-id="summary_divider_v"
+             role="separator"></div>
+        <div class="summary-col"
+             data-component-type="stack"
+             data-component-id="received_col">
+          <span class="summary-label"
+                data-component-type="text"
+                data-component-id="received_label">Received</span>
+          <span class="summary-amount received"
+                data-component-type="text"
+                data-component-id="received_amount"
+                aria-label="Received this month: £3,200.00">£3,200.00</span>
         </div>
       </div>
-      <span class="txn-amount debit" aria-label="Debit: forty-two pounds fifty">-£42.50</span>
-    </article>
+    </div>
 
-    <!-- Transaction 2 -->
-    <article class="txn-row" data-nav-to="transaction-detail" aria-label="Salary Payment, credit three thousand two hundred pounds, Income, 24 May 2026. Tap for details.">
-      <div class="txn-merchant-logo" aria-label="Bank transfer icon">
-        <span class="mi" style="color:var(--primary);">payments</span>
-      </div>
-      <div class="txn-info">
-        <div class="txn-name">Salary Payment</div>
-        <div class="txn-meta-row">
-          <span class="txn-date">24 May 2026</span>
-          <span class="txn-dot" aria-hidden="true">·</span>
-          <span class="txn-cat-badge"><span class="txn-cat-text" aria-label="Category: Income">Income</span></span>
+    <!-- Date Group Header -->
+    <div class="date-group-header"
+         data-component-type="text"
+         data-component-id="transactions_date_group_header"
+         role="heading"
+         aria-level="3"
+         aria-label="Transactions on 25 May 2026">25 May 2026</div>
+
+    <!-- Transaction 1: Tesco -->
+    <div class="txn-row"
+         data-component-type="box"
+         data-component-id="txn_list_row_1"
+         role="button" tabindex="0"
+         aria-label="Tesco Supermarket, debit forty-two pounds fifty, Groceries, 25 May 2026. Tap for details."
+         data-nav-to="transaction-detail">
+      <div class="txn-main-row"
+           data-component-type="stack"
+           data-component-id="txn1_main_row">
+        <div class="txn-logo"
+             data-component-type="image"
+             data-component-id="txn1_merchant_logo"
+             role="img"
+             aria-label="Tesco logo">T</div>
+        <div class="txn-info"
+             data-component-type="stack"
+             data-component-id="txn1_info">
+          <span class="txn-name"
+                data-component-type="text"
+                data-component-id="txn1_name">Tesco Supermarket</span>
+          <div class="txn-meta-row"
+               data-component-type="stack"
+               data-component-id="txn1_meta_row">
+            <span class="txn-date"
+                  data-component-type="text"
+                  data-component-id="txn1_date_meta">25 May 2026</span>
+            <span class="txn-dot"
+                  data-component-type="text"
+                  data-component-id="txn1_dot"
+                  aria-hidden="true">·</span>
+            <div class="txn-cat-badge"
+                 data-component-type="box"
+                 data-component-id="txn1_category_badge">
+              <span class="txn-cat-text"
+                    data-component-type="text"
+                    data-component-id="txn1_category"
+                    aria-label="Category: Groceries">Groceries</span>
+            </div>
+          </div>
         </div>
+        <span class="txn-amount debit"
+              data-component-type="text"
+              data-component-id="txn1_amount_col"
+              aria-label="Debit: forty-two pounds fifty">-£42.50</span>
       </div>
-      <span class="txn-amount credit" aria-label="Credit: three thousand two hundred pounds">+£3,200.00</span>
-    </article>
+    </div>
 
-    <!-- Transaction 3 -->
-    <article class="txn-row" data-nav-to="transaction-detail" aria-label="EDF Energy, debit ninety-four pounds twenty, Utilities, 23 May 2026. Tap for details.">
-      <div class="txn-merchant-logo" aria-label="EDF Energy logo">
-        <span class="mi" style="color:var(--pending);">bolt</span>
-      </div>
-      <div class="txn-info">
-        <div class="txn-name">EDF Energy</div>
-        <div class="txn-meta-row">
-          <span class="txn-date">23 May 2026</span>
-          <span class="txn-dot" aria-hidden="true">·</span>
-          <span class="txn-cat-badge"><span class="txn-cat-text utility" aria-label="Category: Utilities">Utilities</span></span>
+    <!-- Transaction 2: Salary -->
+    <div class="txn-row"
+         data-component-type="box"
+         data-component-id="txn_list_row_2"
+         role="button" tabindex="0"
+         aria-label="Salary Payment, credit three thousand two hundred pounds, Income, 24 May 2026. Tap for details."
+         data-nav-to="transaction-detail">
+      <div class="txn-main-row"
+           data-component-type="stack"
+           data-component-id="txn2_main_row">
+        <div class="txn-logo"
+             data-component-type="image"
+             data-component-id="txn2_merchant_logo"
+             style="background: var(--surface-variant);"
+             role="img"
+             aria-label="Bank transfer icon">
+          <span class="material-icons" style="font-size:18px; color: var(--primary);">account_balance</span>
         </div>
+        <div class="txn-info"
+             data-component-type="stack"
+             data-component-id="txn2_info">
+          <span class="txn-name"
+                data-component-type="text"
+                data-component-id="txn2_name">Salary Payment</span>
+          <div class="txn-meta-row"
+               data-component-type="stack"
+               data-component-id="txn2_meta_row">
+            <span class="txn-date"
+                  data-component-type="text"
+                  data-component-id="txn2_date_meta">24 May 2026</span>
+            <span class="txn-dot"
+                  data-component-type="text"
+                  data-component-id="txn2_dot"
+                  aria-hidden="true">·</span>
+            <div class="txn-cat-badge"
+                 data-component-type="box"
+                 data-component-id="txn2_category_badge">
+              <span class="txn-cat-text"
+                    data-component-type="text"
+                    data-component-id="txn2_category"
+                    aria-label="Category: Income">Income</span>
+            </div>
+          </div>
+        </div>
+        <span class="txn-amount credit"
+              data-component-type="text"
+              data-component-id="txn2_amount_col"
+              aria-label="Credit: three thousand two hundred pounds">+£3,200.00</span>
       </div>
-      <span class="txn-amount debit" aria-label="Debit: ninety-four pounds twenty">-£94.20</span>
-    </article>
+    </div>
 
-    <button class="load-more-btn" data-action="load_more" aria-label="Load more transactions">Load More Transactions</button>
+    <!-- Transaction 3: EDF Energy -->
+    <div class="txn-row"
+         data-component-type="box"
+         data-component-id="txn_list_row_3"
+         role="button" tabindex="0"
+         aria-label="EDF Energy, debit ninety-four pounds twenty, Utilities, 23 May 2026. Tap for details."
+         data-nav-to="transaction-detail">
+      <div class="txn-main-row"
+           data-component-type="stack"
+           data-component-id="txn3_main_row">
+        <div class="txn-logo"
+             data-component-type="image"
+             data-component-id="txn3_merchant_logo"
+             style="background: #FFF3CD;"
+             role="img"
+             aria-label="EDF Energy logo">
+          <span class="material-icons" style="font-size:18px; color: var(--warning);">bolt</span>
+        </div>
+        <div class="txn-info"
+             data-component-type="stack"
+             data-component-id="txn3_info">
+          <span class="txn-name"
+                data-component-type="text"
+                data-component-id="txn3_name">EDF Energy</span>
+          <div class="txn-meta-row"
+               data-component-type="stack"
+               data-component-id="txn3_meta_row">
+            <span class="txn-date"
+                  data-component-type="text"
+                  data-component-id="txn3_date_meta">23 May 2026</span>
+            <span class="txn-dot"
+                  data-component-type="text"
+                  data-component-id="txn3_dot"
+                  aria-hidden="true">·</span>
+            <div class="txn-cat-badge"
+                 data-component-type="box"
+                 data-component-id="txn3_category_badge"
+                 style="background: #FFF3CD;">
+              <span class="txn-cat-text utility"
+                    data-component-type="text"
+                    data-component-id="txn3_category"
+                    aria-label="Category: Utilities">Utilities</span>
+            </div>
+          </div>
+        </div>
+        <span class="txn-amount debit"
+              data-component-type="text"
+              data-component-id="txn3_amount_col"
+              aria-label="Debit: ninety-four pounds twenty">-£94.20</span>
+      </div>
+    </div>
 
-    <div style="height:24px"></div>
+    <!-- Load More -->
+    <button class="load-more-btn"
+            data-component-type="button"
+            data-component-id="load_more_button"
+            role="button" tabindex="0"
+            aria-label="Load more transactions"
+            data-action="load_more">Load More Transactions</button>
+
+    <div style="height:24px;" data-component-type="spacer" data-component-id="bottom_spacer"></div>
   </div>
-</main>
 
-<nav class="bottom-nav" aria-label="Main navigation" data-component-type="bottom-nav">
-  <a class="nav-tab" href="#" data-nav-to="home" aria-label="Home">
-    <div class="nav-pill"><span class="nav-icon">home</span></div>
-    <span class="nav-label">Home</span>
-  </a>
-  <a class="nav-tab active" href="#" data-nav-to="accounts" aria-label="Accounts" aria-current="page">
-    <div class="nav-pill"><span class="nav-icon">account_balance</span></div>
-    <span class="nav-label">Accounts</span>
-  </a>
-  <a class="nav-tab" href="#" data-nav-to="send-money" aria-label="Payments">
-    <div class="nav-pill"><span class="nav-icon">send</span></div>
-    <span class="nav-label">Payments</span>
-  </a>
-  <a class="nav-tab" href="#" data-nav-to="profile" aria-label="Profile">
-    <div class="nav-pill"><span class="nav-icon">person</span></div>
-    <span class="nav-label">Profile</span>
-  </a>
-</nav>
-
+  <!-- Bottom Nav -->
+  <nav class="bottom-nav" data-component-type="bottom_nav" data-component-id="bottom_nav_transactions"
+       aria-label="Main navigation">
+    <div class="nav-item"
+         data-component-type="nav_item"
+         data-component-id="nav_home"
+         role="button" tabindex="0"
+         aria-label="Home"
+         data-nav-to="home">
+      <span class="material-icons">home</span>
+      <span class="nav-label">Home</span>
+    </div>
+    <div class="nav-item active"
+         data-component-type="nav_item"
+         data-component-id="nav_accounts"
+         role="button" tabindex="0"
+         aria-label="Accounts, currently active"
+         aria-current="page"
+         data-nav-to="accounts">
+      <span class="material-icons">account_balance</span>
+      <span class="nav-label">Accounts</span>
+    </div>
+    <div class="nav-item"
+         data-component-type="nav_item"
+         data-component-id="nav_pay"
+         role="button" tabindex="0"
+         aria-label="Pay"
+         data-nav-to="send-money">
+      <span class="material-icons">send</span>
+      <span class="nav-label">Pay</span>
+    </div>
+    <div class="nav-item"
+         data-component-type="nav_item"
+         data-component-id="nav_cards"
+         role="button" tabindex="0"
+         aria-label="Cards"
+         data-nav-to="cards">
+      <span class="material-icons">credit_card</span>
+      <span class="nav-label">Cards</span>
+    </div>
+    <div class="nav-item"
+         data-component-type="nav_item"
+         data-component-id="nav_more"
+         role="button" tabindex="0"
+         aria-label="More"
+         data-nav-to="more">
+      <span class="material-icons">more_horiz</span>
+      <span class="nav-label">More</span>
+    </div>
+  </nav>
+</div>
 <script src="../../preview/_shared/preview-runtime.js"></script>
 </body>
 </html>

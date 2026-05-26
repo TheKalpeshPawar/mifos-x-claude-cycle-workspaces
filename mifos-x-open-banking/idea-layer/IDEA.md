@@ -24,10 +24,10 @@
 
 | Attribute | Value |
 |---|---|
-| Primary Color | Mifos Deep Purple `#1800B1` |
-| Secondary Color | Banking Teal `#008B8B` |
-| Accent | Green `#4CAF50` |
-| Font Family | Inter (Headlines), Manrope (Body) |
+| Primary Color | Sage Green `#4C662B` |
+| Secondary Color | Muted Teal `#386663` |
+| Error / Debit | Red `#BA1A1A` |
+| Font Family | Outfit (all surfaces) |
 | Tone | Professional, Trustworthy, Efficient |
 | Key Message | "Banking for Everyone" |
 
@@ -409,26 +409,26 @@ Splash → Login → Dashboard (Bottom Nav)
 
 | Token | Value | Usage |
 |---|---|---|
-| primary | #1800B1 | CTAs, active states |
-| secondary | #008B8B | Secondary actions |
-| success | #4CAF50 | Positive actions |
-| error | #FF5252 | Errors, destructive |
-| warning | #FFA726 | Warnings, alerts |
-| info | #29B6F6 | Info messages |
+| primary | #4C662B | CTAs, active states, FAB |
+| on_primary | #FFFFFF | Text on primary surfaces |
+| primary_container | #CDEDA3 | Balance cards, highlights |
+| secondary | #386663 | Secondary actions |
+| error | #BA1A1A | Errors, debit amounts, destructive |
+| warning | #E8A317 | Warnings, pending states |
 | surface | #FFFFFF | Cards, containers |
-| background | #F5F5F5 | App background |
-| text_primary | #1F1F1F | Primary text |
-| text_secondary | #757575 | Secondary text |
+| background | #F9FAEF | App background |
+| on_background | #1A1C16 | Primary text |
+| on_surface_variant | #44483D | Secondary text |
 
 ### Typography
 
 | Level | Font | Size | Weight |
 |---|---|---|---|
-| display-lg | Inter | 32px | 600 |
-| headline-lg | Inter | 24px | 600 |
-| body-lg | Manrope | 16px | 400 |
-| body-md | Manrope | 14px | 400 |
-| body-sm | Manrope | 12px | 400 |
+| display-lg | Outfit | 32px | 600 |
+| headline-lg | Outfit | 24px | 600 |
+| body-lg | Outfit | 16px | 400 |
+| body-md | Outfit | 14px | 400 |
+| body-sm | Outfit | 12px | 400 |
 
 ### Component Library
 

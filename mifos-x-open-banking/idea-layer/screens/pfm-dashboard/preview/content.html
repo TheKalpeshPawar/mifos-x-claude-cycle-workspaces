@@ -1,300 +1,868 @@
-<!DOCTYPE html>
-<html lang="en">
+<!doctype html>
+<html lang="en" data-screen="pfm-dashboard" data-state="content">
 <head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=390, initial-scale=1">
-<title>Spending Insights</title>
-<link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;500;600&display=swap" rel="stylesheet">
-<style>
-:root{--primary:#4C662B;--on-primary:#FFF;--primary-container:#CDEDA3;--background:#F9FAEF;--surface:#FFF;--surface-variant:#E1E4D5;--outline:#75796C;--outline-variant:#C5C8BA;--text-primary:#1A1C16;--text-secondary:#44483D;--tertiary:#386663;--error:#BA1A1A;--pending:#E8A317;--nav-active:#DCE7C8;--font:'Outfit',system-ui,sans-serif}
-*{box-sizing:border-box;margin:0;padding:0}
-body{font-family:var(--font);background:var(--background);width:390px;min-height:844px;position:relative;overflow-x:hidden}
-.top-bar{background:var(--surface);display:flex;align-items:center;padding:0 8px;height:56px;border-bottom:1px solid var(--surface-variant);position:sticky;top:0;z-index:10}
-.top-bar-back,.top-bar-action{width:40px;height:40px;display:flex;align-items:center;justify-content:center;cursor:pointer;border:none;background:transparent}
-.top-bar-title{flex:1;font-size:18px;font-weight:600;color:var(--text-primary);font-family:var(--font);margin-left:4px}
-.scroll-area{overflow-y:auto;padding-bottom:100px}
-.page-title{font-size:28px;font-weight:700;color:var(--primary);padding:16px 20px 4px}
-.chips-row{display:flex;gap:8px;padding:8px 20px 16px;overflow-x:auto;scrollbar-width:none}
-.chips-row::-webkit-scrollbar{display:none}
-.chip{border:none;border-radius:20px;padding:6px 14px;font-size:13px;font-weight:500;font-family:var(--font);cursor:pointer;white-space:nowrap}
-.chip.sel{background:var(--primary);color:var(--on-primary)}
-.chip.unsel{background:var(--primary-container);color:var(--primary)}
-.period-lbl{font-size:14px;color:var(--outline);padding:0 20px 16px}
-.card{background:var(--surface);border-radius:20px;box-shadow:0 1px 4px rgba(0,0,0,.08);padding:20px;margin:0 20px 20px;border:1px solid var(--background)}
-.card-title{font-size:16px;font-weight:600;color:var(--text-primary);margin-bottom:16px}
-.metrics-row{display:flex}
-.metric-col{flex:1;display:flex;flex-direction:column;gap:2px}
-.metric-lbl{font-size:11px;color:var(--outline);text-transform:uppercase;letter-spacing:.4px}
-.metric-val{font-size:20px;font-weight:700}
-.col-spent .metric-val{color:var(--error)}
-.col-recv .metric-val,.col-net .metric-val{color:var(--primary)}
-.budget-hero{background:var(--primary-container);border-radius:20px;padding:18px 20px;margin:0 20px 20px;cursor:pointer}
-.bh-row{display:flex;justify-content:space-between;align-items:center;margin-bottom:8px}
-.bh-title{font-size:14px;font-weight:600;color:var(--primary)}
-.bh-pct{font-size:13px;font-weight:600;color:var(--pending)}
-.bh-amounts{display:flex;justify-content:space-between;margin-bottom:10px}
-.bh-spent{font-size:14px;font-weight:600;color:var(--text-primary)}
-.bh-left{font-size:14px;font-weight:600;color:var(--primary)}
-.track{background:var(--surface-variant);border-radius:6px;height:10px;width:100%;margin-bottom:4px}
-.fill{border-radius:6px;height:10px}
-.bh-total{font-size:11px;color:var(--outline);padding-top:4px}
-.sec-lbl{font-size:16px;font-weight:600;color:var(--text-primary);padding:8px 20px 12px}
-.pie-card{background:var(--surface);border-radius:20px;box-shadow:0 1px 4px rgba(0,0,0,.08);padding:16px;margin:0 20px 4px;cursor:pointer}
-svg.donut{display:block;margin:0 auto 8px}
-.legend{padding:0 20px 4px}
-.leg-row{display:flex;justify-content:space-between;align-items:center;padding:6px 0;cursor:pointer}
-.leg-left{display:flex;align-items:center;gap:10px;flex:1}
-.dot{width:12px;height:12px;border-radius:6px;flex-shrink:0}
-.leg-name{font-size:14px;color:var(--text-primary)}
-.leg-amt{font-size:14px;font-weight:600;color:var(--text-primary)}
-.bud-card{background:var(--surface);border-radius:16px;box-shadow:0 1px 3px rgba(0,0,0,.06);padding:14px 16px;margin:0 20px 10px;cursor:pointer;border:1px solid var(--background)}
-.bud-hdr{display:flex;justify-content:space-between;align-items:center;margin-bottom:8px}
-.bud-cat{font-size:14px;font-weight:600;color:var(--text-primary)}
-.bud-amts{font-size:14px;font-weight:600}
-.track-sm{background:var(--surface-variant);border-radius:4px;height:8px;width:100%}
-.fill-sm{border-radius:4px;height:8px}
-.manage-btn{display:block;margin:8px auto 24px;border:1.5px solid var(--primary);background:transparent;color:var(--primary);border-radius:12px;padding:13px 24px;font-size:14px;font-weight:600;font-family:var(--font);cursor:pointer}
-.merchants-card{background:var(--surface);border-radius:20px;box-shadow:0 1px 4px rgba(0,0,0,.08);padding:4px 16px;margin:0 20px 24px;border:1px solid var(--background)}
-.mrch-row{display:flex;align-items:center;gap:12px;padding:12px 0;border-bottom:1px solid var(--surface-variant);cursor:pointer}
-.mrch-row:last-of-type{border-bottom:none}
-.mrch-icon{width:40px;height:40px;border-radius:20px;background:var(--primary-container);display:flex;align-items:center;justify-content:center;flex-shrink:0}
-.mrch-info{flex:1}
-.mrch-name{font-size:14px;font-weight:600;color:var(--text-primary)}
-.mrch-meta{font-size:11px;color:var(--outline)}
-.mrch-amt{font-size:14px;font-weight:600;color:var(--error)}
-.view-all-btn{display:block;width:100%;border:none;background:transparent;color:var(--primary);font-size:14px;font-weight:600;font-family:var(--font);cursor:pointer;padding:12px 0 32px;text-align:center}
-nav[data-shell="bottom-nav"]{position:absolute;bottom:0;left:0;width:390px;height:80px;background:var(--surface);border-top:1px solid var(--surface-variant);display:flex;align-items:center;justify-content:space-around;z-index:20}
-.nav-tab{width:80px;display:flex;flex-direction:column;align-items:center;gap:4px;cursor:pointer;padding:8px 0}
-.nav-pill{width:64px;height:28px;border-radius:14px;display:flex;align-items:center;justify-content:center}
-.nav-pill.active{background:var(--nav-active)}
-.nav-lbl{font-size:11px;font-weight:500;color:var(--outline)}
-.nav-tab.active .nav-lbl{color:var(--primary)}
-</style>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Spending Insights</title>
+  <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet">
+  <style>
+    :root {
+      --primary: #4C662B;
+      --on-primary: #FFFFFF;
+      --primary-container: #CDEDA3;
+      --secondary: #386663;
+      --error: #BA1A1A;
+      --background: #F9FAEF;
+      --on-background: #1A1C16;
+      --surface: #FFFFFF;
+      --on-surface: #1A1C16;
+      --surface-variant: #E1E4D5;
+      --on-surface-variant: #44483D;
+      --outline: #75796C;
+      --outline-variant: #C5C8BA;
+      --warning: #E8A317;
+    }
+
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      font-family: 'Outfit', sans-serif;
+      background: var(--background);
+      color: var(--on-background);
+      min-height: 100vh;
+    }
+
+    .screen-frame {
+      max-width: 390px;
+      margin: 0 auto;
+      background: var(--background);
+      min-height: 100vh;
+      position: relative;
+      padding-bottom: 72px;
+    }
+
+    /* Scrollable content */
+    .content {
+      padding: 16px 16px 8px 16px;
+    }
+
+    /* Page header */
+    .page-header {
+      margin-bottom: 16px;
+    }
+
+    .page-title {
+      font-size: 24px;
+      font-weight: 700;
+      color: var(--on-background);
+    }
+
+    /* Period Chips */
+    .period-chips {
+      display: flex;
+      gap: 8px;
+      margin-bottom: 12px;
+      overflow-x: auto;
+      scrollbar-width: none;
+    }
+
+    .period-chips::-webkit-scrollbar { display: none; }
+
+    .chip {
+      height: 32px;
+      padding: 0 16px;
+      border-radius: 8px;
+      font-size: 14px;
+      font-weight: 500;
+      cursor: pointer;
+      white-space: nowrap;
+      display: flex;
+      align-items: center;
+      border: 1.5px solid var(--outline);
+      color: var(--on-surface-variant);
+      background: transparent;
+      transition: all 0.15s;
+    }
+
+    .chip.selected {
+      background: var(--primary);
+      color: var(--on-primary);
+      border-color: var(--primary);
+    }
+
+    .period-label {
+      font-size: 14px;
+      color: var(--on-surface-variant);
+      margin-bottom: 16px;
+    }
+
+    /* Card */
+    .card {
+      background: var(--surface);
+      border-radius: 12px;
+      padding: 16px;
+      margin-bottom: 12px;
+    }
+
+    .card-title {
+      font-size: 14px;
+      font-weight: 600;
+      color: var(--on-surface-variant);
+      margin-bottom: 12px;
+    }
+
+    /* Summary Card */
+    .summary-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 12px;
+      margin-bottom: 12px;
+    }
+
+    .summary-item { }
+
+    .summary-label {
+      font-size: 12px;
+      color: var(--on-surface-variant);
+      margin-bottom: 2px;
+    }
+
+    .summary-value {
+      font-size: 20px;
+      font-weight: 700;
+      color: var(--on-surface);
+    }
+
+    .summary-value.spent { color: var(--error); }
+    .summary-value.received { color: var(--primary); }
+
+    .summary-net {
+      border-top: 1px solid var(--outline-variant);
+      padding-top: 12px;
+    }
+
+    .net-label {
+      font-size: 12px;
+      color: var(--on-surface-variant);
+      margin-bottom: 2px;
+    }
+
+    .net-value {
+      font-size: 22px;
+      font-weight: 700;
+      color: var(--primary);
+    }
+
+    /* Budget Card */
+    .budget-header-row {
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-end;
+      margin-bottom: 8px;
+    }
+
+    .budget-amount {
+      font-size: 22px;
+      font-weight: 700;
+      color: var(--on-surface);
+    }
+
+    .budget-total {
+      font-size: 14px;
+      color: var(--on-surface-variant);
+    }
+
+    .progress-bar-track {
+      height: 8px;
+      background: var(--surface-variant);
+      border-radius: 4px;
+      overflow: hidden;
+      margin-bottom: 6px;
+    }
+
+    .progress-bar-fill {
+      height: 100%;
+      border-radius: 4px;
+      background: var(--primary);
+    }
+
+    .progress-bar-fill.warning { background: var(--warning); }
+
+    .budget-pct-label {
+      font-size: 12px;
+      color: var(--on-surface-variant);
+    }
+
+    /* Pie Chart Placeholder */
+    .pie-placeholder {
+      width: 140px;
+      height: 140px;
+      border-radius: 50%;
+      background: conic-gradient(
+        var(--primary) 0deg 126deg,
+        var(--secondary) 126deg 198deg,
+        var(--warning) 198deg 252deg,
+        #9E6D30 252deg 306deg,
+        var(--outline) 306deg 360deg
+      );
+      margin: 0 auto 16px;
+      position: relative;
+    }
+
+    .pie-center {
+      position: absolute;
+      inset: 24px;
+      background: var(--surface);
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 12px;
+      font-weight: 600;
+      color: var(--on-surface-variant);
+      text-align: center;
+      line-height: 1.3;
+    }
+
+    /* Category Legend */
+    .legend-row {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      margin-bottom: 8px;
+    }
+
+    .legend-dot {
+      width: 10px;
+      height: 10px;
+      border-radius: 50%;
+      flex-shrink: 0;
+    }
+
+    .legend-label {
+      flex: 1;
+      font-size: 14px;
+      color: var(--on-surface);
+    }
+
+    .legend-pct {
+      font-size: 13px;
+      color: var(--on-surface-variant);
+      margin-right: 4px;
+    }
+
+    .legend-amount {
+      font-size: 14px;
+      font-weight: 600;
+      color: var(--on-surface);
+      min-width: 70px;
+      text-align: right;
+    }
+
+    /* Category Budget Rows */
+    .cat-budget-row {
+      margin-bottom: 14px;
+    }
+
+    .cat-budget-header {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      margin-bottom: 6px;
+    }
+
+    .cat-budget-icon {
+      width: 28px;
+      height: 28px;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      flex-shrink: 0;
+    }
+
+    .cat-budget-icon .material-icons { font-size: 16px; }
+
+    .cat-budget-name {
+      flex: 1;
+      font-size: 14px;
+      font-weight: 500;
+      color: var(--on-surface);
+    }
+
+    .cat-budget-amounts {
+      font-size: 13px;
+      color: var(--on-surface-variant);
+    }
+
+    /* Merchants */
+    .merchant-row {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      padding: 10px 0;
+      border-bottom: 1px solid var(--outline-variant);
+    }
+
+    .merchant-row:last-child { border-bottom: none; }
+
+    .merchant-icon {
+      width: 40px;
+      height: 40px;
+      border-radius: 10px;
+      background: var(--surface-variant);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      flex-shrink: 0;
+      color: var(--on-surface-variant);
+    }
+
+    .merchant-icon .material-icons { font-size: 20px; }
+
+    .merchant-name {
+      flex: 1;
+      font-size: 14px;
+      font-weight: 500;
+      color: var(--on-surface);
+    }
+
+    .merchant-amount {
+      font-size: 14px;
+      font-weight: 600;
+      color: var(--on-surface);
+    }
+
+    /* Buttons */
+    .btn-outlined {
+      display: block;
+      width: 100%;
+      padding: 12px;
+      border: 1.5px solid var(--primary);
+      border-radius: 8px;
+      background: transparent;
+      color: var(--primary);
+      font-family: 'Outfit', sans-serif;
+      font-size: 15px;
+      font-weight: 600;
+      text-align: center;
+      cursor: pointer;
+      margin-top: 4px;
+    }
+
+    .btn-outlined:hover { background: var(--primary-container); }
+
+    .btn-text {
+      display: block;
+      width: 100%;
+      padding: 12px;
+      border: none;
+      border-radius: 8px;
+      background: transparent;
+      color: var(--primary);
+      font-family: 'Outfit', sans-serif;
+      font-size: 15px;
+      font-weight: 600;
+      text-align: center;
+      cursor: pointer;
+    }
+
+    /* Bottom Nav */
+    .bottom-nav {
+      position: fixed;
+      bottom: 0;
+      left: 50%;
+      transform: translateX(-50%);
+      width: 100%;
+      max-width: 390px;
+      height: 72px;
+      background: var(--surface);
+      border-top: 1px solid var(--outline-variant);
+      display: flex;
+      align-items: center;
+      justify-content: space-around;
+      z-index: 20;
+    }
+
+    .nav-item {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 4px;
+      cursor: pointer;
+      padding: 8px 0;
+      color: var(--on-surface-variant);
+    }
+
+    .nav-item.active { color: var(--primary); }
+
+    .nav-indicator {
+      width: 64px;
+      height: 32px;
+      border-radius: 16px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .nav-item.active .nav-indicator { background: var(--primary-container); }
+
+    .nav-item .material-icons { font-size: 22px; }
+
+    .nav-label {
+      font-size: 12px;
+      font-weight: 500;
+    }
+  </style>
 </head>
 <body>
-<main data-screen="pfm-dashboard" data-state="content" role="main">
+<div class="screen-frame">
 
-  <header class="top-bar" role="banner">
-    <button class="top-bar-back" aria-label="Back" data-action="navigate_back">
-      <svg width="24" height="24" viewBox="0 0 24 24"><path d="M20 11H7.83l5.59-5.59L12 4l-8 8 8 8 1.41-1.41L7.83 13H20v-2z" style="fill:var(--text-primary)"/></svg>
-    </button>
-    <span class="top-bar-title">Spending Insights</span>
-    <button class="top-bar-action" aria-label="PFM settings" data-action="open_pfm_settings">
-      <svg width="24" height="24" viewBox="0 0 24 24"><path d="M19.14 12.94c.04-.3.06-.61.06-.94 0-.32-.02-.64-.07-.94l2.03-1.58c.18-.14.23-.41.12-.61l-1.92-3.32c-.12-.22-.37-.29-.59-.22l-2.39.96c-.5-.38-1.03-.7-1.62-.94l-.36-2.54c-.04-.24-.24-.41-.48-.41h-3.84c-.24 0-.43.17-.47.41l-.36 2.54c-.59.24-1.13.57-1.62.94l-2.39-.96c-.22-.08-.47 0-.59.22L2.74 8.87c-.12.21-.08.47.12.61l2.03 1.58c-.05.3-.09.63-.09.94s.02.64.07.94l-2.03 1.58c-.18.14-.23.41-.12.61l1.92 3.32c.12.22.37.29.59.22l2.39-.96c.5.38 1.03.7 1.62.94l.36 2.54c.05.24.24.41.48.41h3.84c.24 0 .44-.17.47-.41l.36-2.54c.59-.24 1.13-.56 1.62-.94l2.39.96c.22.08.47 0 .59-.22l1.92-3.32c.12-.22.07-.47-.12-.61l-2.01-1.58zM12 15.6c-1.98 0-3.6-1.62-3.6-3.6s1.62-3.6 3.6-3.6 3.6 1.62 3.6 3.6-1.62 3.6-3.6 3.6z" style="fill:var(--text-primary)"/></svg>
-    </button>
-  </header>
+  <div class="content">
 
-  <div class="scroll-area">
-    <h1 class="page-title" data-component-type="text" data-component-id="pfm_title" data-component-variant="headline_large">Spending Insights</h1>
-
-    <div class="chips-row" data-component-type="stack" data-component-id="period_selector_row" data-component-variant="horizontal" role="group" aria-label="Select reporting period">
-      <button class="chip sel" data-component-type="chip" data-component-id="period_chip_this_month" data-action="select_period" aria-pressed="true">This Month</button>
-      <button class="chip unsel" data-component-type="chip" data-component-id="period_chip_last_month" data-action="select_period" aria-pressed="false">Last Month</button>
-      <button class="chip unsel" data-component-type="chip" data-component-id="period_chip_last_3_months" data-action="select_period" aria-pressed="false">Last 3 Months</button>
-      <button class="chip unsel" data-component-type="chip" data-component-id="period_chip_custom" data-action="open_custom_date_picker" aria-pressed="false">Custom</button>
+    <!-- Page Header -->
+    <div class="page-header"
+         data-component-type="stack"
+         data-component-id="pfm_header_section">
+      <div class="page-title"
+           data-component-type="text"
+           data-component-id="pfm_title"
+           role="heading"
+           aria-level="1">Spending Insights</div>
     </div>
-    <p class="period-lbl" data-component-type="text" data-component-id="pfm_period_label">May 2026</p>
 
-    <!-- summary card -->
-    <div class="card" data-component-type="box" data-component-id="this_month_summary_card" data-nav-to="transactions" role="region" aria-label="This month summary">
-      <div class="card-title" data-component-type="text" data-component-id="summary_section_label">This Month</div>
-      <div class="metrics-row" data-component-type="stack" data-component-id="summary_metrics_row">
-        <div class="metric-col col-spent" data-component-type="stack" data-component-id="spent_col">
-          <span class="metric-lbl" data-component-type="text" data-component-id="spent_label">Total Spent</span>
-          <span class="metric-val" data-component-type="text" data-component-id="spent_amount">£1,029.80</span>
+    <!-- Period Chips -->
+    <div class="period-chips"
+         data-component-type="tab_row"
+         data-component-id="pfm_period_selector"
+         role="tablist">
+      <div class="chip selected"
+           data-component-type="chip"
+           data-component-id="pfm_chip_this_month"
+           data-action="select_period"
+           role="tab"
+           aria-selected="true"
+           tabindex="0">This Month</div>
+      <div class="chip"
+           data-component-type="chip"
+           data-component-id="pfm_chip_last_month"
+           data-action="select_period"
+           role="tab"
+           aria-selected="false"
+           tabindex="0">Last Month</div>
+      <div class="chip"
+           data-component-type="chip"
+           data-component-id="pfm_chip_3_months"
+           data-action="select_period"
+           role="tab"
+           aria-selected="false"
+           tabindex="0">3 Months</div>
+      <div class="chip"
+           data-component-type="chip"
+           data-component-id="pfm_chip_custom"
+           data-action="select_period"
+           role="tab"
+           aria-selected="false"
+           tabindex="0">Custom</div>
+    </div>
+
+    <!-- Period Label -->
+    <div class="period-label"
+         data-component-type="text"
+         data-component-id="pfm_period_label">May 2026</div>
+
+    <!-- Summary Card -->
+    <div class="card"
+         data-component-type="card"
+         data-component-id="pfm_summary_card">
+      <div class="card-title">Monthly Overview</div>
+      <div class="summary-grid">
+        <div class="summary-item"
+             data-component-type="stack"
+             data-component-id="pfm_spent_block">
+          <div class="summary-label"
+               data-component-type="text"
+               data-component-id="pfm_spent_label">Total Spent</div>
+          <div class="summary-value spent"
+               data-component-type="text"
+               data-component-id="pfm_spent_value">&#163;1,029.80</div>
         </div>
-        <div class="metric-col col-recv" data-component-type="stack" data-component-id="received_col">
-          <span class="metric-lbl" data-component-type="text" data-component-id="received_label">Total Received</span>
-          <span class="metric-val" data-component-type="text" data-component-id="received_amount">£3,200.00</span>
+        <div class="summary-item"
+             data-component-type="stack"
+             data-component-id="pfm_received_block">
+          <div class="summary-label"
+               data-component-type="text"
+               data-component-id="pfm_received_label">Total Received</div>
+          <div class="summary-value received"
+               data-component-type="text"
+               data-component-id="pfm_received_value">&#163;3,200.00</div>
         </div>
-        <div class="metric-col col-net" data-component-type="stack" data-component-id="net_col">
-          <span class="metric-lbl" data-component-type="text" data-component-id="net_label">Net</span>
-          <span class="metric-val" data-component-type="text" data-component-id="net_amount">+£2,170.20</span>
-        </div>
       </div>
-    </div>
-
-    <!-- overall budget -->
-    <div class="budget-hero" data-component-type="box" data-component-id="overall_budget_card" data-action="manage_budgets" role="region" aria-label="Overall monthly budget">
-      <div class="bh-row" data-component-type="stack" data-component-id="overall_budget_header_row">
-        <span class="bh-title" data-component-type="text" data-component-id="overall_budget_title">Monthly Budget</span>
-        <span class="bh-pct" data-component-type="text" data-component-id="overall_budget_percent">68% used</span>
-      </div>
-      <div class="bh-amounts" data-component-type="stack" data-component-id="overall_budget_amounts_row">
-        <span class="bh-spent" data-component-type="text" data-component-id="overall_budget_spent">£1,029.80 spent</span>
-        <span class="bh-left" data-component-type="text" data-component-id="overall_budget_remaining">£470.20 left</span>
-      </div>
-      <div class="track" data-component-type="box" data-component-id="overall_budget_progress_track" role="progressbar" aria-valuenow="68" aria-valuemin="0" aria-valuemax="100" aria-label="68% of budget used">
-        <div class="fill" data-component-type="box" data-component-id="overall_budget_progress_fill" style="width:68%;background:var(--pending)" aria-hidden="true"></div>
-      </div>
-      <p class="bh-total" data-component-type="text" data-component-id="overall_budget_of_total">of £1,500.00 monthly budget</p>
-    </div>
-
-    <!-- spending by category -->
-    <h2 class="sec-lbl" data-component-type="text" data-component-id="category_section_label">Spending by Category</h2>
-    <div class="pie-card" data-component-type="box" data-component-id="category_pie_chart" data-action="open_chart_detail" role="img" aria-label="Spending by category pie chart: Bills 43.7%, Food 31.1%, Transport 12.1%, Shopping 8.7%, Entertainment 4.4%">
-      <svg class="donut" width="180" height="180" viewBox="0 0 180 180" aria-hidden="true">
-        <circle cx="90" cy="90" r="70" fill="none" stroke="var(--surface-variant)" stroke-width="28"/>
-        <circle cx="90" cy="90" r="70" fill="none" stroke="var(--primary)" stroke-width="28" stroke-dasharray="274.6 439.8" stroke-dashoffset="0" transform="rotate(-90 90 90)"/>
-        <circle cx="90" cy="90" r="70" fill="none" stroke="var(--error)" stroke-width="28" stroke-dasharray="195.3 519.1" stroke-dashoffset="-274.6" transform="rotate(-90 90 90)"/>
-        <circle cx="90" cy="90" r="70" fill="none" stroke="var(--tertiary)" stroke-width="28" stroke-dasharray="76.0 637.4" stroke-dashoffset="-469.9" transform="rotate(-90 90 90)"/>
-        <circle cx="90" cy="90" r="70" fill="none" stroke="var(--primary-container)" stroke-width="28" stroke-dasharray="54.6 658.8" stroke-dashoffset="-545.9" transform="rotate(-90 90 90)"/>
-        <circle cx="90" cy="90" r="70" fill="none" stroke="var(--pending)" stroke-width="28" stroke-dasharray="27.6 685.8" stroke-dashoffset="-600.5" transform="rotate(-90 90 90)"/>
-        <circle cx="90" cy="90" r="56" fill="var(--surface)"/>
-        <text x="90" y="86" text-anchor="middle" font-family="Outfit,sans-serif" font-size="12" fill="var(--outline)">Total Spent</text>
-        <text x="90" y="104" text-anchor="middle" font-family="Outfit,sans-serif" font-size="16" font-weight="700" fill="var(--text-primary)">£1,029.80</text>
-      </svg>
-    </div>
-    <div class="legend" data-component-type="stack" data-component-id="category_legend_col" role="list">
-      <div class="leg-row" data-component-type="stack" data-component-id="category_row_food" data-nav-to="transactions" role="button" aria-label="Food and Dining £320.50">
-        <div class="leg-left"><div class="dot" data-component-type="box" data-component-id="category_dot_food" style="background:var(--error)"></div><span class="leg-name" data-component-type="text" data-component-id="category_name_food">Food &amp; Dining</span></div>
-        <span class="leg-amt" data-component-type="text" data-component-id="category_amount_food">£320.50</span>
-      </div>
-      <div class="leg-row" data-component-type="stack" data-component-id="category_row_transport" data-nav-to="transactions" role="button" aria-label="Transport £125.00">
-        <div class="leg-left"><div class="dot" data-component-type="box" data-component-id="category_dot_transport" style="background:var(--tertiary)"></div><span class="leg-name" data-component-type="text" data-component-id="category_name_transport">Transport</span></div>
-        <span class="leg-amt" data-component-type="text" data-component-id="category_amount_transport">£125.00</span>
-      </div>
-      <div class="leg-row" data-component-type="stack" data-component-id="category_row_shopping" data-nav-to="transactions" role="button" aria-label="Shopping £89.30">
-        <div class="leg-left"><div class="dot" data-component-type="box" data-component-id="category_dot_shopping" style="background:var(--primary-container)"></div><span class="leg-name" data-component-type="text" data-component-id="category_name_shopping">Shopping</span></div>
-        <span class="leg-amt" data-component-type="text" data-component-id="category_amount_shopping">£89.30</span>
-      </div>
-      <div class="leg-row" data-component-type="stack" data-component-id="category_row_bills" data-nav-to="transactions" role="button" aria-label="Bills £450.00">
-        <div class="leg-left"><div class="dot" data-component-type="box" data-component-id="category_dot_bills" style="background:var(--primary)"></div><span class="leg-name" data-component-type="text" data-component-id="category_name_bills">Bills</span></div>
-        <span class="leg-amt" data-component-type="text" data-component-id="category_amount_bills">£450.00</span>
-      </div>
-      <div class="leg-row" data-component-type="stack" data-component-id="category_row_entertainment" data-nav-to="transactions" role="button" aria-label="Entertainment £45.00">
-        <div class="leg-left"><div class="dot" data-component-type="box" data-component-id="category_dot_entertainment" style="background:var(--pending)"></div><span class="leg-name" data-component-type="text" data-component-id="category_name_entertainment">Entertainment</span></div>
-        <span class="leg-amt" data-component-type="text" data-component-id="category_amount_entertainment">£45.00</span>
+      <div class="summary-net"
+           data-component-type="stack"
+           data-component-id="pfm_net_block">
+        <div class="net-label"
+             data-component-type="text"
+             data-component-id="pfm_net_label">Net Savings</div>
+        <div class="net-value"
+             data-component-type="text"
+             data-component-id="pfm_net_value">+&#163;2,170.20</div>
       </div>
     </div>
 
-    <!-- budget progress -->
-    <h2 class="sec-lbl" data-component-type="text" data-component-id="budgets_section_label" style="padding-top:12px">Budget Progress</h2>
-
-    <div class="bud-card" data-component-type="box" data-component-id="budget_food_dining" data-action="edit_budget" role="button" aria-label="Food and Dining: £320.50 of £350.00, 92%">
-      <div class="bud-hdr" data-component-type="stack" data-component-id="food_dining_header">
-        <span class="bud-cat" data-component-type="text" data-component-id="food_dining_category">Food &amp; Dining</span>
-        <span class="bud-amts" data-component-type="text" data-component-id="food_dining_amounts" style="color:var(--error)">£320.50 / £350.00</span>
+    <!-- Overall Budget Card -->
+    <div class="card"
+         data-component-type="card"
+         data-component-id="pfm_overall_budget_card">
+      <div class="card-title">Overall Budget</div>
+      <div class="budget-header-row">
+        <div>
+          <div class="budget-amount"
+               data-component-type="text"
+               data-component-id="pfm_budget_spent">&#163;1,029.80</div>
+        </div>
+        <div class="budget-total"
+             data-component-type="text"
+             data-component-id="pfm_budget_total">of &#163;1,500.00</div>
       </div>
-      <div class="track-sm" data-component-type="box" data-component-id="food_dining_progress_track" role="progressbar" aria-valuenow="92" aria-label="92% used">
-        <div class="fill-sm" data-component-type="box" data-component-id="food_dining_progress_fill" style="width:92%;background:var(--error)"></div>
+      <div class="progress-bar-track"
+           data-component-type="progress_bar"
+           data-component-id="pfm_overall_progress">
+        <div class="progress-bar-fill warning" style="width: 68%;"></div>
+      </div>
+      <div class="budget-pct-label"
+           data-component-type="text"
+           data-component-id="pfm_budget_pct">68% used &mdash; &#163;470.20 remaining</div>
+    </div>
+
+    <!-- Spending Breakdown -->
+    <div class="card"
+         data-component-type="card"
+         data-component-id="pfm_breakdown_card">
+      <div class="card-title">Spending by Category</div>
+
+      <!-- Pie Chart Placeholder -->
+      <div class="pie-placeholder"
+           data-component-type="chart"
+           data-component-id="pfm_pie_chart"
+           role="img"
+           aria-label="Pie chart of spending by category">
+        <div class="pie-center">May<br>2026</div>
+      </div>
+
+      <!-- Legend -->
+      <div data-component-type="stack" data-component-id="pfm_category_legend">
+
+        <div class="legend-row"
+             data-component-type="legend_item"
+             data-component-id="pfm_legend_groceries">
+          <div class="legend-dot" style="background: var(--primary);"></div>
+          <span class="legend-label">Groceries</span>
+          <span class="legend-pct">35%</span>
+          <span class="legend-amount">&#163;360.43</span>
+        </div>
+
+        <div class="legend-row"
+             data-component-type="legend_item"
+             data-component-id="pfm_legend_transport">
+          <div class="legend-dot" style="background: var(--secondary);"></div>
+          <span class="legend-label">Transport</span>
+          <span class="legend-pct">20%</span>
+          <span class="legend-amount">&#163;205.96</span>
+        </div>
+
+        <div class="legend-row"
+             data-component-type="legend_item"
+             data-component-id="pfm_legend_dining">
+          <div class="legend-dot" style="background: var(--warning);"></div>
+          <span class="legend-label">Dining Out</span>
+          <span class="legend-pct">15%</span>
+          <span class="legend-amount">&#163;154.47</span>
+        </div>
+
+        <div class="legend-row"
+             data-component-type="legend_item"
+             data-component-id="pfm_legend_utilities">
+          <div class="legend-dot" style="background: #9E6D30;"></div>
+          <span class="legend-label">Utilities</span>
+          <span class="legend-pct">15%</span>
+          <span class="legend-amount">&#163;154.47</span>
+        </div>
+
+        <div class="legend-row"
+             data-component-type="legend_item"
+             data-component-id="pfm_legend_entertainment">
+          <div class="legend-dot" style="background: var(--outline);"></div>
+          <span class="legend-label">Entertainment</span>
+          <span class="legend-pct">15%</span>
+          <span class="legend-amount">&#163;154.47</span>
+        </div>
+
       </div>
     </div>
 
-    <div class="bud-card" data-component-type="box" data-component-id="budget_transport" data-action="edit_budget" role="button" aria-label="Transport: £125.00 of £200.00, 63%">
-      <div class="bud-hdr" data-component-type="stack" data-component-id="transport_header">
-        <span class="bud-cat" data-component-type="text" data-component-id="transport_category">Transport</span>
-        <span class="bud-amts" data-component-type="text" data-component-id="transport_amounts" style="color:var(--text-secondary)">£125.00 / £200.00</span>
+    <!-- Category Budgets -->
+    <div class="card"
+         data-component-type="card"
+         data-component-id="pfm_category_budgets_card">
+      <div class="card-title">Category Budgets</div>
+
+      <div class="cat-budget-row"
+           data-component-type="stack"
+           data-component-id="pfm_catbudget_groceries">
+        <div class="cat-budget-header">
+          <div class="cat-budget-icon" style="background: var(--primary-container); color: var(--primary);"
+               data-component-type="icon"
+               data-component-id="pfm_catbudget_groceries_icon">
+            <span class="material-icons">local_grocery_store</span>
+          </div>
+          <span class="cat-budget-name"
+                data-component-type="text"
+                data-component-id="pfm_catbudget_groceries_name">Groceries</span>
+          <span class="cat-budget-amounts"
+                data-component-type="text"
+                data-component-id="pfm_catbudget_groceries_amounts">&#163;360 / &#163;400</span>
+        </div>
+        <div class="progress-bar-track">
+          <div class="progress-bar-fill" style="width: 90%;"></div>
+        </div>
       </div>
-      <div class="track-sm" data-component-type="box" data-component-id="transport_progress_track" role="progressbar" aria-valuenow="63" aria-label="63% used">
-        <div class="fill-sm" data-component-type="box" data-component-id="transport_progress_fill" style="width:63%;background:var(--pending)"></div>
+
+      <div class="cat-budget-row"
+           data-component-type="stack"
+           data-component-id="pfm_catbudget_transport">
+        <div class="cat-budget-header">
+          <div class="cat-budget-icon" style="background: #D0EBE9; color: var(--secondary);"
+               data-component-type="icon"
+               data-component-id="pfm_catbudget_transport_icon">
+            <span class="material-icons">directions_transit</span>
+          </div>
+          <span class="cat-budget-name"
+                data-component-type="text"
+                data-component-id="pfm_catbudget_transport_name">Transport</span>
+          <span class="cat-budget-amounts"
+                data-component-type="text"
+                data-component-id="pfm_catbudget_transport_amounts">&#163;206 / &#163;250</span>
+        </div>
+        <div class="progress-bar-track">
+          <div class="progress-bar-fill" style="width: 82%;"></div>
+        </div>
+      </div>
+
+      <div class="cat-budget-row"
+           data-component-type="stack"
+           data-component-id="pfm_catbudget_dining">
+        <div class="cat-budget-header">
+          <div class="cat-budget-icon" style="background: #FEF3D6; color: var(--warning);"
+               data-component-type="icon"
+               data-component-id="pfm_catbudget_dining_icon">
+            <span class="material-icons">restaurant</span>
+          </div>
+          <span class="cat-budget-name"
+                data-component-type="text"
+                data-component-id="pfm_catbudget_dining_name">Dining Out</span>
+          <span class="cat-budget-amounts"
+                data-component-type="text"
+                data-component-id="pfm_catbudget_dining_amounts">&#163;154 / &#163;200</span>
+        </div>
+        <div class="progress-bar-track">
+          <div class="progress-bar-fill warning" style="width: 77%;"></div>
+        </div>
+      </div>
+
+      <div class="cat-budget-row"
+           data-component-type="stack"
+           data-component-id="pfm_catbudget_utilities">
+        <div class="cat-budget-header">
+          <div class="cat-budget-icon" style="background: var(--surface-variant); color: var(--on-surface-variant);"
+               data-component-type="icon"
+               data-component-id="pfm_catbudget_utilities_icon">
+            <span class="material-icons">bolt</span>
+          </div>
+          <span class="cat-budget-name"
+                data-component-type="text"
+                data-component-id="pfm_catbudget_utilities_name">Utilities</span>
+          <span class="cat-budget-amounts"
+                data-component-type="text"
+                data-component-id="pfm_catbudget_utilities_amounts">&#163;154 / &#163;180</span>
+        </div>
+        <div class="progress-bar-track">
+          <div class="progress-bar-fill warning" style="width: 86%;"></div>
+        </div>
+      </div>
+
+      <div class="cat-budget-row"
+           data-component-type="stack"
+           data-component-id="pfm_catbudget_entertainment">
+        <div class="cat-budget-header">
+          <div class="cat-budget-icon" style="background: var(--surface-variant); color: var(--on-surface-variant);"
+               data-component-type="icon"
+               data-component-id="pfm_catbudget_entertainment_icon">
+            <span class="material-icons">movie</span>
+          </div>
+          <span class="cat-budget-name"
+                data-component-type="text"
+                data-component-id="pfm_catbudget_entertainment_name">Entertainment</span>
+          <span class="cat-budget-amounts"
+                data-component-type="text"
+                data-component-id="pfm_catbudget_entertainment_amounts">&#163;154 / &#163;300</span>
+        </div>
+        <div class="progress-bar-track">
+          <div class="progress-bar-fill" style="width: 51%;"></div>
+        </div>
+      </div>
+
+      <button class="btn-outlined"
+              data-component-type="button"
+              data-component-id="pfm_manage_budgets_button"
+              data-action="manage_budgets"
+              aria-label="Manage budgets"
+              tabindex="0">Manage Budgets</button>
+    </div>
+
+    <!-- Top Merchants -->
+    <div class="card"
+         data-component-type="card"
+         data-component-id="pfm_top_merchants_card">
+      <div class="card-title">Top Merchants</div>
+
+      <div class="merchant-row"
+           data-component-type="stack"
+           data-component-id="pfm_merchant_tesco">
+        <div class="merchant-icon"
+             data-component-type="icon"
+             data-component-id="pfm_merchant_tesco_icon">
+          <span class="material-icons">local_grocery_store</span>
+        </div>
+        <span class="merchant-name"
+              data-component-type="text"
+              data-component-id="pfm_merchant_tesco_name">Tesco</span>
+        <span class="merchant-amount"
+              data-component-type="text"
+              data-component-id="pfm_merchant_tesco_amount">&#163;248.60</span>
+      </div>
+
+      <div class="merchant-row"
+           data-component-type="stack"
+           data-component-id="pfm_merchant_netflix">
+        <div class="merchant-icon"
+             data-component-type="icon"
+             data-component-id="pfm_merchant_netflix_icon">
+          <span class="material-icons">subscriptions</span>
+        </div>
+        <span class="merchant-name"
+              data-component-type="text"
+              data-component-id="pfm_merchant_netflix_name">Netflix</span>
+        <span class="merchant-amount"
+              data-component-type="text"
+              data-component-id="pfm_merchant_netflix_amount">&#163;15.99</span>
+      </div>
+
+      <div class="merchant-row"
+           data-component-type="stack"
+           data-component-id="pfm_merchant_spotify">
+        <div class="merchant-icon"
+             data-component-type="icon"
+             data-component-id="pfm_merchant_spotify_icon">
+          <span class="material-icons">music_note</span>
+        </div>
+        <span class="merchant-name"
+              data-component-type="text"
+              data-component-id="pfm_merchant_spotify_name">Spotify</span>
+        <span class="merchant-amount"
+              data-component-type="text"
+              data-component-id="pfm_merchant_spotify_amount">&#163;9.99</span>
+      </div>
+
+      <div class="merchant-row"
+           data-component-type="stack"
+           data-component-id="pfm_merchant_tfl">
+        <div class="merchant-icon"
+             data-component-type="icon"
+             data-component-id="pfm_merchant_tfl_icon">
+          <span class="material-icons">directions_subway</span>
+        </div>
+        <span class="merchant-name"
+              data-component-type="text"
+              data-component-id="pfm_merchant_tfl_name">TfL</span>
+        <span class="merchant-amount"
+              data-component-type="text"
+              data-component-id="pfm_merchant_tfl_amount">&#163;94.40</span>
       </div>
     </div>
 
-    <div class="bud-card" data-component-type="box" data-component-id="budget_shopping" data-action="edit_budget" role="button" aria-label="Shopping: £89.30 of £150.00, 60%">
-      <div class="bud-hdr" data-component-type="stack" data-component-id="shopping_header">
-        <span class="bud-cat" data-component-type="text" data-component-id="shopping_category">Shopping</span>
-        <span class="bud-amts" data-component-type="text" data-component-id="shopping_amounts" style="color:var(--text-secondary)">£89.30 / £150.00</span>
-      </div>
-      <div class="track-sm" data-component-type="box" data-component-id="shopping_progress_track" role="progressbar" aria-valuenow="60" aria-label="60% used">
-        <div class="fill-sm" data-component-type="box" data-component-id="shopping_progress_fill" style="width:60%;background:var(--primary)"></div>
-      </div>
-    </div>
+    <!-- View All Transactions -->
+    <button class="btn-text"
+            data-component-type="button"
+            data-component-id="pfm_view_all_transactions_button"
+            data-nav-to="accounts"
+            aria-label="View all transactions"
+            tabindex="0">View All Transactions</button>
 
-    <div class="bud-card" data-component-type="box" data-component-id="budget_bills" data-action="edit_budget" role="button" aria-label="Bills: £450.00 of £500.00, 90%">
-      <div class="bud-hdr" data-component-type="stack" data-component-id="bills_header">
-        <span class="bud-cat" data-component-type="text" data-component-id="bills_category">Bills</span>
-        <span class="bud-amts" data-component-type="text" data-component-id="bills_amounts" style="color:var(--error)">£450.00 / £500.00</span>
-      </div>
-      <div class="track-sm" data-component-type="box" data-component-id="bills_progress_track" role="progressbar" aria-valuenow="90" aria-label="90% used">
-        <div class="fill-sm" data-component-type="box" data-component-id="bills_progress_fill" style="width:90%;background:var(--error)"></div>
-      </div>
-    </div>
-
-    <div class="bud-card" data-component-type="box" data-component-id="budget_entertainment" data-action="edit_budget" role="button" aria-label="Entertainment: £45.00 of £100.00, 45%">
-      <div class="bud-hdr" data-component-type="stack" data-component-id="entertainment_header">
-        <span class="bud-cat" data-component-type="text" data-component-id="entertainment_category">Entertainment</span>
-        <span class="bud-amts" data-component-type="text" data-component-id="entertainment_amounts" style="color:var(--text-secondary)">£45.00 / £100.00</span>
-      </div>
-      <div class="track-sm" data-component-type="box" data-component-id="entertainment_progress_track" role="progressbar" aria-valuenow="45" aria-label="45% used">
-        <div class="fill-sm" data-component-type="box" data-component-id="entertainment_progress_fill" style="width:45%;background:var(--primary)"></div>
-      </div>
-    </div>
-
-    <button class="manage-btn" data-component-type="button" data-component-id="manage_budgets_button" data-action="manage_budgets" aria-label="Manage your spending budgets">Manage Budgets</button>
-
-    <!-- top merchants -->
-    <h2 class="sec-lbl" data-component-type="text" data-component-id="merchants_section_label" style="padding-top:4px">Top Merchants</h2>
-    <div class="merchants-card" data-component-type="box" data-component-id="merchants_card" role="region" aria-label="Top merchants by spending">
-      <div class="mrch-row" data-component-type="list_item" data-component-id="merchant_row_tesco" data-nav-to="transactions" role="button" aria-label="Tesco: £142.30, 8 transactions">
-        <div class="mrch-icon">
-          <svg width="20" height="20" viewBox="0 0 24 24" aria-hidden="true"><path d="M20 6h-2.18c.07-.44.18-.88.18-1.34C18 2.54 15.46 0 12 0 8.54 0 6 2.54 6 4.66c0 .46.11.9.18 1.34H4c-1.1 0-2 .9-2 2v12c0 1.1.9 2 2 2h16c1.1 0 2-.9 2-2V8c0-1.1-.9-2-2-2zm-8-4c1.65 0 3 1.12 3 2.5C15 6 13.65 7 12 7S9 6 9 4.5C9 3.12 10.35 2 12 2z" style="fill:var(--primary)"/></svg>
-        </div>
-        <div class="mrch-info">
-          <div class="mrch-name" data-component-type="text" data-component-id="merchant_name_tesco">Tesco</div>
-          <div class="mrch-meta" data-component-type="text" data-component-id="merchant_meta_tesco">8 transactions</div>
-        </div>
-        <span class="mrch-amt" data-component-type="text" data-component-id="merchant_amount_tesco">£142.30</span>
-      </div>
-      <div class="mrch-row" data-component-type="list_item" data-component-id="merchant_row_netflix" data-nav-to="transactions" role="button" aria-label="Netflix: £17.99, 1 transaction">
-        <div class="mrch-icon">
-          <svg width="20" height="20" viewBox="0 0 24 24" aria-hidden="true"><path d="M8 5v14l11-7z" style="fill:var(--error)"/></svg>
-        </div>
-        <div class="mrch-info">
-          <div class="mrch-name" data-component-type="text" data-component-id="merchant_name_netflix">Netflix</div>
-          <div class="mrch-meta" data-component-type="text" data-component-id="merchant_meta_netflix">1 transaction</div>
-        </div>
-        <span class="mrch-amt" data-component-type="text" data-component-id="merchant_amount_netflix">£17.99</span>
-      </div>
-      <div class="mrch-row" data-component-type="list_item" data-component-id="merchant_row_spotify" data-nav-to="transactions" role="button" aria-label="Spotify: £11.99, 1 transaction">
-        <div class="mrch-icon">
-          <svg width="20" height="20" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3v10.55c-.59-.34-1.27-.55-2-.55-2.21 0-4 1.79-4 4s1.79 4 4 4 4-1.79 4-4V7h4V3h-6z" style="fill:var(--primary)"/></svg>
-        </div>
-        <div class="mrch-info">
-          <div class="mrch-name" data-component-type="text" data-component-id="merchant_name_spotify">Spotify</div>
-          <div class="mrch-meta" data-component-type="text" data-component-id="merchant_meta_spotify">1 transaction</div>
-        </div>
-        <span class="mrch-amt" data-component-type="text" data-component-id="merchant_amount_spotify">£11.99</span>
-      </div>
-      <div class="mrch-row" data-component-type="list_item" data-component-id="merchant_row_tfl" data-nav-to="transactions" role="button" aria-label="Transport for London: £78.50, 23 transactions">
-        <div class="mrch-icon" style="background:var(--nav-active)">
-          <svg width="20" height="20" viewBox="0 0 24 24" aria-hidden="true"><path d="M4 15.5C4 17.43 5.57 19 7.5 19L6 20.5v.5h12v-.5L16.5 19c1.93 0 3.5-1.57 3.5-3.5V5c0-3.5-3.58-4-8-4s-8 .5-8 4v10.5zm8 1.5c-1.1 0-2-.9-2-2s.9-2 2-2 2 .9 2 2-.9 2-2 2zm6-7H6V5h12v5z" style="fill:var(--tertiary)"/></svg>
-        </div>
-        <div class="mrch-info">
-          <div class="mrch-name" data-component-type="text" data-component-id="merchant_name_tfl">Transport for London</div>
-          <div class="mrch-meta" data-component-type="text" data-component-id="merchant_meta_tfl">23 transactions</div>
-        </div>
-        <span class="mrch-amt" data-component-type="text" data-component-id="merchant_amount_tfl">£78.50</span>
-      </div>
-    </div>
-
-    <button class="view-all-btn" data-component-type="button" data-component-id="view_all_transactions_button" data-nav-to="transactions" aria-label="View all transactions">View All Transactions</button>
   </div>
 
-  <nav data-shell="bottom-nav" aria-label="Main navigation">
-    <div class="nav-tab" data-nav-to="home" aria-label="Home">
-      <div class="nav-pill"><svg width="22" height="22" viewBox="0 0 24 24" aria-hidden="true"><path d="M10 20v-6h4v6h5v-8h3L12 3 2 12h3v8z" style="fill:var(--outline)"/></svg></div>
-      <span class="nav-lbl">Home</span>
+  <!-- Bottom Nav -->
+  <nav class="bottom-nav"
+       data-shell="bottom-nav"
+       data-component-type="bottom_navigation"
+       data-component-id="pfm_bottom_nav"
+       aria-label="Main navigation">
+    <div class="nav-item"
+         data-component-type="nav_item"
+         data-component-id="nav_home"
+         data-nav-to="home"
+         role="link"
+         aria-label="Home"
+         tabindex="0">
+      <div class="nav-indicator"><span class="material-icons">home</span></div>
+      <span class="nav-label">Home</span>
     </div>
-    <div class="nav-tab" data-nav-to="accounts" aria-label="Accounts">
-      <div class="nav-pill"><svg width="22" height="22" viewBox="0 0 24 24" aria-hidden="true"><path d="M4 10v7h3v-7H4zm6 0v7h3v-7h-3zM2 22h19v-3H2v3zm14-12v7h3v-7h-3zM11.5 1L2 6v2h19V6l-9.5-5z" style="fill:var(--outline)"/></svg></div>
-      <span class="nav-lbl">Accounts</span>
+    <div class="nav-item"
+         data-component-type="nav_item"
+         data-component-id="nav_accounts"
+         data-nav-to="accounts"
+         role="link"
+         aria-label="Accounts"
+         tabindex="0">
+      <div class="nav-indicator"><span class="material-icons">account_balance</span></div>
+      <span class="nav-label">Accounts</span>
     </div>
-    <div class="nav-tab active" data-nav-to="pfm-dashboard" aria-label="Insights" aria-current="page">
-      <div class="nav-pill active"><svg width="22" height="22" viewBox="0 0 24 24" aria-hidden="true"><path d="M19 3H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zM9 17H7v-7h2v7zm4 0h-2V7h2v10zm4 0h-2v-4h2v4z" style="fill:var(--primary)"/></svg></div>
-      <span class="nav-lbl" style="color:var(--primary)">Insights</span>
+    <div class="nav-item active"
+         data-component-type="nav_item"
+         data-component-id="nav_insights"
+         data-nav-to="pfm-dashboard"
+         role="link"
+         aria-label="Insights"
+         aria-current="page"
+         tabindex="0">
+      <div class="nav-indicator"><span class="material-icons">insights</span></div>
+      <span class="nav-label">Insights</span>
     </div>
-    <div class="nav-tab" data-nav-to="cards" aria-label="Cards">
-      <div class="nav-pill"><svg width="22" height="22" viewBox="0 0 24 24" aria-hidden="true"><path d="M20 4H4c-1.11 0-2 .89-2 2v12c0 1.11.89 2 2 2h16c1.11 0 2-.89 2-2V6c0-1.11-.89-2-2-2zm0 14H4v-6h16v6zm0-10H4V6h16v2z" style="fill:var(--outline)"/></svg></div>
-      <span class="nav-lbl">Cards</span>
+    <div class="nav-item"
+         data-component-type="nav_item"
+         data-component-id="nav_cards"
+         data-nav-to="cards"
+         role="link"
+         aria-label="Cards"
+         tabindex="0">
+      <div class="nav-indicator"><span class="material-icons">credit_card</span></div>
+      <span class="nav-label">Cards</span>
     </div>
-    <div class="nav-tab" data-nav-to="more" aria-label="More">
-      <div class="nav-pill"><svg width="22" height="22" viewBox="0 0 24 24" aria-hidden="true"><path d="M6 10c-1.1 0-2 .9-2 2s.9 2 2 2 2-.9 2-2-.9-2-2-2zm12 0c-1.1 0-2 .9-2 2s.9 2 2 2 2-.9 2-2-.9-2-2-2zm-6 0c-1.1 0-2 .9-2 2s.9 2 2 2 2-.9 2-2-.9-2-2-2z" style="fill:var(--outline)"/></svg></div>
-      <span class="nav-lbl">More</span>
+    <div class="nav-item"
+         data-component-type="nav_item"
+         data-component-id="nav_more"
+         data-nav-to="more"
+         role="link"
+         aria-label="More"
+         tabindex="0">
+      <div class="nav-indicator"><span class="material-icons">more_horiz</span></div>
+      <span class="nav-label">More</span>
     </div>
   </nav>
 
-</main>
+</div>
 <script src="../../preview/_shared/preview-runtime.js"></script>
 </body>
 </html>

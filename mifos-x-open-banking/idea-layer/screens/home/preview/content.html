@@ -1,536 +1,300 @@
 <!doctype html>
-<html lang="en">
+<html lang="en" data-screen="home" data-state="content" data-feature="home" data-flavor="consumer">
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Home — Mifos Open Banking</title>
-  <link rel="preconnect" href="https://fonts.googleapis.com" />
-  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-  <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;500;600&display=swap" rel="stylesheet" />
-  <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet" />
+  <title>Home — Mifos X Open Banking</title>
+  <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet">
   <style>
-    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
-
     :root {
-      --primary:           #4C662B;
-      --on-primary:        #FFFFFF;
+      --primary: #4C662B;
+      --on-primary: #FFFFFF;
       --primary-container: #CDEDA3;
-      --background:        #F9FAEF;
-      --surface:           #FFFFFF;
-      --surface-variant:   #E1E4D5;
-      --outline:           #75796C;
-      --outline-variant:   #C5C8BA;
-      --text-primary:      #1A1C16;
-      --text-secondary:    #44483D;
-      --tertiary:          #386663;
-      --error:             #BA1A1A;
-      --pending:           #E8A317;
-      --nav-active:        #DCE7C8;
-      --font:              'Outfit', system-ui, sans-serif;
+      --on-primary-container: #102000;
+      --secondary: #386663;
+      --on-secondary: #FFFFFF;
+      --secondary-container: #BCEBE7;
+      --error: #BA1A1A;
+      --on-error: #FFFFFF;
+      --warning: #E8A317;
+      --background: #F9FAEF;
+      --on-background: #1A1C16;
+      --surface: #FFFFFF;
+      --on-surface: #1A1C16;
+      --surface-variant: #E1E4D5;
+      --on-surface-variant: #44483D;
+      --outline: #75796C;
+      --outline-variant: #C5C8BA;
     }
-
-    html, body {
-      font-family: var(--font);
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body {
+      font-family: 'Outfit', sans-serif;
       background: var(--background);
-      color: var(--text-primary);
-      width: 390px;
-    position: relative;
-      min-height: 844px;
-      display: flex;
-      flex-direction: column;
+      color: var(--on-background);
+      max-width: 390px;
+      margin: 0 auto;
+      min-height: 100vh;
+      padding-bottom: 80px;
+      -webkit-font-smoothing: antialiased;
     }
 
-    /* ── Status bar area ─────────────────────────────────── */
-    .status-bar {
-      height: 44px;
-      flex-shrink: 0;
+    /* Top App Bar */
+    .top-bar {
+      display: flex; align-items: center; justify-content: space-between;
+      padding: 12px 20px;
+      background: var(--background);
+      position: sticky; top: 0; z-index: 10;
+    }
+    .top-bar-title { font-size: 20px; font-weight: 700; color: var(--primary); }
+    .top-bar-actions { display: flex; gap: 8px; }
+    .top-bar-actions .material-icons {
+      font-size: 24px; color: var(--on-surface-variant); cursor: pointer;
+      width: 40px; height: 40px; display: flex; align-items: center; justify-content: center;
+      border-radius: 20px;
+    }
+    .top-bar-actions .material-icons:hover { background: var(--surface-variant); }
+
+    /* Greeting */
+    .greeting { padding: 4px 20px 0; }
+    .greeting h1 { font-size: 22px; font-weight: 700; color: var(--primary); }
+    .greeting .date { font-size: 14px; color: var(--on-surface-variant); margin-top: 2px; padding-bottom: 16px; }
+
+    /* Account Card */
+    .account-card {
+      background: var(--primary); border-radius: 20px;
+      padding: 24px; margin: 0 20px 8px; color: var(--on-primary);
+      box-shadow: 0 4px 12px rgba(76,102,43,0.3);
+    }
+    .account-card .label { font-size: 14px; font-weight: 500; opacity: 0.7; }
+    .account-card .balance { font-size: 32px; font-weight: 700; padding: 8px 0 4px; }
+    .account-card .iban { font-size: 14px; opacity: 0.7; padding-bottom: 20px; }
+    .quick-actions { display: flex; gap: 8px; }
+    .quick-actions button {
+      flex: 1; border: none; border-radius: 12px;
+      padding: 8px 12px; font-family: 'Outfit', sans-serif;
+      font-size: 13px; font-weight: 600; cursor: pointer;
+      display: flex; align-items: center; justify-content: center; gap: 4px;
+    }
+    .quick-actions button.filled { background: var(--on-primary); color: var(--primary); }
+    .quick-actions button.outlined {
+      background: transparent; color: var(--on-primary);
+      border: 1px solid rgba(255,255,255,0.5);
     }
 
-    /* ── Scrollable content ───────────────────────────────── */
-    .screen-scroll {
-      flex: 1;
-      overflow-y: auto;
-      padding-bottom: 96px;
+    /* Total Balance Chip */
+    .total-chip {
+      display: flex; align-items: center; gap: 6px;
+      background: var(--primary-container); border-radius: 12px;
+      padding: 10px 16px; margin: 12px 20px 8px;
+      font-size: 13px; font-weight: 600; color: var(--primary);
     }
-    .screen-scroll::-webkit-scrollbar { display: none; }
+    .total-chip .material-icons { font-size: 16px; }
 
-    /* ── Header row ───────────────────────────────────────── */
-    .header-row {
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      padding: 0 16px;
-      margin-bottom: 16px;
-    }
-    .header-greeting-col {
-      display: flex;
-      flex-direction: column;
-      gap: 0;
-    }
-    .header-greeting-sub {
-      font-size: 16px;
-      font-weight: 400;
-      color: var(--text-secondary);
-      line-height: 1.3;
-    }
-    .header-greeting-name {
-      font-size: 24px;
-      font-weight: 600;
-      color: var(--text-primary);
-      line-height: 1.2;
-    }
-    .header-actions {
-      display: flex;
-      align-items: center;
-      gap: 8px;
-    }
-    .icon-btn {
-      width: 40px;
-      height: 40px;
-      border-radius: 50%;
-      border: none;
-      background: transparent;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      cursor: pointer;
-      color: var(--text-secondary);
-    }
-    .icon-btn .material-icons { font-size: 24px; }
-    .avatar {
-      width: 36px;
-      height: 36px;
-      border-radius: 50%;
-      background: var(--primary-container);
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      color: var(--primary);
-      font-size: 14px;
-      font-weight: 500;
-      cursor: pointer;
-      flex-shrink: 0;
-    }
-
-    /* ── Balance card ─────────────────────────────────────── */
-    .balance-card {
-      background: var(--primary-container);
-      border-radius: 16px;
-      padding: 20px;
-      margin: 0 16px 24px;
-    }
-    .balance-label {
-      font-size: 14px;
-      font-weight: 500;
-      color: var(--text-secondary);
-      margin-bottom: 4px;
-    }
-    .balance-amount {
-      font-size: 32px;
-      font-weight: 600;
-      color: var(--text-primary);
-      line-height: 40px;
-    }
-    .balance-sub {
-      font-size: 12px;
-      font-weight: 400;
-      color: var(--text-secondary);
-      margin-top: 2px;
-    }
-
-    /* ── Quick actions ────────────────────────────────────── */
-    .quick-actions-row {
-      display: flex;
-      justify-content: space-around;
-      align-items: flex-start;
-      padding: 0 16px;
-      margin-bottom: 24px;
-    }
-    .quick-action-item {
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      gap: 6px;
-      cursor: pointer;
-      border: none;
-      background: none;
-      font-family: var(--font);
-    }
-    .quick-action-circle {
-      width: 48px;
-      height: 48px;
-      border-radius: 24px;
-      background: var(--surface);
-      border: 1px solid var(--outline-variant);
-      display: flex;
-      align-items: center;
-      justify-content: center;
-    }
-    .quick-action-circle .material-icons {
-      font-size: 24px;
-      color: var(--primary);
-    }
-    .quick-action-label {
-      font-size: 11px;
-      font-weight: 500;
-      color: var(--text-secondary);
-      text-align: center;
-    }
-
-    /* ── Section header ───────────────────────────────────── */
+    /* Section Header */
     .section-header {
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      padding: 0 16px;
-      margin-bottom: 12px;
+      display: flex; align-items: center; justify-content: space-between;
+      padding: 20px 20px 12px;
     }
-    .section-title {
-      font-size: 16px;
-      font-weight: 500;
-      color: var(--text-primary);
-    }
-    .section-see-all {
-      font-size: 14px;
-      font-weight: 500;
-      color: var(--primary);
-      cursor: pointer;
-      background: none;
-      border: none;
-      font-family: var(--font);
+    .section-header h2 { font-size: 18px; font-weight: 700; color: var(--on-background); }
+    .section-header a {
+      font-size: 13px; font-weight: 600; color: var(--primary);
+      text-decoration: none; cursor: pointer;
     }
 
-    /* ── Transaction cards ───────────────────────────────── */
-    .txn-card {
-      background: var(--surface);
-      border: 1px solid var(--outline-variant);
-      border-radius: 12px;
-      padding: 16px;
-      margin: 0 16px 8px;
-      display: flex;
-      align-items: center;
-      gap: 12px;
-      cursor: pointer;
+    /* Transaction Row */
+    .txn-row {
+      display: flex; align-items: center; gap: 12px;
+      background: var(--surface); border-radius: 12px;
+      padding: 16px; margin: 0 20px 8px;
+      box-shadow: 0 1px 3px rgba(0,0,0,0.06); cursor: pointer;
     }
-    .txn-icon-circle {
-      width: 40px;
-      height: 40px;
-      border-radius: 50%;
-      background: var(--background);
-      display: flex;
-      align-items: center;
-      justify-content: center;
+    .txn-icon {
+      width: 44px; height: 44px; border-radius: 22px;
+      background: var(--primary-container);
+      display: flex; align-items: center; justify-content: center;
       flex-shrink: 0;
     }
-    .txn-icon-circle .material-icons { font-size: 20px; color: var(--outline); }
-    .txn-detail { flex: 1; min-width: 0; }
-    .txn-merchant {
-      font-size: 16px;
-      font-weight: 500;
-      color: var(--text-primary);
-      white-space: nowrap;
-      overflow: hidden;
-      text-overflow: ellipsis;
+    .txn-icon .material-icons { font-size: 22px; color: var(--primary); }
+    .txn-icon.warning .material-icons { color: var(--warning); }
+    .txn-details { flex: 1; }
+    .txn-details .merchant { font-size: 15px; font-weight: 500; color: var(--on-background); }
+    .txn-details .meta { font-size: 13px; color: var(--on-surface-variant); margin-top: 2px; }
+    .txn-amount { text-align: right; }
+    .txn-amount .amount { font-size: 15px; font-weight: 600; }
+    .txn-amount .amount.debit { color: var(--error); }
+    .txn-amount .amount.credit { color: var(--primary); }
+    .txn-badge {
+      display: inline-block; font-size: 10px; font-weight: 600;
+      padding: 2px 6px; border-radius: 4px; margin-top: 4px;
+      background: var(--primary-container);
     }
-    .txn-category {
-      font-size: 12px;
-      font-weight: 400;
-      color: var(--text-secondary);
-      margin-top: 2px;
-    }
-    .txn-amount-col {
-      display: flex;
-      flex-direction: column;
-      align-items: flex-end;
-      gap: 4px;
-      flex-shrink: 0;
-    }
-    .txn-amount {
-      font-size: 16px;
-      font-weight: 500;
-    }
-    .txn-amount.debit  { color: var(--error); }
-    .txn-amount.credit { color: var(--primary); }
+    .txn-badge.debit { color: var(--error); }
+    .txn-badge.credit { color: var(--primary); }
 
-    /* Badges */
-    .badge {
-      display: inline-flex;
-      align-items: center;
-      justify-content: center;
-      height: 24px;
-      padding: 0 10px;
-      border-radius: 8px;
-      font-size: 12px;
-      font-weight: 500;
-      color: var(--on-primary);
+    /* Services Grid */
+    .services-grid { display: flex; gap: 12px; padding: 0 20px 20px; }
+    .service-card {
+      flex: 1; border-radius: 16px; padding: 16px;
+      cursor: pointer; text-decoration: none; display: block;
     }
-    .badge.completed { background: var(--primary); }
-    .badge.initiated { background: var(--pending); }
+    .service-card .material-icons { font-size: 24px; display: block; margin-bottom: 8px; }
+    .service-card .label { font-size: 13px; font-weight: 600; }
+    .service-card.green { background: var(--primary-container); color: var(--primary); }
+    .service-card.green .material-icons { color: var(--primary); }
+    .service-card.teal { background: #DCE7C8; color: var(--secondary); }
+    .service-card.teal .material-icons { color: var(--secondary); }
+    .service-card.amber { background: var(--primary-container); color: var(--warning); }
+    .service-card.amber .material-icons { color: var(--warning); }
 
-    /* ── Bottom nav ──────────────────────────────────────── */
-    .bottom-nav {
-      position: absolute;
-      bottom: 0;
-      left: 0;
-      width: 390px;
-      height: 80px;
-      background: var(--background);
-      border-top: 1px solid var(--outline-variant);
-      display: flex;
-      align-items: stretch;
-      z-index: 20;
+    /* Bottom Navigation */
+    nav[data-shell="bottom-nav"] {
+      position: fixed; bottom: 0; left: 50%; transform: translateX(-50%);
+      width: 390px; background: var(--surface);
+      border-top: 1px solid var(--surface-variant);
+      display: flex; justify-content: space-around; padding: 8px 0 12px;
+      z-index: 100;
     }
-    .nav-tab {
-      flex: 1;
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      justify-content: center;
-      gap: 4px;
-      cursor: pointer;
-      border: none;
-      background: none;
-      font-family: var(--font);
-      padding: 8px 4px;
-      position: relative;
-      text-decoration: none;
-      color: var(--text-secondary);
+    .nav-item {
+      display: flex; flex-direction: column; align-items: center; gap: 2px;
+      text-decoration: none; cursor: pointer; padding: 4px 12px;
+      border-radius: 16px; min-width: 56px;
     }
-    .nav-tab.active { color: var(--text-primary); }
-    .nav-pill {
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      width: 64px;
-      height: 28px;
-      border-radius: 14px;
-      background: transparent;
-    }
-    .nav-tab.active .nav-pill { background: var(--nav-active); }
-    .nav-tab .material-icons { font-size: 22px; }
-    .nav-label {
-      font-size: 11px;
-      font-weight: 500;
-    }
-    .nav-tab.active .nav-label { font-weight: 500; color: var(--text-primary); }
+    .nav-item .material-icons { font-size: 24px; color: var(--on-surface-variant); }
+    .nav-item .label { font-size: 11px; font-weight: 500; color: var(--on-surface-variant); }
+    .nav-item.active .material-icons { color: var(--primary); }
+    .nav-item.active .label { color: var(--primary); font-weight: 700; }
+    .nav-item.active { background: var(--primary-container); }
   </style>
 </head>
 <body>
-
-  <!-- Status bar area -->
-  <div class="status-bar" aria-hidden="true"></div>
-
-  <!-- Scrollable content -->
-  <main class="screen-scroll" role="main">
-
-    <!-- Header row -->
-    <div class="header-row"
-         data-component-type="stack"
-         data-component-id="header_row">
-      <div class="header-greeting-col" data-component-id="greeting_col">
-        <span class="header-greeting-sub" data-component-id="greeting_sub">Good morning,</span>
-        <span class="header-greeting-name" data-component-id="greeting_name">Felix</span>
+  <main>
+    <!-- Top App Bar -->
+    <div class="top-bar" role="banner">
+      <span class="top-bar-title">Mifos X</span>
+      <div class="top-bar-actions">
+        <span class="material-icons" data-nav-to="notifications" data-component-type="icon" data-component-id="notifications_icon" role="button" aria-label="Notifications" tabindex="0">notifications</span>
+        <span class="material-icons" data-nav-to="profile" data-component-type="icon" data-component-id="profile_icon" role="button" aria-label="Profile" tabindex="0">account_circle</span>
       </div>
-      <div class="header-actions">
-        <button class="icon-btn"
-                aria-label="Notifications"
-                data-nav-to="notifications"
-                data-component-id="btn_notifications">
-          <span class="material-icons" aria-hidden="true">notifications_none</span>
+    </div>
+
+    <!-- Greeting -->
+    <section class="greeting" data-component-type="text" data-component-id="greeting_text">
+      <h1>Good morning, Alex</h1>
+      <p class="date" data-component-type="text" data-component-id="greeting_date">Monday, 25 May 2026</p>
+    </section>
+
+    <!-- Primary Account Card -->
+    <div class="account-card" data-component-type="box" data-component-id="primary_account_card" role="region" aria-label="Primary Checking account card">
+      <div class="label" data-component-type="text" data-component-id="account_card_label">Primary Checking</div>
+      <div class="balance" data-component-type="text" data-component-id="account_card_balance">£4,250.00</div>
+      <div class="iban" data-component-type="text" data-component-id="account_card_iban">•••• •••• •••• 0130</div>
+      <div class="quick-actions" data-component-type="stack" data-component-id="quick_actions_row" role="group" aria-label="Quick actions">
+        <button class="filled" data-nav-to="send-money" data-component-type="button" data-component-id="btn_send_money" aria-label="Send money" tabindex="0">
+          <span class="material-icons" style="font-size:16px">send</span> Send Money
         </button>
-        <div class="avatar"
-             role="button"
-             tabindex="0"
-             aria-label="Profile"
-             data-nav-to="profile"
-             data-component-id="avatar_btn">FS</div>
+        <button class="outlined" data-nav-to="beneficiaries" data-component-type="button" data-component-id="btn_add_beneficiary" aria-label="Manage beneficiaries" tabindex="0">
+          Beneficiaries
+        </button>
+        <button class="outlined" data-nav-to="cards" data-component-type="button" data-component-id="btn_view_cards" aria-label="View my cards" tabindex="0">
+          View Cards
+        </button>
       </div>
     </div>
 
-    <!-- Balance card -->
-    <div class="balance-card"
-         role="region"
-         aria-label="Total balance"
-         data-component-type="box"
-         data-component-id="balance_card">
-      <p class="balance-label" data-component-id="balance_label">Total Balance</p>
-      <p class="balance-amount" data-component-id="balance_amount" aria-label="twelve thousand four hundred fifty dollars and eighty cents">$12,450.80</p>
-      <p class="balance-sub" data-component-id="balance_sub">Across 3 accounts</p>
+    <!-- Total Balance Chip -->
+    <div class="total-chip" data-component-type="box" data-component-id="total_balance_chip" role="status" aria-label="Total across 3 accounts: twelve thousand four hundred eighty pounds fifty pence">
+      <span class="material-icons">account_balance_wallet</span>
+      <span data-component-type="text" data-component-id="total_balance_text">Total across 3 accounts: £12,480.50</span>
     </div>
 
-    <!-- Quick actions -->
-    <div class="quick-actions-row"
-         role="group"
-         aria-label="Quick actions"
-         data-component-type="stack"
-         data-component-id="quick_actions_row">
-
-      <button class="quick-action-item"
-              aria-label="Send"
-              data-nav-to="send-money"
-              data-component-id="qa_send">
-        <div class="quick-action-circle">
-          <span class="material-icons" aria-hidden="true">send</span>
-        </div>
-        <span class="quick-action-label">Send</span>
-      </button>
-
-      <button class="quick-action-item"
-              aria-label="Request"
-              data-action="request_money"
-              data-component-id="qa_request">
-        <div class="quick-action-circle">
-          <span class="material-icons" aria-hidden="true">call_received</span>
-        </div>
-        <span class="quick-action-label">Request</span>
-      </button>
-
-      <button class="quick-action-item"
-              aria-label="Pay Bills"
-              data-nav-to="pay-bills"
-              data-component-id="qa_pay_bills">
-        <div class="quick-action-circle">
-          <span class="material-icons" aria-hidden="true">receipt_long</span>
-        </div>
-        <span class="quick-action-label">Pay Bills</span>
-      </button>
-
-      <button class="quick-action-item"
-              aria-label="More"
-              data-action="show_more_actions"
-              data-component-id="qa_more">
-        <div class="quick-action-circle">
-          <span class="material-icons" aria-hidden="true">more_horiz</span>
-        </div>
-        <span class="quick-action-label">More</span>
-      </button>
-
+    <!-- Recent Transactions -->
+    <div class="section-header" data-component-type="stack" data-component-id="recent_transactions_header">
+      <h2 data-component-type="text" data-component-id="recent_transactions_title">Recent Transactions</h2>
+      <a data-nav-to="transactions" data-component-type="link" data-component-id="view_all_link" role="link" aria-label="View all transactions" tabindex="0">View All</a>
     </div>
 
-    <!-- Recent Transactions header -->
-    <div class="section-header"
-         data-component-type="stack"
-         data-component-id="recent_txn_header">
-      <span class="section-title" data-component-id="recent_txn_title">Recent Transactions</span>
-      <button class="section-see-all"
-              aria-label="See all transactions"
-              data-nav-to="transactions"
-              data-component-id="see_all_link">See all</button>
+    <!-- Transaction 1 -->
+    <div class="txn-row" data-component-type="box" data-component-id="transaction_row_1" role="listitem" aria-label="Tesco Supermarket, debit forty-two pounds fifty, 23 May 2026">
+      <div class="txn-icon"><span class="material-icons" data-component-type="icon" data-component-id="txn1_icon">shopping_cart</span></div>
+      <div class="txn-details">
+        <div class="merchant" data-component-type="text" data-component-id="txn1_merchant">Tesco Supermarket</div>
+        <div class="meta" data-component-type="text" data-component-id="txn1_date">23 May 2026 · Groceries</div>
+      </div>
+      <div class="txn-amount">
+        <div class="amount debit" data-component-type="text" data-component-id="txn1_amount">-£42.50</div>
+        <span class="txn-badge debit" data-component-type="text" data-component-id="txn1_badge_label">DEBIT</span>
+      </div>
     </div>
 
-    <!-- Transaction 1: Coffee House -->
-    <article class="txn-card"
-             role="listitem"
-             aria-label="Coffee House, Food and Drink, debit four dollars fifty, completed"
-             data-component-type="box"
-             data-component-id="txn_row_1"
-             data-nav-to="transactions">
-      <div class="txn-icon-circle" data-component-id="txn1_icon">
-        <span class="material-icons" aria-hidden="true">local_cafe</span>
+    <!-- Transaction 2 -->
+    <div class="txn-row" data-component-type="box" data-component-id="transaction_row_2" role="listitem" aria-label="Salary Payment, credit three thousand two hundred pounds, 22 May 2026">
+      <div class="txn-icon"><span class="material-icons" data-component-type="icon" data-component-id="txn2_icon">payments</span></div>
+      <div class="txn-details">
+        <div class="merchant" data-component-type="text" data-component-id="txn2_merchant">Salary Payment</div>
+        <div class="meta" data-component-type="text" data-component-id="txn2_date">22 May 2026 · Income</div>
       </div>
-      <div class="txn-detail" data-component-id="txn1_detail">
-        <p class="txn-merchant" data-component-id="txn1_merchant">Coffee House</p>
-        <p class="txn-category" data-component-id="txn1_category">Food &amp; Drink</p>
+      <div class="txn-amount">
+        <div class="amount credit" data-component-type="text" data-component-id="txn2_amount">+£3,200.00</div>
+        <span class="txn-badge credit" data-component-type="text" data-component-id="txn2_badge_label">CREDIT</span>
       </div>
-      <div class="txn-amount-col" data-component-id="txn1_amount_col">
-        <span class="txn-amount debit" data-component-id="txn1_amount" aria-label="debit four dollars fifty">-$4.50</span>
-        <span class="badge completed" data-component-id="txn1_badge">COMPLETED</span>
-      </div>
-    </article>
+    </div>
 
-    <!-- Transaction 2: Salary Deposit -->
-    <article class="txn-card"
-             role="listitem"
-             aria-label="Salary Deposit, Income, credit three thousand two hundred dollars, completed"
-             data-component-type="box"
-             data-component-id="txn_row_2"
-             data-nav-to="transactions">
-      <div class="txn-icon-circle" data-component-id="txn2_icon">
-        <span class="material-icons" aria-hidden="true">payments</span>
+    <!-- Transaction 3 -->
+    <div class="txn-row" data-component-type="box" data-component-id="transaction_row_3" role="listitem" aria-label="EDF Energy, debit ninety-four pounds twenty, 20 May 2026">
+      <div class="txn-icon warning"><span class="material-icons" data-component-type="icon" data-component-id="txn3_icon">bolt</span></div>
+      <div class="txn-details">
+        <div class="merchant" data-component-type="text" data-component-id="txn3_merchant">EDF Energy</div>
+        <div class="meta" data-component-type="text" data-component-id="txn3_date">20 May 2026 · Utilities</div>
       </div>
-      <div class="txn-detail" data-component-id="txn2_detail">
-        <p class="txn-merchant" data-component-id="txn2_merchant">Salary Deposit</p>
-        <p class="txn-category" data-component-id="txn2_category">Income</p>
+      <div class="txn-amount">
+        <div class="amount debit" data-component-type="text" data-component-id="txn3_amount">-£94.20</div>
+        <span class="txn-badge debit" data-component-type="text" data-component-id="txn3_badge_label">DEBIT</span>
       </div>
-      <div class="txn-amount-col" data-component-id="txn2_amount_col">
-        <span class="txn-amount credit" data-component-id="txn2_amount" aria-label="credit three thousand two hundred dollars">+$3,200.00</span>
-        <span class="badge completed" data-component-id="txn2_badge">COMPLETED</span>
-      </div>
-    </article>
+    </div>
 
-    <!-- Transaction 3: Electric Bill -->
-    <article class="txn-card"
-             role="listitem"
-             aria-label="Electric Bill, Utilities, debit eighty-five dollars, initiated"
-             data-component-type="box"
-             data-component-id="txn_row_3"
-             data-nav-to="transactions">
-      <div class="txn-icon-circle" data-component-id="txn3_icon">
-        <span class="material-icons" aria-hidden="true">bolt</span>
-      </div>
-      <div class="txn-detail" data-component-id="txn3_detail">
-        <p class="txn-merchant" data-component-id="txn3_merchant">Electric Bill</p>
-        <p class="txn-category" data-component-id="txn3_category">Utilities</p>
-      </div>
-      <div class="txn-amount-col" data-component-id="txn3_amount_col">
-        <span class="txn-amount debit" data-component-id="txn3_amount" aria-label="debit eighty-five dollars">-$85.00</span>
-        <span class="badge initiated" data-component-id="txn3_badge">INITIATED</span>
-      </div>
-    </article>
-
-    <!-- Bottom spacer -->
-    <div style="height: 16px;" aria-hidden="true"></div>
-
+    <!-- Services Section -->
+    <div class="section-header">
+      <h2 data-component-type="text" data-component-id="services_section_title">Services</h2>
+    </div>
+    <div class="services-grid" data-component-type="stack" data-component-id="services_grid">
+      <a class="service-card green" data-nav-to="standing-orders" data-component-type="box" data-component-id="service_standing_orders" role="button" aria-label="Standing Orders" tabindex="0">
+        <span class="material-icons">repeat</span>
+        <span class="label">Standing Orders</span>
+      </a>
+      <a class="service-card teal" data-nav-to="atm-locator" data-component-type="box" data-component-id="service_atm_locator" role="button" aria-label="ATM & Branches" tabindex="0">
+        <span class="material-icons">location_on</span>
+        <span class="label">ATM & Branches</span>
+      </a>
+      <a class="service-card amber" data-nav-to="fx-rates" data-component-type="box" data-component-id="service_fx_rates" role="button" aria-label="Exchange Rates" tabindex="0">
+        <span class="material-icons">currency_exchange</span>
+        <span class="label">FX Rates</span>
+      </a>
+    </div>
   </main>
 
   <!-- Bottom Navigation -->
-  <nav class="bottom-nav" data-shell="bottom-nav" role="navigation" aria-label="Main navigation">
-
-    <a class="nav-tab active"
-       href="#"
-       data-nav-to="home"
-       aria-label="Home, current page"
-       aria-current="page"
-       data-component-id="nav_home">
-      <div class="nav-pill">
-        <span class="material-icons" aria-hidden="true">home</span>
-      </div>
-      <span class="nav-label">Home</span>
+  <nav data-shell="bottom-nav" role="navigation" aria-label="Main navigation">
+    <a class="nav-item active" data-nav-to="home" aria-label="Home" aria-current="page">
+      <span class="material-icons">home</span>
+      <span class="label">Home</span>
     </a>
-
-    <a class="nav-tab"
-       href="#"
-       data-nav-to="accounts"
-       aria-label="Accounts"
-       data-component-id="nav_accounts">
-      <div class="nav-pill">
-        <span class="material-icons" aria-hidden="true">account_balance</span>
-      </div>
-      <span class="nav-label">Accounts</span>
+    <a class="nav-item" data-nav-to="accounts" aria-label="Accounts">
+      <span class="material-icons">account_balance</span>
+      <span class="label">Accounts</span>
     </a>
-
-    <a class="nav-tab"
-       href="#"
-       data-nav-to="payments"
-       aria-label="Payments"
-       data-component-id="nav_payments">
-      <div class="nav-pill">
-        <span class="material-icons" aria-hidden="true">send</span>
-      </div>
-      <span class="nav-label">Payments</span>
+    <a class="nav-item" data-nav-to="send-money" aria-label="Pay">
+      <span class="material-icons">send</span>
+      <span class="label">Pay</span>
     </a>
-
-    <a class="nav-tab"
-       href="#"
-       data-nav-to="profile"
-       aria-label="Profile"
-       data-component-id="nav_profile">
-      <div class="nav-pill">
-        <span class="material-icons" aria-hidden="true">person</span>
-      </div>
-      <span class="nav-label">Profile</span>
+    <a class="nav-item" data-nav-to="cards" aria-label="Cards">
+      <span class="material-icons">credit_card</span>
+      <span class="label">Cards</span>
     </a>
-
+    <a class="nav-item" data-nav-to="settings" aria-label="More">
+      <span class="material-icons">more_horiz</span>
+      <span class="label">More</span>
+    </a>
   </nav>
 
   <script src="../../preview/_shared/preview-runtime.js"></script>
