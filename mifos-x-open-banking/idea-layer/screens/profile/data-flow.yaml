@@ -1,0 +1,36 @@
+sibling: data-flow
+schema_version: "4.0"
+feature_id: profile
+entries:
+  - screen_id: profile
+    trigger: on_mount
+    endpoints:
+      - obp_get_user_profile
+    direction: read
+    dtos:
+      - name: UserProfile
+        role: response
+        api_id: obp_get_user_profile
+    produces_state: content
+    error_paths:
+      - error_code: 401
+        behavior: navigate_login
+      - error_code: 500
+        behavior: error_state
+
+  - screen_id: profile
+    trigger: on_interact
+    event: CustomerSaved
+    endpoints:
+      - obp_update_user_profile
+    direction: write
+    dtos:
+      - name: UserProfile
+        role: request
+        api_id: obp_update_user_profile
+    produces_state: content
+    error_paths:
+      - error_code: 400
+        behavior: error_state
+      - error_code: 401
+        behavior: navigate_login

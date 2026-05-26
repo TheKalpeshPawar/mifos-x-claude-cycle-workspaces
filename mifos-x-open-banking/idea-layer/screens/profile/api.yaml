@@ -1,0 +1,47 @@
+sibling: api
+schema_version: "4.0"
+feature_id: profile
+api:
+  - id: obp_get_user_profile
+    endpoint: "GET /obp/v4.0.0/users/current"
+    tag: UserProfile
+    trigger: on_screen_load
+    response:
+      fields:
+        - name: user_id
+          type: String
+        - name: email
+          type: String
+        - name: username
+          type: String
+    errors:
+      - code: 401
+        name: AUTH_ERROR
+        ui_message: "Session expired. Please sign in again."
+      - code: 500
+        name: NETWORK_ERROR
+        ui_message: "Could not load your profile. Please check your connection."
+
+  - id: obp_update_user_profile
+    endpoint: "PUT /obp/v4.0.0/users/current"
+    tag: UserProfile
+    trigger: on_save_clicked
+    request:
+      fields:
+        - name: email
+          type: String
+          source: profile_email_input
+        - name: phone_number
+          type: String
+          source: profile_phone_input
+    response:
+      fields:
+        - name: user_id
+          type: String
+    errors:
+      - code: 400
+        name: VALIDATION_ERROR
+        ui_message: "Please correct the errors in the form before saving."
+      - code: 401
+        name: AUTH_ERROR
+        ui_message: "Session expired. Please sign in again."

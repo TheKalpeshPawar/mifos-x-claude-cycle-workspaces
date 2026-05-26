@@ -1,0 +1,92 @@
+sibling: data-flow
+schema_version: "4.0"
+feature_id: application-detail
+entries:
+  - screen_id: application-detail
+    trigger: on_mount
+    endpoints:
+      - obp_get_application_detail
+    direction: read
+    dtos:
+      - name: AccountApplication
+        role: response
+        api_id: obp_get_application_detail
+    produces_state: content
+    error_paths:
+      - error_code: 400
+        behavior: error_state
+      - error_code: 401
+        behavior: navigate_login
+      - error_code: 404
+        behavior: empty_state
+
+  - screen_id: application-detail
+    trigger: on_interact
+    event: ApplicationApproved
+    endpoints:
+      - obp_update_application
+    direction: write
+    dtos:
+      - name: AccountApplication
+        role: request
+        api_id: obp_update_application
+      - name: AccountApplication
+        role: response
+        api_id: obp_update_application
+    produces_state: content
+    error_paths:
+      - error_code: 400
+        behavior: error_state
+      - error_code: 401
+        behavior: navigate_login
+      - error_code: 404
+        behavior: empty_state
+
+  - screen_id: application-detail
+    trigger: on_interact
+    event: ApplicationRejected
+    endpoints:
+      - obp_update_application
+    direction: write
+    dtos:
+      - name: AccountApplication
+        role: request
+        api_id: obp_update_application
+      - name: AccountApplication
+        role: response
+        api_id: obp_update_application
+    produces_state: content
+    error_paths:
+      - error_code: 400
+        behavior: error_state
+      - error_code: 401
+        behavior: navigate_login
+      - error_code: 404
+        behavior: empty_state
+
+  - screen_id: application-detail
+    trigger: on_interact
+    event: InfoRequested
+    endpoints: []
+    direction: read
+    dtos: []
+    produces_state: content
+    notes: "Triggers messaging flow (CustomerMessagingService); no direct OBP API call in this screen"
+
+  - screen_id: application-detail
+    trigger: on_interact
+    event: DocumentViewed
+    endpoints: []
+    direction: read
+    dtos: []
+    produces_state: content
+    notes: "Opens document viewer; no OBP network call"
+
+  - screen_id: application-detail
+    trigger: on_interact
+    event: CustomerProfileOpened
+    endpoints: []
+    direction: read
+    dtos: []
+    produces_state: content
+    notes: "Navigation to customer-profile screen; no network call"

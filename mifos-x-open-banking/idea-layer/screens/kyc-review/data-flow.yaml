@@ -1,0 +1,137 @@
+sibling: data-flow
+schema_version: "4.0"
+feature_id: kyc-review
+entries:
+  - screen_id: kyc-review
+    trigger: on_mount
+    endpoints:
+      - obp_get_kyc_documents
+    direction: read
+    dtos:
+      - name: KycDocument
+        role: response
+        api_id: obp_get_kyc_documents
+    produces_state: reviewing
+    error_paths:
+      - error_code: 400
+        behavior: show_error_banner
+      - error_code: 401
+        behavior: redirect_to_login
+      - error_code: 404
+        behavior: show_error_banner
+
+  - screen_id: kyc-review
+    trigger: on_interact
+    event: KycApproved
+    endpoints:
+      - obp_update_kyc_document
+    direction: write
+    dtos:
+      - name: KycDocument
+        role: request
+        api_id: obp_update_kyc_document
+      - name: KycDocument
+        role: response
+        api_id: obp_update_kyc_document
+    produces_state: verifying
+    error_paths:
+      - error_code: 400
+        behavior: show_validation_error
+      - error_code: 401
+        behavior: redirect_to_login
+      - error_code: 404
+        behavior: show_error_banner
+
+  - screen_id: kyc-review
+    trigger: on_interact
+    event: KycApproved
+    endpoints:
+      - obp_kyc_check
+    direction: write
+    dtos:
+      - name: KycDocument
+        role: request
+        api_id: obp_kyc_check
+    produces_state: approved
+    error_paths:
+      - error_code: 400
+        behavior: show_validation_error
+      - error_code: 401
+        behavior: redirect_to_login
+
+  - screen_id: kyc-review
+    trigger: on_interact
+    event: KycApproved
+    endpoints:
+      - obp_kyc_status
+    direction: write
+    dtos:
+      - name: KycDocument
+        role: request
+        api_id: obp_kyc_status
+    produces_state: approved
+    error_paths:
+      - error_code: 400
+        behavior: show_validation_error
+      - error_code: 401
+        behavior: redirect_to_login
+
+  - screen_id: kyc-review
+    trigger: on_interact
+    event: KycRejected
+    endpoints:
+      - obp_update_kyc_document
+    direction: write
+    dtos:
+      - name: KycDocument
+        role: request
+        api_id: obp_update_kyc_document
+    produces_state: rejected
+    error_paths:
+      - error_code: 400
+        behavior: show_validation_error
+      - error_code: 401
+        behavior: redirect_to_login
+      - error_code: 404
+        behavior: show_error_banner
+
+  - screen_id: kyc-review
+    trigger: on_interact
+    event: KycRejected
+    endpoints:
+      - obp_kyc_status
+    direction: write
+    dtos:
+      - name: KycDocument
+        role: request
+        api_id: obp_kyc_status
+    produces_state: rejected
+    error_paths:
+      - error_code: 400
+        behavior: show_validation_error
+      - error_code: 401
+        behavior: redirect_to_login
+
+  - screen_id: kyc-review
+    trigger: on_interact
+    event: MoreDocsRequested
+    endpoints: []
+    direction: none
+    dtos: []
+    produces_state: reviewing
+
+  - screen_id: kyc-review
+    trigger: on_interact
+    event: RiskLevelChanged
+    endpoints: []
+    direction: none
+    dtos: []
+    produces_state: reviewing
+
+  - screen_id: kyc-review
+    trigger: on_interact
+    event: DocumentViewed
+    endpoints: []
+    direction: none
+    dtos: []
+    produces_state: reviewing

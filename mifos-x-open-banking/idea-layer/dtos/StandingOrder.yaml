@@ -1,0 +1,76 @@
+name: StandingOrder
+version: "1.0.0"
+source:
+  origin: project
+  api_path: "POST /obp/v4.0.0/banks/{bankId}/accounts/{accountId}/standing-order"
+description: "Represents a recurring payment instruction (standing order) on a bank account, including frequency, date range, beneficiary IBAN, value, and active status."
+fields:
+  - name: id
+    type: String
+    required: true
+    pii: false
+    description: "Unique identifier for the standing order"
+    primary_key: true
+  - name: when_frequency
+    type: String
+    required: true
+    pii: false
+    description: "Recurrence frequency of the standing order; one of DAILY, WEEKLY, MONTHLY, YEARLY"
+    primary_key: false
+  - name: when_detail
+    type: String
+    required: true
+    pii: false
+    description: "Additional scheduling detail (e.g. day-of-week or day-of-month) qualifying when_frequency"
+    primary_key: false
+  - name: start_date
+    type: Date
+    required: true
+    pii: false
+    description: "ISO-8601 date on which the first payment executes"
+    primary_key: false
+  - name: end_date
+    type:
+      optional: Date
+    required: false
+    pii: false
+    description: "ISO-8601 date after which no further payments are made; null for open-ended orders"
+    primary_key: false
+  - name: value
+    type:
+      dto_ref: MoneyAmount
+    required: true
+    pii: false
+    description: "Monetary amount and currency transferred each recurrence"
+    primary_key: false
+  - name: to_iban
+    type: String
+    required: true
+    pii: true
+    description: "IBAN of the beneficiary account; PII — must be masked in logs"
+    primary_key: false
+  - name: to_name
+    type: String
+    required: true
+    pii: true
+    description: "Full name of the beneficiary; PII — must be masked in logs"
+    primary_key: false
+  - name: description
+    type:
+      optional: String
+    required: false
+    pii: false
+    description: "Optional narrative or reference for the payment"
+    primary_key: false
+  - name: active
+    type: Boolean
+    required: true
+    pii: false
+    description: "Whether the standing order is currently active"
+    primary_key: false
+used_by:
+  - feature: standing-orders
+    api_id: "POST /obp/v4.0.0/banks/{bankId}/accounts/{accountId}/standing-order"
+enums:
+  - field: when_frequency
+    values: [DAILY, WEEKLY, MONTHLY, YEARLY]

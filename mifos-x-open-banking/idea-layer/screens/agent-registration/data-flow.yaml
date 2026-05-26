@@ -1,0 +1,45 @@
+sibling: data-flow
+schema_version: "4.0"
+feature_id: agent-registration
+entries:
+  - screen_id: agent-registration
+    trigger: on_interact
+    event: SubmitClicked
+    endpoints:
+      - obp_create_agent
+    direction: write
+    dtos:
+      - name: Agent
+        role: request
+        api_id: obp_create_agent
+      - name: Agent
+        role: response
+        api_id: obp_create_agent
+    produces_state: content
+    error_paths:
+      - error_code: 400
+        behavior: validation_error
+      - error_code: 401
+        behavior: navigate_login
+      - error_code: 403
+        behavior: error_state
+      - error_code: 409
+        behavior: validation_error
+
+  - screen_id: agent-registration
+    trigger: on_interact
+    event: RegistrationSuccess
+    endpoints: []
+    direction: read
+    dtos: []
+    produces_state: content
+    notes: "Post-submit success confirmation display; no additional network call"
+
+  - screen_id: agent-registration
+    trigger: on_interact
+    event: RegistrationFailed
+    endpoints: []
+    direction: read
+    dtos: []
+    produces_state: content
+    notes: "Error state rendered from RegistrationFailed event payload; no additional network call"

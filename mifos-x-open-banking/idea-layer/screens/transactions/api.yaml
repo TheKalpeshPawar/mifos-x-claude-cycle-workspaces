@@ -1,0 +1,79 @@
+sibling: api
+schema_version: "4.0"
+feature_id: transactions
+api:
+  - id: obp_get_transactions
+    endpoint: "GET /obp/v5.1.0/my/banks/{bankId}/accounts/{accountId}/transactions"
+    tag: Transactions
+    auth: DirectLogin
+    params:
+      - name: accountId
+        type: path
+      - name: limit
+        type: query
+        value: "20"
+      - name: offset
+        type: query
+        value: "0"
+      - name: from_date
+        type: query
+        example: "2026-04-25T00:00:00.000Z"
+      - name: to_date
+        type: query
+        example: "2026-05-25T23:59:59.999Z"
+      - name: type
+        type: query
+        optional: true
+        values: [DEBIT, CREDIT, SEPA_CREDIT_TRANSFERS, UK_FASTER_PAYMENTS_SEND]
+      - name: sort_direction
+        type: query
+        value: "DESC"
+    response:
+      fields:
+        - name: id
+          type: String
+        - name: this_account
+          type: object
+        - name: other_account
+          type: object
+          children:
+            - name: holder
+              type: object
+            - name: metadata
+              type: object
+        - name: details
+          type: object
+          children:
+            - name: type
+              type: String
+            - name: description
+              type: String
+            - name: posted
+              type: String
+            - name: completed
+              type: String
+            - name: new_balance
+              type: object
+              children:
+                - name: currency
+                  type: String
+                - name: amount
+                  type: String
+            - name: value
+              type: object
+              children:
+                - name: currency
+                  type: String
+                - name: amount
+                  type: String
+        - name: metadata
+          type: object
+    errors:
+      - code: 400
+        message: "Invalid date range or filter parameters"
+      - code: 401
+        message: "Unauthorized"
+      - code: 404
+        message: "Account not found"
+      - code: 500
+        message: "OBP server error"

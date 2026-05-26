@@ -1,0 +1,92 @@
+sibling: data-flow
+schema_version: "4.0"
+feature_id: account-detail
+entries:
+  - screen_id: account-detail
+    trigger: on_mount
+    endpoints:
+      - obp_get_account_detail
+    direction: read
+    dtos:
+      - name: Account
+        role: response
+        api_id: obp_get_account_detail
+    produces_state: content
+    error_paths:
+      - error_code: 401
+        behavior: navigate_login
+      - error_code: 404
+        behavior: error_state
+
+  - screen_id: account-detail
+    trigger: on_mount
+    endpoints:
+      - obp_get_account_transactions
+    direction: read
+    dtos:
+      - name: Transaction
+        role: response
+        api_id: obp_get_account_transactions
+    produces_state: content
+    error_paths:
+      - error_code: 401
+        behavior: navigate_login
+      - error_code: 404
+        behavior: error_state
+
+  - screen_id: account-detail
+    trigger: on_interact
+    event: RetryLoad
+    endpoints:
+      - obp_get_account_detail
+      - obp_get_account_transactions
+    direction: read
+    dtos:
+      - name: Account
+        role: response
+        api_id: obp_get_account_detail
+      - name: Transaction
+        role: response
+        api_id: obp_get_account_transactions
+    produces_state: content
+    error_paths:
+      - error_code: 401
+        behavior: navigate_login
+      - error_code: 404
+        behavior: error_state
+
+  - screen_id: account-detail
+    trigger: on_interact
+    event: CopyIban
+    endpoints: []
+    direction: read
+    dtos: []
+    produces_state: content
+    notes: "Clipboard write; no network call"
+
+  - screen_id: account-detail
+    trigger: on_interact
+    event: CopyBic
+    endpoints: []
+    direction: read
+    dtos: []
+    produces_state: content
+    notes: "Clipboard write; no network call"
+
+  - screen_id: account-detail
+    trigger: on_interact
+    event: NavigateToSendMoney
+    endpoints: []
+    direction: read
+    dtos: []
+    produces_state: content
+    notes: "Navigation event to send-money; no network call"
+
+  - screen_id: account-detail
+    trigger: on_interact
+    event: NavigateToTransactions
+    endpoints: []
+    direction: read
+    dtos: []
+    produces_state: content
+    notes: "Navigation event to transactions; no network call"

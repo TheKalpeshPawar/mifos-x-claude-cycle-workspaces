@@ -1,0 +1,54 @@
+sibling: api
+schema_version: "4.0"
+feature_id: consent-manager
+api:
+  - id: obp_my_consents
+    endpoint: "GET /obp/v5.1.0/my/consents"
+    tag: Consent
+    description: "List all PSD2 consents granted by the consumer user"
+    response:
+      fields:
+        - name: consents
+          type: "List<Consent>"
+        - name: consent_id
+          type: String
+        - name: status
+          type: String
+          note: "INITIATED | ACCEPTED | REVOKED | EXPIRED"
+        - name: created_at
+          type: String
+          note: "ISO-8601 UTC timestamp"
+        - name: valid_until
+          type: String
+          note: "ISO-8601 UTC expiry timestamp"
+        - name: consumer_id
+          type: String
+        - name: redirects
+          type: "List<ConsentRedirect>"
+        - name: json_web_token
+          type: String
+    errors:
+      - code: 401
+        message: "USER_NOT_LOGGED_IN"
+      - code: 403
+        message: "INSUFFICIENT_AUTHORISATION"
+
+  - id: obp_revoke_consent
+    endpoint: "DELETE /obp/v5.1.0/my/consents/{consentId}"
+    tag: Consent
+    description: "Revoke a specific PSD2 consent by ID"
+    path_params:
+      - name: consentId
+        type: String
+    response:
+      fields:
+        - name: consent_id
+          type: String
+        - name: status
+          type: String
+          note: "REVOKED"
+    errors:
+      - code: 401
+        message: "USER_NOT_LOGGED_IN"
+      - code: 404
+        message: "CONSENT_NOT_FOUND"

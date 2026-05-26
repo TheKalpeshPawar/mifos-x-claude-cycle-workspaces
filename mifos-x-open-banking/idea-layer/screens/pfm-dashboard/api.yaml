@@ -1,0 +1,78 @@
+sibling: api
+schema_version: "4.0"
+feature_id: pfm-dashboard
+api:
+  - id: obp_personal_data_fields
+    endpoint: "GET /obp/v6.0.0/my/personal-data-fields"
+    tag: User
+    description: "Read PFM budgets stored as personal data fields (convention: pfm_budget_<categoryId>)"
+    response:
+      fields:
+        - name: personal_data_fields
+          type: "List<PersonalDataField>"
+        - name: name
+          type: String
+        - name: value
+          type: String
+    errors:
+      - code: 401
+        message: "USER_NOT_LOGGED_IN"
+      - code: 403
+        message: "INSUFFICIENT_AUTHORISATION"
+  - id: obp_personal_data_field_create
+    endpoint: "POST /obp/v6.0.0/my/personal-data-fields"
+    tag: User
+    description: "Create/update budget entry"
+    request:
+      fields:
+        - name: name
+          type: String
+          example: "pfm_budget_food_dining"
+        - name: value
+          type: String
+          example: "350"
+    response:
+      fields:
+        - name: name
+          type: String
+        - name: value
+          type: String
+    errors:
+      - code: 400
+        message: "INVALID_FIELD_NAME"
+      - code: 401
+        message: "USER_NOT_LOGGED_IN"
+  - id: obp_transactions_list
+    endpoint: "GET /obp/v6.0.0/my/accounts/{account_id}/transactions"
+    tag: Transactions
+    description: "Fetch transactions for PFM analysis — filtered by date range for selected period"
+    request:
+      params:
+        - name: from_date
+          type: String
+          example: "2026-05-01T00:00:00Z"
+        - name: to_date
+          type: String
+          example: "2026-05-31T23:59:59Z"
+        - name: limit
+          type: Int
+          example: 500
+    response:
+      fields:
+        - name: transactions
+          type: "List<Transaction>"
+        - name: transaction_id
+          type: String
+        - name: this_account
+          type: AccountInfo
+        - name: details
+          type: TransactionDetails
+        - name: value
+          type: AmountOfMoney
+    errors:
+      - code: 400
+        message: "INVALID_DATE_FORMAT"
+      - code: 401
+        message: "USER_NOT_LOGGED_IN"
+      - code: 404
+        message: "ACCOUNT_NOT_FOUND"

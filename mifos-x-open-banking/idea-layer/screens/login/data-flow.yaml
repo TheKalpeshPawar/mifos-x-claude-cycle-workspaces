@@ -1,0 +1,60 @@
+sibling: data-flow
+schema_version: "4.0"
+feature_id: login
+entries:
+  - screen_id: login
+    trigger: on_interact
+    event: OnDirectLoginClicked
+    endpoints:
+      - obp_direct_login
+    direction: write
+    dtos: []
+    produces_state: authenticating
+    error_paths:
+      - error_code: 400
+        behavior: error_state
+      - error_code: 401
+        behavior: error_state
+      - error_code: 500
+        behavior: error_state
+
+  - screen_id: login
+    trigger: on_interact
+    event: OnOAuthLoginClicked
+    endpoints:
+      - obp_oidc_authorize
+    direction: read
+    dtos: []
+    produces_state: oauth_redirecting
+    error_paths:
+      - error_code: 302
+        behavior: error_state
+
+  - screen_id: login
+    trigger: on_interact
+    event: OnOAuthCallback
+    endpoints:
+      - obp_oidc_token
+    direction: write
+    dtos:
+      - name: OidcToken
+        role: response
+        api_id: obp_oidc_token
+    produces_state: oauth_exchanging
+    error_paths:
+      - error_code: 400
+        behavior: error_state
+      - error_code: 401
+        behavior: error_state
+
+  - screen_id: login
+    trigger: after_token_exchange
+    endpoints:
+      - obp_oidc_userinfo
+    direction: read
+    dtos:
+      - name: UserProfile
+        role: response
+        api_id: obp_oidc_userinfo
+    produces_state: idle
+    error_paths: []

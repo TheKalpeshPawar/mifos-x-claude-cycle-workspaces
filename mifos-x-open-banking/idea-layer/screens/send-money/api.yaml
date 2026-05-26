@@ -1,0 +1,102 @@
+sibling: api
+schema_version: "4.0"
+feature_id: send-money
+api:
+  - id: obp_get_sender_accounts
+    endpoint: "GET /obp/v5.1.0/banks/{bankId}/accounts"
+    tag: Accounts
+    response:
+      fields:
+        - name: accounts
+          type: List<Account>
+        - name: id
+          type: String
+        - name: label
+          type: String
+        - name: balance
+          type: Amount
+        - name: currency
+          type: String
+    errors:
+      - code: 400
+        message: "INVALID_BANK_ID"
+      - code: 401
+        message: "USER_NOT_LOGGED_IN"
+      - code: 404
+        message: "BANK_NOT_FOUND"
+  - id: obp_get_beneficiary_counterparties
+    endpoint: "GET /obp/v4.0.0/banks/{bankId}/accounts/{accountId}/{viewId}/counterparties"
+    tag: Counterparties
+    response:
+      fields:
+        - name: counterparties
+          type: List<Counterparty>
+        - name: id
+          type: String
+        - name: name
+          type: String
+        - name: other_bank_routing_address
+          type: String
+        - name: other_account_routing_address
+          type: String
+    errors:
+      - code: 400
+        message: "INVALID_BANK_ID"
+      - code: 401
+        message: "USER_NOT_LOGGED_IN"
+  - id: obp_create_sepa_transfer
+    endpoint: "POST /obp/v5.1.0/banks/{bankId}/accounts/{accountId}/owner/transaction-request-types/SEPA/transaction-requests"
+    tag: TransactionRequests
+    response:
+      fields:
+        - name: id
+          type: String
+        - name: type
+          type: String
+        - name: status
+          type: String
+        - name: start_date
+          type: DateTime
+        - name: end_date
+          type: DateTime
+        - name: challenge
+          type: Challenge
+        - name: charge
+          type: Charge
+    errors:
+      - code: 400
+        message: "INVALID_JSON_FORMAT"
+      - code: 403
+        message: "INSUFFICIENT_AUTHORISATION"
+      - code: 404
+        message: "BANK_ACCOUNT_NOT_FOUND"
+      - code: 422
+        message: "INSUFFICIENT_FUNDS"
+  - id: obp_iban_check
+    endpoint: "POST /obp/v4.0.0/account/check/scheme/iban"
+    tag: Account
+    description: "Validate IBAN before payment"
+    request:
+      fields:
+        - name: address
+          type: String
+          note: "The IBAN to validate — field name is 'address' not 'iban'"
+    response:
+      fields:
+        - name: is_valid
+          type: Boolean
+  - id: obp_funds_available
+    endpoint: "GET /obp/v3.1.0/banks/{bankId}/accounts/{accountId}/owner/funds-available"
+    tag: Account
+    description: "Check if sufficient funds before payment"
+    request:
+      params:
+        - name: amount
+          type: String
+        - name: currency
+          type: String
+    response:
+      fields:
+        - name: answer
+          type: String
+          note: "'yes' or 'no'"

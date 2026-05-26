@@ -1,0 +1,520 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Mifos X Open Banking — App Navigation Flow</title>
+  <script src="https://cdn.jsdelivr.net/npm/mermaid@10/dist/mermaid.min.js"></script>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --bg:        #0f1117;
+      --surface:   #1a1d27;
+      --border:    #2a2d3a;
+      --primary:   #4C662B;
+      --primary-lt:#6a8f3c;
+      --text:      #e8eaf0;
+      --muted:     #8a8fa8;
+      --header-h:  56px;
+      --ctrl-h:    44px;
+    }
+
+    html, body {
+      height: 100%;
+      background: var(--bg);
+      color: var(--text);
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+      overflow: hidden;
+    }
+
+    /* ── Header ─────────────────────────────────── */
+    header {
+      position: fixed;
+      top: 0; left: 0; right: 0;
+      height: var(--header-h);
+      background: var(--surface);
+      border-bottom: 1px solid var(--border);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 0 20px;
+      z-index: 100;
+      gap: 16px;
+    }
+
+    .brand {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      flex-shrink: 0;
+    }
+
+    .brand-dot {
+      width: 10px;
+      height: 10px;
+      border-radius: 50%;
+      background: var(--primary);
+      box-shadow: 0 0 8px var(--primary-lt);
+    }
+
+    .brand-title {
+      font-size: 14px;
+      font-weight: 600;
+      color: var(--text);
+      letter-spacing: 0.01em;
+    }
+
+    .brand-sub {
+      font-size: 11px;
+      color: var(--muted);
+      margin-top: 1px;
+    }
+
+    /* ── Zoom controls ───────────────────────────── */
+    .controls {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      flex-shrink: 0;
+    }
+
+    .ctrl-btn {
+      height: 30px;
+      min-width: 30px;
+      padding: 0 10px;
+      background: transparent;
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      color: var(--text);
+      font-size: 14px;
+      cursor: pointer;
+      transition: background 0.15s, border-color 0.15s;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .ctrl-btn:hover {
+      background: rgba(76,102,43,0.18);
+      border-color: var(--primary-lt);
+    }
+
+    .ctrl-btn.reset {
+      font-size: 11px;
+      color: var(--muted);
+      letter-spacing: 0.03em;
+    }
+
+    .zoom-label {
+      min-width: 42px;
+      text-align: center;
+      font-size: 12px;
+      color: var(--muted);
+    }
+
+    /* ── Legend ──────────────────────────────────── */
+    .legend {
+      display: flex;
+      align-items: center;
+      gap: 14px;
+      flex-shrink: 0;
+    }
+
+    .legend-item {
+      display: flex;
+      align-items: center;
+      gap: 5px;
+      font-size: 11px;
+      color: var(--muted);
+    }
+
+    .legend-dot {
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+      flex-shrink: 0;
+    }
+
+    .legend-dot.shared   { background: #575899; }
+    .legend-dot.consumer { background: #1800B1; }
+    .legend-dot.fo       { background: #5C0068; }
+
+    /* ── Canvas area ─────────────────────────────── */
+    #canvas-wrap {
+      position: fixed;
+      top: var(--header-h);
+      left: 0; right: 0; bottom: 0;
+      overflow: auto;
+      background: var(--bg);
+      cursor: grab;
+    }
+
+    #canvas-wrap:active { cursor: grabbing; }
+
+    #canvas-inner {
+      display: inline-flex;
+      align-items: flex-start;
+      justify-content: flex-start;
+      padding: 32px 48px 80px;
+      transform-origin: top left;
+      transition: transform 0.1s ease;
+      min-width: 100%;
+    }
+
+    /* Mermaid diagram overrides */
+    .mermaid {
+      display: block;
+    }
+
+    .mermaid svg {
+      max-width: none !important;
+      height: auto;
+      filter: drop-shadow(0 4px 24px rgba(0,0,0,0.5));
+    }
+
+    /* ── Loading state ───────────────────────────── */
+    #loading {
+      position: fixed;
+      inset: 0;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      background: var(--bg);
+      gap: 14px;
+      z-index: 200;
+      transition: opacity 0.3s;
+    }
+
+    #loading.hidden {
+      opacity: 0;
+      pointer-events: none;
+    }
+
+    .spinner {
+      width: 36px;
+      height: 36px;
+      border: 3px solid var(--border);
+      border-top-color: var(--primary-lt);
+      border-radius: 50%;
+      animation: spin 0.8s linear infinite;
+    }
+
+    .loading-text {
+      font-size: 13px;
+      color: var(--muted);
+    }
+
+    @keyframes spin {
+      to { transform: rotate(360deg); }
+    }
+
+    /* ── Scrollbar styling ───────────────────────── */
+    #canvas-wrap::-webkit-scrollbar { width: 8px; height: 8px; }
+    #canvas-wrap::-webkit-scrollbar-track { background: var(--bg); }
+    #canvas-wrap::-webkit-scrollbar-thumb { background: var(--border); border-radius: 4px; }
+    #canvas-wrap::-webkit-scrollbar-thumb:hover { background: var(--muted); }
+  </style>
+</head>
+<body>
+
+  <div id="loading">
+    <div class="spinner"></div>
+    <div class="loading-text">Rendering navigation flow…</div>
+  </div>
+
+  <header>
+    <div class="brand">
+      <div class="brand-dot"></div>
+      <div>
+        <div class="brand-title">Mifos X Open Banking</div>
+        <div class="brand-sub">App Navigation Flow · 35 screens</div>
+      </div>
+    </div>
+
+    <div class="legend">
+      <div class="legend-item"><div class="legend-dot shared"></div>Shared</div>
+      <div class="legend-item"><div class="legend-dot consumer"></div>Consumer</div>
+      <div class="legend-item"><div class="legend-dot fo"></div>Field Officer</div>
+    </div>
+
+    <div class="controls">
+      <button class="ctrl-btn" id="btn-zoom-out" title="Zoom out">−</button>
+      <span class="zoom-label" id="zoom-display">100%</span>
+      <button class="ctrl-btn" id="btn-zoom-in"  title="Zoom in">+</button>
+      <button class="ctrl-btn reset" id="btn-reset" title="Reset zoom">Reset</button>
+    </div>
+  </header>
+
+  <div id="canvas-wrap">
+    <div id="canvas-inner">
+      <pre class="mermaid">
+flowchart TB
+
+  %% ──────────── Entry ────────────
+  Launch([App Launch]) --> Splash
+
+  subgraph shared_group ["Shared Screens"]
+    direction TB
+    Splash[Splash\nbootstrap]
+    Login[Login\nDirectLogin / OIDC]
+    Profile[Profile]
+    Settings[Settings]
+  end
+
+  Splash -->|consumer| Home
+  Splash -->|field officer| FoDashboard
+  Splash -->|unauthenticated| Login
+  Login -->|consumer| Home
+  Login -->|field officer| FoDashboard
+
+  %% ──────────── Consumer Banking ────────────
+  subgraph consumer_group ["Consumer Persona"]
+    direction TB
+
+    subgraph core_banking ["Core Banking"]
+      Home[Home\nDashboard]
+      Accounts[Accounts]
+      AccountDetail[Account\nDetail]
+      Transactions[Transactions]
+      TransactionDetail[Transaction\nDetail]
+      SendMoney[Send Money]
+      SendMoneyConfirm[Send Money\nConfirm]
+      Beneficiaries[Beneficiaries]
+      Cards[Cards]
+      CardDetail[Card Detail]
+      StandingOrders[Standing\nOrders]
+    end
+
+    subgraph enhancements ["Enhancement Features"]
+      AtmLocator[ATM Locator]
+      FxRates[FX Rates]
+      Notifications[Notifications]
+      DirectDebits[Direct Debits]
+      PfmDashboard[Spending\nInsights]
+      Products[Products]
+      ConsentManager[Connected Apps]
+      TransactionTags[Transaction\nTags]
+    end
+  end
+
+  %% Consumer navigation
+  Home --> Accounts
+  Home --> SendMoney
+  Home --> Transactions
+  Home --> Beneficiaries
+  Home --> Cards
+  Home --> StandingOrders
+  Home --> AtmLocator
+  Home --> FxRates
+  Home --> Notifications
+  Home --> PfmDashboard
+
+  Accounts --> AccountDetail
+  AccountDetail --> Transactions
+  AccountDetail --> SendMoney
+
+  Transactions --> TransactionDetail
+  TransactionDetail --> TransactionTags
+
+  SendMoney --> SendMoneyConfirm
+  SendMoneyConfirm -->|success| Home
+  SendMoneyConfirm -->|back| SendMoney
+  Beneficiaries --> SendMoney
+
+  Cards --> CardDetail
+  CardDetail --> Transactions
+  Cards --> TransactionDetail
+
+  FxRates --> SendMoney
+  DirectDebits --> Accounts
+  PfmDashboard --> Accounts
+  PfmDashboard --> Transactions
+  ConsentManager --> Settings
+  Products --> Accounts
+
+  %% ──────────── Field Officer ────────────
+  subgraph fo_group ["Field Officer Persona"]
+    direction TB
+
+    subgraph fo_core ["Core Agent Banking"]
+      FoDashboard[FO Dashboard]
+      CustomerSearch[Customer Search]
+      CustomerDetail[Customer Detail]
+      CustomerProfile[Customer Profile]
+      CustomerOnboarding[Customer\nOnboarding]
+      CorporateOnboarding[Corporate\nOnboarding]
+      KycReview[KYC Review]
+      AccountApplications[Account\nApplications]
+      ApplicationDetail[Application\nDetail]
+      CustomerMessages[Customer\nMessages]
+      Meetings[Meetings]
+    end
+
+    subgraph fo_setup ["FO Setup"]
+      AgentRegistration[Agent\nRegistration]
+    end
+  end
+
+  %% FO navigation
+  FoDashboard --> CustomerSearch
+  FoDashboard --> AccountApplications
+  FoDashboard --> KycReview
+  FoDashboard --> Meetings
+
+  CustomerSearch --> CustomerDetail
+  CustomerSearch --> CustomerOnboarding
+  CustomerSearch --> CorporateOnboarding
+
+  CustomerDetail --> CustomerProfile
+  CustomerDetail --> CustomerMessages
+  CustomerDetail --> KycReview
+  CustomerDetail --> AccountApplications
+
+  CustomerOnboarding --> KycReview
+  CorporateOnboarding --> AccountApplications
+
+  KycReview --> CustomerDetail
+  KycReview --> CustomerMessages
+
+  AccountApplications --> ApplicationDetail
+  AccountApplications --> CustomerOnboarding
+
+  ApplicationDetail --> CustomerDetail
+  ApplicationDetail --> CustomerMessages
+
+  AgentRegistration --> FoDashboard
+
+  %% Shared nav (accessible from both personas via bottom nav More)
+  Home -.->|more| Profile
+  Home -.->|more| Settings
+  FoDashboard -.->|more| Profile
+  FoDashboard -.->|more| Settings
+  Profile -->|logout| Login
+
+  %% Styling
+  classDef shared_style fill:#575899,stroke:#403CD8,color:#fff
+  classDef consumer_style fill:#1800B1,stroke:#403CD8,color:#fff
+  classDef fo_style fill:#5C0068,stroke:#403CD8,color:#fff
+  classDef entry fill:#FCF8FF,stroke:#1B1B24,color:#1B1B24
+
+  class Splash,Login,Profile,Settings shared_style
+  class Home,Accounts,AccountDetail,Transactions,TransactionDetail,SendMoney,SendMoneyConfirm,Beneficiaries,Cards,CardDetail,StandingOrders,AtmLocator,FxRates,Notifications,DirectDebits,PfmDashboard,Products,ConsentManager,TransactionTags consumer_style
+  class FoDashboard,CustomerSearch,CustomerDetail,CustomerProfile,CustomerOnboarding,CorporateOnboarding,KycReview,AccountApplications,ApplicationDetail,CustomerMessages,Meetings,AgentRegistration fo_style
+  class Launch entry
+      </pre>
+    </div>
+  </div>
+
+  <script>
+    // ── Mermaid init ──────────────────────────────────────────────────────────
+    mermaid.initialize({
+      startOnLoad: true,
+      theme: 'dark',
+      themeVariables: {
+        darkMode: true,
+        background:       '#0f1117',
+        mainBkg:          '#1a1d27',
+        nodeBorder:       '#4C662B',
+        clusterBkg:       '#1a1d27',
+        clusterBorder:    '#4C662B',
+        titleColor:       '#e8eaf0',
+        edgeLabelBackground: '#1a1d27',
+        lineColor:        '#6a8f3c',
+        fontFamily:       '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif',
+        fontSize:         '13px',
+      },
+      flowchart: {
+        useMaxWidth: false,
+        htmlLabels: true,
+        curve: 'basis',
+        padding: 20,
+      },
+      securityLevel: 'loose',
+    });
+
+    // Hide loading overlay once rendering is done
+    document.addEventListener('DOMContentLoaded', () => {
+      // Mermaid renders synchronously after DOMContentLoaded; give it a tick
+      requestAnimationFrame(() => {
+        setTimeout(() => {
+          document.getElementById('loading').classList.add('hidden');
+        }, 400);
+      });
+    });
+
+    // ── Zoom ─────────────────────────────────────────────────────────────────
+    const inner       = document.getElementById('canvas-inner');
+    const zoomDisplay = document.getElementById('zoom-display');
+    let scale = 1.0;
+    const STEP = 0.15;
+    const MIN  = 0.2;
+    const MAX  = 3.0;
+
+    function applyZoom() {
+      inner.style.transform = `scale(${scale})`;
+      zoomDisplay.textContent = Math.round(scale * 100) + '%';
+    }
+
+    document.getElementById('btn-zoom-in').addEventListener('click', () => {
+      scale = Math.min(MAX, +(scale + STEP).toFixed(2));
+      applyZoom();
+    });
+
+    document.getElementById('btn-zoom-out').addEventListener('click', () => {
+      scale = Math.max(MIN, +(scale - STEP).toFixed(2));
+      applyZoom();
+    });
+
+    document.getElementById('btn-reset').addEventListener('click', () => {
+      scale = 1.0;
+      applyZoom();
+      document.getElementById('canvas-wrap').scrollTo({ top: 0, left: 0, behavior: 'smooth' });
+    });
+
+    // Trackpad / mouse wheel zoom (Ctrl + scroll)
+    document.getElementById('canvas-wrap').addEventListener('wheel', (e) => {
+      if (!e.ctrlKey && !e.metaKey) return;
+      e.preventDefault();
+      const delta = e.deltaY > 0 ? -STEP : STEP;
+      scale = Math.min(MAX, Math.max(MIN, +(scale + delta).toFixed(2)));
+      applyZoom();
+    }, { passive: false });
+
+    // ── Pan (drag to scroll) ──────────────────────────────────────────────────
+    const wrap = document.getElementById('canvas-wrap');
+    let dragging = false;
+    let startX, startY, scrollLeft, scrollTop;
+
+    wrap.addEventListener('mousedown', (e) => {
+      // Only drag on empty space, not on SVG links
+      if (e.target.closest('a') || e.target.closest('button')) return;
+      dragging = true;
+      startX    = e.pageX - wrap.offsetLeft;
+      startY    = e.pageY - wrap.offsetTop;
+      scrollLeft = wrap.scrollLeft;
+      scrollTop  = wrap.scrollTop;
+    });
+
+    wrap.addEventListener('mouseleave', () => { dragging = false; });
+    wrap.addEventListener('mouseup',    () => { dragging = false; });
+
+    wrap.addEventListener('mousemove', (e) => {
+      if (!dragging) return;
+      e.preventDefault();
+      const x = e.pageX - wrap.offsetLeft;
+      const y = e.pageY - wrap.offsetTop;
+      wrap.scrollLeft = scrollLeft - (x - startX);
+      wrap.scrollTop  = scrollTop  - (y - startY);
+    });
+
+    // Keyboard shortcuts
+    document.addEventListener('keydown', (e) => {
+      if (e.key === '=' || e.key === '+') { scale = Math.min(MAX, +(scale + STEP).toFixed(2)); applyZoom(); }
+      if (e.key === '-')                   { scale = Math.max(MIN, +(scale - STEP).toFixed(2)); applyZoom(); }
+      if (e.key === '0')                   { scale = 1.0; applyZoom(); }
+    });
+  </script>
+</body>
+</html>

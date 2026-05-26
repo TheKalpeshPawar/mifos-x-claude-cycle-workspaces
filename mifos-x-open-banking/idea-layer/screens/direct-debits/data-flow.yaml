@@ -1,0 +1,105 @@
+sibling: data-flow
+schema_version: "4.0"
+feature_id: direct-debits
+entries:
+  - screen_id: direct-debits
+    trigger: on_mount
+    endpoints:
+      - obp_get_direct_debits
+    direction: read
+    dtos:
+      - name: DirectDebit
+        role: response
+        api_id: obp_get_direct_debits
+    produces_state: populated
+    error_paths:
+      - error_code: 401
+        behavior: show_error_state
+      - error_code: 403
+        behavior: show_error_state
+      - error_code: 404
+        behavior: show_error_state
+
+  - screen_id: direct-debits
+    trigger: on_interact
+    event: SetUpDirectDebitClicked
+    endpoints:
+      - obp_create_direct_debit
+    direction: write
+    dtos:
+      - name: DirectDebit
+        role: request
+        api_id: obp_create_direct_debit
+      - name: DirectDebit
+        role: response
+        api_id: obp_create_direct_debit
+    produces_state: populated
+    error_paths:
+      - error_code: 400
+        behavior: show_create_failed_error
+      - error_code: 401
+        behavior: show_error_state
+      - error_code: 403
+        behavior: show_error_state
+      - error_code: 404
+        behavior: show_error_state
+
+  - screen_id: direct-debits
+    trigger: on_interact
+    event: ViewDirectDebitClicked
+    endpoints: []
+    direction: none
+    dtos: []
+    produces_state: populated
+
+  - screen_id: direct-debits
+    trigger: on_interact
+    event: CancelDirectDebitClicked
+    endpoints: []
+    direction: none
+    dtos: []
+    produces_state: cancel_confirm
+
+  - screen_id: direct-debits
+    trigger: on_interact
+    event: CancelConfirmed
+    endpoints:
+      - obp_get_direct_debits
+    direction: read
+    dtos:
+      - name: DirectDebit
+        role: response
+        api_id: obp_get_direct_debits
+    produces_state: populated
+    error_paths:
+      - error_code: 401
+        behavior: show_error_state
+      - error_code: 403
+        behavior: show_error_state
+
+  - screen_id: direct-debits
+    trigger: on_interact
+    event: CancelDismissed
+    endpoints: []
+    direction: none
+    dtos: []
+    produces_state: populated
+
+  - screen_id: direct-debits
+    trigger: on_interact
+    event: RetryLoad
+    endpoints:
+      - obp_get_direct_debits
+    direction: read
+    dtos:
+      - name: DirectDebit
+        role: response
+        api_id: obp_get_direct_debits
+    produces_state: populated
+    error_paths:
+      - error_code: 401
+        behavior: show_error_state
+      - error_code: 403
+        behavior: show_error_state
+      - error_code: 404
+        behavior: show_error_state

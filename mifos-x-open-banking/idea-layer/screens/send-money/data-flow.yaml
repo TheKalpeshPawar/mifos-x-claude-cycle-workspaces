@@ -1,0 +1,74 @@
+sibling: data-flow
+schema_version: "4.0"
+feature_id: send-money
+entries:
+  - screen_id: send-money
+    trigger: on_mount
+    endpoints:
+      - obp_get_sender_accounts
+      - obp_get_beneficiary_counterparties
+    direction: read
+    dtos:
+      - name: Account
+        role: response
+        api_id: obp_get_sender_accounts
+      - name: Counterparty
+        role: response
+        api_id: obp_get_beneficiary_counterparties
+    produces_state: content
+    error_paths:
+      - error_code: 401
+        behavior: navigate_login
+      - error_code: 500
+        behavior: error_state
+
+  - screen_id: send-money
+    trigger: on_interact
+    event: ValidateIban
+    endpoints:
+      - obp_iban_check
+    direction: read
+    dtos:
+      - name: IbanCheckResult
+        role: response
+        api_id: obp_iban_check
+    produces_state: content
+    error_paths:
+      - error_code: 400
+        behavior: error_state
+
+  - screen_id: send-money
+    trigger: on_interact
+    event: ContinueClicked
+    endpoints:
+      - obp_funds_available
+    direction: read
+    dtos:
+      - name: MoneyAmount
+        role: response
+        api_id: obp_funds_available
+    produces_state: content
+    error_paths:
+      - error_code: 400
+        behavior: error_state
+      - error_code: 401
+        behavior: navigate_login
+
+  - screen_id: send-money
+    trigger: on_interact
+    event: ConfirmTransfer
+    endpoints:
+      - obp_create_sepa_transfer
+    direction: write
+    dtos:
+      - name: SepaTransactionRequest
+        role: response
+        api_id: obp_create_sepa_transfer
+    produces_state: content
+    error_paths:
+      - error_code: 400
+        behavior: error_state
+      - error_code: 401
+        behavior: navigate_login
+      - error_code: 500
+        behavior: error_state

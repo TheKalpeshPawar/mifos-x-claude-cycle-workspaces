@@ -1,0 +1,87 @@
+sibling: api
+schema_version: "4.0"
+feature_id: account-detail
+api:
+  - id: obp_get_account_detail
+    endpoint: "GET /obp/v5.1.0/banks/{bankId}/accounts/{accountId}/owner/account"
+    tag: Accounts
+    auth: DirectLogin
+    params:
+      - name: bankId
+        type: path
+        value: "gh.29.uk"
+      - name: accountId
+        type: path
+    response:
+      fields:
+        - name: id
+          type: String
+        - name: label
+          type: String
+        - name: account_type
+          type: String
+        - name: balance
+          type: object
+          children:
+            - name: currency
+              type: String
+            - name: amount
+              type: String
+        - name: account_routings
+          type: "List<AccountRouting>"
+          children:
+            - name: scheme
+              type: String
+            - name: address
+              type: String
+    errors:
+      - code: 401
+        message: "Unauthorized"
+      - code: 404
+        message: "Account not found"
+
+  - id: obp_get_account_transactions
+    endpoint: "GET /obp/v5.1.0/my/banks/{bankId}/accounts/{accountId}/transactions"
+    tag: Transactions
+    auth: DirectLogin
+    params:
+      - name: accountId
+        type: path
+      - name: limit
+        type: query
+        value: "5"
+      - name: sort_direction
+        type: query
+        value: "DESC"
+    response:
+      fields:
+        - name: id
+          type: String
+        - name: details
+          type: object
+          children:
+            - name: type
+              type: String
+            - name: description
+              type: String
+            - name: posted
+              type: String
+            - name: value
+              type: object
+              children:
+                - name: currency
+                  type: String
+                - name: amount
+                  type: String
+        - name: other_account
+          type: object
+          children:
+            - name: holder
+              type: object
+            - name: metadata
+              type: object
+    errors:
+      - code: 401
+        message: "Unauthorized"
+      - code: 404
+        message: "Account not found"

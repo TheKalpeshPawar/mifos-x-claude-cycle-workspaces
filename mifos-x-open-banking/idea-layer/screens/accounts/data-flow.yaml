@@ -1,0 +1,67 @@
+sibling: data-flow
+schema_version: "4.0"
+feature_id: accounts
+entries:
+  - screen_id: accounts
+    trigger: on_mount
+    endpoints:
+      - obp_get_accounts
+    direction: read
+    dtos:
+      - name: Account
+        role: response
+        api_id: obp_get_accounts
+    produces_state: content
+    error_paths:
+      - error_code: 401
+        behavior: navigate_login
+      - error_code: 404
+        behavior: error_state
+      - error_code: 500
+        behavior: error_state
+
+  - screen_id: accounts
+    trigger: on_interact
+    event: RetryLoad
+    endpoints:
+      - obp_get_accounts
+    direction: read
+    dtos:
+      - name: Account
+        role: response
+        api_id: obp_get_accounts
+    produces_state: content
+    error_paths:
+      - error_code: 401
+        behavior: navigate_login
+      - error_code: 404
+        behavior: error_state
+      - error_code: 500
+        behavior: error_state
+
+  - screen_id: accounts
+    trigger: on_interact
+    event: FilterChanged
+    endpoints: []
+    direction: read
+    dtos: []
+    produces_state: content
+    notes: "Client-side filter on loaded accounts list; no network call"
+
+  - screen_id: accounts
+    trigger: on_interact
+    event: AccountSelected
+    endpoints: []
+    direction: read
+    dtos: []
+    produces_state: content
+    notes: "Navigation event to account-detail; no network call"
+
+  - screen_id: accounts
+    trigger: on_interact
+    event: RequestNewAccount
+    endpoints: []
+    direction: read
+    dtos: []
+    produces_state: content
+    notes: "Navigation event to account-applications; no network call"
