@@ -1,107 +1,125 @@
 ---
 name: Mifos X Open Banking — Components
-version: "1.0.0"
-generated_at: "2026-05-22"
+version: "2.0.0"
+generated_at: "2026-05-25"
+figma_source: "tEEJwW4HkUR75fKhDq73Jz"
+category: banking
 ---
 
 # Mifos X Open Banking — Component Library
 
-> M3 components used across screens. Each entry: M3 component + project-specific usage notes + source location.
-> Empty-slate scaffold: only universally-applicable + scaffolding-screen components are documented. Per-feature components will be added when product scope is defined.
+> M3 components extracted from Figma design system. Each entry documents the Figma component spec, token references, and Compose implementation target.
 
-## App-Shell Components
+## Buttons
 
-### TopAppBar
-- **M3 variant**: small (single-line) for utility screens; medium (two-line) for detail screens.
-- **Source**: `core/designsystem/component/MifosTopAppBar.kt`
-- **Usage**: Home / Profile / Settings.
+### Button / Filled
+- **Figma**: `#4C662B` background, white text, 40px height, 20px border-radius (pill), 24px horizontal padding
+- **Typography**: Outfit Medium 14px / 20px line-height (Label Large)
+- **Compose**: `Button(colors = ButtonDefaults.buttonColors(containerColor = Primary))`
+- **Usage**: Primary actions — Login, Send, Confirm, Save
 
-### BottomNavigation (Phone/Tablet)
-- **M3 variant**: NavigationBar with destinations declared in `design-system/app-shell.yaml`.
-- **Source**: `cmp-navigation/AppNavHost.kt`
-- **Current scaffolding**: Home / Profile / Settings.
+### Button / Outlined
+- **Figma**: 1px `#75796C` border, `#4C662B` text, 40px height, 20px border-radius, 24px horizontal padding
+- **Typography**: Outfit Medium 14px / 20px line-height
+- **Compose**: `OutlinedButton(border = BorderStroke(1.dp, Outline))`
+- **Usage**: Secondary actions — Continue with OBP-OIDC, Cancel, Sign Out (with Error color)
 
-### NavigationRail (Desktop/Wide)
-- **M3 variant**: NavigationRail on Desktop / Web ≥ 600dp width.
-- **Source**: `cmp-navigation/AppNavHost.kt`
+### Button / Text
+- **Typography**: Outfit Medium 14px, `#4C662B` color
+- **Usage**: Tertiary actions — Forgot password, See all, links
 
-### Snackbar
-- **M3 variant**: Snackbar for transient messages.
-- **Source**: `core/designsystem/component/MifosSnackbar.kt`
+## FAB
 
-### ErrorBanner
-- **Custom**: persistent banner for network-down or error states.
-- **Source**: `core/designsystem/component/MifosErrorBanner.kt`
+### FAB / Primary
+- **Figma**: 56px square, 16px border-radius, `#4C662B` background, white "+" icon 28px
+- **Compose**: `FloatingActionButton(containerColor = Primary, shape = RoundedCornerShape(16.dp))`
+- **Usage**: Primary creation — New payment, Add beneficiary, New account
 
-## Form Components
+## Badges
 
-### MifosOutlinedTextField
-- **M3 variant**: OutlinedTextField with custom error treatment.
-- **Source**: `core/designsystem/component/MifosOutlinedTextField.kt`
+### Badge / Success
+- **Figma**: `#4C662B` background, white text, 24px height, 8px border-radius, 10px horizontal padding
+- **Typography**: Outfit Medium 12px
+- **Content**: "COMPLETED"
 
-### MifosFilterChip
-- **M3 variant**: FilterChip (selectable).
-- **Source**: `core/designsystem/component/MifosFilterChip.kt`
+### Badge / Pending
+- **Figma**: `#E8A317` background, white text, same dimensions
+- **Content**: "INITIATED"
 
-### MifosButton (Primary)
-- **M3 variant**: FilledButton (primary action).
+### Badge / Failed
+- **Figma**: `#BA1A1A` background, white text, same dimensions
+- **Content**: "FAILED"
 
-### MifosTonalButton (Secondary)
-- **M3 variant**: FilledTonalButton (secondary action).
-- **Usage**: "Cancel" in dialogs.
+## Inputs
 
-### MifosOutlinedButton (Tertiary)
-- **M3 variant**: OutlinedButton.
+### TextField / Default
+- **Figma**: White background, 1px `#75796C` border, 56px height, 4px border-radius, 16px horizontal padding, 8px vertical padding
+- **Label**: Outfit Medium 11px `#75796C` (Label Small)
+- **Value**: Outfit Regular 16px `#1A1C16` (Body Large)
+- **Compose**: `OutlinedTextField(shape = RoundedCornerShape(4.dp))`
 
-### MifosSlider
-- **M3 variant**: Slider with discrete marks.
+## Surfaces
 
-## Content Components
+### Card / Base
+- **Figma**: White background, 1px `#C5C8BA` border, 12px border-radius, 16px padding
+- **Title**: Outfit Medium 16px `#1A1C16` (Title Medium)
+- **Supporting text**: Outfit Regular 14px `#44483D` (Body Medium)
+- **Compose**: `Card(border = BorderStroke(1.dp, OutlineVariant), shape = RoundedCornerShape(12.dp))`
 
-### MifosCard (in-list row)
-- **M3 variant**: Card (no elevation) with `surface_container` background.
-- **Source**: `core/designsystem/component/MifosCard.kt`
-- **Usage**: Settings rows.
+### Balance Card (Banking)
+- **Figma**: `#CDEDA3` background, 16px border-radius, 20px padding, no border
+- **Label**: Outfit Medium 12-14px `#44483D`
+- **Amount**: Outfit SemiBold 32px `#1A1C16` / 40px line-height (Display Small)
+- **Subtitle**: Outfit Regular 12px `#44483D`
 
-### MifosElevatedCard (standalone)
-- **M3 variant**: ElevatedCard at level1.
+### Transaction Item (Banking)
+- **Container**: White card with `#C5C8BA` border, 12px radius, 16px padding
+- **Icon**: 40px circle with `#F9FAEF` background
+- **Merchant**: Outfit Medium 16px `#1A1C16`
+- **Category**: Outfit Regular 12px `#44483D`
+- **Amount**: Outfit Medium 16px — credit `#4C662B`, debit `#BA1A1A`
+- **Badge**: inline, right-aligned
 
-### MifosListItem
-- **M3 variant**: ListItem (M3 spec).
-- **Usage**: Language picker rows.
+## Navigation
 
-## Feedback Components
+### TopBar / Default
+- **Figma**: `#F9FAEF` background, 56px height, 16px horizontal padding
+- **Back arrow**: 24px, `#1A1C16`
+- **Title**: Outfit Regular 22px / 28px line-height (Title Large)
+- **Gap**: 16px between arrow and title
+- **Compose**: `TopAppBar(colors = TopAppBarDefaults.topAppBarColors(containerColor = Background))`
 
-### MifosLoadingIndicator (full-screen)
-- **M3 variant**: CircularProgressIndicator centered.
-- **Source**: `core/designsystem/component/MifosLoading.kt`
+### BottomNav / Home
+- **Figma**: `#F9FAEF` background, 1px `#C5C8BA` border-top, 80px height
+- **Layout**: 4 tabs evenly spaced, each 80px wide
+- **Active tab**: Icon inside 64×28px pill with `#DCE7C8` background, 14px border-radius. Label Outfit Medium 11px `#1A1C16`
+- **Inactive tab**: No pill. Label Outfit Medium 11px `#44483D`
+- **Tabs**: Home, Accounts, Payments, Profile
+- **Compose**: `NavigationBar(containerColor = Background)`
 
-### MifosSkeleton (placeholder)
-- **M3 variant**: shimmer placeholder.
+## Feedback
 
-### MifosEmptyState
-- **Custom**: icon + headline + body + optional primary action.
-- **Source**: `core/designsystem/component/MifosEmptyState.kt`
+### Loading States
+- **Skeleton shimmer**: Gradient sweep `#E1E4D5` → `#F9FAEF`, 1.5s linear infinite
+- **Circular spinner**: 3px border, `#CDEDA3` track, `#4C662B` active arc, 1s linear
+- **Pattern**: Chrome (TopBar, BottomNav) stays real during loading. Content replaced by skeletons matching the content layout geometry.
 
-### MifosErrorBanner
-- **Custom**: full-width banner with icon + message + "Retry" affordance.
-- **Source**: `core/designsystem/component/MifosErrorBanner.kt`
+### Empty / Error States
+- **Empty**: Centered icon (48px, `#75796C`) + title (Outfit Medium 16px) + description (Outfit Regular 14px `#44483D`) + optional action button
+- **Error**: Same layout, icon in `#BA1A1A`, "Retry" filled button
 
-## Dialog Components
+## Design Tokens Quick Reference
 
-### SettingsDialog
-- **M3 variant**: AlertDialog with theme picker (radio group: light / dark / system + brand color).
-- **Source**: `feature/settings/SettingsDialog.kt`
-- **Usage**: Settings → tap Theme card.
+| Token | Light | Dark |
+|-------|-------|------|
+| Primary | `#4C662B` | `#B2D188` |
+| Primary Container | `#CDEDA3` | `#354E16` |
+| Background | `#F9FAEF` | `#12140E` |
+| Surface | `#FFFFFF` | `#12140E` |
+| Error | `#BA1A1A` | `#FFB4AB` |
+| Outline | `#75796C` | `#8F9285` |
+| Outline Variant | `#C5C8BA` | `#44483D` |
+| Text Primary | `#1A1C16` | `#E3E3D8` |
+| Text Secondary | `#44483D` | `#C5C8BA` |
 
-### LanguageDialog
-- **M3 variant**: AlertDialog with locale picker (radio group of platform-supported locales).
-- **Source**: `feature/settings/LanguageDialog.kt`
-- **Usage**: Settings → tap Language card.
-
-## Cross-cutting
-
-### MifosScaffold
-- **Custom wrapper around M3 Scaffold** — applies safe-area insets, error banner host, snackbar host.
-- **Source**: `core/designsystem/component/MifosScaffold.kt`
-- **Usage**: every screen entry.
+_Generated by /design-system --full · 2026-05-25 · Figma source: tEEJwW4HkUR75fKhDq73Jz_

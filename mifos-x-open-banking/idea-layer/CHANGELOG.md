@@ -4,6 +4,9 @@ All notable changes to the idea-layer are documented here. Format inspired by [K
 
 ## [Unreleased]
 
+### Changed (design-system)
+- [design-system] v1.0.0 → v2.0.0: Full regeneration from Figma source (file tEEJwW4HkUR75fKhDq73Jz). Primary color `#1800B1` → `#4C662B`, font Inter/Space Grotesk → Outfit, background `#FCF8FF` → `#F9FAEF`. 14 component specs (12 universal + 2 banking). WCAG AA validated (12 pairs, 0 failures). App-shell colors updated.
+
 ### Changed
 - IDEA.md + FEATURES.md repositioned as **empty-slate scaffold** (2026-05-22) — was previously describing TaskMinder (template reference), then briefly redescribed as "financial utilities showcase" reflecting template feature modules. Both narratives were wrong; the actual product scope is undefined and to be set by `/idea-plan`.
 - PROJECT_CONFIG.yaml `architecture: mvi` → `architecture: stream-first`.

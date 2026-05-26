@@ -1,0 +1,401 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=390px, initial-scale=1.0" />
+  <title>Login (Signing in…) – Mifos X Open Banking</title>
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=Outfit:wght@400;500;600&display=swap');
+    :root {
+      --primary: #4C662B; --on-primary: #FFFFFF; --primary-container: #CDEDA3;
+      --background: #F9FAEF; --surface: #FFFFFF; --surface-variant: #E1E4D5;
+      --outline: #75796C; --outline-variant: #C5C8BA;
+      --text-primary: #1A1C16; --text-secondary: #44483D;
+      --tertiary: #386663; --error: #BA1A1A;
+      --nav-active: #DCE7C8;
+      --font: 'Outfit', system-ui, sans-serif;
+    }
+
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      font-family: var(--font);
+      background: var(--background);
+      width: 390px;
+      min-height: 844px;
+      display: flex;
+      flex-direction: column;
+      align-items: stretch;
+      color: var(--text-primary);
+      -webkit-font-smoothing: antialiased;
+    }
+
+    /* ── TopBar ─────────────────────────────────────────────────── */
+    .top-bar {
+      display: flex;
+      align-items: center;
+      height: 56px;
+      padding: 0 16px;
+      background: var(--background);
+      flex-shrink: 0;
+      gap: 16px;
+    }
+
+    .top-bar-back {
+      width: 24px;
+      height: 24px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      border: none;
+      background: transparent;
+      cursor: not-allowed;
+      flex-shrink: 0;
+      padding: 0;
+      opacity: 0.5;
+    }
+
+    .top-bar-back svg { display: block; }
+
+    .top-bar-title {
+      font-family: var(--font);
+      font-size: 22px;
+      font-weight: 400;
+      line-height: 28px;
+      color: var(--text-primary);
+    }
+
+    /* ── Scrollable content ─────────────────────────────────────── */
+    .scroll-area {
+      flex: 1;
+      overflow-y: auto;
+      padding: 0 16px 32px;
+      display: flex;
+      flex-direction: column;
+    }
+
+    .top-spacing { height: 40px; flex-shrink: 0; }
+
+    /* ── Logo ───────────────────────────────────────────────────── */
+    .logo-wrap {
+      display: flex;
+      justify-content: center;
+    }
+
+    .logo-circle {
+      width: 80px;
+      height: 80px;
+      border-radius: 50%;
+      background: var(--primary);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .logo-letter {
+      font-family: var(--font);
+      font-size: 32px;
+      font-weight: 600;
+      color: var(--on-primary);
+      line-height: 1;
+    }
+
+    .gap-24 { height: 24px; flex-shrink: 0; }
+    .gap-16 { height: 16px; flex-shrink: 0; }
+    .gap-32 { height: 32px; flex-shrink: 0; }
+
+    /* ── Headlines ──────────────────────────────────────────────── */
+    .headline {
+      font-family: var(--font);
+      font-size: 24px;
+      font-weight: 600;
+      color: var(--text-primary);
+      text-align: center;
+      line-height: 1.25;
+    }
+
+    .subheadline {
+      font-family: var(--font);
+      font-size: 14px;
+      font-weight: 400;
+      color: var(--text-secondary);
+      text-align: center;
+      line-height: 1.5;
+    }
+
+    /* ── TextField (disabled) ───────────────────────────────────── */
+    .text-field-wrap {
+      display: flex;
+      flex-direction: column;
+      position: relative;
+      opacity: 0.5;
+    }
+
+    .text-field-box {
+      width: 100%;
+      height: 56px;
+      background: var(--surface-variant);
+      border: 1px solid var(--outline);
+      border-radius: 4px;
+      padding: 8px 16px;
+      position: relative;
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+    }
+
+    .text-field-box.has-icon {
+      padding-right: 48px;
+    }
+
+    .field-label {
+      font-family: var(--font);
+      font-size: 11px;
+      font-weight: 500;
+      color: var(--outline);
+      line-height: 1.2;
+      margin-bottom: 2px;
+    }
+
+    .field-value {
+      font-family: var(--font);
+      font-size: 16px;
+      font-weight: 400;
+      color: var(--text-primary);
+      line-height: 1.25;
+    }
+
+    .field-eye-btn {
+      position: absolute;
+      right: 12px;
+      top: 50%;
+      transform: translateY(-50%);
+      width: 24px;
+      height: 24px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      border: none;
+      background: transparent;
+      cursor: not-allowed;
+      padding: 0;
+    }
+
+    /* ── Login button — loading state ───────────────────────────── */
+    .btn-filled {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+      width: 100%;
+      height: 40px;
+      padding: 0 24px;
+      font-family: var(--font);
+      font-size: 14px;
+      font-weight: 500;
+      color: var(--on-primary);
+      background: var(--primary);
+      border: none;
+      border-radius: 20px;
+      cursor: not-allowed;
+      letter-spacing: 0.1px;
+    }
+
+    /* Spinner */
+    .spinner {
+      width: 16px;
+      height: 16px;
+      border: 2px solid rgba(255, 255, 255, 0.35);
+      border-top-color: #FFFFFF;
+      border-radius: 50%;
+      animation: spin 0.75s linear infinite;
+      flex-shrink: 0;
+    }
+
+    @keyframes spin {
+      to { transform: rotate(360deg); }
+    }
+
+    /* ── Outlined button (disabled) ─────────────────────────────── */
+    .btn-outlined {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+      width: 100%;
+      height: 40px;
+      padding: 0 24px;
+      font-family: var(--font);
+      font-size: 14px;
+      font-weight: 500;
+      color: var(--primary);
+      background: transparent;
+      border: 1px solid var(--outline);
+      border-radius: 20px;
+      cursor: not-allowed;
+      letter-spacing: 0.1px;
+      opacity: 0.5;
+    }
+
+    /* ── OR divider ─────────────────────────────────────────────── */
+    .or-divider {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      opacity: 0.5;
+    }
+
+    .or-line {
+      flex: 1;
+      height: 1px;
+      background: var(--outline-variant);
+    }
+
+    .or-text {
+      font-family: var(--font);
+      font-size: 12px;
+      font-weight: 400;
+      color: var(--outline);
+    }
+
+    /* ── Forgot password (disabled) ─────────────────────────────── */
+    .forgot-link {
+      font-family: var(--font);
+      font-size: 14px;
+      font-weight: 500;
+      color: var(--primary);
+      text-align: center;
+      text-decoration: none;
+      cursor: not-allowed;
+      pointer-events: none;
+      display: block;
+      opacity: 0.5;
+    }
+  </style>
+</head>
+<body data-screen="login" data-state="loading">
+
+  <!-- TopBar -->
+  <header class="top-bar" role="banner">
+    <button class="top-bar-back" aria-label="Go back (disabled while signing in)" disabled aria-disabled="true">
+      <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+        <path d="M20 11H7.83l5.59-5.59L12 4l-8 8 8 8 1.41-1.41L7.83 13H20v-2z" fill="#1A1C16"/>
+      </svg>
+    </button>
+    <span class="top-bar-title">Login</span>
+  </header>
+
+  <!-- Scrollable content -->
+  <main class="scroll-area" role="main" aria-busy="true" aria-label="Signing in, please wait">
+
+    <div class="top-spacing"></div>
+
+    <!-- Logo -->
+    <div class="logo-wrap" aria-hidden="true">
+      <div class="logo-circle">
+        <span class="logo-letter">M</span>
+      </div>
+    </div>
+
+    <div class="gap-24"></div>
+
+    <!-- Headlines -->
+    <h1 class="headline">Welcome Back</h1>
+    <div style="height:4px;flex-shrink:0;"></div>
+    <p class="subheadline">Sign in to your account</p>
+
+    <div class="gap-32"></div>
+
+    <!-- Username TextField (disabled) -->
+    <div class="text-field-wrap"
+         data-component-id="login_username_input"
+         data-component-type="text_field"
+         data-component-variant="filled">
+      <div class="text-field-box">
+        <span class="field-label">Username</span>
+        <span class="field-value">felixsmith</span>
+      </div>
+    </div>
+
+    <div class="gap-16"></div>
+
+    <!-- Password TextField (disabled) -->
+    <div class="text-field-wrap"
+         data-component-id="login_password_input"
+         data-component-type="text_field"
+         data-component-variant="password">
+      <div class="text-field-box has-icon">
+        <span class="field-label">Password</span>
+        <span class="field-value">••••••••</span>
+        <button class="field-eye-btn" type="button" aria-label="Toggle password visibility" disabled aria-disabled="true">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+            <path d="M12 4.5C7 4.5 2.73 7.61 1 12c1.73 4.39 6 7.5 11 7.5s9.27-3.11 11-7.5c-1.73-4.39-6-7.5-11-7.5zm0 12.5c-2.76 0-5-2.24-5-5s2.24-5 5-5 5 2.24 5 5-2.24 5-5 5zm0-8c-1.66 0-3 1.34-3 3s1.34 3 3 3 3-1.34 3-3-1.34-3-3-3z" fill="#75796C"/>
+          </svg>
+        </button>
+      </div>
+    </div>
+
+    <div class="gap-24"></div>
+
+    <!-- Login button — spinner + "Signing in..." -->
+    <button
+      class="btn-filled"
+      type="button"
+      aria-label="Signing in, please wait"
+      aria-busy="true"
+      disabled
+      aria-disabled="true"
+      data-component-id="login_cta_button"
+      data-component-type="button"
+      data-component-variant="filled"
+    >
+      <span class="spinner" role="progressbar" aria-label="Loading"></span>
+      Signing in...
+    </button>
+
+    <div class="gap-16"></div>
+
+    <!-- OR divider (dimmed) -->
+    <div class="or-divider" role="separator" aria-hidden="true">
+      <div class="or-line"></div>
+      <span class="or-text">or</span>
+      <div class="or-line"></div>
+    </div>
+
+    <div class="gap-16"></div>
+
+    <!-- OBP-OIDC outlined button (disabled) -->
+    <button
+      class="btn-outlined"
+      type="button"
+      aria-label="Continue with OBP-OIDC (unavailable while signing in)"
+      disabled
+      aria-disabled="true"
+      data-component-id="login_oauth_button"
+      data-component-type="button"
+      data-component-variant="outlined"
+    >
+      Continue with OBP-OIDC
+    </button>
+
+    <div class="gap-16"></div>
+
+    <!-- Forgot password (disabled) -->
+    <a
+      class="forgot-link"
+      href="#"
+      aria-label="Forgot password? (unavailable while signing in)"
+      aria-disabled="true"
+      tabindex="-1"
+      data-component-id="login_forgot_password_link"
+      data-component-type="link"
+      data-component-variant="inline"
+    >
+      Forgot password?
+    </a>
+
+  </main>
+
+  <script src="../../preview/_shared/preview-runtime.js"></script>
+</body>
+</html>

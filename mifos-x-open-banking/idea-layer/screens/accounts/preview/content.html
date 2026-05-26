@@ -1,0 +1,442 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0" />
+  <title>Accounts — Mifos Open Banking</title>
+  <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;500;600&display=swap" rel="stylesheet" />
+  <link href="https://fonts.googleapis.com/icon?family=Material+Icons+Round" rel="stylesheet" />
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --primary:           #4C662B;
+      --on-primary:        #FFFFFF;
+      --primary-container: #CDEDA3;
+      --background:        #F9FAEF;
+      --surface:           #FFFFFF;
+      --surface-variant:   #E1E4D5;
+      --outline:           #75796C;
+      --outline-variant:   #C5C8BA;
+      --text-primary:      #1A1C16;
+      --text-secondary:    #44483D;
+      --tertiary:          #386663;
+      --error:             #BA1A1A;
+      --nav-active:        #DCE7C8;
+      --font:              'Outfit', system-ui, sans-serif;
+    }
+
+    body {
+      font-family: var(--font);
+      background: var(--background);
+      color: var(--text-primary);
+      width: 390px;
+      height: 844px;
+      margin: 0;
+      position: relative;
+      overflow: hidden;
+    }
+
+    /* ── TOP APP BAR (56px) ── */
+    .top-bar {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      height: 56px;
+      padding: 0 16px;
+      background: var(--background);
+      position: sticky;
+      top: 0;
+      z-index: 10;
+    }
+    .top-bar-title {
+      font-size: 22px;
+      font-weight: 400;
+      color: var(--text-primary);
+      letter-spacing: 0;
+    }
+    .top-bar-action {
+      width: 40px;
+      height: 40px;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      background: transparent;
+      cursor: pointer;
+    }
+    .top-bar-action .material-icons-round {
+      font-size: 24px;
+      color: var(--text-primary);
+    }
+
+    /* ── SCROLL AREA ── */
+    .scroll-area {
+      height: calc(844px - 56px - 80px);
+      overflow-y: auto;
+      overflow-x: hidden;
+      padding: 16px;
+      padding-bottom: 88px;
+      scrollbar-width: none;
+    }
+    .scroll-area::-webkit-scrollbar { display: none; }
+
+    /* ── TOTAL BALANCE CARD ── */
+    .total-balance-card {
+      background: var(--primary-container);
+      border-radius: 16px;
+      padding: 20px;
+      margin-bottom: 16px;
+    }
+    .balance-label {
+      font-size: 12px;
+      font-weight: 500;
+      color: var(--text-secondary);
+      margin-bottom: 4px;
+      font-family: var(--font);
+    }
+    .balance-amount {
+      font-size: 32px;
+      font-weight: 600;
+      color: var(--text-primary);
+      letter-spacing: -0.5px;
+      line-height: 1.1;
+      margin-bottom: 6px;
+      font-family: var(--font);
+    }
+    .balance-sub {
+      font-size: 12px;
+      font-weight: 400;
+      color: var(--text-secondary);
+      font-family: var(--font);
+    }
+
+    /* ── ACCOUNT CARDS ── */
+    .account-card {
+      background: var(--surface);
+      border: 1px solid var(--outline-variant);
+      border-radius: 12px;
+      padding: 16px;
+      margin-bottom: 8px;
+      display: flex;
+      align-items: stretch;
+      gap: 12px;
+      cursor: pointer;
+      position: relative;
+      overflow: hidden;
+    }
+
+    /* Left accent bar */
+    .accent-bar {
+      width: 4px;
+      border-radius: 4px;
+      flex-shrink: 0;
+      align-self: stretch;
+    }
+    .accent-green  { background: var(--primary); }
+    .accent-teal   { background: var(--tertiary); }
+    .accent-amber  { background: var(--pending); }
+
+    /* Icon circle */
+    .icon-circle {
+      width: 40px;
+      height: 40px;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      flex-shrink: 0;
+      align-self: center;
+    }
+    .icon-circle-green { background: var(--primary-container); }
+    .icon-circle-teal  { background: var(--nav-active); }
+    .icon-circle-amber { background: var(--primary-container); }
+    .icon-circle .material-icons-round { font-size: 20px; }
+    .icon-green { color: var(--primary); }
+    .icon-teal  { color: var(--tertiary); }
+    .icon-amber { color: var(--pending); }
+
+    /* Card body */
+    .card-body {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      gap: 2px;
+      min-width: 0;
+    }
+    .card-name {
+      font-size: 16px;
+      font-weight: 500;
+      color: var(--text-primary);
+      font-family: var(--font);
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+    .card-number {
+      font-size: 12px;
+      font-weight: 400;
+      color: var(--text-secondary);
+      font-family: var(--font);
+    }
+    .card-maturity {
+      font-size: 11px;
+      font-weight: 400;
+      color: var(--text-secondary);
+      font-family: var(--font);
+      margin-top: 2px;
+    }
+
+    /* Card right side */
+    .card-right {
+      display: flex;
+      flex-direction: column;
+      align-items: flex-end;
+      justify-content: center;
+      gap: 4px;
+      flex-shrink: 0;
+    }
+    .card-balance {
+      font-size: 16px;
+      font-weight: 600;
+      color: var(--text-primary);
+      font-family: var(--font);
+    }
+    .card-status {
+      font-size: 11px;
+      font-weight: 400;
+      color: var(--primary);
+      font-family: var(--font);
+    }
+
+    /* ── FAB ── */
+    .fab {
+      position: absolute;
+      bottom: calc(80px + 16px);
+      right: 16px;
+      width: 56px;
+      height: 56px;
+      border-radius: 16px;
+      background: var(--primary);
+      color: var(--on-primary);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      box-shadow: 0 4px 12px rgba(76,102,43,0.40);
+      cursor: pointer;
+      z-index: 20;
+    }
+    .fab .material-icons-round {
+      font-size: 28px;
+      color: var(--on-primary);
+    }
+
+    /* ── BOTTOM NAV (80px, 4 tabs) ── */
+    .bottom-nav {
+      position: absolute;
+      bottom: 0;
+      left: 0;
+      width: 390px;
+      height: 80px;
+      background: var(--background);
+      border-top: 1px solid var(--outline-variant);
+      display: flex;
+      align-items: flex-start;
+      justify-content: space-between;
+      padding: 12px 12px 16px;
+      z-index: 30;
+    }
+    .nav-item {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: 4px;
+      cursor: pointer;
+      padding: 8px 0;
+    }
+    /* Active pill: 64×28px, 14px radius */
+    .nav-pill {
+      width: 64px;
+      height: 28px;
+      border-radius: 14px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+    .nav-item.active .nav-pill { background: var(--nav-active); }
+    .nav-item .material-icons-round { font-size: 22px; color: var(--text-secondary); }
+    .nav-item.active .material-icons-round { color: var(--primary); }
+    .nav-label { font-size: 11px; font-weight: 500; color: var(--text-secondary); font-family: var(--font); }
+    .nav-item.active .nav-label { color: var(--primary); font-weight: 600; }
+  </style>
+</head>
+<body>
+
+  <!-- TOP APP BAR -->
+  <header class="top-bar" role="banner" data-shell="top-bar">
+    <span class="top-bar-title">Accounts</span>
+    <div class="top-bar-action"
+         role="button"
+         aria-label="Filter accounts"
+         data-action="open_filter"
+         data-component-type="icon-button"
+         data-component-id="filter_btn"
+         data-component-variant="standard">
+      <span class="material-icons-round">filter_list</span>
+    </div>
+  </header>
+
+  <!-- SCROLLABLE CONTENT -->
+  <main class="scroll-area" role="main">
+
+    <!-- TOTAL BALANCE CARD -->
+    <div class="total-balance-card"
+         role="region"
+         aria-label="Total balance summary"
+         data-component-type="summary-card"
+         data-component-id="total_balance_card"
+         data-component-variant="highlighted">
+      <div class="balance-label">Total Balance</div>
+      <div class="balance-amount">$24,850.00</div>
+      <div class="balance-sub">3 active accounts</div>
+    </div>
+
+    <!-- ACCOUNT CARD 1 — Current Account -->
+    <div class="account-card"
+         role="button"
+         aria-label="Current Account ending 4521, balance $12,450.80, Active"
+         data-nav-to="account-detail"
+         data-component-type="account-card"
+         data-component-id="account_card_current"
+         data-component-variant="current">
+      <div class="accent-bar accent-green"></div>
+      <div class="icon-circle icon-circle-green">
+        <span class="material-icons-round icon-green">account_balance</span>
+      </div>
+      <div class="card-body">
+        <div class="card-name">Current Account</div>
+        <div class="card-number">****4521</div>
+      </div>
+      <div class="card-right">
+        <div class="card-balance">$12,450.80</div>
+        <div class="card-status">Active</div>
+      </div>
+    </div>
+
+    <!-- ACCOUNT CARD 2 — Savings Account -->
+    <div class="account-card"
+         role="button"
+         aria-label="Savings Account ending 7832, balance $8,200.00, Active"
+         data-nav-to="account-detail"
+         data-component-type="account-card"
+         data-component-id="account_card_savings"
+         data-component-variant="savings">
+      <div class="accent-bar accent-teal"></div>
+      <div class="icon-circle icon-circle-teal">
+        <span class="material-icons-round icon-teal">savings</span>
+      </div>
+      <div class="card-body">
+        <div class="card-name">Savings Account</div>
+        <div class="card-number">****7832</div>
+      </div>
+      <div class="card-right">
+        <div class="card-balance">$8,200.00</div>
+        <div class="card-status">Active</div>
+      </div>
+    </div>
+
+    <!-- ACCOUNT CARD 3 — Fixed Deposit -->
+    <div class="account-card"
+         role="button"
+         aria-label="Fixed Deposit ending 1098, balance $4,199.20, Active, maturity June 2027"
+         data-nav-to="account-detail"
+         data-component-type="account-card"
+         data-component-id="account_card_fixed"
+         data-component-variant="fixed-deposit">
+      <div class="accent-bar accent-amber"></div>
+      <div class="icon-circle icon-circle-amber">
+        <span class="material-icons-round icon-amber">lock_clock</span>
+      </div>
+      <div class="card-body">
+        <div class="card-name">Fixed Deposit</div>
+        <div class="card-number">****1098</div>
+        <div class="card-maturity">Maturity: Jun 2027</div>
+      </div>
+      <div class="card-right">
+        <div class="card-balance">$4,199.20</div>
+        <div class="card-status">Active</div>
+      </div>
+    </div>
+
+  </main>
+
+  <!-- FAB -->
+  <div class="fab"
+       role="button"
+       aria-label="Add new account"
+       data-action="request_new_account"
+       data-component-type="fab"
+       data-component-id="add_account_fab"
+       data-component-variant="primary">
+    <span class="material-icons-round">add</span>
+  </div>
+
+  <!-- BOTTOM NAV -->
+  <nav class="bottom-nav" role="navigation" aria-label="Main navigation" data-shell="bottom-nav">
+    <div class="nav-item"
+         role="tab"
+         aria-label="Home"
+         data-nav-to="home"
+         data-component-type="nav-item"
+         data-component-id="nav_home"
+         data-component-variant="inactive">
+      <div class="nav-pill">
+        <span class="material-icons-round">home</span>
+      </div>
+      <span class="nav-label">Home</span>
+    </div>
+    <div class="nav-item active"
+         role="tab"
+         aria-label="Accounts, current page"
+         aria-selected="true"
+         data-nav-to="accounts"
+         data-component-type="nav-item"
+         data-component-id="nav_accounts"
+         data-component-variant="active">
+      <div class="nav-pill">
+        <span class="material-icons-round">account_balance</span>
+      </div>
+      <span class="nav-label">Accounts</span>
+    </div>
+    <div class="nav-item"
+         role="tab"
+         aria-label="Payments"
+         data-nav-to="send-money"
+         data-component-type="nav-item"
+         data-component-id="nav_pay"
+         data-component-variant="inactive">
+      <div class="nav-pill">
+        <span class="material-icons-round">send</span>
+      </div>
+      <span class="nav-label">Payments</span>
+    </div>
+    <div class="nav-item"
+         role="tab"
+         aria-label="Profile"
+         data-nav-to="profile"
+         data-component-type="nav-item"
+         data-component-id="nav_profile"
+         data-component-variant="inactive">
+      <div class="nav-pill">
+        <span class="material-icons-round">person</span>
+      </div>
+      <span class="nav-label">Profile</span>
+    </div>
+  </nav>
+
+  <script src="../../preview/_shared/preview-runtime.js"></script>
+</body>
+</html>

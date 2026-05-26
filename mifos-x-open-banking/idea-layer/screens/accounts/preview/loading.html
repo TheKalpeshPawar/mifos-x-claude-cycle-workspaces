@@ -1,0 +1,311 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0" />
+  <title>Accounts — Loading</title>
+  <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;500;600&display=swap" rel="stylesheet" />
+  <link href="https://fonts.googleapis.com/icon?family=Material+Icons+Round" rel="stylesheet" />
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --primary:           #4C662B;
+      --on-primary:        #FFFFFF;
+      --primary-container: #CDEDA3;
+      --background:        #F9FAEF;
+      --surface:           #FFFFFF;
+      --surface-variant:   #E1E4D5;
+      --outline:           #75796C;
+      --outline-variant:   #C5C8BA;
+      --text-primary:      #1A1C16;
+      --text-secondary:    #44483D;
+      --tertiary:          #386663;
+      --error:             #BA1A1A;
+      --nav-active:        #DCE7C8;
+      --font:              'Outfit', system-ui, sans-serif;
+    }
+
+    body {
+      font-family: var(--font);
+      background: var(--background);
+      color: var(--text-primary);
+      width: 390px;
+      height: 844px;
+      margin: 0 auto;
+      position: relative;
+      overflow: hidden;
+    }
+
+    /* ── SHIMMER: #E1E4D5 → #F9FAEF ── */
+    @keyframes shimmer {
+      0%   { background-position: -780px 0; }
+      100% { background-position: 780px 0; }
+    }
+    .skeleton {
+      background: linear-gradient(
+        90deg,
+        var(--surface-variant) 25%,
+        var(--background)      50%,
+        var(--surface-variant) 75%
+      );
+      background-size: 1560px 100%;
+      animation: shimmer 1.5s infinite linear;
+      border-radius: 6px;
+    }
+
+    /* ── TOP APP BAR (56px) — real ── */
+    .top-bar {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      height: 56px;
+      padding: 0 16px;
+      background: var(--background);
+      position: sticky;
+      top: 0;
+      z-index: 10;
+    }
+    .top-bar-title {
+      font-size: 22px;
+      font-weight: 400;
+      color: var(--text-primary);
+      letter-spacing: 0;
+    }
+    .top-bar-icon-sk {
+      width: 40px;
+      height: 40px;
+      border-radius: 50%;
+    }
+
+    /* ── SCROLL AREA ── */
+    .scroll-area {
+      height: calc(844px - 56px - 80px);
+      overflow: hidden;
+      padding: 16px;
+    }
+
+    /* ── BALANCE CARD SKELETON ── */
+    .balance-card-sk {
+      border-radius: 16px;
+      height: 100px;
+      margin-bottom: 16px;
+    }
+
+    /* ── ACCOUNT CARD SKELETONS ── */
+    .account-card-sk {
+      background: var(--surface);
+      border: 1px solid var(--outline-variant);
+      border-radius: 12px;
+      padding: 16px;
+      margin-bottom: 8px;
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      overflow: hidden;
+    }
+
+    /* Accent bar skeleton */
+    .sk-accent {
+      width: 4px;
+      height: 56px;
+      border-radius: 4px;
+      flex-shrink: 0;
+    }
+
+    /* Icon circle skeleton */
+    .sk-icon {
+      width: 40px;
+      height: 40px;
+      border-radius: 50%;
+      flex-shrink: 0;
+    }
+
+    /* Text block skeletons */
+    .sk-body {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+    }
+    .sk-name {
+      height: 16px;
+      width: 140px;
+    }
+    .sk-number {
+      height: 12px;
+      width: 80px;
+    }
+
+    /* Right side skeletons */
+    .sk-right {
+      display: flex;
+      flex-direction: column;
+      align-items: flex-end;
+      gap: 8px;
+      flex-shrink: 0;
+    }
+    .sk-balance {
+      height: 16px;
+      width: 88px;
+    }
+    .sk-status {
+      height: 11px;
+      width: 44px;
+    }
+
+    /* ── BOTTOM NAV (80px, 4 tabs) — real ── */
+    .bottom-nav {
+      position: fixed;
+      bottom: 0;
+      left: 50%;
+      transform: translateX(-50%);
+      width: 390px;
+      height: 80px;
+      background: var(--background);
+      border-top: 1px solid var(--outline-variant);
+      display: flex;
+      align-items: center;
+      justify-content: space-around;
+      padding: 0 4px;
+      z-index: 30;
+    }
+    .nav-item {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: 4px;
+      cursor: pointer;
+      padding: 8px 0;
+    }
+    .nav-pill {
+      width: 64px;
+      height: 28px;
+      border-radius: 14px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+    .nav-item.active .nav-pill { background: var(--nav-active); }
+    .nav-item .material-icons-round { font-size: 22px; color: var(--text-secondary); }
+    .nav-item.active .material-icons-round { color: var(--primary); }
+    .nav-label { font-size: 11px; font-weight: 500; color: var(--text-secondary); font-family: var(--font); }
+    .nav-item.active .nav-label { color: var(--primary); font-weight: 600; }
+  </style>
+</head>
+<body>
+
+  <!-- TOP APP BAR — real -->
+  <header class="top-bar" role="banner" data-shell="top-bar">
+    <span class="top-bar-title">Accounts</span>
+    <div class="skeleton top-bar-icon-sk" aria-hidden="true"></div>
+  </header>
+
+  <!-- SKELETON CONTENT -->
+  <main class="scroll-area" role="main" aria-busy="true" aria-label="Loading your accounts">
+
+    <!-- Balance card skeleton -->
+    <div class="skeleton balance-card-sk" aria-hidden="true"></div>
+
+    <!-- Account card skeleton 1 -->
+    <div class="account-card-sk" aria-hidden="true">
+      <div class="skeleton sk-accent"></div>
+      <div class="skeleton sk-icon"></div>
+      <div class="sk-body">
+        <div class="skeleton sk-name"></div>
+        <div class="skeleton sk-number"></div>
+      </div>
+      <div class="sk-right">
+        <div class="skeleton sk-balance"></div>
+        <div class="skeleton sk-status"></div>
+      </div>
+    </div>
+
+    <!-- Account card skeleton 2 -->
+    <div class="account-card-sk" aria-hidden="true">
+      <div class="skeleton sk-accent"></div>
+      <div class="skeleton sk-icon"></div>
+      <div class="sk-body">
+        <div class="skeleton sk-name"></div>
+        <div class="skeleton sk-number"></div>
+      </div>
+      <div class="sk-right">
+        <div class="skeleton sk-balance"></div>
+        <div class="skeleton sk-status"></div>
+      </div>
+    </div>
+
+    <!-- Account card skeleton 3 -->
+    <div class="account-card-sk" aria-hidden="true">
+      <div class="skeleton sk-accent"></div>
+      <div class="skeleton sk-icon"></div>
+      <div class="sk-body">
+        <div class="skeleton sk-name"></div>
+        <div class="skeleton sk-number"></div>
+      </div>
+      <div class="sk-right">
+        <div class="skeleton sk-balance"></div>
+        <div class="skeleton sk-status"></div>
+      </div>
+    </div>
+
+  </main>
+
+  <!-- BOTTOM NAV — real -->
+  <nav class="bottom-nav" role="navigation" aria-label="Main navigation" data-shell="bottom-nav">
+    <div class="nav-item"
+         role="tab"
+         aria-label="Home"
+         data-nav-to="home"
+         data-component-type="nav-item"
+         data-component-id="nav_home"
+         data-component-variant="inactive">
+      <div class="nav-pill">
+        <span class="material-icons-round">home</span>
+      </div>
+      <span class="nav-label">Home</span>
+    </div>
+    <div class="nav-item active"
+         role="tab"
+         aria-label="Accounts, current page"
+         aria-selected="true"
+         data-nav-to="accounts"
+         data-component-type="nav-item"
+         data-component-id="nav_accounts"
+         data-component-variant="active">
+      <div class="nav-pill">
+        <span class="material-icons-round">account_balance</span>
+      </div>
+      <span class="nav-label">Accounts</span>
+    </div>
+    <div class="nav-item"
+         role="tab"
+         aria-label="Payments"
+         data-nav-to="send-money"
+         data-component-type="nav-item"
+         data-component-id="nav_pay"
+         data-component-variant="inactive">
+      <div class="nav-pill">
+        <span class="material-icons-round">send</span>
+      </div>
+      <span class="nav-label">Payments</span>
+    </div>
+    <div class="nav-item"
+         role="tab"
+         aria-label="Profile"
+         data-nav-to="profile"
+         data-component-type="nav-item"
+         data-component-id="nav_profile"
+         data-component-variant="inactive">
+      <div class="nav-pill">
+        <span class="material-icons-round">person</span>
+      </div>
+      <span class="nav-label">Profile</span>
+    </div>
+  </nav>
+
+  <script src="../../preview/_shared/preview-runtime.js"></script>
+</body>
+</html>

@@ -1,0 +1,166 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=390px, initial-scale=1.0">
+<title>KYC Document Review</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+:root{
+  --primary:#4C662B;--on-primary:#FFF;--primary-container:#CDEDA3;
+  --background:#F9FAEF;--surface:#FFF;--surface-variant:#E1E4D5;
+  --outline:#75796C;--outline-variant:#C5C8BA;
+  --text-primary:#1A1C16;--text-secondary:#44483D;
+  --tertiary:#386663;--error:#BA1A1A;--pending:#E8A317;
+  --nav-active:#DCE7C8;--font:'Outfit',system-ui,sans-serif
+}
+*{box-sizing:border-box;margin:0;padding:0}
+body{width:390px;min-height:844px;position:relative;overflow-x:hidden;background:var(--background);font-family:var(--font)}
+main{display:flex;flex-direction:column;min-height:844px;padding-bottom:32px}
+
+/* Header */
+.kyc-hdr{background:var(--primary);padding:16px;display:flex;align-items:center;gap:12px}
+.kyc-avatar{width:40px;height:40px;border-radius:50%;background:var(--surface);display:flex;align-items:center;justify-content:center;flex-shrink:0}
+.kyc-avatar-initials{font-size:14px;font-weight:700;color:var(--primary)}
+.kyc-hdr-texts{display:flex;flex-direction:column}
+.kyc-cust-name{font-size:16px;font-weight:700;color:var(--on-primary);line-height:1.3}
+.kyc-hdr-sub{font-size:12px;color:var(--primary-container)}
+
+/* Status row */
+.status-row{display:flex;align-items:center;gap:8px;padding:14px 16px 8px}
+.status-lbl{font-size:14px;font-weight:500;color:var(--text-secondary)}
+.status-chip{background:var(--primary-container);border:1px solid var(--pending);border-radius:16px;padding:4px 12px}
+.status-chip-txt{font-size:12px;font-weight:600;color:var(--pending)}
+
+/* Section headings */
+.sec-h2{font-size:16px;font-weight:600;color:var(--text-primary);padding:12px 16px 8px}
+
+/* Doc cards */
+.doc-card{background:var(--surface);border-radius:10px;padding:14px;margin:0 16px 8px;border:1px solid var(--surface-variant);box-shadow:0 1px 2px rgba(0,0,0,.07);display:flex;align-items:center;gap:12px}
+.doc-thumb{width:56px;height:40px;border-radius:6px;flex-shrink:0;background:var(--background);border:1px solid var(--surface-variant);display:flex;align-items:center;justify-content:center}
+.doc-thumb-ok{border:2px solid var(--primary)}
+.doc-thumb-round{border-radius:50%;border:2px solid var(--primary)}
+.doc-info{flex:1;display:flex;flex-direction:column}
+.doc-title{font-size:15px;font-weight:600;color:var(--text-primary);margin-bottom:2px}
+.doc-st-ok{font-size:12px;color:var(--primary)}
+.doc-st-pend{font-size:12px;color:var(--pending)}
+.doc-st-none{font-size:12px;color:var(--outline-variant)}
+.doc-view-lnk{font-size:12px;font-weight:600;color:var(--primary);text-decoration:underline;cursor:pointer;flex-shrink:0}
+.doc-upload-btn{background:none;border:1px solid var(--tertiary);border-radius:8px;color:var(--tertiary);font-size:12px;font-weight:600;padding:6px 12px;cursor:pointer;flex-shrink:0;font-family:var(--font)}
+
+/* Risk */
+.risk-wrap{padding:0 16px 12px}
+.sel-field{width:100%;border:1px solid var(--surface-variant);border-radius:8px;padding:12px 14px;font-size:14px;font-family:var(--font);color:var(--text-primary);background:var(--surface);margin-bottom:12px;appearance:none;background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' viewBox='0 0 24 24'%3E%3Cpath fill='%2375796C' d='M7 10l5 5 5-5z'/%3E%3C/svg%3E");background-repeat:no-repeat;background-position:right 12px center;padding-right:36px}
+.textarea{width:100%;border:1px solid var(--surface-variant);border-radius:8px;padding:12px 14px;font-size:14px;font-family:var(--font);color:var(--text-secondary);background:var(--surface);min-height:96px;resize:none;margin-bottom:16px}
+.textarea::placeholder{color:var(--outline-variant)}
+
+/* Buttons */
+.btn-filled{display:block;width:calc(100% - 32px);margin:0 16px 8px;background:var(--primary);color:var(--on-primary);border:none;border-radius:10px;padding:14px 0;font-size:15px;font-weight:600;font-family:var(--font);cursor:pointer;text-align:center}
+.btn-out-err{display:block;width:calc(100% - 32px);margin:0 16px 8px;background:none;color:var(--error);border:1px solid var(--error);border-radius:10px;padding:14px 0;font-size:15px;font-weight:600;font-family:var(--font);cursor:pointer;text-align:center}
+.btn-txt{display:block;width:calc(100% - 32px);margin:0 16px 24px;background:none;color:var(--primary);border:none;border-radius:10px;padding:14px 0;font-size:15px;font-weight:500;font-family:var(--font);cursor:pointer;text-align:center}
+</style>
+</head>
+<body>
+<main data-screen="kyc-review" data-state="content" role="main">
+
+  <!-- Customer header -->
+  <div class="kyc-hdr" data-component-type="box" data-component-id="customer_mini_header" aria-label="Customer: John Mwangi — KYC Review Required">
+    <div class="kyc-avatar" data-component-type="box" data-component-id="customer_avatar" role="img" aria-label="Customer avatar initials JM">
+      <span class="kyc-avatar-initials" data-component-type="text" data-component-id="avatar_initials">JM</span>
+    </div>
+    <div class="kyc-hdr-texts" data-component-type="box" data-component-id="header_text_group">
+      <span class="kyc-cust-name" data-component-type="text" data-component-id="header_customer_name">John Mwangi</span>
+      <span class="kyc-hdr-sub" data-component-type="text" data-component-id="header_kyc_label">KYC Review Required</span>
+    </div>
+  </div>
+
+  <!-- KYC Status badge -->
+  <div class="status-row" data-component-type="box" data-component-id="kyc_status_badge_row" aria-label="KYC Status: In Progress">
+    <span class="status-lbl" data-component-type="text" data-component-id="kyc_status_label">KYC Status:</span>
+    <div class="status-chip" data-component-type="box" data-component-id="kyc_status_chip" role="status" aria-label="Status: In Progress">
+      <span class="status-chip-txt" data-component-type="text" data-component-id="kyc_status_chip_text">In Progress</span>
+    </div>
+  </div>
+
+  <!-- Documents -->
+  <h2 class="sec-h2" data-component-type="text" data-component-id="documents_section_heading" role="heading" aria-level="2">Documents</h2>
+
+  <!-- National ID Front -->
+  <div class="doc-card" data-component-type="box" data-component-id="doc_national_id_front" aria-label="National ID Front: Uploaded and verified">
+    <div class="doc-thumb doc-thumb-ok" data-component-type="image" data-component-id="id_front_thumbnail" role="img" aria-label="Thumbnail of National ID front side">
+      <svg width="22" height="22" viewBox="0 0 24 24" aria-hidden="true"><path style="fill:var(--primary)" d="M20 4H4c-1.1 0-2 .9-2 2v12c0 1.1.9 2 2 2h16c1.1 0 2-.9 2-2V6c0-1.1-.9-2-2-2zm0 14H4V6h16v12zM6 10h12v2H6zm0 4h8v2H6z"/></svg>
+    </div>
+    <div class="doc-info" data-component-type="box" data-component-id="doc_front_info">
+      <span class="doc-title" data-component-type="text" data-component-id="doc_front_title">National ID — Front</span>
+      <span class="doc-st-ok" data-component-type="text" data-component-id="doc_front_status">Uploaded ✓ · 22 May 2026</span>
+    </div>
+    <a class="doc-view-lnk" data-component-type="link" data-component-id="doc_front_view_link" data-action="view_document" role="button" aria-label="View National ID front document">View</a>
+  </div>
+
+  <!-- National ID Back -->
+  <div class="doc-card" data-component-type="box" data-component-id="doc_national_id_back" aria-label="National ID Back: Pending upload">
+    <div class="doc-thumb" data-component-type="box" data-component-id="id_back_placeholder" role="img" aria-label="No thumbnail, upload pending">
+      <svg width="20" height="20" viewBox="0 0 24 24" aria-hidden="true"><path style="fill:var(--outline-variant)" d="M21.9 21.9L2.1 2.1.69 3.51 3 5.83V19c0 1.1.9 2 2 2h13.17l2.31 2.31 1.42-1.41zM5 19V7.83l11.17 11.17H5zM8 1h11v13.9l2 2V1c0-1.1-.9-2-2-2H8L6 1h2z"/></svg>
+    </div>
+    <div class="doc-info" data-component-type="box" data-component-id="doc_back_info">
+      <span class="doc-title" data-component-type="text" data-component-id="doc_back_title">National ID — Back</span>
+      <span class="doc-st-pend" data-component-type="text" data-component-id="doc_back_status">Pending Upload</span>
+    </div>
+  </div>
+
+  <!-- Selfie -->
+  <div class="doc-card" data-component-type="box" data-component-id="doc_selfie" aria-label="Selfie Liveness Check: Passed">
+    <div class="doc-thumb doc-thumb-round" data-component-type="image" data-component-id="selfie_thumbnail" role="img" aria-label="Customer selfie thumbnail">
+      <svg width="22" height="22" viewBox="0 0 24 24" aria-hidden="true"><path style="fill:var(--primary-container)" d="M12 12c2.7 0 4.8-2.1 4.8-4.8S14.7 2.4 12 2.4 7.2 4.5 7.2 7.2 9.3 12 12 12zm0 2.4c-3.2 0-9.6 1.6-9.6 4.8v2.4h19.2v-2.4c0-3.2-6.4-4.8-9.6-4.8z"/></svg>
+    </div>
+    <div class="doc-info" data-component-type="box" data-component-id="doc_selfie_info">
+      <span class="doc-title" data-component-type="text" data-component-id="doc_selfie_title">Selfie / Liveness Check</span>
+      <span class="doc-st-ok" data-component-type="text" data-component-id="doc_selfie_status">Passed ✓ · 22 May 2026</span>
+    </div>
+  </div>
+
+  <!-- Proof of Address -->
+  <div class="doc-card" style="margin-bottom:16px" data-component-type="box" data-component-id="doc_proof_of_address" aria-label="Proof of Address: Optional, not yet uploaded">
+    <div class="doc-thumb" data-component-type="box" data-component-id="proof_address_placeholder" role="img" aria-label="No proof of address uploaded">
+      <svg width="20" height="20" viewBox="0 0 24 24" aria-hidden="true"><path style="fill:var(--outline-variant)" d="M10 20v-6h4v6h5v-8h3L12 3 2 12h3v8z"/></svg>
+    </div>
+    <div class="doc-info" data-component-type="box" data-component-id="doc_address_info">
+      <span class="doc-title" data-component-type="text" data-component-id="doc_address_title">Proof of Address (Optional)</span>
+      <span class="doc-st-none" data-component-type="text" data-component-id="doc_address_status">Not uploaded</span>
+    </div>
+    <button class="doc-upload-btn" data-component-type="button" data-component-id="upload_address_proof_button" data-action="view_document" aria-label="Upload proof of address">Upload</button>
+  </div>
+
+  <!-- Risk Assessment -->
+  <h2 class="sec-h2" data-component-type="text" data-component-id="risk_section_heading" role="heading" aria-level="2">Risk Assessment</h2>
+
+  <div class="risk-wrap">
+    <select class="sel-field" data-component-type="input" data-component-id="risk_level_select" aria-label="Select customer risk level" data-action="select_risk_level">
+      <option value="">Risk Level</option>
+      <option value="low">Low</option>
+      <option value="medium">Medium</option>
+      <option value="high">High</option>
+      <option value="declined">Declined</option>
+    </select>
+
+    <textarea class="textarea" data-component-type="input" data-component-id="rejection_reason_input"
+      placeholder="Explain why KYC cannot be approved — e.g. National ID does not match selfie, blurry documents, suspected fraud..."
+      aria-label="Reason for rejection, required when rejecting"
+      data-action="focus_field"></textarea>
+  </div>
+
+  <!-- Actions -->
+  <button class="btn-filled" data-component-type="button" data-component-id="approve_kyc_button"
+    data-nav-to="customer-detail" aria-label="Approve KYC for this customer">Approve KYC</button>
+
+  <button class="btn-out-err" data-component-type="button" data-component-id="reject_kyc_button"
+    data-action="reject_kyc" aria-label="Reject KYC for this customer">Reject KYC</button>
+
+  <button class="btn-txt" data-component-type="button" data-component-id="request_more_docs_button"
+    data-nav-to="customer-messages" aria-label="Request additional documents from the customer">Request More Documents</button>
+
+</main>
+<script src="../../preview/_shared/preview-runtime.js"></script>
+</body>
+</html>

@@ -12,7 +12,7 @@
 | Status: enriched | 0 |
 | Avg quality score | ~81.2 |
 | Exports present | 35 / 35 |
-| Preview HTML | 0 / 35 |
+| Preview HTML | 35 / 35 |
 
 ---
 

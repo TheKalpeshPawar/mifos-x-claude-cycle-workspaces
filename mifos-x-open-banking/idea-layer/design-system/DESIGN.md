@@ -1,89 +1,143 @@
 ---
 name: Mifos X Open Banking
-version: "1.0.0"
-generated_at: "2026-05-22"
+version: "2.0.0"
+generated_at: "2026-05-25"
 token_source: design-tokens.yaml
 design_system: material3
-primary_color: "#1800B1"
+figma_source: "figma.com/design/tEEJwW4HkUR75fKhDq73Jz"
+colors:
+  primary: "#4C662B"
+  secondary: "#386663"
+  error: "#BA1A1A"
+  background: "#F9FAEF"
+  surface: "#FFFFFF"
+typography:
+  body:
+    family: "Outfit"
+rounded:
+  small: 4
+  medium: 12
+  large: 16
+spacing:
+  unit: 8
 platforms: [android, ios, desktop, web]
 ---
 
 # Mifos X Open Banking — Design System
 
-> Material Design 3 implementation tuned for fintech. Brand: Mifos deep-purple `#1800B1`.
-> Token source-of-truth: `design-tokens.yaml`. Generated 2026-05-22.
+> Material Design 3 · Outfit typeface · Green primary `#4C662B` · 390px mobile baseline
+> Extracted from Figma design system (file `tEEJwW4HkUR75fKhDq73Jz`).
+> Token source-of-truth: `design-tokens.yaml`. Regenerated 2026-05-25.
 
-## Principles
+## Overview
 
-1. **Clarity over decoration** — finance UIs prioritize numerical legibility; spacing, hierarchy, and tabular alignment carry weight over visual flourish.
-2. **Trust through consistency** — every monetary or rate value uses the same typographic treatment; never style the same value-type two ways.
-3. **Cross-platform parity** — a screen rendered on Android, iOS, Desktop, and Web must look like the same product, not four ports.
-4. **Offline-honest** — surface freshness clearly (timestamps, "cached" badges, error banners). Never lie about live-ness.
-5. **WCAG AA minimum** — 4.5:1 contrast, 48dp touch targets, all icons paired with text where space allows.
+Open banking app for Mifos X — Consumer (account management, payments, cards) + Field Officer (customer onboarding, KYC, applications). Material 3 with an earth-green primary palette conveying financial stability and growth. Single typeface (Outfit) across all surfaces for a clean, modern feel.
 
-## Color
+## Colors
 
-**Primary**: `#1800B1` deep purple — Mifos brand, used for primary actions, app bar, key data emphasis.
-**Secondary**: `#5C5D72` — supporting actions, secondary chrome.
-**Tertiary**: `#785368` — accent in detail surfaces (e.g. rate-trend chart points).
-**Error**: `#BA1A1A` (light) / `#FFB4AB` (dark) — destructive actions, validation errors, network failures.
+**Primary**: `#4C662B` — buttons, selected nav, credit indicators, FAB.
+**Primary container**: `#CDEDA3` — balance card backgrounds, highlighted sections.
+**Error / Debit**: `#BA1A1A` — debit amounts, failed badges, destructive actions.
+**Pending**: `#E8A317` — initiated/pending transaction status badges.
+**Tertiary accent**: `#386663` — accent text, secondary emphasis.
 
-Surface hierarchy (light): `background #FCF8FF` < `surface_container #F0EDF7` < `surface_container_high #EAE7F1`. Use container shades for elevated cards (watchlist items, rate rows, settings cards).
+**Surfaces (light)**:
+- Background: `#F9FAEF` (warm off-white, screen base)
+- Surface (card): `#FFFFFF` (pure white cards on tinted background)
+- Surface variant: `#E1E4D5` (dividers, disabled states)
 
-Dark mode mirrors with `background #13131B` and progressively lighter container shades.
+**Text**:
+- Primary text: `#1A1C16` (near-black, body + titles)
+- Secondary text: `#44483D` (captions, supporting text)
+
+**Borders**:
+- Outline: `#75796C` (input field borders)
+- Outline variant: `#C5C8BA` (card borders, dividers)
+
+**Navigation**:
+- Active indicator: `#DCE7C8` (tab pill background for selected nav item)
+- On primary: `#FFFFFF` (text/icons on primary-colored surfaces)
+
+Dark mode derives from the same seed using M3 tonal palette inversion — see `design-tokens.yaml` for full dark scheme.
 
 ## Typography
 
-- **Display**: Space Grotesk — used for prices in detail screens (e.g. `$42,387.12`), large hero numbers.
-- **Body**: Inter — all UI text, list items, form labels.
-- **Monospace**: JetBrains Mono — amortization tables, rate columns (where digit alignment matters).
+**Single typeface: Outfit** — geometric sans-serif, clean and modern. All weights from Regular (400) through SemiBold (600).
 
-Type-scale clamping: never use `display_lg` (57sp) on phones; reserve for Desktop. Phone hero values use `headline_lg` (32sp).
+| Style | Size | Weight | Line Height | Usage |
+|-------|------|--------|-------------|-------|
+| Display Small | 32 | SemiBold | 40 | Hero balances, welcome headers |
+| Headline Small | 24 | SemiBold | 32 | Section titles, screen headers |
+| Title Large | 22 | Regular | 28 | Top app bar title |
+| Title Medium | 16 | Medium | 24 | List primary text, card titles |
+| Body Large | 16 | Regular | 24 | Body text, descriptions |
+| Body Medium | 14 | Regular | 20 | Secondary content |
+| Label Large | 14 | Medium | 20 | Button text |
+| Label Medium | 12 | Medium | 16 | Chips, tabs |
+| Label Small | 11 | Medium | 16 | Timestamps, metadata |
 
-## Spacing — 8dp grid
+## Layout
 
-All padding, margins, gaps snap to the 8dp grid (`xs=4`, `sm=8`, `md=16`, `lg=24`, `xl=32`). Cards have `md` internal padding. Sections have `lg` vertical gaps. Screen edges use `md` horizontal padding (Android/iOS) or `xl` (Desktop/Web).
+- **Mobile baseline**: 390px width (iPhone 14 / Pixel 7)
+- **Grid**: 8dp baseline grid
+- **Content padding**: 16dp horizontal
+- **Card gap**: 16dp vertical
+- **Section spacing**: 24dp between groups
+- **Touch targets**: 48dp minimum
 
-## Radius
+## Elevation & Depth
 
-Buttons: pill (fully rounded). Cards: `md` (12dp). Text fields: `xs` (4dp) — Material 3 default. Dialogs: `lg` (16dp).
+Cards use border-based depth (`outline_variant` border, `md` radius) rather than shadow elevation — matching the Figma flat card style. Only FAB and dialogs use elevation.
 
-## Elevation
+| Surface | Elevation | Treatment |
+|---------|-----------|-----------|
+| Screen background | level0 | Flat `#F9FAEF` |
+| Card | level0 | White + 1dp `#C5C8BA` border + 12dp radius |
+| FAB | level3 | Primary fill + 16dp radius |
+| Dialog | level3 | White + shadow |
+| Bottom nav | level0 | Border-top `#C5C8BA` |
 
-Flat surfaces (level0) for screen background and app bar (Material 3 trend). Cards use level1. Dialogs use level3. Bottom sheets use level1 with scrim.
+## Shapes
 
-## Motion
+| Token | Value | Usage |
+|-------|-------|-------|
+| `radius.xs` | 4dp | Text fields |
+| `radius.sm` | 8dp | Badges |
+| `radius.md` | 12dp | Cards |
+| `radius.lg` | 16dp | FAB |
+| `radius.pill` | 999dp | Buttons (filled + outlined) |
+| `radius.xl` | 24dp | Bottom sheets |
 
-Standard easing for most transitions. Use `emphasized` for screen-to-screen navigation. Avoid motion longer than 400ms (`medium4`) — finance apps prioritize speed.
+## Components
 
-## Iconography
+**Button / Filled**: `#4C662B` background, white text, 40dp height, pill radius, 24dp horizontal padding. Used for primary actions (Login, Send, Confirm).
 
-Material Symbols Outlined at 24dp default. Common icons in current scaffolding:
-- `home` — Home destination
-- `account_circle` — Profile
-- `settings` — Settings
-- `dark_mode` / `light_mode` — theme picker
-- `language` — language picker
-- `notifications` — notification preferences
-- `arrow_back`, `chevron_right` — navigation
+**Button / Outlined**: `#75796C` border, `#4C662B` text, 40dp height, pill radius. Used for secondary actions (Continue with OBP-OIDC, Cancel).
 
-Additional icons will be declared per feature once product scope is set. Icons never appear alone in primary actions — always paired with text (accessibility + clarity).
+**FAB / Primary**: 56dp square, `#4C662B` fill, 16dp radius. Used for primary creation actions (new payment, new beneficiary).
 
-## Component principles (see COMPONENTS.md for full surface)
+**Badge / Success**: `#4C662B` fill, white text, 24dp height, 8dp radius. Shows "COMPLETED".
+**Badge / Pending**: `#E8A317` fill, white text. Shows "INITIATED".
+**Badge / Failed**: `#BA1A1A` fill, white text. Shows "FAILED".
 
-- **Buttons**: filled for primary action, tonal for secondary, outlined for tertiary; text-only for inline links.
-- **Cards**: filled (no elevation) for in-list rows; elevated (level1) for standalone detail panels.
-- **Text fields**: outlined (Material 3 default); never filled within forms.
-- **Dialogs**: alert dialog for destructive confirmations; full-screen for multi-step pickers (theme, language).
+**TextField**: White fill, `#75796C` border, 56dp height, 4dp radius. Label in `Label Small` (11/Medium), value in `Body Large` (16/Regular).
 
-## Accessibility checklist
+**Card / Base**: White fill, `#C5C8BA` border, 12dp radius, 16dp padding. Title in `Title Medium`, supporting text in `Body Medium` `#44483D`.
 
-- All touch targets ≥ 48dp (`component_tokens.touch_target_min`).
-- All text-vs-background contrast ≥ 4.5:1 (verified against MD3 dynamic-color tuning).
-- All non-text icons have `contentDescription` (i18n-aware).
-- All interactive components have `Modifier.semantics { role = Role.Button }` or equivalent.
-- Focus order on Desktop/Web follows visual reading order; Tab/Shift-Tab navigates predictably.
+**TopBar / Default**: `#F9FAEF` background, 56dp height, back arrow + `Title Large` title.
 
-## i18n
+**BottomNav**: `#F9FAEF` background, `#C5C8BA` border-top, 80dp height. 4 tabs: Home, Accounts, Payments, Profile. Active tab: `#DCE7C8` pill indicator + `#1A1C16` text. Inactive: `#44483D` text.
 
-All strings live in `composeResources/values/strings.xml` per feature module. Numeric formatting uses platform-native locale (`NumberFormat` on JVM/Android, `Intl.NumberFormat` on JS/Wasm, `NSNumberFormatter` on iOS — wrapped behind `expect/actual`).
+## Do's and Don'ts
+
+**Do**: Use primary green (`#4C662B`) only for interactive elements — buttons, selected states, credit amounts. Keep backgrounds warm off-white (`#F9FAEF`).
+
+**Don't**: Use primary green for large background areas — it becomes overwhelming. Use `primary_container` (`#CDEDA3`) for highlighted cards instead.
+
+**Do**: Use the pending color (`#E8A317`) exclusively for in-progress states. Use error (`#BA1A1A`) for failed/debit.
+
+**Don't**: Mix pending and error colors on the same surface. Each status badge should use exactly one semantic color.
+
+**Do**: Maintain the single-typeface discipline — Outfit for everything. Weight and size create hierarchy, not font switching.
+
+**Don't**: Add additional typefaces for "variety." The Figma system uses Outfit exclusively.

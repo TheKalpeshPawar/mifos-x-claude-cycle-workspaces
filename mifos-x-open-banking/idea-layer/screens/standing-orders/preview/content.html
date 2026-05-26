@@ -1,0 +1,326 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=390px, initial-scale=1">
+<title>Standing Orders — Mifos X</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;500;600&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet">
+<style>
+:root{
+  --primary:#4C662B;
+  --on-primary:#FFF;
+  --primary-container:#CDEDA3;
+  --background:#F9FAEF;
+  --surface:#FFF;
+  --surface-variant:#E1E4D5;
+  --outline:#75796C;
+  --outline-variant:#C5C8BA;
+  --text-primary:#1A1C16;
+  --text-secondary:#44483D;
+  --tertiary:#386663;
+  --error:#BA1A1A;
+  --pending:#E8A317;
+  --nav-active:#DCE7C8;
+  --font:'Outfit',system-ui,sans-serif;
+}
+*{box-sizing:border-box;margin:0;padding:0;}
+body{
+  width:390px;
+  min-height:844px;
+  position:relative;
+  overflow-x:hidden;
+  background:var(--background);
+  font-family:var(--font);
+  color:var(--text-primary);
+}
+.top-bar{
+  width:390px;
+  height:56px;
+  background:var(--surface);
+  display:flex;
+  align-items:center;
+  padding:0 8px;
+  border-bottom:1px solid var(--surface-variant);
+}
+.top-bar-back{
+  width:40px;height:40px;
+  display:flex;align-items:center;justify-content:center;
+  cursor:pointer;
+}
+.top-bar-title{
+  flex:1;
+  font-size:18px;
+  font-weight:600;
+  color:var(--text-primary);
+}
+.top-bar-action{
+  width:40px;height:40px;
+  display:flex;align-items:center;justify-content:center;
+  cursor:pointer;
+}
+.mi{font-family:'Material Icons';font-style:normal;font-size:24px;}
+.screen-content{
+  height:calc(844px - 56px - 80px);
+  overflow-y:auto;
+  padding:16px 16px 24px;
+  scrollbar-width:none;
+}
+.screen-content::-webkit-scrollbar{display:none;}
+/* Header row */
+.page-header-row{
+  display:flex;
+  align-items:center;
+  gap:10px;
+  margin-bottom:16px;
+}
+.page-title{
+  font-size:26px;
+  font-weight:600;
+  color:var(--primary);
+  flex:1;
+}
+.active-count-chip{
+  background:var(--primary-container);
+  color:var(--primary);
+  font-size:13px;
+  font-weight:600;
+  border-radius:12px;
+  padding:4px 10px;
+}
+/* Order cards */
+.order-card{
+  background:var(--surface);
+  border-radius:16px;
+  padding:16px;
+  margin-bottom:12px;
+  box-shadow:0 2px 6px rgba(0,0,0,0.08);
+  cursor:pointer;
+}
+.order-card.paused{
+  background:var(--background);
+  border:1px solid var(--surface-variant);
+}
+.order-header-row{
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  margin-bottom:6px;
+}
+.order-title{
+  font-size:15px;
+  font-weight:600;
+  color:var(--text-primary);
+}
+.order-title.paused{color:var(--outline);}
+.status-badge{
+  font-size:11px;
+  font-weight:600;
+  border-radius:10px;
+  padding:3px 8px;
+}
+.status-badge.active{
+  background:var(--primary-container);
+  color:var(--primary);
+}
+.status-badge.paused{
+  background:var(--background);
+  color:var(--outline-variant);
+  border:1px solid var(--outline-variant);
+}
+.order-beneficiary{
+  font-size:13px;
+  color:var(--text-secondary);
+  margin-bottom:10px;
+}
+.order-amount-row{
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  margin-bottom:10px;
+}
+.order-amount{
+  font-size:16px;
+  font-weight:600;
+  color:var(--primary);
+}
+.order-amount.paused{color:var(--outline-variant);}
+.order-next-date{
+  font-size:12px;
+  color:var(--outline);
+}
+.order-next-date.paused{color:var(--outline-variant);}
+.order-actions-row{
+  display:flex;
+  justify-content:flex-end;
+  gap:4px;
+  padding-top:8px;
+  border-top:1px solid var(--background);
+}
+.order-action-btn{
+  width:36px;height:36px;
+  display:flex;align-items:center;justify-content:center;
+  border-radius:8px;
+  cursor:pointer;
+}
+/* FAB */
+.fab{
+  position:absolute;
+  bottom:96px;
+  right:16px;
+  background:var(--primary);
+  color:var(--on-primary);
+  border-radius:16px;
+  padding:14px 18px;
+  display:flex;
+  align-items:center;
+  gap:8px;
+  font-size:14px;
+  font-weight:600;
+  font-family:var(--font);
+  cursor:pointer;
+  box-shadow:0 4px 12px rgba(76,102,43,0.35);
+  border:none;
+}
+.fab-icon{font-size:22px;}
+/* Bottom nav */
+.bottom-nav{
+  position:absolute;
+  bottom:0;left:0;
+  width:390px;height:80px;
+  background:var(--surface);
+  border-top:1px solid var(--surface-variant);
+  display:flex;
+  align-items:flex-start;
+  padding:12px 12px 16px;
+  gap:8px;
+}
+.nav-tab{
+  display:flex;flex-direction:column;align-items:center;
+  width:80px;gap:4px;cursor:pointer;text-decoration:none;
+}
+.nav-pill{
+  display:flex;align-items:center;justify-content:center;
+  width:64px;height:28px;border-radius:14px;
+}
+.nav-tab.active .nav-pill{background:var(--nav-active);}
+.nav-icon{font-size:22px;color:var(--outline);font-family:'Material Icons';font-style:normal;}
+.nav-tab.active .nav-icon{color:var(--primary);}
+.nav-label{font-size:11px;color:var(--outline);font-family:var(--font);}
+.nav-tab.active .nav-label{color:var(--primary);font-weight:600;}
+</style>
+</head>
+<body>
+
+<header class="top-bar">
+  <div class="top-bar-back" data-action="navigate_back" aria-label="Go back">
+    <span class="mi" style="color:var(--text-primary);">arrow_back</span>
+  </div>
+  <span class="top-bar-title">Standing Orders</span>
+  <div class="top-bar-action" data-action="filter_standing_orders" aria-label="Filter">
+    <span class="mi" style="color:var(--text-primary);">filter_list</span>
+  </div>
+</header>
+
+<main data-screen="standing-orders" data-state="content" role="main">
+  <div class="screen-content">
+
+    <!-- Page header -->
+    <div class="page-header-row">
+      <h1 class="page-title">Standing Orders</h1>
+      <span class="active-count-chip" role="status" aria-label="3 active standing orders">3 active</span>
+    </div>
+
+    <!-- Card 1: Rent Payment -->
+    <article class="order-card" role="button" aria-label="Rent Payment standing order. £1,200 monthly to Landlord Holdings Ltd. Next payment 1 June 2026. Active." data-action="view_standing_order">
+      <div class="order-header-row">
+        <span class="order-title">Rent Payment</span>
+        <span class="status-badge active" role="status" aria-label="Status: Active">Active</span>
+      </div>
+      <div class="order-beneficiary" aria-label="Recipient: Landlord Holdings Ltd">To: Landlord Holdings Ltd</div>
+      <div class="order-amount-row">
+        <span class="order-amount" aria-label="Amount: £1,200 per month">£1,200 / month</span>
+        <span class="order-next-date" aria-label="Next payment: 1 June 2026">Next: 1 Jun 2026</span>
+      </div>
+      <div class="order-actions-row">
+        <div class="order-action-btn" role="button" aria-label="Edit Rent Payment standing order" data-action="edit_standing_order">
+          <span class="mi" style="font-size:20px;color:var(--primary);">edit</span>
+        </div>
+        <div class="order-action-btn" role="button" aria-label="Delete Rent Payment standing order" data-action="delete_standing_order">
+          <span class="mi" style="font-size:20px;color:var(--error);">delete</span>
+        </div>
+      </div>
+    </article>
+
+    <!-- Card 2: Netflix Subscription -->
+    <article class="order-card" role="button" aria-label="Netflix Subscription standing order. £15.99 monthly. Next payment 7 June 2026. Active." data-action="view_standing_order">
+      <div class="order-header-row">
+        <span class="order-title">Netflix Subscription</span>
+        <span class="status-badge active" role="status" aria-label="Status: Active">Active</span>
+      </div>
+      <div class="order-amount-row">
+        <span class="order-amount" aria-label="Amount: £15.99 per month">£15.99 / month</span>
+        <span class="order-next-date" aria-label="Next payment: 7 June 2026">Next: 7 Jun 2026</span>
+      </div>
+      <div class="order-actions-row">
+        <div class="order-action-btn" role="button" aria-label="Edit Netflix Subscription standing order" data-action="edit_standing_order">
+          <span class="mi" style="font-size:20px;color:var(--primary);">edit</span>
+        </div>
+        <div class="order-action-btn" role="button" aria-label="Delete Netflix Subscription standing order" data-action="delete_standing_order">
+          <span class="mi" style="font-size:20px;color:var(--error);">delete</span>
+        </div>
+      </div>
+    </article>
+
+    <!-- Card 3: Gym Membership (Paused) -->
+    <article class="order-card paused" role="button" aria-label="Gym Membership standing order. £45 monthly. Next payment 15 June 2026. Paused." data-action="view_standing_order">
+      <div class="order-header-row">
+        <span class="order-title paused">Gym Membership</span>
+        <span class="status-badge paused" role="status" aria-label="Status: Paused">Paused</span>
+      </div>
+      <div class="order-amount-row">
+        <span class="order-amount paused" aria-label="Amount: £45.00 per month">£45.00 / month</span>
+        <span class="order-next-date paused" aria-label="Next scheduled: 15 June 2026, currently paused">Next: 15 Jun 2026 (Paused)</span>
+      </div>
+      <div class="order-actions-row">
+        <div class="order-action-btn" role="button" aria-label="Edit Gym Membership standing order" data-action="edit_standing_order">
+          <span class="mi" style="font-size:20px;color:var(--primary);">edit</span>
+        </div>
+        <div class="order-action-btn" role="button" aria-label="Delete Gym Membership standing order" data-action="delete_standing_order">
+          <span class="mi" style="font-size:20px;color:var(--error);">delete</span>
+        </div>
+      </div>
+    </article>
+
+  </div>
+</main>
+
+<!-- FAB: bottom:96px (nav present) -->
+<button class="fab" data-action="create_standing_order" aria-label="Create a new standing order">
+  <span class="mi fab-icon">add</span>
+  Create Standing Order
+</button>
+
+<nav class="bottom-nav" aria-label="Main navigation" data-component-type="bottom-nav">
+  <a class="nav-tab" href="#" data-nav-to="home" aria-label="Home">
+    <div class="nav-pill"><span class="nav-icon">home</span></div>
+    <span class="nav-label">Home</span>
+  </a>
+  <a class="nav-tab" href="#" data-nav-to="accounts" aria-label="Accounts">
+    <div class="nav-pill"><span class="nav-icon">account_balance</span></div>
+    <span class="nav-label">Accounts</span>
+  </a>
+  <a class="nav-tab active" href="#" data-nav-to="send-money" aria-label="Payments" aria-current="page">
+    <div class="nav-pill"><span class="nav-icon">send</span></div>
+    <span class="nav-label">Payments</span>
+  </a>
+  <a class="nav-tab" href="#" data-nav-to="profile" aria-label="Profile">
+    <div class="nav-pill"><span class="nav-icon">person</span></div>
+    <span class="nav-label">Profile</span>
+  </a>
+</nav>
+
+<script src="../../preview/_shared/preview-runtime.js"></script>
+</body>
+</html>

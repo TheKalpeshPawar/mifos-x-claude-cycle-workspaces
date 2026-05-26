@@ -1,0 +1,407 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=390px,initial-scale=1">
+<title>ATM Locator — Content</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;500;600&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Rounded:opsz,wght,FILL,GRAD@24,400,0,0" rel="stylesheet">
+<style>
+:root{
+  --primary:#4C662B;
+  --on-primary:#FFF;
+  --primary-container:#CDEDA3;
+  --background:#F9FAEF;
+  --surface:#FFF;
+  --surface-variant:#E1E4D5;
+  --outline:#75796C;
+  --outline-variant:#C5C8BA;
+  --text-primary:#1A1C16;
+  --text-secondary:#44483D;
+  --tertiary:#386663;
+  --error:#BA1A1A;
+  --pending:#E8A317;
+  --nav-active:#DCE7C8;
+  --font:'Outfit',system-ui,sans-serif;
+}
+*{box-sizing:border-box;margin:0;padding:0;}
+body{
+  width:390px;min-height:844px;position:relative;overflow-x:hidden;
+  background:var(--background);font-family:var(--font);
+}
+.scroll-area{
+  overflow-y:auto;
+  height:calc(844px - 80px);
+  padding-bottom:8px;
+}
+/* Page title */
+.page-title{
+  font-size:28px;font-weight:600;color:var(--primary);
+  padding:24px 16px 0;
+}
+/* Search bar */
+.search-bar{
+  display:flex;align-items:center;gap:10px;
+  background:var(--surface);border-radius:28px;
+  margin:12px 16px 0;padding:12px 16px;
+  box-shadow:0 1px 4px rgba(0,0,0,0.07);
+}
+.search-bar input{
+  flex:1;border:none;outline:none;background:transparent;
+  font-family:var(--font);font-size:15px;color:var(--text-primary);
+}
+.search-bar input::placeholder{color:var(--outline);}
+/* Map area */
+.map-area{
+  margin:12px 16px 0;height:240px;border-radius:12px;
+  background:var(--surface-variant);
+  display:flex;flex-direction:column;align-items:center;justify-content:center;
+  gap:8px;overflow:hidden;position:relative;
+}
+.map-grid{
+  position:absolute;inset:0;
+  background-image:
+    linear-gradient(rgba(0,0,0,0.05) 1px,transparent 1px),
+    linear-gradient(90deg,rgba(0,0,0,0.05) 1px,transparent 1px);
+  background-size:30px 30px;
+}
+.map-roads{position:absolute;inset:0;overflow:hidden;}
+.map-road-h{position:absolute;left:0;right:0;height:3px;background:var(--surface);opacity:0.7;}
+.map-road-v{position:absolute;top:0;bottom:0;width:3px;background:var(--surface);opacity:0.7;}
+.map-pin{
+  position:relative;z-index:1;
+  display:flex;align-items:center;justify-content:center;
+  width:44px;height:44px;border-radius:50%;
+  background:var(--primary);
+  box-shadow:0 2px 8px rgba(76,102,43,0.4);
+}
+.map-pin-label{
+  font-size:12px;font-weight:500;color:var(--outline);
+  position:relative;z-index:1;
+}
+/* Filter chips */
+.filter-row{
+  display:flex;gap:8px;
+  padding:12px 16px;
+  overflow-x:auto;
+  scrollbar-width:none;
+}
+.filter-row::-webkit-scrollbar{display:none;}
+.chip{
+  display:flex;align-items:center;
+  padding:8px 16px;border-radius:16px;
+  font-size:14px;font-weight:500;font-family:var(--font);
+  cursor:pointer;border:none;white-space:nowrap;flex-shrink:0;
+  border:1px solid var(--outline-variant);
+  background:var(--surface);color:var(--text-primary);
+}
+.chip.active{
+  background:var(--primary);color:var(--on-primary);border-color:var(--primary);
+}
+/* Results header */
+.results-header{
+  font-size:16px;font-weight:600;color:var(--text-primary);
+  padding:8px 16px 4px;
+}
+/* ATM card */
+.atm-card{
+  background:var(--surface);border-radius:12px;
+  box-shadow:0 2px 8px rgba(0,0,0,0.08);
+  margin:0 16px 8px;padding:16px;
+  cursor:pointer;
+}
+.atm-card-header{display:flex;align-items:flex-start;justify-content:space-between;margin-bottom:4px;}
+.atm-name{font-size:15px;font-weight:600;color:var(--text-primary);}
+.atm-distance{font-size:13px;color:var(--outline);margin-top:2px;}
+.atm-hours-open{font-size:13px;font-weight:500;color:var(--primary);}
+.atm-hours-limited{font-size:13px;font-weight:500;color:var(--pending);}
+.atm-limit-text{font-size:13px;color:var(--text-secondary);}
+.atm-services{font-size:13px;color:var(--text-secondary);}
+.directions-link{
+  display:flex;align-items:center;gap:4px;
+  background:transparent;border:none;cursor:pointer;
+  font-family:var(--font);font-size:13px;font-weight:500;color:var(--primary);
+  margin-top:8px;padding:0;
+}
+.divider-line{height:1px;background:var(--surface-variant);margin:4px 16px;}
+/* Bottom Nav */
+.bottom-nav{
+  position:absolute;bottom:0;left:0;width:390px;height:80px;
+  background:var(--surface);
+  border-top:1px solid var(--surface-variant);
+  display:flex;align-items:center;justify-content:space-around;
+  padding:0 8px;
+}
+.nav-tab{
+  display:flex;flex-direction:column;align-items:center;justify-content:center;
+  gap:4px;width:80px;height:56px;border-radius:16px;
+  background:transparent;border:none;cursor:pointer;font-family:var(--font);
+}
+.nav-tab.active{background:var(--nav-active);}
+.nav-label{font-size:12px;font-weight:500;color:var(--outline);}
+.nav-tab.active .nav-label{color:var(--primary);}
+</style>
+</head>
+<body>
+<main data-screen="atm-locator" data-state="content" role="main">
+
+  <div class="scroll-area">
+
+    <!-- Page Title -->
+    <h1 class="page-title"
+        data-component-type="text"
+        data-component-id="atm_locator_title"
+        data-component-variant="headline_large"
+        role="heading"
+        aria-level="1">ATM &amp; Branches</h1>
+
+    <!-- Search Input -->
+    <div class="search-bar"
+         data-component-type="input"
+         data-component-id="location_search_input"
+         data-component-variant="search"
+         role="search">
+      <span class="material-symbols-rounded" style="font-size:20px;color:var(--outline);" aria-hidden="true">search</span>
+      <input type="search"
+             placeholder="Enter city, postcode or address..."
+             aria-label="Search for ATMs and branches by location"
+             data-action="search_location">
+    </div>
+
+    <!-- Map Area -->
+    <div class="map-area"
+         data-component-type="image"
+         data-component-id="atm_map_area"
+         data-component-variant="default"
+         role="img"
+         aria-label="ATM map showing nearby locations">
+      <div class="map-grid" aria-hidden="true"></div>
+      <div class="map-roads" aria-hidden="true">
+        <div class="map-road-h" style="top:30%;"></div>
+        <div class="map-road-h" style="top:60%;"></div>
+        <div class="map-road-v" style="left:40%;"></div>
+        <div class="map-road-v" style="left:70%;"></div>
+      </div>
+      <div class="map-pin" aria-hidden="true">
+        <span class="material-symbols-rounded" style="font-size:22px;color:var(--on-primary);">atm</span>
+      </div>
+      <span class="map-pin-label">Map preview</span>
+    </div>
+
+    <!-- Filter Chips -->
+    <div class="filter-row"
+         data-component-type="stack"
+         data-component-id="filter_chips_row"
+         data-component-variant="horizontal"
+         role="group"
+         aria-label="Filter ATMs and branches by type">
+      <button class="chip active"
+              data-component-type="input"
+              data-component-id="filter_all"
+              data-component-variant="radio"
+              data-action="filter_type"
+              role="radio"
+              aria-checked="true"
+              aria-label="Show all ATMs and branches">All</button>
+      <button class="chip"
+              data-component-type="input"
+              data-component-id="filter_atms"
+              data-component-variant="radio"
+              data-action="filter_type"
+              role="radio"
+              aria-checked="false"
+              aria-label="Show ATMs only">ATMs</button>
+      <button class="chip"
+              data-component-type="input"
+              data-component-id="filter_branches"
+              data-component-variant="radio"
+              data-action="filter_type"
+              role="radio"
+              aria-checked="false"
+              aria-label="Show branches only">Branches</button>
+      <button class="chip"
+              data-component-type="input"
+              data-component-id="filter_24_7"
+              data-component-variant="radio"
+              data-action="filter_type"
+              role="radio"
+              aria-checked="false"
+              aria-label="Show 24/7 locations only">24/7</button>
+    </div>
+
+    <!-- Results Header -->
+    <h2 class="results-header"
+        data-component-type="text"
+        data-component-id="nearby_results_header"
+        data-component-variant="title_medium"
+        role="heading"
+        aria-level="2"
+        aria-label="Nearby results: 3 ATMs found within 500 metres">3 ATMs found within 500m</h2>
+
+    <!-- ATM Card 1: Oxford Street -->
+    <div class="atm-card"
+         data-component-type="box"
+         data-component-id="atm_result_oxford_street"
+         data-component-variant="default"
+         data-action="view_atm_detail"
+         role="listitem"
+         aria-label="Mifos ATM Oxford Street, 0.2 kilometres away, Open 24/7">
+      <div class="atm-card-header">
+        <div>
+          <div class="atm-name"
+               data-component-type="text"
+               data-component-id="atm_oxford_name"
+               data-component-variant="title_small">Mifos ATM — Oxford Street</div>
+          <div class="atm-distance"
+               data-component-type="text"
+               data-component-id="atm_oxford_distance"
+               data-component-variant="body_small">0.2km away</div>
+          <div class="atm-hours-open"
+               data-component-type="text"
+               data-component-id="atm_oxford_hours"
+               data-component-variant="body_small">Open 24/7</div>
+          <div class="atm-limit-text"
+               data-component-type="text"
+               data-component-id="atm_oxford_limit"
+               data-component-variant="body_small">£300 max withdrawal</div>
+        </div>
+        <span class="material-symbols-rounded" style="font-size:20px;color:var(--primary);" aria-hidden="true">atm</span>
+      </div>
+      <button class="directions-link"
+              data-component-type="link"
+              data-component-id="atm_oxford_directions"
+              data-component-variant="default"
+              data-action="open_directions"
+              aria-label="Get directions to Mifos ATM Oxford Street">
+        <span class="material-symbols-rounded" style="font-size:16px;" aria-hidden="true">directions</span>
+        Get Directions
+      </button>
+    </div>
+
+    <div class="divider-line"
+         data-component-type="divider"
+         data-component-id="results_divider"
+         data-component-variant="default"
+         role="separator"></div>
+
+    <!-- ATM Card 2: Bond Street -->
+    <div class="atm-card"
+         data-component-type="box"
+         data-component-id="atm_result_bond_street"
+         data-component-variant="default"
+         data-action="view_atm_detail"
+         role="listitem"
+         aria-label="Mifos ATM Bond Street Station, 0.5 kilometres away, Open 24/7">
+      <div class="atm-card-header">
+        <div>
+          <div class="atm-name"
+               data-component-type="text"
+               data-component-id="atm_bond_name"
+               data-component-variant="title_small">Mifos ATM — Bond Street Station</div>
+          <div class="atm-distance"
+               data-component-type="text"
+               data-component-id="atm_bond_distance"
+               data-component-variant="body_small">0.5km away</div>
+          <div class="atm-hours-open"
+               data-component-type="text"
+               data-component-id="atm_bond_hours"
+               data-component-variant="body_small">Open 24/7</div>
+        </div>
+        <span class="material-symbols-rounded" style="font-size:20px;color:var(--primary);" aria-hidden="true">atm</span>
+      </div>
+      <button class="directions-link"
+              data-component-type="link"
+              data-component-id="atm_bond_directions"
+              data-component-variant="default"
+              data-action="open_directions"
+              aria-label="Get directions to Mifos ATM Bond Street Station">
+        <span class="material-symbols-rounded" style="font-size:16px;" aria-hidden="true">directions</span>
+        Get Directions
+      </button>
+    </div>
+
+    <!-- ATM Card 3: Mayfair Branch -->
+    <div class="atm-card"
+         data-component-type="box"
+         data-component-id="atm_result_mayfair_branch"
+         data-component-variant="default"
+         data-action="view_atm_detail"
+         role="listitem"
+         aria-label="Mifos Branch Mayfair, 0.8 kilometres away, Monday to Friday 9am to 5pm">
+      <div class="atm-card-header">
+        <div>
+          <div class="atm-name"
+               data-component-type="text"
+               data-component-id="branch_mayfair_name"
+               data-component-variant="title_small">Mifos Branch — Mayfair</div>
+          <div class="atm-distance"
+               data-component-type="text"
+               data-component-id="branch_mayfair_distance"
+               data-component-variant="body_small">0.8km away</div>
+          <div class="atm-hours-limited"
+               data-component-type="text"
+               data-component-id="branch_mayfair_hours"
+               data-component-variant="body_small">Mon–Fri 9am–5pm</div>
+          <div class="atm-services"
+               data-component-type="text"
+               data-component-id="branch_mayfair_services"
+               data-component-variant="body_small">Services: Cashier · FX · Safe Deposit</div>
+        </div>
+        <span class="material-symbols-rounded" style="font-size:20px;color:var(--tertiary);" aria-hidden="true">account_balance</span>
+      </div>
+      <button class="directions-link"
+              data-component-type="link"
+              data-component-id="branch_mayfair_directions"
+              data-component-variant="default"
+              data-action="open_directions"
+              aria-label="Get directions to Mifos Branch Mayfair">
+        <span class="material-symbols-rounded" style="font-size:16px;" aria-hidden="true">directions</span>
+        Get Directions
+      </button>
+    </div>
+
+  </div>
+
+  <!-- Consumer Bottom Nav: Home active -->
+  <nav class="bottom-nav"
+       data-shell="bottom-nav"
+       role="navigation"
+       aria-label="Main navigation">
+    <button class="nav-tab active"
+            data-nav-to="home"
+            aria-label="Home"
+            aria-current="page">
+      <span class="material-symbols-rounded" style="font-size:24px;color:var(--primary);" aria-hidden="true">home</span>
+      <span class="nav-label" style="color:var(--primary);">Home</span>
+    </button>
+    <button class="nav-tab"
+            data-nav-to="accounts"
+            aria-label="Accounts">
+      <span class="material-symbols-rounded" style="font-size:24px;color:var(--outline);" aria-hidden="true">account_balance</span>
+      <span class="nav-label">Accounts</span>
+    </button>
+    <button class="nav-tab"
+            data-nav-to="send-money"
+            aria-label="Payments">
+      <span class="material-symbols-rounded" style="font-size:24px;color:var(--outline);" aria-hidden="true">payments</span>
+      <span class="nav-label">Payments</span>
+    </button>
+    <button class="nav-tab"
+            data-nav-to="cards"
+            aria-label="Cards">
+      <span class="material-symbols-rounded" style="font-size:24px;color:var(--outline);" aria-hidden="true">credit_card</span>
+      <span class="nav-label">Cards</span>
+    </button>
+    <button class="nav-tab"
+            data-nav-to="profile"
+            aria-label="Profile">
+      <span class="material-symbols-rounded" style="font-size:24px;color:var(--outline);" aria-hidden="true">person</span>
+      <span class="nav-label">Profile</span>
+    </button>
+  </nav>
+
+</main>
+<script src="../../preview/_shared/preview-runtime.js"></script>
+</body>
+</html>
