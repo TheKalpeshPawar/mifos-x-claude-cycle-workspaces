@@ -1,0 +1,121 @@
+<!doctype html>
+<html lang="en" data-screen="consent-manager" data-state="revoke_confirm">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Connected Apps — Revoke Confirmation</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet">
+  <style>
+    :root { --primary: #4C662B; --on-primary: #FFFFFF; --primary-container: #CDEDA3; --secondary: #386663; --error: #BA1A1A; --background: #F9FAEF; --on-background: #1A1C16; --surface: #FFFFFF; --on-surface: #1A1C16; --surface-variant: #E1E4D5; --on-surface-variant: #44483D; --outline: #75796C; --outline-variant: #C5C8BA; --warning: #E8A317; }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body { font-family: 'Outfit', sans-serif; background: var(--background); color: var(--on-background); max-width: 390px; margin: 0 auto; min-height: 100vh; position: relative; }
+    .top-app-bar { display: flex; align-items: center; background: var(--surface); padding: 0 4px; height: 64px; border-bottom: 1px solid var(--surface-variant); opacity: 0.5; }
+    .icon-btn { width: 48px; height: 48px; display: flex; align-items: center; justify-content: center; border-radius: 50%; cursor: pointer; color: var(--on-surface); background: none; border: none; }
+    .bar-title { flex: 1; font-size: 22px; font-weight: 600; color: var(--on-surface); padding-left: 4px; }
+    /* Screen content (dimmed behind dialog) */
+    .screen-content { padding: 16px; opacity: 0.35; pointer-events: none; }
+    .consent-card { background: var(--surface); border-radius: 12px; padding: 16px; margin-bottom: 12px; border: 1px solid var(--outline-variant); }
+    .consent-card-header { display: flex; align-items: center; gap: 12px; margin-bottom: 12px; }
+    .app-logo { width: 44px; height: 44px; border-radius: 10px; background: var(--primary-container); display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
+    .app-logo .material-icons { color: var(--primary); font-size: 22px; }
+    .app-name { font-size: 15px; font-weight: 600; color: var(--on-surface); }
+    .app-meta { font-size: 12px; color: var(--outline); }
+    .scope-chip { display: inline-flex; align-items: center; gap: 4px; background: var(--surface-variant); border-radius: 6px; padding: 4px 8px; font-size: 12px; color: var(--on-surface-variant); margin: 2px; }
+    .scopes-row { display: flex; flex-wrap: wrap; margin-bottom: 10px; }
+    /* Modal overlay */
+    .modal-overlay { position: fixed; inset: 0; max-width: 390px; margin: 0 auto; background: rgba(26,28,22,0.5); display: flex; align-items: flex-end; z-index: 50; }
+    .modal-sheet { background: var(--surface); border-radius: 28px 28px 0 0; padding: 28px 24px 40px; width: 100%; }
+    .modal-handle { width: 32px; height: 4px; background: var(--outline-variant); border-radius: 2px; margin: 0 auto 20px; }
+    .modal-icon-ring { width: 64px; height: 64px; border-radius: 50%; background: #FFDAD6; display: flex; align-items: center; justify-content: center; margin: 0 auto 16px; }
+    .modal-icon-ring .material-icons { font-size: 32px; color: var(--error); }
+    .modal-title { font-size: 20px; font-weight: 700; color: var(--on-surface); text-align: center; margin-bottom: 10px; }
+    .modal-body { font-size: 14px; color: var(--on-surface-variant); text-align: center; line-height: 1.6; margin-bottom: 8px; }
+    .app-name-highlight { font-weight: 700; color: var(--on-surface); }
+    .warning-card { background: #FFF8E7; border: 1px solid var(--warning); border-radius: 10px; padding: 12px 14px; margin: 12px 0; display: flex; align-items: flex-start; gap: 8px; }
+    .warning-card .material-icons { color: var(--warning); font-size: 18px; flex-shrink: 0; margin-top: 1px; }
+    .warning-text { font-size: 12px; color: #7A5B00; line-height: 1.4; }
+    .modal-actions { display: flex; flex-direction: column; gap: 10px; margin-top: 20px; }
+    .btn-revoke { background: var(--error); color: #FFFFFF; border: none; border-radius: 12px; padding: 15px; font-size: 15px; font-weight: 600; font-family: 'Outfit', sans-serif; cursor: pointer; }
+    .btn-cancel { background: var(--surface); color: var(--on-surface); border: 1px solid var(--outline-variant); border-radius: 12px; padding: 15px; font-size: 15px; font-weight: 600; font-family: 'Outfit', sans-serif; cursor: pointer; }
+    .material-icons { font-family: 'Material Icons'; font-style: normal; font-size: 24px; line-height: 1; display: inline-block; -webkit-font-smoothing: antialiased; }
+  </style>
+</head>
+<body>
+
+  <div class="top-app-bar" data-component-type="top_app_bar" data-component-id="consent_top_bar">
+    <button class="icon-btn" aria-label="Go back" aria-disabled="true">
+      <span class="material-icons" aria-hidden="true">arrow_back</span>
+    </button>
+    <span class="bar-title">Connected Apps</span>
+  </div>
+
+  <!-- Background content (dimmed) -->
+  <div class="screen-content" aria-hidden="true">
+    <div class="consent-card">
+      <div class="consent-card-header">
+        <div class="app-logo"><span class="material-icons">account_balance</span></div>
+        <div>
+          <div class="app-name">Mint Budget</div>
+          <div class="app-meta">Connected 12 Jan 2026 · Active</div>
+        </div>
+      </div>
+      <div class="scopes-row">
+        <span class="scope-chip"><span class="material-icons" style="font-size:12px;">visibility</span> Read balances</span>
+        <span class="scope-chip"><span class="material-icons" style="font-size:12px;">visibility</span> Read transactions</span>
+      </div>
+    </div>
+    <div class="consent-card">
+      <div class="consent-card-header">
+        <div class="app-logo"><span class="material-icons">payments</span></div>
+        <div>
+          <div class="app-name">PayHelper Pro</div>
+          <div class="app-meta">Connected 03 Mar 2026 · Active</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Confirmation bottom sheet -->
+  <div class="modal-overlay" role="dialog" aria-modal="true" aria-labelledby="revoke_modal_title"
+       data-component-type="box" data-component-id="revoke_confirm_dialog">
+    <div class="modal-sheet">
+      <div class="modal-handle" aria-hidden="true"></div>
+
+      <div class="modal-icon-ring" aria-hidden="true">
+        <span class="material-icons">link_off</span>
+      </div>
+
+      <h2 class="modal-title" id="revoke_modal_title" data-component-type="text" data-component-id="revoke_dialog_title">
+        Revoke Access?
+      </h2>
+
+      <p class="modal-body" data-component-type="text" data-component-id="revoke_dialog_body">
+        <span class="app-name-highlight">Mint Budget</span> will immediately lose access to your account data, including balances and transaction history.
+      </p>
+
+      <div class="warning-card" data-component-type="box" data-component-id="revoke_warning">
+        <span class="material-icons" aria-hidden="true">warning_amber</span>
+        <span class="warning-text">This may cause Mint Budget to stop functioning correctly until you re-authorise it.</span>
+      </div>
+
+      <div class="modal-actions">
+        <button class="btn-revoke"
+                data-component-type="button" data-component-id="confirm_revoke_button"
+                data-action="confirm_revoke" aria-label="Confirm revoke access for Mint Budget" tabindex="0">
+          Revoke Access
+        </button>
+        <button class="btn-cancel"
+                data-component-type="button" data-component-id="cancel_revoke_button"
+                data-action="cancel_revoke" aria-label="Cancel and keep access" tabindex="0">
+          Keep Access
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <script src="../../preview/_shared/preview-runtime.js"></script>
+</body>
+</html>

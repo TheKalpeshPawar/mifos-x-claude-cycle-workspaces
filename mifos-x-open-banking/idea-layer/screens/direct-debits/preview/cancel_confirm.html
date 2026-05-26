@@ -1,0 +1,147 @@
+<!doctype html>
+<html lang="en" data-screen="direct-debits" data-state="cancel_confirm">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Direct Debits — Cancel Confirmation</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet">
+  <style>
+    :root { --primary: #4C662B; --on-primary: #FFFFFF; --primary-container: #CDEDA3; --secondary: #386663; --error: #BA1A1A; --background: #F9FAEF; --on-background: #1A1C16; --surface: #FFFFFF; --on-surface: #1A1C16; --surface-variant: #E1E4D5; --on-surface-variant: #44483D; --outline: #75796C; --outline-variant: #C5C8BA; --warning: #E8A317; }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body { font-family: 'Outfit', sans-serif; background: var(--background); color: var(--on-background); max-width: 390px; margin: 0 auto; min-height: 100vh; position: relative; }
+    .top-app-bar { display: flex; align-items: center; background: var(--surface); padding: 0 4px; height: 64px; border-bottom: 1px solid var(--surface-variant); opacity: 0.5; }
+    .icon-btn { width: 48px; height: 48px; display: flex; align-items: center; justify-content: center; border-radius: 50%; cursor: pointer; color: var(--on-surface); background: none; border: none; }
+    .bar-title { flex: 1; font-size: 22px; font-weight: 600; color: var(--on-surface); padding-left: 4px; }
+    /* Screen content (dimmed) */
+    .screen-content { padding: 16px; opacity: 0.35; pointer-events: none; }
+    .mandate-card { background: var(--surface); border-radius: 12px; padding: 16px; margin-bottom: 10px; border: 1px solid var(--outline-variant); }
+    .mandate-row { display: flex; align-items: center; gap: 12px; }
+    .mandate-logo { width: 44px; height: 44px; border-radius: 10px; background: var(--primary-container); display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
+    .mandate-logo .material-icons { color: var(--primary); font-size: 22px; }
+    .mandate-name { font-size: 15px; font-weight: 600; color: var(--on-surface); }
+    .mandate-meta { font-size: 12px; color: var(--outline); }
+    .badge-active { display: inline-block; background: var(--primary-container); color: var(--primary); border-radius: 6px; padding: 2px 8px; font-size: 11px; font-weight: 600; margin-top: 6px; }
+    .badge-cancelled { display: inline-block; background: var(--surface-variant); color: var(--outline); border-radius: 6px; padding: 2px 8px; font-size: 11px; font-weight: 600; margin-top: 6px; }
+    /* Modal overlay */
+    .modal-overlay { position: fixed; inset: 0; max-width: 390px; margin: 0 auto; background: rgba(26,28,22,0.5); display: flex; align-items: flex-end; z-index: 50; }
+    .modal-sheet { background: var(--surface); border-radius: 28px 28px 0 0; padding: 28px 24px 40px; width: 100%; }
+    .modal-handle { width: 32px; height: 4px; background: var(--outline-variant); border-radius: 2px; margin: 0 auto 20px; }
+    .modal-icon-ring { width: 64px; height: 64px; border-radius: 50%; background: #FFDAD6; display: flex; align-items: center; justify-content: center; margin: 0 auto 16px; }
+    .modal-icon-ring .material-icons { font-size: 32px; color: var(--error); }
+    .modal-title { font-size: 20px; font-weight: 700; color: var(--on-surface); text-align: center; margin-bottom: 10px; }
+    .modal-body { font-size: 14px; color: var(--on-surface-variant); text-align: center; line-height: 1.6; margin-bottom: 4px; }
+    .mandate-name-highlight { font-weight: 700; color: var(--on-surface); }
+    .mandate-detail-card { background: var(--surface-variant); border-radius: 10px; padding: 12px 14px; margin: 12px 0; }
+    .mandate-detail-row { display: flex; justify-content: space-between; padding: 5px 0; }
+    .mandate-detail-label { font-size: 12px; color: var(--outline); }
+    .mandate-detail-value { font-size: 12px; color: var(--on-surface); font-weight: 500; }
+    .info-note { font-size: 12px; color: var(--on-surface-variant); text-align: center; line-height: 1.5; padding: 0 4px; }
+    .modal-actions { display: flex; flex-direction: column; gap: 10px; margin-top: 20px; }
+    .btn-cancel-mandate { background: var(--error); color: #FFFFFF; border: none; border-radius: 12px; padding: 15px; font-size: 15px; font-weight: 600; font-family: 'Outfit', sans-serif; cursor: pointer; }
+    .btn-keep { background: var(--surface); color: var(--on-surface); border: 1px solid var(--outline-variant); border-radius: 12px; padding: 15px; font-size: 15px; font-weight: 600; font-family: 'Outfit', sans-serif; cursor: pointer; }
+    .material-icons { font-family: 'Material Icons'; font-style: normal; font-size: 24px; line-height: 1; display: inline-block; -webkit-font-smoothing: antialiased; }
+  </style>
+</head>
+<body>
+
+  <div class="top-app-bar" data-component-type="top_app_bar" data-component-id="direct_debits_top_bar">
+    <button class="icon-btn" aria-label="Go back" aria-disabled="true">
+      <span class="material-icons" aria-hidden="true">arrow_back</span>
+    </button>
+    <span class="bar-title">Direct Debits</span>
+  </div>
+
+  <!-- Background content (dimmed) -->
+  <div class="screen-content" aria-hidden="true">
+    <div class="mandate-card">
+      <div class="mandate-row">
+        <div class="mandate-logo"><span class="material-icons">bolt</span></div>
+        <div>
+          <div class="mandate-name">Electricity Board</div>
+          <div class="mandate-meta">Monthly · Up to £120.00</div>
+          <span class="badge-active">Active</span>
+        </div>
+      </div>
+    </div>
+    <div class="mandate-card">
+      <div class="mandate-row">
+        <div class="mandate-logo"><span class="material-icons">wifi</span></div>
+        <div>
+          <div class="mandate-name">BroadNet ISP</div>
+          <div class="mandate-meta">Monthly · £45.99 fixed</div>
+          <span class="badge-active">Active</span>
+        </div>
+      </div>
+    </div>
+    <div class="mandate-card">
+      <div class="mandate-row">
+        <div class="mandate-logo"><span class="material-icons">local_gym</span></div>
+        <div>
+          <div class="mandate-name">FitLife Gym</div>
+          <div class="mandate-meta">Monthly · £32.00 fixed</div>
+          <span class="badge-cancelled">Cancelled</span>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Cancel confirmation bottom sheet -->
+  <div class="modal-overlay" role="dialog" aria-modal="true" aria-labelledby="cancel_modal_title"
+       data-component-type="box" data-component-id="cancel_confirm_dialog">
+    <div class="modal-sheet">
+      <div class="modal-handle" aria-hidden="true"></div>
+
+      <div class="modal-icon-ring" aria-hidden="true">
+        <span class="material-icons">cancel</span>
+      </div>
+
+      <h2 class="modal-title" id="cancel_modal_title" data-component-type="text" data-component-id="cancel_dialog_title">
+        Cancel Direct Debit?
+      </h2>
+
+      <p class="modal-body" data-component-type="text" data-component-id="cancel_dialog_body">
+        You are about to cancel the direct debit mandate for <span class="mandate-name-highlight">Electricity Board</span>.
+      </p>
+
+      <div class="mandate-detail-card" data-component-type="box" data-component-id="cancel_mandate_summary">
+        <div class="mandate-detail-row">
+          <span class="mandate-detail-label">Payee</span>
+          <span class="mandate-detail-value">Electricity Board</span>
+        </div>
+        <div class="mandate-detail-row">
+          <span class="mandate-detail-label">Frequency</span>
+          <span class="mandate-detail-value">Monthly</span>
+        </div>
+        <div class="mandate-detail-row">
+          <span class="mandate-detail-label">Max Amount</span>
+          <span class="mandate-detail-value">£120.00</span>
+        </div>
+        <div class="mandate-detail-row">
+          <span class="mandate-detail-label">Next Payment</span>
+          <span class="mandate-detail-value">01 Jun 2026</span>
+        </div>
+      </div>
+
+      <p class="info-note">No further payments will be collected. Contact Electricity Board directly if you have an outstanding balance.</p>
+
+      <div class="modal-actions">
+        <button class="btn-cancel-mandate"
+                data-component-type="button" data-component-id="confirm_cancel_dd_button"
+                data-action="confirm_cancel_dd" aria-label="Confirm cancel direct debit for Electricity Board" tabindex="0">
+          Cancel Direct Debit
+        </button>
+        <button class="btn-keep"
+                data-component-type="button" data-component-id="keep_dd_button"
+                data-action="dismiss_cancel_dialog" aria-label="Keep this direct debit" tabindex="0">
+          Keep Direct Debit
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <script src="../../preview/_shared/preview-runtime.js"></script>
+</body>
+</html>

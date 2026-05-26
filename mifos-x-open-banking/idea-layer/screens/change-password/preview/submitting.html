@@ -1,0 +1,163 @@
+<!doctype html>
+<html lang="en" data-screen="change-password" data-state="submitting">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Change Password — Submitting</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet">
+  <style>
+    :root {
+      --primary: #4C662B;
+      --on-primary: #FFFFFF;
+      --primary-container: #CDEDA3;
+      --secondary: #386663;
+      --error: #BA1A1A;
+      --background: #F9FAEF;
+      --on-background: #1A1C16;
+      --surface: #FFFFFF;
+      --on-surface: #1A1C16;
+      --surface-variant: #E1E4D5;
+      --on-surface-variant: #44483D;
+      --outline: #75796C;
+      --outline-variant: #C5C8BA;
+      --spacing-xs: 4px; --spacing-sm: 8px; --spacing-md: 16px;
+      --spacing-lg: 24px; --spacing-xl: 32px;
+    }
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    body { font-family: 'Outfit', sans-serif; background: var(--background); color: var(--on-background); min-height: 100vh; }
+    .device-frame { max-width: 390px; margin: 0 auto; min-height: 100vh; background: var(--background); display: flex; flex-direction: column; position: relative; }
+    .top-app-bar {
+      display: flex; align-items: center; height: 64px; padding: 0 var(--spacing-sm);
+      background: var(--background); position: sticky; top: 0; z-index: 10;
+    }
+    .top-app-bar__nav-btn {
+      width: 48px; height: 48px; border: none; background: transparent; border-radius: 50%;
+      cursor: pointer; display: flex; align-items: center; justify-content: center;
+      color: var(--on-background); flex-shrink: 0; opacity: 0.5;
+    }
+    .top-app-bar__title { font-size: 22px; font-weight: 500; color: var(--on-background); flex: 1; padding-left: var(--spacing-sm); }
+    main { flex: 1; overflow-y: auto; padding: var(--spacing-lg); display: flex; flex-direction: column; gap: var(--spacing-md); }
+    .header-section { display: flex; flex-direction: column; padding-bottom: var(--spacing-xl); gap: var(--spacing-xs); }
+    .header-title { font-size: 24px; font-weight: 700; color: var(--primary); }
+    .header-subtitle { font-size: 14px; color: var(--outline); line-height: 1.5; }
+    .card { background: var(--surface); border-radius: 12px; padding: var(--spacing-md); margin-bottom: var(--spacing-md); }
+    .input-group { display: flex; flex-direction: column; gap: 4px; margin-bottom: var(--spacing-sm); }
+    .input-label { font-size: 12px; font-weight: 500; color: var(--on-surface-variant); }
+    .input-wrapper { position: relative; display: flex; align-items: center; border: 1.5px solid var(--outline-variant); border-radius: 8px; background: var(--surface); opacity: 0.6; }
+    .input-field { flex: 1; height: 48px; padding: 0 var(--spacing-md); border: none; background: transparent; font-family: 'Outfit', sans-serif; font-size: 14px; color: var(--on-surface); outline: none; }
+    .input-field::placeholder { color: var(--outline-variant); }
+    .divider { height: 1px; background: var(--surface-variant); margin: var(--spacing-xs) 0; }
+    .strength-indicator { display: flex; flex-direction: column; gap: 2px; padding-bottom: var(--spacing-sm); }
+    .strength-bar-track { height: 4px; border-radius: 2px; background: var(--surface-variant); overflow: hidden; }
+    .strength-bar-fill { height: 100%; width: 65%; border-radius: 2px; background: var(--primary); }
+    .strength-label { font-size: 12px; color: var(--outline); }
+    .btn-filled {
+      display: flex; align-items: center; justify-content: center; gap: 10px;
+      width: 100%; height: 52px; padding: 0 var(--spacing-xl);
+      background: var(--primary); border: none; border-radius: 12px;
+      color: var(--on-primary); font-family: 'Outfit', sans-serif;
+      font-size: 16px; font-weight: 600; cursor: not-allowed; opacity: 0.85;
+    }
+    /* Spinner */
+    .btn-spinner {
+      width: 20px; height: 20px; border: 2.5px solid rgba(255,255,255,0.4);
+      border-top-color: var(--on-primary); border-radius: 50%;
+      animation: spin 0.8s linear infinite; flex-shrink: 0;
+    }
+    @keyframes spin { to { transform: rotate(360deg); } }
+    /* Overlay */
+    .submitting-overlay {
+      position: absolute; inset: 0; background: rgba(249,250,239,0.55);
+      display: flex; align-items: center; justify-content: center; z-index: 20;
+      pointer-events: all;
+    }
+    .overlay-card {
+      background: var(--surface); border-radius: 16px;
+      padding: 32px 24px; text-align: center;
+      box-shadow: 0 8px 24px rgba(0,0,0,0.12);
+      display: flex; flex-direction: column; align-items: center; gap: 16px;
+    }
+    .overlay-spinner {
+      width: 48px; height: 48px; border: 4px solid var(--primary-container);
+      border-top-color: var(--primary); border-radius: 50%;
+      animation: spin 0.85s linear infinite;
+    }
+    .overlay-text { font-size: 16px; font-weight: 600; color: var(--on-surface); }
+    .overlay-sub { font-size: 13px; color: var(--outline); }
+    .material-icons {
+      font-family: 'Material Icons'; font-style: normal; font-weight: normal;
+      font-size: 24px; line-height: 1; letter-spacing: normal; text-transform: none;
+      display: inline-block; white-space: nowrap; word-wrap: normal; direction: ltr;
+      -webkit-font-feature-settings: 'liga'; font-feature-settings: 'liga'; -webkit-font-smoothing: antialiased;
+    }
+  </style>
+</head>
+<body>
+  <div class="device-frame">
+    <nav class="top-app-bar" role="navigation" aria-label="Screen navigation">
+      <button class="top-app-bar__nav-btn" aria-label="Navigate back" aria-disabled="true"
+              data-component-type="icon_button" data-component-id="top_app_bar_back">
+        <span class="material-icons" aria-hidden="true">arrow_back</span>
+      </button>
+      <h1 class="top-app-bar__title">Change Password</h1>
+    </nav>
+
+    <main id="chpw_root" data-component-type="stack" data-component-id="chpw_root" aria-busy="true">
+      <div class="header-section" data-component-type="stack" data-component-id="chpw_header_section">
+        <h2 class="header-title" data-component-type="text" data-component-id="chpw_header_title">Update Your Password</h2>
+        <p class="header-subtitle" data-component-type="text" data-component-id="chpw_header_subtitle">Choose a strong password that you don't use elsewhere.</p>
+      </div>
+
+      <div class="card" data-component-type="card" data-component-id="chpw_form_card">
+        <div class="input-group" data-component-type="input" data-component-id="chpw_current_password_input">
+          <label class="input-label" for="current-password">Current Password</label>
+          <div class="input-wrapper">
+            <input id="current-password" class="input-field" type="password" value="••••••••" disabled aria-label="Current password, disabled while submitting">
+          </div>
+        </div>
+        <hr class="divider" role="separator" aria-hidden="true">
+        <div class="input-group" data-component-type="input" data-component-id="chpw_new_password_input">
+          <label class="input-label" for="new-password">New Password</label>
+          <div class="input-wrapper">
+            <input id="new-password" class="input-field" type="password" value="••••••••••" disabled aria-label="New password, disabled while submitting">
+          </div>
+        </div>
+        <div class="strength-indicator" data-component-type="stack" data-component-id="chpw_strength_indicator">
+          <div class="strength-bar-track" role="progressbar" aria-valuenow="65" aria-valuemin="0" aria-valuemax="100">
+            <div class="strength-bar-fill"></div>
+          </div>
+          <span class="strength-label">Password strength: Good</span>
+        </div>
+        <hr class="divider" role="separator" aria-hidden="true">
+        <div class="input-group" data-component-type="input" data-component-id="chpw_confirm_password_input">
+          <label class="input-label" for="confirm-password">Confirm New Password</label>
+          <div class="input-wrapper">
+            <input id="confirm-password" class="input-field" type="password" value="••••••••••" disabled aria-label="Confirm new password, disabled while submitting">
+          </div>
+        </div>
+      </div>
+
+      <button class="btn-filled" disabled aria-label="Updating password, please wait" aria-busy="true"
+              data-component-type="button" data-component-id="chpw_submit_button">
+        <div class="btn-spinner" aria-hidden="true"></div>
+        Updating...
+      </button>
+    </main>
+
+    <!-- Submitting Overlay -->
+    <div class="submitting-overlay" role="status" aria-live="polite" aria-label="Submitting password change"
+         data-component-type="box" data-component-id="chpw_submitting_overlay">
+      <div class="overlay-card">
+        <div class="overlay-spinner" aria-hidden="true"></div>
+        <span class="overlay-text">Updating password...</span>
+        <span class="overlay-sub">Please don't close this screen</span>
+      </div>
+    </div>
+  </div>
+
+  <script src="../../preview/_shared/preview-runtime.js"></script>
+</body>
+</html>

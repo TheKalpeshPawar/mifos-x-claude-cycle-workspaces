@@ -1,0 +1,498 @@
+<!doctype html>
+<html lang="en" data-screen="change-password" data-state="idle">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Change Password — Mifos X Open Banking</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet">
+  <style>
+    :root {
+      --primary: #4C662B;
+      --on-primary: #FFFFFF;
+      --primary-container: #CDEDA3;
+      --secondary: #386663;
+      --error: #BA1A1A;
+      --background: #F9FAEF;
+      --on-background: #1A1C16;
+      --surface: #FFFFFF;
+      --on-surface: #1A1C16;
+      --surface-variant: #E1E4D5;
+      --on-surface-variant: #44483D;
+      --outline: #75796C;
+      --outline-variant: #C5C8BA;
+      --warning: #E8A317;
+
+      --spacing-xs: 4px;
+      --spacing-sm: 8px;
+      --spacing-md: 16px;
+      --spacing-lg: 24px;
+      --spacing-xl: 32px;
+    }
+
+    *, *::before, *::after {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    body {
+      font-family: 'Outfit', sans-serif;
+      background: var(--background);
+      color: var(--on-background);
+      min-height: 100vh;
+    }
+
+    .device-frame {
+      max-width: 390px;
+      margin: 0 auto;
+      min-height: 100vh;
+      background: var(--background);
+      display: flex;
+      flex-direction: column;
+    }
+
+    /* Top App Bar */
+    .top-app-bar {
+      display: flex;
+      align-items: center;
+      height: 64px;
+      padding: 0 var(--spacing-sm);
+      background: var(--background);
+      position: sticky;
+      top: 0;
+      z-index: 10;
+    }
+
+    .top-app-bar__nav-btn {
+      width: 48px;
+      height: 48px;
+      border: none;
+      background: transparent;
+      border-radius: 50%;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: var(--on-background);
+      flex-shrink: 0;
+    }
+
+    .top-app-bar__nav-btn:hover {
+      background: rgba(0,0,0,0.08);
+    }
+
+    .top-app-bar__title {
+      font-size: 22px;
+      font-weight: 500;
+      color: var(--on-background);
+      flex: 1;
+      padding-left: var(--spacing-sm);
+    }
+
+    /* Main */
+    main {
+      flex: 1;
+      overflow-y: auto;
+      padding: var(--spacing-lg);
+      display: flex;
+      flex-direction: column;
+      gap: var(--spacing-md);
+    }
+
+    /* Header section */
+    .header-section {
+      display: flex;
+      flex-direction: column;
+      padding-bottom: var(--spacing-xl);
+      gap: var(--spacing-xs);
+    }
+
+    .header-title {
+      font-size: 24px;
+      font-weight: 700;
+      color: var(--primary);
+    }
+
+    .header-subtitle {
+      font-size: 14px;
+      font-weight: 400;
+      color: var(--outline);
+      line-height: 1.5;
+    }
+
+    /* Card */
+    .card {
+      background: var(--surface);
+      border-radius: 12px;
+      padding: var(--spacing-md);
+      margin-bottom: var(--spacing-md);
+    }
+
+    /* Input field */
+    .input-group {
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+      margin-bottom: var(--spacing-sm);
+    }
+
+    .input-group:last-child {
+      margin-bottom: 0;
+    }
+
+    .input-label {
+      font-size: 12px;
+      font-weight: 500;
+      color: var(--on-surface-variant);
+    }
+
+    .input-wrapper {
+      position: relative;
+      display: flex;
+      align-items: center;
+      border: 1.5px solid var(--outline-variant);
+      border-radius: 8px;
+      background: var(--surface);
+      transition: border-color 0.15s;
+    }
+
+    .input-wrapper:focus-within {
+      border-color: var(--primary);
+    }
+
+    .input-field {
+      flex: 1;
+      height: 48px;
+      padding: 0 var(--spacing-md);
+      border: none;
+      background: transparent;
+      font-family: 'Outfit', sans-serif;
+      font-size: 14px;
+      color: var(--on-surface);
+      outline: none;
+    }
+
+    .input-field::placeholder {
+      color: var(--outline-variant);
+    }
+
+    .input-toggle-btn {
+      width: 40px;
+      height: 40px;
+      border: none;
+      background: transparent;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: var(--outline);
+      border-radius: 50%;
+      margin-right: 4px;
+    }
+
+    .input-toggle-btn:hover {
+      background: rgba(0,0,0,0.04);
+    }
+
+    /* Divider */
+    .divider {
+      height: 1px;
+      background: var(--surface-variant);
+      margin-top: var(--spacing-xs);
+      margin-bottom: var(--spacing-xs);
+    }
+
+    /* Strength indicator */
+    .strength-indicator {
+      display: flex;
+      flex-direction: column;
+      gap: 2px;
+      padding-bottom: var(--spacing-sm);
+    }
+
+    .strength-bar-track {
+      height: 4px;
+      border-radius: 2px;
+      background: var(--surface-variant);
+      overflow: hidden;
+    }
+
+    .strength-bar-fill {
+      height: 100%;
+      width: 65%;
+      border-radius: 2px;
+      background: var(--primary);
+      transition: width 0.3s, background 0.3s;
+    }
+
+    .strength-label {
+      font-size: 12px;
+      font-weight: 400;
+      color: var(--outline);
+    }
+
+    /* Banner */
+    .banner {
+      border-radius: 8px;
+      padding: var(--spacing-sm) var(--spacing-md);
+      margin-bottom: var(--spacing-md);
+      display: flex;
+      align-items: flex-start;
+      gap: var(--spacing-sm);
+    }
+
+    .banner--error {
+      background: #FFDAD6;
+      color: var(--error);
+    }
+
+    .banner--success {
+      background: #D8EED0;
+      color: var(--primary);
+    }
+
+    .banner__icon {
+      font-size: 20px;
+      flex-shrink: 0;
+      margin-top: 1px;
+    }
+
+    .banner__text {
+      font-size: 14px;
+      font-weight: 400;
+      line-height: 1.5;
+    }
+
+    /* Submit button */
+    .btn-filled {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      width: 100%;
+      height: 52px;
+      padding: 0 var(--spacing-xl);
+      background: var(--primary);
+      border: none;
+      border-radius: 12px;
+      color: var(--on-primary);
+      font-family: 'Outfit', sans-serif;
+      font-size: 16px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: opacity 0.15s;
+    }
+
+    .btn-filled:hover {
+      opacity: 0.9;
+    }
+
+    .btn-filled:active {
+      opacity: 0.8;
+    }
+
+    .material-icons {
+      font-family: 'Material Icons';
+      font-style: normal;
+      font-weight: normal;
+      font-size: 24px;
+      line-height: 1;
+      letter-spacing: normal;
+      text-transform: none;
+      display: inline-block;
+      white-space: nowrap;
+      word-wrap: normal;
+      direction: ltr;
+      -webkit-font-feature-settings: 'liga';
+      font-feature-settings: 'liga';
+      -webkit-font-smoothing: antialiased;
+    }
+  </style>
+</head>
+<body>
+  <div class="device-frame">
+    <!-- Top App Bar -->
+    <nav class="top-app-bar" role="navigation" aria-label="Screen navigation">
+      <button
+        class="top-app-bar__nav-btn"
+        aria-label="Navigate back"
+        data-action="navigate_back"
+        data-component-type="icon_button"
+        data-component-id="top_app_bar_back"
+      >
+        <span class="material-icons" aria-hidden="true">arrow_back</span>
+      </button>
+      <h1 class="top-app-bar__title">Change Password</h1>
+    </nav>
+
+    <!-- Main Content -->
+    <main id="chpw_root" data-component-type="stack" data-component-id="chpw_root">
+
+      <!-- Header Section -->
+      <div
+        class="header-section"
+        data-component-type="stack"
+        data-component-id="chpw_header_section"
+      >
+        <h2
+          class="header-title"
+          data-component-type="text"
+          data-component-id="chpw_header_title"
+          role="heading"
+          aria-label="Update Your Password"
+        >
+          Update Your Password
+        </h2>
+        <p
+          class="header-subtitle"
+          data-component-type="text"
+          data-component-id="chpw_header_subtitle"
+          role="text"
+          aria-label="Choose a strong password that you don't use elsewhere."
+        >
+          Choose a strong password that you don't use elsewhere.
+        </p>
+      </div>
+
+      <!-- Form Card -->
+      <div
+        class="card"
+        data-component-type="card"
+        data-component-id="chpw_form_card"
+        role="group"
+        aria-label="Password change form"
+      >
+        <!-- Current Password -->
+        <div
+          class="input-group"
+          data-component-type="input"
+          data-component-id="chpw_current_password_input"
+        >
+          <label class="input-label" for="current-password">Current Password</label>
+          <div class="input-wrapper">
+            <input
+              id="current-password"
+              class="input-field"
+              type="password"
+              placeholder="Enter your current password"
+              aria-label="Current password"
+              autocomplete="current-password"
+              data-action="focus_field"
+            >
+            <button class="input-toggle-btn" type="button" aria-label="Toggle current password visibility">
+              <span class="material-icons" aria-hidden="true" style="font-size: 20px;">visibility_off</span>
+            </button>
+          </div>
+        </div>
+
+        <hr
+          class="divider"
+          data-component-type="divider"
+          data-component-id="chpw_divider_1"
+          role="separator"
+          aria-hidden="true"
+        >
+
+        <!-- New Password -->
+        <div
+          class="input-group"
+          data-component-type="input"
+          data-component-id="chpw_new_password_input"
+        >
+          <label class="input-label" for="new-password">New Password</label>
+          <div class="input-wrapper">
+            <input
+              id="new-password"
+              class="input-field"
+              type="password"
+              placeholder="At least 8 characters"
+              aria-label="New password"
+              autocomplete="new-password"
+              data-action="focus_field"
+            >
+            <button class="input-toggle-btn" type="button" aria-label="Toggle new password visibility">
+              <span class="material-icons" aria-hidden="true" style="font-size: 20px;">visibility_off</span>
+            </button>
+          </div>
+        </div>
+
+        <!-- Strength Indicator -->
+        <div
+          class="strength-indicator"
+          data-component-type="stack"
+          data-component-id="chpw_strength_indicator"
+        >
+          <div
+            class="strength-bar-track"
+            data-component-type="progress_bar"
+            data-component-id="chpw_strength_bar"
+            role="progressbar"
+            aria-label="Password strength indicator"
+            aria-valuenow="65"
+            aria-valuemin="0"
+            aria-valuemax="100"
+          >
+            <div class="strength-bar-fill"></div>
+          </div>
+          <span
+            class="strength-label"
+            data-component-type="text"
+            data-component-id="chpw_strength_label"
+            role="text"
+            aria-label="Password strength status"
+          >Password strength: Good</span>
+        </div>
+
+        <hr
+          class="divider"
+          data-component-type="divider"
+          data-component-id="chpw_divider_2"
+          role="separator"
+          aria-hidden="true"
+        >
+
+        <!-- Confirm Password -->
+        <div
+          class="input-group"
+          data-component-type="input"
+          data-component-id="chpw_confirm_password_input"
+        >
+          <label class="input-label" for="confirm-password">Confirm New Password</label>
+          <div class="input-wrapper">
+            <input
+              id="confirm-password"
+              class="input-field"
+              type="password"
+              placeholder="Re-enter your new password"
+              aria-label="Confirm new password"
+              autocomplete="new-password"
+              data-action="focus_field"
+            >
+            <button class="input-toggle-btn" type="button" aria-label="Toggle confirm password visibility">
+              <span class="material-icons" aria-hidden="true" style="font-size: 20px;">visibility_off</span>
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <!-- Submit Button -->
+      <button
+        class="btn-filled"
+        data-component-type="button"
+        data-component-id="chpw_submit_button"
+        role="button"
+        aria-label="Submit password change"
+        tabindex="0"
+        data-action="submit_change_password"
+      >
+        Update Password
+      </button>
+
+    </main>
+  </div>
+
+  <script src="../../preview/_shared/preview-runtime.js"></script>
+</body>
+</html>
