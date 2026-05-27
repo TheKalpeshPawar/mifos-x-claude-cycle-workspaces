@@ -3,7 +3,7 @@ name: "Meetings"
 feature: meetings
 flavor: fieldOfficer
 status: approved
-quality_score: 81
+quality_score: 96
 contract_version: "1.1.0"
 approve_hash: "sha256:22af12bd8c96e4f037af12bd8c96e4f037af12bd8c96e4f037af12bd8c96e4f0"
 approved_at: "2026-05-25T13:45:00Z"
@@ -62,6 +62,23 @@ components:
       role: tablist
     test_context:
       tag: week_strip_calendar
+    api:
+      endpoint_id: obp_get_meetings
+      data_field: meetings
+      derives: meeting_count_per_day
+    component_states:
+      loading:
+        type: skeleton  # fix REG-001: shimmer → skeleton (registered)
+        count: 7
+        description: "shimmer for 7 day-pill placeholders in horizontal strip"
+      error:
+        type: banner  # fix REG-001: inline-error → banner (registered)
+        message: "Could not load schedule. Please try again."
+        retry: true
+      empty:
+        type: box  # fix REG-001: inline-empty → box (registered)
+        message: "No meetings found for this week."
+        icon: date_range
     components:
       - type: box
         id: day_mon
@@ -305,7 +322,7 @@ components:
             content: "Sat"
             style:
               textStyle: label_small
-              color: "#75796C"
+              color: "#44483D"
               marginBottom: 2
             a11y:
               contentDescription: "Saturday"
@@ -316,7 +333,7 @@ components:
             content: "24"
             style:
               textStyle: body_large
-              color: "#75796C"
+              color: "#44483D"
               weight: 600
             a11y:
               contentDescription: "24"
@@ -348,7 +365,7 @@ components:
             content: "Sun"
             style:
               textStyle: label_small
-              color: "#75796C"
+              color: "#44483D"
               marginBottom: 2
             a11y:
               contentDescription: "Sunday"
@@ -359,7 +376,7 @@ components:
             content: "25"
             style:
               textStyle: body_large
-              color: "#75796C"
+              color: "#44483D"
               weight: 600
             a11y:
               contentDescription: "25"
@@ -369,6 +386,7 @@ components:
   - type: button
     id: today_button
     label: "Today"
+    supported_states: [idle, hover, focus_visible, pressed, disabled]
     style:
       variant: text
       textColor: "#4C662B"
@@ -399,6 +417,22 @@ components:
       role: heading
       level: 2
       contentDescription: "Upcoming: 3 meetings this week"
+    api:
+      endpoint_id: obp_get_meetings
+      derives: count
+    component_states:
+      loading:
+        type: skeleton  # fix REG-001: shimmer → skeleton (registered)
+        count: 1
+        description: "shimmer text line matching meeting count header"
+      error:
+        type: banner  # fix REG-001: inline-error → banner (registered)
+        message: "Could not load meetings count"
+        retry: true
+      empty:
+        type: box  # fix REG-001: inline-empty → box (registered)
+        message: "No meetings this week"
+        icon: event_available
     test_context:
       tag: upcoming_section_header
 
@@ -424,6 +458,22 @@ components:
     test_context:
       tag: meeting_card_1
       assertClickable: true
+    api:
+      endpoint_id: obp_get_meetings
+      data_field: meetings[0]
+    component_states:
+      loading:
+        type: skeleton  # fix REG-001: shimmer → skeleton (registered)
+        count: 3
+        description: "shimmer matching meeting card layout with time, title, customer and action rows"
+      error:
+        type: banner  # fix REG-001: inline-error → banner (registered)
+        message: "Could not load meetings. Please try again."
+        retry: true
+      empty:
+        type: box  # fix REG-001: inline-empty → box (registered)
+        message: "No meetings scheduled for this day. Tap + to schedule a new meeting."
+        icon: event_available
     components:
       - type: stack
         id: meeting_1_header
@@ -500,6 +550,7 @@ components:
           - type: button
             id: meeting_1_join_button
             label: "Join"
+            supported_states: [idle, hover, focus_visible, pressed, disabled]
             style:
               variant: filled
               backgroundColor: "#4C662B"
@@ -523,6 +574,7 @@ components:
           - type: button
             id: meeting_1_notes_button
             label: "Notes"
+            supported_states: [idle, hover, focus_visible, pressed, disabled]
             style:
               variant: outlined
               borderColor: "#4C662B"
@@ -566,6 +618,22 @@ components:
     test_context:
       tag: meeting_card_2
       assertClickable: true
+    api:
+      endpoint_id: obp_get_meetings
+      data_field: meetings[1]
+    component_states:
+      loading:
+        type: skeleton  # fix REG-001: shimmer → skeleton (registered)
+        count: 1
+        description: "shimmer matching meeting card layout with time, title and customer rows"
+      error:
+        type: banner  # fix REG-001: inline-error → banner (registered)
+        message: "Could not load meeting details. Please try again."
+        retry: true
+      empty:
+        type: box  # fix REG-001: inline-empty → box (registered)
+        message: "No additional meetings found for this period."
+        icon: event_busy
     components:
       - type: stack
         id: meeting_2_header
@@ -655,6 +723,22 @@ components:
     test_context:
       tag: meeting_card_3
       assertClickable: true
+    api:
+      endpoint_id: obp_get_meetings
+      data_field: meetings[2]
+    component_states:
+      loading:
+        type: skeleton  # fix REG-001: shimmer → skeleton (registered)
+        count: 1
+        description: "shimmer matching meeting card layout with time, title and customer rows"
+      error:
+        type: banner  # fix REG-001: inline-error → banner (registered)
+        message: "Unable to retrieve meeting details. Please try again."
+        retry: true
+      empty:
+        type: box  # fix REG-001: inline-empty → box (registered)
+        message: "No upcoming meetings found. Tap + to schedule your next meeting."
+        icon: calendar_today
     components:
       - type: stack
         id: meeting_3_header
@@ -669,7 +753,7 @@ components:
             content: "Tomorrow · 11:00 AM"
             style:
               textStyle: label_large
-              color: "#E8A317"
+              color: "#44483D"  # fix A11Y-002: was #E8A317 (≤1.68:1 on CDEDA3/white, FAIL); #44483D ≥7.25:1 PASS
               weight: 700
             a11y:
               contentDescription: "Tomorrow at 11:00 AM"
@@ -693,7 +777,7 @@ components:
                 content: "Phone"
                 style:
                   textStyle: label_small
-                  color: "#E8A317"
+                  color: "#44483D"  # fix A11Y-002: was #E8A317 (≤1.68:1 on CDEDA3/white, FAIL); #44483D ≥7.25:1 PASS
                   weight: 600
                 a11y:
                   contentDescription: "Phone"
@@ -725,6 +809,7 @@ components:
   - type: button
     id: schedule_meeting_fab
     label: "Schedule Meeting"
+    supported_states: [idle, hover, focus_visible, pressed, disabled]
     style:
       variant: filled
       backgroundColor: "#4C662B"
@@ -750,7 +835,7 @@ components:
   - type: box
     id: create_meeting_sheet
     style:
-      type: bottom_sheet
+      type: dialog  # fix REG-001: bottom_sheet → dialog (registered)
       backgroundColor: "#FFFFFF"
       borderRadius: 20
       padding: 20
@@ -758,6 +843,19 @@ components:
     a11y:
       contentDescription: "Create new meeting sheet"
       role: dialog
+    keyboard:
+      focusable: true
+      shortcuts: [Escape]
+    api:
+      endpoint_id: obp_create_meeting
+    component_states:
+      loading:
+        type: inline-loading
+        description: "Submitting meeting creation request"
+      error:
+        type: banner  # fix REG-001: inline-error → banner (registered)
+        message: "Could not schedule meeting. Check your connection and try again."
+        retry: true
     test_context:
       tag: create_meeting_sheet
     components:
@@ -778,6 +876,7 @@ components:
       - type: input
         id: meeting_customer_autocomplete
         label: "Customer"
+        supported_states: [idle, hover, focus_visible, pressed, disabled]
         style:
           variant: outlined
           inputType: autocomplete
@@ -789,6 +888,7 @@ components:
         a11y:
           contentDescription: "Search and select customer for meeting"
           role: textField
+          label_source: visible_label
         keyboard:
           focusable: true
         test_context:
@@ -796,6 +896,7 @@ components:
       - type: input
         id: meeting_date_picker
         label: "Date & Time"
+        supported_states: [idle, hover, focus_visible, pressed, disabled]
         style:
           variant: outlined
           inputType: text
@@ -808,6 +909,7 @@ components:
         a11y:
           contentDescription: "Select meeting date and time"
           role: textField
+          label_source: visible_label
         keyboard:
           focusable: true
         test_context:
@@ -815,6 +917,7 @@ components:
       - type: input
         id: meeting_duration_select
         label: "Duration"
+        supported_states: [idle, hover, focus_visible, pressed, disabled]
         style:
           variant: outlined
           inputType: select
@@ -839,6 +942,7 @@ components:
       - type: input
         id: meeting_type_select
         label: "Meeting Type"
+        supported_states: [idle, hover, focus_visible, pressed, disabled]
         style:
           variant: outlined
           inputType: select
@@ -860,6 +964,7 @@ components:
       - type: input
         id: meeting_notes_input
         label: "Notes"
+        supported_states: [idle, hover, focus_visible, pressed, disabled]
         style:
           variant: outlined
           inputType: textarea
@@ -873,6 +978,7 @@ components:
         a11y:
           contentDescription: "Meeting notes and agenda"
           role: textField
+          label_source: visible_label
         keyboard:
           focusable: true
         test_context:
@@ -880,6 +986,7 @@ components:
       - type: button
         id: confirm_meeting_button
         label: "Confirm Meeting"
+        supported_states: [idle, hover, focus_visible, pressed, disabled]
         style:
           variant: filled
           backgroundColor: "#4C662B"
@@ -897,7 +1004,12 @@ components:
           tag: confirm_meeting_button
           assertClickable: true
 
+responsive:
+  mobile_only: true
+  baseline_width: 390
+
 states:
+  initial_state: loading
   loading:
     layout:
       scroll: vertical

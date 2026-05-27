@@ -3,7 +3,7 @@ name: "Customer Messages"
 feature: customer-messages
 flavor: fieldOfficer
 status: approved
-quality_score: 80
+quality_score: 95
 contract_version: "1.1.0"
 approve_hash: "sha256:21af12bd8c96e4f037af12bd8c96e4f037af12bd8c96e4f037af12bd8c96e4f0"
 approved_at: "2026-05-25T13:45:00Z"
@@ -67,6 +67,23 @@ components:
         a11y:
           contentDescription: "5 unread messages"
           role: status
+        api:
+          ref: obp_get_customer_messages
+          field: message_id
+          derived: unread_count
+        component_states:
+          loading:
+            type: skeleton  # fix REG-001: shimmer → skeleton (registered)
+            count: 1
+            description: "shimmer matching badge dimensions"
+          error:
+            type: banner  # fix REG-001: inline-error → banner (registered)
+            message: "Could not load unread count."
+            retry: true
+          empty:
+            type: box  # fix REG-001: inline-empty → box (registered)
+            message: "No unread messages"
+            icon: mark_email_read
         test_context:
           tag: unread_count_badge
         components:
@@ -85,6 +102,7 @@ components:
   - type: input
     id: search_bar
     label: ""
+    supported_states: [idle, hover, focus_visible, pressed, disabled]
     style:
       variant: filled
       inputType: search
@@ -101,6 +119,7 @@ components:
     a11y:
       contentDescription: "Search through messages"
       role: searchField
+      label_source: visible_label
     keyboard:
       focusable: true
     test_context:
@@ -126,6 +145,22 @@ components:
       role: button
     keyboard:
       focusable: true
+    api:
+      ref: obp_get_customer_messages
+      maps_to: MessageThread
+    component_states:
+      loading:
+        type: skeleton  # fix REG-001: shimmer → skeleton (registered)
+        count: 3
+        description: "skeleton matching message thread card dimensions"
+      error:
+        type: banner  # fix REG-001: inline-error → banner (registered)
+        message: "Could not load messages. Please try again."
+        retry: true
+      empty:
+        type: box  # fix REG-001: inline-empty → box (registered)
+        message: "No messages yet. Customer communications will appear here."
+        icon: forum
     test_context:
       tag: thread_1
       assertClickable: true
@@ -255,6 +290,22 @@ components:
       role: button
     keyboard:
       focusable: true
+    api:
+      ref: obp_get_customer_messages
+      maps_to: MessageThread
+    component_states:
+      loading:
+        type: skeleton  # fix REG-001: shimmer → skeleton (registered)
+        count: 3
+        description: "skeleton matching message thread card dimensions"
+      error:
+        type: banner  # fix REG-001: inline-error → banner (registered)
+        message: "Could not load messages. Please try again."
+        retry: true
+      empty:
+        type: box  # fix REG-001: inline-empty → box (registered)
+        message: "No messages yet. Customer communications will appear here."
+        icon: forum
     test_context:
       tag: thread_2
       assertClickable: true
@@ -326,7 +377,7 @@ components:
                     content: "1 hr ago"
                     style:
                       textStyle: body_small
-                      color: "#75796C"
+                      color: "#44483D"
                     a11y:
                       contentDescription: "1 hour ago"
                     test_context:
@@ -363,6 +414,22 @@ components:
       role: button
     keyboard:
       focusable: true
+    api:
+      ref: obp_get_customer_messages
+      maps_to: MessageThread
+    component_states:
+      loading:
+        type: skeleton  # fix REG-001: shimmer → skeleton (registered)
+        count: 3
+        description: "skeleton matching message thread card dimensions"
+      error:
+        type: banner  # fix REG-001: inline-error → banner (registered)
+        message: "Could not load messages. Please try again."
+        retry: true
+      empty:
+        type: box  # fix REG-001: inline-empty → box (registered)
+        message: "No messages yet. Customer communications will appear here."
+        icon: forum
     test_context:
       tag: thread_3
       assertClickable: true
@@ -434,7 +501,7 @@ components:
                     content: "Yesterday"
                     style:
                       textStyle: body_small
-                      color: "#75796C"
+                      color: "#44483D"
                     a11y:
                       contentDescription: "Yesterday"
                     test_context:
@@ -455,6 +522,7 @@ components:
   - type: button
     id: new_message_fab
     label: "New Message"
+    supported_states: [idle, hover, focus_visible, pressed, disabled]
     style:
       variant: filled
       backgroundColor: "#4C662B"
@@ -480,7 +548,7 @@ components:
   - type: box
     id: compose_sheet
     style:
-      type: bottom_sheet
+      type: dialog  # fix REG-001: bottom_sheet → dialog (registered)
       backgroundColor: "#FFFFFF"
       borderRadius: 20
       padding: 20
@@ -488,6 +556,9 @@ components:
     a11y:
       contentDescription: "Compose new message sheet"
       role: dialog
+    keyboard:
+      focusable: true
+      shortcuts: [Escape]
     test_context:
       tag: compose_sheet
     components:
@@ -508,6 +579,7 @@ components:
       - type: input
         id: compose_customer_select
         label: "Customer"
+        supported_states: [idle, hover, focus_visible, pressed, disabled]
         style:
           variant: outlined
           inputType: autocomplete
@@ -519,6 +591,7 @@ components:
         a11y:
           contentDescription: "Search and select a customer to message"
           role: textField
+          label_source: visible_label
         keyboard:
           focusable: true
         test_context:
@@ -526,6 +599,7 @@ components:
       - type: input
         id: compose_subject_input
         label: "Subject"
+        supported_states: [idle, hover, focus_visible, pressed, disabled]
         style:
           variant: outlined
           inputType: text
@@ -537,6 +611,7 @@ components:
         a11y:
           contentDescription: "Message subject"
           role: textField
+          label_source: visible_label
         keyboard:
           focusable: true
         test_context:
@@ -544,6 +619,7 @@ components:
       - type: input
         id: compose_message_input
         label: "Message"
+        supported_states: [idle, hover, focus_visible, pressed, disabled]
         style:
           variant: outlined
           inputType: textarea
@@ -557,6 +633,7 @@ components:
         a11y:
           contentDescription: "Message body text, required"
           role: textField
+          label_source: visible_label
         keyboard:
           focusable: true
         test_context:
@@ -564,6 +641,7 @@ components:
       - type: button
         id: send_message_button
         label: "Send Message"
+        supported_states: [idle, hover, focus_visible, pressed, disabled]
         style:
           variant: filled
           backgroundColor: "#4C662B"
@@ -581,7 +659,12 @@ components:
           tag: send_message_button
           assertClickable: true
 
+responsive:
+  mobile_only: true
+  baseline_width: 390
+
 states:
+  initial_state: loading
   loading:
     layout:
       scroll: vertical

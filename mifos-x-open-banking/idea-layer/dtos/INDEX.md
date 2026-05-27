@@ -1,6 +1,6 @@
 # DTO Registry — mifos-x-open-banking
 
-> Auto-maintained by `/idea generate-dtos`. 35 DTOs registered.
+> Auto-maintained by `/idea generate-dtos`. 41 DTOs registered.
 
 | Name | Version | Origin | Consumers | PII |
 |------|---------|--------|-----------|-----|
@@ -10,7 +10,10 @@
 | Agent | 1.0.0 | project | 1 | phone_number |
 | AtmLocation | 1.0.0 | project | 1 | - |
 | Branch | 1.0.0 | project | 1 | - |
+| CancelMandateResponse | 1.0.0 | project | 1 | - |
 | Card | 1.0.0 | project | 2 | bank_card_number, name_on_card |
+| ChangePasswordRequest | 1.0.0 | project | 1 | current_password, new_password |
+| ChangePasswordResponse | 1.0.0 | project | 1 | - |
 | Consent | 1.0.0 | project | 1 | - |
 | Counterparty | 1.0.0 | project | 2 | name, other_account_routing_address |
 | Currency | 1.0.0 | project | 1 | - |
@@ -21,12 +24,15 @@
 | GeoLocation | 1.0.0 | project | 1 | - |
 | IbanCheckResult | 1.0.0 | project | 1 | - |
 | KycDocument | 1.0.0 | project | 2 | number, date_of_birth |
+| MandateDetail | 1.0.0 | project | 1 | counterparty_name |
 | Meeting | 1.0.0 | project | 2 | - |
 | MeetingInvitee | 1.0.0 | project | 1 | - |
 | MoneyAmount | 1.0.0 | shared | 5 | - |
 | OidcToken | 1.0.0 | project | 1 | access_token, id_token, refresh_token |
 | PersonalDataField | 1.0.0 | project | 2 | - |
 | PostalAddress | 1.0.0 | project | 2 | - |
+| PasswordResetRequest | 1.0.0 | project | 1 | username, email |
+| PasswordResetResponse | 1.0.0 | project | 1 | - |
 | Product | 1.0.0 | project | 1 | - |
 | SepaTransactionRequest | 1.0.0 | project | 2 | to_iban, to_name |
 | SignalChannel | 1.0.0 | project | 1 | - |

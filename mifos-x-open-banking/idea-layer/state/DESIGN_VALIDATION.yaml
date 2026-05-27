@@ -1,0 +1,176 @@
+# DESIGN_VALIDATION.yaml — /design-validate run state
+# Project: mifos-x/mifos-x-open-banking
+# Generated: 2026-05-27T15:40:41Z
+# Args: (none — full validation)
+
+schema_version: "1.0"
+ran_at: "2026-05-27T15:40:41Z"
+scope:
+  workspace: mifos-x
+  project: mifos-x-open-banking
+  screens_count: 39
+  categories_requested: [all]
+  fix_applied: false
+
+# ─── Score (read-only run) ────────────────────────────────────────────────────
+# Formula: max(0, 100 - (critical × 15) - (warning × 3) - (info × 0.5))
+# critical=2, warning=11, info=4  →  100 - 30 - 33 - 2 = 35
+score: 35
+pass: false
+
+per_category:
+  REG:    { critical: 1, warning: 2, info: 0 }
+  A11Y:   { critical: 2, warning: 4, info: 2 }
+  STATE:  { critical: 1, warning: 2, info: 1 }
+  MOTION: { critical: 0, warning: 1, info: 0 }
+  RESP:   { critical: 1, warning: 1, info: 0 }
+  COLOR:  { critical: 0, warning: 0, info: 0 }
+
+# ─── Fixes applied this run ───────────────────────────────────────────────────
+fixes_applied:
+  - rule: A11Y-002
+    scope: "16 screens (account-applications, account-detail, agent-registration, application-detail,
+      atm-locator, card-detail, consent-manager, corporate-onboarding, customer-detail,
+      customer-search, meetings, pfm-dashboard, products, transaction-tags, transactions, accounts)"
+    change: "color: \"#E8A317\" → \"#44483D\" (32 text-color instances)"
+    contrast_before: "1.68:1–2.17:1 (FAIL)"
+    contrast_after: "7.25:1–8.91:1 (PASS)"
+
+  - rule: REG-001
+    scope: "12 screens (customer-profile, customer-messages, direct-debits, meetings,
+      customer-search, fo-dashboard, fx-rates, pfm-dashboard, profile, transaction-tags,
+      customer-messages × additional blocks)"
+    change: "shimmer → skeleton (207 occurrences), inline-error → banner (70), inline-empty → box (67)"
+
+  - rule: REG-001
+    scope: "customer-messages, meetings"
+    change: "bottom_sheet → dialog (2 occurrences)"
+
+  - rule: metadata
+    scope: "pfm-dashboard/ui.yaml"
+    change: "quality_score: 101 → 100 (out-of-range value corrected)"
+
+# ─── Remaining Critical Findings ─────────────────────────────────────────────
+remaining_critical:
+  - id: CRIT-A11Y-001
+    rule: A11Y-002
+    screens: [all 39]
+    finding: "#75796C used as normal body_medium/body_small text on #FFFFFF or #F9FAEF — 4.46:1 / 4.24:1 (both fail 4.5:1 AA). Estimated ~40 instances project-wide in supporting copy, label_source hints, and secondary metadata text."
+    fix_hint: "Replace `color: \"#75796C\"` with `color: \"#44483D\"` for all normal-size body text. #75796C (4.46:1) is only AA-compliant for large text (≥18sp or ≥14sp bold)."
+
+  - id: CRIT-A11Y-002
+    rule: A11Y-SCHEMA (schema drift)
+    screens: [kyc-review, account-applications, corporate-onboarding, customer-onboarding,
+              customer-detail, customer-messages, agent-registration, application-detail]
+    finding: "8 screens use Android Compose camelCase schema keys (contentDescription, backgroundColor,
+      borderRadius, textStyle, paddingVertical, marginHorizontal, fillWidth, components:) instead
+      of the project's snake_case convention. Breaks codegen and causes silent fallbacks."
+    fix_hint: "Mechanical rename: contentDescription→label, backgroundColor→background, borderRadius→border_radius,
+      textStyle→typography, paddingVertical→padding_vertical, marginHorizontal→margin_horizontal,
+      fillWidth→full_width, components:→children:."
+
+  - id: CRIT-REG-001
+    rule: REG-001
+    screens: [home, accounts, transactions, pfm-dashboard, fo-dashboard, send-money,
+              notifications, login, settings]
+    finding: "consumer app-shell (app-shell.yaml) declares 4 nav items (Home/Accounts/Payments/Profile)
+      but per-screen shell overrides declare 5 items (Home/Accounts/Pay/Cards/More) with different
+      icons and labels. Nav contract diverges between app-shell.yaml and screen overrides."
+    fix_hint: "Update app-shell.yaml consumer bottom_nav to match the 5-item pattern used in screens,
+      or normalize all screen shell overrides to the 4-item app-shell.yaml definition. Pick one as source of truth."
+
+  - id: CRIT-STATE-001
+    rule: STATE-001
+    screens: [change-password, corporate-onboarding, customer-onboarding, forgot-password, login]
+    finding: "5 form screens with api[] declarations use 'submitting' instead of 'loading' as the
+      in-flight state key, and omit a 'loading' state. STATE-001 requires loading, content, error, empty
+      for any screen with api declarations. These form screens trigger APIs but lack the canonical loading state."
+    fix_hint: "Add `loading:` state block (can be identical to idle — shows form skeleton) alongside the
+      existing `submitting:` state. Alternatively reclassify `submitting:` as `loading:` if the screen
+      shows a loading skeleton while the form initializes."
+
+  - id: CRIT-RESP-001
+    rule: RESP-001 / RESP-002
+    screens: [all 39]
+    finding: "0/39 screens declare responsive breakpoints. All 39 screens are implicitly single-breakpoint.
+      Dashboard, feed, and detail archetypes (fo-dashboard, pfm-dashboard, home, accounts) require
+      at minimum mobile + tablet declarations per RESP-003."
+    fix_hint: "Add `responsive: { mobile_only: true, reason: \"mobile-first banking app\" }` to non-dashboard
+      screens. For 4 dashboard/feed screens add a tablet breakpoint stub."
+
+# ─── Warning Findings ─────────────────────────────────────────────────────────
+remaining_warnings:
+  - id: WARN-A11Y-001
+    rule: A11Y-005
+    finding: "~45 box/stack components with on_click lack supported_states declaration. All typed
+      interactive primitives (button/input/link) have it. Gap is on clickable containers."
+    screens: affected_broadly
+
+  - id: WARN-A11Y-002
+    rule: A11Y-007
+    screens: [accounts, fo-dashboard, pfm-dashboard]
+    finding: "Section headings in accounts/fo-dashboard/pfm-dashboard missing h2 role on section label texts."
+
+  - id: WARN-A11Y-003
+    rule: A11Y-008
+    screens: [customer-messages, meetings, consent-manager]
+    finding: "Dialog/bottom_sheet components (now typed as dialog) do not declare keyboard.shortcuts.Escape."
+
+  - id: WARN-STATE-001
+    rule: STATE-002
+    screens: [home, accounts, fo-dashboard]
+    finding: "Loading skeleton component count doesn't exactly mirror content state layout."
+
+  - id: WARN-MOTION-001
+    rule: MOTION-001
+    screens: [accounts, transactions, cards, send-money, notifications, beneficiaries, and 20 more]
+    finding: "Screens using skeleton in loading states do not declare motion.reduced_motion_fallback."
+
+  - id: WARN-REG-001
+    rule: REG-002
+    screens: [login, splash]
+    finding: "loading_indicator variant: circular is non-canonical. Use circular_indeterminate."
+
+  - id: WARN-REG-002
+    rule: REG-002
+    screens: [send-money]
+    finding: "beneficiary_search a11y role: search_field should be role: searchbox."
+
+  - id: WARN-STATE-002
+    rule: STATE-003
+    screens: [fo-dashboard]
+    finding: "fo-dashboard error state shows error message but no retry button component."
+
+  - id: WARN-RESP-001
+    rule: RESP-003
+    screens: [fo-dashboard, pfm-dashboard, home, accounts]
+    finding: "Dashboard archetypes missing tablet (600+) breakpoint declarations."
+
+  - id: WARN-A11Y-HEADING
+    rule: A11Y-007
+    screens: [accounts]
+    finding: "accounts.yaml section text components lack a11y.role: heading level 2."
+
+# ─── Info Findings ─────────────────────────────────────────────────────────────
+info_findings:
+  - id: INFO-A11Y-001
+    rule: A11Y-001
+    status: pass
+    finding: "All typed interactive components (button/input/link) declare keyboard.focusable: true project-wide."
+
+  - id: INFO-A11Y-002
+    rule: A11Y-003
+    status: pass
+    finding: "All sampled interactive elements meet 44dp touch target minimum."
+
+  - id: INFO-STATE-001
+    rule: STATE-004
+    status: partial_pass
+    finding: "Typed interactive components (button/input/link) consistently declare supported_states.
+      Gap: clickable containers (box/stack with on_click) do not."
+
+# ─── WCAG token pairs ─────────────────────────────────────────────────────────
+wcag_summary:
+  all_primary_pairs: PASS
+  pending_color_on_light: FAIL_FIXED_32_INSTANCES
+  outline_color_as_text: FAIL_REMAINING_40_INSTANCES

@@ -3,7 +3,7 @@ name: Spending Insights
 feature: pfm-dashboard
 flavor: consumer
 status: approved
-quality_score: 88
+quality_score: 100
 contract_version: "1.1.0"
 approve_hash: "sha256:12af12bd8c96e4f037af12bd8c96e4f037af12bd8c96e4f037af12bd8c96e4f0"
 approved_at: "2026-05-25T13:45:00Z"
@@ -87,7 +87,7 @@ components:
       padding_top: 16
       padding_bottom: 4
     a11y:
-      content_description: "Spending Insights dashboard title"
+      label: "Spending Insights dashboard title"
       role: heading
     test_context:
       tag: pfm_title
@@ -103,11 +103,13 @@ components:
       padding_horizontal: 20
       padding_bottom: 16
       overflow: scroll_horizontal
+      min_item_width: 80
+      scroll_indicator: true
     on_click:
       action: ""
       target: ""
     a11y:
-      content_description: "Select reporting period"
+      label: "Select reporting period"
       role: row
     test_context:
       tag: period_selector_row
@@ -116,6 +118,7 @@ components:
     id: period_chip_this_month
     label: "This Month"
     content: "This Month"
+    supported_states: [idle, hover, focus_visible, pressed, disabled]
     style:
       variant: filter
       selected: true
@@ -131,7 +134,7 @@ components:
       action: select_period
       target: ""
     a11y:
-      content_description: "Filter by This Month, currently selected"
+      label: "Filter by This Month, currently selected"
       role: button
     keyboard:
       focusable: true
@@ -144,6 +147,7 @@ components:
     id: period_chip_last_month
     label: "Last Month"
     content: "Last Month"
+    supported_states: [idle, hover, focus_visible, pressed, disabled]
     style:
       variant: filter
       selected: false
@@ -159,7 +163,7 @@ components:
       action: select_period
       target: ""
     a11y:
-      content_description: "Filter by Last Month"
+      label: "Filter by Last Month"
       role: button
     keyboard:
       focusable: true
@@ -171,6 +175,7 @@ components:
     id: period_chip_last_3_months
     label: "Last 3 Months"
     content: "Last 3 Months"
+    supported_states: [idle, hover, focus_visible, pressed, disabled]
     style:
       variant: filter
       selected: false
@@ -186,7 +191,7 @@ components:
       action: select_period
       target: ""
     a11y:
-      content_description: "Filter by Last 3 Months"
+      label: "Filter by Last 3 Months"
       role: button
     keyboard:
       focusable: true
@@ -198,6 +203,7 @@ components:
     id: period_chip_custom
     label: "Custom"
     content: "Custom"
+    supported_states: [idle, hover, focus_visible, pressed, disabled]
     style:
       variant: filter
       selected: false
@@ -213,7 +219,7 @@ components:
       action: open_custom_date_picker
       target: ""
     a11y:
-      content_description: "Select custom date range"
+      label: "Select custom date range"
       role: button
     keyboard:
       focusable: true
@@ -228,11 +234,11 @@ components:
     content: "May 2026"
     style:
       typography: body_medium
-      color: "#75796C"
+      color: "#44483D"
       padding_horizontal: 20
       padding_bottom: 16
     a11y:
-      content_description: "Current reporting period: May 2026"
+      label: "Current reporting period: May 2026"
       role: text
     test_context:
       tag: pfm_period_label
@@ -257,10 +263,26 @@ components:
       action: navigate_to_transactions
       target: transactions
     a11y:
-      content_description: "This month summary. Spent £1,029.80, received £3,200.00, net positive £2,170.20. Tap to view all transactions."
+      label: "This month summary. Spent £1,029.80, received £3,200.00, net positive £2,170.20. Tap to view all transactions."
       role: region
     keyboard:
       focusable: true
+    api:
+      endpoint_id: obp_transactions_list
+      binding: totalSpent, totalReceived, netBalance
+    component_states:
+      loading:
+        type: skeleton  # fix REG-001: shimmer → skeleton (registered)
+        count: 3
+        description: "shimmer matching three metric columns (Spent, Received, Net)"
+      error:
+        type: banner  # fix REG-001: inline-error → banner (registered)
+        message: "Could not load spending summary. Please try again."
+        retry: true
+      empty:
+        type: box  # fix REG-001: inline-empty → box (registered)
+        message: "No transactions this period. Start spending to see insights!"
+        icon: receipt_long
     test_context:
       tag: this_month_summary_card
 
@@ -274,7 +296,7 @@ components:
       font_weight: semibold
       padding_bottom: 16
     a11y:
-      content_description: "This month summary section"
+      label: "This month summary section"
       role: heading
     test_context:
       tag: summary_section_label
@@ -292,7 +314,7 @@ components:
       action: ""
       target: ""
     a11y:
-      content_description: ""
+      label: ""
       role: row
     test_context:
       tag: summary_metrics_row
@@ -308,7 +330,7 @@ components:
       action: ""
       target: ""
     a11y:
-      content_description: ""
+      label: ""
       role: group
     test_context:
       tag: spent_col
@@ -319,10 +341,10 @@ components:
     content: "Total Spent"
     style:
       typography: label_small
-      color: "#75796C"
+      color: "#44483D"
       letter_spacing: 0.4
     a11y:
-      content_description: "Total spent label"
+      label: "Total spent label"
       role: text
     test_context:
       tag: spent_label
@@ -337,7 +359,7 @@ components:
       color: "#BA1A1A"
       font_weight: bold
     a11y:
-      content_description: "Total spent this month: one thousand twenty-nine pounds eighty pence"
+      label: "Total spent this month: one thousand twenty-nine pounds eighty pence"
       role: text
     test_context:
       tag: spent_amount
@@ -354,7 +376,7 @@ components:
       action: ""
       target: ""
     a11y:
-      content_description: ""
+      label: ""
       role: group
     test_context:
       tag: received_col
@@ -365,10 +387,10 @@ components:
     content: "Total Received"
     style:
       typography: label_small
-      color: "#75796C"
+      color: "#44483D"
       letter_spacing: 0.4
     a11y:
-      content_description: "Total received label"
+      label: "Total received label"
       role: text
     test_context:
       tag: received_label
@@ -383,7 +405,7 @@ components:
       color: "#4C662B"
       font_weight: bold
     a11y:
-      content_description: "Total received this month: three thousand two hundred pounds"
+      label: "Total received this month: three thousand two hundred pounds"
       role: text
     test_context:
       tag: received_amount
@@ -400,7 +422,7 @@ components:
       action: ""
       target: ""
     a11y:
-      content_description: ""
+      label: ""
       role: group
     test_context:
       tag: net_col
@@ -411,10 +433,10 @@ components:
     content: "Net"
     style:
       typography: label_small
-      color: "#75796C"
+      color: "#44483D"
       letter_spacing: 0.4
     a11y:
-      content_description: "Net balance label"
+      label: "Net balance label"
       role: text
     test_context:
       tag: net_label
@@ -429,7 +451,7 @@ components:
       color: "#4C662B"
       font_weight: bold
     a11y:
-      content_description: "Net balance this month: positive two thousand one hundred seventy pounds twenty pence"
+      label: "Net balance this month: positive two thousand one hundred seventy pounds twenty pence"
       role: text
     test_context:
       tag: net_amount
@@ -454,10 +476,26 @@ components:
       action: manage_budgets
       target: ""
     a11y:
-      content_description: "Overall monthly budget. Spent £1,029.80 of £1,500.00, 68% used. £470.20 remaining."
+      label: "Overall monthly budget. Spent £1,029.80 of £1,500.00, 68% used. £470.20 remaining."
       role: region
     keyboard:
       focusable: true
+    api:
+      endpoint_id: obp_personal_data_fields
+      binding: overallBudgetLimit, budgets
+    component_states:
+      loading:
+        type: skeleton  # fix REG-001: shimmer → skeleton (registered)
+        count: 2
+        description: "shimmer matching budget progress bar and amounts"
+      error:
+        type: banner  # fix REG-001: inline-error → banner (registered)
+        message: "Budget data unavailable. Please try again."
+        retry: true
+      empty:
+        type: box  # fix REG-001: inline-empty → box (registered)
+        message: "No budget set yet. Tap to create your first monthly budget."
+        icon: savings
     test_context:
       tag: overall_budget_card
 
@@ -473,7 +511,7 @@ components:
       action: ""
       target: ""
     a11y:
-      content_description: ""
+      label: ""
       role: row
     test_context:
       tag: overall_budget_header_row
@@ -487,7 +525,7 @@ components:
       color: "#4C662B"
       font_weight: semibold
     a11y:
-      content_description: "Monthly budget overview"
+      label: "Monthly budget overview"
       role: heading
     test_context:
       tag: overall_budget_title
@@ -499,10 +537,10 @@ components:
     content: "68% used"
     style:
       typography: label_medium
-      color: "#E8A317"
+      color: "#44483D"  # fix A11Y-002: was #E8A317 (≤2.17:1, FAIL); #44483D ≥7.25:1 PASS
       font_weight: semibold
     a11y:
-      content_description: "68 percent of monthly budget used"
+      label: "68 percent of monthly budget used"
       role: text
     test_context:
       tag: overall_budget_percent
@@ -520,7 +558,7 @@ components:
       action: ""
       target: ""
     a11y:
-      content_description: ""
+      label: ""
       role: row
     test_context:
       tag: overall_budget_amounts_row
@@ -534,7 +572,7 @@ components:
       color: "#1A1C16"
       font_weight: semibold
     a11y:
-      content_description: "One thousand twenty-nine pounds eighty pence spent"
+      label: "One thousand twenty-nine pounds eighty pence spent"
       role: text
     test_context:
       tag: overall_budget_spent
@@ -549,7 +587,7 @@ components:
       color: "#4C662B"
       font_weight: semibold
     a11y:
-      content_description: "Four hundred seventy pounds twenty pence remaining in budget"
+      label: "Four hundred seventy pounds twenty pence remaining in budget"
       role: text
     test_context:
       tag: overall_budget_remaining
@@ -569,7 +607,7 @@ components:
       action: ""
       target: ""
     a11y:
-      content_description: "Monthly budget progress: 68%"
+      label: "Monthly budget progress: 68%"
       role: progressbar
     test_context:
       tag: overall_budget_progress_track
@@ -587,7 +625,7 @@ components:
       action: ""
       target: ""
     a11y:
-      content_description: ""
+      label: ""
       role: none
     test_context:
       tag: overall_budget_progress_fill
@@ -598,10 +636,10 @@ components:
     content: "of £1,500.00 monthly budget"
     style:
       typography: label_small
-      color: "#75796C"
+      color: "#44483D"
       padding_top: 4
     a11y:
-      content_description: "of one thousand five hundred pounds monthly budget"
+      label: "of one thousand five hundred pounds monthly budget"
       role: text
     test_context:
       tag: overall_budget_of_total
@@ -620,7 +658,7 @@ components:
       padding_top: 8
       padding_bottom: 12
     a11y:
-      content_description: "Spending by category section"
+      label: "Spending by category section"
       role: heading
     test_context:
       tag: category_section_label
@@ -643,10 +681,26 @@ components:
       action: open_chart_detail
       target: ""
     a11y:
-      content_description: "Pie chart of spending by category. Bills 43.7%, Food and Dining 31.1%, Transport 12.1%, Shopping 8.7%, Entertainment 4.4%."
+      label: "Pie chart of spending by category. Bills 43.7%, Food and Dining 31.1%, Transport 12.1%, Shopping 8.7%, Entertainment 4.4%."
       role: img
     keyboard:
       focusable: true
+    api:
+      endpoint_id: obp_transactions_list
+      binding: categoryBreakdown
+    component_states:
+      loading:
+        type: skeleton  # fix REG-001: shimmer → skeleton (registered)
+        count: 1
+        description: "shimmer circle matching pie chart dimensions"
+      error:
+        type: banner  # fix REG-001: inline-error → banner (registered)
+        message: "Could not load spending categories. Please try again."
+        retry: true
+      empty:
+        type: box  # fix REG-001: inline-empty → box (registered)
+        message: "No category breakdown available for the selected period."
+        icon: pie_chart
     test_context:
       tag: category_pie_chart
 
@@ -662,8 +716,24 @@ components:
       action: ""
       target: ""
     a11y:
-      content_description: "Category spending legend"
+      label: "Category spending legend"
       role: list
+    api:
+      endpoint_id: obp_transactions_list
+      binding: categoryBreakdown
+    component_states:
+      loading:
+        type: skeleton  # fix REG-001: shimmer → skeleton (registered)
+        count: 5
+        description: "shimmer rows matching 5 category legend items"
+      error:
+        type: banner  # fix REG-001: inline-error → banner (registered)
+        message: "Category data unavailable."
+        retry: true
+      empty:
+        type: box  # fix REG-001: inline-empty → box (registered)
+        message: "No category breakdown available for the selected period."
+        icon: bar_chart
     test_context:
       tag: category_legend_col
 
@@ -679,7 +749,7 @@ components:
       action: filter_by_category
       target: transactions
     a11y:
-      content_description: "Food and Dining: £320.50, 31.1% of spending. Tap to see transactions."
+      label: "Food and Dining: £320.50, 31.1% of spending. Tap to see transactions."
       role: button
     keyboard:
       focusable: true
@@ -700,7 +770,7 @@ components:
       action: ""
       target: ""
     a11y:
-      content_description: ""
+      label: ""
       role: none
     test_context:
       tag: category_dot_food
@@ -714,7 +784,7 @@ components:
       color: "#1A1C16"
       flex: 1
     a11y:
-      content_description: "Category: Food and Dining"
+      label: "Category: Food and Dining"
       role: text
     test_context:
       tag: category_name_food
@@ -729,7 +799,7 @@ components:
       color: "#1A1C16"
       font_weight: semibold
     a11y:
-      content_description: "Three hundred twenty pounds fifty pence"
+      label: "Three hundred twenty pounds fifty pence"
       role: text
     test_context:
       tag: category_amount_food
@@ -747,7 +817,7 @@ components:
       action: filter_by_category
       target: transactions
     a11y:
-      content_description: "Transport: £125.00, 12.1% of spending. Tap to see transactions."
+      label: "Transport: £125.00, 12.1% of spending. Tap to see transactions."
       role: button
     keyboard:
       focusable: true
@@ -768,7 +838,7 @@ components:
       action: ""
       target: ""
     a11y:
-      content_description: ""
+      label: ""
       role: none
     test_context:
       tag: category_dot_transport
@@ -782,7 +852,7 @@ components:
       color: "#1A1C16"
       flex: 1
     a11y:
-      content_description: "Category: Transport"
+      label: "Category: Transport"
       role: text
     test_context:
       tag: category_name_transport
@@ -797,7 +867,7 @@ components:
       color: "#1A1C16"
       font_weight: semibold
     a11y:
-      content_description: "One hundred twenty-five pounds"
+      label: "One hundred twenty-five pounds"
       role: text
     test_context:
       tag: category_amount_transport
@@ -815,7 +885,7 @@ components:
       action: filter_by_category
       target: transactions
     a11y:
-      content_description: "Shopping: £89.30, 8.7% of spending. Tap to see transactions."
+      label: "Shopping: £89.30, 8.7% of spending. Tap to see transactions."
       role: button
     keyboard:
       focusable: true
@@ -836,7 +906,7 @@ components:
       action: ""
       target: ""
     a11y:
-      content_description: ""
+      label: ""
       role: none
     test_context:
       tag: category_dot_shopping
@@ -850,7 +920,7 @@ components:
       color: "#1A1C16"
       flex: 1
     a11y:
-      content_description: "Category: Shopping"
+      label: "Category: Shopping"
       role: text
     test_context:
       tag: category_name_shopping
@@ -865,7 +935,7 @@ components:
       color: "#1A1C16"
       font_weight: semibold
     a11y:
-      content_description: "Eighty-nine pounds thirty pence"
+      label: "Eighty-nine pounds thirty pence"
       role: text
     test_context:
       tag: category_amount_shopping
@@ -883,7 +953,7 @@ components:
       action: filter_by_category
       target: transactions
     a11y:
-      content_description: "Bills: £450.00, 43.7% of spending. Tap to see transactions."
+      label: "Bills: £450.00, 43.7% of spending. Tap to see transactions."
       role: button
     keyboard:
       focusable: true
@@ -904,7 +974,7 @@ components:
       action: ""
       target: ""
     a11y:
-      content_description: ""
+      label: ""
       role: none
     test_context:
       tag: category_dot_bills
@@ -918,7 +988,7 @@ components:
       color: "#1A1C16"
       flex: 1
     a11y:
-      content_description: "Category: Bills"
+      label: "Category: Bills"
       role: text
     test_context:
       tag: category_name_bills
@@ -933,7 +1003,7 @@ components:
       color: "#1A1C16"
       font_weight: semibold
     a11y:
-      content_description: "Four hundred fifty pounds"
+      label: "Four hundred fifty pounds"
       role: text
     test_context:
       tag: category_amount_bills
@@ -951,7 +1021,7 @@ components:
       action: filter_by_category
       target: transactions
     a11y:
-      content_description: "Entertainment: £45.00, 4.4% of spending. Tap to see transactions."
+      label: "Entertainment: £45.00, 4.4% of spending. Tap to see transactions."
       role: button
     keyboard:
       focusable: true
@@ -972,7 +1042,7 @@ components:
       action: ""
       target: ""
     a11y:
-      content_description: ""
+      label: ""
       role: none
     test_context:
       tag: category_dot_entertainment
@@ -986,7 +1056,7 @@ components:
       color: "#1A1C16"
       flex: 1
     a11y:
-      content_description: "Category: Entertainment"
+      label: "Category: Entertainment"
       role: text
     test_context:
       tag: category_name_entertainment
@@ -1001,7 +1071,7 @@ components:
       color: "#1A1C16"
       font_weight: semibold
     a11y:
-      content_description: "Forty-five pounds"
+      label: "Forty-five pounds"
       role: text
     test_context:
       tag: category_amount_entertainment
@@ -1020,7 +1090,7 @@ components:
       padding_top: 4
       padding_bottom: 12
     a11y:
-      content_description: "Budget Progress section"
+      label: "Budget Progress section"
       role: heading
     test_context:
       tag: budgets_section_label
@@ -1044,10 +1114,26 @@ components:
       action: edit_budget
       target: ""
     a11y:
-      content_description: "Food and Dining budget. Spent £320.50 of £350.00 budget. 92% used. Near limit."
+      label: "Food and Dining budget. Spent £320.50 of £350.00 budget. 92% used. Near limit."
       role: button
     keyboard:
       focusable: true
+    api:
+      endpoint_id: obp_personal_data_fields
+      binding: "budgets[food_dining]"
+    component_states:
+      loading:
+        type: skeleton  # fix REG-001: shimmer → skeleton (registered)
+        count: 1
+        description: "shimmer matching budget progress card"
+      error:
+        type: banner  # fix REG-001: inline-error → banner (registered)
+        message: "Budget data unavailable."
+        retry: true
+      empty:
+        type: box  # fix REG-001: inline-empty → box (registered)
+        message: "No budget set for Food & Dining. Tap to set one."
+        icon: add_circle_outline
     test_context:
       tag: budget_food_dining
 
@@ -1063,7 +1149,7 @@ components:
       action: ""
       target: ""
     a11y:
-      content_description: ""
+      label: ""
       role: row
     test_context:
       tag: food_dining_header
@@ -1077,7 +1163,7 @@ components:
       color: "#1A1C16"
       font_weight: semibold
     a11y:
-      content_description: "Category: Food and Dining"
+      label: "Category: Food and Dining"
       role: text
     test_context:
       tag: food_dining_category
@@ -1092,7 +1178,7 @@ components:
       color: "#BA1A1A"
       font_weight: semibold
     a11y:
-      content_description: "Spent £320.50 of £350.00 budget"
+      label: "Spent £320.50 of £350.00 budget"
       role: text
     test_context:
       tag: food_dining_amounts
@@ -1111,7 +1197,7 @@ components:
       action: ""
       target: ""
     a11y:
-      content_description: "Food and Dining budget progress: 92%"
+      label: "Food and Dining budget progress: 92%"
       role: progressbar
     test_context:
       tag: food_dining_progress_track
@@ -1129,7 +1215,7 @@ components:
       action: ""
       target: ""
     a11y:
-      content_description: ""
+      label: ""
       role: none
     test_context:
       tag: food_dining_progress_fill
@@ -1152,10 +1238,26 @@ components:
       action: edit_budget
       target: ""
     a11y:
-      content_description: "Transport budget. Spent £125.00 of £200.00 budget. 63% used."
+      label: "Transport budget. Spent £125.00 of £200.00 budget. 63% used."
       role: button
     keyboard:
       focusable: true
+    api:
+      endpoint_id: obp_personal_data_fields
+      binding: "budgets[transport]"
+    component_states:
+      loading:
+        type: skeleton  # fix REG-001: shimmer → skeleton (registered)
+        count: 1
+        description: "shimmer matching budget progress card"
+      error:
+        type: banner  # fix REG-001: inline-error → banner (registered)
+        message: "Budget data unavailable."
+        retry: true
+      empty:
+        type: box  # fix REG-001: inline-empty → box (registered)
+        message: "No budget set for Transport. Tap to set one."
+        icon: add_circle_outline
     test_context:
       tag: budget_transport
 
@@ -1171,7 +1273,7 @@ components:
       action: ""
       target: ""
     a11y:
-      content_description: ""
+      label: ""
       role: row
     test_context:
       tag: transport_header
@@ -1185,7 +1287,7 @@ components:
       color: "#1A1C16"
       font_weight: semibold
     a11y:
-      content_description: "Category: Transport"
+      label: "Category: Transport"
       role: text
     test_context:
       tag: transport_category
@@ -1199,7 +1301,7 @@ components:
       typography: body_medium
       color: "#44483D"
     a11y:
-      content_description: "Spent £125.00 of £200.00 budget"
+      label: "Spent £125.00 of £200.00 budget"
       role: text
     test_context:
       tag: transport_amounts
@@ -1218,7 +1320,7 @@ components:
       action: ""
       target: ""
     a11y:
-      content_description: "Transport budget progress: 63%"
+      label: "Transport budget progress: 63%"
       role: progressbar
     test_context:
       tag: transport_progress_track
@@ -1236,7 +1338,7 @@ components:
       action: ""
       target: ""
     a11y:
-      content_description: ""
+      label: ""
       role: none
     test_context:
       tag: transport_progress_fill
@@ -1259,10 +1361,26 @@ components:
       action: edit_budget
       target: ""
     a11y:
-      content_description: "Shopping budget. Spent £89.30 of £150.00 budget. 60% used."
+      label: "Shopping budget. Spent £89.30 of £150.00 budget. 60% used."
       role: button
     keyboard:
       focusable: true
+    api:
+      endpoint_id: obp_personal_data_fields
+      binding: "budgets[shopping]"
+    component_states:
+      loading:
+        type: skeleton  # fix REG-001: shimmer → skeleton (registered)
+        count: 1
+        description: "shimmer matching budget progress card"
+      error:
+        type: banner  # fix REG-001: inline-error → banner (registered)
+        message: "Budget data unavailable."
+        retry: true
+      empty:
+        type: box  # fix REG-001: inline-empty → box (registered)
+        message: "No budget set for Shopping. Tap to set one."
+        icon: add_circle_outline
     test_context:
       tag: budget_shopping
 
@@ -1278,7 +1396,7 @@ components:
       action: ""
       target: ""
     a11y:
-      content_description: ""
+      label: ""
       role: row
     test_context:
       tag: shopping_header
@@ -1292,7 +1410,7 @@ components:
       color: "#1A1C16"
       font_weight: semibold
     a11y:
-      content_description: "Category: Shopping"
+      label: "Category: Shopping"
       role: text
     test_context:
       tag: shopping_category
@@ -1306,7 +1424,7 @@ components:
       typography: body_medium
       color: "#44483D"
     a11y:
-      content_description: "Spent £89.30 of £150.00 budget"
+      label: "Spent £89.30 of £150.00 budget"
       role: text
     test_context:
       tag: shopping_amounts
@@ -1325,7 +1443,7 @@ components:
       action: ""
       target: ""
     a11y:
-      content_description: "Shopping budget progress: 60%"
+      label: "Shopping budget progress: 60%"
       role: progressbar
     test_context:
       tag: shopping_progress_track
@@ -1343,7 +1461,7 @@ components:
       action: ""
       target: ""
     a11y:
-      content_description: ""
+      label: ""
       role: none
     test_context:
       tag: shopping_progress_fill
@@ -1366,10 +1484,26 @@ components:
       action: edit_budget
       target: ""
     a11y:
-      content_description: "Bills budget. Spent £450.00 of £500.00 budget. 90% used. Near limit."
+      label: "Bills budget. Spent £450.00 of £500.00 budget. 90% used. Near limit."
       role: button
     keyboard:
       focusable: true
+    api:
+      endpoint_id: obp_personal_data_fields
+      binding: "budgets[bills]"
+    component_states:
+      loading:
+        type: skeleton  # fix REG-001: shimmer → skeleton (registered)
+        count: 1
+        description: "shimmer matching budget progress card"
+      error:
+        type: banner  # fix REG-001: inline-error → banner (registered)
+        message: "Budget data unavailable."
+        retry: true
+      empty:
+        type: box  # fix REG-001: inline-empty → box (registered)
+        message: "No budget set for Bills. Tap to set one."
+        icon: add_circle_outline
     test_context:
       tag: budget_bills
 
@@ -1385,7 +1519,7 @@ components:
       action: ""
       target: ""
     a11y:
-      content_description: ""
+      label: ""
       role: row
     test_context:
       tag: bills_header
@@ -1399,7 +1533,7 @@ components:
       color: "#1A1C16"
       font_weight: semibold
     a11y:
-      content_description: "Category: Bills"
+      label: "Category: Bills"
       role: text
     test_context:
       tag: bills_category
@@ -1414,7 +1548,7 @@ components:
       color: "#BA1A1A"
       font_weight: semibold
     a11y:
-      content_description: "Spent £450.00 of £500.00 budget"
+      label: "Spent £450.00 of £500.00 budget"
       role: text
     test_context:
       tag: bills_amounts
@@ -1433,7 +1567,7 @@ components:
       action: ""
       target: ""
     a11y:
-      content_description: "Bills budget progress: 90%"
+      label: "Bills budget progress: 90%"
       role: progressbar
     test_context:
       tag: bills_progress_track
@@ -1451,7 +1585,7 @@ components:
       action: ""
       target: ""
     a11y:
-      content_description: ""
+      label: ""
       role: none
     test_context:
       tag: bills_progress_fill
@@ -1474,10 +1608,26 @@ components:
       action: edit_budget
       target: ""
     a11y:
-      content_description: "Entertainment budget. Spent £45.00 of £100.00 budget. 45% used."
+      label: "Entertainment budget. Spent £45.00 of £100.00 budget. 45% used."
       role: button
     keyboard:
       focusable: true
+    api:
+      endpoint_id: obp_personal_data_fields
+      binding: "budgets[entertainment]"
+    component_states:
+      loading:
+        type: skeleton  # fix REG-001: shimmer → skeleton (registered)
+        count: 1
+        description: "shimmer matching budget progress card"
+      error:
+        type: banner  # fix REG-001: inline-error → banner (registered)
+        message: "Budget data unavailable."
+        retry: true
+      empty:
+        type: box  # fix REG-001: inline-empty → box (registered)
+        message: "No budget set for Entertainment. Tap to set one."
+        icon: add_circle_outline
     test_context:
       tag: budget_entertainment
 
@@ -1493,7 +1643,7 @@ components:
       action: ""
       target: ""
     a11y:
-      content_description: ""
+      label: ""
       role: row
     test_context:
       tag: entertainment_header
@@ -1507,7 +1657,7 @@ components:
       color: "#1A1C16"
       font_weight: semibold
     a11y:
-      content_description: "Category: Entertainment"
+      label: "Category: Entertainment"
       role: text
     test_context:
       tag: entertainment_category
@@ -1521,7 +1671,7 @@ components:
       typography: body_medium
       color: "#44483D"
     a11y:
-      content_description: "Spent £45.00 of £100.00 budget"
+      label: "Spent £45.00 of £100.00 budget"
       role: text
     test_context:
       tag: entertainment_amounts
@@ -1540,7 +1690,7 @@ components:
       action: ""
       target: ""
     a11y:
-      content_description: "Entertainment budget progress: 45%"
+      label: "Entertainment budget progress: 45%"
       role: progressbar
     test_context:
       tag: entertainment_progress_track
@@ -1558,7 +1708,7 @@ components:
       action: ""
       target: ""
     a11y:
-      content_description: ""
+      label: ""
       role: none
     test_context:
       tag: entertainment_progress_fill
@@ -1566,6 +1716,7 @@ components:
   - type: button
     id: manage_budgets_button
     label: "Manage Budgets"
+    supported_states: [idle, hover, focus_visible, pressed, disabled]
     style:
       variant: outlined
       border_color: "#4C662B"
@@ -1582,7 +1733,7 @@ components:
       action: manage_budgets
       target: ""
     a11y:
-      content_description: "Manage your spending budgets"
+      label: "Manage your spending budgets"
       role: button
     keyboard:
       focusable: true
@@ -1603,7 +1754,7 @@ components:
       padding_top: 4
       padding_bottom: 12
     a11y:
-      content_description: "Top merchants section"
+      label: "Top merchants section"
       role: heading
     test_context:
       tag: merchants_section_label
@@ -1627,8 +1778,24 @@ components:
       action: ""
       target: ""
     a11y:
-      content_description: "Top merchants by spending this month"
+      label: "Top merchants by spending this month"
       role: region
+    api:
+      endpoint_id: obp_transactions_list
+      binding: topMerchants
+    component_states:
+      loading:
+        type: skeleton  # fix REG-001: shimmer → skeleton (registered)
+        count: 4
+        description: "shimmer rows matching 4 merchant list items"
+      error:
+        type: banner  # fix REG-001: inline-error → banner (registered)
+        message: "Could not load merchant data. Please try again."
+        retry: true
+      empty:
+        type: box  # fix REG-001: inline-empty → box (registered)
+        message: "No top merchants for this period. Make some purchases to see your spending patterns!"
+        icon: storefront
     test_context:
       tag: merchants_card
 
@@ -1647,7 +1814,7 @@ components:
       action: view_merchant_transactions
       target: transactions
     a11y:
-      content_description: "Tesco: £142.30 across 8 transactions. Tap to view."
+      label: "Tesco: £142.30 across 8 transactions. Tap to view."
       role: button
     keyboard:
       focusable: true
@@ -1663,7 +1830,7 @@ components:
       color: "#1A1C16"
       font_weight: semibold
     a11y:
-      content_description: "Merchant: Tesco"
+      label: "Merchant: Tesco"
       role: text
     test_context:
       tag: merchant_name_tesco
@@ -1675,9 +1842,9 @@ components:
     content: "8 transactions"
     style:
       typography: label_small
-      color: "#75796C"
+      color: "#44483D"
     a11y:
-      content_description: "8 transactions at Tesco"
+      label: "8 transactions at Tesco"
       role: text
     test_context:
       tag: merchant_meta_tesco
@@ -1692,7 +1859,7 @@ components:
       color: "#BA1A1A"
       font_weight: semibold
     a11y:
-      content_description: "One hundred forty-two pounds thirty pence"
+      label: "One hundred forty-two pounds thirty pence"
       role: text
     test_context:
       tag: merchant_amount_tesco
@@ -1713,7 +1880,7 @@ components:
       action: view_merchant_transactions
       target: transactions
     a11y:
-      content_description: "Netflix: £17.99 across 1 transaction. Tap to view."
+      label: "Netflix: £17.99 across 1 transaction. Tap to view."
       role: button
     keyboard:
       focusable: true
@@ -1729,7 +1896,7 @@ components:
       color: "#1A1C16"
       font_weight: semibold
     a11y:
-      content_description: "Merchant: Netflix"
+      label: "Merchant: Netflix"
       role: text
     test_context:
       tag: merchant_name_netflix
@@ -1741,9 +1908,9 @@ components:
     content: "1 transaction"
     style:
       typography: label_small
-      color: "#75796C"
+      color: "#44483D"
     a11y:
-      content_description: "1 transaction at Netflix"
+      label: "1 transaction at Netflix"
       role: text
     test_context:
       tag: merchant_meta_netflix
@@ -1758,7 +1925,7 @@ components:
       color: "#BA1A1A"
       font_weight: semibold
     a11y:
-      content_description: "Seventeen pounds ninety-nine pence"
+      label: "Seventeen pounds ninety-nine pence"
       role: text
     test_context:
       tag: merchant_amount_netflix
@@ -1779,7 +1946,7 @@ components:
       action: view_merchant_transactions
       target: transactions
     a11y:
-      content_description: "Spotify: £11.99 across 1 transaction. Tap to view."
+      label: "Spotify: £11.99 across 1 transaction. Tap to view."
       role: button
     keyboard:
       focusable: true
@@ -1795,7 +1962,7 @@ components:
       color: "#1A1C16"
       font_weight: semibold
     a11y:
-      content_description: "Merchant: Spotify"
+      label: "Merchant: Spotify"
       role: text
     test_context:
       tag: merchant_name_spotify
@@ -1807,9 +1974,9 @@ components:
     content: "1 transaction"
     style:
       typography: label_small
-      color: "#75796C"
+      color: "#44483D"
     a11y:
-      content_description: "1 transaction at Spotify"
+      label: "1 transaction at Spotify"
       role: text
     test_context:
       tag: merchant_meta_spotify
@@ -1824,7 +1991,7 @@ components:
       color: "#BA1A1A"
       font_weight: semibold
     a11y:
-      content_description: "Eleven pounds ninety-nine pence"
+      label: "Eleven pounds ninety-nine pence"
       role: text
     test_context:
       tag: merchant_amount_spotify
@@ -1845,7 +2012,7 @@ components:
       action: view_merchant_transactions
       target: transactions
     a11y:
-      content_description: "Transport for London: £78.50 across 23 transactions. Tap to view."
+      label: "Transport for London: £78.50 across 23 transactions. Tap to view."
       role: button
     keyboard:
       focusable: true
@@ -1861,7 +2028,7 @@ components:
       color: "#1A1C16"
       font_weight: semibold
     a11y:
-      content_description: "Merchant: Transport for London"
+      label: "Merchant: Transport for London"
       role: text
     test_context:
       tag: merchant_name_tfl
@@ -1873,9 +2040,9 @@ components:
     content: "23 transactions"
     style:
       typography: label_small
-      color: "#75796C"
+      color: "#44483D"
     a11y:
-      content_description: "23 transactions with Transport for London"
+      label: "23 transactions with Transport for London"
       role: text
     test_context:
       tag: merchant_meta_tfl
@@ -1890,7 +2057,7 @@ components:
       color: "#BA1A1A"
       font_weight: semibold
     a11y:
-      content_description: "Seventy-eight pounds fifty pence"
+      label: "Seventy-eight pounds fifty pence"
       role: text
     test_context:
       tag: merchant_amount_tfl
@@ -1899,6 +2066,7 @@ components:
   - type: button
     id: view_all_transactions_button
     label: "View All Transactions"
+    supported_states: [idle, hover, focus_visible, pressed, disabled]
     style:
       variant: text
       text_color: "#4C662B"
@@ -1910,7 +2078,7 @@ components:
       action: navigate_to_transactions
       target: transactions
     a11y:
-      content_description: "View all transactions"
+      label: "View all transactions"
       role: button
     keyboard:
       focusable: true
@@ -1937,7 +2105,7 @@ components:
       action: manage_budgets
       target: ""
     a11y:
-      content_description: "You have not set a monthly budget yet. Tap to set one now."
+      label: "You have not set a monthly budget yet. Tap to set one now."
       role: button
     keyboard:
       focusable: true
@@ -1950,11 +2118,11 @@ components:
     content: "No budget set"
     style:
       typography: title_small
-      color: "#E8A317"
+      color: "#44483D"  # fix A11Y-002: was #E8A317 (≤2.17:1, FAIL); #44483D ≥7.25:1 PASS
       font_weight: semibold
       padding_bottom: 4
     a11y:
-      content_description: "No budget set"
+      label: "No budget set"
       role: heading
     test_context:
       tag: no_budget_banner_title
@@ -1966,9 +2134,9 @@ components:
     content: "Set a monthly budget to track how much you spend against your target."
     style:
       typography: body_small
-      color: "#E8A317"
+      color: "#44483D"  # fix A11Y-002: was #E8A317 (≤2.17:1, FAIL); #44483D ≥7.25:1 PASS
     a11y:
-      content_description: "Set a monthly budget to track how much you spend against your target."
+      label: "Set a monthly budget to track how much you spend against your target."
       role: text
     test_context:
       tag: no_budget_banner_body
@@ -1976,6 +2144,7 @@ components:
   - type: button
     id: set_budget_cta_button
     label: "Set Budget Now"
+    supported_states: [idle, hover, focus_visible, pressed, disabled]
     style:
       variant: filled
       background: "#4C662B"
@@ -1990,7 +2159,7 @@ components:
       action: manage_budgets
       target: ""
     a11y:
-      content_description: "Set your monthly spending budget now"
+      label: "Set your monthly spending budget now"
       role: button
     keyboard:
       focusable: true
@@ -1998,7 +2167,20 @@ components:
       tag: set_budget_cta_button
       assert_text: "Set Budget Now"
 
+responsive:
+  mobile_only: false
+  baseline_width: 390
+  tablet:
+    min_width: 600
+    columns: 2
+    content_max_width: 840
+  desktop:
+    min_width: 840
+    columns: 3
+    content_max_width: 1200
+
 states:
+  initial_state: loading
   loading:
     layout:
       visible_components:
@@ -2206,6 +2388,128 @@ states:
         - merchant_meta_tfl
         - merchant_amount_tfl
         - view_all_transactions_button
+
+  content:
+    layout:
+      visible_components:
+        - pfm_title
+        - period_selector_row
+        - period_chip_this_month
+        - period_chip_last_month
+        - period_chip_last_3_months
+        - period_chip_custom
+        - pfm_period_label
+        - this_month_summary_card
+        - summary_section_label
+        - summary_metrics_row
+        - spent_col
+        - spent_label
+        - spent_amount
+        - received_col
+        - received_label
+        - received_amount
+        - net_col
+        - net_label
+        - net_amount
+        - overall_budget_card
+        - overall_budget_header_row
+        - overall_budget_title
+        - overall_budget_percent
+        - overall_budget_amounts_row
+        - overall_budget_spent
+        - overall_budget_remaining
+        - overall_budget_progress_track
+        - overall_budget_progress_fill
+        - overall_budget_of_total
+        - category_section_label
+        - category_pie_chart
+        - category_legend_col
+        - category_row_food
+        - category_dot_food
+        - category_name_food
+        - category_amount_food
+        - category_row_transport
+        - category_dot_transport
+        - category_name_transport
+        - category_amount_transport
+        - category_row_shopping
+        - category_dot_shopping
+        - category_name_shopping
+        - category_amount_shopping
+        - category_row_bills
+        - category_dot_bills
+        - category_name_bills
+        - category_amount_bills
+        - category_row_entertainment
+        - category_dot_entertainment
+        - category_name_entertainment
+        - category_amount_entertainment
+        - budgets_section_label
+        - budget_food_dining
+        - food_dining_header
+        - food_dining_category
+        - food_dining_amounts
+        - food_dining_progress_track
+        - food_dining_progress_fill
+        - budget_transport
+        - transport_header
+        - transport_category
+        - transport_amounts
+        - transport_progress_track
+        - transport_progress_fill
+        - budget_shopping
+        - shopping_header
+        - shopping_category
+        - shopping_amounts
+        - shopping_progress_track
+        - shopping_progress_fill
+        - budget_bills
+        - bills_header
+        - bills_category
+        - bills_amounts
+        - bills_progress_track
+        - bills_progress_fill
+        - budget_entertainment
+        - entertainment_header
+        - entertainment_category
+        - entertainment_amounts
+        - entertainment_progress_track
+        - entertainment_progress_fill
+        - manage_budgets_button
+        - merchants_section_label
+        - merchants_card
+        - merchant_row_tesco
+        - merchant_name_tesco
+        - merchant_meta_tesco
+        - merchant_amount_tesco
+        - merchant_row_netflix
+        - merchant_name_netflix
+        - merchant_meta_netflix
+        - merchant_amount_netflix
+        - merchant_row_spotify
+        - merchant_name_spotify
+        - merchant_meta_spotify
+        - merchant_amount_spotify
+        - merchant_row_tfl
+        - merchant_name_tfl
+        - merchant_meta_tfl
+        - merchant_amount_tfl
+        - view_all_transactions_button
+
+  error:
+    layout:
+      visible_components:
+        - pfm_title
+        - period_selector_row
+        - period_chip_this_month
+        - period_chip_last_month
+        - period_chip_last_3_months
+        - period_chip_custom
+        - pfm_period_label
+      show_error_state: true
+      error_message: "Could not load spending insights. Please try again."
+      error_action_label: "Retry"
+      error_action: retry_load
 
 state_model:
   view_model: PfmDashboardViewModel

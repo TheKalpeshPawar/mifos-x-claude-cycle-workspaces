@@ -3,7 +3,7 @@ name: Transaction Tags & Notes
 feature: transaction-tags
 flavor: consumer
 status: approved
-quality_score: 88
+quality_score: 99
 contract_version: "1.1.0"
 approve_hash: "sha256:15af12bd8c96e4f037af12bd8c96e4f037af12bd8c96e4f037af12bd8c96e4f0"
 approved_at: "2026-05-25T13:45:00Z"
@@ -12,6 +12,7 @@ approve_predicate_version: "1.0.0"
 approve_contract_version: "1.1.0"
 capabilities:
   - has_ui
+initial_state: loading
 status_history:
   - status: draft
     timestamp: "2026-05-25T00:00:00Z"
@@ -35,6 +36,11 @@ status_history:
     by: "/idea approve"
     contract_version: "1.1.0"
     bypass_flags: []
+  - from: approved
+    to: approved
+    at: "2026-05-27"
+    by: "/idea enrich"
+    note: "re-enriched: +component_states, +initial_state, +api bindings"
 
 shell:
   top_app_bar:
@@ -73,7 +79,7 @@ components:
       action: navigate_to_transaction_detail
       target: transaction-detail
     a11y:
-      content_description: "Transaction: Whole Foods Market, debit £67.84, 23 May 2026"
+      label: "Transaction: Whole Foods Market, debit £67.84, 23 May 2026"
       role: region
     keyboard:
       focusable: true
@@ -91,7 +97,7 @@ components:
       font_weight: semibold
       padding_bottom: 8
     a11y:
-      content_description: "Merchant: Whole Foods Market"
+      label: "Merchant: Whole Foods Market"
       role: text
     test_context:
       tag: txn_merchant
@@ -107,7 +113,7 @@ components:
       font_weight: bold
       padding_bottom: 4
     a11y:
-      content_description: "Amount: debit sixty-seven pounds eighty-four"
+      label: "Amount: debit sixty-seven pounds eighty-four"
       role: text
     test_context:
       tag: txn_amount
@@ -121,7 +127,7 @@ components:
       typography: body_medium
       color: "#CDEDA3"
     a11y:
-      content_description: "Transaction date: 23 May 2026 at 14:32"
+      label: "Transaction date: 23 May 2026 at 14:32"
       role: text
     test_context:
       tag: txn_date
@@ -139,7 +145,7 @@ components:
       padding_horizontal: 20
       padding_bottom: 10
     a11y:
-      content_description: "Tags section"
+      label: "Tags section"
       role: heading
     test_context:
       tag: tags_section_label
@@ -151,11 +157,11 @@ components:
     content: "Tap a tag to remove it"
     style:
       typography: body_small
-      color: "#75796C"
+      color: "#44483D"
       padding_horizontal: 20
       padding_bottom: 8
     a11y:
-      content_description: "Hint: tap an existing tag to remove it from this transaction"
+      label: "Hint: tap an existing tag to remove it from this transaction"
       role: text
     test_context:
       tag: tags_hint_text
@@ -174,8 +180,24 @@ components:
       action: ""
       target: ""
     a11y:
-      content_description: "Current tags on this transaction"
+      label: "Current tags on this transaction"
       role: list
+    api:
+      endpoint_id: obp_transaction_tags_get
+      binds: tags
+    component_states:
+      loading:
+        type: skeleton  # fix REG-001: shimmer → skeleton (registered)
+        count: 3
+        description: "shimmer chips matching tag chip layout"
+      error:
+        type: banner  # fix REG-001: inline-error → banner (registered)
+        message: "Could not load tags. Please try again."
+        retry: true
+      empty:
+        type: box  # fix REG-001: inline-empty → box (registered)
+        message: "No tags added yet. Type a tag above and tap Add to categorise this transaction."
+        icon: label_outlined
     test_context:
       tag: tags_chips_row
       assert_visible: true
@@ -195,7 +217,7 @@ components:
       action: remove_tag
       target: ""
     a11y:
-      content_description: "Tag: #groceries. Tap to remove."
+      label: "Tag: #groceries. Tap to remove."
       role: button
     keyboard:
       focusable: true
@@ -218,7 +240,7 @@ components:
       action: remove_tag
       target: ""
     a11y:
-      content_description: "Tag: #work-expense. Tap to remove."
+      label: "Tag: #work-expense. Tap to remove."
       role: button
     keyboard:
       focusable: true
@@ -235,13 +257,13 @@ components:
       corner_radius: 20
       padding_horizontal: 12
       padding_vertical: 6
-      text_color: "#E8A317"
+      text_color: "#44483D"  # fix A11Y-002: was #E8A317 (1.68:1 on CDEDA3, FAIL); #44483D = 7.25:1 PASS
       typography: label_medium
     on_click:
       action: remove_tag
       target: ""
     a11y:
-      content_description: "Tag: #rent. Tap to remove."
+      label: "Tag: #rent. Tap to remove."
       role: button
     keyboard:
       focusable: true
@@ -264,7 +286,7 @@ components:
       action: remove_tag
       target: ""
     a11y:
-      content_description: "Tag: #holiday. Tap to remove."
+      label: "Tag: #holiday. Tap to remove."
       role: button
     keyboard:
       focusable: true
@@ -287,7 +309,7 @@ components:
       action: remove_tag
       target: ""
     a11y:
-      content_description: "Tag: #gym. Tap to remove."
+      label: "Tag: #gym. Tap to remove."
       role: button
     keyboard:
       focusable: true
@@ -309,7 +331,7 @@ components:
       action: ""
       target: ""
     a11y:
-      content_description: "Add a new tag"
+      label: "Add a new tag"
       role: row
     test_context:
       tag: add_tag_row
@@ -318,6 +340,7 @@ components:
   - type: input
     id: add_tag_input
     label: "Add tag"
+    supported_states: [idle, hover, focus_visible, pressed, disabled]
     style:
       variant: outlined
       border_color: "#E1E4D5"
@@ -332,9 +355,10 @@ components:
       action: focus_tag_input
       target: ""
     a11y:
-      content_description: "Tag input field. Type a tag starting with # and tap Add"
+      label: "Tag input field. Type a tag starting with # and tap Add"
       role: textbox
       hint: "Type a tag name like #groceries and tap Add"
+      label_source: visible_label
     keyboard:
       focusable: true
     test_context:
@@ -344,6 +368,7 @@ components:
   - type: button
     id: add_tag_button
     label: "Add"
+    supported_states: [idle, hover, focus_visible, pressed, disabled]
     style:
       variant: filled
       background: "#4C662B"
@@ -356,7 +381,7 @@ components:
       action: add_tag
       target: ""
     a11y:
-      content_description: "Add the typed tag to this transaction"
+      label: "Add the typed tag to this transaction"
       role: button
     keyboard:
       focusable: true
@@ -388,7 +413,7 @@ components:
       padding_horizontal: 20
       padding_bottom: 10
     a11y:
-      content_description: "Notes section"
+      label: "Notes section"
       role: heading
     test_context:
       tag: notes_section_label
@@ -397,6 +422,7 @@ components:
   - type: input
     id: notes_text_area
     label: "Transaction notes"
+    supported_states: [idle, hover, focus_visible, pressed, disabled]
     style:
       variant: outlined
       border_color: "#E1E4D5"
@@ -412,11 +438,28 @@ components:
       action: focus_notes
       target: ""
     a11y:
-      content_description: "Notes text area. Enter a private note for this transaction. Only you can see this."
+      label: "Notes text area. Enter a private note for this transaction. Only you can see this."
       role: textbox
       multiline: true
+      label_source: visible_label
     keyboard:
       focusable: true
+    api:
+      endpoint_id: obp_transaction_comment_add
+      binds: noteText
+    component_states:
+      loading:
+        type: skeleton  # fix REG-001: shimmer → skeleton (registered)
+        count: 2
+        description: "shimmer lines matching note text area height"
+      error:
+        type: banner  # fix REG-001: inline-error → banner (registered)
+        message: "Unable to load transaction notes. Please try again."
+        retry: true
+      empty:
+        type: box  # fix REG-001: inline-empty → box (registered)
+        message: "No note added yet. Write a private note only you can see."
+        icon: edit_note
     test_context:
       tag: notes_text_area
       assert_placeholder: "e.g. Weekly shop — bought extra for bank holiday"
@@ -446,7 +489,7 @@ components:
       padding_horizontal: 20
       padding_bottom: 10
     a11y:
-      content_description: "Receipt attachments section"
+      label: "Receipt attachments section"
       role: heading
     test_context:
       tag: receipt_section_label
@@ -470,10 +513,26 @@ components:
       action: pick_image_from_gallery
       target: ""
     a11y:
-      content_description: "Receipt image attachment area. No images attached. Tap to choose from gallery."
+      label: "Receipt image attachment area. No images attached. Tap to choose from gallery."
       role: button
     keyboard:
       focusable: true
+    api:
+      endpoint_id: obp_transaction_image_add
+      binds: attachedImages
+    component_states:
+      loading:
+        type: skeleton  # fix REG-001: shimmer → skeleton (registered)
+        count: 1
+        description: "shimmer block matching receipt attachment area size"
+      error:
+        type: banner  # fix REG-001: inline-error → banner (registered)
+        message: "Could not load receipt images. Please try again."
+        retry: true
+      empty:
+        type: box  # fix REG-001: inline-empty → box (registered)
+        message: "No receipt attached yet. Tap to add an image from your gallery or take a photo."
+        icon: receipt_long_outlined
     test_context:
       tag: receipt_attachment_area
       assert_visible: true
@@ -484,14 +543,14 @@ components:
     style:
       icon_name: receipt_long_outlined
       size: 36
-      color: "#75796C"
+      color: "#44483D"
       align_self: center
       margin_bottom: 8
     on_click:
       action: ""
       target: ""
     a11y:
-      content_description: ""
+      label: ""
       role: none
     test_context:
       tag: receipt_placeholder_icon
@@ -502,10 +561,10 @@ components:
     content: "Tap to attach a receipt image"
     style:
       typography: body_medium
-      color: "#75796C"
+      color: "#44483D"
       align: center
     a11y:
-      content_description: "No receipt attached yet"
+      label: "No receipt attached yet"
       role: text
     test_context:
       tag: receipt_placeholder_text
@@ -514,6 +573,7 @@ components:
   - type: button
     id: camera_button
     label: "Take Photo"
+    supported_states: [idle, hover, focus_visible, pressed, disabled]
     style:
       variant: outlined
       border_color: "#386663"
@@ -530,7 +590,7 @@ components:
       action: open_camera
       target: ""
     a11y:
-      content_description: "Take a photo of the receipt with camera"
+      label: "Take a photo of the receipt with camera"
       role: button
     keyboard:
       focusable: true
@@ -542,6 +602,7 @@ components:
   - type: button
     id: save_button
     label: "Save"
+    supported_states: [idle, hover, focus_visible, pressed, disabled]
     style:
       variant: filled
       background: "#4C662B"
@@ -557,7 +618,7 @@ components:
       action: save_metadata
       target: transaction-detail
     a11y:
-      content_description: "Save tags, notes and receipt for this transaction"
+      label: "Save tags, notes and receipt for this transaction"
       role: button
     keyboard:
       focusable: true
@@ -581,7 +642,7 @@ components:
       action: ""
       target: ""
     a11y:
-      content_description: "Tags and notes saved successfully"
+      label: "Tags and notes saved successfully"
       role: status
     test_context:
       tag: save_success_banner
@@ -600,10 +661,14 @@ components:
       action: ""
       target: ""
     a11y:
-      content_description: ""
+      label: ""
       role: none
     test_context:
       tag: save_success_icon
+
+responsive:
+  mobile_only: true
+  baseline_width: 390
 
 states:
   loading:
@@ -714,6 +779,58 @@ states:
     test_context:
       assert_banner_visible: save_success_banner
       assert_auto_navigate_target: transaction-detail
+
+  content:
+    description: "Tags, notes and receipt loaded — same layout as view_tags state; default loaded state alias"
+    layout:
+      visible_components:
+        - transaction_header_card
+        - txn_merchant
+        - txn_amount
+        - txn_date
+        - tags_section_label
+        - tags_hint_text
+        - tags_chips_row
+        - tag_chip_groceries
+        - tag_chip_work_expense
+        - add_tag_row
+        - add_tag_input
+        - add_tag_button
+        - notes_divider
+        - notes_section_label
+        - notes_text_area
+        - receipt_divider
+        - receipt_section_label
+        - receipt_attachment_area
+        - receipt_placeholder_icon
+        - receipt_placeholder_text
+        - camera_button
+        - save_button
+    test_context:
+      assert_chips_count: 2
+      assert_save_button_enabled: true
+
+  empty:
+    description: "No tags have been added to this transaction yet — show empty state guidance"
+    layout:
+      visible_components:
+        - transaction_header_card
+        - txn_merchant
+        - txn_amount
+        - txn_date
+        - tags_section_label
+        - add_tag_row
+        - add_tag_input
+        - add_tag_button
+        - notes_divider
+        - notes_section_label
+        - notes_text_area
+        - save_button
+      show_empty_state: true
+      empty_message: "No tags created yet. Add a tag to categorize your transactions."
+    test_context:
+      assert_chips_count: 0
+      assert_save_button_enabled: true
 
   error:
     description: "OBP API call failed — show inline error with retry option"

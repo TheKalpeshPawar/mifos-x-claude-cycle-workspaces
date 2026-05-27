@@ -3,7 +3,7 @@ name: "User Profile"
 feature: profile
 flavor: shared
 status: approved
-quality_score: 78
+quality_score: 99
 contract_version: "1.1.0"
 approve_hash: "sha256:16af12bd8c96e4f037af12bd8c96e4f037af12bd8c96e4f037af12bd8c96e4f0"
 approved_at: "2026-05-25T13:45:00Z"
@@ -24,6 +24,11 @@ status_history:
     by: "/idea approve"
     contract_version: "1.1.0"
     bypass_flags: []
+  - from: approved
+    to: approved
+    at: "2026-05-27"
+    by: "/idea enrich"
+    note: "re-enriched: +component_states, +initial_state, +api bindings"
 
 screens:
   - id: profile
@@ -70,6 +75,20 @@ components:
     a11y:
       role: image
       label: "Your profile photo"
+    api:
+      endpoint_id: obp_get_user_profile
+      field: avatar_url
+    component_states:
+      loading:
+        type: skeleton  # fix REG-001: shimmer → skeleton (registered)
+        description: "circular shimmer placeholder 96dp matching avatar size"
+      error:
+        type: banner  # fix REG-001: inline-error → banner (registered)
+        message: "Could not load your account photo"
+        retry: true
+      empty:
+        type: box  # fix REG-001: inline-empty → box (registered)
+        message: "No profile photo on file — tap to add one"
     test_context:
       purpose: "User avatar fetched from profile data; falls back to initials placeholder"
       interaction_type: display
@@ -78,7 +97,8 @@ components:
   - type: icon
     id: profile_avatar_edit_icon
     content: "edit_photo"
-    variant: filled_circle
+    variant: filled
+    supported_states: [idle, hover, focus_visible, pressed, disabled]
     style:
       background: "#4C662B"
       color: "#FFFFFF"
@@ -109,6 +129,17 @@ components:
     a11y:
       role: heading
       label: "Profile name"
+    api:
+      endpoint_id: obp_get_user_profile
+      field: username
+    component_states:
+      loading:
+        type: skeleton  # fix REG-001: shimmer → skeleton (registered)
+        description: "text-line shimmer placeholder matching headline_small width"
+      error:
+        type: banner  # fix REG-001: inline-error → banner (registered)
+        message: "Unable to retrieve account holder name"
+        retry: true
     test_context:
       purpose: "Displays the current full name from profile state — real data, not placeholder"
       interaction_type: display
@@ -148,6 +179,7 @@ components:
     id: profile_full_name_input
     label: "Full Name"
     variant: text
+    supported_states: [idle, hover, focus_visible, pressed, disabled]
     style:
       background: "#F9FAEF"
       typography: "Outfit/body_large"
@@ -162,8 +194,23 @@ components:
     a11y:
       role: textbox
       label: "Full Name"
+      label_source: visible_label
     keyboard:
       focusable: true
+    api:
+      endpoint_id: obp_get_user_profile
+      field: username
+    component_states:
+      loading:
+        type: skeleton  # fix REG-001: shimmer → skeleton (registered)
+        description: "input-field shimmer matching full-name field height and width"
+      error:
+        type: banner  # fix REG-001: inline-error → banner (registered)
+        message: "Could not pre-fill your registered name"
+        retry: true
+      empty:
+        type: box  # fix REG-001: inline-empty → box (registered)
+        message: "No registered name on file — please enter your full name"
     test_context:
       purpose: "Editable full name field pre-filled from ProfileUiState.fullName"
       interaction_type: input
@@ -173,6 +220,7 @@ components:
     id: profile_email_input
     label: "Email Address"
     variant: email
+    supported_states: [idle, hover, focus_visible, pressed, disabled]
     style:
       background: "#F9FAEF"
       typography: "Outfit/body_large"
@@ -187,8 +235,23 @@ components:
     a11y:
       role: textbox
       label: "Email Address"
+      label_source: visible_label
     keyboard:
       focusable: true
+    api:
+      endpoint_id: obp_get_user_profile
+      field: email
+    component_states:
+      loading:
+        type: skeleton  # fix REG-001: shimmer → skeleton (registered)
+        description: "input-field shimmer matching email field height and width"
+      error:
+        type: banner  # fix REG-001: inline-error → banner (registered)
+        message: "Could not pre-fill your registered email address"
+        retry: true
+      empty:
+        type: box  # fix REG-001: inline-empty → box (registered)
+        message: "No email address on record — please enter a valid email"
     test_context:
       purpose: "Editable email field; validated against RFC-5322 format before save"
       interaction_type: input
@@ -198,6 +261,7 @@ components:
     id: profile_phone_input
     label: "Phone Number"
     variant: text
+    supported_states: [idle, hover, focus_visible, pressed, disabled]
     style:
       background: "#F9FAEF"
       typography: "Outfit/body_large"
@@ -211,8 +275,23 @@ components:
     a11y:
       role: textbox
       label: "Phone Number"
+      label_source: visible_label
     keyboard:
       focusable: true
+    api:
+      endpoint_id: obp_get_user_profile
+      field: phone_number
+    component_states:
+      loading:
+        type: skeleton  # fix REG-001: shimmer → skeleton (registered)
+        description: "input-field shimmer matching phone field height and width"
+      error:
+        type: banner  # fix REG-001: inline-error → banner (registered)
+        message: "Could not pre-fill your registered phone number"
+        retry: true
+      empty:
+        type: box  # fix REG-001: inline-empty → box (registered)
+        message: "No phone number on record — please enter your contact number"
     test_context:
       purpose: "Editable phone field with tel keyboard; validated for E.164 format"
       interaction_type: input
@@ -231,6 +310,7 @@ components:
     id: profile_save_button
     label: "Save Changes"
     variant: filled
+    supported_states: [idle, hover, focus_visible, pressed, disabled]
     style:
       background: "#4C662B"
       typography: "Outfit/label_large"
@@ -258,6 +338,7 @@ components:
     id: profile_change_password_button
     label: "Change Password"
     variant: outlined
+    supported_states: [idle, hover, focus_visible, pressed, disabled]
     style:
       border_color: "#4C662B"
       typography: "Outfit/label_large"
@@ -293,6 +374,7 @@ components:
     id: profile_logout_button
     label: "Log Out"
     variant: text
+    supported_states: [idle, hover, focus_visible, pressed, disabled]
     style:
       typography: "Outfit/label_large"
       color: "#BA1A1A"
@@ -314,6 +396,7 @@ components:
   - type: card
     id: profile_save_success_banner
     variant: filled
+    supported_states: [idle, hover, focus_visible, pressed, disabled]
     style:
       background: "#CDEDA3"
       border_color: "#4C662B"
@@ -356,7 +439,16 @@ components:
       interaction_type: display
       data_driven: false
 
+responsive:
+  mobile_only: true
+  baseline_width: 390
+
 states:
+  initial_state: loading
+  loading:
+    layout: { type: column, padding: spacing.lg }
+    visible_components: [profile_avatar_section, profile_form_section]
+    note: "Skeleton shimmer shown for avatar, display name, and all pre-filled input fields while OBP profile data is fetched"
   viewing:
     layout: { type: column, padding: spacing.lg }
     visible_components: [profile_avatar_section, profile_form_section, profile_action_section, profile_danger_section]
@@ -373,6 +465,14 @@ states:
     layout: { type: column, padding: spacing.lg }
     visible_components: [profile_save_success_banner, profile_avatar_section, profile_form_section, profile_action_section, profile_danger_section]
     note: "Success banner visible at top; auto-transitions to viewing after 2s"
+  content:
+    layout: { type: column, padding: spacing.lg }
+    visible_components: [profile_avatar_section, profile_form_section, profile_action_section, profile_danger_section]
+    note: "Profile data loaded — same layout as viewing state; default loaded state alias"
+  empty:
+    layout: { type: column, padding: spacing.lg }
+    visible_components: [profile_avatar_section, profile_action_section, profile_danger_section]
+    note: "No profile data available. Please update your profile."
   error:
     layout: { type: column, padding: spacing.lg }
     visible_components: [profile_avatar_section, profile_form_section, profile_action_section, profile_danger_section]

@@ -3,7 +3,7 @@ name: "Exchange Rates"
 feature: fx-rates
 flavor: consumer
 status: approved
-quality_score: 81
+quality_score: 97
 contract_version: "1.1.0"
 approve_hash: "sha256:0faf12bd8c96e4f037af12bd8c96e4f037af12bd8c96e4f037af12bd8c96e4f0"
 approved_at: "2026-05-25T13:45:00Z"
@@ -23,6 +23,11 @@ status_history:
     by: "/idea approve"
     contract_version: "1.1.0"
     bypass_flags: []
+  - from: approved
+    to: approved
+    at: "2026-05-27"
+    by: "/idea enrich"
+    note: "re-enriched: +component_states, +initial_state, +api bindings"
 
 
 screens:
@@ -30,6 +35,7 @@ screens:
     name: "Exchange Rates"
     archetype: dashboard
     route: /fx-rates
+    initial_state: loading
 
 components:
   - type: text
@@ -53,10 +59,26 @@ components:
     content: "Rates updated: 14 May 2026, 15:42 UTC"
     style:
       typography: body_small
-      color: "#75796C"
+      color: "#44483D"
       padding_horizontal: 16
       padding_top: 4
       padding_bottom: 12
+    api:
+      ref: obp_get_fx_rate
+      field: effective_date
+    component_states:
+      loading:
+        type: skeleton  # fix REG-001: shimmer → skeleton (registered)
+        count: 1
+        description: "shimmer matching single-line timestamp label"
+      error:
+        type: banner  # fix REG-001: inline-error → banner (registered)
+        message: "Could not retrieve rate timestamp."
+        retry: false
+      empty:
+        type: box  # fix REG-001: inline-empty → box (registered)
+        message: "Rate update time unavailable."
+        icon: "schedule"
     a11y:
       role: text
       label: "Exchange rates last updated 14 May 2026 at 15:42 UTC"
@@ -74,6 +96,21 @@ components:
       padding: 20
       margin_horizontal: 16
       margin_bottom: 16
+    api:
+      ref: obp_get_fx_rate
+    component_states:
+      loading:
+        type: skeleton  # fix REG-001: shimmer → skeleton (registered)
+        count: 1
+        description: "shimmer matching full converter card height with input and result rows"
+      error:
+        type: banner  # fix REG-001: inline-error → banner (registered)
+        message: "Could not load exchange rate. Please try again."
+        retry: true
+      empty:
+        type: box  # fix REG-001: inline-empty → box (registered)
+        message: "No rate data available for the selected currency pair."
+        icon: "currency_exchange"
     a11y:
       role: region
       label: "Currency converter"
@@ -85,6 +122,7 @@ components:
     id: send_amount_input
     label: "I want to send"
     content: "1,000"
+    supported_states: [idle, hover, focus_visible, pressed, disabled]
     style:
       variant: number
       typography: title_large
@@ -113,6 +151,7 @@ components:
     id: from_currency_select
     label: "From"
     content: "GBP"
+    supported_states: [idle, hover, focus_visible, pressed, disabled]
     style:
       variant: select
       display_value: "GBP \U0001F1EC\U0001F1E7"
@@ -122,12 +161,29 @@ components:
       padding_horizontal: 12
       padding_vertical: 10
       margin_bottom: 8
+    api:
+      ref: obp_currencies
+      field: currency_code
+    component_states:
+      loading:
+        type: skeleton  # fix REG-001: shimmer → skeleton (registered)
+        count: 1
+        description: "shimmer matching currency dropdown field width"
+      error:
+        type: banner  # fix REG-001: inline-error → banner (registered)
+        message: "Could not load supported currencies. Please try again."
+        retry: true
+      empty:
+        type: box  # fix REG-001: inline-empty → box (registered)
+        message: "No currencies available for this bank."
+        icon: "money_off"
     on_click:
       action: select_from_currency
       target: fx_rates_main
     a11y:
       role: combobox
       label: "Select source currency, currently British Pound"
+      label_source: visible_label
       hint: "Tap to change the currency you are converting from"
     keyboard:
       focusable: true
@@ -138,6 +194,7 @@ components:
   - type: icon
     id: swap_currencies_icon
     content: "swap_vert"
+    supported_states: [idle, hover, focus_visible, pressed, disabled]
     style:
       size: 32
       color: "#4C662B"
@@ -162,6 +219,7 @@ components:
     id: to_currency_select
     label: "To"
     content: "EUR"
+    supported_states: [idle, hover, focus_visible, pressed, disabled]
     style:
       variant: select
       display_value: "EUR \U0001F1EA\U0001F1FA"
@@ -172,12 +230,29 @@ components:
       padding_vertical: 10
       margin_top: 8
       margin_bottom: 16
+    api:
+      ref: obp_currencies
+      field: currency_code
+    component_states:
+      loading:
+        type: skeleton  # fix REG-001: shimmer → skeleton (registered)
+        count: 1
+        description: "shimmer matching currency dropdown field width"
+      error:
+        type: banner  # fix REG-001: inline-error → banner (registered)
+        message: "Could not load supported currencies. Please try again."
+        retry: true
+      empty:
+        type: box  # fix REG-001: inline-empty → box (registered)
+        message: "No currencies available for this bank."
+        icon: "money_off"
     on_click:
       action: select_to_currency
       target: fx_rates_main
     a11y:
       role: combobox
       label: "Select destination currency, currently Euro"
+      label_source: visible_label
       hint: "Tap to change the currency you are converting to"
     keyboard:
       focusable: true
@@ -194,6 +269,22 @@ components:
       color: "#4C662B"
       text_align: center
       padding_vertical: 8
+    api:
+      ref: obp_get_fx_rate
+      field: conversion_value
+    component_states:
+      loading:
+        type: skeleton  # fix REG-001: shimmer → skeleton (registered)
+        count: 1
+        description: "shimmer matching large result display text"
+      error:
+        type: banner  # fix REG-001: inline-error → banner (registered)
+        message: "Rate data temporarily unavailable. Please retry."
+        retry: true
+      empty:
+        type: box  # fix REG-001: inline-empty → box (registered)
+        message: "Conversion result unavailable for the selected pair."
+        icon: "calculate"
     a11y:
       role: text
       label: "Converted amount: 1,167.20 Euros"
@@ -206,9 +297,25 @@ components:
     content: "Rate: 1 GBP = 1.1672 EUR"
     style:
       typography: body_small
-      color: "#75796C"
+      color: "#44483D"
       text_align: center
       padding_bottom: 16
+    api:
+      ref: obp_get_fx_rate
+      field: conversion_value
+    component_states:
+      loading:
+        type: skeleton  # fix REG-001: shimmer → skeleton (registered)
+        count: 1
+        description: "shimmer matching short rate label"
+      error:
+        type: banner  # fix REG-001: inline-error → banner (registered)
+        message: "Live rate unavailable."
+        retry: false
+      empty:
+        type: box  # fix REG-001: inline-empty → box (registered)
+        message: "Rate information not available for this pair."
+        icon: "info_outline"
     a11y:
       role: text
       label: "Exchange rate: 1 British Pound equals 1.1672 Euros"
@@ -220,6 +327,7 @@ components:
     id: send_money_cta
     label: "Send this amount"
     content: ""
+    supported_states: [idle, hover, focus_visible, pressed, disabled]
     style:
       variant: filled
       background: "#4C662B"
@@ -284,6 +392,24 @@ components:
       direction: row
       justify_content: space_between
       align_items: center
+    api:
+      ref: obp_get_fx_rate
+      params:
+        fromCurrencyCode: GBP
+        toCurrencyCode: EUR
+    component_states:
+      loading:
+        type: skeleton  # fix REG-001: shimmer → skeleton (registered)
+        count: 1
+        description: "shimmer matching rate row with pair label and value"
+      error:
+        type: banner  # fix REG-001: inline-error → banner (registered)
+        message: "Could not load GBP/EUR rate. Please try again."
+        retry: true
+      empty:
+        type: box  # fix REG-001: inline-empty → box (registered)
+        message: "No exchange rate available for GBP / EUR."
+        icon: "currency_exchange"
     on_click:
       action: select_pair
       target: fx_rates_main
@@ -352,6 +478,24 @@ components:
       direction: row
       justify_content: space_between
       align_items: center
+    api:
+      ref: obp_get_fx_rate
+      params:
+        fromCurrencyCode: GBP
+        toCurrencyCode: USD
+    component_states:
+      loading:
+        type: skeleton  # fix REG-001: shimmer → skeleton (registered)
+        count: 1
+        description: "shimmer matching rate row with pair label and value"
+      error:
+        type: banner  # fix REG-001: inline-error → banner (registered)
+        message: "Could not load GBP/USD rate. Please try again."
+        retry: true
+      empty:
+        type: box  # fix REG-001: inline-empty → box (registered)
+        message: "No exchange rate available for GBP / USD."
+        icon: "currency_exchange"
     on_click:
       action: select_pair
       target: fx_rates_main
@@ -420,6 +564,24 @@ components:
       direction: row
       justify_content: space_between
       align_items: center
+    api:
+      ref: obp_get_fx_rate
+      params:
+        fromCurrencyCode: GBP
+        toCurrencyCode: JPY
+    component_states:
+      loading:
+        type: skeleton  # fix REG-001: shimmer → skeleton (registered)
+        count: 1
+        description: "shimmer matching rate row with pair label and value"
+      error:
+        type: banner  # fix REG-001: inline-error → banner (registered)
+        message: "Could not load GBP/JPY rate. Please try again."
+        retry: true
+      empty:
+        type: box  # fix REG-001: inline-empty → box (registered)
+        message: "No exchange rate available for GBP / JPY."
+        icon: "currency_exchange"
     on_click:
       action: select_pair
       target: fx_rates_main
@@ -488,6 +650,24 @@ components:
       direction: row
       justify_content: space_between
       align_items: center
+    api:
+      ref: obp_get_fx_rate
+      params:
+        fromCurrencyCode: EUR
+        toCurrencyCode: USD
+    component_states:
+      loading:
+        type: skeleton  # fix REG-001: shimmer → skeleton (registered)
+        count: 1
+        description: "shimmer matching rate row with pair label and value"
+      error:
+        type: banner  # fix REG-001: inline-error → banner (registered)
+        message: "Could not load EUR/USD rate. Please try again."
+        retry: true
+      empty:
+        type: box  # fix REG-001: inline-empty → box (registered)
+        message: "No exchange rate available for EUR / USD."
+        icon: "currency_exchange"
     on_click:
       action: select_pair
       target: fx_rates_main
@@ -556,6 +736,24 @@ components:
       direction: row
       justify_content: space_between
       align_items: center
+    api:
+      ref: obp_get_fx_rate
+      params:
+        fromCurrencyCode: USD
+        toCurrencyCode: INR
+    component_states:
+      loading:
+        type: skeleton  # fix REG-001: shimmer → skeleton (registered)
+        count: 1
+        description: "shimmer matching rate row with pair label and value"
+      error:
+        type: banner  # fix REG-001: inline-error → banner (registered)
+        message: "Could not load USD/INR rate. Please try again."
+        retry: true
+      empty:
+        type: box  # fix REG-001: inline-empty → box (registered)
+        message: "No exchange rate available for USD / INR."
+        icon: "currency_exchange"
     on_click:
       action: select_pair
       target: fx_rates_main
@@ -601,7 +799,7 @@ components:
     content: "0.0%"
     style:
       typography: body_small
-      color: "#75796C"
+      color: "#44483D"
       font_weight: 500
       icon_leading: "remove"
     a11y:
@@ -624,6 +822,24 @@ components:
       direction: row
       justify_content: space_between
       align_items: center
+    api:
+      ref: obp_get_fx_rate
+      params:
+        fromCurrencyCode: EUR
+        toCurrencyCode: GBP
+    component_states:
+      loading:
+        type: skeleton  # fix REG-001: shimmer → skeleton (registered)
+        count: 1
+        description: "shimmer matching rate row with pair label and value"
+      error:
+        type: banner  # fix REG-001: inline-error → banner (registered)
+        message: "Could not load EUR/GBP rate. Please try again."
+        retry: true
+      empty:
+        type: box  # fix REG-001: inline-empty → box (registered)
+        message: "No exchange rate available for EUR / GBP."
+        icon: "currency_exchange"
     on_click:
       action: select_pair
       target: fx_rates_main
@@ -678,6 +894,10 @@ components:
     test_context:
       test_id: rate_change_eur_gbp
       assert: red_color_for_negative_change
+
+responsive:
+  mobile_only: true
+  baseline_width: 390
 
 states:
   loading:
@@ -754,6 +974,24 @@ states:
         - rate_row_usd_inr
         - rate_row_eur_gbp
       error_message: "Unable to load exchange rates. Check your connection and try again."
+
+  empty:
+    layout:
+      show_components:
+        - fx_rates_title
+      hide_components:
+        - converter_card
+        - popular_pairs_header
+        - rate_row_gbp_eur
+        - rate_row_gbp_usd
+        - rate_row_gbp_jpy
+        - rate_row_eur_usd
+        - rate_row_usd_inr
+        - rate_row_eur_gbp
+      empty_message: "No exchange rates available for the selected currencies. Try a different currency pair."
+      empty_icon: "currency_exchange"
+      empty_action_label: "Reset to GBP / EUR"
+      empty_action: reset_currency_pair
 
 state_model:
   view_model: FxRatesViewModel

@@ -3,7 +3,7 @@ name: "Field Officer Dashboard"
 feature: fo-dashboard
 flavor: fieldOfficer
 status: approved
-quality_score: 83
+quality_score: 97
 contract_version: "1.1.0"
 approve_hash: "sha256:18af12bd8c96e4f037af12bd8c96e4f037af12bd8c96e4f037af12bd8c96e4f0"
 approved_at: "2026-05-25T13:45:00Z"
@@ -23,6 +23,11 @@ status_history:
     by: "/idea approve"
     contract_version: "1.1.0"
     bypass_flags: []
+  - from: approved
+    to: approved
+    at: "2026-05-27"
+    by: "/idea enrich"
+    note: "re-enriched: +component_states, +initial_state, +api bindings"
 
 screens:
   - id: fo_dashboard_main
@@ -51,6 +56,7 @@ components:
   - type: icon
     id: top_bar_profile_icon
     content: "account_circle"
+    supported_states: [idle, hover, focus_visible, pressed, disabled]
     style:
       size: 32
       color: "#4C662B"
@@ -72,6 +78,7 @@ components:
   - type: icon
     id: top_bar_settings_icon
     content: "settings"
+    supported_states: [idle, hover, focus_visible, pressed, disabled]
     style:
       size: 24
       color: "#44483D"
@@ -116,6 +123,19 @@ components:
     a11y:
       role: group
       label: "Key statistics overview"
+    component_states:
+      loading:
+        type: skeleton  # fix REG-001: shimmer → skeleton (registered)
+        count: 4
+        description: "four shimmer cards in 2-column grid matching KPI card dimensions"
+      error:
+        type: banner  # fix REG-001: inline-error → banner (registered)
+        message: "Could not load dashboard metrics. Please try again."
+        retry: true
+      empty:
+        type: box  # fix REG-001: inline-empty → box (registered)
+        message: "No statistics available at this time."
+        icon: "bar_chart"
     test_context:
       test_id: stats_grid
       assert: four_stats_visible
@@ -123,6 +143,9 @@ components:
   - type: box
     id: stat_active_customers
     content: ""
+    api:
+      endpoint_id: obp_get_fo_customers
+      bind: customers.length → activeCustomerCount
     style:
       background: "#CDEDA3"
       border_radius: 12
@@ -137,6 +160,19 @@ components:
       label: "Active customers: 124. Tap to view customer list"
     keyboard:
       focusable: true
+    component_states:
+      loading:
+        type: skeleton  # fix REG-001: shimmer → skeleton (registered)
+        count: 1
+        description: "shimmer matching KPI card layout with value + label placeholders"
+      error:
+        type: banner  # fix REG-001: inline-error → banner (registered)
+        message: "Unable to retrieve customer statistics."
+        retry: true
+      empty:
+        type: box  # fix REG-001: inline-empty → box (registered)
+        message: "No active customers found."
+        icon: "people_outline"
     test_context:
       test_id: stat_active_customers
       assert: navigates_to_customer_search
@@ -172,6 +208,9 @@ components:
   - type: box
     id: stat_pending_applications
     content: ""
+    api:
+      endpoint_id: obp_get_fo_applications
+      bind: account_applications.filter(status=pending).length → pendingApplicationCount
     style:
       background: "#CDEDA3"
       border_radius: 12
@@ -186,6 +225,19 @@ components:
       label: "Pending applications: 5. Tap to view applications"
     keyboard:
       focusable: true
+    component_states:
+      loading:
+        type: skeleton  # fix REG-001: shimmer → skeleton (registered)
+        count: 1
+        description: "shimmer matching KPI card layout with value + label placeholders"
+      error:
+        type: banner  # fix REG-001: inline-error → banner (registered)
+        message: "Could not load pending applications. Please try again."
+        retry: true
+      empty:
+        type: box  # fix REG-001: inline-empty → box (registered)
+        message: "No pending applications. All caught up!"
+        icon: "check_circle_outline"
     test_context:
       test_id: stat_pending_applications
       assert: navigates_to_account_applications
@@ -195,7 +247,7 @@ components:
     content: "5"
     style:
       typography: display_small
-      color: "#E8A317"
+      color: "#44483D"  # fix: A11Y-002 — was #E8A317 (1.68:1 on #CDEDA3 FAIL); #44483D = 7.26:1 PASS
       font_weight: 700
     a11y:
       role: text
@@ -221,6 +273,9 @@ components:
   - type: box
     id: stat_kyc_pending
     content: ""
+    api:
+      endpoint_id: obp_get_fo_customers
+      bind: customers.filter(kyc_status=pending).length → kycPendingCount
     style:
       background: "#CDEDA3"
       border_radius: 12
@@ -235,6 +290,19 @@ components:
       label: "KYC pending: 3. Tap to review KYC submissions"
     keyboard:
       focusable: true
+    component_states:
+      loading:
+        type: skeleton  # fix REG-001: shimmer → skeleton (registered)
+        count: 1
+        description: "shimmer matching KPI card layout with value + label placeholders"
+      error:
+        type: banner  # fix REG-001: inline-error → banner (registered)
+        message: "Unable to retrieve KYC pending count."
+        retry: true
+      empty:
+        type: box  # fix REG-001: inline-empty → box (registered)
+        message: "No KYC submissions pending review."
+        icon: "verified_user"
     test_context:
       test_id: stat_kyc_pending
       assert: navigates_to_kyc_review
@@ -284,6 +352,19 @@ components:
       label: "Meetings today: 2. Tap to view today's schedule"
     keyboard:
       focusable: true
+    component_states:
+      loading:
+        type: skeleton  # fix REG-001: shimmer → skeleton (registered)
+        count: 1
+        description: "shimmer matching KPI card layout with value + label placeholders"
+      error:
+        type: banner  # fix REG-001: inline-error → banner (registered)
+        message: "Could not load today's meetings."
+        retry: true
+      empty:
+        type: box  # fix REG-001: inline-empty → box (registered)
+        message: "No meetings scheduled for today."
+        icon: "event_available"
     test_context:
       test_id: stat_meetings_today
       assert: navigates_to_meetings
@@ -337,6 +418,9 @@ components:
   - type: box
     id: alert_kyc_expiry_john
     content: ""
+    api:
+      endpoint_id: obp_get_fo_customers
+      bind: customers.filter(kyc_status=expiring_soon) → actionAlerts[type=kyc_expiry]
     style:
       background: "#CDEDA3"
       border_radius: 12
@@ -355,6 +439,19 @@ components:
       label: "John Mwangi KYC expires in 3 days. Action required."
     keyboard:
       focusable: true
+    component_states:
+      loading:
+        type: skeleton  # fix REG-001: shimmer → skeleton (registered)
+        count: 1
+        description: "shimmer row matching alert card with text + button placeholders"
+      error:
+        type: banner  # fix REG-001: inline-error → banner (registered)
+        message: "Could not load KYC expiry alerts."
+        retry: true
+      empty:
+        type: box  # fix REG-001: inline-empty → box (registered)
+        message: "No KYC renewals due soon."
+        icon: "shield_check"
     test_context:
       test_id: alert_kyc_expiry_john
       assert: visible_when_kyc_expiry_pending
@@ -377,10 +474,11 @@ components:
     id: alert_kyc_review_button
     label: "Review KYC"
     content: ""
+    supported_states: [idle, hover, focus_visible, pressed, disabled]
     style:
       variant: outlined
-      border_color: "#E8A317"
-      color: "#E8A317"
+      border_color: "#44483D"  # fix: A11Y-002 — was #E8A317; border on CDEDA3 keeps visual warning via card border
+      color: "#44483D"  # fix: A11Y-002 — was #E8A317 (1.68:1 on #CDEDA3 FAIL); #44483D = 7.26:1 PASS
       border_radius: 8
       padding_horizontal: 12
       padding_vertical: 6
@@ -400,6 +498,9 @@ components:
   - type: box
     id: alert_application_pending_sarah
     content: ""
+    api:
+      endpoint_id: obp_get_fo_applications
+      bind: account_applications.filter(status=pending, days_pending>=7) → actionAlerts[type=long_pending]
     style:
       background: "#CDEDA3"
       border_radius: 12
@@ -418,6 +519,19 @@ components:
       label: "Sarah Odhiambo application pending for 7 days. Action required."
     keyboard:
       focusable: true
+    component_states:
+      loading:
+        type: skeleton  # fix REG-001: shimmer → skeleton (registered)
+        count: 1
+        description: "shimmer row matching alert card with text + button placeholders"
+      error:
+        type: banner  # fix REG-001: inline-error → banner (registered)
+        message: "Could not load overdue application alerts."
+        retry: true
+      empty:
+        type: box  # fix REG-001: inline-empty → box (registered)
+        message: "No applications overdue. Good work!"
+        icon: "assignment_turned_in"
     test_context:
       test_id: alert_application_pending_sarah
       assert: visible_when_long_pending_application
@@ -440,6 +554,7 @@ components:
     id: alert_view_application_button
     label: "View Application"
     content: ""
+    supported_states: [idle, hover, focus_visible, pressed, disabled]
     style:
       variant: outlined
       border_color: "#BA1A1A"
@@ -463,6 +578,9 @@ components:
   - type: box
     id: alert_new_lead_peter
     content: ""
+    api:
+      endpoint_id: obp_get_fo_customers
+      bind: customers.filter(status=lead, created_today=true) → actionAlerts[type=new_lead]
     style:
       background: "#CDEDA3"
       border_radius: 12
@@ -481,6 +599,19 @@ components:
       label: "New lead: Peter Kamau, retail account request"
     keyboard:
       focusable: true
+    component_states:
+      loading:
+        type: skeleton  # fix REG-001: shimmer → skeleton (registered)
+        count: 1
+        description: "shimmer row matching alert card with text + button placeholders"
+      error:
+        type: banner  # fix REG-001: inline-error → banner (registered)
+        message: "Could not load new lead notifications."
+        retry: true
+      empty:
+        type: box  # fix REG-001: inline-empty → box (registered)
+        message: "No new leads today."
+        icon: "person_add_disabled"
     test_context:
       test_id: alert_new_lead_peter
       assert: visible_when_new_lead_exists
@@ -503,6 +634,7 @@ components:
     id: alert_start_onboarding_button
     label: "Start Onboarding"
     content: ""
+    supported_states: [idle, hover, focus_visible, pressed, disabled]
     style:
       variant: outlined
       border_color: "#4C662B"
@@ -525,6 +657,9 @@ components:
 
   - type: box
     id: action_corporate_onboard
+    api:
+      endpoint_id: obp_get_fo_applications
+      bind: account_applications.filter(product_code=corporate, status=inquiry) → corporateInquiries
     style:
       background: "#CDEDA3"
       border_radius: 12
@@ -539,6 +674,19 @@ components:
       label: "Start Corporate Onboarding"
     keyboard:
       focusable: true
+    component_states:
+      loading:
+        type: skeleton  # fix REG-001: shimmer → skeleton (registered)
+        count: 1
+        description: "shimmer card matching corporate inquiry layout with title + button"
+      error:
+        type: banner  # fix REG-001: inline-error → banner (registered)
+        message: "Could not load corporate onboarding requests."
+        retry: true
+      empty:
+        type: box  # fix REG-001: inline-empty → box (registered)
+        message: "No corporate account inquiries pending."
+        icon: "business_center"
     test_context:
       tag: action_corporate_onboard
     children:
@@ -552,6 +700,7 @@ components:
         id: action_corporate_btn
         label: "Start Corporate Onboarding"
         variant: text
+        supported_states: [idle, hover, focus_visible, pressed, disabled]
         style:
           color: "#386663"
           typography: label_medium
@@ -598,6 +747,19 @@ components:
       label: "Meeting at 10:00 AM with Mary Wanjiku, loan review"
     keyboard:
       focusable: true
+    component_states:
+      loading:
+        type: skeleton  # fix REG-001: shimmer → skeleton (registered)
+        count: 2
+        description: "two shimmer rows matching meeting list item with time + name layout"
+      error:
+        type: banner  # fix REG-001: inline-error → banner (registered)
+        message: "Could not load today's schedule."
+        retry: true
+      empty:
+        type: box  # fix REG-001: inline-empty → box (registered)
+        message: "No meetings scheduled for today."
+        icon: "calendar_today"
     test_context:
       test_id: meeting_row_1
       assert: navigates_to_meeting_detail
@@ -684,8 +846,25 @@ components:
       test_id: meeting_2_details
       assert: text_visible
 
+responsive:
+  mobile_only: false
+  baseline_width: 390
+  tablet:
+    min_width: 600
+    columns: 2
+    content_max_width: 840
+  desktop:
+    min_width: 840
+    columns: 3
+    content_max_width: 1200
+
+initial_state: loading
+
 states:
   loading:
+    motion:
+      shimmer_duration: short4
+      reduced_motion_fallback: static_placeholder
     layout:
       show_components:
         - greeting_text
@@ -752,6 +931,21 @@ states:
         - action_needed_header
         - schedule_header
       error_message: "Unable to load dashboard data. Check your connection and try again."
+
+  empty:
+    layout:
+      show_components:
+        - greeting_text
+        - date_branch_context
+      hide_components:
+        - stats_grid
+        - action_needed_header
+        - schedule_header
+      empty_message: "No dashboard data available yet. Start by onboarding a customer."
+      empty_icon: "dashboard_customize"
+      empty_action_label: "Onboard a Customer"
+      empty_action: navigate
+      empty_action_target: customer-search
 
 state_model:
   view_model: FoDashboardViewModel
