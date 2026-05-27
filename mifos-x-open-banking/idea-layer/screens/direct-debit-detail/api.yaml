@@ -1,0 +1,63 @@
+sibling: api
+schema_version: "4.0"
+feature_id: direct-debit-detail
+api:
+  - id: obp_get_mandate_detail
+    endpoint: "GET /obp/v7.0.0/banks/{bankId}/accounts/{accountId}/standing-orders/{standingOrderId}"
+    tag: Standing-Order
+    trigger: LoadMandate
+    description: "Retrieve full details of a specific direct debit mandate / standing order"
+    response:
+      fields:
+        - name: standing_order_id
+          type: String
+        - name: bank_id
+          type: String
+        - name: account_id
+          type: String
+        - name: counterparty_name
+          type: String
+        - name: amount_value
+          type: String
+        - name: amount_currency
+          type: String
+        - name: frequency
+          type: String
+        - name: start_date
+          type: String
+        - name: next_payment_date
+          type: String
+        - name: status
+          type: String
+        - name: reference
+          type: String
+        - name: recent_payments
+          type: "List<Payment>"
+    errors:
+      - code: 401
+        message: "USER_NOT_LOGGED_IN"
+      - code: 403
+        message: "INSUFFICIENT_AUTHORISATION"
+      - code: 404
+        message: "MANDATE_NOT_FOUND"
+
+  - id: obp_cancel_mandate
+    endpoint: "DELETE /obp/v7.0.0/banks/{bankId}/accounts/{accountId}/standing-orders/{standingOrderId}"
+    tag: Standing-Order
+    trigger: OnCancelClicked
+    description: "Cancel an active direct debit mandate / standing order"
+    response:
+      fields:
+        - name: success
+          type: Boolean
+        - name: message
+          type: String
+    errors:
+      - code: 401
+        message: "USER_NOT_LOGGED_IN"
+      - code: 403
+        message: "INSUFFICIENT_AUTHORISATION"
+      - code: 404
+        message: "MANDATE_NOT_FOUND"
+      - code: 500
+        message: "CANCEL_FAILED"
