@@ -1,0 +1,110 @@
+id: consumer-accounts-payments
+version: "1.0.0"
+name: "Consumer Accounts & Payments"
+description: "Returning consumer checks their account balance, reviews transactions, and sends money to a beneficiary — the core daily banking workflow."
+
+persona:
+  archetype: "returning consumer"
+  jtbd: "check my balance and pay someone quickly without errors"
+  context: "weekday morning, needs to pay rent or transfer funds before work"
+  knowledge_level: familiar
+  emotional_state: "confident"
+
+goal: "View account balance and complete a money transfer to a beneficiary within the same session."
+
+success_metric:
+  name: payment_completion_rate
+  kind: task_completion
+  target: ">=85% of payment initiations reach send-money-confirm success state"
+  measurement: "funnel: send_money_opened → confirm_tapped → payment_success_event"
+
+screen_sequence:
+  - screen_id: home_content
+    feature_id: home
+    state: content
+    user_intent: "see balance summary and navigate to accounts"
+    success_signal: "taps Accounts tile or bottom nav"
+  - screen_id: accounts_content
+    feature_id: accounts
+    state: content
+    user_intent: "view all accounts and balances"
+    success_signal: "sees account list with balances"
+  - screen_id: account_detail_content
+    feature_id: account-detail
+    state: content
+    user_intent: "see account details and recent activity"
+    success_signal: "views account detail with mini statement"
+  - screen_id: transactions_content
+    feature_id: transactions
+    state: content
+    user_intent: "review recent transactions"
+    success_signal: "transaction list loaded with categories"
+  - screen_id: transaction_detail_content
+    feature_id: transaction-detail
+    state: content
+    user_intent: "view a specific transaction detail"
+    success_signal: "full transaction detail visible"
+  - screen_id: transaction-tags
+    feature_id: transaction-tags
+    state: content
+    user_intent: "tag or annotate transaction"
+    success_signal: "tag saved, returns to transaction detail"
+  - screen_id: send-money
+    feature_id: send-money
+    state: content
+    user_intent: "initiate a payment"
+    success_signal: "fills amount + beneficiary, taps Review"
+  - screen_id: beneficiaries
+    feature_id: beneficiaries
+    state: content
+    user_intent: "select or add a beneficiary"
+    success_signal: "beneficiary selected, returns to send-money"
+  - screen_id: send-money-confirm
+    feature_id: send-money-confirm
+    state: content
+    user_intent: "review and confirm payment details"
+    success_signal: "taps Confirm, payment submitted"
+  - screen_id: home_content
+    feature_id: home
+    state: content
+    user_intent: "verify payment reflected on home"
+    success_signal: "home reloads with updated balance"
+
+expected_outcome: "Consumer has reviewed their accounts, inspected a transaction, and successfully sent money to a beneficiary."
+
+flows:
+  - feature_id: home
+    flow_id: consumer-banking
+    role: primary
+  - feature_id: accounts
+    flow_id: consumer-banking
+    role: primary
+  - feature_id: send-money
+    flow_id: consumer-banking
+    role: primary
+  - feature_id: beneficiaries
+    flow_id: consumer-banking
+    role: branch
+
+capabilities_used: [has_payments, has_ui, has_api]
+
+tier: maximum
+
+preconditions:
+  - "user is authenticated as consumer"
+  - "at least one active account exists"
+  - "device is online"
+
+failure_modes:
+  - cause: "insufficient funds"
+    recovery_screen: send-money-confirm
+    notes: "Error shown on confirm screen; user edits amount"
+  - cause: "network timeout on confirm"
+    recovery_screen: send-money-confirm
+    notes: "Error with retry; idempotency key prevents duplicate"
+  - cause: "beneficiary account not found"
+    recovery_screen: send-money
+    notes: "Inline validation error on account field"
+
+tags: [consumer, payments, accounts, transactions]
+deprecated: false

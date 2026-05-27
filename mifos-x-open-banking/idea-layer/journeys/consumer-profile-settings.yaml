@@ -1,0 +1,78 @@
+id: consumer-profile-settings
+version: "1.0.0"
+name: "Consumer Profile & Settings"
+description: "Consumer updates their profile, changes their password, manages open banking consent, and accesses app information."
+
+persona:
+  archetype: "returning consumer"
+  jtbd: "keep my account secure and manage which third-party apps can access my data"
+  context: "received a security notification or wants to review data sharing permissions"
+  knowledge_level: expert
+  emotional_state: "focused"
+
+goal: "Update password and review consent grants for connected apps within one session."
+
+success_metric:
+  name: settings_task_completion
+  kind: task_completion
+  target: ">=90% of users who start password change complete it"
+  measurement: "funnel: change_password_opened → password_change_success_event"
+
+screen_sequence:
+  - screen_id: profile
+    feature_id: profile
+    state: content
+    user_intent: "view and edit personal profile details"
+    success_signal: "profile details visible"
+  - screen_id: settings
+    feature_id: settings
+    state: content
+    user_intent: "access account settings"
+    success_signal: "settings list loaded"
+  - screen_id: change-password
+    feature_id: change-password
+    state: content
+    user_intent: "change account password"
+    success_signal: "new password saved successfully"
+  - screen_id: consent-manager
+    feature_id: consent-manager
+    state: content
+    user_intent: "review and revoke open banking consent"
+    success_signal: "consent grants listed with revoke option"
+  - screen_id: about
+    feature_id: about
+    state: content
+    user_intent: "see app version and legal information"
+    success_signal: "about page loaded"
+
+expected_outcome: "Consumer has updated their password, reviewed open banking consent grants, and is back on the settings screen."
+
+flows:
+  - feature_id: settings
+    flow_id: consumer-banking
+    role: primary
+  - feature_id: profile
+    flow_id: app-main
+    role: branch
+  - feature_id: consent-manager
+    flow_id: consumer-banking
+    role: branch
+
+capabilities_used: [is_auth_feature, has_ui, has_api]
+
+tier: maximum
+
+preconditions:
+  - "user is authenticated as consumer"
+  - "device is online"
+
+failure_modes:
+  - cause: "password change validation fails"
+    recovery_screen: change-password
+    notes: "Inline error; user re-enters matching passwords"
+  - cause: "consent revoke API error"
+    recovery_screen: consent-manager
+    notes: "Error toast; consent remains active"
+
+tags: [consumer, profile, settings, security, consent]
+deprecated: false

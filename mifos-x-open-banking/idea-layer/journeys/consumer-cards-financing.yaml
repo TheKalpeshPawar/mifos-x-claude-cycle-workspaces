@@ -1,0 +1,84 @@
+id: consumer-cards-financing
+version: "1.0.0"
+name: "Consumer Cards & Financing"
+description: "Consumer manages their debit/credit cards, reviews card transactions, manages standing orders, and monitors direct debits — core financial instrument management."
+
+persona:
+  archetype: "returning consumer"
+  jtbd: "keep my recurring payments organised and understand my card spend"
+  context: "end of month, reviewing outgoings and checking card usage"
+  knowledge_level: familiar
+  emotional_state: "focused"
+
+goal: "Review card activity, check standing orders, and manage direct debits within one session."
+
+success_metric:
+  name: financial_instrument_review_completion
+  kind: task_completion
+  target: ">=80% of users who open cards view ≥1 card detail"
+  measurement: "funnel: cards_opened → card_detail_viewed"
+
+screen_sequence:
+  - screen_id: cards
+    feature_id: cards
+    state: content
+    user_intent: "see all cards and their status"
+    success_signal: "card list loaded with balances"
+  - screen_id: card-detail
+    feature_id: card-detail
+    state: content
+    user_intent: "review card limit, balance, recent transactions"
+    success_signal: "card detail visible with transaction list"
+  - screen_id: transactions_content
+    feature_id: transactions
+    state: content
+    user_intent: "see full card transaction history"
+    success_signal: "filtered transactions for card shown"
+  - screen_id: standing-orders
+    feature_id: standing-orders
+    state: content
+    user_intent: "view and manage recurring payments"
+    success_signal: "standing order list loaded"
+  - screen_id: direct-debits
+    feature_id: direct-debits
+    state: content
+    user_intent: "review all direct debits"
+    success_signal: "direct debit list loaded"
+  - screen_id: direct-debit-detail
+    feature_id: direct-debit-detail
+    state: content
+    user_intent: "see detail for a specific direct debit"
+    success_signal: "direct debit detail loaded with amount and schedule"
+
+expected_outcome: "Consumer has reviewed their card usage, checked standing orders, and inspected their direct debits."
+
+flows:
+  - feature_id: cards
+    flow_id: consumer-banking
+    role: primary
+  - feature_id: standing-orders
+    flow_id: consumer-banking
+    role: primary
+  - feature_id: direct-debits
+    flow_id: consumer-banking
+    role: primary
+
+capabilities_used: [has_ui, has_api]
+
+tier: maximum
+
+preconditions:
+  - "user is authenticated as consumer"
+  - "at least one card linked to account"
+  - "device is online"
+
+failure_modes:
+  - cause: "card data load failure"
+    recovery_screen: cards
+    notes: "Error state with retry"
+  - cause: "direct debit cancel fails"
+    recovery_screen: direct-debit-detail
+    notes: "Error toast; user contacts support"
+
+tags: [consumer, cards, direct-debits, standing-orders]
+deprecated: false
