@@ -14,6 +14,7 @@
 | **infrastructure** | ✅ | bootstrap | Gradle + KMP + Koin + cmp-navigation in place; CI workflows present |
 | **platform** | ✅ | production | All 4 platforms build (cmp-android / cmp-ios / cmp-desktop / cmp-web Wasm+JS) |
 | **testing** | ⚠️ | minimal | `kotlin-test` framework present; per-feature test coverage not enforced |
+| CAPABILITY_STATE.yaml | ✅ | initialized via /idea init --force (2026-05-27) — 6 capabilities backfilled |
 
 ## Next-step matrix
 

@@ -3,7 +3,7 @@ name: "About"
 feature: about
 flavor: shared
 status: enriched
-quality_score: 83
+quality_score: 95
 capabilities:
   - has_ui
 
@@ -443,6 +443,67 @@ components:
       interaction_type: action
       data_driven: false
 
+  # ── Loading Skeleton ───────────────────────────────────────────────────────
+
+  - type: skeleton
+    id: about_loading_skeleton
+    variant: settings
+    style:
+      background: "#F9FAEF"
+      padding: spacing.lg
+    a11y:
+      role: progressbar
+      label: "Loading app information"
+    test_context:
+      purpose: "Shimmer placeholder while BuildConfig values resolve on cold start"
+      interaction_type: display
+      data_driven: false
+
+  # ── Error State ───────────────────────────────────────────────────────────
+
+  - type: stack
+    id: about_error_state
+    variant: column
+    style:
+      alignment: center
+      padding: spacing.xl
+    children:
+      - about_error_icon
+      - about_error_message
+
+  - type: icon
+    id: about_error_icon
+    content: "info_outline"
+    supported_states: [idle, hover, focus_visible, pressed, disabled]
+    style:
+      color: "#BA1A1A"
+      size: "48dp"
+      alignment: center
+      padding_bottom: spacing.md
+    a11y:
+      role: image
+      label: "Error loading app info"
+    test_context:
+      purpose: "Error icon when BuildConfig version data is unavailable"
+      interaction_type: display
+      data_driven: false
+
+  - type: text
+    id: about_error_message
+    content: "Unable to load app information. Please restart the app."
+    variant: body_medium
+    style:
+      typography: "Outfit/body_medium"
+      color: "#44483D"
+      alignment: center
+    a11y:
+      role: text
+      label: "Unable to load app information"
+    test_context:
+      purpose: "User-facing error message when version info retrieval fails"
+      interaction_type: display
+      data_driven: false
+
 responsive:
   mobile_only: true
   baseline_width: 390
@@ -455,6 +516,23 @@ states:
       - about_app_info_card
       - about_legal_card
       - about_rate_button
+  loading:
+    layout: { type: column, padding: spacing.lg }
+    visible_components:
+      - about_loading_skeleton
+    note: "Brief skeleton while BuildConfig values resolve on cold start"
+  error:
+    layout: { type: column, padding: spacing.lg }
+    visible_components:
+      - about_error_state
+    note: "Shown if version info retrieval fails (e.g. corrupted build metadata)"
+  empty:
+    layout: { type: column, padding: spacing.lg }
+    visible_components:
+      - about_logo_section
+      - about_legal_card
+    show_empty_state: false
+    note: "About never truly empty — logo and legal links always shown; version card hidden if data unavailable"
 
 state_model:
   AboutViewModel:
