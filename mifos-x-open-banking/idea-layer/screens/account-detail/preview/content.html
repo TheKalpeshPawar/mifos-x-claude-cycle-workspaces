@@ -1,0 +1,145 @@
+<!doctype html>
+<html lang="en" data-screen="account-detail" data-state="content" data-feature="account-detail" data-flavor="consumer">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Account Detail — Mifos X Open Banking</title>
+  <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet">
+  <style>
+    :root {
+      --primary: #4C662B; --on-primary: #FFFFFF; --primary-container: #CDEDA3; --on-primary-container: #102000;
+      --secondary: #386663; --on-secondary: #FFFFFF; --error: #BA1A1A; --on-error: #FFFFFF;
+      --background: #F9FAEF; --on-background: #1A1C16; --surface: #FFFFFF; --on-surface: #1A1C16;
+      --surface-variant: #E1E4D5; --on-surface-variant: #44483D; --outline: #75796C; --outline-variant: #C5C8BA; --warning: #E8A317;
+    }
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body { font-family: 'Outfit', sans-serif; background: var(--background); color: var(--on-background); display: flex; flex-direction: column; min-height: 100vh; }
+    main { flex: 1; display: flex; flex-direction: column; padding-bottom: 72px; }
+    .top-bar { display: flex; align-items: center; gap: 12px; padding: 12px 20px; background: var(--primary); }
+    .top-bar .material-icons { color: var(--on-primary); cursor: pointer; }
+    .top-bar h1 { font-size: 18px; font-weight: 600; color: var(--on-primary); }
+    .header-card { background: var(--primary); padding: 0 24px 32px; }
+    .header-label { font-size: 14px; color: rgba(255,255,255,0.7); margin-bottom: 4px; }
+    .header-balance { font-size: 36px; font-weight: 700; color: var(--on-primary); margin-bottom: 12px; }
+    .badge-row { display: flex; gap: 8px; }
+    .badge { display: inline-flex; align-items: center; gap: 4px; padding: 4px 10px; border-radius: 8px; font-size: 11px; font-weight: 600; }
+    .badge.currency { background: rgba(255,255,255,0.15); color: var(--on-primary); }
+    .badge.type { background: var(--primary-container); color: var(--primary); }
+    .info-card { background: var(--surface); border-radius: 16px; margin: -16px 20px 12px; padding: 16px; box-shadow: 0 2px 8px rgba(0,0,0,0.08); }
+    .info-row { display: flex; align-items: center; justify-content: space-between; padding: 10px 0; }
+    .info-label { font-size: 12px; color: var(--on-surface-variant); }
+    .info-value { font-size: 14px; font-weight: 600; color: var(--on-background); font-family: 'SF Mono', monospace; }
+    .info-divider { height: 1px; background: var(--surface-variant); }
+    .copy-btn { background: none; border: none; cursor: pointer; padding: 8px; border-radius: 8px; }
+    .copy-btn .material-icons { font-size: 18px; color: var(--primary); }
+    .action-row { display: flex; gap: 8px; padding: 12px 20px; }
+    .action-btn { flex: 1; display: flex; flex-direction: column; align-items: center; gap: 6px; padding: 14px 8px; border-radius: 12px; border: none; cursor: pointer; font-family: 'Outfit', sans-serif; font-size: 12px; font-weight: 600; }
+    .action-btn.tonal { background: var(--primary-container); color: var(--primary); }
+    .action-btn.outlined { background: transparent; border: 1px solid var(--outline-variant); color: var(--on-background); }
+    .action-btn .material-icons { font-size: 22px; }
+    .section-header { display: flex; align-items: center; justify-content: space-between; padding: 16px 20px 8px; }
+    .section-header h2 { font-size: 16px; font-weight: 700; color: var(--on-background); }
+    .section-header a { font-size: 13px; font-weight: 600; color: var(--primary); text-decoration: none; cursor: pointer; }
+    .txn-row { display: flex; align-items: center; gap: 12px; padding: 12px 20px; }
+    .txn-icon { width: 40px; height: 40px; border-radius: 20px; background: var(--primary-container); display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
+    .txn-icon .material-icons { font-size: 20px; color: var(--primary); }
+    .txn-details { flex: 1; }
+    .txn-details .merchant { font-size: 14px; font-weight: 500; color: var(--on-background); }
+    .txn-details .meta { font-size: 12px; color: var(--on-surface-variant); margin-top: 2px; }
+    .txn-amount { font-size: 14px; font-weight: 600; }
+    .txn-amount.debit { color: var(--error); }
+    .txn-amount.credit { color: var(--primary); }
+    nav[data-shell="bottom-nav"] { position: sticky; bottom: 0; margin-top: auto; background: var(--surface); border-top: 1px solid var(--surface-variant); display: flex; justify-content: space-around; padding: 8px 0 12px; }
+    .nav-item { display: flex; flex-direction: column; align-items: center; gap: 2px; text-decoration: none; padding: 4px 12px; border-radius: 16px; min-width: 56px; cursor: pointer; }
+    .nav-item .material-icons { font-size: 24px; color: var(--on-surface-variant); }
+    .nav-item .nav-label { font-size: 11px; font-weight: 500; color: var(--on-surface-variant); }
+    .nav-item.active .material-icons { color: var(--primary); }
+    .nav-item.active .nav-label { color: var(--primary); font-weight: 700; }
+    .nav-item.active { background: var(--primary-container); }
+    @media (prefers-color-scheme: dark) {
+      :root {
+        --primary: #B2D188; --on-primary: #1F3701; --primary-container: #354E16; --on-primary-container: #CDEDA3;
+        --secondary: #A0CFCB; --on-secondary: #003735; --error: #FFB4AB; --on-error: #690005;
+        --background: #12140E; --on-background: #E3E3D8; --surface: #12140E; --on-surface: #E3E3D8;
+        --surface-variant: #44483D; --on-surface-variant: #C5C8BA; --outline: #8F9285; --outline-variant: #44483D; --warning: #E8A317;
+      }
+    }
+  </style>
+</head>
+<body>
+  <main>
+    <div class="top-bar">
+      <span class="material-icons" data-action="navigate_back" tabindex="0" aria-label="Go back">arrow_back</span>
+      <h1>Account Details</h1>
+    </div>
+    <div class="header-card" data-component-type="box" data-component-id="account_header_card" role="region" aria-label="Account summary">
+      <div class="header-label" data-component-type="text" data-component-id="account_header_label">Primary Checking</div>
+      <div class="header-balance" data-component-type="text" data-component-id="account_header_balance">£4,250.00</div>
+      <div class="badge-row" data-component-type="stack" data-component-id="account_header_meta">
+        <span class="badge currency" data-component-type="box" data-component-id="account_currency_badge"><span data-component-type="text" data-component-id="account_currency_label">GBP</span></span>
+        <span class="badge type" data-component-type="box" data-component-id="account_type_badge"><span data-component-type="text" data-component-id="account_type_label">CHECKING</span></span>
+      </div>
+    </div>
+    <div class="info-card" data-component-type="box" data-component-id="account_info_card">
+      <div class="info-row" data-component-type="stack" data-component-id="iban_row">
+        <div data-component-type="stack" data-component-id="iban_label_col">
+          <div class="info-label" data-component-type="text" data-component-id="iban_label">IBAN</div>
+          <div class="info-value" data-component-type="text" data-component-id="iban_value">DE89 3704 0044 0532 0130 00</div>
+        </div>
+        <button class="copy-btn" data-action="copy_iban" data-component-type="icon" data-component-id="copy_iban_button" aria-label="Copy IBAN" tabindex="0"><span class="material-icons">content_copy</span></button>
+      </div>
+      <div class="info-divider" data-component-type="divider" data-component-id="info_divider_1"></div>
+      <div class="info-row" data-component-type="stack" data-component-id="bic_row">
+        <div data-component-type="stack" data-component-id="bic_label_col">
+          <div class="info-label" data-component-type="text" data-component-id="bic_label">BIC / SWIFT</div>
+          <div class="info-value" data-component-type="text" data-component-id="bic_value">COBADEFFXXX</div>
+        </div>
+        <button class="copy-btn" data-action="copy_bic" data-component-type="icon" data-component-id="copy_bic_button" aria-label="Copy BIC" tabindex="0"><span class="material-icons">content_copy</span></button>
+      </div>
+    </div>
+    <div class="action-row">
+      <button class="action-btn tonal" data-nav-to="send-money" data-component-type="button" data-component-id="btn_send_money" aria-label="Send Money" tabindex="0"><span class="material-icons">send</span>Send</button>
+      <button class="action-btn outlined" data-action="request_payment" data-component-type="button" data-component-id="btn_request_payment" aria-label="Request Payment" tabindex="0"><span class="material-icons">call_received</span>Request</button>
+      <button class="action-btn outlined" data-action="download_statement" data-component-type="button" data-component-id="btn_download_statement" aria-label="Download Statement" tabindex="0"><span class="material-icons">download</span>Statement</button>
+    </div>
+    <div class="section-header">
+      <h2 role="heading" aria-level="2">Recent Transactions</h2>
+      <a data-nav-to="transactions" data-component-type="link" data-component-id="view_all_transactions_link" role="link" aria-label="View all transactions" tabindex="0">View All</a>
+    </div>
+    <div class="txn-row" data-component-type="box" data-component-id="detail_txn_row_1">
+      <div class="txn-icon"><span class="material-icons">shopping_cart</span></div>
+      <div class="txn-details"><div class="merchant" data-component-type="text" data-component-id="dtxn1_merchant">Tesco</div><div class="meta" data-component-type="text" data-component-id="dtxn1_date">23 May · Groceries</div></div>
+      <span class="txn-amount debit" data-component-type="text" data-component-id="dtxn1_amount">-£42.50</span>
+    </div>
+    <div class="txn-row" data-component-type="box" data-component-id="detail_txn_row_2">
+      <div class="txn-icon"><span class="material-icons">payments</span></div>
+      <div class="txn-details"><div class="merchant" data-component-type="text" data-component-id="dtxn2_merchant">Salary</div><div class="meta" data-component-type="text" data-component-id="dtxn2_date">22 May · Income</div></div>
+      <span class="txn-amount credit" data-component-type="text" data-component-id="dtxn2_amount">+£3,200.00</span>
+    </div>
+    <div class="txn-row" data-component-type="box" data-component-id="detail_txn_row_3">
+      <div class="txn-icon"><span class="material-icons">bolt</span></div>
+      <div class="txn-details"><div class="merchant" data-component-type="text" data-component-id="dtxn3_merchant">EDF Energy</div><div class="meta" data-component-type="text" data-component-id="dtxn3_date">20 May · Utilities</div></div>
+      <span class="txn-amount debit" data-component-type="text" data-component-id="dtxn3_amount">-£94.20</span>
+    </div>
+    <div class="txn-row" data-component-type="box" data-component-id="detail_txn_row_4">
+      <div class="txn-icon"><span class="material-icons">local_cafe</span></div>
+      <div class="txn-details"><div class="merchant" data-component-type="text" data-component-id="dtxn4_merchant">Costa Coffee</div><div class="meta" data-component-type="text" data-component-id="dtxn4_date">19 May · Dining</div></div>
+      <span class="txn-amount debit" data-component-type="text" data-component-id="dtxn4_amount">-£4.80</span>
+    </div>
+    <div class="txn-row" data-component-type="box" data-component-id="detail_txn_row_5">
+      <div class="txn-icon"><span class="material-icons">directions_bus</span></div>
+      <div class="txn-details"><div class="merchant" data-component-type="text" data-component-id="dtxn5_merchant">TfL Oyster</div><div class="meta" data-component-type="text" data-component-id="dtxn5_date">18 May · Transport</div></div>
+      <span class="txn-amount debit" data-component-type="text" data-component-id="dtxn5_amount">-£7.40</span>
+    </div>
+  </main>
+  <nav data-shell="bottom-nav" role="navigation" aria-label="Main navigation">
+    <a class="nav-item" data-nav-to="home" aria-label="Home"><span class="material-icons">home</span><span class="nav-label">Home</span></a>
+    <a class="nav-item active" data-nav-to="accounts" aria-label="Accounts" aria-current="page"><span class="material-icons">account_balance</span><span class="nav-label">Accounts</span></a>
+    <a class="nav-item" data-nav-to="send-money" aria-label="Pay"><span class="material-icons">send</span><span class="nav-label">Pay</span></a>
+    <a class="nav-item" data-nav-to="cards" aria-label="Cards"><span class="material-icons">credit_card</span><span class="nav-label">Cards</span></a>
+    <a class="nav-item" data-nav-to="settings" aria-label="More"><span class="material-icons">more_horiz</span><span class="nav-label">More</span></a>
+  </nav>
+  <script src="../../preview/_shared/preview-runtime.js"></script>
+</body>
+</html>
