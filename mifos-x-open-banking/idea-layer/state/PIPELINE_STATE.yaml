@@ -68,39 +68,40 @@ capabilities:
 
   idea-verify:
     status: partial
-    last_run: "2026-05-28T15:00:00Z"
+    last_run: "2026-05-28T22:00:00Z"
     actor: claude
-    args: "(standalone /idea verify)"
+    args: "remember all the rules"
     command: "/idea verify"
     layer: idea
     metrics:
-      checks_run: 54
-      checks_passed: 41
+      checks_run: 58
+      checks_passed: 43
       checks_failed: 9
-      warnings: 4
+      warnings: 6
       architecture_files: "9/9"
-      sibling_completeness: "39/39 (ui+docs+flow); 36/39 api (3 intentional skip: about, settings, splash)"
-      state_coverage: "39/39 features rendered (157 HTML)"
+      sibling_completeness: "43/43 ui+docs; flow: 39/43 (4 new screens missing flow.yaml); api: 37/43 (about/settings/splash exempt; 3 new static screens no api needed)"
+      state_coverage: "39/43 features with preview HTML (157 HTML); 4 new screens: 0 previews"
       component_types_used: 20
       component_types_registered: 20
       component_types_unregistered: 0
-      navigation_targets: "6 broken ui.yaml targets (consumer-home, terms-of-service, privacy-policy, licenses, standing-order-detail)"
-      navigates_to_targets: "all 39 resolve (0 broken)"
-      export_coverage: "39/39"
-      demo_data_coverage: "36/39 (3 exempt: about, settings, splash)"
-      tests_yaml_coverage: "0/39"
-      feature_status: "39 approved"
+      navigation_targets: "0 broken targets (FIXED 2026-05-28: consumer-home→home in splash+login; standing-order-edit→standing-orders deferred fallback in standing-order-detail)"
+      new_screens_reachable: "terms-of-service/privacy-policy/licenses reachable from about; standing-order-detail reachable from standing-orders"
+      export_coverage: "39/43 (4 new screens not yet exported)"
+      demo_data_coverage: "40/43 (about/settings/splash exempt; 4 new screens all have demo-data.yaml)"
+      tests_yaml_coverage: "0/43"
+      feature_status: "43 approved"
       design_validate_score: 52
-      stitch: "disabled (skipped — stitch.enabled not set)"
-      deferred: "none (FD1-FD2 skip — no release-plan; FD3-FD5 pass)"
+      stitch: "disabled (skipped)"
+      deferred: "none (FD1-FD2 skip; FD3-FD5 pass)"
       release_plan: "not initialized"
       roadmap_v1: "missing"
-      features_count_drift: "FEATURES.md=30, screens/=39"
-      server_apis_dir: "empty (16 spec files missing)"
+      features_count_drift: "FEATURES.md says 30+ features; 43 screen dirs exist"
+      server_apis_dir: "3/22 spec files present (auth-recovery, profile, standing-orders-detail); 19 missing"
       server_tables_dir: "missing"
-      design_tokens_schema_drift: "uses color: not colors:, missing metadata/touchTargets"
-      journey_screen_id_mismatches: "18/39 screen_ids use state-suffix format"
-      unreachable_screens: "agent-registration, consent-manager"
+      design_tokens_schema_drift: "uses color: not colors:; missing metadata/touchTargets top-level keys"
+      journey_screen_id_mismatches: "state-suffix format in journey screen_ids (pre-existing)"
+      unreachable_screens: "none (FIXED 2026-05-28: agent-registration inbound via fo-dashboard action_register_as_agent; consent-manager inbound via settings Data&Consent row)"
+      new_screens_missing_flow: "licenses, privacy-policy, standing-order-detail, terms-of-service"
     failed_checks:
       - id: "V1-ROADMAP-HAS-V1"
         rule: "RULE-IDEA-CORE-001"
@@ -108,8 +109,8 @@ capabilities:
         fix: "/idea sync (update ROADMAP.md to add v1.0 section)"
       - id: "V1-FEATURES-SUM-MATCHES"
         rule: "RULE-IDEA-CONSISTENCY-001"
-        message: "FEATURES.md header says '30 Screens' but 39 screen dirs exist"
-        fix: "/idea sync --auto-fix (recompute FEATURES.md count)"
+        message: "FEATURES.md header says '30+ features'; 43 screen dirs exist (4 added by /idea-completeness)"
+        fix: "/idea sync --auto-fix (recompute FEATURES.md count to 43)"
       - id: "DST3-REQUIRED-TOP-LEVEL"
         rule: "RULE-DS-TOKEN-VALIDATE-001"
         message: "design-tokens.yaml uses 'color:' not 'colors:'; missing 'metadata', 'touchTargets' top-level keys"
@@ -118,13 +119,9 @@ capabilities:
         rule: "RULE-DS-TOKEN-VALIDATE-001"
         message: "design-tokens.yaml 'color:' block not shaped as M3 29-role 'colors:' map"
         fix: "/design-system (rebuild with M3 color roles)"
-      - id: "V1-APIS-DIR"
+      - id: "V1-APIS-DIR-INCOMPLETE"
         rule: "RULE-IDEA-SERVER-DATA-001"
-        message: "server/apis/ exists but is empty (0 yaml files)"
-        fix: "/server init or /idea sync STEP 4g (populate per-flow api yaml files)"
-      - id: "V1-FLOW-API-MATCH"
-        rule: "RULE-IDEA-SERVER-DATA-001"
-        message: "api_manifest.yaml references 16 spec_files in server/apis/ — all missing"
+        message: "api_manifest.yaml references 22 spec_files; only 3 present in server/apis/; 19 missing"
         fix: "/server init (generate per-flow api yaml files)"
       - id: "V1-TABLES-DIR"
         rule: "RULE-IDEA-SERVER-DATA-001"
@@ -132,18 +129,26 @@ capabilities:
         fix: "/server init (scaffold server/tables/ directory)"
       - id: "V1-NAV-TARGET-RESOLVES"
         rule: "RULE-PROTO-INTEGRITY-001"
-        message: "6 ui.yaml navigation targets resolve to non-existent screens: consumer-home (splash,login), terms-of-service/privacy-policy/licenses (about), standing-order-detail (standing-orders)"
-        fix: "/idea enrich (re-wire navigation targets to valid screen IDs)"
+        status: "FIXED 2026-05-28"
+        message: "RESOLVED — consumer-home→home (splash+login); standing-order-edit→standing-orders deferred fallback (standing-order-detail)"
+        fix: "applied"
       - id: "V1-SCREEN-REACHABLE"
         rule: "RULE-PROTO-INTEGRITY-001"
-        message: "2 screens never appear in any navigates_to: agent-registration, consent-manager"
-        fix: "/idea enrich --feature fo-dashboard (add agent-registration), /idea enrich --feature settings (add consent-manager)"
+        status: "FIXED 2026-05-28"
+        message: "RESOLVED — agent-registration inbound via fo-dashboard; consent-manager inbound via settings"
+        fix: "applied"
+      - id: "V1-FLOW-YAML-MISSING"
+        rule: "RULE-IDEA-CONSISTENCY-001"
+        message: "4 screens missing flow.yaml: licenses, privacy-policy, standing-order-detail, terms-of-service"
+        fix: "/idea sync --auto-fix (scaffold flow.yaml for each new screen)"
     warning_summary:
-      - "J3-SCREEN-SEQUENCE-RESOLVES: 18/39 journey screen_ids use state-suffix format (e.g., accounts_content, home_content) — do not match screen dirs"
-      - "tests.yaml 0/39 — no test specs scaffolded"
+      - "J3-SCREEN-SEQUENCE-RESOLVES: journey screen_ids use state-suffix format (pre-existing)"
+      - "tests.yaml 0/43 — no test specs scaffolded"
       - "DST7-WCAG-AA-VALIDATED: design_validate score 52 (<75); WCAG AA not met"
-      - "V1-PIPELINE-STATE-DESIGN-BLOCK: design_system block present under capabilities (Phase 2.5.1 ambiguous on top-level vs nested)"
-    detail_ref: "state/verify-logs/idea-verify-2026-05-28T15-00-00Z.md"
+      - "4 new screens have 0 preview HTML — run /idea-render-screen for each"
+      - "standing-order-detail references 'standing-order-edit' target (screen not created)"
+      - "export_coverage: 4 new screens missing SPEC.md/API.md/MOCKUP.md — run /idea export"
+    detail_ref: "state/verify-logs/idea-verify-2026-05-28T22-00-00Z.md"
 
   design_system:
     status: complete
@@ -179,21 +184,40 @@ capabilities:
 
   idea-sync:
     status: complete
-    last_run: "2026-05-28T14:30:00Z"
+    last_run: "2026-05-28T23:00:00Z"
     actor: claude
-    args: ""
+    args: "remember all the rules"
     command: "/idea sync"
     layer: idea
     metrics:
-      steps_total: 9
-      steps_succeeded: 9
+      steps_total: 8
+      steps_succeeded: 8
       steps_failed: 0
-      screens_total: 39
-      screens_approved: 39
+      screens_total: 43
+      screens_approved: 43
       screens_enriched: 0
-      features_re_approved: 4
-      exports_total: "39/39"
-      quality_scores: { min: 92, max: 100, avg: 95.1 }
+      flow_yaml_scaffolded: 4
+      artifacts_updated: 4
+      exports_total: "39/43"
+      quality_scores: { min: 92, max: 100, avg: 94.8 }
+    auto_fixes:
+      - "flow.yaml scaffolded for: terms-of-service, privacy-policy, licenses, standing-order-detail"
+      - "APP_FLOW.mmd updated — 43 screens (added 4 new nodes + StandingOrderDetail edge)"
+      - "TAG_REGISTRY.yaml updated — FR-001..FR-005, FR-018 registered"
+      - "dashboard/DEV_STATUS.md updated — 43 screens, open issues table"
+      - "FEATURES.md count fixed: 30+ → 43"
+    open_issues:
+      - "V1-NAV-TARGET-RESOLVES: consumer-home (splash+login), standing-order-edit (standing-order-detail)"
+      - "V1-SCREEN-REACHABLE: agent-registration, consent-manager orphaned"
+      - "V1-ROADMAP-HAS-V1: ROADMAP.md missing v1.0 section"
+      - "DST3/DST4: design-tokens.yaml M3 schema drift"
+      - "V1-APIS-DIR-INCOMPLETE: 19/22 server/apis/ spec files missing"
+      - "V1-TABLES-DIR: server/tables/ missing"
+    next_capabilities:
+      - "idea-enrich (fix nav targets in splash, login, fo-dashboard, settings)"
+      - "idea-export (4 new screens: terms-of-service, privacy-policy, licenses, standing-order-detail)"
+      - "idea-render-screen (4 new screens need preview HTML)"
+      - "server-init (scaffold tables + api specs)"
       preview_html_files: 157
       rv_failures: 0
       rv_warnings: 0

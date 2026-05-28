@@ -100,7 +100,7 @@ api_groups:
 
   - id: standing_orders
     name: Standing Orders
-    screens: [standing-orders]
+    screens: [standing-orders, standing-order-detail]
     spec_file: "server/apis/standing-orders.yaml"
     endpoints:
       - method: GET
@@ -113,6 +113,23 @@ api_groups:
       - method: DELETE
         path: "/v3.0.0/banks/{bank_id}/accounts/{account_id}/standing-orders/{standing_order_id}"
         description: "Cancel standing order"
+      - method: GET
+        path: "/v4.0.0/banks/{bank_id}/accounts/{account_id}/standing-orders/{standing_order_id}"
+        description: "Get standing order detail with execution history"
+        spec_file: "server/apis/standing-orders-detail.yaml"
+        response_fields: [id, beneficiary_name, beneficiary_iban, beneficiary_bank, amount_value, amount_currency, frequency, start_date, next_payment_date, final_date, status, execution_history]
+      - method: POST
+        path: "/v4.0.0/banks/{bank_id}/accounts/{account_id}/standing-orders/{standing_order_id}/pause"
+        description: "Pause a standing order — idempotent"
+        spec_file: "server/apis/standing-orders-detail.yaml"
+      - method: POST
+        path: "/v4.0.0/banks/{bank_id}/accounts/{account_id}/standing-orders/{standing_order_id}/resume"
+        description: "Resume a paused standing order — idempotent"
+        spec_file: "server/apis/standing-orders-detail.yaml"
+      - method: DELETE
+        path: "/v4.0.0/banks/{bank_id}/accounts/{account_id}/standing-orders/{standing_order_id}"
+        description: "Soft-delete (cancel) a standing order"
+        spec_file: "server/apis/standing-orders-detail.yaml"
 
   - id: direct_debits
     name: Direct Debits
@@ -257,3 +274,39 @@ api_groups:
         path: "/v3.0.0/banks/{bank_id}/products"
         description: "List bank products"
         response_fields: [code, parent_product_code, bank_id, label, category, family, super_family, more_info_url, details, description, meta]
+
+  - id: profile
+    name: User Profile
+    screens: [profile]
+    spec_file: "server/apis/profile.yaml"
+    endpoints:
+      - method: GET
+        path: "/v4.0.0/users/current"
+        description: "Get authenticated user profile — user_id, username, email, provider, entitlements, date_joined, last_login_at"
+        response_fields: [user_id, username, email, provider, entitlements, date_joined, last_login_at]
+      - method: PUT
+        path: "/v4.0.0/users/current"
+        description: "Update mutable profile fields — email, language_preference"
+        request_fields: [email, language_preference]
+
+  - id: auth_recovery
+    name: Auth Recovery
+    screens: [forgot-password, change-password]
+    spec_file: "server/apis/auth-recovery.yaml"
+    endpoints:
+      - method: POST
+        path: "/v4.0.0/auth/password/reset/initiate"
+        description: "Initiate password reset — sends time-limited token to registered email"
+        request_fields: [email]
+        response_fields: [message]
+      - method: POST
+        path: "/v4.0.0/auth/password/reset/confirm"
+        description: "Complete password reset with emailed token and new password"
+        request_fields: [token, new_password]
+        response_fields: [message]
+      - method: POST
+        path: "/v4.0.0/users/current/password"
+        description: "Change password for authenticated user — invalidates all sessions on success"
+        auth_required: true
+        request_fields: [current_password, new_password]
+        response_fields: [message]

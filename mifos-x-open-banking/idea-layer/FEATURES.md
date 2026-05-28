@@ -1,6 +1,7 @@
 # Features — Mifos X Open Banking
 
-All 30+ features organized by flavor and OBP API integration points.
+All 43 features organized by flavor and OBP API integration points.
+Updated 2026-05-28 — added terms-of-service, privacy-policy, licenses, standing-order-detail.
 
 ---
 
