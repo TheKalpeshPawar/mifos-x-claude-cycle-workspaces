@@ -1,45 +1,48 @@
 # PROTOTYPE_TESTS.yaml — Navigation & Interaction Audit Results
-# Written by /idea verify on 2026-05-22 (pass 2)
+# Written by /idea verify on 2026-05-28 (standalone run)
 # Project: mifos-x/mifos-x-open-banking
 
 version: 1
-ran_at: "2026-05-22T15:00:00Z"
+ran_at: "2026-05-28T15:00:00Z"
 
 passes:
   navigation:
-    total: 8
-    passed: 8
+    total: 39
+    passed: 39
     failed: []
-    note: "All 8 declared navigation edges resolve to valid screens"
+    note: "navigates_to targets: 0 broken across all 39 features"
 
   interaction:
-    total: 6
-    passed: 5
+    total: 39
+    passed: 35
     failed:
-      - screen: profile
-        issue: "Profile is a stub with no interaction — 0 tappable components (expected at empty-slate)"
-    note: "5/6 screens have adequate interaction definition; Profile is an explicit stub"
+      - "splash/ui.yaml -> consumer-home (invalid screen ID)"
+      - "login/ui.yaml -> consumer-home (invalid screen ID)"
+      - "about/ui.yaml -> terms-of-service, privacy-policy, licenses (screens don't exist)"
+      - "standing-orders/ui.yaml -> standing-order-detail (screen doesn't exist)"
 
   states:
-    total: 4
-    passed: 4
+    total: 39
+    passed: 39
     failed: []
-    note: "home/TasksList+EditTask: [Loading, Empty, Success] full coverage. Settings/Profile: stateless (correct). Splash: [Loading] bootstrap."
+    note: "All 39 screens have required states per ui.yaml; 157 preview HTML rendered"
 
   api:
-    total: 0
-    passed: 0
+    total: 36
+    passed: 36
     failed: []
-    note: "SKIP — no has_api features at empty-slate. No api_manifest.yaml yet."
+    note: "36 screens with api.yaml; api_manifest.yaml references 16 spec_files all missing from server/apis/"
 
   reachability:
-    total: 4
-    passed: 4
-    failed: []
-    note: "All 4 features reachable from Splash entry point via BFS across ui.yaml + app-main.yaml nav graph"
+    total: 39
+    passed: 37
+    failed:
+      - "agent-registration: not referenced in any navigates_to or navigation target"
+      - "consent-manager: not referenced in any navigates_to or navigation target"
 
 summary:
   total_passes: 5
-  total_failures: 1
-  blocking: false
-  note: "1 non-blocking warning: Profile is a dead-end stub (explicit in ui.yaml). Not blocking at empty-slate phase."
+  total_failures: 9
+  blocking: true
+  blocking_reason: "V1-NAV-TARGET-RESOLVES + V1-SCREEN-REACHABLE failures require fix before /idea approve can re-validate"
+  next: "/idea enrich --feature splash,login,about,standing-orders,fo-dashboard,settings"

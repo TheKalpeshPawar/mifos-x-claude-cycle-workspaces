@@ -1,11 +1,11 @@
 # PIPELINE_STATE.yaml — Idea Layer Pipeline State
-# Updated 2026-05-27 — state-repair applied (legacy blocks migrated, stale running reconciled).
+# Updated 2026-05-28 — idea-verify standalone run.
 # Project: mifos-x/mifos-x-open-banking
 
 schema_version: "2.1.0"
 project: mifos-x-open-banking
 workspace: mifos-x
-last_updated: "2026-05-28T14:30:00Z"
+last_updated: "2026-05-28T15:00:00Z"
 
 capabilities:
   design-validate:
@@ -46,37 +46,104 @@ capabilities:
       - "A11Y-008: 4 screens — dialog/bottom_sheet missing keyboard.shortcuts.Escape"
 
 
+  project-verify:
+    last_run:
+      at: "2026-05-28T00:00:00Z"
+      status: partial
+      duration_ms: 0
+      actor: claude
+      args: ""
+      command: "/project-verify"
+    artifacts_written:
+      - path: "workspaces/mifos-x/mifos-x-open-banking/VERIFY_LOG.yaml"
+    metrics:
+      project: "mifos-x/mifos-x-open-banking"
+      layers_checked: 8
+      total_checks: 35
+      passed: 27
+      failed: 6
+      auto_fixed: 4
+      violations_found: 6
+      health_score: 71
+
   idea-verify:
-    status: complete
-    last_run: "2026-05-28T14:30:00Z"
+    status: partial
+    last_run: "2026-05-28T15:00:00Z"
     actor: claude
-    args: "(inline during /idea sync)"
+    args: "(standalone /idea verify)"
     command: "/idea verify"
     layer: idea
     metrics:
-      checks_run: 52
-      checks_passed: 52
-      checks_failed: 0
-      warnings: 2
+      checks_run: 54
+      checks_passed: 41
+      checks_failed: 9
+      warnings: 4
       architecture_files: "9/9"
       sibling_completeness: "39/39 (ui+docs+flow); 36/39 api (3 intentional skip: about, settings, splash)"
       state_coverage: "39/39 features rendered (157 HTML)"
       component_types_used: 20
       component_types_registered: 20
       component_types_unregistered: 0
-      navigation_targets: "all resolve (0 broken)"
+      navigation_targets: "6 broken ui.yaml targets (consumer-home, terms-of-service, privacy-policy, licenses, standing-order-detail)"
+      navigates_to_targets: "all 39 resolve (0 broken)"
       export_coverage: "39/39"
       demo_data_coverage: "36/39 (3 exempt: about, settings, splash)"
       tests_yaml_coverage: "0/39"
       feature_status: "39 approved"
       design_validate_score: 52
-      stitch: "disabled (skipped)"
-      deferred: "none (FD1-FD5 all pass)"
+      stitch: "disabled (skipped — stitch.enabled not set)"
+      deferred: "none (FD1-FD2 skip — no release-plan; FD3-FD5 pass)"
       release_plan: "not initialized"
+      roadmap_v1: "missing"
+      features_count_drift: "FEATURES.md=30, screens/=39"
+      server_apis_dir: "empty (16 spec files missing)"
+      server_tables_dir: "missing"
+      design_tokens_schema_drift: "uses color: not colors:, missing metadata/touchTargets"
+      journey_screen_id_mismatches: "18/39 screen_ids use state-suffix format"
+      unreachable_screens: "agent-registration, consent-manager"
+    failed_checks:
+      - id: "V1-ROADMAP-HAS-V1"
+        rule: "RULE-IDEA-CORE-001"
+        message: "ROADMAP.md has no v1.0 section — only v0.1/v0.2/v0.3+"
+        fix: "/idea sync (update ROADMAP.md to add v1.0 section)"
+      - id: "V1-FEATURES-SUM-MATCHES"
+        rule: "RULE-IDEA-CONSISTENCY-001"
+        message: "FEATURES.md header says '30 Screens' but 39 screen dirs exist"
+        fix: "/idea sync --auto-fix (recompute FEATURES.md count)"
+      - id: "DST3-REQUIRED-TOP-LEVEL"
+        rule: "RULE-DS-TOKEN-VALIDATE-001"
+        message: "design-tokens.yaml uses 'color:' not 'colors:'; missing 'metadata', 'touchTargets' top-level keys"
+        fix: "/design-system (rebuild design-tokens.yaml to M3 schema)"
+      - id: "DST4-COLORS-M3-COMPLIANT"
+        rule: "RULE-DS-TOKEN-VALIDATE-001"
+        message: "design-tokens.yaml 'color:' block not shaped as M3 29-role 'colors:' map"
+        fix: "/design-system (rebuild with M3 color roles)"
+      - id: "V1-APIS-DIR"
+        rule: "RULE-IDEA-SERVER-DATA-001"
+        message: "server/apis/ exists but is empty (0 yaml files)"
+        fix: "/server init or /idea sync STEP 4g (populate per-flow api yaml files)"
+      - id: "V1-FLOW-API-MATCH"
+        rule: "RULE-IDEA-SERVER-DATA-001"
+        message: "api_manifest.yaml references 16 spec_files in server/apis/ — all missing"
+        fix: "/server init (generate per-flow api yaml files)"
+      - id: "V1-TABLES-DIR"
+        rule: "RULE-IDEA-SERVER-DATA-001"
+        message: "server/tables/ directory missing"
+        fix: "/server init (scaffold server/tables/ directory)"
+      - id: "V1-NAV-TARGET-RESOLVES"
+        rule: "RULE-PROTO-INTEGRITY-001"
+        message: "6 ui.yaml navigation targets resolve to non-existent screens: consumer-home (splash,login), terms-of-service/privacy-policy/licenses (about), standing-order-detail (standing-orders)"
+        fix: "/idea enrich (re-wire navigation targets to valid screen IDs)"
+      - id: "V1-SCREEN-REACHABLE"
+        rule: "RULE-PROTO-INTEGRITY-001"
+        message: "2 screens never appear in any navigates_to: agent-registration, consent-manager"
+        fix: "/idea enrich --feature fo-dashboard (add agent-registration), /idea enrich --feature settings (add consent-manager)"
     warning_summary:
+      - "J3-SCREEN-SEQUENCE-RESOLVES: 18/39 journey screen_ids use state-suffix format (e.g., accounts_content, home_content) — do not match screen dirs"
       - "tests.yaml 0/39 — no test specs scaffolded"
-      - "No release plan initialized"
-    detail_ref: "state/SYNC_STEPS.yaml"
+      - "DST7-WCAG-AA-VALIDATED: design_validate score 52 (<75); WCAG AA not met"
+      - "V1-PIPELINE-STATE-DESIGN-BLOCK: design_system block present under capabilities (Phase 2.5.1 ambiguous on top-level vs nested)"
+    detail_ref: "state/verify-logs/idea-verify-2026-05-28T15-00-00Z.md"
 
   design_system:
     status: complete
