@@ -1,6 +1,7 @@
 # DTO Registry — mifos-x-open-banking
 
-> Auto-maintained by `/idea generate-dtos`. 41 DTOs registered.
+> Auto-maintained by `/idea generate-dtos`. 45 DTOs registered.
+> Last run: 2026-05-28 — `--all --force` — added 4 new DTOs, updated 3 existing.
 
 | Name | Version | Origin | Consumers | PII |
 |------|---------|--------|-----------|-----|
@@ -29,19 +30,23 @@
 | MeetingInvitee | 1.0.0 | project | 1 | - |
 | MoneyAmount | 1.0.0 | shared | 5 | - |
 | OidcToken | 1.0.0 | project | 1 | access_token, id_token, refresh_token |
+| PasswordResetConfirmRequest | 1.0.0 | project | 1 | token, new_password |
+| PasswordResetRequest | 1.1.0 | project | 1 | email |
+| PasswordResetResponse | 1.0.0 | project | 1 | - |
 | PersonalDataField | 1.0.0 | project | 2 | - |
 | PostalAddress | 1.0.0 | project | 2 | - |
-| PasswordResetRequest | 1.0.0 | project | 1 | username, email |
-| PasswordResetResponse | 1.0.0 | project | 1 | - |
 | Product | 1.0.0 | project | 1 | - |
 | SepaTransactionRequest | 1.0.0 | project | 2 | to_iban, to_name |
 | SignalChannel | 1.0.0 | project | 1 | - |
-| StandingOrder | 1.0.0 | project | 1 | to_iban, to_name |
+| StandingOrder | 1.0.0 | project | 2 | to_iban, to_name |
+| StandingOrderDetail | 1.0.0 | project | 1 | beneficiary_name, beneficiary_iban |
+| StandingOrderExecution | 1.0.0 | project | 1 | - |
+| StandingOrderStatusResponse | 1.0.0 | project | 3 | - |
 | Transaction | 1.0.0 | project | 3 | - |
-| TransactionAccount | 1.0.0 | project | 1 | - |
+| TransactionAccount | 1.1.0 | project | 1 | - |
 | TransactionComment | 1.0.0 | project | 2 | - |
 | TransactionCounterparty | 1.0.0 | project | 1 | holder_name |
 | TransactionDetails | 1.0.0 | project | 2 | - |
 | TransactionMetadata | 1.0.0 | project | 2 | - |
 | TransactionTag | 1.0.0 | project | 4 | - |
-| UserProfile | 1.0.0 | project | 2 | email, display_name |
+| UserProfile | 1.1.0 | project | 3 | email, display_name |

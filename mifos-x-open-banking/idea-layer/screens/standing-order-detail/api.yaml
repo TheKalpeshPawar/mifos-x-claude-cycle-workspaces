@@ -1,0 +1,117 @@
+sibling: api
+schema_version: "4.0"
+feature_id: standing-order-detail
+api:
+  - id: get_standing_order
+    endpoint: "GET /obp/v4.0.0/banks/{bank_id}/accounts/{account_id}/standing-orders/{standing_order_id}"
+    tag: Standing-Orders
+    trigger: on_screen_load
+    description: "Retrieve full detail of a specific standing order including beneficiary info, schedule, status, and last 5 execution records"
+    response:
+      dto: StandingOrderDetail
+      fields:
+        - name: id
+          type: String
+        - name: bank_id
+          type: String
+        - name: account_id
+          type: String
+        - name: beneficiary_name
+          type: String
+        - name: beneficiary_iban
+          type: String
+        - name: beneficiary_bank
+          type: String
+        - name: amount_value
+          type: String
+        - name: amount_currency
+          type: String
+        - name: frequency
+          type: String
+        - name: start_date
+          type: String
+        - name: next_payment_date
+          type: String
+        - name: final_date
+          type: "String?"
+        - name: status
+          type: String
+        - name: execution_history
+          type: "List<StandingOrderExecution>"
+    errors:
+      - code: 401
+        message: "USER_NOT_LOGGED_IN"
+      - code: 403
+        message: "INSUFFICIENT_AUTHORISATION"
+      - code: 404
+        message: "STANDING_ORDER_NOT_FOUND"
+
+  - id: pause_standing_order
+    endpoint: "POST /obp/v4.0.0/banks/{bank_id}/accounts/{account_id}/standing-orders/{standing_order_id}/pause"
+    tag: Standing-Orders
+    trigger: on_pause_clicked
+    description: "Pause an active standing order. Idempotent — 409 treated as success."
+    response:
+      dto: StandingOrderStatusResponse
+      fields:
+        - name: id
+          type: String
+        - name: status
+          type: String
+        - name: paused_at
+          type: String
+    errors:
+      - code: 401
+        message: "USER_NOT_LOGGED_IN"
+      - code: 404
+        message: "STANDING_ORDER_NOT_FOUND"
+      - code: 409
+        message: "STANDING_ORDER_ALREADY_PAUSED"
+
+  - id: resume_standing_order
+    endpoint: "POST /obp/v4.0.0/banks/{bank_id}/accounts/{account_id}/standing-orders/{standing_order_id}/resume"
+    tag: Standing-Orders
+    trigger: on_resume_clicked
+    description: "Resume a paused standing order. Idempotent — 409 treated as success."
+    response:
+      dto: StandingOrderStatusResponse
+      fields:
+        - name: id
+          type: String
+        - name: status
+          type: String
+        - name: resumed_at
+          type: String
+        - name: next_payment_date
+          type: String
+    errors:
+      - code: 401
+        message: "USER_NOT_LOGGED_IN"
+      - code: 404
+        message: "STANDING_ORDER_NOT_FOUND"
+      - code: 409
+        message: "STANDING_ORDER_NOT_PAUSED"
+
+  - id: delete_standing_order
+    endpoint: "DELETE /obp/v4.0.0/banks/{bank_id}/accounts/{account_id}/standing-orders/{standing_order_id}"
+    tag: Standing-Orders
+    trigger: on_cancel_clicked
+    description: "Soft-cancel a standing order. Record remains accessible in read-only mode."
+    response:
+      dto: StandingOrderStatusResponse
+      fields:
+        - name: id
+          type: String
+        - name: status
+          type: String
+        - name: cancelled_at
+          type: String
+    errors:
+      - code: 401
+        message: "USER_NOT_LOGGED_IN"
+      - code: 403
+        message: "INSUFFICIENT_AUTHORISATION"
+      - code: 404
+        message: "STANDING_ORDER_NOT_FOUND"
+      - code: 409
+        message: "STANDING_ORDER_ALREADY_CANCELLED"

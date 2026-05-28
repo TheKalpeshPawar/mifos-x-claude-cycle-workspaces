@@ -1,32 +1,78 @@
 # DESIGN_VALIDATION.yaml — /design-validate run state
 # Project: mifos-x/mifos-x-open-banking
-# Generated: 2026-05-27T15:40:41Z
-# Args: (none — full validation)
+# Generated: 2026-05-27T15:40:41Z  |  Last updated: 2026-05-28T12:00:00Z (--fix pass 2)
+# Args: --fix (pass 2)
 
 schema_version: "1.0"
 ran_at: "2026-05-27T15:40:41Z"
+updated_at: "2026-05-28T12:00:00Z"
 scope:
   workspace: mifos-x
   project: mifos-x-open-banking
-  screens_count: 39
+  screens_count: 43
   categories_requested: [all]
-  fix_applied: false
+  fix_applied: true
 
-# ─── Score (read-only run) ────────────────────────────────────────────────────
+# ─── Score (post --fix pass 2) ────────────────────────────────────────────────
 # Formula: max(0, 100 - (critical × 15) - (warning × 3) - (info × 0.5))
-# critical=2, warning=11, info=4  →  100 - 30 - 33 - 2 = 35
-score: 35
+# Before pass 2: critical=4, warning=10, info=3  → score=9
+# After pass 2:  critical=1 (REG-001 app-shell skipped), warning=10, info=3
+#                100 - 15 - 30 - 1.5 = 53  (clamped: 53)
+score: 53
 pass: false
 
 per_category:
   REG:    { critical: 1, warning: 2, info: 0 }
-  A11Y:   { critical: 2, warning: 4, info: 2 }
-  STATE:  { critical: 1, warning: 2, info: 1 }
+  A11Y:   { critical: 0, warning: 4, info: 2 }
+  STATE:  { critical: 0, warning: 2, info: 1 }
   MOTION: { critical: 0, warning: 1, info: 0 }
-  RESP:   { critical: 1, warning: 1, info: 0 }
+  RESP:   { critical: 0, warning: 1, info: 0 }
   COLOR:  { critical: 0, warning: 0, info: 0 }
 
-# ─── Fixes applied this run ───────────────────────────────────────────────────
+# ─── Fixes applied pass 2 ────────────────────────────────────────────────────
+fixes_applied_pass2:
+  - rule: A11Y-002
+    scope: "4 files (card-detail, kyc-review, customer-messages, send-money-confirm)"
+    change: "#75796C already replaced with #44483D in pass 1 comments — confirmed 0 active instances remain"
+    instances: 0
+    status: already_fixed
+
+  - rule: A11Y-SCHEMA
+    scope: "customer-messages (camelCase→snake_case: contentDescription→label, backgroundColor→background,
+      borderRadius→border_radius, textStyle→typography, paddingVertical→padding_vertical,
+      marginHorizontal→margin_horizontal, alignItems→align_items, justifyContent→justify_content,
+      borderWidth→border_width, borderColor→border_color, inputType→input_type,
+      flexShrink→flex_shrink, marginBottom→margin_bottom, marginRight→margin_right,
+      textColor→text_color, prefixIcon→prefix_icon)"
+    change: "16 key renames, ~40 occurrences in customer-messages"
+
+  - rule: A11Y-SCHEMA
+    scope: "kyc-review, account-applications, application-detail, customer-messages"
+    change: "indented components: → children: (nested component lists only; top-level components: preserved)"
+    instances: "~69 occurrences across 4 files"
+
+  - rule: A11Y-SCHEMA
+    scope: "account-applications"
+    change: "backgroundColor: → background: (1 occurrence in states block)"
+
+  - rule: STATE-001
+    scope: "forgot-password, corporate-onboarding, customer-onboarding"
+    change: "submitting: → loading: (canonical in-flight state rename)"
+
+  - rule: STATE-001
+    scope: "login"
+    change: "Added loading: state block (alias of authenticating:) — satisfies canonical state requirement"
+
+  - rule: STATE-001
+    scope: "change-password, agent-registration"
+    change: "No change needed — both already have loading: state present"
+
+  - rule: REG-001
+    scope: "app-shell nav divergence"
+    change: "SKIPPED — needs design decision (4-item vs 5-item nav)"
+    status: skipped
+
+# ─── Fixes applied pass 1 ────────────────────────────────────────────────────
 fixes_applied:
   - rule: A11Y-002
     scope: "16 screens (account-applications, account-detail, agent-registration, application-detail,
@@ -50,27 +96,17 @@ fixes_applied:
     scope: "pfm-dashboard/ui.yaml"
     change: "quality_score: 101 → 100 (out-of-range value corrected)"
 
-# ─── Remaining Critical Findings ─────────────────────────────────────────────
+  - rule: RESP-001/RESP-003
+    scope: "all 43 screens"
+    change: "Added responsive: block to all 43 ui.yaml files. mobile_only: true with baseline_width: 390 for 39 non-dashboard screens. Dashboard archetypes (fo-dashboard, pfm-dashboard, home, accounts) get mobile_only: false + tablet: { min_width: 600, columns: 2 }."
+    screens_before: 0
+    screens_after: 43
+
+# ─── Remaining Critical Findings (after pass 2) ───────────────────────────────
 remaining_critical:
-  - id: CRIT-A11Y-001
-    rule: A11Y-002
-    screens: [all 39]
-    finding: "#75796C used as normal body_medium/body_small text on #FFFFFF or #F9FAEF — 4.46:1 / 4.24:1 (both fail 4.5:1 AA). Estimated ~40 instances project-wide in supporting copy, label_source hints, and secondary metadata text."
-    fix_hint: "Replace `color: \"#75796C\"` with `color: \"#44483D\"` for all normal-size body text. #75796C (4.46:1) is only AA-compliant for large text (≥18sp or ≥14sp bold)."
-
-  - id: CRIT-A11Y-002
-    rule: A11Y-SCHEMA (schema drift)
-    screens: [kyc-review, account-applications, corporate-onboarding, customer-onboarding,
-              customer-detail, customer-messages, agent-registration, application-detail]
-    finding: "8 screens use Android Compose camelCase schema keys (contentDescription, backgroundColor,
-      borderRadius, textStyle, paddingVertical, marginHorizontal, fillWidth, components:) instead
-      of the project's snake_case convention. Breaks codegen and causes silent fallbacks."
-    fix_hint: "Mechanical rename: contentDescription→label, backgroundColor→background, borderRadius→border_radius,
-      textStyle→typography, paddingVertical→padding_vertical, marginHorizontal→margin_horizontal,
-      fillWidth→full_width, components:→children:."
-
   - id: CRIT-REG-001
     rule: REG-001
+    status: open_needs_design_decision
     screens: [home, accounts, transactions, pfm-dashboard, fo-dashboard, send-money,
               notifications, login, settings]
     finding: "consumer app-shell (app-shell.yaml) declares 4 nav items (Home/Accounts/Payments/Profile)
@@ -79,24 +115,26 @@ remaining_critical:
     fix_hint: "Update app-shell.yaml consumer bottom_nav to match the 5-item pattern used in screens,
       or normalize all screen shell overrides to the 4-item app-shell.yaml definition. Pick one as source of truth."
 
+# ─── Resolved Critical Findings (pass 2) ─────────────────────────────────────
+resolved_critical_pass2:
+  - id: CRIT-A11Y-001
+    rule: A11Y-002
+    status: fixed
+    note: "#75796C → #44483D confirmed 0 active instances (all already replaced in pass 1 or prior)"
+
+  - id: CRIT-A11Y-002
+    rule: A11Y-SCHEMA
+    status: fixed
+    note: "camelCase → snake_case renames applied to customer-messages (16 key types).
+      components: → children: applied to kyc-review, account-applications, application-detail,
+      customer-messages. corporate-onboarding, customer-onboarding, customer-detail,
+      agent-registration already used snake_case."
+
   - id: CRIT-STATE-001
     rule: STATE-001
-    screens: [change-password, corporate-onboarding, customer-onboarding, forgot-password, login]
-    finding: "5 form screens with api[] declarations use 'submitting' instead of 'loading' as the
-      in-flight state key, and omit a 'loading' state. STATE-001 requires loading, content, error, empty
-      for any screen with api declarations. These form screens trigger APIs but lack the canonical loading state."
-    fix_hint: "Add `loading:` state block (can be identical to idle — shows form skeleton) alongside the
-      existing `submitting:` state. Alternatively reclassify `submitting:` as `loading:` if the screen
-      shows a loading skeleton while the form initializes."
-
-  - id: CRIT-RESP-001
-    rule: RESP-001 / RESP-002
-    screens: [all 39]
-    finding: "0/39 screens declare responsive breakpoints. All 39 screens are implicitly single-breakpoint.
-      Dashboard, feed, and detail archetypes (fo-dashboard, pfm-dashboard, home, accounts) require
-      at minimum mobile + tablet declarations per RESP-003."
-    fix_hint: "Add `responsive: { mobile_only: true, reason: \"mobile-first banking app\" }` to non-dashboard
-      screens. For 4 dashboard/feed screens add a tablet breakpoint stub."
+    status: fixed
+    note: "forgot-password/corporate-onboarding/customer-onboarding: submitting: → loading:.
+      login: added loading: state block. change-password/agent-registration: already had loading:."
 
 # ─── Warning Findings ─────────────────────────────────────────────────────────
 remaining_warnings:
@@ -140,11 +178,6 @@ remaining_warnings:
     rule: STATE-003
     screens: [fo-dashboard]
     finding: "fo-dashboard error state shows error message but no retry button component."
-
-  - id: WARN-RESP-001
-    rule: RESP-003
-    screens: [fo-dashboard, pfm-dashboard, home, accounts]
-    finding: "Dashboard archetypes missing tablet (600+) breakpoint declarations."
 
   - id: WARN-A11Y-HEADING
     rule: A11Y-007

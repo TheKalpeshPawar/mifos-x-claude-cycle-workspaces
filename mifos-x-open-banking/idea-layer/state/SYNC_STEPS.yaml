@@ -509,6 +509,73 @@ runs:
         at: "2026-05-28T23:15:00Z"
         summary: "43 screens · 4 flow.yaml scaffolded · 4 artifacts updated · 9 open issues remain (nav targets, orphans, design-tokens, server-apis)"
 
+  - run_id: "sync-20260528-dto-incremental"
+    started_at: "2026-05-28T23:30:00Z"
+    completed_at: "2026-05-28T23:45:00Z"
+    actor: claude
+    command: "/idea sync (incremental — post DTO generation + pii_fields backfill)"
+    status: complete
+    steps:
+      - n: 0
+        name: "init"
+        status: complete
+        at: "2026-05-28T23:30:00Z"
+        note: "Appending new run entry — preserving prior runs. Incremental scope: DTO validation + artifact spot-checks."
+      - n: "0.TRAIN"
+        name: "training-context-load"
+        status: skipped
+        at: "2026-05-28T23:30:00Z"
+        note: "TRAINING_MASTER.yaml exists (109 lines) — skipping generation per prior-session state"
+      - n: 1
+        name: "verify"
+        status: skipped
+        at: "2026-05-28T23:30:00Z"
+        note: "Referenced prior run: state/verify-logs/idea-verify-2026-05-28T22-00-00Z.md (43 screens, 9 fails, 6 warnings). Pre-existing failures not addressable in this incremental scope."
+      - n: "1.S"
+        name: "sibling-completeness"
+        status: complete
+        at: "2026-05-28T23:31:00Z"
+        result: pass
+        note: "43/43 screens have ui.yaml + flow.yaml (4 flow.yaml scaffolded in prior sync run). All required siblings present."
+      - n: "2.9"
+        name: "rebuild-manifest"
+        status: complete
+        at: "2026-05-28T23:32:00Z"
+        result: pass
+        note: "api_manifest.yaml parses OK — 15 groups intact, 22 spec_file refs (19 still missing per V1-APIS-DIR-INCOMPLETE, pre-existing). New DTOs (StandingOrderDetail, etc.) are referenced via api.yaml siblings, not manifest directly. No manifest rebuild required."
+      - n: "2.FD"
+        name: "deferred-reconcile"
+        status: skipped
+        at: "2026-05-28T23:32:00Z"
+        note: "No deferred features"
+      - n: "3.0"
+        name: "enrichment-matrix"
+        status: complete
+        at: "2026-05-28T23:33:00Z"
+        note: "43/43 screens approved, quality ≥ 92. No enrichment needed. Recorded: skipped=all_screens_approved."
+      - n: "4.DTO"
+        name: "dto-index-verify"
+        status: complete
+        at: "2026-05-28T23:34:00Z"
+        result: pass
+        note: "dtos/ dir: 45 yaml files. INDEX.md header: '45 DTOs registered'. Count consistent. 12 DTOs have pii_fields backfilled (D5 PASS confirmed per prior run). No rebuild required."
+      - n: "4.TAG"
+        name: "tag-registry-spot-check"
+        status: complete
+        at: "2026-05-28T23:35:00Z"
+        result: pass
+        note: "TAG_REGISTRY.yaml: functional_requirements block present (FR-001..FR-005, FR-018 = 6 entries). No new tags introduced by DTO work. Rebuild: skipped."
+      - n: "4.VERIFY"
+        name: "file-existence-gate"
+        status: complete
+        at: "2026-05-28T23:36:00Z"
+        note: "All 7 artifact groups present: APP_FLOW.mmd, TAG_REGISTRY.yaml, dashboard/DEV_STATUS.md, FEATURES.md, server/api_manifest.yaml, dtos/INDEX.md, flows/. DTO INDEX.md verified consistent."
+      - n: 5
+        name: "complete"
+        status: complete
+        at: "2026-05-28T23:45:00Z"
+        summary: "43 screens · 45 DTOs (pii_fields backfilled) · all artifact groups verified · 9 pre-existing open issues unchanged"
+
   - run_id: "sync-20260528-reapprove"
     started_at: "2026-05-28T14:30:00Z"
     completed_at: "2026-05-28T14:35:00Z"
@@ -588,3 +655,140 @@ runs:
         name: "complete"
         status: complete
         at: "2026-05-28T14:35:00Z"
+
+  - run_id: "sync-20260528-post-demo-data-regen"
+    started_at: "2026-05-28T15:48:52Z"
+    completed_at: "2026-05-28T15:53:00Z"
+    actor: claude
+    command: "/idea sync"
+    args: ""
+    status: complete
+    steps:
+      - n: 0
+        name: "init"
+        status: complete
+        at: "2026-05-28T15:48:52Z"
+        note: "Full-sync scope chosen post 5-feature demo-data regen + EXPORT_MATRIX reconciliation pending"
+      - n: "0.TRAIN"
+        name: "training-context-load"
+        status: complete
+        at: "2026-05-28T15:48:52Z"
+        note: "TRAINING_MASTER.yaml exists (6299 bytes) — skipping regen"
+      - n: 1
+        name: "verify"
+        status: complete
+        at: "2026-05-28T15:50:00Z"
+        rules_run: 9
+        checks_passed: 4
+        checks_failed: 7
+        checks_warned: 4
+        delta_from_prior: "9→7 fails (V1-FLOW-YAML-MISSING + V1-SCREEN-REACHABLE resolved)"
+        failures:
+          - rule: RULE-IDEA-CORE-001
+            scope: ROADMAP.md
+            sub_check: V1-ROADMAP-HAS-V1
+            detail: "No v1.0 section; only v0.1/v0.2/v0.3+"
+          - rule: RULE-IDEA-CONSISTENCY-001
+            scope: FEATURES.md
+            sub_check: V1-FEATURES-SUM-MATCHES
+            detail: "Header says '30+' — 43 screen dirs exist"
+          - rule: RULE-DS-TOKEN-VALIDATE-001
+            scope: design-tokens.yaml
+            sub_check: DST3-REQUIRED-TOP-LEVEL
+            detail: "Missing metadata + touchTargets top-level"
+          - rule: RULE-DS-TOKEN-VALIDATE-001
+            scope: design-tokens.yaml
+            sub_check: DST4-COLORS-M3-COMPLIANT
+            detail: "Uses color: key; M3 schema requires colors:"
+          - rule: RULE-IDEA-SERVER-DATA-001
+            scope: server/apis/
+            sub_check: V1-APIS-DIR-INCOMPLETE
+            detail: "16/19 spec_files missing (only auth-recovery, profile, standing-orders-detail present)"
+          - rule: RULE-IDEA-SERVER-DATA-001
+            scope: server/tables/
+            sub_check: V1-TABLES-DIR
+            detail: "Directory missing entirely"
+          - rule: RULE-PROTO-INTEGRITY-001
+            scope: standing-order-detail/ui.yaml
+            sub_check: V1-NAV-TARGET-RESOLVES
+            detail: "standing-order-edit target referenced; no screen dir exists (deferred per code comment)"
+        warnings:
+          - "WARN-1 tests.yaml 0/43 scaffolded"
+          - "WARN-2 design_validate WCAG AA score 52 (target ≥75)"
+          - "WARN-3 4 screens (terms-of-service, privacy-policy, licenses, standing-order-detail) no preview HTML"
+          - "WARN-4 standing-order-detail references standing-order-edit (deferred-noted)"
+      - n: "1.C"
+        name: "component-type-audit"
+        status: complete
+        at: "2026-05-28T15:50:00Z"
+        result: pass
+        total_instances: 1395
+        known_types: 21
+        unknown_types: 0
+      - n: "1.S"
+        name: "sibling-completeness"
+        status: complete
+        at: "2026-05-28T15:50:00Z"
+        result: pass
+        features: 43
+        required_complete: "43/43"
+        optional_missing: { docs.yaml: 0, api.yaml: 3, data-flow.yaml: 3, demo-data.yaml: 3 }
+        missing_required_halt: []
+        note: "3 exempt (about, settings, splash) — no API needed"
+      - n: "2.9"
+        name: "rebuild-manifest"
+        status: complete
+        at: "2026-05-28T15:50:00Z"
+        result: pass
+        groups: 19
+        spec_file_refs_present: 3
+        spec_file_refs_missing: 16
+        note: "Manifest structure intact; missing spec files = V1-APIS-DIR-INCOMPLETE (tracked separately)"
+      - n: "2.FD"
+        name: "deferred-reconcile"
+        status: skipped
+        at: "2026-05-28T15:50:00Z"
+        note: "No _deferred/ dir, no release-plan.yaml deferred[] entries — FD1/FD2 skip; FD3-FD5 pass"
+      - n: "3.0"
+        name: "enrichment-matrix"
+        status: complete
+        at: "2026-05-28T15:51:00Z"
+        note: "43/43 screens at status:approved, quality≥92 per prior runs. Demo-data regen does not invalidate enrichment scores. Auto-skip enrichment."
+        scope_chosen: "skip"
+      - n: "3.2"
+        name: "enrichment"
+        status: skipped
+        at: "2026-05-28T15:51:00Z"
+        note: "All features approved + fresh. No quality-changing edits since prior approve."
+      - n: 4
+        name: "artifacts"
+        status: complete
+        at: "2026-05-28T15:52:00Z"
+        result: pass
+        artifacts_checked:
+          - "APP_FLOW.mmd (present, 43 nodes — no nav changes from demo-data regen)"
+          - "TAG_REGISTRY.yaml (present — no new tags from demo-data regen)"
+          - "dashboard/DEV_STATUS.md (present)"
+          - "server/api_manifest.yaml (present, 19 groups — 16 spec_file refs missing, pre-existing V1-APIS-DIR-INCOMPLETE)"
+          - "flows/app-main.yaml, consumer-banking.yaml, field-officer.yaml (all present)"
+          - "dtos/INDEX.md (TransactionAccount row bumped 1.0.0 → 1.1.0 to match DTO file)"
+        artifacts_skipped:
+          - "prototype/index.html (legacy viewer removed 2026-05-14)"
+        note: "Demo-data regen of 5 features doesn't propagate to nav/tag/status artifacts — they remain valid. DTO INDEX updated for TransactionAccount version bump."
+      - n: "4.VERIFY"
+        name: "file-existence-gate"
+        status: complete
+        at: "2026-05-28T15:52:00Z"
+        result: pass
+        note: "All 7 artifact groups exist: APP_FLOW.mmd, TAG_REGISTRY.yaml, DEV_STATUS.md, api_manifest.yaml, flows/ (3 files), dtos/INDEX.md"
+      - n: "5.5"
+        name: "render-preview"
+        status: skipped
+        at: "2026-05-28T15:52:00Z"
+        note: "WARN-3: 4 screens (terms-of-service, privacy-policy, licenses, standing-order-detail) still missing preview HTML — surfaced as next-step. Demo-data regen of 5 OTHER features doesn't invalidate their existing previews (SHA-cache no-op)."
+        next_step: "/idea-render-screen --feature terms-of-service privacy-policy licenses standing-order-detail"
+      - n: 5
+        name: "complete"
+        status: complete
+        at: "2026-05-28T15:53:00Z"
+        summary: "Light reconciliation post 5-feature demo-data regen. Verify: 7 fails (all pre-existing) + 4 warns. Components: 1395 instances all registered. Siblings: 43/43. Manifest: intact. No deferred. Enrichment+render skipped (no-op for changed scope). DTO INDEX bumped for TransactionAccount v1.1.0."

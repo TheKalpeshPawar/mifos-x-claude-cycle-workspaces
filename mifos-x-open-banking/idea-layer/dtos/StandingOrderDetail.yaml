@@ -1,0 +1,102 @@
+name: StandingOrderDetail
+version: "1.0.0"
+source:
+  origin: project
+  api_path: "GET /obp/v4.0.0/banks/{bank_id}/accounts/{account_id}/standing-orders/{standing_order_id}"
+description: "Full read-side detail of a standing order, including beneficiary info, schedule, lifecycle status, and the last 5 execution records. Distinct from StandingOrder (create/list payload) — this shape is returned by the GET detail endpoint from standing-orders-detail.yaml."
+fields:
+  - name: id
+    type: String
+    required: true
+    pii: false
+    description: "Unique identifier for the standing order"
+    primary_key: true
+  - name: bank_id
+    type: String
+    required: true
+    pii: false
+    description: "OBP bank identifier the standing order belongs to"
+    primary_key: false
+  - name: account_id
+    type: String
+    required: true
+    pii: false
+    description: "Account identifier the standing order is drawn from"
+    primary_key: false
+  - name: beneficiary_name
+    type: String
+    required: true
+    pii: true
+    description: "Full legal name of the payment recipient; PII — mask in logs"
+    primary_key: false
+  - name: beneficiary_iban
+    type: String
+    required: true
+    pii: true
+    description: "IBAN of the recipient account; PII — mask in logs"
+    primary_key: false
+  - name: beneficiary_bank
+    type: String
+    required: true
+    pii: false
+    description: "Name of the beneficiary's bank"
+    primary_key: false
+  - name: amount_value
+    type: String
+    required: true
+    pii: false
+    description: "Payment amount as a decimal string (e.g. '1200.00')"
+    primary_key: false
+  - name: amount_currency
+    type: String
+    required: true
+    pii: false
+    description: "ISO 4217 currency code (e.g. 'GBP', 'KES')"
+    primary_key: false
+  - name: frequency
+    type: String
+    required: true
+    pii: false
+    description: "Recurrence frequency: WEEKLY, MONTHLY, QUARTERLY, or ANNUALLY"
+    primary_key: false
+  - name: start_date
+    type: String
+    required: true
+    pii: false
+    description: "ISO-8601 date on which the first payment executes"
+    primary_key: false
+  - name: next_payment_date
+    type: String
+    required: true
+    pii: false
+    description: "ISO-8601 date of the next scheduled payment"
+    primary_key: false
+  - name: final_date
+    type: "String?"
+    required: false
+    pii: false
+    description: "ISO-8601 date after which no further payments are made; null for open-ended orders"
+    primary_key: false
+  - name: status
+    type: String
+    required: true
+    pii: false
+    description: "Lifecycle status: ACTIVE, PAUSED, or CANCELLED"
+    primary_key: false
+  - name: execution_history
+    type: "List<StandingOrderExecution>"
+    required: true
+    pii: false
+    description: "Last 5 execution records, newest first"
+    primary_key: false
+used_by:
+  - screen: standing-order-detail
+    api_id: get_standing_order
+enums:
+  - field: frequency
+    values: [WEEKLY, MONTHLY, QUARTERLY, ANNUALLY]
+  - field: status
+    values: [ACTIVE, PAUSED, CANCELLED]
+pii_fields:
+  - beneficiary_name
+  - beneficiary_iban

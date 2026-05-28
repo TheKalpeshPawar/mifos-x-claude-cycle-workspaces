@@ -101,7 +101,39 @@ api_contract_patterns:
     No project-specific APIs declared. Will populate as features are added.
 
 # ─── Captured patterns (grows over time) ─────────────────────────────────────
-captured_patterns: []
+captured_patterns:
+  - id: dto-lifecycle-response-shared
+    captured_at: "2026-05-28"
+    source_command: "/idea generate-dtos --all --force"
+    pattern: |
+      When multiple lifecycle operations (pause / resume / cancel) on the same entity
+      all return a subset of the same fields (id, status, timestamp), model them as a
+      SINGLE shared DTO (e.g. StandingOrderStatusResponse) with nullable timestamp
+      fields rather than 3 separate response DTOs. Reduces codegen surface area.
+  - id: dto-read-vs-write-split
+    captured_at: "2026-05-28"
+    source_command: "/idea generate-dtos --all --force"
+    pattern: |
+      OBP follows a read/write split on many entities. The write (POST) shape is
+      a compact payload (StandingOrder), while the GET detail returns an expanded
+      shape with computed fields and nested collections (StandingOrderDetail +
+      StandingOrderExecution). Always model these as separate DTOs — do NOT inflate
+      the write DTO with read-only fields.
+  - id: dto-auth-recovery-two-step
+    captured_at: "2026-05-28"
+    source_command: "/idea generate-dtos --all --force"
+    pattern: |
+      Password reset on OBP v4.0.0 is a two-step flow: initiate (email → token)
+      and confirm (token + new_password → success). These require two separate
+      request DTOs (PasswordResetRequest, PasswordResetConfirmRequest) even though
+      the response shape for both is a simple {message: String}.
+  - id: dto-pii-on-entitlements-not-needed
+    captured_at: "2026-05-28"
+    source_command: "/idea generate-dtos --all --force"
+    pattern: |
+      OBP entitlements (List<String> of role identifiers like 'CanGetAnyUser') are
+      NOT PII — they are access control metadata. Do not flag them as pii:true.
+      Only email, display_name, and credential fields are PII on UserProfile.
 
 # ─── References to framework training (floor) ────────────────────────────────
 framework_training_ref:

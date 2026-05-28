@@ -5,6 +5,7 @@ All notable changes to the idea-layer are documented here. Format inspired by [K
 ## [Unreleased]
 
 ### Changed (design-system)
+- [design-system] v2.0.0 → v3.0.0 (2026-05-28): Schema bump to v3.0 — fixes RULE-DS-TOKEN-VALIDATE-001 DST3 (added top-level `metadata` + `touchTargets` blocks) and DST4 (renamed `color:` → `colors:` plural). Added dark scheme (29 roles), 4 mood gradients (growth_dawn, financial_stability, field_dusk, trust_horizon), M3 emphasized easing curves. DESIGN.md + COMPONENTS.md refreshed to v3.0.0. WCAG AA: 12 pairs, 0 failures. Backup: `design-tokens.v2.0.0.yaml.bak-20260528T155300Z`.
 - [design-system] v1.0.0 → v2.0.0: Full regeneration from Figma source (file tEEJwW4HkUR75fKhDq73Jz). Primary color `#1800B1` → `#4C662B`, font Inter/Space Grotesk → Outfit, background `#FCF8FF` → `#F9FAEF`. 14 component specs (12 universal + 2 banking). WCAG AA validated (12 pairs, 0 failures). App-shell colors updated.
 
 ### Changed
