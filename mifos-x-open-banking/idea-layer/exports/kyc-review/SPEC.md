@@ -1,126 +1,154 @@
-# Feature Specification — KYC Document Review
+# SPEC — KYC Document Review
 
-| Field         | Value                          |
-|---------------|-------------------------------|
-| Feature       | kyc-review                    |
-| Flavor        | fieldOfficer                  |
-| Status        | enriched                      |
-| Quality Score | 83                            |
+| Field         | Value                  |
+|---------------|------------------------|
+| Feature       | kyc-review             |
+| Flavor        | fieldOfficer           |
+| Status        | approved               |
+| Quality Score | 94                     |
+| ViewModel     | KycReviewViewModel     |
 
 ---
 
 ## Overview
 
-The KYC Document Review screen allows a Field Officer to examine customer identity documents and make an approval or rejection decision. The screen displays the customer's uploaded documents (National ID front/back, selfie/liveness, optional proof of address) each with their upload status. The officer selects a risk level, optionally enters a rejection reason, and either approves (PUT kyc_check + PUT kyc_statuses → navigate to customer-detail) or rejects (updates status, shows rejection banner) or requests more documents (navigates to customer-messages).
+The KYC Document Review screen is the field officer's primary interface for verifying customer identity documents and completing regulatory compliance checks. Accessed from Customer Detail or Meetings after scheduling an in-person or virtual review session, it presents all uploaded KYC artefacts for customer John Mwangi in a scrollable detail layout. The officer reviews National ID (front/back), a selfie/liveness check, and optional proof of address, selects a risk level (Low/Medium/High/Declined), optionally enters a rejection reason, then approves or rejects via four OBP KYC API calls. On approval the officer is taken back to customer-detail; on rejection a banner is shown inline.
 
 ---
 
 ## Screens
 
-| Screen ID       | Route                                  | Layout        | Scroll   |
-|-----------------|----------------------------------------|---------------|----------|
-| kyc-review-main | /customers/{customerId}/kyc-review     | detail_screen | vertical |
+| ID               | Name             | Route                              | Layout | Scroll   |
+|------------------|------------------|------------------------------------|--------|----------|
+| kyc-review-main  | KYC Verification | /customers/{customerId}/kyc-review | Column | Vertical |
+
+**Shell:** fieldOfficer flavor — Top app bar with back arrow. No bottom navigation on this detail screen.
+
+| Nav Item     | ID                | Icon        | Target               |
+|--------------|-------------------|-------------|----------------------|
+| Dashboard    | nav_dashboard     | dashboard   | fo-dashboard         |
+| Customers    | nav_customers     | people      | customer-search      |
+| Applications | nav_applications  | description | account-applications |
+| Messages     | nav_messages      | mail        | customer-messages    |
+| More         | nav_more          | more_vert   | settings             |
 
 ---
 
 ## Components
 
-| ID                         | Type    | Description                                                                 |
-|----------------------------|---------|-----------------------------------------------------------------------------|
-| customer_mini_header       | box     | Deep purple header bar with customer avatar initials + name + "KYC Review Required" label |
-| customer_avatar            | box     | 40×40dp white circle with "JM" initials in primary purple, label_large     |
-| header_customer_name       | text    | "John Mwangi" — title_medium, white, weight 700                            |
-| header_kyc_label           | text    | "KYC Review Required" — body_small, #B0B8FF                                |
-| kyc_status_badge_row       | box     | Horizontal row: "KYC Status:" label + status chip                          |
-| kyc_status_chip            | box     | Amber chip (#FFF8E1, border #FFB300): "In Progress" in #E65100, weight 600 |
-| documents_section_heading  | text    | "Documents" — title_medium, role heading level 2                           |
-| doc_national_id_front      | box     | Document card: thumbnail + "National ID — Front", "Uploaded ✓ · 22 May 2026" in green, View link |
-| doc_national_id_back       | box     | Document card: placeholder icon + "National ID — Back", "Pending Upload" in amber |
-| doc_selfie                 | box     | Document card: circular thumbnail with green border + "Selfie / Liveness Check", "Passed ✓ · 22 May 2026" |
-| doc_proof_of_address       | box     | Document card: home icon placeholder + "Proof of Address (Optional)", "Not uploaded", Upload button |
-| risk_section_heading       | text    | "Risk Assessment" — title_medium, role heading level 2                     |
-| risk_level_select          | input   | Dropdown: Low, Medium, High, Declined                                      |
-| rejection_reason_input     | input   | Textarea (conditionalVisible — shown when risk_level = Declined or reject tapped), 3-6 lines |
-| approve_kyc_button         | button  | Filled green (#4CAF50) "Approve KYC" — navigates to customer-detail        |
-| reject_kyc_button          | button  | Outlined red (border/text #FF5252) "Reject KYC" — updates KYC status       |
-| request_more_docs_button   | button  | Text button, #1800B1 "Request More Documents" — navigates to customer-messages |
+| ID                        | Type   | Description                                                                                                                                     |
+|---------------------------|--------|-------------------------------------------------------------------------------------------------------------------------------------------------|
+| customer_mini_header      | box    | Green header band (`#4C662B`), 16dp vertical padding. Contains horizontal stack: 40×40 white avatar circle (initials "JM", label_large `#4C662B` bold) + vertical group: "John Mwangi" (title_medium, `#FFFFFF`, weight 700) / "KYC Review Required" (body_small, `#CDEDA3`) |
+| kyc_status_badge_row      | box    | Horizontal row, 14dp top padding. "KYC Status:" (body_medium, `#44483D`, weight 500) + chip: `#CDEDA3` bg, 16dp radius, 1dp `#E8A317` border, "In Progress" (label_medium, `#44483D`, weight 600) |
+| documents_section_heading | text   | "Documents" — title_medium, `#1A1C16`, heading level 2, 8dp vertical padding, 16dp horizontal padding                                         |
+| doc_national_id_front     | box    | White card (`#FFFFFF`, 10dp radius, 14dp padding, 1dp `#E1E4D5` border, elevation 1). Row: 56×40 thumbnail (6dp radius, cover) + "National ID — Front" (body_large, `#1A1C16`, bold) + "Uploaded ✓ · 22 May 2026" (body_small, `#4C662B`) + "View" link (label_medium, `#4C662B`, underline) |
+| doc_national_id_back      | box    | White card. Row: 56×40 placeholder (`#F9FAEF`, 1dp `#E1E4D5`, image_not_supported icon `#44483D` 20dp) + "National ID — Back" (body_large, bold) + "Pending Upload" (body_small, `#44483D`) |
+| doc_selfie                | box    | White card. Row: 56×40 circular selfie thumbnail (28dp radius, 2dp `#4C662B` border) + "Selfie / Liveness Check" (body_large, bold) + "Passed ✓ · 22 May 2026" (body_small, `#4C662B`) |
+| doc_proof_of_address      | box    | White card. Row: 56×40 placeholder (home icon `#44483D` 20dp) + "Proof of Address (Optional)" (body_large, bold) + "Not uploaded" (body_small, `#44483D`) + "Upload" outlined button (`#386663` border/text, label_small) |
+| risk_section_heading      | text   | "Risk Assessment" — title_medium, `#1A1C16`, heading level 2, 16dp horizontal padding                                                         |
+| risk_level_select         | input  | Outlined select dropdown, 16dp margin horizontal. Options: Low / Medium / High / Declined. Label: "Risk Level"                                  |
+| rejection_reason_input    | input  | Outlined textarea (3–6 lines), placeholder "Explain why KYC cannot be approved — e.g. National ID does not match selfie, blurry documents, suspected fraud…", conditionally visible when risk = Declined |
+| approve_kyc_button        | button | Filled, `#4C662B` bg, `#FFFFFF` text, full-width — "Approve KYC". On tap: PUT kyc_check + PUT kyc_statuses → navigate customer-detail          |
+| reject_kyc_button         | button | Outlined, `#BA1A1A` border/text, full-width — "Reject KYC". On tap: PUT kyc_check (satisfied:false) + PUT kyc_statuses (ok:false)              |
+| request_more_docs_button  | button | Text button, `#4C662B` text — "Request More Documents". Navigates to customer-messages                                                          |
 
 ---
 
 ## States
 
-| ID         | Trigger                                   | Description                                                       |
-|------------|-------------------------------------------|-------------------------------------------------------------------|
-| loading    | Screen open                               | Shimmer skeleton while fetching KYC documents from API            |
-| reviewing  | Data loaded                               | Full document list + risk assessment form visible, bg #F5F5F5     |
-| verifying  | Approve/Reject tapped                     | Progress overlay: "Verifying documents..."                        |
-| approved   | OBP kyc_check + kyc_statuses succeed      | Success banner, KYC Status chip updates to "Verified"            |
-| rejected   | Rejection confirmed with reason           | Rejection banner shown, status chip updates to "Rejected"        |
-| error      | API call fails                            | Error banner with retry option                                    |
+| ID        | Trigger                             | Description                                                                   |
+|-----------|-------------------------------------|-------------------------------------------------------------------------------|
+| loading   | Screen entry                        | Shimmer skeletons over document cards; action buttons disabled                |
+| reviewing | Documents loaded                    | All 4 document cards, risk selector, and action row visible; bg `#F9FAEF`    |
+| verifying | "Approve KYC" tapped                | Progress overlay "Verifying documents…" while PUT calls in flight             |
+| approved  | PUT kyc_statuses returns ok=true    | Success banner; approve button disabled; auto-navigate to customer-detail     |
+| rejected  | PUT kyc_statuses returns ok=false   | Rejection banner shown with officer-entered reason                            |
+| content   | Loaded state alias                  | Same layout as reviewing; canonical loaded state                              |
+| empty     | Customer has zero KYC documents     | Empty state: "No KYC documents to review"                                     |
+| error     | Network or auth failure             | Error banner with retry button; 16dp padding                                  |
 
 ---
 
 ## State Model
 
 **ViewModel:** `KycReviewViewModel`
+**Screen State Type:** `KycReviewScreenState`
 
-| State Field        | Type                     | Default | Values               |
-|--------------------|--------------------------|---------|----------------------|
-| customerId         | String                   | —       | —                    |
-| kycStatus          | KycStatus                | —       | IN_PROGRESS, VERIFIED, REJECTED |
-| documents          | List\<KycDocument\>      | —       | —                    |
-| riskLevel          | RiskLevel (nullable)     | null    | LOW, MEDIUM, HIGH, DECLINED |
-| rejectionReason    | String (nullable)        | null    | —                    |
-| showRejectionField | Boolean                  | false   | —                    |
-| isVerifying        | Boolean                  | false   | —                    |
+| Name               | Type                | Default     |
+|--------------------|---------------------|-------------|
+| customerId         | String              | —           |
+| kycStatus          | KycStatus           | IN_PROGRESS |
+| documents          | List\<KycDocument\> | emptyList() |
+| riskLevel          | RiskLevel?          | null        |
+| rejectionReason    | String?             | null        |
+| showRejectionField | Boolean             | false       |
+| isVerifying        | Boolean             | false       |
 
-**Events:** KycApproved, KycRejected, MoreDocsRequested, DocumentViewed, RiskLevelChanged
+**KycStatus values:** `IN_PROGRESS`, `VERIFIED`, `REJECTED`
 
-**Actions:** approve_kyc, reject_kyc, request_more_docs, view_document, select_risk_level
+**RiskLevel values:** `LOW`, `MEDIUM`, `HIGH`, `DECLINED`
 
-**DI Dependencies:** KycRepository, CustomerMessagingService
+**Events:** `KycApproved`, `KycRejected`, `MoreDocsRequested`, `DocumentViewed`, `RiskLevelChanged`
 
-**Errors:** APPROVAL_FAILED, REJECTION_FAILED, DOCUMENT_LOAD_FAILED, NETWORK_UNAVAILABLE
+**Actions:** `approve_kyc()`, `reject_kyc()`, `request_more_docs()`, `view_document(docId: String)`, `select_risk_level(level: RiskLevel)`
+
+**DI Dependencies:** `KycRepository`, `CustomerMessagingService`
+
+**Errors:**
+- `APPROVAL_FAILED`: "KYC approval failed. Please try again."
+- `REJECTION_FAILED`: "KYC rejection failed. Please try again."
+- `DOCUMENT_LOAD_FAILED`: "Could not load KYC documents."
+- `NETWORK_UNAVAILABLE`: "No network connection. Please check and retry."
 
 ---
 
 ## Navigation
 
-| From        | To                  | Trigger                   | Type     |
-|-------------|---------------------|---------------------------|----------|
-| kyc-review  | customer-detail     | Approve KYC               | navigate |
-| kyc-review  | kyc-review          | Reject KYC (stays, banner)| refresh  |
-| kyc-review  | customer-messages   | Request More Documents    | navigate |
+| From       | To               | Trigger                                    | Type |
+|------------|------------------|--------------------------------------------|------|
+| kyc-review | customer-detail  | approve_kyc_button tap (on API success)    | pop  |
+| kyc-review | customer-messages| request_more_docs_button tap               | push |
+| kyc-review | kyc-review       | reject_kyc_button tap (rejection banner inline) | — |
+| kyc-review | customer-detail  | Top app bar back arrow                     | pop  |
 
 ---
 
 ## API Endpoints
 
-| Endpoint                                                                                  | Auth        | Purpose                                          |
-|-------------------------------------------------------------------------------------------|-------------|--------------------------------------------------|
-| GET /obp/v5.1.0/customers/{customerId}/kyc_documents                                      | DirectLogin | Load all KYC documents for the customer          |
-| PUT /obp/v2.0.0/banks/{bankId}/customers/{customerId}/kyc_documents/{documentId}          | DirectLogin | Update individual document status (is_valid)     |
-| PUT /obp/v2.0.0/banks/{bankId}/customers/{customerId}/kyc_check/{kycCheckId}              | DirectLogin | Record officer's KYC check (satisfied + how)     |
-| PUT /obp/v2.0.0/banks/{bankId}/customers/{customerId}/kyc_statuses                        | DirectLogin | Set final KYC status (ok: true/false, appends)  |
+| Endpoint                                                                              | Auth        | Tag | Purpose                                      |
+|---------------------------------------------------------------------------------------|-------------|-----|----------------------------------------------|
+| GET /obp/v5.1.0/customers/{customerId}/kyc_documents                                  | DirectLogin | KYC | Fetch all KYC documents for customer         |
+| PUT /obp/v2.0.0/banks/{bankId}/customers/{customerId}/kyc_documents/{documentId}      | DirectLogin | KYC | Update document status (is_valid)            |
+| PUT /obp/v2.0.0/banks/{bankId}/customers/{customerId}/kyc_check/{kycCheckId}         | DirectLogin | KYC | Record officer's KYC check result            |
+| PUT /obp/v2.0.0/banks/{bankId}/customers/{customerId}/kyc_statuses                    | DirectLogin | KYC | Append final KYC pass/fail status            |
 
 ---
 
 ## Design Tokens
 
-| Token          | Value   | Usage                                            |
-|----------------|---------|--------------------------------------------------|
-| primary        | #1800B1 | Header background, avatar initials, Upload chip, Request More Docs text |
-| on_primary     | #FFFFFF | Header text, avatar circle                       |
-| success        | #4CAF50 | Approve KYC button, doc verified status text, selfie border |
-| error_action   | #FF5252 | Reject KYC button border and text               |
-| error          | #BA1A1A | System error messages                            |
-| warning_bg     | #FFF8E1 | KYC Status "In Progress" chip background        |
-| warning_border | #FFB300 | Status chip border                              |
-| warning_text   | #E65100 | Status chip text, risk/rejection context        |
-| avatar_label   | #B0B8FF | "KYC Review Required" subtitle in header        |
-| surface        | #FFFFFF | Document cards                                  |
-| background     | #F5F5F5 | Screen background in reviewing state            |
+| Token                         | Value     | Usage                                                               |
+|-------------------------------|-----------|---------------------------------------------------------------------|
+| color.light.primary           | #4C662B   | Header band, avatar initials, verified doc status text, approve button, selfie border, View link, Request More Docs text |
+| color.light.primary_container | #CDEDA3   | KYC status chip background                                          |
+| color.pending                 | #E8A317   | KYC status chip border accent                                       |
+| color.light.secondary         | #386663   | Upload proof of address outlined button border/text                 |
+| color.light.error             | #BA1A1A   | Reject KYC button border/text                                       |
+| color.light.surface           | #FFFFFF   | Document cards background                                           |
+| color.light.background        | #F9FAEF   | Screen background, document placeholder fill                        |
+| color.light.on_surface        | #1A1C16   | Document card titles, section headings                              |
+| color.light.on_surface_variant| #44483D   | KYC Status label, pending/optional status text, captions            |
+| color.light.outline_variant   | #E1E4D5   | Document card borders, placeholder borders                          |
+| color.light.on_primary        | #FFFFFF   | Approve button text, header customer name                           |
+| typography.title_medium       | —         | Documents section heading, Risk Assessment heading                  |
+| typography.body_large         | —         | Document card titles                                                |
+| typography.body_medium        | —         | KYC Status label                                                    |
+| typography.body_small         | —         | Document upload date/status, selfie date                            |
+| typography.label_medium       | —         | KYC status chip text                                                |
+| typography.label_small        | —         | Upload outlined button text                                         |
+| spacing.md                    | 16dp      | Horizontal padding throughout, card margin                          |
+| spacing.sm                    | 8dp       | Chip padding-vertical, card margin-bottom                           |
+| radius.md                     | 12dp      | Card border-radius (10dp per source — closest token)                |
 
 ---
 
-*Generated by /idea export | 2026-05-25*
+_Generated by /idea export | 2026-05-29_

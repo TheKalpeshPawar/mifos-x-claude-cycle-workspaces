@@ -1,212 +1,113 @@
-# API.md — direct-debit-detail
+# API Reference — Direct Debit Detail
 
-OBP API version: **v7.0.0**
-Auth: Bearer token (OBP OAuth 2.0 / Direct Login)
+| Field    | Value                                     |
+|----------|-------------------------------------------|
+| Feature  | direct-debit-detail                       |
+| Base URL | https://apisandbox.openbankproject.com    |
 
 ---
 
-## Endpoint 1 — Get Standing Order Detail
+## GET /obp/v5.0.0/banks/{bankId}/accounts/{accountId}/direct-debit/{directDebitId}
 
-**Trigger:** `LoadMandate` (screen entry, retry tap)
-
-```
-GET /obp/v7.0.0/banks/{bankId}/accounts/{accountId}/standing-orders/{standingOrderId}
-```
+**Auth:** DirectLogin
+**Tag:** DirectDebits
+**Trigger:** `loadMandate(mandateId)` on screen entry and `OnRetryClicked` event
 
 ### Path Parameters
 
-| Parameter | Type | Required | Description |
-|---|---|---|---|
-| bankId | String | Yes | OBP bank identifier |
-| accountId | String | Yes | Account that owns the mandate |
-| standingOrderId | String | Yes | Unique standing order identifier |
+| Name          | Type   | Value                         |
+|---------------|--------|-------------------------------|
+| bankId        | String | gh.29.uk                      |
+| accountId     | String | (from navigation arguments — linked account ID) |
+| directDebitId | String | (from navigation arguments — mandate ID)        |
 
-### Headers
+### Response Fields
 
-| Header | Value |
-|---|---|
-| Authorization | Bearer {token} |
-| Content-Type | application/json |
+| Field              | Type    | Description                                                        |
+|--------------------|---------|-------------------------------------------------------------------|
+| direct_debit_id    | String  | Unique mandate identifier — maps to mandateReference              |
+| bank_id            | String  | Bank identifier                                                   |
+| account_id         | String  | Linked account identifier — maps to linkedAccountMasked           |
+| date_signed        | String  | ISO-8601 date the mandate was authorised — maps to mandateStartDate |
+| date_starts        | String  | ISO-8601 date mandate becomes active                              |
+| date_expires       | String? | ISO-8601 expiry date; null if perpetual                           |
+| date_cancelled     | String? | ISO-8601 cancellation date; null if active                        |
+| date_updated       | String  | ISO-8601 last update timestamp                                    |
+| date_of_next_payment | String| ISO-8601 next scheduled collection — maps to nextPaymentDate      |
+| period             | String  | Frequency code: "MONTHLY", "WEEKLY", "QUARTERLY", "ANNUAL"       |
+| amount             | Object  | Contains `value` (String e.g. "15.99") + `currency` (e.g. "GBP") |
+| amount.value       | String  | Mandate amount — maps to mandateAmount display                    |
+| amount.currency    | String  | Currency code — prepended to formatted amount                     |
+| virtual_account    | Object  | Merchant virtual account reference                                |
 
-### Response — 200 OK
+### Derived Fields (ViewModel)
+
+| ViewModel Field        | Derived From                                      |
+|------------------------|---------------------------------------------------|
+| merchantName           | virtual_account.label or mandate counterparty name|
+| merchantLogoUrl        | domain-based favicon lookup from merchant name    |
+| mandateStatus          | Derived: null date_cancelled + not expired = "Active"; date_cancelled set = "Cancelled" |
+| mandateFrequency       | period → formatted label ("Monthly" etc.)         |
+| linkedAccountMasked    | account_id last 4 chars prefixed with "****"      |
+
+### Sample Response
 
 ```json
 {
-  "standing_order_id": "so-8f3d2a",
+  "direct_debit_id": "MDT-2024-00947",
   "bank_id": "gh.29.uk",
-  "account_id": "8ca8a7e4-6d02-40e3-a129-0b2bf89de9f0",
-  "counterparty_name": "Thames Water Utilities Ltd",
-  "amount": {
-    "value": "48.50",
-    "currency": "GBP"
-  },
-  "frequency": "MONTHLY",
-  "start_date": "2024-01-15",
-  "next_payment_date": "2026-06-15",
-  "status": "active",
-  "reference": "WATER-ACC-TW-99102",
-  "recent_payments": [
-    {
-      "payment_id": "pmt-001",
-      "date": "2026-05-15",
-      "amount": {
-        "value": "48.50",
-        "currency": "GBP"
-      },
-      "status": "completed"
-    },
-    {
-      "payment_id": "pmt-002",
-      "date": "2026-04-15",
-      "amount": {
-        "value": "48.50",
-        "currency": "GBP"
-      },
-      "status": "completed"
-    }
-  ]
+  "account_id": "acc-4521",
+  "date_signed": "2024-01-12",
+  "date_starts": "2024-01-15",
+  "date_expires": null,
+  "date_cancelled": null,
+  "date_updated": "2026-05-01T00:00:00Z",
+  "date_of_next_payment": "2026-06-15",
+  "period": "MONTHLY",
+  "amount": { "value": "15.99", "currency": "GBP" },
+  "virtual_account": { "label": "Netflix Entertainment" }
 }
 ```
 
-### Response Fields
+### Error Codes
 
-| Field | Type | Nullable | Description |
-|---|---|---|---|
-| standing_order_id | String | No | Unique mandate identifier |
-| bank_id | String | No | OBP bank identifier |
-| account_id | String | No | Owning account identifier |
-| counterparty_name | String | No | Name of the payee/creditor |
-| amount.value | String | No | Decimal string amount |
-| amount.currency | String | No | ISO-4217 currency code |
-| frequency | String | No | WEEKLY \| MONTHLY \| QUARTERLY \| ANNUALLY |
-| start_date | String | No | ISO-8601 date mandate started |
-| next_payment_date | String | Yes | ISO-8601 date of next scheduled payment; null if cancelled |
-| status | String | No | active \| pending \| cancelled \| suspended |
-| reference | String | Yes | Mandate reference string |
-| recent_payments | List | No | Most recent payments against this mandate (≤10) |
-| recent_payments[].payment_id | String | No | Payment identifier |
-| recent_payments[].date | String | No | ISO-8601 payment date |
-| recent_payments[].amount.value | String | No | Payment amount |
-| recent_payments[].amount.currency | String | No | Payment currency |
-| recent_payments[].status | String | No | completed \| failed \| pending |
-
-### Error Responses
-
-| HTTP Status | OBP Error Code | UI Handling |
-|---|---|---|
-| 401 | USER_NOT_LOGGED_IN | Clear session → navigate to Login |
-| 403 | INSUFFICIENT_AUTHORISATION | Show error state: "You do not have permission to view this mandate" |
-| 404 | MANDATE_NOT_FOUND | Show empty state: "No mandate found" |
-| 500 | OBP_CONNECTOR_CANNOT_OBTAIN_RESPONSE | Show error state with retry |
+| Code | Message                                             |
+|------|-----------------------------------------------------|
+| 403  | INSUFFICIENT_PERMISSIONS — user lacks mandate view  |
+| 404  | MANDATE_NOT_FOUND — directDebitId does not exist    |
+| 500  | OBP server error                                    |
 
 ---
 
-## Endpoint 2 — Cancel Standing Order
+## DELETE /obp/v5.0.0/banks/{bankId}/accounts/{accountId}/direct-debit/{directDebitId}
 
-**Trigger:** `OnCancelClicked` → user confirms in CancelConfirmDialog
-
-```
-DELETE /obp/v7.0.0/banks/{bankId}/accounts/{accountId}/standing-orders/{standingOrderId}
-```
+**Auth:** DirectLogin
+**Tag:** DirectDebits
+**Trigger:** `onCancelClicked()` after user confirms the cancellation confirmation dialog
 
 ### Path Parameters
 
-| Parameter | Type | Required | Description |
-|---|---|---|---|
-| bankId | String | Yes | OBP bank identifier |
-| accountId | String | Yes | Account that owns the mandate |
-| standingOrderId | String | Yes | Mandate to cancel |
-
-### Headers
-
-| Header | Value |
-|---|---|
-| Authorization | Bearer {token} |
-| Content-Type | application/json |
-
-### Request Body
-
-None (DELETE with path parameters only).
-
-### Response — 200 OK
-
-```json
-{
-  "success": true,
-  "message": "Standing order successfully cancelled."
-}
-```
+| Name          | Type   | Value                        |
+|---------------|--------|------------------------------|
+| bankId        | String | gh.29.uk                     |
+| accountId     | String | (from screen state)          |
+| directDebitId | String | (from screen state mandateId)|
 
 ### Response Fields
 
-| Field | Type | Nullable | Description |
-|---|---|---|---|
-| success | Boolean | No | true on successful cancellation |
-| message | String | No | Human-readable confirmation message |
+| Field   | Type    | Description                                    |
+|---------|---------|------------------------------------------------|
+| success | Boolean | `true` on successful cancellation              |
 
-### Error Responses
+### Error Codes
 
-| HTTP Status | OBP Error Code | UI Handling |
-|---|---|---|
-| 401 | USER_NOT_LOGGED_IN | Clear session → navigate to Login |
-| 403 | INSUFFICIENT_AUTHORISATION | Snackbar: "You are not authorised to cancel this mandate" |
-| 404 | MANDATE_NOT_FOUND | Snackbar: "Mandate not found — it may have already been cancelled" |
-| 500 | CANCEL_FAILED | Snackbar: "Cancellation failed. Please try again." |
-
----
-
-## Domain Models (Kotlin)
-
-```kotlin
-data class StandingOrderDetail(
-    val standingOrderId: String,
-    val bankId: String,
-    val accountId: String,
-    val counterpartyName: String,
-    val amountValue: String,
-    val amountCurrency: String,
-    val frequency: MandateFrequency,
-    val startDate: String,
-    val nextPaymentDate: String?,
-    val status: MandateStatus,
-    val reference: String?,
-    val recentPayments: List<MandatePayment>
-)
-
-data class MandatePayment(
-    val paymentId: String,
-    val date: String,
-    val amountValue: String,
-    val amountCurrency: String,
-    val status: PaymentStatus
-)
-
-enum class MandateFrequency { WEEKLY, MONTHLY, QUARTERLY, ANNUALLY }
-enum class MandateStatus { active, pending, cancelled, suspended }
-enum class PaymentStatus { completed, failed, pending }
-
-data class CancelMandateResult(
-    val success: Boolean,
-    val message: String
-)
-```
+| Code | Message                                                       |
+|------|---------------------------------------------------------------|
+| 403  | INSUFFICIENT_PERMISSIONS — user cannot cancel this mandate    |
+| 404  | MANDATE_NOT_FOUND                                             |
+| 409  | MANDATE_ALREADY_CANCELLED — already in cancelled state        |
+| 500  | OBP server error                                              |
 
 ---
 
-## Repository Interface
-
-```kotlin
-interface DirectDebitRepository {
-    suspend fun getStandingOrderDetail(
-        bankId: String,
-        accountId: String,
-        standingOrderId: String
-    ): Result<StandingOrderDetail>
-
-    suspend fun cancelStandingOrder(
-        bankId: String,
-        accountId: String,
-        standingOrderId: String
-    ): Result<CancelMandateResult>
-}
-```
+_Generated by /idea export | 2026-05-29_

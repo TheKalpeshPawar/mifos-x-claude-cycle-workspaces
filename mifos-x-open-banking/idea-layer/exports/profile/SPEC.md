@@ -1,63 +1,70 @@
 # SPEC — User Profile
 
-| Field         | Value            |
-|---------------|------------------|
-| Feature       | profile          |
-| Flavor        | shared           |
-| Status        | enriched         |
-| Quality Score | 78               |
-| ViewModel     | ProfileViewModel |
+| Field         | Value              |
+|---------------|--------------------|
+| Feature       | profile            |
+| Flavor        | shared             |
+| Status        | approved           |
+| Quality Score | 99                 |
+| ViewModel     | ProfileViewModel   |
 
 ---
 
 ## Overview
 
-The Profile screen allows authenticated users to view and edit their personal information (full name, email address, phone number) and manage their account avatar. It loads current profile data from `GET /obp/v4.0.0/users/current` on entry and persists changes via `PUT /obp/v4.0.0/users/current`. A danger-zone section provides quick access to logout. A success banner confirms saves; an error state surfaces API failures inline.
+The User Profile screen is a shared feature accessible from both Consumer and Field Officer personas via the top app bar profile icon or the Profile nav item. It allows the authenticated user to view and edit their personal information (full name, email address, phone number), upload or change their profile avatar, and navigate to the Change Password screen. A danger-zone card at the bottom provides a Log Out button that clears the session token and redirects to Login.
+
+Profile data is pre-filled from `GET /obp/v4.0.0/users/current` on load. On save, `PUT /obp/v4.0.0/users/current` is called with the updated fields. The Save Changes button is enabled only when `hasUnsavedChanges` is true and the form state is Editing. After a successful save, a green success banner is displayed for 2 seconds before auto-transitioning back to the Viewing state.
 
 ---
 
 ## Screens
 
-| ID      | Name    | Route    | Layout | Scroll   |
-|---------|---------|----------|--------|----------|
-| profile | Profile | /profile | Column | Vertical |
+| ID      | Name    | Route | Layout | Scroll   |
+|---------|---------|-------|--------|----------|
+| profile | Profile | —     | Column | Vertical |
+
+**Shell:** Top app bar ("Profile", back arrow). No bottom navigation bar.
 
 ---
 
 ## Components
 
-| ID                          | Type   | Description                                                                          |
-|-----------------------------|--------|--------------------------------------------------------------------------------------|
-| profile_root                | stack  | Full-screen column, background #F5F5F5, padding spacing.lg                          |
-| profile_avatar_section      | stack  | Centered column: avatar image + edit icon overlay + display name                    |
-| profile_avatar_image        | image  | Circular avatar 96×96 dp, border #1800B1 2 dp, fallback to initials on #E8EAF6     |
-| profile_avatar_edit_icon    | icon   | edit_photo, 28 dp, background #1800B1, color #FFFFFF; overlaid on avatar bottom-right|
-| profile_display_name        | text   | "Maria Santos", headline_small, color #1800B1, centered; data-driven from state     |
-| profile_form_section        | stack  | White card, border-radius 12 dp: section header + 3 input fields                   |
-| profile_section_header      | text   | "Personal Information", title_medium, color #1800B1                                 |
-| profile_full_name_input     | input  | Text field "Full Name"; prefill=fullName; ime_action=next                           |
-| profile_email_input         | input  | Email field "Email Address"; prefill=email; validated RFC-5322; ime_action=next     |
-| profile_phone_input         | input  | Tel field "Phone Number"; prefill=phoneNumber; E.164 format; ime_action=done        |
-| profile_action_section      | stack  | Column: Save Changes button + Change Password button                                |
-| profile_save_button         | button | "Save Changes", filled, #1800B1; disabled when no unsaved changes; loading on Saving|
-| profile_change_password_button| button| "Change Password", outlined, border/text #1800B1; navigates to change-password     |
-| profile_danger_section      | stack  | White card, border-radius 12 dp: Log Out button                                    |
-| profile_logout_button       | button | "Log Out", text variant, color #FF5252; clears session + navigates to login         |
-| profile_save_success_banner | card   | Green success banner; visible_when uiState==Saved; auto-hides after 2 s            |
-| profile_success_icon        | icon   | check_circle, 20 dp, color #4CAF50                                                 |
-| profile_success_message     | text   | "Your profile has been updated successfully.", body_small, color #1B5E20           |
+| ID                          | Type   | Description                                                                                      |
+|-----------------------------|--------|--------------------------------------------------------------------------------------------------|
+| profile_root                | stack  | Column root, #F9FAEF bg, 24dp padding                                                           |
+| profile_avatar_section      | stack  | Centred column — avatar image + edit icon overlay + display name                                |
+| profile_avatar_image        | image  | Circle avatar, 96dp, #4C662B border 2dp, #CDEDA3 bg; data-driven from `obp_get_user_profile.avatar_url` |
+| profile_avatar_edit_icon    | icon   | edit_photo icon — 28dp, bg #4C662B, color #FFFFFF; overlaid offset (x:32dp, y:-16dp); opens photo picker |
+| profile_display_name        | text   | "Maria Santos" — Outfit/headline_small, #4C662B, centred; data-driven from `username`           |
+| profile_form_section        | stack  | White card (radius 12, 24dp padding) — Personal Information section                             |
+| profile_section_header      | text   | "Personal Information" — Outfit/title_medium, #4C662B, 16dp bottom padding                     |
+| profile_full_name_input     | input  | "Full Name" — text variant, bg #F9FAEF, border #C5C8BA → focused #4C662B; pre-filled from `username`; placeholder "e.g. Maria Santos" |
+| profile_email_input         | input  | "Email Address" — email variant, keyboard_type email; pre-filled from `email`; placeholder "e.g. maria.santos@example.com" |
+| profile_phone_input         | input  | "Phone Number" — tel variant, keyboard_type tel; pre-filled from `phone_number`; placeholder "e.g. +63 917 123 4567" |
+| profile_action_section      | stack  | Column with Save Changes + Change Password buttons                                               |
+| profile_save_button         | button | "Save Changes" — filled, bg #4C662B, text #FFFFFF, radius 8, full width; enabled when hasUnsavedChanges=true AND state≠Viewing; shows spinner when Saving |
+| profile_change_password_button | button | "Change Password" — outlined, border+text #4C662B, radius 8, full width; navigates to change-password |
+| profile_danger_section      | stack  | White card (radius 12, 24dp padding, 16dp margin-top) — danger zone                            |
+| profile_logout_button       | button | "Log Out" — text variant, color #BA1A1A, Outfit/label_large, full width; clears session → login |
+| profile_save_success_banner | card   | #CDEDA3 bg, #4C662B border, radius 8 — visible when uiState==Saved; check_circle icon + success text |
+| profile_success_icon        | icon   | check_circle, 20dp, color #4C662B                                                               |
+| profile_success_message     | text   | "Your profile has been updated successfully." — Outfit/body_small, #4C662B                     |
 
 ---
 
 ## States
 
-| ID      | Trigger                          | Description                                                                  |
-|---------|----------------------------------|------------------------------------------------------------------------------|
-| viewing | Screen load complete             | Fields read-only; Save button disabled; profile data populated               |
-| editing | User modifies any input field    | Fields editable; Save button enabled; hasUnsavedChanges=true                 |
-| saving  | Save Changes tapped              | Save button shows loading spinner; all inputs disabled                       |
-| saved   | PUT API success                  | Success banner visible; auto-transitions to viewing after 2 s               |
-| error   | API failure on load or save      | Error message shown (toast or inline); inputs remain editable for retry     |
+| ID      | Trigger                                  | Description                                                                       |
+|---------|------------------------------------------|-----------------------------------------------------------------------------------|
+| loading | Screen entry — profile data being fetched| Skeleton shimmer on avatar, display name, and all 3 input fields                  |
+| viewing | Profile data loaded, no edits made       | All fields pre-filled; Save Changes button disabled                               |
+| editing | User modifies any input field            | Fields editable; Save Changes button enabled; hasUnsavedChanges=true              |
+| saving  | User taps Save Changes                   | Save button shows spinner; inputs disabled; PUT request in flight                 |
+| saved   | PUT request succeeds                     | Success banner visible; auto-transitions to viewing after 2 seconds               |
+| content | Alias for viewing (default loaded state) | Same layout as viewing                                                            |
+| empty   | No profile data available                | Avatar + actions visible; form fields absent; "No profile data" note             |
+| error   | GET /users/current fails                 | Fields may be blank; error state shown with retry option                          |
 
 ---
 
@@ -66,7 +73,7 @@ The Profile screen allows authenticated users to view and edit their personal in
 **ViewModel:** `ProfileViewModel`
 **Screen State Type:** `ProfileUiState`
 
-| Field             | Type    | Default |
+| Name              | Type    | Default |
 |-------------------|---------|---------|
 | fullName          | String  | ""      |
 | email             | String  | ""      |
@@ -78,50 +85,57 @@ The Profile screen allows authenticated users to view and edit their personal in
 
 **Events:** `LoadProfile`, `OnFullNameChanged`, `OnEmailChanged`, `OnPhoneChanged`, `OnSaveClicked`, `OnChangePasswordClicked`, `OnLogoutClicked`, `OnProfileSaved`, `OnProfileError`
 
-**Actions:** `onLoadProfile()`, `onFullNameChanged(value: String)`, `onEmailChanged(value: String)`, `onPhoneChanged(value: String)`, `onSaveClicked()`, `onChangePasswordClicked()`, `onLogoutClicked()`
-
 **DI Dependencies:** `ObpAuthRepository`, `UserProfileRepository`, `SessionManager`
 
-**Errors:** `NETWORK_ERROR`, `VALIDATION_ERROR`, `AUTH_ERROR`
+**Errors:**
+- `NETWORK_ERROR`: "Could not load your profile. Please check your connection."
+- `VALIDATION_ERROR`: "Please correct the errors in the form before saving."
+- `AUTH_ERROR`: "Session expired. Please sign in again."
 
 ---
 
 ## Navigation
 
-| ID                    | From    | To              | Trigger              |
-|-----------------------|---------|-----------------|----------------------|
-| nav_to_change_password| profile | change-password | Change Password tap  |
-| nav_to_login_on_logout| profile | login           | on_logout_confirmed  |
+| From    | To              | Trigger                          | Type  |
+|---------|-----------------|----------------------------------|-------|
+| profile | change-password | Change Password button tap       | push  |
+| profile | login           | Log Out button tap (after confirm)| root |
+| profile | (back)          | Back arrow tap                   | pop   |
 
 ---
 
 ## API Endpoints
 
-| ID                    | Endpoint                           | Auth         | Purpose                               |
-|-----------------------|------------------------------------|--------------|---------------------------------------|
-| obp_get_user_profile  | GET /obp/v4.0.0/users/current      | DirectLogin  | Load current user profile on screen entry |
-| obp_update_user_profile| PUT /obp/v4.0.0/users/current     | DirectLogin  | Persist edited profile fields         |
+| Endpoint                            | Auth        | Tag         | Purpose                                      |
+|-------------------------------------|-------------|-------------|----------------------------------------------|
+| GET /obp/v4.0.0/users/current       | DirectLogin | UserProfile | Fetch current user profile for pre-fill      |
+| PUT /obp/v4.0.0/users/current       | DirectLogin | UserProfile | Save updated email and phone_number          |
 
 ---
 
 ## Design Tokens
 
-| Token                       | Value     | Usage                                            |
-|-----------------------------|-----------|--------------------------------------------------|
-| color.light.primary         | #1800B1   | Avatar border, display name, section headers, save button, focused borders |
-| color.light.background      | #F5F5F5   | Root and input field backgrounds                |
-| color.surface.white         | #FFFFFF   | Form card and danger section backgrounds         |
-| color.error.default         | #FF5252   | Log Out button text                              |
-| color.success.background    | #E8F5E9   | Success banner background                        |
-| color.success.border        | #4CAF50   | Success banner border and icon                   |
-| color.success.text          | #1B5E20   | Success message text                             |
-| color.avatar.placeholder    | #E8EAF6   | Avatar placeholder background                    |
-| typography.headline_small   | Inter/headline_small | Display name                         |
-| typography.title_medium     | Inter/title_medium   | Section headers                      |
-| typography.body_large       | Manrope/body_large   | Input field text                     |
-| typography.label_large      | Inter/label_large    | Button labels                        |
-| typography.body_small       | Manrope/body_small   | Success/error messages               |
+| Token                           | Value   | Usage                                                           |
+|---------------------------------|---------|-----------------------------------------------------------------|
+| colors.light.primary            | #4C662B | Avatar border, display name, section headers, Save button bg, edit icon bg, success banner border/icon/text |
+| colors.light.primary_container  | #CDEDA3 | Avatar placeholder background, success banner background       |
+| colors.light.on_primary         | #FFFFFF | Save button text, edit icon color                              |
+| colors.light.error              | #BA1A1A | Log Out button text                                            |
+| colors.light.surface            | #FFFFFF | Form section card, danger section card                         |
+| colors.light.background         | #F9FAEF | Screen root bg, input field backgrounds                        |
+| colors.light.outline_variant    | #C5C8BA | Input field default border                                     |
+| colors.light.outline            | #75796C | Change Password outlined button border                         |
+| colors.light.on_surface_variant | #44483D | (secondary text)                                               |
+| typography.headline_small       | —       | Display name below avatar (24sp, SemiBold)                     |
+| typography.title_medium         | —       | "Personal Information" section header                          |
+| typography.body_large           | —       | Input field values                                             |
+| typography.body_small           | —       | Success banner message                                         |
+| typography.label_large          | —       | Save Changes, Change Password, Log Out button text             |
+| radius.md                       | 12dp    | Form section card, danger section card, success banner         |
+| spacing.lg                      | 24dp    | Root padding, form card padding                                |
+| spacing.md                      | 16dp    | Input bottom margin, section header bottom padding             |
+| spacing.sm                      | 8dp     | Save button bottom margin                                      |
 
 ---
 
-_Generated by /idea export | 2026-05-25_
+_Generated by /idea export | 2026-05-29_

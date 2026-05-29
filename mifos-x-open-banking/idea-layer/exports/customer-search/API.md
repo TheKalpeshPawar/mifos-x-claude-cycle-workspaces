@@ -1,85 +1,128 @@
-# API Reference: Find Customer
+# API Reference — Find Customer
 
-| Field | Value |
-|---|---|
-| Feature | customer-search |
-| Base URL | https://apisandbox.openbankproject.com |
-| Auth | DirectLogin — `DirectLogin token="<token>"` header |
+| Field    | Value                                     |
+|----------|-------------------------------------------|
+| Feature  | customer-search                           |
+| Base URL | https://apisandbox.openbankproject.com    |
 
 ---
 
 ## GET /obp/v5.1.0/banks/{bankId}/customers
 
-Searches customers within the specified bank. Results are filtered by the `query` (name / ID / email match) and `status` parameters. Used for both the idle list load and live search-as-you-type.
+**Auth:** DirectLogin
+**Tag:** Customers
+**Trigger:** `search` action — fired on query change (debounced ≥2 chars) or filter chip tap
 
 ### Path Parameters
 
-| Parameter | Type | Description |
-|---|---|---|
-| bankId | String | OBP bank identifier |
+| Name   | Type   | Value    |
+|--------|--------|----------|
+| bankId | String | gh.29.uk |
 
 ### Query Parameters
 
-| Parameter | Type | Description |
-|---|---|---|
-| query | String | Free-text search across name, customer_number, email |
-| status | String | Filter: `active`, `prospect`, `dormant`; omit for all |
+| Name   | Type   | Required | Description                                              |
+|--------|--------|----------|----------------------------------------------------------|
+| query  | String | No       | Free-text search across legal_name, national_id, email   |
+| status | String | No       | Filter by KYC/account status: "active", "prospect", "dormant" |
 
 ### Response Fields
 
-| Field | Type | Description |
-|---|---|---|
-| customers | List\<Customer\> | Matched customer records |
-| customer_id | String | Unique OBP customer ID |
-| legal_name | String | Full legal name |
-| kyc_status | String | `verified`, `pending`, or `not_started` |
-| customer_number | String | Bank-assigned customer number |
-| mobile_phone_number | String | Primary phone |
-| email | String | Primary email address |
-| date_of_birth | String | ISO date |
-| last_ok_date | String | Timestamp of last successful interaction |
+| Field                  | Type   | Description                                                    |
+|------------------------|--------|----------------------------------------------------------------|
+| customers              | Array  | List of matched Customer objects                               |
+| customer_id            | String | Unique OBP customer identifier                                 |
+| legal_name             | String | Full legal name — maps to customer_X_name                      |
+| kyc_status             | String | "VERIFIED", "PENDING", "NONE" — maps to customer_X_kyc_status |
+| customer_number        | String | Unique customer reference number                               |
+| mobile_phone_number    | Object | `{ prefix, number }` — used for phone search display          |
+| email                  | String | Email address                                                  |
+| date_of_birth          | String | ISO-8601 date                                                  |
+| last_ok_date           | String | ISO-8601 timestamp of last verified interaction                |
+
+### Sample Response
+
+```json
+{
+  "customers": [
+    {
+      "customer_id": "cust-001",
+      "legal_name": "John Mwangi",
+      "kyc_status": "VERIFIED",
+      "customer_number": "CN-20240001",
+      "mobile_phone_number": { "prefix": "+254", "number": "722123456" },
+      "email": "john.mwangi@gmail.com",
+      "last_ok_date": "2026-05-26T00:00:00Z"
+    },
+    {
+      "customer_id": "cust-002",
+      "legal_name": "Sarah Odhiambo",
+      "kyc_status": "PENDING",
+      "customer_number": "CN-20240002",
+      "last_ok_date": "2026-05-22T00:00:00Z"
+    },
+    {
+      "customer_id": "cust-003",
+      "legal_name": "Peter Kamau",
+      "kyc_status": "NONE",
+      "customer_number": "CN-20240003",
+      "last_ok_date": "2026-05-29T00:00:00Z"
+    }
+  ]
+}
+```
 
 ### Error Codes
 
-| Code | Meaning |
-|---|---|
-| 400 | Invalid search parameters |
-| 401 | Unauthorized — missing or invalid token |
-| 500 | Internal server error |
+| Code | Message                                         |
+|------|-------------------------------------------------|
+| 400  | INVALID_SEARCH_PARAMS — malformed query param   |
+| 401  | UNAUTHORIZED — DirectLogin token expired        |
+| 500  | OBP server error                                |
 
 ---
 
 ## POST /obp/v4.0.0/banks/{bankId}/search/customers/mobile-phone-number
 
-Targeted search by mobile phone number. Used when the search query is detected as a phone number pattern (digits, +254 prefix).
+**Auth:** DirectLogin
+**Tag:** Customer
+**Trigger:** `search` action when query matches phone number pattern (all digits, ≥7 chars)
 
 ### Path Parameters
 
-| Parameter | Type | Description |
-|---|---|---|
-| bankId | String | OBP bank identifier |
+| Name   | Type   | Value    |
+|--------|--------|----------|
+| bankId | String | gh.29.uk |
 
-### Request Body
+### Request Fields
 
-| Field | Type | Description |
-|---|---|---|
-| mobile_phone_number | String | Full phone number including country code (e.g. +254722123456) |
+| Field               | Type   | Required | Description                                                       |
+|---------------------|--------|----------|-------------------------------------------------------------------|
+| mobile_phone_number | String | Yes      | Phone number from search_input — stripped of spaces and prefix    |
+
+### Sample Request Body
+
+```json
+{
+  "mobile_phone_number": "+254722123456"
+}
+```
 
 ### Response Fields
 
-| Field | Type | Description |
-|---|---|---|
-| customers | List\<Customer\> | Matched customer records (same shape as GET response) |
+| Field     | Type  | Description                                             |
+|-----------|-------|---------------------------------------------------------|
+| customers | Array | List of Customer objects matching the phone number      |
 
 ### Error Codes
 
-| Code | Meaning |
-|---|---|
-| 400 | Invalid phone number format |
-| 401 | Unauthorized — missing or invalid token |
-| 404 | No customers found with this number |
-| 500 | Internal server error |
+| Code | Message                                                  |
+|------|----------------------------------------------------------|
+| 400  | INVALID_PHONE_NUMBER — malformed phone format            |
+| 401  | UNAUTHORIZED                                             |
+| 404  | NO_CUSTOMER_FOUND — no account linked to this number     |
+| 500  | OBP server error                                         |
 
 ---
 
-_Generated by /idea export | 2026-05-25_
+_Generated by /idea export | 2026-05-29_

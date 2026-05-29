@@ -1,140 +1,79 @@
-# API Reference — Connected Apps (Consent Manager)
+# API Reference — Connected Apps
 
-| Field | Value |
-|---|---|
-| Feature | consent-manager |
-| Base URL | https://apisandbox.openbankproject.com |
-| Auth Scheme | DirectLogin (header: `DirectLogin token=<token>`) |
-| OBP API Version | v5.1.0 |
+| Field    | Value                                       |
+|----------|---------------------------------------------|
+| Feature  | consent-manager                             |
+| Base URL | https://apisandbox.openbankproject.com      |
 
 ---
 
 ## GET /obp/v5.1.0/my/consents
 
+**Auth:** DirectLogin
 **Tag:** Consent
-**Purpose:** List all PSD2 consents that the authenticated user has granted to third-party applications. Returns both active (ACCEPTED) and historical (REVOKED, EXPIRED) records, enabling the Connected Apps screen to render the full consent history with correct status badges.
-
-### Request
-
-```
-GET /obp/v5.1.0/my/consents
-Authorization: DirectLogin token=<token>
-```
-
-No query parameters. No request body.
-
-### Response — 200 OK
-
-```json
-{
-  "consents": [
-    {
-      "consent_id": "9d429899-24f5-42c8-8565-943ffa6a7945",
-      "status": "ACCEPTED",
-      "created_at": "2026-03-01T00:00:00Z",
-      "valid_until": "2027-03-01T00:00:00Z",
-      "consumer_id": "7uy8a7e4-6d02-40e3-a129-0b2bf89de8uh",
-      "redirects": [],
-      "json_web_token": "eyJhbGci..."
-    }
-  ]
-}
-```
+**Trigger:** `loadConsents()` on screen open / `RetryLoad` event
 
 ### Response Fields
 
-| Field | Type | Nullable | Description |
-|---|---|---|---|
-| consents | List\<Consent\> | No | Ordered array of all consent objects for the authenticated user |
-| consent_id | String | No | Unique consent identifier — used as path param for revocation |
-| status | String | No | Consent lifecycle state: `INITIATED`, `ACCEPTED`, `REVOKED`, or `EXPIRED` |
-| created_at | String | No | ISO 8601 UTC timestamp when the consent was first granted |
-| valid_until | String | Yes | ISO 8601 UTC expiry timestamp; null if no expiry set |
-| consumer_id | String | No | ID of the third-party consumer application that holds the consent |
-| redirects | List\<ConsentRedirect\> | No | Redirect URLs registered during the consent flow (may be empty array) |
-| json_web_token | String | No | JWT encoding the consent scopes and claims |
+| Field             | Type                    | Description                                          |
+|-------------------|-------------------------|------------------------------------------------------|
+| consents          | List\<Consent\>         | All PSD2 consents granted by the authenticated user  |
+| consent_id        | String                  | Unique consent identifier (used for revoke call)     |
+| status            | String                  | `INITIATED` \| `ACCEPTED` \| `REVOKED` \| `EXPIRED` |
+| created_at        | String                  | ISO-8601 UTC consent creation timestamp              |
+| valid_until       | String                  | ISO-8601 UTC consent expiry timestamp                |
+| consumer_id       | String                  | ID of the third-party app consumer                   |
+| redirects         | List\<ConsentRedirect\> | OAuth redirect URIs registered for this consent      |
+| json_web_token    | String                  | JWT encoding the consent scopes and metadata         |
 
-### Status Values
+### ConsentItem (mapped from OBP Consent)
 
-| Value | Badge Label | Badge Colour | UI Treatment |
-|---|---|---|---|
-| ACCEPTED | ACTIVE | #2E7D32 on #E8F5E9 | Full colour card, Revoke Access button (red outlined) |
-| EXPIRED | EXPIRED | #E65100 on #FFF3E0 | Dimmed card (#FAFAFA bg, greyed text), Remove button (text variant) |
-| REVOKED | REVOKED | #9E9E9E on #F5F5F5 | Dimmed card, no action button (already revoked) |
-| INITIATED | PENDING | #1565C0 on #E3F2FD | Informational card only; no revoke action |
+| Field      | Type     | Source                    | Description                                    |
+|------------|----------|---------------------------|------------------------------------------------|
+| id         | String   | consent_id                | Used as key for revoke call                    |
+| appName    | String   | consumer metadata         | Display name e.g. "MoneyManager Pro"           |
+| grantedAt  | String   | created_at                | Formatted as "1 Mar 2026"                      |
+| expiresAt  | String   | valid_until               | Formatted as "1 Mar 2027"                      |
+| status     | String   | status                    | ACTIVE (ACCEPTED) or EXPIRED                   |
+| scopes     | List\<String\> | jwt payload scope | e.g. ["Read Accounts", "View Transactions"]   |
 
 ### Error Codes
 
-| HTTP Code | OBP Error | Meaning |
-|---|---|---|
-| 401 | USER_NOT_LOGGED_IN | DirectLogin token is missing, malformed, or expired |
-| 403 | INSUFFICIENT_AUTHORISATION | Token does not carry the consent management scope |
+| Code | OBP Error Key              | UI Behaviour                                    |
+|------|----------------------------|-------------------------------------------------|
+| 401  | USER_NOT_LOGGED_IN         | Navigate to login                               |
+| 403  | INSUFFICIENT_AUTHORISATION | Show error state with message                   |
+| 500  | INTERNAL_SERVER_ERROR      | Show error state + retry button                 |
 
 ---
 
 ## DELETE /obp/v5.1.0/my/consents/{consentId}
 
+**Auth:** DirectLogin
 **Tag:** Consent
-**Purpose:** Revoke a specific PSD2 consent by ID. Called when the user confirms the revoke action in the `revoke_confirm` dialog overlay. On success, the consent is removed from the in-memory list in `ConsentManagerViewModel` and the UI transitions back to `populated` (or `empty` if no consents remain).
-
-### Request
-
-```
-DELETE /obp/v5.1.0/my/consents/{consentId}
-Authorization: DirectLogin token=<token>
-```
+**Trigger:** `RevokeConsentConfirmed(consentId)` event — after user taps "Revoke" in the confirmation dialog
 
 ### Path Parameters
 
-| Parameter | Type | Required | Description |
-|---|---|---|---|
-| consentId | String | Yes | The `consent_id` of the consent to revoke (e.g. `9d429899-24f5-42c8-8565-943ffa6a7945`) |
-
-No request body.
-
-### Response — 200 OK
-
-```json
-{
-  "consent_id": "9d429899-24f5-42c8-8565-943ffa6a7945",
-  "status": "REVOKED"
-}
-```
+| Name      | Type   | Description                                        |
+|-----------|--------|----------------------------------------------------|
+| consentId | String | ID of the consent to revoke (from ConsentItem.id)  |
 
 ### Response Fields
 
-| Field | Type | Description |
-|---|---|---|
-| consent_id | String | ID of the consent that was revoked — matches the request path param |
-| status | String | Always `"REVOKED"` on success |
+| Field      | Type   | Description                                  |
+|------------|--------|----------------------------------------------|
+| consent_id | String | ID of the revoked consent (for local removal) |
+| status     | String | `REVOKED` — confirms successful revocation   |
 
 ### Error Codes
 
-| HTTP Code | OBP Error | Meaning | UI Handling |
-|---|---|---|---|
-| 401 | USER_NOT_LOGGED_IN | DirectLogin token expired mid-session | Redirect to login |
-| 404 | CONSENT_NOT_FOUND | The consentId does not exist or has already been revoked | Show `REVOKE_FAILED` snackbar; refresh list |
-| 403 | INSUFFICIENT_AUTHORISATION | Token lacks revocation scope | Show `REVOKE_FAILED` snackbar |
+| Code | OBP Error Key              | UI Behaviour                                                        |
+|------|----------------------------|---------------------------------------------------------------------|
+| 401  | USER_NOT_LOGGED_IN         | Navigate to login                                                   |
+| 404  | CONSENT_NOT_FOUND          | Show snackbar "This app was already disconnected"; refresh list     |
+| 500  | INTERNAL_SERVER_ERROR      | Show snackbar "Could not revoke access. Please try again."; keep dialog |
 
 ---
 
-## ConsentItem Data Model (Client-Side)
-
-Mapped from the API response fields for use in `ConsentManagerViewModel`.
-
-```kotlin
-data class ConsentItem(
-    val consentId: String,          // consent_id
-    val status: ConsentStatus,      // parsed from status string
-    val createdAt: Instant,         // parsed from created_at ISO-8601
-    val validUntil: Instant?,       // parsed from valid_until ISO-8601; null = no expiry
-    val consumerId: String,         // consumer_id — used to look up app name + logo
-    val permissions: List<String>   // decoded from json_web_token claims
-)
-
-enum class ConsentStatus { INITIATED, ACCEPTED, REVOKED, EXPIRED }
-```
-
----
-
-*Generated by /idea export | 2026-05-25*
+_Generated by /idea export | 2026-05-29_

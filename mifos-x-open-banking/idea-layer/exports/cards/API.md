@@ -1,92 +1,45 @@
-# My Cards — API Reference
+# API Reference — My Cards
 
-| Field | Value |
-|---|---|
-| Feature | cards |
+| Field    | Value                                  |
+|----------|----------------------------------------|
+| Feature  | cards                                  |
 | Base URL | https://apisandbox.openbankproject.com |
-| Auth | DirectLogin (header: `DirectLogin token=<token>`) |
 
 ---
 
-## 1. List All Cards
-
-**GET** `/obp/v5.1.0/cards`
-
-Fetches all payment cards associated with the authenticated user across all banks.
+## GET /obp/v5.1.0/cards
 
 **Auth:** DirectLogin
+**Tag:** Cards
+**Trigger:** Screen entry — fetches all cards for the authenticated user across all banks
 
-**No Path or Query Parameters.**
+### Path Parameters
 
-**Response Fields:**
+_None — returns all cards for the authenticated user._
 
-| Field | Type | Description |
-|---|---|---|
-| cards | List\<Card\> | All user payment cards |
-| cards[].id | String | Unique card identifier |
-| cards[].bank_id | String | Bank that issued the card |
-| cards[].bank_card_number | String | Masked card number (PAN) |
-| cards[].name_on_card | String | Cardholder name (e.g., "Alex Johnson") |
-| cards[].card_type | String | "debit" or "credit" |
-| cards[].card_description | String | Display description (e.g., "Mifos Debit Visa") |
-| cards[].card_network | String | "VISA" or "MASTERCARD" |
-| cards[].allows | List\<String\> | Permitted operations array |
-| cards[].enabled | Boolean | false when card is frozen/disabled |
+### Response Fields
 
-**Sample Response:**
+| Field                     | Type           | Description                                                 |
+|---------------------------|----------------|-------------------------------------------------------------|
+| cards                     | List\<Object\> | All user payment cards                                      |
+| cards[].id                | String         | Unique card identifier                                      |
+| cards[].bank_id           | String         | Bank that issued the card (e.g. "gb.mifos")                |
+| cards[].bank_card_number  | String         | Masked PAN (e.g. "************4521")                       |
+| cards[].name_on_card      | String         | Cardholder name (e.g. "Alex Johnson")                      |
+| cards[].card_type         | String         | "debit" or "credit"                                         |
+| cards[].card_description  | String         | Display description (e.g. "Mifos Debit Visa")              |
+| cards[].card_network      | String         | "VISA" or "MASTERCARD"                                      |
+| cards[].allows            | List\<String\> | Permitted operations (e.g. "credit", "debit", "cash")      |
+| cards[].enabled           | Boolean        | false when card is frozen or disabled                       |
 
-```json
-{
-  "cards": [
-    {
-      "id": "card-4521-uuid",
-      "bank_id": "gb.mifos",
-      "bank_card_number": "************4521",
-      "name_on_card": "Alex Johnson",
-      "card_type": "debit",
-      "card_description": "Mifos Debit Visa",
-      "card_network": "VISA",
-      "allows": ["credit", "debit", "cash"],
-      "enabled": true
-    },
-    {
-      "id": "card-7834-uuid",
-      "bank_id": "gb.mifos",
-      "bank_card_number": "************7834",
-      "name_on_card": "Alex Johnson",
-      "card_type": "credit",
-      "card_description": "Mifos Business Mastercard",
-      "card_network": "MASTERCARD",
-      "allows": ["credit"],
-      "enabled": false
-    }
-  ]
-}
-```
+### Error Codes
 
-**Error Codes:**
-
-| Code | Message | UI Behaviour |
-|---|---|---|
-| 400 | INVALID_BANK_ID | Show error state with retry |
-| 401 | USER_NOT_LOGGED_IN | Redirect to login |
-| 403 | INSUFFICIENT_AUTHORISATION | Show error state with support message |
+| Code | Message                    | UI Behaviour                                         |
+|------|----------------------------|------------------------------------------------------|
+| 400  | INVALID_BANK_ID            | Show error state with retry button                   |
+| 401  | USER_NOT_LOGGED_IN         | Redirect to login screen                             |
+| 403  | INSUFFICIENT_AUTHORISATION | Show error state with support contact message        |
 
 ---
 
-## Notes on Card Operations (No Dedicated OBP Endpoints)
-
-The following quick actions from the Cards screen are handled client-side or via bank-specific extensions rather than standard OBP v5.x endpoints:
-
-| Action | Mechanism |
-|---|---|
-| Freeze / Unfreeze | Navigate to card-detail screen → `toggle_card_status` |
-| Set Limit | Opens bottom sheet → card-detail `edit_limit` action |
-| View PIN | `BiometricAuthUseCase` → `reveal_card_details` (card-detail screen) |
-| Report Lost | `report_card_lost` → confirmation dialog → card-detail API call |
-
-For card transaction history, the Transactions API (scoped to `GET /obp/v4.0.0/banks/{bankId}/accounts/{accountId}/{viewId}/transactions`) is used filtered by card ID.
-
----
-
-*Generated by /idea export | 2026-05-25*
+_Generated by /idea export | 2026-05-29_

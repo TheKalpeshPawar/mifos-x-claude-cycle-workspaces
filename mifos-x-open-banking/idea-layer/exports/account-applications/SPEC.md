@@ -1,129 +1,152 @@
-# Feature Specification — Account Applications
+# SPEC — Account Applications
 
-| Field         | Value                          |
-|---------------|-------------------------------|
-| Feature       | account-applications          |
-| Flavor        | fieldOfficer                  |
-| Status        | enriched                      |
-| Quality Score | 81                            |
+| Field         | Value                              |
+|---------------|------------------------------------|
+| Feature       | account-applications               |
+| Flavor        | fieldOfficer                       |
+| Status        | approved                           |
+| Quality Score | 93                                 |
+| ViewModel     | AccountApplicationsViewModel       |
 
 ---
 
 ## Overview
 
-The Account Applications screen is the Field Officer's pipeline dashboard showing all customer account applications with their current processing status. A horizontally scrollable chip-based filter bar lets officers slice by All (8), Pending (3), Approved (3), or Rejected (2). Each application is rendered as a card showing applicant name, product name, submission date, and status badge. A floating action button launches new onboarding. Tapping any card or its Review/View Reason button navigates to application-detail.
+The Account Applications screen is the Field Officer's central pipeline view for managing new account requests submitted by customers. It displays a scrollable list of application cards filtered by status (All, Pending, Approved, Rejected), each card showing the applicant's name, requested product, submission date, and a status chip. Pending applications include a "Review" button that navigates to the Application Detail screen. A floating action button in the bottom-right corner initiates a new account application via the customer onboarding flow. Data is fetched from the OBP `/banks/{bankId}/account-applications` endpoint and filtered client-side.
 
 ---
 
 ## Screens
 
-| Screen ID                    | Route                        | Layout     | Scroll   |
-|------------------------------|------------------------------|------------|----------|
-| account-applications-main    | /applications                | index_list | vertical |
+| ID                          | Name                        | Route                   | Layout | Scroll   |
+|-----------------------------|-----------------------------|-------------------------|--------|----------|
+| account-applications-main   | Account Application Pipeline| /account-applications   | Column | Vertical |
+
+**Shell:** Field Officer bottom navigation bar with 5 items (Applications active). Top app bar visible.
+
+| Nav Item     | ID                | Icon        | Target               |
+|--------------|-------------------|-------------|----------------------|
+| Dashboard    | nav_fo_dashboard  | dashboard   | fo-dashboard         |
+| Customers    | nav_customers     | people      | customer-search      |
+| Applications | nav_applications  | description | account-applications |
+| Messages     | nav_messages      | mail        | customer-messages    |
+| More         | nav_more          | more_vert   | settings             |
 
 ---
 
 ## Components
 
-| ID                      | Type   | Description                                                                      |
-|-------------------------|--------|----------------------------------------------------------------------------------|
-| page_title              | text   | "Account Applications" — headline_large, #1800B1, paddingTop 20, role heading h1 |
-| status_filter_tabs      | stack  | Horizontally scrollable chip row (gap 8): All (8) · Pending (3) · Approved (3) · Rejected (2) |
-| filter_all              | input  | Radio chip — "All (8)", selected bg #1800B1, text white; unselected: #F0F0F0 bg |
-| filter_pending          | input  | Radio chip — "Pending (3)", selected bg #FF8F00 (amber)                          |
-| filter_approved         | input  | Radio chip — "Approved (3)", selected bg #4CAF50 (green)                         |
-| filter_rejected         | input  | Radio chip — "Rejected (2)", selected bg #FF5252 (red)                           |
-| app_card_1              | box    | Card: John Mwangi · KCB Savings Account · Pending Review · Submitted 20 May 2026 |
-| app_card_2              | box    | Card: Sarah Odhiambo · M-Shwari Checking Account · Approved ✓ · Submitted 18 May 2026 |
-| app_card_3              | box    | Card: Peter Kamau · Business Current Account · Rejected ✗ · Submitted 12 May 2026 |
-| new_application_fab     | button | Extended FAB, bg #1800B1, icon add, label "New Application", position bottom-right |
-
-**Per-card sub-components (app_card_1 as canonical example):**
-
-| ID                      | Type  | Description                                                     |
-|-------------------------|-------|-----------------------------------------------------------------|
-| app_card_1_name         | text  | Applicant name — title_medium, weight 700, #1A1A1A             |
-| app_card_1_status_chip  | box   | Pending: #FFF8E1 bg, #FFB300 border, "Pending Review" #E65100  |
-| app_card_1_product      | text  | Product name — body_medium, color #1800B1                      |
-| app_card_1_date         | text  | "Submitted: 20 May 2026" — body_small, #999999                 |
-| app_card_1_review_btn   | button| "Review" — filled, bg #1800B1, white text → application-detail |
+| ID                      | Type   | Description                                                                                             |
+|-------------------------|--------|---------------------------------------------------------------------------------------------------------|
+| page_title              | text   | "Account Applications" — headline_large (32sp), color `#4C662B`; screen identity heading               |
+| status_filter_tabs      | stack  | Horizontal scrollable row of filter chips: All (8), Pending (3), Approved (3), Rejected (2)             |
+| filter_all              | input  | Filter chip "All (8)" — selected: `#4C662B` bg/white text; unselected: `#F9FAEF`/`#44483D`             |
+| filter_pending          | input  | Filter chip "Pending (3)" — selected: `#E8A317` bg/white text                                          |
+| filter_approved         | input  | Filter chip "Approved (3)" — selected: `#4C662B` bg/white text                                         |
+| filter_rejected         | input  | Filter chip "Rejected (2)" — selected: `#BA1A1A` bg/white text                                         |
+| app_card_1              | box    | Elevated card (white, radius 12dp, elevation 2) — John Mwangi / KCB Savings Account / Pending Review   |
+| app_card_1_name         | text   | "John Mwangi" — title_medium/Bold, color `#1A1C16`                                                     |
+| app_card_1_status_chip  | box    | Status chip: `#CDEDA3` bg, `#E8A317` border; text "Pending Review" label_small/`#44483D`               |
+| app_card_1_product      | text   | "KCB Savings Account" — body_medium, color `#4C662B`                                                   |
+| app_card_1_date         | text   | "Submitted: 20 May 2026" — body_small, color `#44483D`                                                 |
+| app_card_1_review_btn   | button | "Review" — filled `#4C662B`/white, label_medium; navigates to application-detail                       |
+| app_card_2              | box    | Elevated card — Sarah Odhiambo / M-Shwari Checking Account / Approved                                  |
+| app_card_2_name         | text   | "Sarah Odhiambo" — title_medium/Bold, color `#1A1C16`                                                  |
+| app_card_2_status_chip  | box    | Status chip: `#CDEDA3` bg, `#4C662B` border; text "Approved ✓" label_small/`#4C662B`                   |
+| app_card_2_product      | text   | "M-Shwari Checking Account" — body_medium, color `#4C662B`                                             |
+| app_card_2_date         | text   | "Submitted: 18 May 2026" — body_small, color `#44483D`                                                 |
+| app_card_3              | box    | Elevated card — Peter Kamau / Business Current Account / Rejected                                       |
+| app_card_3_name         | text   | "Peter Kamau" — title_medium/Bold, color `#1A1C16`                                                     |
+| app_card_3_status_chip  | box    | Status chip: `#CDEDA3` bg, `#BA1A1A` border; text "Rejected ✗" label_small/`#BA1A1A`                   |
+| app_card_3_product      | text   | "Business Current Account" — body_medium, color `#4C662B`                                              |
+| app_card_3_date         | text   | "Submitted: 12 May 2026" — body_small, color `#44483D`                                                 |
+| app_card_3_reason_link  | link   | "View Reason" — label_medium, color `#BA1A1A`, underlined; navigates to application-detail             |
+| new_application_fab     | button | Extended FAB "New Application" — `#4C662B` bg, white text + `add` icon; position bottom-right          |
 
 ---
 
 ## States
 
-| ID      | Trigger                         | Description                                                         |
-|---------|---------------------------------|---------------------------------------------------------------------|
-| loading | Screen open / filter change     | Shimmer skeleton cards while fetching from GET account-applications |
-| content | Data loaded                     | Scrollable card list with filter chips, bg #F5F5F5                 |
-| empty   | No applications match filter    | Empty state: icon assignment, "No Applications Found", subtitle "No account applications match the selected filter" |
-| error   | API call fails                  | Error banner with retry                                             |
+| ID      | Trigger                                        | Description                                                                 |
+|---------|------------------------------------------------|-----------------------------------------------------------------------------|
+| loading | Screen entry / RetryLoad                       | Shimmer skeleton cards in place of application cards; filter row visible    |
+| content | Data load success                              | All application cards visible with real data; filter tabs operative         |
+| empty   | No applications match selected filter          | Empty state card: "No Applications Found" with `assignment` icon            |
+| error   | Network or OBP API failure                     | Error banner shown above filter row with retry option                       |
 
 ---
 
 ## State Model
 
 **ViewModel:** `AccountApplicationsViewModel`
+**Screen State Type:** `AccountApplicationsScreenState`
 
-| State Field           | Type                      | Default | Values                       |
-|-----------------------|---------------------------|---------|------------------------------|
-| applications          | List\<AccountApplication\>| emptyList | —                          |
-| activeFilter          | ApplicationFilter         | ALL     | ALL, PENDING, APPROVED, REJECTED |
-| filteredApplications  | List\<AccountApplication\>| emptyList | —                          |
-| isLoading             | Boolean                   | true    | —                            |
-| counts                | ApplicationCounts         | —       | all=8, pending=3, approved=3, rejected=2 |
+| Name                  | Type                        | Default        |
+|-----------------------|-----------------------------|----------------|
+| applications          | `List<AccountApplication>`  | `emptyList()`  |
+| activeFilter          | `ApplicationFilter`         | `ALL`          |
+| filteredApplications  | `List<AccountApplication>`  | `emptyList()`  |
+| isLoading             | `Boolean`                   | `true`         |
+| counts                | `ApplicationCounts`         | _(zero counts)_|
 
-**Events:** FilterChanged, ApplicationSelected, NewApplicationStarted
+**Events:** `FilterChanged`, `ApplicationSelected`, `NewApplicationStarted`
 
-**Actions:** filter, navigate, new_application
+**Actions:** `filter`, `navigate`, `new_application`
 
-**DI Dependencies:** AccountApplicationRepository
+**DI Dependencies:** `AccountApplicationRepository`
 
-**Errors:** LOAD_FAILED, NETWORK_UNAVAILABLE
+**Errors:**
+- `LOAD_FAILED`: "Could not load account applications. Please try again."
+- `NETWORK_UNAVAILABLE`: "No internet connection. Check your network and retry."
 
 ---
 
 ## Navigation
 
-| From                  | To                   | Trigger                       | Type     |
-|-----------------------|----------------------|-------------------------------|----------|
-| account-applications  | application-detail   | Tap any card / Review button  | navigate |
-| account-applications  | application-detail   | "View Reason" link on rejected| navigate |
-| account-applications  | customer-onboarding  | FAB "New Application"         | navigate |
+| From                 | To                  | Trigger                              | Type  |
+|----------------------|---------------------|--------------------------------------|-------|
+| account-applications | application-detail  | app_card_1 tap / app_card_1_review_btn tap | push  |
+| account-applications | application-detail  | app_card_2 tap                       | push  |
+| account-applications | application-detail  | app_card_3 tap / app_card_3_reason_link tap | push  |
+| account-applications | customer-onboarding | new_application_fab tap              | push  |
+| account-applications | fo-dashboard        | nav_fo_dashboard tab tap             | tab   |
+| account-applications | customer-search     | nav_customers tab tap                | tab   |
+| account-applications | customer-messages   | nav_messages tab tap                 | tab   |
+| account-applications | settings            | nav_more tab tap                     | tab   |
 
 ---
 
 ## API Endpoints
 
-| Endpoint                                               | Auth        | Purpose                                                   |
-|--------------------------------------------------------|-------------|-----------------------------------------------------------|
-| GET /obp/v5.1.0/banks/{bankId}/account-applications   | DirectLogin | Fetch all account applications for the bank               |
-
-**Response fields:** account_application_id, product_code, user, customer, date_of_application, date_last_modified, status
-
-**Errors:** 400 BAD_REQUEST · 401 UNAUTHORIZED
+| Endpoint                                                  | Auth        | Tag                  | Purpose                                            |
+|-----------------------------------------------------------|-------------|----------------------|----------------------------------------------------|
+| GET /obp/v5.1.0/banks/{bankId}/account-applications       | DirectLogin | Account-Applications | Fetch all account applications for the bank        |
 
 ---
 
 ## Design Tokens
 
-| Token           | Value   | Usage                                                   |
-|-----------------|---------|---------------------------------------------------------|
-| primary         | #1800B1 | Page title, "All" chip selected bg, product name text, Review button, FAB |
-| background      | #F5F5F5 | Screen background in content state                     |
-| surface         | #FFFFFF | Application cards                                       |
-| pending_bg      | #FFF8E1 | Pending status chip background                         |
-| pending_border  | #FFB300 | Pending status chip border                             |
-| pending_text    | #E65100 | Pending status chip text                               |
-| approved_bg     | #E8F5E9 | Approved status chip background                        |
-| approved_border | #4CAF50 | Approved status chip border                            |
-| approved_text   | #2E7D32 | Approved status chip text                              |
-| rejected_bg     | #FFEBEE | Rejected status chip background                        |
-| rejected_border | #FF5252 | Rejected status chip border                            |
-| rejected_text   | #C62828 | Rejected status chip text                              |
-| on_surface      | #1A1A1A | Application card names                                  |
-| muted           | #999999 | Submission date text                                    |
+| Token                           | Value     | Usage                                                           |
+|---------------------------------|-----------|-----------------------------------------------------------------|
+| colors.light.primary            | `#4C662B` | Page title, product text in cards, Review button, approved chip|
+| colors.light.on_primary         | `#FFFFFF` | Review button text, selected filter chip text                   |
+| colors.light.primary_container  | `#CDEDA3` | Status chip background for all states                           |
+| colors.light.on_surface         | `#1A1C16` | Applicant name text in cards                                    |
+| colors.light.on_surface_variant | `#44483D` | Date text, pending chip text (a11y-corrected)                   |
+| colors.light.error              | `#BA1A1A` | Rejected chip border + text, "View Reason" link                 |
+| colors.light.pending            | `#E8A317` | Pending chip border, pending filter selected background         |
+| colors.light.background         | `#F9FAEF` | Screen background, unselected filter chip background            |
+| colors.light.surface            | `#FFFFFF` | Application card background                                     |
+| typography.headline_large       | 32sp/Regular | Page title                                                  |
+| typography.title_medium         | 16sp/Medium  | Applicant name in cards                                     |
+| typography.body_medium          | 14sp/Regular | Product name in cards                                       |
+| typography.body_small           | 12sp/Regular | Submission date in cards                                    |
+| typography.label_medium         | 12sp/Medium  | Filter chip labels, Review button text, View Reason link    |
+| typography.label_small          | 11sp/Medium  | Status chip text                                            |
+| radius.md                       | 12dp      | Application card corners, status chip radius                    |
+| elevation.level2                | 3dp       | Application card elevation                                      |
+| spacing.md                      | 16dp      | Card horizontal margin                                          |
 
 ---
 
-*Generated by /idea export | 2026-05-25*
+_Generated by /idea export | 2026-05-29_

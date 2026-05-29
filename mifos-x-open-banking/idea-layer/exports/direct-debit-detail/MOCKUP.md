@@ -1,205 +1,165 @@
-# MOCKUP.md — direct-debit-detail
+# MOCKUP — Direct Debit Detail
 
-Design system: Material 3 · Typography: Outfit · Accent: #4C662B (Earth-green)
-Canvas: 390 × 844 px (iPhone 14 base)
-
----
-
-## State: loading
-
-```
-┌─────────────────────────────────────────┐
-│ ← [TopAppBar]  Direct Debit Detail      │  height: 64dp, surface color
-├─────────────────────────────────────────┤
-│                                         │
-│  ┌───────────────────────────────────┐  │
-│  │ ░░░░░░░░░░░░░░░░░░  ░░░░░░░░░░   │  │  skeleton: counterparty name line
-│  │ ░░░░░░░    ░░░░░░░░░░░░░░░░░░░   │  │  skeleton: status chip + amount
-│  └───────────────────────────────────┘  │  card: 16dp margin, 12dp radius
-│                                         │
-│  ░░░░░░░░░░░░░░░  ░░░░░░░░░░░░░░░░░░   │  skeleton: meta row 1
-│  ░░░░░░░░░░░░░    ░░░░░░░░░░░░░░░░░░   │  skeleton: meta row 2
-│  ░░░░░░░░░░░░░░░░ ░░░░░░░░░░░░░░░░░░   │  skeleton: meta row 3
-│  ░░░░░░░░░░░      ░░░░░░░░░░░░░░░░░░   │  skeleton: meta row 4
-│                                         │
-│  ── Recent Payments ──────────────────  │  section divider skeleton
-│                                         │
-│  ░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░   │  skeleton: payment row 1
-│  ░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░   │  skeleton: payment row 2
-│  ░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░   │  skeleton: payment row 3
-│                                         │
-└─────────────────────────────────────────┘
-Shimmer animation: left-to-right gradient sweep, 1200ms loop
-```
+**Archetype:** detail_screen
+**Shell:** Top app bar ("Direct Debit", back arrow, more_vert overflow). No bottom navigation — consumer detail screen.
+**Accent:** #4C662B (Earth-green). Typography: Outfit. Design system: M3.
 
 ---
 
-## State: content
+## Screen: content (Primary)
 
 ```
-┌─────────────────────────────────────────┐
-│ ←  Direct Debit Detail           [⋮]   │  TopAppBar, surface, Outfit Medium 18sp
-├─────────────────────────────────────────┤
-│                                         │
-│  ┌───────────────────────────────────┐  │
-│  │  Thames Water Utilities Ltd       │  │  titleLarge Outfit 22sp, onSurface
-│  │  ┌──────────┐          £ 48.50   │  │  status chip (left) + amount (right)
-│  │  │ ● Active │          GBP       │  │  chip: #4C662B fill, white text 12sp
-│  └───────────────────────────────────┘  │  card elevation 1dp, cornerRadius 12dp
-│                                         │  16dp horizontal margin
-│  ─────────────────────────────────────  │  divider
-│                                         │
-│  Frequency          Monthly            │  labelMedium / bodyMedium, 56dp row
-│  Start Date         15 Jan 2024        │  labelMedium / bodyMedium, 56dp row
-│  Next Payment       15 Jun 2026        │  labelMedium / bodyMedium, 56dp row
-│  Reference          WATER-ACC-TW-99102 │  labelMedium / bodyMedium, 56dp row
-│                                         │
-│  ─────────────────────────────────────  │  divider
-│                                         │
-│  Recent Payments                        │  titleSmall Outfit SemiBold, #4C662B
-│                                         │
-│  ┌─────────────────────────────────┐   │
-│  │  15 May 2026    £48.50   ✓      │   │  payment row: date + amount + status dot
-│  ├─────────────────────────────────┤   │  ✓ completed = #4C662B
-│  │  15 Apr 2026    £48.50   ✓      │   │  ✗ failed = #BA1A1A
-│  ├─────────────────────────────────┤   │  ○ pending = #757575
-│  │  15 Mar 2026    £48.50   ✓      │   │
-│  └─────────────────────────────────┘   │  list card, 12dp corner, 16dp margin
-│                                         │
-│  ┌───────────────────────────────────┐  │
-│  │      Cancel Direct Debit          │  │  OutlinedButton, border #BA1A1A
-│  └───────────────────────────────────┘  │  text #BA1A1A, Outfit Medium, 16dp margin
-│                                         │  visible only when status = active/pending
-└─────────────────────────────────────────┘
+┌─────────────────────────────────────┐
+│ ←  Direct Debit              ⋮      │  ← Top app bar #F9FAEF, more_vert
+├─────────────────────────────────────┤
+│                                     │  ← #F9FAEF background, pad 24dp
+│  ┌──────────────────────────────┐   │  ← Merchant hero #4C662B bg, radius-bottom 24dp
+│  │                              │   │    pad H24/T32/B36
+│  │    ┌───────┐                 │   │
+│  │    │ NFLX  │                 │   │    56×56dp logo #FFFFFF bg, radius 12
+│  │    └───────┘                 │   │
+│  │    Netflix Entertainment     │   │    headline_small #FFFFFF centered
+│  │      [  Active  ]            │   │    badge: #CDEDA3 bg #4C662B text, radius 20
+│  │                              │   │
+│  │          £15.99              │   │    display_small #FFFFFF bold centered
+│  │          Monthly             │   │    body_medium #CDEDA3 centered
+│  └──────────────────────────────┘   │
+│                                     │
+│  ┌──────────────────────────────┐   │  ← Mandate Details card #FFFFFF, radius 12
+│  │  Mandate Details             │   │    title_medium #4C662B
+│  │  ──────────────────────────  │
+│  │  Next Payment    15 Jun 2026 │   │    body_medium; label=#44483D value=#1A1C16 bold
+│  │  ──────────────────────────  │
+│  │  Account         Current     │   │    account name bold; number #44483D body_small
+│  │                  ****4521    │
+│  │  ──────────────────────────  │
+│  │  Mandate Ref  MDT-2024-00947 │   │    monospace
+│  │  ──────────────────────────  │
+│  │  Start Date      12 Jan 2024 │   │    body_medium bold
+│  └──────────────────────────────┘   │
+│                                     │
+│  ┌──────────────────────────────┐   │  ← Recent Payments card #FFFFFF, radius 12
+│  │  Recent Payments   View all  │   │    title_medium #4C662B + label_medium #386663 link
+│  │  ──────────────────────────  │
+│  │  15 May 2026              −£15.99│   body_medium #1A1C16 bold; right-aligned
+│  │  Collected                   │   │    body_small #4C662B
+│  │  ──────────────────────────  │
+│  │  15 Apr 2026              −£15.99│
+│  │  Collected                   │   │    #4C662B
+│  │  ──────────────────────────  │
+│  │  15 Mar 2026              −£15.99│   #BA1A1A (failed — error color)
+│  │  Failed                      │   │    body_small #BA1A1A
+│  └──────────────────────────────┘   │
+│                                     │
+│  [Cancel Mandate] [  Edit Mandate ] │  ← Cancel: outlined #BA1A1A, radius 12
+│                                     │    Edit: filled #386663, radius 12
+│                                     │
+└─────────────────────────────────────┘
 ```
 
-### Cancel Confirmation Dialog (overlay on content)
+**Layout notes:**
+- Screen root: #F9FAEF, pad 24dp column.
+- Merchant hero: #4C662B bg, radius only bottom-left/right 24dp, no top radius. Logo centered, name centered, badge centered, amount centered, frequency below amount.
+- Status badge: #CDEDA3 bg (primary_container), #4C662B text. Paused = #FFF3CD. Cancelled = #FFDAD6.
+- Cards: #FFFFFF bg, radius 12dp, pad 16dp, margin B16.
+- Detail rows: horizontal space-between, pad V8; dividers #E1E4D5 between rows, margin V4.
+- Payment history items: date column left (body_medium date + body_small status) + amount right (body_medium bold). Collected=green, Failed=red.
+- Action row: space-between, top pad 16dp, horizontal gap 16dp.
+- Cancel: outlined error #BA1A1A, half-width, radius 12. Edit: filled #386663, half-width, radius 12.
+
+---
+
+## Screen: loading
 
 ```
-┌─────────────────────────────────────────┐
-│  ████████████████████████████████████   │  scrim 54% black
-│  █                                  █   │
-│  █  ┌──────────────────────────┐   █   │
-│  █  │  Cancel Direct Debit?    │   █   │  AlertDialog
-│  █  │                          │   █   │  titleLarge Outfit 20sp
-│  █  │  This will permanently   │   █   │
-│  █  │  cancel your standing    │   █   │  bodyMedium 14sp onSurfaceVariant
-│  █  │  order with Thames       │   █   │
-│  █  │  Water Utilities Ltd.    │   █   │
-│  █  │                          │   █   │
-│  █  │  [Dismiss]  [Cancel DD]  │   █   │  text buttons: Dismiss (neutral)
-│  █  └──────────────────────────┘   █   │  Cancel DD: #BA1A1A destructive
-│  ████████████████████████████████████   │
-└─────────────────────────────────────────┘
+┌─────────────────────────────────────┐
+│ ←  Direct Debit              ⋮      │
+├─────────────────────────────────────┤
+│                                     │
+│  ████████████████████████████████   │  ← Hero skeleton (tall, radius-bottom 24)
+│  ████████████████████████████████   │
+│  ████████████████████████████████   │
+│                                     │
+│  ┌──────────────────────────────┐   │  ← Card skeleton
+│  │  ████████████████████████   │   │    shimmer on #F0F1E6 base
+│  │  ████████████  ████████████ │   │
+│  │  ████████████  ████████████ │   │
+│  │  ████████████  ████████████ │   │
+│  │  ████████████  ████████████ │   │
+│  └──────────────────────────────┘   │
+│                                     │
+│  ┌──────────────────────────────┐   │
+│  │  ████████████  ████████████ │   │
+│  │  ████████████  ████████████ │   │
+│  │  ████████████  ████████████ │   │
+│  └──────────────────────────────┘   │
+│                                     │
+└─────────────────────────────────────┘
+```
+
+**Layout notes:** Hero placeholder same height as content hero. Card skeletons match Mandate Details + Payment History proportions. No action buttons during loading.
+
+---
+
+## Screen: error
+
+```
+┌─────────────────────────────────────┐
+│ ←  Direct Debit              ⋮      │
+├─────────────────────────────────────┤
+│                                     │
+│                                     │
+│              ⚠                      │  ← error_outline icon, 48dp, #BA1A1A, centered
+│                                     │
+│  Couldn't load mandate details.     │  ← body_medium #44483D, centered
+│  Please try again.                  │
+│                                     │
+│       [      Try Again      ]       │  ← Filled #4C662B, radius 12, pad H32
+│                                     │
+│                                     │
+└─────────────────────────────────────┘
+```
+
+**Layout notes:** Icon + text + button vertically centered. Button width auto (content), centered horizontally.
+
+---
+
+## Screen: empty
+
+```
+┌─────────────────────────────────────┐
+│ ←  Direct Debit              ⋮      │
+├─────────────────────────────────────┤
+│                                     │
+│           📅                        │  ← event_busy icon 48dp, #44483D
+│                                     │
+│    Mandate details not available    │  ← title_medium #1A1C16, centered
+│                                     │
+│  This direct debit mandate could    │  ← body_medium #44483D centered
+│  not be found. It may have already  │
+│  been cancelled or expired.         │
+│                                     │
+│  [ Back to Direct Debits ]          │  ← Outlined #4C662B pill, centered
+│                                     │
+└─────────────────────────────────────┘
 ```
 
 ---
 
-## State: error
+## Design Checklist (Figma / Stitch)
 
-```
-┌─────────────────────────────────────────┐
-│ ←  Direct Debit Detail                  │  TopAppBar
-├─────────────────────────────────────────┤
-│                                         │
-│              [!] icon                   │  error_outline 64dp, #BA1A1A
-│                                         │
-│      Something went wrong               │  titleMedium Outfit, center
-│                                         │
-│  We couldn't load the mandate detail.   │  bodyMedium, center, onSurfaceVariant
-│  Please check your connection           │
-│  and try again.                         │
-│                                         │
-│       ┌──────────────────┐              │
-│       │      Retry       │              │  FilledButton #4C662B
-│       └──────────────────┘              │
-│                                         │
-└─────────────────────────────────────────┘
-404 variant: icon = search_off, text = "Mandate not found", no Retry button
-```
-
----
-
-## State: empty
-
-```
-┌─────────────────────────────────────────┐
-│ ←  Direct Debit Detail                  │  TopAppBar
-├─────────────────────────────────────────┤
-│                                         │
-│        [illustration]                   │  empty_inbox 96dp SVG, #4C662B tint
-│                                         │
-│      No Mandate Found                   │  titleMedium Outfit, center
-│                                         │
-│  This direct debit no longer exists     │  bodyMedium, center, onSurfaceVariant
-│  or may have been removed.              │
-│                                         │
-└─────────────────────────────────────────┘
-```
-
----
-
-## Design Tokens
-
-| Token | Value | Usage |
-|---|---|---|
-| accent | #4C662B | Buttons, status chip, section headers, active status |
-| error | #BA1A1A | Cancel button, failed payments, error state |
-| surface | #FFFBFF | Card backgrounds |
-| onSurfaceVariant | #44483E | Secondary text, meta labels |
-| outlineVariant | #C3C8BC | Dividers, card outlines |
-| typography-title | Outfit SemiBold | Screen title, card counterparty name |
-| typography-body | Outfit Regular | Meta values, payment rows |
-| typography-label | Outfit Medium | Meta field labels, chip text |
-| card-corner-radius | 12dp | All cards |
-| card-elevation | 1dp | MandateHeaderCard |
-| horizontal-margin | 16dp | All content |
-| row-height | 56dp | Meta section rows |
-
----
-
-## Figma Layer Naming
-
-```
-direct-debit-detail/
-  states/
-    loading/
-      TopAppBar
-      MandateHeaderCard_skeleton
-      MetaSection_skeleton
-      RecentPayments_skeleton
-    content/
-      TopAppBar
-      MandateHeaderCard
-        counterparty_name
-        status_chip
-        amount_label
-      MandateMetaSection
-        row_frequency
-        row_start_date
-        row_next_payment
-        row_reference
-      RecentPaymentsList
-        PaymentRow × n
-      CancelMandateButton
-    content_dialog/
-      [content layers]
-      CancelConfirmDialog
-        dialog_title
-        dialog_body
-        btn_dismiss
-        btn_confirm_cancel
-    error/
-      TopAppBar
-      ErrorState
-        error_icon
-        error_title
-        error_body
-        btn_retry
-    empty/
-      TopAppBar
-      EmptyState
-        empty_illustration
-        empty_title
-        empty_body
-```
+- [ ] Top app bar: back arrow left, "Direct Debit" title, more_vert overflow action
+- [ ] Merchant hero: #4C662B fill, radius ONLY bottom-left + bottom-right 24dp, pad H24/T32/B36
+- [ ] Merchant logo: 56×56dp, radius 12dp, #FFFFFF bg, centered; initials fallback on error
+- [ ] Status badge: #CDEDA3 bg / #4C662B text; Paused=#FFF3CD; Cancelled=#FFDAD6; radius 20dp
+- [ ] Mandate amount: Outfit display_small #FFFFFF bold, centered
+- [ ] Frequency text: Outfit body_medium #CDEDA3, centered (using primary_container on dark bg)
+- [ ] Mandate Details card: white, radius 12, pad 16; rows space-between, dividers #E1E4D5
+- [ ] Mandate ref value: monospace font family
+- [ ] Recent Payments: Collected status=#4C662B; Failed status+amount=#BA1A1A
+- [ ] "View all" link: label_medium #386663 (secondary color)
+- [ ] Cancel Mandate: outlined #BA1A1A border+text, radius 12
+- [ ] Edit Mandate: filled #386663 bg #FFFFFF text, radius 12
+- [ ] Loading: shimmer hero + card skeletons; shimmer base #F0F1E6
+- [ ] Error: error_outline 48dp #BA1A1A + centered text + filled green Try Again btn
+- [ ] All text Outfit typeface; 24dp screen padding

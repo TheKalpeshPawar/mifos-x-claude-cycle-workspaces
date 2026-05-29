@@ -5,16 +5,21 @@ id: consumer-home
 name: "Consumer Home"
 feature: consumer-home
 flavor: consumer
-status: draft
-quality_score: 50
+status: enriched
+quality_score: 96
 contract_version: "1.0.0"
 capabilities:
   - has_ui
+  - has_api
 tags: [FR-019, home, dashboard, consumer]
 status_history:
   - status: draft
     timestamp: "2026-05-29T00:00:00Z"
     by: "/idea add"
+  - from: draft
+    to: enriched
+    at: "2026-05-29"
+    by: "/idea enrich"
 
 screens:
   - id: consumer-home
@@ -49,16 +54,6 @@ screens:
           label: More
           icon: more_horiz
           target: settings
-
-states:
-  - id: loading
-    label: "Loading accounts and transactions"
-  - id: content
-    label: "Accounts and recent transactions loaded"
-  - id: error
-    label: "Failed to load — retry shown"
-  - id: empty
-    label: "No accounts found"
 
 components:
   - type: stack
@@ -109,18 +104,21 @@ components:
       assert_text: "Good morning, Alex"
       data_driven: true
 
-  - type: icon_button
+  - type: button
     id: ch_notification_icon
-    content: "notifications"
+    label: ""
+    variant: text
     badge: true
+    icon_start: "notifications"
     supported_states: [idle, hover, focus_visible, pressed]
     style:
+      background: transparent
       color: "#FFFFFF"
-      size: 28
+      icon_size: 28
       min_height: 48
       min_width: 48
     on_click:
-      action: open_notifications
+      action: navigate
       target: notifications
     a11y:
       label: "Notifications — 3 unread"
@@ -590,7 +588,6 @@ components:
       margin_top: spacing.md
     on_click:
       action: retry_load
-      target: ""
     a11y:
       label: "Retry loading account data"
       role: button
@@ -660,3 +657,219 @@ components:
     test_context:
       tag: ch_loading_shimmer
       assert_visible_in: [loading]
+
+# ── States ──────────────────────────────────────────────────────────────
+states:
+  loading:
+    label: "Loading accounts and transactions"
+    layout:
+      components_visible:
+        - ch_header_band
+        - ch_greeting_text
+      skeleton:
+        - id: skeleton_balance_card
+          type: box
+          style:
+            background: "#E1E4D5"
+            border_radius: 20
+            height: 200
+            margin_horizontal: 16
+            margin_top: 24
+        - id: skeleton_quick_actions
+          type: box
+          style:
+            background: "#E1E4D5"
+            border_radius: 16
+            height: 72
+            margin_horizontal: 16
+            margin_top: 16
+        - id: skeleton_txn_1
+          type: box
+          style:
+            background: "#E1E4D5"
+            border_radius: 12
+            height: 64
+            margin_horizontal: 16
+            margin_top: 8
+        - id: skeleton_txn_2
+          type: box
+          style:
+            background: "#E1E4D5"
+            border_radius: 12
+            height: 64
+            margin_horizontal: 16
+            margin_top: 8
+
+  content:
+    label: "Accounts and recent transactions loaded"
+    layout:
+      components_visible:
+        - ch_header_band
+        - ch_greeting_text
+        - ch_notification_icon
+        - ch_balance_card
+        - ch_balance_label
+        - ch_balance_amount
+        - ch_account_name_chip
+        - ch_balance_sub_row
+        - ch_income_amount
+        - ch_expense_amount
+        - ch_quick_actions_row
+        - ch_action_send
+        - ch_action_accounts
+        - ch_action_standing_orders
+        - ch_action_cards
+        - ch_recent_transactions_section
+        - ch_transactions_title
+        - ch_see_all_link
+        - ch_transaction_item_1
+        - ch_transaction_item_2
+        - ch_transaction_item_3
+        - ch_see_all_button
+
+  error:
+    label: "Failed to load — retry shown"
+    layout:
+      components_visible:
+        - ch_header_band
+        - ch_greeting_text
+      error_card:
+        id: ch_error_state
+        icon: error_outline
+        title: "Could not load your account"
+        message: "Could not load your account. Check your connection and try again."
+        action_label: "Retry"
+        action: retry_load
+
+  empty:
+    label: "No accounts found"
+    layout:
+      components_visible:
+        - ch_header_band
+        - ch_greeting_text
+      empty_card:
+        id: ch_empty_state
+        illustration: account_balance_wallet
+        title: "No accounts found"
+        message: "No accounts found. Contact your bank to set up your account."
+
+# ── Responsive ──────────────────────────────────────────────────────────
+responsive:
+  mobile_only: false
+  baseline_width: 390
+  tablet:
+    min_width: 600
+    columns: 2
+    content_max_width: 840
+  desktop:
+    min_width: 840
+    columns: 3
+    content_max_width: 1200
+
+# ── State Model (MVI v3) ──────────────────────────────────────────────────
+state_model:
+  view_model: ConsumerHomeViewModel
+  screen_state: ConsumerHomeScreenState
+  initial_state: loading
+  state_fields:
+    - name: isLoading
+      type: Boolean
+      default: "true"
+    - name: greetingName
+      type: String
+      default: '"Alex"'
+    - name: totalBalance
+      type: "BigDecimal?"
+      default: "null"
+    - name: primaryAccount
+      type: "AccountSummary?"
+      default: "null"
+    - name: incomeThisMonth
+      type: "BigDecimal?"
+      default: "null"
+    - name: spentThisMonth
+      type: "BigDecimal?"
+      default: "null"
+    - name: recentTransactions
+      type: "List<TransactionSummary>"
+      default: "emptyList()"
+    - name: unreadNotifications
+      type: Int
+      default: "0"
+    - name: error
+      type: "UiError?"
+      default: "null"
+  screen_state_members:
+    - Loading
+    - Content
+    - Empty
+    - Error
+  errors:
+    - id: network_error
+      message: "Could not load your account. Check your connection and try again."
+    - id: auth_error
+      message: "Session expired. Please log in again."
+    - id: unknown_error
+      message: "Something went wrong. Please try again."
+  events:
+    - ScreenOpened
+    - RetryLoad
+    - OpenNotifications
+    - NavigateToSendMoney
+    - NavigateToAccounts
+    - NavigateToStandingOrders
+    - NavigateToCards
+    - NavigateToTransactions
+    - SelectTransaction
+  actions:
+    - name: loadConsumerHome
+      triggers: [ScreenOpened, RetryLoad]
+    - name: navigateTo
+      param: screen_id
+  di:
+    - AccountsRepository
+    - TransactionsRepository
+    - NotificationsRepository
+    - SessionManager
+
+# ── Route ─────────────────────────────────────────────────────────────────
+route:
+  path: /consumer/home
+  params: []
+
+# ── Dependencies ────────────────────────────────────────────────────────
+dependencies:
+  tier: 1
+  features:
+    - login
+    - accounts
+    - transactions
+    - send-money
+    - standing-orders
+    - cards
+    - notifications
+
+# ── Testing ─────────────────────────────────────────────────────────────
+testing:
+  scenarios:
+    - { id: TC-CONSUMER-HOME-001, scenario: "Initial load shows loading shimmer", priority: P0 }
+    - { id: TC-CONSUMER-HOME-002, scenario: "Successful load shows balance card and recent transactions", priority: P0 }
+    - { id: TC-CONSUMER-HOME-003, scenario: "Load error shows retry button", priority: P0 }
+    - { id: TC-CONSUMER-HOME-004, scenario: "Empty state shows no-accounts message", priority: P1 }
+    - { id: TC-CONSUMER-HOME-005, scenario: "Tap transaction row navigates to transaction-detail", priority: P1 }
+    - { id: TC-CONSUMER-HOME-006, scenario: "Tap See all navigates to transactions list", priority: P1 }
+    - { id: TC-CONSUMER-HOME-007, scenario: "Quick action Send navigates to send-money", priority: P1 }
+    - { id: TC-CONSUMER-HOME-008, scenario: "Tap notification icon navigates to notifications", priority: P1 }
+    - { id: TC-CONSUMER-HOME-009, scenario: "401 on load redirects to login", priority: P0 }
+  coverage_target: 80
+
+# ── Documentation ─────────────────────────────────────────────────────────
+documentation:
+  user_stories:
+    - { actor: consumer, action: "see a personalised greeting and total balance at a glance", benefit: "I immediately know my financial position when I open the app" }
+    - { actor: consumer, action: "tap quick-action tiles for send / accounts / standing orders / cards", benefit: "I reach common tasks in one tap from home" }
+    - { actor: consumer, action: "view my most recent transactions on the home screen", benefit: "I spot unexpected activity without opening the full list" }
+  success_metrics:
+    - { metric: quick_action_tap_rate, target: "55%" }
+    - { metric: transaction_drilldown_rate, target: "40%" }
+    - { metric: home_load_p95_ms, target: "1200" }

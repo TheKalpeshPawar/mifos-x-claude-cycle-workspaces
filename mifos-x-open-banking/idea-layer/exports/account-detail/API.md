@@ -1,84 +1,93 @@
 # API Reference — Account Detail
-**Feature:** account-detail | **Base URL:** https://apisandbox.openbankproject.com
+
+| Field    | Value                                       |
+|----------|---------------------------------------------|
+| Feature  | account-detail                              |
+| Base URL | https://apisandbox.openbankproject.com      |
 
 ---
 
 ## GET /obp/v5.1.0/banks/{bankId}/accounts/{accountId}/owner/account
 
-Retrieves full account details for a specific account, including balance and routing information.
-
-**Auth:** DirectLogin (header: `DirectLogin token=<token>`)
+**Auth:** DirectLogin
 **Tag:** Accounts
+**Trigger:** `loadAccountDetail(accountId)` on screen open / `RetryLoad` event
 
 ### Path Parameters
 
-| Name | Type | Required | Example |
-|---|---|---|---|
-| bankId | String | Yes | gh.29.uk |
-| accountId | String | Yes | acc_checking_primary |
+| Name      | Type   | Value            |
+|-----------|--------|------------------|
+| bankId    | String | gh.29.uk         |
+| accountId | String | (from navigation)|
 
 ### Response Fields
 
-| Field | Type | Description |
-|---|---|---|
-| id | String | Account identifier |
-| label | String | Account display name (e.g. "Primary Checking") |
-| account_type | String | Account type classification |
-| balance.currency | String | ISO 4217 currency code (e.g. "GBP") |
-| balance.amount | String | Current balance decimal string |
-| account_routings[].scheme | String | Routing scheme: "IBAN" or "BIC" |
-| account_routings[].address | String | Routing value (e.g. "DE89 3704 0044 0532 0130 00" or "COBADEFFXXX") |
+| Field                           | Type                   | Description                                       |
+|---------------------------------|------------------------|---------------------------------------------------|
+| id                              | String                 | Account identifier                                |
+| label                           | String                 | Account display name e.g. "Primary Checking"       |
+| account_type                    | String                 | e.g. "CHECKING", "SAVINGS"                        |
+| balance.currency                | String                 | e.g. "GBP"                                        |
+| balance.amount                  | String                 | e.g. "4250.00"                                    |
+| account_routings[].scheme       | String                 | e.g. "IBAN", "BIC"                                |
+| account_routings[].address      | String                 | e.g. "DE89 3704 0044 0532 0130 00", "COBADEFFXXX" |
 
 ### Error Codes
 
-| HTTP Code | Message | Resolution |
-|---|---|---|
-| 401 | Unauthorized | Re-authenticate via POST /my/logins/direct |
-| 404 | Account not found | Verify accountId matches authenticated user's accounts |
+| Code | Message                                              |
+|------|------------------------------------------------------|
+| 401  | Unauthorized — DirectLogin token missing or expired  |
+| 404  | Account not found                                    |
+| 500  | OBP server error                                     |
 
 ---
 
 ## GET /obp/v5.1.0/my/banks/{bankId}/accounts/{accountId}/transactions
 
-Retrieves the 5 most recent transactions for an account, displayed in the Recent Transactions section.
-
-**Auth:** DirectLogin (header: `DirectLogin token=<token>`)
+**Auth:** DirectLogin
 **Tag:** Transactions
+**Trigger:** `loadAccountDetail(accountId)` on screen open / `RetryLoad` event (fetches 5 most recent)
 
-### Path Parameters
+### Path + Query Parameters
 
-| Name | Type | Required | Example |
-|---|---|---|---|
-| bankId | String | Yes | gh.29.uk |
-| accountId | String | Yes | acc_checking_primary |
-
-### Query Parameters
-
-| Name | Type | Required | Value |
-|---|---|---|---|
-| limit | Integer | No | 5 |
-| sort_direction | String | No | DESC |
+| Name           | Type   | In    | Value            | Description                      |
+|----------------|--------|-------|------------------|----------------------------------|
+| bankId         | String | path  | gh.29.uk         | Bank identifier                  |
+| accountId      | String | path  | (from navigation)| Account identifier               |
+| limit          | Int    | query | 5                | Return only the 5 most recent    |
+| sort_direction | String | query | DESC             | Newest first                     |
 
 ### Response Fields
 
-| Field | Type | Description |
-|---|---|---|
-| id | String | Transaction identifier |
-| details.type | String | Transaction type (e.g. SEPA_CREDIT_TRANSFERS) |
-| details.description | String | Transaction description / merchant name |
-| details.posted | String | ISO 8601 posted timestamp |
-| details.value.currency | String | Transaction currency |
-| details.value.amount | String | Signed amount (negative = debit) |
-| other_account.holder | Object | Counterparty holder information |
-| other_account.metadata | Object | Counterparty metadata (merchant logo URL etc.) |
+| Field                       | Type   | Description                              |
+|-----------------------------|--------|------------------------------------------|
+| id                          | String | Transaction identifier                   |
+| details.type                | String | Transaction type e.g. "DEBIT", "CREDIT"  |
+| details.description         | String | Merchant or reference description        |
+| details.posted              | String | ISO-8601 posted timestamp                |
+| details.value.currency      | String | e.g. "GBP"                              |
+| details.value.amount        | String | Signed amount e.g. "-42.50", "3200.00"   |
+| other_account.holder        | Object | Counterparty holder reference            |
+| other_account.metadata      | Object | Counterparty metadata (name, logo, etc.) |
+
+### Sample Transactions (demo data)
+
+| Merchant          | Amount    | Date        |
+|-------------------|-----------|-------------|
+| Tesco Supermarket | -£42.50   | 23 May 2026 |
+| Salary Payment    | +£3,200.00| 22 May 2026 |
+| EDF Energy        | -£94.20   | 20 May 2026 |
+| Amazon Prime      | -£8.99    | 18 May 2026 |
+| Costa Coffee      | -£3.75    | 17 May 2026 |
 
 ### Error Codes
 
-| HTTP Code | Message | Resolution |
-|---|---|---|
-| 401 | Unauthorized | Re-authenticate |
-| 404 | Account not found | Verify accountId |
+| Code | Message                                              |
+|------|------------------------------------------------------|
+| 401  | Unauthorized — DirectLogin token missing or expired  |
+| 404  | Account not found                                    |
+| 500  | OBP server error                                     |
 
 ---
 
-_Generated by /idea export | 2026-05-25_
+_Generated by /idea export | 2026-05-29_

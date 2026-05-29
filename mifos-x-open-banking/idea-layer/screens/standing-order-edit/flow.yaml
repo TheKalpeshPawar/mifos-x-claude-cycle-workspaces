@@ -8,10 +8,22 @@ navigates_to:
 navigated_from:
   - standing-order-detail
 flow_logic:
+  - decision: "Amount valid (> £0.00)?"
+    condition: "amount > BigDecimal.ZERO"
+    true_path: proceed_save
+    false_path: show_amount_validation_error
+    impl: "StandingOrderEditViewModel:validateForm()"
+  - decision: "Start date not in the past?"
+    condition: "startDate >= LocalDate.now()"
+    true_path: proceed_save
+    false_path: show_start_date_validation_error
+    impl: "StandingOrderEditViewModel:validateForm()"
   - trigger: save_standing_order
     on_success: navigate_back_to_standing_order_detail
     on_error: show_error_banner
+    impl: "StandingOrderEditViewModel:saveStandingOrder()"
   - trigger: navigate_back
     action: pop_back_stack
+    impl: "StandingOrderEditViewModel:cancelEdit()"
 journey_ids:
   - consumer-cards-financing

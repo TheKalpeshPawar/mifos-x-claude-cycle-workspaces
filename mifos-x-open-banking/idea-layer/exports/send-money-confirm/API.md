@@ -1,29 +1,26 @@
-# Confirm Payment — API Reference
+# API Reference — Confirm Payment
 
-| Field | Value |
-|---|---|
-| Feature | send-money-confirm |
-| Base URL | https://apisandbox.openbankproject.com |
-| Auth | DirectLogin (header: `DirectLogin token=<token>`) |
+| Field    | Value                                      |
+|----------|--------------------------------------------|
+| Feature  | send-money-confirm                         |
+| Base URL | https://apisandbox.openbankproject.com     |
 
 ---
 
-## Submit SEPA Payment
+## POST /obp/v5.1.0/banks/{bankId}/accounts/{accountId}/owner/transaction-request-types/SEPA/transaction-requests
 
-**POST** `/obp/v5.1.0/banks/{bankId}/accounts/{accountId}/owner/transaction-request-types/SEPA/transaction-requests`
+**Auth:** DirectLogin (header: `DirectLogin token=<token>`)
+**Tag:** TransactionRequests
+**Trigger:** `ConfirmClicked` event — fires when user taps "Confirm & Send" in review/content state
 
-This is the primary endpoint called on "Confirm & Send". The transaction-request-type in the path matches the payment type selected on the Send Money screen (SEPA, COUNTERPARTY, ACCOUNT, or SANDBOX_TAN).
+### Path Parameters
 
-**Auth:** DirectLogin
+| Name      | Type   | Description                                     |
+|-----------|--------|-------------------------------------------------|
+| bankId    | String | OBP bank identifier (e.g., `gh.29.uk`)          |
+| accountId | String | Source account ID from session / send-money state|
 
-**Path Parameters:**
-
-| Param | Type | Description |
-|---|---|---|
-| bankId | String | OBP bank identifier (e.g., "gb.barclays") |
-| accountId | String | Source account ID from session state |
-
-**Request Body:**
+### Request Body
 
 ```json
 {
@@ -39,69 +36,55 @@ This is the primary endpoint called on "Confirm & Send". The transaction-request
 }
 ```
 
-**Request Fields:**
+### Request Fields
 
-| Field | Type | Required | Description |
-|---|---|---|---|
-| value.currency | String | Yes | ISO 4217 currency code |
-| value.amount | String | Yes | Decimal amount string (e.g., "500.00") |
-| to.iban | String | Yes (SEPA) | Beneficiary IBAN |
-| description | String | Yes | Payment reference (max 35 chars) |
-| charge_policy | String | No | "SHARED", "SENDER" or "RECEIVER" |
+| Field          | Type   | Required | Description                                         |
+|----------------|--------|----------|-----------------------------------------------------|
+| value.currency | String | Yes      | ISO 4217 currency code from `currency` state field  |
+| value.amount   | String | Yes      | Decimal amount string, e.g., "500.00"               |
+| to.iban        | String | Yes      | Beneficiary IBAN from `iban` state field             |
+| description    | String | Yes      | Payment reference (max 35 chars) from `reference`   |
+| charge_policy  | String | No       | "SHARED", "SENDER", or "RECEIVER" — defaults SHARED |
 
-**Response Fields:**
+### Response Fields
 
-| Field | Type | Description |
-|---|---|---|
-| id | String | Transaction request ID |
-| type | String | "SEPA" |
-| status | String | INITIATED / COMPLETED / FAILED |
-| start_date | DateTime | Payment submission timestamp |
-| charge | Charge | Fee details object |
-| charge.summary | String | Fee description (e.g., "Free") |
-| charge.value.amount | String | Fee amount (e.g., "0.00") |
-| charge.value.currency | String | Fee currency |
-| challenge | Challenge | SCA challenge object if required |
-| transaction_ids | List\<String\> | Created transaction IDs on completion |
+| Field                  | Type          | Description                                      |
+|------------------------|---------------|--------------------------------------------------|
+| id                     | String        | Transaction request identifier                   |
+| type                   | String        | "SEPA"                                           |
+| status                 | String        | INITIATED / COMPLETED / FAILED                   |
+| start_date             | DateTime      | ISO-8601 submission timestamp                    |
+| charge                 | Object        | Fee breakdown object                             |
+| charge.summary         | String        | Human-readable fee description (e.g., "Free")   |
+| charge.value.amount    | String        | Fee amount (e.g., "0.00")                        |
+| charge.value.currency  | String        | Fee currency code                                |
+| challenge              | Challenge?    | SCA challenge object, null if not required       |
+| transaction_ids        | List\<String\>| Created transaction IDs on COMPLETED status      |
 
-**Success Response Example:**
+### Error Codes
 
-```json
-{
-  "id": "4050046c-63b3-4868-8a22-14b0be5fe3e5",
-  "type": "SEPA",
-  "status": "COMPLETED",
-  "start_date": "2026-05-25T10:30:00Z",
-  "end_date": "2026-05-25T10:30:01Z",
-  "charge": {
-    "summary": "Free",
-    "value": { "currency": "GBP", "amount": "0.00" }
-  },
-  "challenge": null,
-  "transaction_ids": ["d0f23d4a-eab1-4922-bf23-00a33f0c7b08"]
-}
-```
+| Code | OBP Message              | UI Error Displayed                                           |
+|------|--------------------------|--------------------------------------------------------------|
+| 400  | INVALID_JSON_FORMAT      | Inline field validation banner                               |
+| 403  | INSUFFICIENT_AUTHORISATION | "Payment could not be processed. Please try again."        |
+| 404  | BANK_ACCOUNT_NOT_FOUND   | "Payment could not be processed. Please try again."         |
+| 422  | INSUFFICIENT_FUNDS       | "Insufficient funds in your account."                       |
+| 423  | DAILY_LIMIT_EXCEEDED     | "This payment exceeds your daily transfer limit."           |
 
-**Error Codes:**
+### Success Flow
 
-| Code | OBP Message | UI Error |
-|---|---|---|
-| 400 | INVALID_JSON_FORMAT | Show inline validation |
-| 403 | INSUFFICIENT_AUTHORISATION | "Payment could not be processed. Please try again." |
-| 404 | BANK_ACCOUNT_NOT_FOUND | "Payment could not be processed. Please try again." |
-| 422 | INSUFFICIENT_FUNDS | "Insufficient funds in your account." |
-| 423 | DAILY_LIMIT_EXCEEDED | "This payment exceeds your daily transfer limit." |
+On HTTP 200/201 the ViewModel emits `PaymentSucceeded`. The UI:
+1. Dismisses the submit spinner
+2. Shows snackbar: "Payment of £500.00 sent to John Smith"
+3. Navigates to `home` (replaces back stack)
+
+### Error Flow
+
+On non-2xx or network failure the ViewModel emits `PaymentFailed`. The UI:
+1. Re-enables the "Confirm & Send" button
+2. Shows inline error banner with the mapped error message
+3. Allows the user to retry or tap "Edit Payment" to correct details
 
 ---
 
-## State: Snackbar on Success
-
-On HTTP 200/201, the ViewModel emits `PaymentSucceeded`. The UI shows:
-
-> "Payment of £500.00 sent to John Smith"
-
-Then navigates to `home`.
-
----
-
-*Generated by /idea export | 2026-05-25*
+_Generated by /idea export | 2026-05-29_

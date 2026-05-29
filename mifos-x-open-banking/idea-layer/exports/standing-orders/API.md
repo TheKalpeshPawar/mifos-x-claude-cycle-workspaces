@@ -1,136 +1,76 @@
-# Standing Orders — API Reference
+# API Reference — Standing Orders
 
-| Field | Value |
-|---|---|
-| Feature | standing-orders |
+| Field    | Value                                  |
+|----------|----------------------------------------|
+| Feature  | standing-orders                        |
 | Base URL | https://apisandbox.openbankproject.com |
-| Auth | DirectLogin (header: `DirectLogin token=<token>`) |
 
 ---
 
-## Create Standing Order
-
-**POST** `/obp/v4.0.0/banks/{bankId}/accounts/{accountId}/owner/standing-order`
-
-Creates a new recurring payment instruction. OBP v4.0.0 does not provide a dedicated GET list endpoint for standing orders — the list view is populated by filtering the transaction history for recurring patterns, or via a bank-specific extension.
+## POST /obp/v4.0.0/banks/{bankId}/accounts/{accountId}/owner/standing-order
 
 **Auth:** DirectLogin
+**Tag:** Standing-Orders
+**Trigger:** `create_standing_order` action — user taps Extended FAB and completes creation form
 
-**Path Parameters:**
+> **Note:** OBP v4.0.0 provides POST-only for standing orders. There is no dedicated GET list endpoint. The standing orders displayed in the UI are derived from transaction history filtered by `details.type: "StandingOrder"` or from a bank-specific extension. The creation endpoint response confirms the new order.
 
-| Param | Type | Description |
-|---|---|---|
-| bankId | String | OBP bank identifier (e.g., "gb.mifos") |
-| accountId | String | Source account ID |
+### Path Parameters
 
-**Request Body:**
+| Name      | Type   | Value          | Description            |
+|-----------|--------|----------------|------------------------|
+| bankId    | String | gh.29.uk       | OBP bank identifier    |
+| accountId | String | (from session) | Source account ID      |
 
-```json
-{
-  "to": {
-    "counterparty_id": "9fg8a7e4-6d02-40e3-a129-0b2bf89de8uh"
-  },
-  "value": {
-    "currency": "GBP",
-    "amount": "1200.00"
-  },
-  "when": {
-    "frequency": "MONTHLY",
-    "detail": "1",
-    "start_date": "2026-06-01",
-    "final_date": "2027-05-31"
-  },
-  "standing_order_id": ""
-}
-```
+### Request Body Fields
 
-**Request Fields:**
+| Field                | Type    | Required | Description                                     |
+|----------------------|---------|----------|-------------------------------------------------|
+| to.counterparty_id   | String  | Yes      | OBP counterparty ID for the beneficiary         |
+| value.currency       | String  | Yes      | ISO 4217 code (e.g. "GBP")                     |
+| value.amount         | String  | Yes      | Per-period amount as decimal string             |
+| when.frequency       | String  | Yes      | "MONTHLY", "WEEKLY", or "ANNUALLY"              |
+| when.detail          | String  | No       | Day within period (e.g. "1" = 1st of month)    |
+| when.start_date      | String  | Yes      | ISO 8601 start date (YYYY-MM-DD)               |
+| when.final_date      | String  | No       | ISO 8601 end date; omit for indefinite order    |
 
-| Field | Type | Required | Description |
-|---|---|---|---|
-| to.counterparty_id | String | Yes | OBP counterparty ID for the beneficiary |
-| value.currency | String | Yes | ISO 4217 currency code |
-| value.amount | String | Yes | Amount per period (decimal string) |
-| when.frequency | String | Yes | "MONTHLY", "WEEKLY", "ANNUALLY" |
-| when.detail | String | No | Day of period (e.g., "1" for 1st of month) |
-| when.start_date | String | Yes | ISO 8601 start date (YYYY-MM-DD) |
-| when.final_date | String | No | ISO 8601 end date; omit for indefinite |
+### Response Fields
 
-**Response Fields:**
+| Field                 | Type                    | Description                              |
+|-----------------------|-------------------------|------------------------------------------|
+| standing_orders       | List\<StandingOrder\>   | Array containing the newly created order |
+| id                    | String                  | Unique standing order identifier         |
+| bank_id               | String                  | Bank identifier                          |
+| account_id            | String                  | Source account identifier                |
+| counterparty          | Counterparty            | Beneficiary reference object             |
+| counterparty.name     | String                  | Beneficiary display name                 |
+| amount_value          | String                  | Per-period amount (decimal string)       |
+| amount_currency       | String                  | Currency code                            |
+| when                  | StandingOrderSchedule   | Schedule details object                  |
+| when.frequency        | String                  | Repeat frequency                         |
+| when.start_date       | String                  | First payment date                       |
+| when.final_date       | String                  | Last payment date (if finite)            |
+| active                | Boolean                 | true if currently active                 |
 
-| Field | Type | Description |
-|---|---|---|
-| standing_orders | List\<StandingOrder\> | Created standing order array |
-| id | String | Unique standing order identifier |
-| bank_id | String | Bank identifier |
-| account_id | String | Source account identifier |
-| counterparty | Counterparty | Beneficiary details |
-| counterparty.name | String | Beneficiary display name |
-| amount_value | String | Per-period amount |
-| amount_currency | String | Currency code |
-| when | StandingOrderSchedule | Schedule details |
-| when.frequency | String | Repeat frequency |
-| when.start_date | String | First payment date |
-| when.final_date | String | Last payment date (if set) |
-| active | Boolean | true if currently active |
+### Error Codes
 
-**Sample Response:**
-
-```json
-{
-  "standing_orders": [
-    {
-      "id": "so-rent-uuid-001",
-      "bank_id": "gb.mifos",
-      "account_id": "acc-primary-0130",
-      "counterparty": {
-        "name": "Landlord Holdings Ltd"
-      },
-      "amount_value": "1200.00",
-      "amount_currency": "GBP",
-      "when": {
-        "frequency": "MONTHLY",
-        "start_date": "2026-06-01",
-        "final_date": "2027-05-31"
-      },
-      "active": true
-    }
-  ]
-}
-```
-
-**Error Codes:**
-
-| Code | Message | UI Behaviour |
-|---|---|---|
-| 400 | INVALID_BANK_ID | Show CREATE_FAILED error |
-| 401 | USER_NOT_LOGGED_IN | Redirect to login |
-| 403 | INSUFFICIENT_AUTHORISATION | Show CREATE_FAILED error |
-| 404 | BANK_ACCOUNT_NOT_FOUND | Show CREATE_FAILED error |
+| Code | Message                    | UI Behaviour                   |
+|------|----------------------------|--------------------------------|
+| 400  | INVALID_BANK_ID            | Show CREATE_FAILED inline error|
+| 401  | USER_NOT_LOGGED_IN         | Redirect to login screen       |
+| 403  | INSUFFICIENT_AUTHORISATION | Show CREATE_FAILED inline error|
+| 404  | BANK_ACCOUNT_NOT_FOUND     | Show CREATE_FAILED inline error|
 
 ---
 
-## List Standing Orders (Implementation Note)
+## Standing Orders Shown in UI (Demo Data)
 
-The OBP v4.0.0 API does not expose a `GET /standing-orders` list endpoint. The standing orders shown on this screen are either:
-
-1. Retrieved via a bank-specific extension endpoint (if available from the institution)
-2. Derived from transaction history filtered by `transaction_type: "StandingOrder"` recurring entries using:
-
-**GET** `/obp/v4.0.0/banks/{bankId}/accounts/{accountId}/owner/transactions`
-
-Filter server-side or client-side by `details.type: "StandingOrder"` grouping.
+| Order              | Beneficiary            | Amount     | Freq    | Next Date    | Status |
+|--------------------|------------------------|------------|---------|--------------|--------|
+| Rent Payment       | Landlord Holdings Ltd  | £1,200.00  | Monthly | 1 Jun 2026   | Active |
+| Netflix Subscription | Netflix              | £15.99     | Monthly | 7 Jun 2026   | Active |
+| Gym Membership     | PureGym Ltd            | £45.00     | Monthly | 15 Jun 2026  | Paused |
 
 ---
 
-## Standing Order Data Shown in UI
-
-| Order | Beneficiary | Amount | Frequency | Next Date | Status |
-|---|---|---|---|---|---|
-| Rent Payment | Landlord Holdings Ltd | £1,200.00 | Monthly | 1 Jun 2026 | Active |
-| Netflix Subscription | (Netflix) | £15.99 | Monthly | 7 Jun 2026 | Active |
-| Gym Membership | (Gym) | £45.00 | Monthly | 15 Jun 2026 | Paused |
-
----
-
-*Generated by /idea export | 2026-05-25*
+_Generated by /idea export | 2026-05-29_

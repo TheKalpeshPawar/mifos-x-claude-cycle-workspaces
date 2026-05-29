@@ -4,15 +4,15 @@
 |---------------|-------------------|
 | Feature       | settings          |
 | Flavor        | shared            |
-| Status        | enriched          |
-| Quality Score | 78                |
+| Status        | approved          |
+| Quality Score | 93                |
 | ViewModel     | SettingsViewModel |
 
 ---
 
 ## Overview
 
-The Settings screen exposes user-configurable preferences across four grouped sections: Appearance (dark mode + language), Notifications (push notifications + transaction alerts), Security (biometric login), and About (app version + About link). All preferences are persisted to DataStore and hydrated on screen entry. The Settings screen has no direct OBP API calls — it reads and writes local preferences only, delegating to platform managers (BiometricManager, NotificationManager, LocaleManager).
+The Settings screen provides user-configurable preferences grouped into four card sections: Appearance (dark mode toggle + language selector), Notifications (push notifications master switch + transaction alerts sub-switch), Security (biometric login toggle + Data & Consent link), and About (About link + app version display). All preferences are persisted to DataStore via `SettingsRepository` and hydrated on screen entry. The screen makes no OBP API calls. It is reachable via the "More" tab in the consumer bottom navigation and the equivalent tab in the field officer shell. On entry the screen shows a skeleton shimmer while DataStore reads complete.
 
 ---
 
@@ -22,45 +22,78 @@ The Settings screen exposes user-configurable preferences across four grouped se
 |----------|----------|-----------|--------|----------|
 | settings | Settings | /settings | Column | Vertical |
 
+**Shell:** Consumer — bottom navigation bar (More tab active). Field Officer — bottom navigation bar (More tab active). No top app bar on this screen (destination-level screen).
+
+| Nav Item | ID        | Icon          | Target   |
+|----------|-----------|---------------|----------|
+| Home     | nav_home  | home          | home     |
+| Accounts | nav_accts | account_balance| accounts|
+| Pay      | nav_pay   | send          | send-money|
+| Cards    | nav_cards | credit_card   | cards    |
+| More     | nav_more  | more_horiz    | settings |
+
 ---
 
 ## Components
 
-| ID                              | Type   | Description                                                                            |
-|---------------------------------|--------|----------------------------------------------------------------------------------------|
-| settings_root                   | stack  | Full-screen column, background #F5F5F5, padding spacing.lg                            |
-| settings_appearance_group       | card   | White card, border-radius 12 dp; contains Appearance section header + dark mode + language rows |
-| settings_appearance_header      | text   | "Appearance", title_medium, color #1800B1                                             |
-| settings_dark_mode_row          | stack  | Row: label group (label + description) + dark mode switch                             |
-| settings_dark_mode_label        | text   | "Dark Mode", body_large, color #212121                                                |
-| settings_dark_mode_description  | text   | "Switch to a darker color scheme", body_small, color #757575                          |
-| settings_dark_mode_toggle       | input  | Switch variant; active color #1800B1, inactive #BDBDBD; prefill=isDarkModeEnabled     |
-| settings_language_row           | stack  | Row: label group + language select dropdown                                            |
-| settings_language_label         | text   | "Language", body_large, color #212121                                                 |
-| settings_language_description   | text   | "Choose your preferred display language", body_small, color #757575                   |
-| settings_language_select        | input  | Select/combobox with options: English, Spanish, French, Hindi, Arabic                  |
-| settings_notifications_group    | card   | White card; contains Notifications header + push notifications + transaction alerts    |
-| settings_notifications_header   | text   | "Notifications", title_medium, color #1800B1                                          |
-| settings_push_notifications_toggle| input| Switch; active #1800B1; prefill=isPushNotificationsEnabled; master toggle              |
-| settings_transaction_alerts_toggle| input| Switch; active #008B8B; disabled when push notifications off; prefill=isTransactionAlertsEnabled |
-| settings_security_group         | card   | White card; contains Security header + biometric row                                   |
-| settings_security_header        | text   | "Security", title_medium, color #1800B1                                               |
-| settings_biometric_toggle       | input  | Switch; active #1800B1; disabled when device has no biometric HW; prefill=isBiometricLoginEnabled |
-| settings_about_group            | card   | White card; contains About header + About link row + divider + app version row        |
-| settings_about_header           | text   | "About", title_medium, color #1800B1                                                  |
-| settings_about_link             | link   | "About Mifos X Open Banking", body_large, color #212121; navigates to about screen    |
-| settings_about_chevron          | icon   | chevron_right, 20 dp, color #BDBDBD; trailing affordance on About row                 |
-| settings_app_version_label      | text   | "App Version", body_large, color #212121                                              |
-| settings_app_version_value      | text   | "v1.0.0", body_small, color #757575; data from BuildConfig.VERSION_NAME              |
+| ID                                   | Type  | Description                                                                                              |
+|--------------------------------------|-------|----------------------------------------------------------------------------------------------------------|
+| settings_root                        | stack | Full-screen column, background #F9FAEF, padding spacing.lg                                               |
+| **Appearance Group**                 |       |                                                                                                          |
+| settings_appearance_group            | card  | White card, radius 12dp, pad spacing.md, margin_bottom spacing.md; contains header + dark mode + language|
+| settings_appearance_header           | text  | "Appearance" — Outfit/title_medium, color #4C662B; role=heading                                         |
+| settings_dark_mode_row               | stack | Row: label group (label + description) + toggle switch                                                   |
+| settings_dark_mode_label             | text  | "Dark Mode" — Outfit/body_large, color #1A1C16                                                          |
+| settings_dark_mode_description       | text  | "Switch to a darker color scheme" — Outfit/body_small, color #44483D                                    |
+| settings_dark_mode_toggle            | input | Switch; active #4C662B, inactive #C5C8BA; prefill=isDarkModeEnabled                                     |
+| settings_divider_1                   | divider | #E1E4D5, separates dark mode row from language row                                                     |
+| settings_language_row                | stack | Row: label group + language combobox                                                                     |
+| settings_language_label              | text  | "Language" — Outfit/body_large, color #1A1C16                                                           |
+| settings_language_description        | text  | "Choose your preferred display language" — Outfit/body_small, color #44483D                             |
+| settings_language_select             | input | Select/combobox; options: English/Spanish/French/Hindi/Arabic; prefill=selectedLanguage                  |
+| **Notifications Group**              |       |                                                                                                          |
+| settings_notifications_group         | card  | White card, radius 12dp; contains header + push notifications + transaction alerts                       |
+| settings_notifications_header        | text  | "Notifications" — Outfit/title_medium, color #4C662B; role=heading                                     |
+| settings_push_notifications_row      | stack | Row: label group + push switch                                                                           |
+| settings_push_notifications_label    | text  | "Push Notifications" — Outfit/body_large, color #1A1C16                                                 |
+| settings_push_notifications_description| text| "Receive alerts and updates from Mifos X" — Outfit/body_small, color #44483D                           |
+| settings_push_notifications_toggle  | input | Switch; active #4C662B; prefill=isPushNotificationsEnabled; master toggle                               |
+| settings_divider_2                   | divider | #E1E4D5                                                                                               |
+| settings_transaction_alerts_row      | stack | Row: label group + alerts switch                                                                         |
+| settings_transaction_alerts_label    | text  | "Transaction Alerts" — Outfit/body_large, color #1A1C16                                                 |
+| settings_transaction_alerts_description| text| "Notify me for every debit and credit activity" — Outfit/body_small, color #44483D                    |
+| settings_transaction_alerts_toggle  | input | Switch; active #386663; disabled when push notifications off; prefill=isTransactionAlertsEnabled        |
+| **Security Group**                   |       |                                                                                                          |
+| settings_security_group              | card  | White card, radius 12dp; contains header + biometric + data & consent                                   |
+| settings_security_header             | text  | "Security" — Outfit/title_medium, color #4C662B; role=heading                                          |
+| settings_biometric_row               | stack | Row: label group + biometric switch                                                                      |
+| settings_biometric_label             | text  | "Biometric Login" — Outfit/body_large, color #1A1C16                                                   |
+| settings_biometric_description       | text  | "Use fingerprint or face ID to sign in faster" — Outfit/body_small, color #44483D                      |
+| settings_biometric_toggle            | input | Switch; active #4C662B; disabled when !isBiometricAvailableOnDevice; prefill=isBiometricLoginEnabled    |
+| settings_divider_security            | divider | #E1E4D5                                                                                              |
+| settings_consent_manager_row         | stack | Row: label group (Data & Consent + description) + chevron_right icon                                    |
+| settings_consent_manager_label       | text  | "Data & Consent" — Outfit/body_large, color #1A1C16                                                   |
+| settings_consent_manager_description | text  | "Manage your data sharing consents" — Outfit/body_small, color #44483D                                 |
+| settings_consent_manager_chevron     | icon  | chevron_right, 20dp, color #C5C8BA; on tap navigates to consent-manager                                 |
+| **About Group**                      |       |                                                                                                          |
+| settings_about_group                 | card  | White card, radius 12dp; contains header + about link + divider + version                               |
+| settings_about_header                | text  | "About" — Outfit/title_medium, color #4C662B; role=heading                                              |
+| settings_about_link_row              | stack | Row: About link + chevron icon                                                                           |
+| settings_about_link                  | link  | "About Mifos X Open Banking" — Outfit/body_large, color #1A1C16; navigates to about                    |
+| settings_about_chevron               | icon  | chevron_right, 20dp, color #C5C8BA; trailing affordance (non-interactive)                               |
+| settings_divider_3                   | divider | #E1E4D5                                                                                               |
+| settings_app_version_row             | stack | Row: "App Version" label + "v1.0.0" value                                                               |
+| settings_app_version_label           | text  | "App Version" — Outfit/body_large, color #1A1C16                                                       |
+| settings_app_version_value           | text  | "v1.0.0" — Outfit/body_small, color #44483D; data from BuildConfig.VERSION_NAME                         |
 
 ---
 
 ## States
 
-| ID      | Trigger                    | Description                                                               |
-|---------|----------------------------|---------------------------------------------------------------------------|
-| loading | Screen entry               | Skeleton shimmer shown while preferences load from DataStore              |
-| content | DataStore load complete    | All preference cards visible with current values pre-filled               |
+| ID      | Trigger                       | Description                                                                    |
+|---------|-------------------------------|--------------------------------------------------------------------------------|
+| loading | Screen entry                  | Skeleton shimmer on all four card groups while DataStore preferences load      |
+| content | DataStore load complete       | All four card sections visible with current preference values pre-filled       |
 
 ---
 
@@ -69,16 +102,16 @@ The Settings screen exposes user-configurable preferences across four grouped se
 **ViewModel:** `SettingsViewModel`
 **Screen State Type:** `SettingsUiState`
 
-| Field                       | Type    | Default  |
-|-----------------------------|---------|----------|
-| isDarkModeEnabled           | Boolean | false    |
-| selectedLanguage            | String  | "en"     |
-| isPushNotificationsEnabled  | Boolean | true     |
-| isTransactionAlertsEnabled  | Boolean | true     |
-| isBiometricLoginEnabled     | Boolean | false    |
-| isBiometricAvailableOnDevice| Boolean | false    |
-| appVersion                  | String  | "v1.0.0" |
-| isLoading                   | Boolean | true     |
+| Field                        | Type    | Default   |
+|------------------------------|---------|-----------|
+| isDarkModeEnabled            | Boolean | false     |
+| selectedLanguage             | String  | "en"      |
+| isPushNotificationsEnabled   | Boolean | true      |
+| isTransactionAlertsEnabled   | Boolean | true      |
+| isBiometricLoginEnabled      | Boolean | false     |
+| isBiometricAvailableOnDevice | Boolean | false     |
+| appVersion                   | String  | "v1.0.0"  |
+| isLoading                    | Boolean | true      |
 
 **Events:** `LoadSettings`, `OnDarkModeToggled`, `OnLanguageSelected`, `OnPushNotificationsToggled`, `OnTransactionAlertsToggled`, `OnBiometricToggled`, `OnAboutClicked`
 
@@ -92,38 +125,43 @@ The Settings screen exposes user-configurable preferences across four grouped se
 
 ## Navigation
 
-| ID           | From     | To    | Trigger               |
-|--------------|----------|-------|-----------------------|
-| nav_to_about | settings | about | About link row tapped |
+| ID                  | From     | To              | Trigger                               |
+|---------------------|----------|-----------------|---------------------------------------|
+| nav_to_about        | settings | about           | settings_about_link or chevron tapped |
+| nav_to_consent_manager | settings | consent-manager | settings_consent_manager_chevron tapped |
 
 ---
 
 ## API Endpoints
 
-No direct API calls — all data is read/written from/to local DataStore preferences via `SettingsRepository`. Network calls are not made from this screen.
+_No backend API dependencies — static/local screen._
+
+All data is read/written via local `SettingsRepository` (Jetpack DataStore). No HTTP requests are issued from this screen.
 
 ---
 
 ## Design Tokens
 
-| Token                       | Value     | Usage                                                    |
-|-----------------------------|-----------|----------------------------------------------------------|
-| color.light.primary         | #1800B1   | Section headers, active switch color (dark mode, push, biometric) |
-| color.light.background      | #F5F5F5   | Root background                                          |
-| color.surface.white         | #FFFFFF   | All four preference group card backgrounds               |
-| color.accent.teal           | #008B8B   | Transaction alerts switch active color                   |
-| color.neutral.dark          | #212121   | All preference row label texts                           |
-| color.neutral.medium        | #757575   | All preference row description texts, app version value  |
-| color.neutral.border        | #BDBDBD   | Switch inactive color, language select border, chevron icon |
-| typography.title_medium     | Inter/title_medium  | All four section headers                       |
-| typography.body_large       | Manrope/body_large  | All preference row labels                      |
-| typography.body_small       | Manrope/body_small  | All preference row descriptions, app version   |
-| typography.body_medium      | Manrope/body_medium | Language select dropdown text                  |
-| spacing.lg                  | 24 dp     | Root padding, appearance header padding-top              |
-| spacing.md                  | 16 dp     | Card padding                                             |
-| spacing.sm                  | 8 dp      | Row padding-top/bottom, section header padding-bottom    |
-| spacing.xs                  | 4 dp      | Divider margins                                          |
+| Token                           | Value     | Usage                                                                    |
+|---------------------------------|-----------|--------------------------------------------------------------------------|
+| colors.light.primary            | #4C662B   | All four section header texts; dark mode, push, biometric switch active  |
+| colors.light.secondary          | #386663   | Transaction alerts switch active color                                   |
+| colors.light.background         | #F9FAEF   | settings_root background                                                 |
+| colors.light.surface            | #FFFFFF   | All four card group backgrounds                                           |
+| colors.light.on_surface         | #1A1C16   | All preference row primary labels and link text                          |
+| colors.light.on_surface_variant | #44483D   | All preference row description texts; app version value                  |
+| colors.light.surface_variant    | #E1E4D5   | Divider colors between rows                                              |
+| colors.light.outline_variant    | #C5C8BA   | Switch inactive color; chevron icon color; language select border        |
+| typography.title_medium         | 16sp/500  | All four section headers                                                 |
+| typography.body_large           | 16sp/400  | All preference row primary labels                                        |
+| typography.body_small           | 12sp/400  | All preference row descriptions; app version value                       |
+| typography.body_medium          | 14sp/400  | Language select dropdown text                                            |
+| radius.md                       | 12dp      | All four card group corner radius                                        |
+| spacing.lg                      | 24dp      | Root column padding; appearance header padding-top                       |
+| spacing.md                      | 16dp      | Card internal padding                                                    |
+| spacing.sm                      | 8dp       | Row padding-top/bottom; section header padding-bottom                    |
+| spacing.xs                      | 4dp       | Divider vertical margins                                                 |
 
 ---
 
-_Generated by /idea export | 2026-05-25_
+_Generated by /idea export | 2026-05-29_

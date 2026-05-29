@@ -1,206 +1,189 @@
-# Feature Specification — Spending Insights (PFM Dashboard)
+# SPEC — Spending Insights
 
-| Field | Value |
-|---|---|
-| Feature | pfm-dashboard |
-| Name | Spending Insights |
-| Flavor | consumer |
-| Status | designed |
-| Quality Score | 88 |
-| Contract Version | 1.1.0 |
+| Field         | Value                    |
+|---------------|--------------------------|
+| Feature       | pfm-dashboard            |
+| Flavor        | consumer                 |
+| Status        | approved                 |
+| Quality Score | 100                      |
+| ViewModel     | PfmDashboardViewModel    |
 
 ---
 
 ## Overview
 
-The Spending Insights dashboard gives consumers a full personal financial management (PFM) view for a chosen reporting period. A scrollable period chip selector (This Month / Last Month / Last 3 Months / Custom) drives the active data window. A summary card shows Total Spent (£1,029.80), Total Received (£3,200.00), and Net (+£2,170.20) for the period side-by-side. An overall budget progress card tracks £1,029.80 of a £1,500.00 monthly budget at 68% consumed (amber indicator). A pie chart with a category legend breaks spending into five categories: Bills £450.00, Food & Dining £320.50, Transport £125.00, Shopping £89.30, Entertainment £45.00. Per-category budget progress cards show individual category budgets with colour-coded fill bars (red = critical ≥90%, amber = approaching ≥60%, green = healthy). A Top Merchants section lists the four highest-spend merchants (Tesco £142.30, Transport for London £78.50, Netflix £17.99, Spotify £11.99) with transaction counts. Budget entries are persisted via OBP's personal data fields API; transaction totals are derived by locally aggregating the OBP transactions feed filtered by the selected date range.
+Spending Insights is the personal finance management dashboard for Consumer persona users. It surfaces a full-period breakdown of income vs. spending, an overall monthly budget progress card, a category spending pie chart with legend (5 categories), per-category budget progress cards, and a top-merchants list. A horizontally-scrollable period selector (This Month / Last Month / Last 3 Months / Custom) drives all data.
+
+Budget limits are stored as OBP personal data fields (`pfm_budget_<categoryId>`), enabling server-side persistence without a separate budget service. For May 2026: spent £1,029.80 against a £1,500.00 monthly budget (68%), received £3,200.00, net positive £2,170.20. Categories: Bills (£450.00, 43.7%), Food & Dining (£320.50, 31.1%), Transport (£125.00, 12.1%), Shopping (£89.30, 8.7%), Entertainment (£45.00, 4.4%). Top merchants: Tesco £142.30 (8 txns), TfL £78.50 (23 txns), Netflix £17.99, Spotify £11.99.
 
 ---
 
 ## Screens
 
-| Screen ID | Name | Route | Archetype | Scroll |
-|---|---|---|---|---|
-| pfm-dashboard | Spending Insights | /pfm-dashboard | dashboard | vertical |
+| ID            | Name              | Route          | Layout | Scroll   |
+|---------------|-------------------|----------------|--------|----------|
+| pfm-dashboard | Spending Insights | /pfm-dashboard | Column | Vertical |
 
----
+**Shell:** Top app bar ("Spending Insights", back arrow, tune filter action) + Bottom navigation bar with 5 items (Insights active)
 
-## Shell
-
-| Zone | Configuration |
-|---|---|
-| Top app bar | Title "Spending Insights", back arrow (navigate_back → home), tune icon (open_pfm_settings) |
-| Bottom nav | Home / Accounts / Insights (active) / Cards / More |
+| Nav Item | ID           | Icon            | Target        |
+|----------|--------------|-----------------|---------------|
+| Home     | nav_home     | home            | home          |
+| Accounts | nav_accounts | account_balance | accounts      |
+| Insights | nav_insights | insights        | pfm-dashboard |
+| Cards    | nav_cards    | credit_card     | cards         |
+| More     | nav_more     | more_horiz      | settings      |
 
 ---
 
 ## Components
 
-| ID | Type | Description |
-|---|---|---|
-| pfm_title | text | "Spending Insights" headline_large, #1800B1, bold, padding H20 T16 |
-| period_selector_row | stack | Horizontal scrollable chip row, padding H20, B16 |
-| period_chip_this_month | chip | Filter chip "This Month" — selected state: bg #1800B1 text #FFFFFF; unselected: bg #F0EDFF text #1800B1 |
-| period_chip_last_month | chip | Filter chip "Last Month" — same style, unselected by default |
-| period_chip_last_3_months | chip | Filter chip "Last 3 Months" — unselected by default |
-| period_chip_custom | chip | Filter chip "Custom" — opens date range picker on tap |
-| pfm_period_label | text | Active period label "May 2026" body_medium, #888888 |
-| this_month_summary_card | box | White card (radius 20, elevation 2, border #F0F0F0); tappable → transactions |
-| summary_section_label | text | "This Month" title_medium semi-bold |
-| spent_amount | text | "£1,029.80" title_large bold #FF5252 |
-| received_amount | text | "£3,200.00" title_large bold #4CAF50 |
-| net_amount | text | "+£2,170.20" title_large bold #1800B1 |
-| overall_budget_card | box | Lavender card (bg #F8F4FF, border #E8E0FF, radius 20, elevation 1); tappable → manage_budgets |
-| overall_budget_title | text | "Monthly Budget" title_small semi-bold #1800B1 |
-| overall_budget_percent | text | "68% used" label_medium semi-bold #FF9800 |
-| overall_budget_spent | text | "£1,029.80 spent" body_medium semi-bold |
-| overall_budget_remaining | text | "£470.20 left" body_medium semi-bold #4CAF50 |
-| overall_budget_progress_track | box | Progress track: bg #E0E0E0, height 10, radius 6 |
-| overall_budget_progress_fill | box | Progress fill: bg #FF9800 (amber), width 68%, height 10 |
-| overall_budget_of_total | text | "of £1,500.00 monthly budget" label_small #888888 |
-| category_section_label | text | "Spending by Category" title_medium semi-bold, padding H20 |
-| category_pie_chart | box | Pie chart card (white, radius 20, elevation 2, height 220); tappable → open_chart_detail |
-| category_legend_col | stack | Vertical legend list; each row tappable → filter_by_category → transactions |
-| category_row_food | stack | Food & Dining row — dot #FF6B6B, amount £320.50 |
-| category_row_transport | stack | Transport row — dot #4ECDC4, amount £125.00 |
-| category_row_shopping | stack | Shopping row — dot #A8E6CF, amount £89.30 |
-| category_row_bills | stack | Bills row — dot #1800B1, amount £450.00 |
-| category_row_entertainment | stack | Entertainment row — dot #FFD93D, amount £45.00 |
-| budgets_section_label | text | "Budget Progress" title_medium semi-bold, padding H20 |
-| budget_food_dining | box | Food & Dining: £320.50 / £350.00, 92% fill #FF5252 (critical) |
-| budget_transport | box | Transport: £125.00 / £200.00, 63% fill #FF9800 (approaching) |
-| budget_shopping | box | Shopping: £89.30 / £150.00, 60% fill #FF9800 (approaching) |
-| budget_bills | box | Bills: £450.00 / £500.00, 90% fill #FF5252 (critical) |
-| budget_entertainment | box | Entertainment: £45.00 / £100.00, 45% fill #4CAF50 (healthy) |
-| manage_budgets_button | button | "Manage Budgets" outlined #1800B1, radius 12, centered |
-| merchants_section_label | text | "Top Merchants" title_medium semi-bold, padding H20 |
-| merchants_card | box | White card (radius 20, elevation 2, border #F0F0F0) containing merchant rows |
-| merchant_row_tesco | list_item | Tesco — storefront icon #1800B1, £142.30, 8 transactions → transactions |
-| merchant_row_tfl | list_item | Transport for London — subway icon #003688, £78.50, 23 transactions → transactions |
-| merchant_row_netflix | list_item | Netflix — play_circle icon #E50914, £17.99, 1 transaction → transactions |
-| merchant_row_spotify | list_item | Spotify — music_note icon #1DB954, £11.99, 1 transaction → transactions |
-| view_all_transactions_button | button | "View All Transactions" text variant #1800B1 → transactions |
-| no_budget_set_banner | box | Amber banner (bg #FFF8E1, border #FFE082) shown when no budget defined |
-| set_budget_cta_button | button | "Set Budget Now" filled #1800B1 → manage_budgets |
+| ID                           | Type      | Description                                                                                  |
+|------------------------------|-----------|----------------------------------------------------------------------------------------------|
+| pfm_title                    | text      | "Spending Insights" — Outfit/headline_large, #4C662B, bold                                  |
+| period_selector_row          | stack     | Horizontal scroll row of 4 filter chips; fires select_period on tap                         |
+| period_chip_this_month       | chip      | "This Month" — selected bg #4C662B text #FFFFFF; unselected bg #CDEDA3 text #4C662B         |
+| period_chip_last_month       | chip      | "Last Month" — same chip token colors, unselected by default                                |
+| period_chip_last_3_months    | chip      | "Last 3 Months" — same chip token colors, unselected by default                             |
+| period_chip_custom           | chip      | "Custom" — opens date range picker bottom sheet on tap                                      |
+| pfm_period_label             | text      | "May 2026" — Outfit/body_medium, #44483D                                                    |
+| this_month_summary_card      | box       | White card (#FFFFFF, radius 20, elevation 2) — 3-column Spent/Received/Net metrics          |
+| summary_section_label        | text      | "This Month" — Outfit/title_medium, #1A1C16, semibold                                       |
+| spent_label                  | text      | "Total Spent" — Outfit/label_small, #44483D                                                 |
+| spent_amount                 | text      | "£1,029.80" — Outfit/title_large, #BA1A1A, bold                                             |
+| received_label               | text      | "Total Received" — Outfit/label_small, #44483D                                              |
+| received_amount              | text      | "£3,200.00" — Outfit/title_large, #4C662B, bold                                             |
+| net_label                    | text      | "Net" — Outfit/label_small, #44483D                                                         |
+| net_amount                   | text      | "+£2,170.20" — Outfit/title_large, #4C662B, bold                                            |
+| overall_budget_card          | box       | #CDEDA3 card (radius 20, elevation 1) — overall budget heading + progress bar               |
+| overall_budget_title         | text      | "Monthly Budget" — Outfit/title_small, #4C662B, semibold                                    |
+| overall_budget_percent       | text      | "68% used" — Outfit/label_medium, #44483D                                                   |
+| overall_budget_spent         | text      | "£1,029.80 spent" — Outfit/body_medium, #1A1C16, semibold                                   |
+| overall_budget_remaining     | text      | "£470.20 left" — Outfit/body_medium, #4C662B, semibold                                      |
+| overall_budget_progress_track| box       | Progress track — #E1E4D5, radius 6, height 10dp, full width                                 |
+| overall_budget_progress_fill | box       | Progress fill — #E8A317, width 68%, radius 6, height 10dp                                   |
+| overall_budget_of_total      | text      | "of £1,500.00 monthly budget" — Outfit/label_small, #44483D                                 |
+| category_section_label       | text      | "Spending by Category" — Outfit/title_medium, #1A1C16, semibold                             |
+| category_pie_chart           | box       | White card (radius 20, h 220dp, elevation 2) — pie chart; a11y: Bills 43.7%, Food 31.1%…   |
+| category_legend_col          | stack     | Vertical column of 5 category legend rows                                                    |
+| category_row_food            | stack     | "Food & Dining" — dot #BA1A1A, amount "£320.50", Outfit/body_medium, #1A1C16               |
+| category_row_transport       | stack     | "Transport" — dot #386663, amount "£125.00"                                                  |
+| category_row_shopping        | stack     | "Shopping" — dot #CDEDA3, amount "£89.30"                                                   |
+| category_row_bills           | stack     | "Bills" — dot #4C662B, amount "£450.00"                                                     |
+| category_row_entertainment   | stack     | "Entertainment" — dot #E8A317, amount "£45.00"                                              |
+| budgets_section_label        | text      | "Budget Progress" — Outfit/title_medium, #1A1C16, semibold                                  |
+| budget_food_dining           | box       | White card (radius 16) — "Food & Dining £320.50 / £350.00", fill 92% #BA1A1A (near limit)   |
+| budget_transport             | box       | White card — "Transport £125.00 / £200.00", fill 63% #E8A317                               |
+| budget_shopping              | box       | White card — "Shopping £89.30 / £150.00", fill 60% #4C662B                                 |
+| budget_bills                 | box       | White card — "Bills £450.00 / £500.00", fill 90% #BA1A1A (near limit)                      |
+| budget_entertainment         | box       | White card — "Entertainment £45.00 / £100.00", fill 45% #4C662B                            |
+| manage_budgets_button        | button    | "Manage Budgets" — outlined, border+text #4C662B, radius 12, centered                      |
+| merchants_section_label      | text      | "Top Merchants" — Outfit/title_medium, #1A1C16, semibold                                   |
+| merchants_card               | box       | White card (radius 20, elevation 2) — 4 merchant list rows                                  |
+| merchant_row_tesco           | list_item | "Tesco" — storefront icon (bg #CDEDA3, color #4C662B), "8 transactions", "£142.30" error    |
+| merchant_row_netflix         | list_item | "Netflix" — play_circle icon (bg #CDEDA3, color #BA1A1A), "1 transaction", "£17.99" error  |
+| merchant_row_spotify         | list_item | "Spotify" — music_note icon (bg #CDEDA3, color #4C662B), "1 transaction", "£11.99" error   |
+| merchant_row_tfl             | list_item | "Transport for London" — directions_subway icon (bg #DCE7C8, color #386663), "23 transactions", "£78.50" error |
+| view_all_transactions_button | button    | "View All Transactions" — text variant, #4C662B, Outfit/label_large                        |
+| no_budget_set_banner         | box       | #CDEDA3 card amber border — "No budget set" + body + "Set Budget Now" filled CTA #4C662B   |
 
 ---
 
 ## States
 
-| ID | Trigger | Description |
-|---|---|---|
-| loading | Screen enters; API calls in-flight | Period chips and title visible; 5 skeleton cards shown |
-| populated | Data loaded; budgets set | Full dashboard: summary card, overall budget, category chart, per-category budgets, top merchants |
-| empty | No transactions in selected period | Period chips + title; empty state with receipt_long icon, "No transaction history yet", "View Accounts" CTA |
-| no_budget_set | Transactions loaded but no budget entries found | Summary card + category breakdown shown; amber "No budget set" banner with "Set Budget Now" CTA replaces budget progress section; top merchants still shown |
+| ID            | Trigger                                 | Description                                                                      |
+|---------------|-----------------------------------------|----------------------------------------------------------------------------------|
+| loading       | Screen entry / RetryLoad                | Title + period selector visible; 5 skeleton cards shimmer; all data cards hidden |
+| populated     | Transactions + budgets loaded           | All sections visible: summary, overall budget, pie, per-category budgets, merchants |
+| empty         | No transactions in selected period      | Title + period selector; empty state (receipt_long icon, "View Accounts" CTA)    |
+| no_budget_set | Transactions loaded, no budget set      | Summary + pie + merchants visible; budget section shows prompt banner            |
+| content       | Alias for populated                     | Same as populated — default loaded state alias                                   |
+| error         | Network / API failure                   | Title + period selector; error message + "Retry" action                          |
 
 ---
 
 ## State Model
 
 **ViewModel:** `PfmDashboardViewModel`
+**Screen State Type:** `PfmDashboardUiState`
 
-### State Fields
+| Name               | Type                  | Default              |
+|--------------------|-----------------------|----------------------|
+| totalSpent         | BigDecimal            | BigDecimal.ZERO      |
+| totalReceived      | BigDecimal            | BigDecimal.ZERO      |
+| categoryBreakdown  | List\<CategorySpend\> | emptyList()          |
+| budgets            | List\<BudgetEntry\>   | emptyList()          |
+| overallBudgetLimit | BigDecimal?           | null                 |
+| topMerchants       | List\<MerchantSpend\> | emptyList()          |
+| selectedPeriod     | PfmPeriod             | PfmPeriod.THIS_MONTH |
+| reportingPeriod    | String                | ""                   |
+| uiState            | PfmDashboardUiState   | Loading              |
+| error              | UiError?              | null                 |
 
-| Name | Type | Default |
-|---|---|---|
-| totalSpent | BigDecimal | BigDecimal.ZERO |
-| totalReceived | BigDecimal | BigDecimal.ZERO |
-| categoryBreakdown | List\<CategorySpend\> | emptyList() |
-| budgets | List\<BudgetEntry\> | emptyList() |
-| overallBudgetLimit | BigDecimal? | null |
-| topMerchants | List\<MerchantSpend\> | emptyList() |
-| selectedPeriod | PfmPeriod | PfmPeriod.THIS_MONTH |
-| reportingPeriod | String | "" |
-| uiState | PfmDashboardUiState | Loading |
-| error | UiError? | null |
+**Events:** `DataLoaded`, `BudgetEditClicked(categoryId)`, `ManageBudgetsClicked`, `ChartDetailClicked(categoryId?)`, `PeriodSelected(period)`, `CategoryFilterClicked(categoryId)`, `MerchantClicked(merchantName)`, `RetryLoad`, `NavigateToTransactions`, `NavigateToAccounts`
 
-### Error Codes
+**DI Dependencies:** `PersonalDataFieldsRepository`, `TransactionsRepository`
 
-| Field | Code | Message |
-|---|---|---|
-| global | LOAD_FAILED | Unable to load spending insights. Please try again. |
-| budget_save | SAVE_FAILED | Could not save budget. Please try again. |
-
-### Events
-
-`DataLoaded`, `BudgetEditClicked(categoryId: String)`, `ManageBudgetsClicked`, `ChartDetailClicked(categoryId: String?)`, `PeriodSelected(period: PfmPeriod)`, `CategoryFilterClicked(categoryId: String)`, `MerchantClicked(merchantName: String)`, `RetryLoad`, `NavigateToTransactions`, `NavigateToAccounts`
-
-### Actions
-
-`edit_budget`, `manage_budgets`, `open_chart_detail`, `open_pfm_settings`, `select_period`, `open_custom_date_picker`, `filter_by_category`, `view_merchant_transactions`, `navigate_to_transactions`, `navigate_to_accounts`
-
-### DI Dependencies
-
-`PersonalDataFieldsRepository`, `TransactionsRepository`
+**Errors:**
+- `LOAD_FAILED`: "Unable to load spending insights. Please try again."
+- `SAVE_FAILED`: "Could not save budget. Please try again."
 
 ---
 
 ## Navigation
 
-| Action | Target | Type | Description |
-|---|---|---|---|
-| navigate_back | home | pop | Top app bar back arrow |
-| open_pfm_settings | — | bottom sheet | Top app bar tune icon |
-| navigate_to_transactions | transactions | push | Summary card tap / view all button |
-| filter_by_category | transactions | push | Category legend row tap; passes categoryId filter |
-| view_merchant_transactions | transactions | push | Merchant row tap; passes merchantName filter |
-| manage_budgets | — | bottom sheet | Overall budget card tap / Manage Budgets button |
-| open_chart_detail | — | full-screen modal | Pie chart tap |
-| open_custom_date_picker | — | bottom sheet | "Custom" period chip tap |
-| select_period | — | in-place reload | This Month / Last Month / Last 3 Months chip tap |
-| navigate_to_accounts | accounts | push | Empty state "View Accounts" CTA |
-| edit_budget | — | bottom sheet | Per-category budget card tap |
+| From          | To           | Trigger                              | Type  |
+|---------------|--------------|--------------------------------------|-------|
+| pfm-dashboard | transactions | summary card tap / View All tap      | push  |
+| pfm-dashboard | transactions | category row tap (filtered)          | push  |
+| pfm-dashboard | transactions | merchant row tap (filtered)          | push  |
+| pfm-dashboard | accounts     | nav_accounts tab tap                 | tab   |
+| pfm-dashboard | home         | nav_home tab tap / back arrow        | tab   |
+| pfm-dashboard | cards        | nav_cards tab tap                    | tab   |
+| pfm-dashboard | settings     | nav_more tab tap                     | tab   |
+| pfm-dashboard | —            | manage_budgets_button                | sheet |
+| pfm-dashboard | —            | category_pie_chart tap               | sheet |
+| pfm-dashboard | —            | period_chip_custom tap               | sheet |
 
 ---
 
-## Category Breakdown (populated state)
+## API Endpoints
 
-| Category | Color | Amount | % |
-|---|---|---|---|
-| Bills | #1800B1 | £450.00 | 43.7% |
-| Food & Dining | #FF6B6B | £320.50 | 31.1% |
-| Transport | #4ECDC4 | £125.00 | 12.1% |
-| Shopping | #A8E6CF | £89.30 | 8.7% |
-| Entertainment | #FFD93D | £45.00 | 4.4% |
-| **Total** | | **£1,029.80** | 100% |
-
-## Per-Category Budgets
-
-| Category | Spent | Budget | % | Color |
-|---|---|---|---|---|
-| Food & Dining | £320.50 | £350.00 | 92% | #FF5252 (critical) |
-| Transport | £125.00 | £200.00 | 63% | #FF9800 (approaching) |
-| Shopping | £89.30 | £150.00 | 60% | #FF9800 (approaching) |
-| Bills | £450.00 | £500.00 | 90% | #FF5252 (critical) |
-| Entertainment | £45.00 | £100.00 | 45% | #4CAF50 (healthy) |
-
-## Top Merchants
-
-| Merchant | Icon | Amount | Transactions |
-|---|---|---|---|
-| Tesco | storefront | £142.30 | 8 |
-| Transport for London | directions_subway | £78.50 | 23 |
-| Netflix | play_circle | £17.99 | 1 |
-| Spotify | music_note | £11.99 | 1 |
+| Endpoint                                               | Auth        | Tag          | Purpose                                         |
+|--------------------------------------------------------|-------------|--------------|-------------------------------------------------|
+| GET /obp/v6.0.0/my/personal-data-fields               | DirectLogin | User         | Read PFM budgets stored as personal data fields |
+| POST /obp/v6.0.0/my/personal-data-fields              | DirectLogin | User         | Create/update budget (pfm_budget_<categoryId>)  |
+| GET /obp/v6.0.0/my/accounts/{account_id}/transactions | DirectLogin | Transactions | Fetch transactions for PFM analysis per period  |
 
 ---
 
 ## Design Tokens
 
-| Token | Value | Usage |
-|---|---|---|
-| primary | #1800B1 | Title, net amount, buttons, Bills category dot |
-| on_primary | #FFFFFF | Button text |
-| surface | #FFFFFF | Summary card, budget cards, merchants card |
-| surface_variant | #F8F4FF | Overall budget card background (lavender tint) |
-| error | #FF5252 | Spent amount, critical budget fills and amounts |
-| success | #4CAF50 | Received amount, remaining budget label, healthy fill |
-| warning | #FF9800 | Overall budget progress fill, approaching budget fills |
-| on_surface_variant | #888888 | Period label, metric sub-labels, merchant transaction count |
-| border_default | #F0F0F0 | Card borders |
-| border_budget | #E8E0FF | Overall budget card border |
+| Token                           | Value   | Usage                                                              |
+|---------------------------------|---------|--------------------------------------------------------------------|
+| colors.light.primary            | #4C662B | Page title, received/net amounts, budget remaining, safe fills     |
+| colors.light.primary_container  | #CDEDA3 | Overall budget card bg, chip unselected bg, merchant icon bg       |
+| colors.light.on_primary         | #FFFFFF | Chip selected text                                                 |
+| colors.light.error              | #BA1A1A | Spent amount, food & bills budget fills, merchant amounts, food dot|
+| colors.light.pending            | #E8A317 | Overall progress fill (68%), transport fill, entertainment dot     |
+| colors.light.secondary          | #386663 | Transport category dot, TfL icon                                  |
+| colors.light.surface            | #FFFFFF | Summary card, budget cards, merchants card                         |
+| colors.light.surface_variant    | #E1E4D5 | Progress track background                                          |
+| colors.light.on_surface         | #1A1C16 | Section labels, category names, merchant names                     |
+| colors.light.on_surface_variant | #44483D | Period label, budget percent, column labels                        |
+| colors.light.background         | #F9FAEF | Screen background                                                  |
+| colors.light.nav_active_indicator | #DCE7C8 | TfL merchant icon bg, active nav pill                            |
+| typography.headline_large       | —       | Page title                                                         |
+| typography.title_medium         | —       | Section headers (category, budget, merchants)                      |
+| typography.title_large          | —       | Spent / received / net metric values                               |
+| typography.body_medium          | —       | Period label, category/budget amounts, merchant names              |
+| typography.label_medium         | —       | Budget percent, filter chip text                                   |
+| typography.label_small          | —       | Metric column labels, budget-of-total text                         |
+| radius.xl                       | 24dp    | Summary card, pie chart card, merchants card                       |
+| radius.lg                       | 16dp    | Per-category budget cards                                          |
+| radius.sm                       | 8dp     | Feature chips, badge dots                                          |
+| elevation.level2                | 3dp     | Summary card, pie chart card, merchants card                       |
 
 ---
 
-*Generated by /idea export | 2026-05-25*
+_Generated by /idea export | 2026-05-29_

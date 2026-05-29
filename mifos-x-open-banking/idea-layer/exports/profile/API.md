@@ -1,76 +1,73 @@
 # API Reference — User Profile
 
-| Field    | Value                                       |
-|----------|---------------------------------------------|
-| Feature  | profile                                     |
-| Base URL | https://apisandbox.openbankproject.com      |
+| Field    | Value                                  |
+|----------|----------------------------------------|
+| Feature  | profile                                |
+| Base URL | https://apisandbox.openbankproject.com |
 
 ---
 
 ## GET /obp/v4.0.0/users/current
 
-**Auth:** DirectLogin (session token in Authorization header)
-**Trigger:** `onLoadProfile()` — fires on screen entry
-
-### Request Headers
-
-| Header        | Value                              |
-|---------------|------------------------------------|
-| Authorization | `DirectLogin token="{session_token}"` |
-
-No query parameters.
+**Auth:** DirectLogin
+**Tag:** UserProfile
+**Trigger:** `onLoadProfile()` on screen entry
 
 ### Response Fields
 
-| Field    | Type   | Description                          |
-|----------|--------|--------------------------------------|
-| user_id  | String | Unique OBP user identifier           |
-| email    | String | User's registered email address      |
-| username | String | User's login username                |
+| Field     | Type   | Description                                            |
+|-----------|--------|--------------------------------------------------------|
+| user_id   | String | OBP user UUID                                          |
+| email     | String | Registered email address — pre-fills email input      |
+| username  | String | Username / display name — pre-fills full name + avatar |
+
+### Sample Response
+
+```json
+{
+  "user_id": "5995d6a2-01b3-423c-a173-5481df49bdaf",
+  "email": "maria.santos@example.com",
+  "username": "Maria Santos"
+}
+```
 
 ### Error Codes
 
-| Code | Name         | UI Message                                              |
-|------|--------------|---------------------------------------------------------|
-| 401  | AUTH_ERROR   | "Session expired. Please sign in again."               |
-| 500  | NETWORK_ERROR| "Could not load your profile. Please check your connection." |
+| Code | Name          | UI Message                                                    |
+|------|---------------|---------------------------------------------------------------|
+| 401  | AUTH_ERROR    | "Session expired. Please sign in again."                     |
+| 500  | NETWORK_ERROR | "Could not load your profile. Please check your connection." |
 
 ---
 
 ## PUT /obp/v4.0.0/users/current
 
-**Auth:** DirectLogin (session token in Authorization header)
-**Trigger:** `onSaveClicked()` — fires when user taps "Save Changes"
+**Auth:** DirectLogin
+**Tag:** UserProfile
+**Trigger:** `onSaveClicked()` — fires when user taps Save Changes with `hasUnsavedChanges=true`
 
-### Request Headers
+### Request Fields
 
-| Header        | Value                              |
-|---------------|------------------------------------|
-| Authorization | `DirectLogin token="{session_token}"` |
-| Content-Type  | application/json                   |
+| Field        | Type   | Source               | Description                           |
+|--------------|--------|----------------------|---------------------------------------|
+| email        | String | profile_email_input  | Updated email address (RFC-5322 validated client-side) |
+| phone_number | String | profile_phone_input  | Updated phone number (E.164 format)   |
 
-### Request Body
-
-| Field        | Type   | Source                | Validation          |
-|--------------|--------|-----------------------|---------------------|
-| email        | String | profile_email_input   | RFC-5322 format     |
-| phone_number | String | profile_phone_input   | E.164 format        |
-
-Note: `fullName` maps to the display name but is submitted as part of the body where the OBP API accepts it. The `user_id` is not submitted — it is path-implied by the `/current` endpoint.
+**Note:** `username` / full name is not writeable via OBP v4.0.0 PUT. The `profile_full_name_input` value is displayed locally but the field is informational; only email and phone_number are sent in the PUT body.
 
 ### Response Fields
 
-| Field   | Type   | Description                    |
-|---------|--------|--------------------------------|
-| user_id | String | Confirms which user was updated|
+| Field   | Type   | Description         |
+|---------|--------|---------------------|
+| user_id | String | Echoed user UUID    |
 
 ### Error Codes
 
-| Code | Name             | UI Message                                                    |
-|------|------------------|---------------------------------------------------------------|
-| 400  | VALIDATION_ERROR | "Please correct the errors in the form before saving."       |
-| 401  | AUTH_ERROR       | "Session expired. Please sign in again."                     |
+| Code | Name             | UI Message                                                 |
+|------|------------------|------------------------------------------------------------|
+| 400  | VALIDATION_ERROR | "Please correct the errors in the form before saving."    |
+| 401  | AUTH_ERROR       | "Session expired. Please sign in again."                  |
 
 ---
 
-_Generated by /idea export | 2026-05-25_
+_Generated by /idea export | 2026-05-29_

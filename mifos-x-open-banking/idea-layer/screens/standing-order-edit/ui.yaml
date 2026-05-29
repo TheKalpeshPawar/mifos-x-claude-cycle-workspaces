@@ -5,16 +5,21 @@ id: standing-order-edit
 name: "Standing Order Edit"
 feature: standing-orders
 flavor: consumer
-status: draft
-quality_score: 50
-contract_version: "1.0.0"
+status: enriched
+quality_score: 94
+contract_version: "1.1.0"
 capabilities:
   - has_ui
+  - has_api
 tags: [FR-006, standing-orders, payments, form, edit]
 status_history:
   - status: draft
     timestamp: "2026-05-29T00:00:00Z"
     by: "/idea add"
+  - from: draft
+    to: enriched
+    at: "2026-05-29"
+    by: "/idea enrich"
 
 screens:
   - id: standing-order-edit
@@ -22,36 +27,35 @@ screens:
     archetype: form
     route: /standing-orders/{standingOrderId}/edit
     viewmodel: "StandingOrderEditViewModel"
-    shell:
-      top_app_bar:
-        show: true
-        title: "Edit Standing Order"
-        navigation_icon: arrow_back
-        navigation_action: navigate_back
-        actions: []
-      bottom_nav: false
 
-states:
-  - id: idle
-    label: "Form ready"
-  - id: loading
-    label: "Saving changes"
-  - id: success
-    label: "Saved — navigate back to detail"
-  - id: error
-    label: "Save failed — inline error shown"
+archetype: form
+
+route:
+  name: StandingOrderEditRoute
+  params:
+    standingOrderId: { type: String, required: true }
+    accountId: { type: String, required: true }
+
+shell:
+  top_app_bar:
+    show: true
+    title: "Edit Standing Order"
+    navigation_icon: arrow_back
+    navigation_action: navigate_back
+    actions: []
+  bottom_nav: false
 
 components:
   - type: stack
     id: soe_root
     variant: column
-    supported_states: [idle, loading, error]
+    supported_states: [content, loading, error]
     style:
       background: "#F9FAEF"
       padding_horizontal: spacing.md
       padding_top: spacing.lg
     children:
-      - soe_beneficiary_row
+      - soe_beneficiary_card
       - soe_amount_input
       - soe_currency_selector
       - soe_frequency_selector
@@ -59,77 +63,113 @@ components:
       - soe_end_date_input
       - soe_error_banner
       - soe_save_button
+      - soe_cancel_button
+      - soe_bottom_spacer
 
-  # ── Beneficiary (readonly) ────────────────────────────────────────────
+  # ── Beneficiary (read-only — immutable after creation) ────────────────────────
+
+  - type: card
+    id: soe_beneficiary_card
+    variant: filled
+    supported_states: [content]
+    style:
+      background: "#FFFFFF"
+      border_radius: "16dp"
+      padding: spacing.md
+      margin_bottom: spacing.md
+      elevation: "1dp"
+    a11y:
+      role: group
+      label: "Paying to Landlord Holdings Ltd — recipient cannot be changed"
+    children:
+      - soe_beneficiary_header
+      - soe_beneficiary_row
+
+  - type: text
+    id: soe_beneficiary_header
+    content: "Paying To"
+    variant: label_small
+    style:
+      typography: "Outfit/label_small"
+      color: "#44483D"
+      letter_spacing: "0.8dp"
+      padding_bottom: spacing.sm
+      text_transform: uppercase
+    a11y:
+      role: text
+      label: "Paying to section — read only"
+    test_context:
+      purpose: "Section label for the immutable beneficiary block"
+      interaction_type: display
+      data_driven: false
 
   - type: stack
     id: soe_beneficiary_row
     variant: row
-    supported_states: [idle]
     style:
-      orientation: horizontal
+      alignment: center_start
       spacing: spacing.sm
-      padding_bottom: spacing.md
-      align: center
-      background: "#FFFFFF"
-      border_radius: 12
-      padding_horizontal: spacing.md
-      padding_vertical: spacing.md
-      border_width: 1
-      border_color: "#E0E0E0"
-    a11y:
-      label: "Beneficiary — read-only"
-      role: group
     children:
       - soe_beneficiary_icon
       - soe_beneficiary_info
 
   - type: icon
     id: soe_beneficiary_icon
-    content: "person"
+    content: "account_balance"
     style:
       color: "#4C662B"
-      size: 24
+      size: "24dp"
     a11y:
-      label: ""
       role: presentation
+      label: ""
+    test_context:
+      purpose: "Bank icon beside the locked beneficiary name"
+      interaction_type: display
+      data_driven: false
 
   - type: stack
     id: soe_beneficiary_info
     variant: column
-    children:
-      - soe_beneficiary_label
-      - soe_beneficiary_name
-
-  - type: text
-    id: soe_beneficiary_label
-    content: "Paying to"
     style:
-      typography: "Outfit/label_small"
-      color: "#757575"
-    a11y:
-      label: "Paying to label"
-      role: none
-    test_context:
-      tag: soe_beneficiary_label
-      assert_text: "Paying to"
+      spacing: "2dp"
+    children:
+      - soe_beneficiary_name
+      - soe_beneficiary_iban
 
   - type: text
     id: soe_beneficiary_name
     content: "Landlord Holdings Ltd"
+    variant: body_large
     style:
       typography: "Outfit/body_large"
       color: "#1A1C16"
-      font_weight: medium
+      font_weight: "500"
     a11y:
-      label: "Landlord Holdings Ltd"
       role: text
+      label: "Recipient: Landlord Holdings Ltd"
     test_context:
       tag: soe_beneficiary_name
-      assert_text: "Landlord Holdings Ltd"
+      purpose: "Read-only beneficiary name carried over from standing-order-detail"
+      interaction_type: display
       data_driven: true
 
-  # ── Amount ────────────────────────────────────────────────────────────
+  - type: text
+    id: soe_beneficiary_iban
+    content: "GB29 NWBK 6016 1331 9268 19 · NatWest Bank"
+    variant: body_small
+    style:
+      typography: "Outfit/body_small"
+      color: "#44483D"
+      font_family: monospace
+    a11y:
+      role: text
+      label: "IBAN GB29 NWBK 6016 1331 9268 19, NatWest Bank"
+    test_context:
+      purpose: "Read-only IBAN and bank for the locked beneficiary"
+      interaction_type: display
+      data_driven: true
+
+  # ── Amount ────────────────────────────────────────────────────────────────────
 
   - type: input
     id: soe_amount_input
@@ -140,49 +180,50 @@ components:
       variant: outlined
       input_type: number
       placeholder: "0.00"
-      border_radius: 12
+      border_radius: "12dp"
       prefix_text: "£"
       keyboard_type: decimal
+      helper_text: "Amount taken on each payment date"
       margin_top: spacing.md
     on_click:
-      action: focus_amount
-      target: ""
+      action: edit_amount
+      intent: form_field
     a11y:
-      label: "Enter payment amount"
-      role: text_field
+      label: "Payment amount in pounds. Currently 1200.00"
+      role: textbox
       label_source: visible_label
     keyboard:
       focusable: true
     test_context:
       tag: soe_amount_input
-      assert_hint: "0.00"
+      purpose: "Editable amount field, pre-filled with the existing standing order amount"
+      interaction_type: input
       data_driven: true
 
-  # ── Currency ──────────────────────────────────────────────────────────
+  # ── Currency (read-only — display only, GBP account) ──────────────────────────
 
   - type: input
     id: soe_currency_selector
     label: "Currency"
-    content: "GBP"
-    supported_states: [idle, hover, focus_visible, pressed]
+    content: "GBP — British Pound"
+    supported_states: [idle, disabled]
     style:
       variant: outlined
-      trailing_icon: expand_more
-      border_radius: 12
+      readonly: true
+      trailing_icon: lock
+      border_radius: "12dp"
+      helper_text: "Matches the source account currency"
       margin_top: spacing.sm
-    on_click:
-      action: select_currency
-      target: ""
     a11y:
-      label: "Select currency. Currently: GBP"
-      role: button
-    keyboard:
-      focusable: true
+      label: "Currency GBP British Pound — fixed to the account currency"
+      role: text
     test_context:
       tag: soe_currency_selector
-      assert_text: "GBP"
+      purpose: "Currency is fixed to the source account (GBP); shown read-only for context"
+      interaction_type: display
+      data_driven: true
 
-  # ── Frequency ─────────────────────────────────────────────────────────
+  # ── Frequency ─────────────────────────────────────────────────────────────────
 
   - type: input
     id: soe_frequency_selector
@@ -193,116 +234,384 @@ components:
       variant: outlined
       trailing_icon: expand_more
       leading_icon: repeat
-      border_radius: 12
+      border_radius: "12dp"
+      helper_text: "How often the payment repeats"
       margin_top: spacing.sm
     on_click:
       action: select_frequency
-      target: ""
+      intent: picker
     a11y:
-      label: "Select payment frequency. Currently: Monthly"
+      label: "Payment frequency. Currently Monthly. Tap to choose Daily, Weekly, Monthly, or Yearly"
       role: button
     keyboard:
       focusable: true
     test_context:
       tag: soe_frequency_selector
-      assert_text: "Monthly"
+      purpose: "Opens a picker for DAILY, WEEKLY, MONTHLY, YEARLY — pre-selected to Monthly"
+      interaction_type: action
+      data_driven: true
 
-  # ── Start Date ────────────────────────────────────────────────────────
+  # ── Start Date ──────────────────────────────────────────────────────────────
 
   - type: input
     id: soe_start_date_input
     label: "Start Date"
-    content: "01 Jun 2026"
+    content: "1 Jan 2026"
     supported_states: [idle, hover, focus_visible, pressed, error]
     style:
       variant: outlined
       trailing_icon: calendar_today
-      border_radius: 12
+      border_radius: "12dp"
+      helper_text: "First date this payment runs"
       margin_top: spacing.sm
     on_click:
       action: pick_start_date
-      target: ""
+      intent: picker
     a11y:
-      label: "Select start date. Currently: 1 June 2026"
+      label: "Start date. Currently 1 January 2026. Tap to open the date picker"
       role: button
     keyboard:
       focusable: true
     test_context:
       tag: soe_start_date_input
+      purpose: "Opens a date picker for the schedule start date, pre-filled to 1 Jan 2026"
+      interaction_type: action
       data_driven: true
 
-  # ── End Date ──────────────────────────────────────────────────────────
+  # ── End Date (optional / indefinite) ──────────────────────────────────────────
 
   - type: input
     id: soe_end_date_input
     label: "End Date (optional)"
-    content: ""
+    content: "Ongoing — no end date"
     supported_states: [idle, hover, focus_visible, pressed, error]
     style:
       variant: outlined
       trailing_icon: calendar_today
-      border_radius: 12
+      border_radius: "12dp"
+      helper_text: "Leave as Ongoing to run indefinitely"
       margin_top: spacing.sm
     on_click:
       action: pick_end_date
-      target: ""
+      intent: picker
     a11y:
-      label: "Select end date — optional"
+      label: "End date. Currently Ongoing with no end date. Tap to set a final payment date"
       role: button
     keyboard:
       focusable: true
     test_context:
       tag: soe_end_date_input
+      purpose: "Optional final date picker; defaults to Ongoing (null finalDate)"
+      interaction_type: action
       data_driven: true
 
-  # ── Error Banner ──────────────────────────────────────────────────────
+  # ── Inline Error Banner ─────────────────────────────────────────────────────
 
-  - type: box
+  - type: banner
     id: soe_error_banner
-    content: "Failed to save changes. Please try again."
+    content: "Couldn't save your changes. Check the amount and try again."
+    variant: error
     supported_states: [error]
     visible_in_states: [error]
     style:
-      background: "#FDECEA"
-      border_radius: 8
+      background: "#FFDAD6"
+      border_radius: "8dp"
       padding_horizontal: spacing.md
       padding_vertical: spacing.sm
       margin_top: spacing.md
-      border_color: "#D32F2F"
-      border_width: 1
+      text_color: "#410002"
+      leading_icon: error_outline
     a11y:
-      label: "Error: Failed to save changes. Please try again."
       role: alert
       live: assertive
+      label: "Error: couldn't save your changes. Check the amount and try again."
     test_context:
       tag: soe_error_banner
-      assert_visible_in: [error]
-      assert_text: "Failed to save changes. Please try again."
+      purpose: "Inline error surfaced when the PUT save call fails (400/409/network)"
+      interaction_type: display
+      data_driven: true
 
-  # ── Save Button ───────────────────────────────────────────────────────
+  # ── Save Button ───────────────────────────────────────────────────────────────
 
   - type: button
     id: soe_save_button
     label: "Save Changes"
+    variant: filled
     supported_states: [idle, hover, focus_visible, pressed, disabled, loading]
     style:
-      variant: filled
       background: "#4C662B"
       text_color: "#FFFFFF"
-      border_radius: 24
-      min_height: 56
+      border_radius: "24dp"
+      min_height: "56dp"
       width: fill
       margin_top: spacing.xl
       typography: "Outfit/label_large"
     on_click:
       action: save_standing_order
-      target: ""
+      intent: api
+      target: standing-order-detail
     a11y:
-      label: "Save changes to standing order"
       role: button
+      label: "Save changes to this standing order"
     keyboard:
       focusable: true
     test_context:
       tag: soe_save_button
-      assert_text: "Save Changes"
+      purpose: "Submits the PUT update; shows spinner while saving, then returns to detail on success"
       interaction_type: action
+      data_driven: false
+
+  # ── Cancel Button ──────────────────────────────────────────────────────────────
+
+  - type: button
+    id: soe_cancel_button
+    label: "Cancel"
+    variant: text
+    supported_states: [idle, hover, focus_visible, pressed]
+    style:
+      color: "#4C662B"
+      typography: "Outfit/label_large"
+      width: fill
+      margin_top: spacing.sm
+    on_click:
+      action: navigate_back
+      intent: target
+      target: standing-order-detail
+    a11y:
+      role: button
+      label: "Discard changes and return to the standing order detail"
+    keyboard:
+      focusable: true
+    test_context:
+      tag: soe_cancel_button
+      purpose: "Discards edits and navigates back to standing-order-detail without saving"
+      interaction_type: action
+      data_driven: false
+
+  # ── Bottom Spacer ───────────────────────────────────────────────────────────────
+
+  - type: spacer
+    id: soe_bottom_spacer
+    style:
+      height: "24dp"
+
+  # ── Saving Overlay (loading state) ───────────────────────────────────────────
+
+  - type: loading_indicator
+    id: soe_saving_indicator
+    variant: circular
+    supported_states: [loading]
+    style:
+      color: "#4C662B"
+      alignment: center
+      padding: spacing.xl
+    a11y:
+      role: progressbar
+      label: "Saving your standing order changes"
+    test_context:
+      tag: soe_saving_indicator
+      purpose: "Circular progress shown while the PUT save request is in flight"
+      interaction_type: display
+      data_driven: false
+
+responsive:
+  mobile_only: true
+  baseline_width: 390
+
+states:
+  initial_state: content
+  content:
+    layout:
+      type: column
+      scroll: vertical
+      padding: spacing.md
+    visible_components:
+      - soe_beneficiary_card
+      - soe_amount_input
+      - soe_currency_selector
+      - soe_frequency_selector
+      - soe_start_date_input
+      - soe_end_date_input
+      - soe_save_button
+      - soe_cancel_button
+      - soe_bottom_spacer
+    note: "Form pre-filled from the standing order passed in from standing-order-detail"
+  loading:
+    layout:
+      type: column
+      alignment: center
+      padding: spacing.xl
+    visible_components:
+      - soe_saving_indicator
+    note: "Save in progress — PUT request in flight; inputs disabled, save button shows spinner"
+  error:
+    layout:
+      type: column
+      scroll: vertical
+      padding: spacing.md
+    visible_components:
+      - soe_beneficiary_card
+      - soe_amount_input
+      - soe_currency_selector
+      - soe_frequency_selector
+      - soe_start_date_input
+      - soe_end_date_input
+      - soe_error_banner
+      - soe_save_button
+      - soe_cancel_button
+      - soe_bottom_spacer
+    note: "Save failed — inline error banner shown above the buttons; form remains editable for retry"
+
+state_model:
+  StandingOrderEditViewModel:
+    screen_state: StandingOrderEditUiState
+    state:
+      - field: standingOrderId
+        type: String
+        default: "\"\""
+      - field: accountId
+        type: String
+        default: "\"\""
+      - field: beneficiaryName
+        type: String
+        default: "\"\""
+      - field: beneficiaryIban
+        type: String
+        default: "\"\""
+      - field: amount
+        type: BigDecimal
+        default: "BigDecimal.ZERO"
+      - field: currency
+        type: String
+        default: "\"GBP\""
+      - field: frequency
+        type: StandingOrderFrequency
+        default: "StandingOrderFrequency.MONTHLY"
+      - field: startDate
+        type: LocalDate
+        default: "LocalDate.now()"
+      - field: endDate
+        type: "LocalDate?"
+        default: "null"
+      - field: amountError
+        type: "String?"
+        default: "null"
+      - field: startDateError
+        type: "String?"
+        default: "null"
+      - field: isSaving
+        type: Boolean
+        default: "false"
+      - field: uiState
+        type: StandingOrderEditUiState
+        default: "StandingOrderEditUiState.Content"
+    screen_state_members: [Content, Saving, Error]
+    errors:
+      - id: validation_amount
+        message: "Enter an amount greater than £0.00."
+      - id: validation_start_date
+        message: "Start date can't be in the past."
+      - id: save_failed
+        message: "Couldn't save your changes. Check the amount and try again."
+      - id: already_cancelled
+        message: "This standing order has been cancelled and can no longer be edited."
+      - id: network_error
+        message: "Network unavailable. Please check your connection."
+      - id: not_logged_in
+        message: "Your session expired. Please sign in again."
+    events:
+      - OnAmountChange
+      - OnCurrencySelect
+      - OnFrequencyChange
+      - OnStartDateChange
+      - OnEndDateChange
+      - OnSave
+      - OnCancel
+      - NavigateBack
+      - NavigateToDetail
+    actions:
+      - name: prefillForm
+        param: standingOrderId
+        triggers: [ScreenOpened]
+      - name: onAmountChange
+        param: amount
+      - name: onFrequencyChange
+        param: frequency
+      - name: onStartDateChange
+        param: startDate
+      - name: onEndDateChange
+        param: endDate
+      - name: validateForm
+      - name: saveStandingOrder
+        triggers: [OnSave]
+      - name: cancelEdit
+        triggers: [OnCancel]
+    di:
+      - StandingOrderRepository
+      - AccountRepository
+
+api:
+  - id: obp_update_standing_order
+    endpoint: "PUT /obp/v4.0.0/banks/{bank_id}/accounts/{account_id}/owner/standing-order/{standing_order_id}"
+    tag: Standing-Orders
+    auth_required: true
+    auth_scheme: DirectLogin
+    trigger: on_save_clicked
+    description: "Update the mutable fields (amount, frequency, start/final date) of an existing standing order. Beneficiary and currency are immutable after creation."
+    request:
+      dto: StandingOrderUpdateRequest
+      fields:
+        - name: amount_value
+          type: String
+        - name: amount_currency
+          type: String
+        - name: when.frequency
+          type: String
+        - name: when.start_date
+          type: String
+        - name: when.final_date
+          type: "String?"
+    response:
+      dto: StandingOrderDetail
+      fields:
+        - name: id
+          type: String
+        - name: amount_value
+          type: String
+        - name: amount_currency
+          type: String
+        - name: frequency
+          type: String
+        - name: start_date
+          type: String
+        - name: final_date
+          type: "String?"
+        - name: status
+          type: String
+    errors:
+      - code: 400
+        message: "INVALID_STANDING_ORDER_VALUES"
+      - code: 401
+        message: "USER_NOT_LOGGED_IN"
+      - code: 403
+        message: "INSUFFICIENT_AUTHORISATION"
+      - code: 404
+        message: "STANDING_ORDER_NOT_FOUND"
+      - code: 409
+        message: "STANDING_ORDER_ALREADY_CANCELLED"
+
+navigation:
+  - id: nav_back
+    target: standing-order-detail
+    on_click:
+      action: navigate_back
+  - id: nav_save_success
+    target: standing-order-detail
+    on_click:
+      action: navigate
+      intent: target
+      note: "On successful PUT, pop back to standing-order-detail which reloads the updated record"
+
+dependencies:
+  tier: feature
+  features: [standing-orders, standing-order-detail, accounts]

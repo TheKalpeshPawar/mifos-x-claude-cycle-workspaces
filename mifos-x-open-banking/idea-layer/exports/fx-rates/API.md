@@ -1,75 +1,100 @@
 # API Reference — Exchange Rates
 
-| Field | Value |
-|---|---|
-| Feature | fx-rates |
-| Base URL | https://apisandbox.openbankproject.com |
-| Auth Scheme | DirectLogin (header: `DirectLogin token=<token>`) |
+| Field    | Value                                       |
+|----------|---------------------------------------------|
+| Feature  | fx-rates                                    |
+| Base URL | https://apisandbox.openbankproject.com      |
 
 ---
 
 ## GET /obp/v5.1.0/banks/{bankId}/currencies
 
+**Auth:** DirectLogin
 **Tag:** FX
-**Purpose:** List all currencies supported by the bank for use in from/to currency dropdowns.
+**Trigger:** `loadFxScreen()` on screen open — populates from/to currency dropdown options
 
 ### Path Parameters
 
-| Parameter | Type | Description |
-|---|---|---|
-| bankId | String | OBP bank identifier |
+| Name   | Type   | Value    | Description     |
+|--------|--------|----------|-----------------|
+| bankId | String | gh.29.uk | Bank identifier |
 
 ### Response Fields
 
-| Field | Type | Description |
-|---|---|---|
-| currencies | List\<Currency\> | Array of supported currency objects |
-| code | String | ISO 4217 currency code (e.g. "GBP") |
-| name | String | Currency full name |
-| symbol | String | Currency symbol |
+| Field                     | Type              | Description                             |
+|---------------------------|-------------------|-----------------------------------------|
+| currencies                | List\<Currency\>  | All currencies supported by the bank    |
+| currencies[].currency_code| String            | ISO 4217 code e.g. "GBP", "EUR", "USD" |
+| currencies[].name         | String            | Display name e.g. "British Pound"       |
+| currencies[].is_active    | Boolean           | Whether the currency is currently active|
+
+### Demo Data
+
+Default dropdown pre-populated with: GBP 🇬🇧, EUR 🇪🇺, USD 🇺🇸, JPY 🇯🇵, INR 🇮🇳, KES 🇰🇪, NGN 🇳🇬, ZAR 🇿🇦
 
 ### Error Codes
 
-| Code | Meaning |
-|---|---|
-| 401 | Unauthorized — missing or invalid DirectLogin token |
-| 404 | Bank not found |
-| 500 | Internal server error |
+| Code | Message                        | UI Handling                               |
+|------|--------------------------------|-------------------------------------------|
+| 401  | Unauthorized — missing token   | Navigate to login                         |
+| 404  | Bank not found                 | Show error banner in currency dropdown    |
+| 500  | Internal server error          | Show error state                          |
 
 ---
 
 ## GET /obp/v5.1.0/banks/{bankId}/fx/{fromCurrencyCode}/{toCurrencyCode}
 
+**Auth:** DirectLogin
 **Tag:** FX
-**Purpose:** Fetch the live exchange rate for a specific currency pair (e.g. GBP to EUR).
+**Trigger:** Screen load (6 pre-fetched pairs) + user changes amount/currency (recalculate active pair)
+
+Called once per currency pair displayed. The popular pairs section pre-fetches 6 pairs on load. When the user changes the from/to selection or enters a new amount, the ViewModel recalculates `convertedAmount` using the cached `exchangeRate` without a new API call unless the currency pair changes.
 
 ### Path Parameters
 
-| Parameter | Type | Example | Description |
-|---|---|---|---|
-| bankId | String | — | OBP bank identifier |
-| fromCurrencyCode | String | GBP | ISO 4217 source currency code |
-| toCurrencyCode | String | EUR | ISO 4217 destination currency code |
+| Name             | Type   | Description              | Demo Values                              |
+|------------------|--------|--------------------------|------------------------------------------|
+| bankId           | String | Bank identifier          | gh.29.uk                                 |
+| fromCurrencyCode | String | Source currency ISO code | GBP, EUR, USD                            |
+| toCurrencyCode   | String | Target currency ISO code | EUR, USD, JPY, INR, GBP                  |
 
 ### Response Fields
 
-| Field | Type | Description |
-|---|---|---|
-| bank_id | String | The bank this rate applies to |
-| from_currency_code | String | Source currency code |
-| to_currency_code | String | Destination currency code |
-| conversion_value | Double | Rate: how many to-units per 1 from-unit (e.g. 1.1672) |
-| inverse_conversion_value | Double | Inverse rate (e.g. 0.8568) |
-| effective_date | String | ISO 8601 timestamp when rate was set |
+| Field                    | Type   | Description                                                         |
+|--------------------------|--------|---------------------------------------------------------------------|
+| bank_id                  | String | Bank identifier                                                     |
+| from_currency_code       | String | Source currency code e.g. "GBP"                                     |
+| to_currency_code         | String | Target currency code e.g. "EUR"                                     |
+| conversion_value         | Double | Rate: 1 unit of from_currency = N units of to_currency             |
+| inverse_conversion_value | Double | Inverse rate: 1 unit of to_currency = N units of from_currency     |
+| effective_date           | String | ISO-8601 timestamp when the rate was last updated                   |
+
+### Demo Rate Data (Popular Pairs)
+
+| Pair    | conversion_value | change  | direction |
+|---------|------------------|---------|-----------|
+| GBP/EUR | 1.1672           | +0.2%   | up        |
+| GBP/USD | 1.2834           | −0.1%   | down      |
+| GBP/JPY | 193.45           | +0.4%   | up        |
+| EUR/USD | 1.0993           | −0.3%   | down      |
+| USD/INR | 83.22            | 0.0%    | neutral   |
+| EUR/GBP | 0.8568           | −0.2%   | down      |
+
+### Converter Default State
+
+- From: GBP, To: EUR, Amount: 1,000
+- `convertedAmount = 1000 * 1.1672 = 1,167.20 EUR`
+- `rate_info_text`: "Rate: 1 GBP = 1.1672 EUR"
+- `last_updated_text`: "Rates updated: 14 May 2026, 15:42 UTC" (from `effective_date`)
 
 ### Error Codes
 
-| Code | Meaning |
-|---|---|
-| 401 | Unauthorized — missing or invalid DirectLogin token |
-| 404 | Currency pair not supported by this bank |
-| 500 | Internal server error |
+| Code | Message                    | UI Handling                                          |
+|------|----------------------------|------------------------------------------------------|
+| 401  | Unauthorized               | Navigate to login                                    |
+| 404  | Currency pair not supported| Show empty state for that row; converter shows error |
+| 500  | Internal server error      | Show error state with retry                          |
 
 ---
 
-*Generated by /idea export | 2026-05-25*
+_Generated by /idea export | 2026-05-29_

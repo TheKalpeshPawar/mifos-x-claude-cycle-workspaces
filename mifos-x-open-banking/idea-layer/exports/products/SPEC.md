@@ -1,199 +1,183 @@
-# Feature Specification — Products
+# SPEC — Products
 
-| Field | Value |
-|---|---|
-| Feature | products |
-| Name | Products |
-| Flavor | consumer |
-| Status | designed |
-| Quality Score | 88 |
-| Contract Version | 1.1.0 |
+| Field         | Value              |
+|---------------|--------------------|
+| Feature       | products           |
+| Flavor        | consumer           |
+| Status        | approved           |
+| Quality Score | 95                 |
+| ViewModel     | ProductsViewModel  |
 
 ---
 
 ## Overview
 
-The Products screen is the bank product catalogue for Mifos X Open Banking consumers. It presents four real OBP-backed products in scrollable cards organised by horizontally-scrollable category filter chips (All, Savings, Loans, Cards, Mortgages). Each card shows the product name, prominent rate badge, category label, a concise description, colour-coded feature badge chips, and two action buttons — "Details" (outlined) and "Apply Now" (filled) — both navigating to the `application-detail` screen. A promotional banner ("Refer a friend — earn £50", expires 30 June 2026) sits below the product list.
+The Products screen is a scrollable catalog that lets Consumer persona users browse, filter, and apply for banking products offered via Open Bank Project v5.0.0. It displays four real OBP products grouped by category with a horizontally-scrollable filter chip row (All / Savings / Loans / Cards / Mortgages) and a promotional refer-a-friend banner at the bottom.
 
-The screen handles four states: **loading** (4 skeleton cards), **populated** (full product list), **empty** (category filter has no matches), and **error** (network failure with retry). Navigation connects to home, accounts, and send-money via the bottom navigation bar, and to `application-detail` via product CTAs.
+Products listed: Instant Access Savings (4.5% AER — withdraw anytime, no minimum deposit), Fixed Rate Bond 1yr (5.1% AER — 12-month lock-in, min £1,000, FSCS protected), Personal Loan (from 6.9% APR — £1,000–£25,000, 1–7 year terms), Platinum Credit Card (0% for 20 months — no annual fee, contactless + Apple/Google Pay). Each card shows the headline rate in Display Small and has "Details" (outlined) and "Apply Now" (filled) action buttons navigating to application-detail.
 
 ---
 
 ## Screens
 
-| Screen ID | Name | Route | Archetype | Scroll |
-|---|---|---|---|---|
-| products | Products | /products | index_list | vertical |
+| ID       | Name     | Route     | Layout | Scroll   |
+|----------|----------|-----------|--------|----------|
+| products | Products | /products | Column | Vertical |
 
----
+**Shell:** Top app bar ("Products", back arrow, search action) + Bottom navigation bar with 5 items (Products active)
 
-## Shell
-
-| Element | Config |
-|---|---|
-| Top app bar | Title "Products", back arrow (navigate_back to home), search action (search_products) |
-| Bottom navigation | 5 items: Home (home), Accounts (accounts), Products (products, active), Send (send-money), More (more) |
+| Nav Item | ID           | Icon            | Target      |
+|----------|--------------|-----------------|-------------|
+| Home     | nav_home     | home            | home        |
+| Accounts | nav_accounts | account_balance | accounts    |
+| Products | nav_products | store           | products    |
+| Send     | nav_send     | send            | send-money  |
+| More     | nav_more     | more_horiz      | settings    |
 
 ---
 
 ## Components
 
-| ID | Type | Description |
-|---|---|---|
-| products_title | text | "Products" — headline_large, #1800B1, bold, padding_horizontal 20, padding_top 16 |
-| products_subtitle | text | "Explore accounts, savings, loans and cards tailored for you." — body_medium, #555555, padding_horizontal 20 |
-| category_tabs_row | stack | Horizontally scrollable row of 5 category filter chips |
-| tab_all | button | "All" — filled #1800B1 (active); action: filter_products |
-| tab_savings | button | "Savings" — outlined #CCCCCC border, #666666 text; action: filter_products |
-| tab_loans | button | "Loans" — outlined; action: filter_products |
-| tab_cards | button | "Cards" — outlined; action: filter_products |
-| tab_mortgages | button | "Mortgages" — outlined; action: filter_products |
-| product_instant_access_savings | box | Card container for Instant Access Savings; corner_radius 16, elevation 2; on_click → application-detail |
-| ias_name | text | "Instant Access Savings" — title_medium, #111111, semi-bold |
-| ias_category_badge | box | "Savings" — #E8F5E9 bg, #2E7D32 text, label_small |
-| ias_rate | text | "4.5% AER" — display_small, #1800B1, bold |
-| ias_description | text | "Earn 4.5% AER on every pound you save. Withdraw at any time with no notice period or penalties." — body_medium, #555555 |
-| ias_feat_aer | box | Feature badge "4.5% AER" — #E8F5E9 bg, #2E7D32 text |
-| ias_feat_access | box | Feature badge "Instant access" — #E3F2FD bg, #1565C0 text |
-| ias_feat_no_min | box | Feature badge "No minimum deposit" — #EDE7F6 bg, #4527A0 text |
-| ias_learn_more | button | "Details" — outlined #1800B1; navigates to application-detail |
-| ias_apply | button | "Apply Now" — filled #1800B1 white text; navigates to application-detail |
-| product_fixed_rate_bond | box | Card container for Fixed Rate Bond 1yr; on_click → application-detail |
-| frb_name | text | "Fixed Rate Bond 1yr" — title_medium, #111111, semi-bold |
-| frb_category_badge | box | "Savings" — #E8F5E9 bg, #2E7D32 text |
-| frb_rate | text | "5.1% AER" — display_small, #1800B1, bold |
-| frb_description | text | "Lock in a market-leading 5.1% AER for 12 months. Minimum deposit £1,000. Interest paid at maturity." — body_medium, #555555 |
-| frb_feat_aer | box | Feature badge "5.1% AER" — #E8F5E9 bg, #2E7D32 text |
-| frb_feat_term | box | Feature badge "12-month term" — #FFF3E0 bg, #E65100 text |
-| frb_feat_fscs | box | Feature badge "FSCS protected" — #EDE7F6 bg, #4527A0 text |
-| frb_learn_more | button | "Details" — outlined #1800B1; navigates to application-detail |
-| frb_apply | button | "Apply Now" — filled #1800B1; navigates to application-detail |
-| product_personal_loan | box | Card container for Personal Loan; on_click → application-detail |
-| personal_loan_name | text | "Personal Loan" — title_medium, #111111, semi-bold |
-| pl_category_badge | box | "Loans" — #FFF3E0 bg, #E65100 text |
-| pl_rate | text | "From 6.9% APR" — display_small, #1800B1, bold |
-| personal_loan_description | text | "Borrow from £1,000 to £25,000 at a representative 6.9% APR. Flexible repayment terms from 1 to 7 years." — body_medium, #555555 |
-| personal_loan_feat_apr | box | Feature badge "From 6.9% APR" — #FFF3E0 bg, #E65100 text |
-| personal_loan_feat_amount | box | Feature badge "Up to £25,000" — #EDE7F6 bg, #4527A0 text |
-| personal_loan_feat_terms | box | Feature badge "1–7 year terms" — #E3F2FD bg, #1565C0 text |
-| personal_loan_learn_more | button | "Details" — outlined #1800B1; navigates to application-detail |
-| personal_loan_apply | button | "Apply Now" — filled #1800B1; navigates to application-detail |
-| product_platinum_credit_card | box | Card container for Platinum Credit Card; on_click → application-detail |
-| pcc_name | text | "Platinum Credit Card" — title_medium, #111111, semi-bold |
-| pcc_category_badge | box | "Cards" — #E3F2FD bg, #1565C0 text |
-| pcc_rate | text | "0% for 20 months" — display_small, #1800B1, bold |
-| pcc_description | text | "0% interest on purchases for 20 months. No annual fee. Contactless and Apple Pay / Google Pay enabled." — body_medium, #555555 |
-| pcc_feat_zero_pct | box | Feature badge "0% for 20 months" — #E3F2FD bg, #1565C0 text |
-| pcc_feat_no_annual_fee | box | Feature badge "No annual fee" — #E8F5E9 bg, #2E7D32 text |
-| pcc_feat_contactless | box | Feature badge "Contactless & Apple/Google Pay" — #EDE7F6 bg, #4527A0 text |
-| pcc_learn_more | button | "Details" — outlined #1800B1; navigates to application-detail |
-| pcc_apply | button | "Apply Now" — filled #1800B1; navigates to application-detail |
-| promotions_banner | box | Promotional banner — #1800B1 bg, corner_radius 12; on_click → home |
-| promo_banner_text | text | "Refer a friend — earn £50" — title_small, #FFFFFF, semi-bold |
-| promo_banner_detail | text | "When your friend opens any account before 30 June 2026" — body_small, #C5C0FF |
+| ID                          | Type    | Description                                                                                     |
+|-----------------------------|---------|-------------------------------------------------------------------------------------------------|
+| products_title              | text    | "Products" — Outfit/headline_large, #4C662B, bold                                             |
+| products_subtitle           | text    | "Explore accounts, savings, loans and cards tailored for you." — Outfit/body_medium, #44483D   |
+| category_tabs_row           | stack   | Horizontal scroll row of 5 filter buttons; fires filter_products                               |
+| tab_all                     | button  | "All" — filled, bg #4C662B, text #FFFFFF, radius 20; currently selected                       |
+| tab_savings                 | button  | "Savings" — outlined, border #E1E4D5, text #44483D, radius 20                                 |
+| tab_loans                   | button  | "Loans" — outlined, border #E1E4D5, text #44483D, radius 20                                   |
+| tab_cards                   | button  | "Cards" — outlined, border #E1E4D5, text #44483D, radius 20                                   |
+| tab_mortgages               | button  | "Mortgages" — outlined, border #E1E4D5, text #44483D, radius 20                               |
+| product_instant_access_savings | box  | White card (radius 16, elevation 2) — Instant Access Savings product card                     |
+| ias_name                    | text    | "Instant Access Savings" — Outfit/title_medium, #1A1C16, semibold                              |
+| ias_category_badge          | box     | "Savings" — bg #CDEDA3, radius 6, text #4C662B, Outfit/label_small                            |
+| ias_rate                    | text    | "4.5% AER" — Outfit/display_small, #4C662B, bold                                              |
+| ias_description             | text    | "Earn 4.5% AER on every pound you save. Withdraw at any time with no notice period or penalties." — body_medium, #44483D |
+| ias_feat_aer                | box     | Feature chip "4.5% AER" — bg #CDEDA3, radius 8, text #4C662B                                  |
+| ias_feat_access             | box     | Feature chip "Instant access" — bg #DCE7C8, radius 8, text #386663                            |
+| ias_feat_no_min             | box     | Feature chip "No minimum deposit" — bg #CDEDA3, radius 8, text #4C662B                        |
+| ias_learn_more              | button  | "Details" — outlined, border+text #4C662B, radius 8; navigates to application-detail          |
+| ias_apply                   | button  | "Apply Now" — filled, bg #4C662B, text #FFFFFF, radius 8; navigates to application-detail     |
+| product_fixed_rate_bond     | box     | White card (radius 16, elevation 2) — Fixed Rate Bond 1yr product card                        |
+| frb_name                    | text    | "Fixed Rate Bond 1yr" — Outfit/title_medium, #1A1C16, semibold                                |
+| frb_category_badge          | box     | "Savings" — bg #CDEDA3, radius 6, text #4C662B                                                |
+| frb_rate                    | text    | "5.1% AER" — Outfit/display_small, #4C662B, bold                                              |
+| frb_description             | text    | "Lock in a market-leading 5.1% AER for 12 months. Minimum deposit £1,000. Interest paid at maturity." — body_medium, #44483D |
+| frb_feat_aer                | box     | Feature chip "5.1% AER" — bg #CDEDA3, text #4C662B                                            |
+| frb_feat_term               | box     | Feature chip "12-month term" — bg #CDEDA3, text #44483D                                       |
+| frb_feat_fscs               | box     | Feature chip "FSCS protected" — bg #CDEDA3, text #4C662B                                      |
+| frb_learn_more              | button  | "Details" — outlined, #4C662B                                                                  |
+| frb_apply                   | button  | "Apply Now" — filled, #4C662B                                                                  |
+| product_personal_loan       | box     | White card (radius 16, elevation 2) — Personal Loan product card                              |
+| personal_loan_name          | text    | "Personal Loan" — Outfit/title_medium, #1A1C16, semibold                                      |
+| pl_category_badge           | box     | "Loans" — bg #CDEDA3, radius 6, text #44483D                                                  |
+| pl_rate                     | text    | "From 6.9% APR" — Outfit/display_small, #4C662B, bold                                         |
+| personal_loan_description   | text    | "Borrow from £1,000 to £25,000 at a representative 6.9% APR. Flexible 1 to 7 year terms." — body_medium, #44483D |
+| personal_loan_feat_apr      | box     | Feature chip "From 6.9% APR" — bg #CDEDA3, text #44483D                                       |
+| personal_loan_feat_amount   | box     | Feature chip "Up to £25,000" — bg #CDEDA3, text #4C662B                                       |
+| personal_loan_feat_terms    | box     | Feature chip "1–7 year terms" — bg #DCE7C8, text #386663                                      |
+| personal_loan_learn_more    | button  | "Details" — outlined, #4C662B                                                                  |
+| personal_loan_apply         | button  | "Apply Now" — filled, #4C662B                                                                  |
+| product_platinum_credit_card| box     | White card (radius 16, elevation 2) — Platinum Credit Card product card                       |
+| pcc_name                    | text    | "Platinum Credit Card" — Outfit/title_medium, #1A1C16, semibold                               |
+| pcc_category_badge          | box     | "Cards" — bg #DCE7C8, radius 6, text #386663                                                  |
+| pcc_rate                    | text    | "0% for 20 months" — Outfit/display_small, #4C662B, bold                                      |
+| pcc_description             | text    | "0% interest on purchases for 20 months. No annual fee. Contactless and Apple Pay / Google Pay enabled." — body_medium, #44483D |
+| pcc_feat_zero_pct           | box     | Feature chip "0% for 20 months" — bg #DCE7C8, text #386663                                    |
+| pcc_feat_no_annual_fee      | box     | Feature chip "No annual fee" — bg #CDEDA3, text #4C662B                                       |
+| pcc_feat_contactless        | box     | Feature chip "Contactless & Apple/Google Pay" — bg #CDEDA3, text #4C662B                      |
+| pcc_learn_more              | button  | "Details" — outlined, #4C662B                                                                  |
+| pcc_apply                   | button  | "Apply Now" — filled, #4C662B                                                                  |
+| promotions_banner           | box     | #4C662B filled banner (radius 12) — referral promotion                                        |
+| promo_banner_text           | text    | "Refer a friend — earn £50" — Outfit/title_small, #FFFFFF, semibold                           |
+| promo_banner_detail         | text    | "When your friend opens any account before 30 June 2026" — Outfit/body_small, #CDEDA3         |
 
 ---
 
 ## States
 
-| ID | Trigger | Description |
-|---|---|---|
-| loading | Screen enters; OBP API call in flight | Title, subtitle, and category tabs shown; skeleton list of 4 cards |
-| populated | API returns product list | Full product cards: Instant Access Savings, Fixed Rate Bond 1yr, Personal Loan, Platinum Credit Card; promotional banner below |
-| empty | Category filter returns no matching products | Title, subtitle, and tabs shown; empty-state with store_outlined icon, title "No products available", message inviting filter change |
-| error | Network or OBP API failure | Title, subtitle, and tabs shown; error state with cloud_off icon, title "Unable to load products", message with offline hint, Retry button |
+| ID        | Trigger                               | Description                                                                    |
+|-----------|---------------------------------------|--------------------------------------------------------------------------------|
+| loading   | Screen entry / RetryLoad              | Title + subtitle + category tabs visible; 4 skeleton product cards shimmer     |
+| populated | Products loaded from OBP v5.0.0       | All 4 product cards + promotions banner visible                                |
+| empty     | Category filter returns no results    | Title + subtitle + tabs; empty state (store icon, "No products available")     |
+| error     | Network / API failure                 | Title + subtitle + tabs; error state (cloud_off icon, Retry button)            |
 
 ---
 
 ## State Model
 
 **ViewModel:** `ProductsViewModel`
+**Screen State Type:** `ProductsUiState`
 
-### State Fields
+| Name             | Type                  | Default              |
+|------------------|-----------------------|----------------------|
+| products         | List\<BankProduct\>   | emptyList()          |
+| selectedCategory | ProductCategory       | ProductCategory.ALL  |
+| uiState          | ProductsUiState       | Loading              |
+| error            | UiError?              | null                 |
 
-| Name | Type | Default |
-|---|---|---|
-| products | List\<BankProduct\> | emptyList() |
-| selectedCategory | ProductCategory | ProductCategory.ALL |
-| uiState | ProductsUiState | Loading |
-| error | UiError? | null |
+**Events:** `ProductsLoaded(products)`, `CategoryFilterChanged(category)`, `ApplyNowClicked(productCode)`, `ProductDetailClicked(productCode)`, `RetryLoad`, `SearchOpened`
 
-### Events
+**DI Dependencies:** `ProductRepository`, `BankRepository`
 
-`ProductsLoaded(products: List<BankProduct>)`, `CategoryFilterChanged(category: ProductCategory)`, `ApplyNowClicked(productCode: String)`, `ProductDetailClicked(productCode: String)`, `RetryLoad`, `SearchOpened`
-
-### Actions
-
-`filter_products`, `search_products`, `navigate_to_application_detail`
-
-### DI Dependencies
-
-`ProductRepository`, `BankRepository`
-
-### Error Codes
-
-| Field | Code | Message |
-|---|---|---|
-| global | LOAD_FAILED | Unable to load products. Please try again. |
-| global | NETWORK_TIMEOUT | Connection timed out. Check your internet connection. |
+**Errors:**
+- `LOAD_FAILED`: "Unable to load products. Please try again."
+- `NETWORK_TIMEOUT`: "Connection timed out. Check your internet connection."
 
 ---
 
 ## Navigation
 
-| From | To | Trigger | Type |
-|---|---|---|---|
-| ias_learn_more / ias_apply | application-detail | Tap | push |
-| frb_learn_more / frb_apply | application-detail | Tap | push |
-| personal_loan_learn_more / personal_loan_apply | application-detail | Tap | push |
-| pcc_learn_more / pcc_apply | application-detail | Tap | push |
-| product card body (any) | application-detail | Tap card | push |
-| promotions_banner | home | Tap banner | push |
-| bottom nav — Home | home | Tap | replace |
-| bottom nav — Accounts | accounts | Tap | replace |
-| bottom nav — Send | send-money | Tap | replace |
-| top app bar back arrow | home | Tap | pop |
+| From     | To                 | Trigger                          | Type  |
+|----------|--------------------|----------------------------------|-------|
+| products | application-detail | "Apply Now" or "Details" tap     | push  |
+| products | home               | nav_home tab tap / back arrow    | tab   |
+| products | accounts           | nav_accounts tab tap             | tab   |
+| products | send-money         | nav_send tab tap                 | tab   |
+| products | settings           | nav_more tab tap                 | tab   |
+| products | products           | category tab tap (filter in-place)| —   |
+| products | —                  | search icon tap (overlay)        | sheet |
 
 ---
 
-## Products Catalogue
+## API Endpoints
 
-| Product | Category | Rate / Offer | Key Features |
-|---|---|---|---|
-| Instant Access Savings | Savings | 4.5% AER | Instant access, No minimum deposit |
-| Fixed Rate Bond 1yr | Savings | 5.1% AER | 12-month term, FSCS protected |
-| Personal Loan | Loans | From 6.9% APR | Up to £25,000, 1–7 year terms |
-| Platinum Credit Card | Cards | 0% for 20 months | No annual fee, Contactless & Apple/Google Pay |
-
----
-
-## Promotional Banner
-
-| Field | Value |
-|---|---|
-| Headline | Refer a friend — earn £50 |
-| Detail | When your friend opens any account before 30 June 2026 |
-| Background | #1800B1 |
-| CTA | Navigates to home (referral flow) |
-| Expiry | 30 June 2026 |
+| Endpoint                                            | Auth        | Tag     | Purpose                                 |
+|-----------------------------------------------------|-------------|---------|------------------------------------------|
+| GET /obp/v5.0.0/banks/{bankId}/products             | DirectLogin | Product | List available banking products from OBP |
 
 ---
 
 ## Design Tokens
 
-| Token | Value | Usage |
-|---|---|---|
-| primary | #1800B1 | Title, active tab, Apply Now buttons, Details borders, promo banner bg |
-| on_primary | #FFFFFF | Apply Now text, active tab text |
-| surface | #FFFFFF | Product card background |
-| background | #FCF8FF | Screen background |
-| error | #BA1A1A | Error state |
-| green_badge | #E8F5E9 / #2E7D32 | Savings category, AER rate badges |
-| blue_badge | #E3F2FD / #1565C0 | Cards category, instant access, contactless badges |
-| orange_badge | #FFF3E0 / #E65100 | Loans category, APR, term badges |
-| purple_badge | #EDE7F6 / #4527A0 | FSCS protected, amount, no-minimum badges |
-| promo_accent | #C5C0FF | Promo banner secondary text |
+| Token                           | Value   | Usage                                                              |
+|---------------------------------|---------|--------------------------------------------------------------------|
+| colors.light.primary            | #4C662B | Page title, headline rates, filled buttons, active filter tab bg   |
+| colors.light.primary_container  | #CDEDA3 | Feature chip bg (Savings/Loans), category badge bg (Savings)       |
+| colors.light.secondary          | #386663 | Cards category badge text+bg (DCE7C8), loan terms chip text        |
+| colors.light.secondary_container | #BCEBE7 | — (referenced for teal feature chips)                             |
+| colors.light.nav_active_indicator | #DCE7C8 | Cards category badge bg, "0% for 20 months" chip bg              |
+| colors.light.surface            | #FFFFFF | Product cards background                                           |
+| colors.light.on_surface         | #1A1C16 | Product names                                                      |
+| colors.light.on_surface_variant | #44483D | Subtitle, product descriptions, inactive filter tab text           |
+| colors.light.surface_variant    | #E1E4D5 | Inactive filter tab border                                         |
+| colors.light.background         | #F9FAEF | Screen background                                                  |
+| colors.light.on_primary         | #FFFFFF | Active filter tab text, filled button text, promotions banner text |
+| typography.headline_large       | —       | Page title                                                         |
+| typography.display_small        | —       | Headline rates (4.5% AER, 5.1% AER, etc.)                        |
+| typography.title_medium         | —       | Product names                                                      |
+| typography.title_small          | —       | Promotions banner title                                            |
+| typography.body_medium          | —       | Product descriptions, subtitle                                     |
+| typography.body_small           | —       | Promotions banner detail text                                      |
+| typography.label_medium         | —       | Filter tab labels                                                  |
+| typography.label_small          | —       | Category badges, feature chips                                     |
+| radius.lg                       | 16dp    | Product cards                                                      |
+| radius.md                       | 12dp    | Promotions banner                                                  |
+| radius.sm                       | 8dp     | Feature chips, action buttons                                      |
+| radius.pill                     | 20dp    | Category filter tabs                                               |
+| elevation.level2                | 3dp     | Product cards                                                      |
 
 ---
 
-*Generated by /idea export | 2026-05-25*
+_Generated by /idea export | 2026-05-29_

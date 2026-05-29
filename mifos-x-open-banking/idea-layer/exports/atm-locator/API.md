@@ -1,93 +1,94 @@
 # API Reference — ATM & Branch Locator
 
-| Field | Value |
-|---|---|
-| Feature | atm-locator |
+| Field    | Value                                  |
+|----------|----------------------------------------|
+| Feature  | atm-locator                            |
 | Base URL | https://apisandbox.openbankproject.com |
-| Auth Scheme | DirectLogin (header: `DirectLogin token=<token>`) |
 
 ---
 
 ## GET /obp/v5.1.0/banks/{bankId}/atms
 
+**Auth:** DirectLogin
 **Tag:** ATM
-**Purpose:** Fetch a list of ATMs near the user's location, used to populate the map and result list.
+**Trigger:** Screen entry (`loadAtms()`) with user latitude/longitude; re-triggered on `SearchLocationEvent`
 
 ### Path Parameters
 
-| Parameter | Type | Description |
-|---|---|---|
+| Name   | Type   | Description         |
+|--------|--------|---------------------|
 | bankId | String | OBP bank identifier |
 
 ### Query Parameters
 
-| Parameter | Type | Required | Description |
-|---|---|---|---|
-| latitude | Double | Yes | User's latitude coordinate |
-| longitude | Double | Yes | User's longitude coordinate |
-| limit | Int | No | Max results to return (default 10) |
+| Name      | Type   | Required | Description                                  |
+|-----------|--------|----------|----------------------------------------------|
+| latitude  | Double | Yes      | User's current latitude coordinate            |
+| longitude | Double | Yes      | User's current longitude coordinate           |
+| limit     | Int    | No       | Maximum results to return (default 10)        |
 
 ### Response Fields
 
-| Field | Type | Description |
-|---|---|---|
-| id | String | Unique ATM identifier |
-| name | String | ATM display name (e.g. "Mifos ATM Oxford Street") |
-| address | Address | Structured address object (line1, city, postcode) |
-| location | LatLng | ATM latitude/longitude coordinates |
-| open_24_hours | Boolean | Whether the ATM is open around the clock |
-| cash_withdrawal_national_amount | String | Maximum withdrawal limit (e.g. "300") |
-| supported_languages | List\<String\> | ISO language codes supported at the ATM |
-| services | List\<String\> | Services available (e.g. "cash_withdrawal", "balance_enquiry") |
+| Field                            | Type           | Description                                             |
+|----------------------------------|----------------|---------------------------------------------------------|
+| id                               | String         | Unique ATM identifier                                   |
+| name                             | String         | ATM display name (e.g. "Mifos ATM Oxford Street")      |
+| address                          | Address        | Structured address (line1, city, postcode)              |
+| location                         | LatLng         | ATM latitude/longitude coordinates                      |
+| open_24_hours                    | Boolean        | true when ATM operates around the clock                 |
+| cash_withdrawal_national_amount  | String         | Maximum withdrawal limit (e.g. "300")                   |
+| supported_languages              | List\<String\> | ISO language codes supported                            |
+| services                         | List\<String\> | Services available (e.g. "cash_withdrawal")             |
 
 ### Error Codes
 
-| Code | Meaning |
-|---|---|
-| 401 | Unauthorized — missing or invalid DirectLogin token |
-| 404 | Bank not found |
-| 500 | Internal server error |
+| Code | Message      | Description                                   |
+|------|--------------|-----------------------------------------------|
+| 401  | Unauthorized | Missing or invalid DirectLogin token          |
+| 404  | Not Found    | Bank not found for provided bankId            |
+| 500  | Server Error | OBP internal server error                     |
 
 ---
 
 ## GET /obp/v5.1.0/banks/{bankId}/branches
 
+**Auth:** DirectLogin
 **Tag:** Branch
-**Purpose:** Fetch a list of branches near the user's location for display alongside ATM results.
+**Trigger:** Screen entry — called in parallel with ATM fetch to populate branch results
 
 ### Path Parameters
 
-| Parameter | Type | Description |
-|---|---|---|
+| Name   | Type   | Description         |
+|--------|--------|---------------------|
 | bankId | String | OBP bank identifier |
 
 ### Query Parameters
 
-| Parameter | Type | Required | Description |
-|---|---|---|---|
-| latitude | Double | Yes | User's latitude coordinate |
-| longitude | Double | Yes | User's longitude coordinate |
+| Name      | Type   | Required | Description                          |
+|-----------|--------|----------|--------------------------------------|
+| latitude  | Double | Yes      | User's current latitude coordinate   |
+| longitude | Double | Yes      | User's current longitude coordinate  |
 
 ### Response Fields
 
-| Field | Type | Description |
-|---|---|---|
-| id | String | Unique branch identifier |
-| name | String | Branch display name (e.g. "Mifos Branch Mayfair") |
-| address | Address | Structured address object |
-| location | LatLng | Branch latitude/longitude coordinates |
-| lobby | LobbyHours | Object with weekday opening and closing times |
-| drive_up | DriveUpHours | Drive-through hours (null if not applicable) |
-| branch_routings | List\<BranchRouting\> | Sort code / routing number data |
+| Field            | Type                  | Description                                                  |
+|------------------|-----------------------|--------------------------------------------------------------|
+| id               | String                | Unique branch identifier                                     |
+| name             | String                | Branch display name (e.g. "Mifos Branch Mayfair")           |
+| address          | Address               | Structured address object                                    |
+| location         | LatLng                | Branch latitude/longitude coordinates                        |
+| lobby            | LobbyHours            | Weekday opening and closing times (e.g. Mon–Fri 9am–5pm)    |
+| drive_up         | DriveUpHours          | Drive-through hours (null if not applicable)                 |
+| branch_routings  | List\<BranchRouting\> | Sort code / routing number data                              |
 
 ### Error Codes
 
-| Code | Meaning |
-|---|---|
-| 401 | Unauthorized — missing or invalid DirectLogin token |
-| 404 | Bank not found |
-| 500 | Internal server error |
+| Code | Message      | Description                                   |
+|------|--------------|-----------------------------------------------|
+| 401  | Unauthorized | Missing or invalid DirectLogin token          |
+| 404  | Not Found    | Bank not found for provided bankId            |
+| 500  | Server Error | OBP internal server error                     |
 
 ---
 
-*Generated by /idea export | 2026-05-25*
+_Generated by /idea export | 2026-05-29_

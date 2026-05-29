@@ -1,79 +1,114 @@
-# API Reference: Customer Messages
+# API Reference — Customer Messages
 
-| Field | Value |
-|---|---|
-| Feature | customer-messages |
-| Base URL | https://apisandbox.openbankproject.com |
-| Auth | DirectLogin — `DirectLogin token="<token>"` header |
+| Field    | Value                                     |
+|----------|-------------------------------------------|
+| Feature  | customer-messages                         |
+| Base URL | https://apisandbox.openbankproject.com    |
 
 ---
 
 ## GET /obp/v5.1.0/banks/{bankId}/customers/{customerId}/messages
 
-Retrieves all messages exchanged with a specific customer. Called when opening a thread from the messaging center.
+**Auth:** DirectLogin
+**Tag:** Customer-Messages
+**Trigger:** Screen entry / `RetryLoad` event — loads all message threads for the field officer
 
 ### Path Parameters
 
-| Parameter | Type | Description |
-|---|---|---|
-| bankId | String | OBP bank identifier |
-| customerId | String | OBP customer identifier |
+| Name       | Type   | Value         |
+|------------|--------|---------------|
+| bankId     | String | gh.29.uk      |
+| customerId | String | (from session)|
 
 ### Response Fields
 
-| Field | Type | Description |
-|---|---|---|
-| message_id | String | Unique message identifier |
-| user | User | Sender/recipient user object |
-| transport | String | Delivery channel: `sms`, `email`, `ftp`, or `post` |
-| message | String | Message body text |
-| from_name | String | Display name of sender |
-| from_email_address | String | Sender email address |
-| date | String | ISO datetime of message |
+| Field                | Type   | Description                                                 |
+|----------------------|--------|-------------------------------------------------------------|
+| message_id           | String | Unique message identifier                                   |
+| user                 | Object | OBP user reference linked to the message                    |
+| transport            | String | Delivery channel: "sms", "email", "ftp", or "post"         |
+| message              | String | Full message body text                                      |
+| from_name            | String | Display name of the sender                                  |
+| from_email_address   | String | Sender email used for threading / reply-to                  |
+| date                 | String | ISO-8601 timestamp the message was created                  |
+
+### Sample Response (condensed)
+
+```json
+{
+  "messages": [
+    {
+      "message_id": "msg-001",
+      "user": { "id": "user-john-mwangi" },
+      "transport": "email",
+      "message": "Please send me the account statement for the last 3 months.",
+      "from_name": "John Mwangi",
+      "from_email_address": "john.mwangi@gmail.com",
+      "date": "2026-05-29T08:43:00Z"
+    }
+  ]
+}
+```
 
 ### Error Codes
 
-| Code | Meaning |
-|---|---|
-| 400 | BAD_REQUEST |
-| 401 | UNAUTHORIZED |
-| 404 | CUSTOMER_NOT_FOUND |
+| Code | Message                                         |
+|------|-------------------------------------------------|
+| 400  | BAD_REQUEST — malformed bankId or customerId    |
+| 401  | UNAUTHORIZED — DirectLogin token missing/expired|
+| 404  | CUSTOMER_NOT_FOUND — customerId does not exist  |
 
 ---
 
 ## POST /obp/v4.0.0/banks/{bankId}/customers/{customerId}/messages
 
-Sends a new message to a customer. Called when the officer taps "Send Message" in the compose bottom sheet. The `transport` field is required and must match the customer's preferred channel.
+**Auth:** DirectLogin
+**Tag:** Customer-Messages
+**Trigger:** `send_message` action from compose dialog — submits new message to customer
 
 ### Path Parameters
 
-| Parameter | Type | Description |
-|---|---|---|
-| bankId | String | OBP bank identifier |
-| customerId | String | OBP customer identifier (selected in autocomplete) |
+| Name       | Type   | Value                         |
+|------------|--------|-------------------------------|
+| bankId     | String | gh.29.uk                      |
+| customerId | String | Selected from compose autocomplete |
 
-### Request Body
+### Request Fields
 
-| Field | Type | Required | Description |
-|---|---|---|---|
-| message | String | Yes | The message body text |
-| from_department | String | Yes | Officer's department name (e.g. "Field Operations") |
-| from_person | String | Yes | Officer's display name (e.g. "Priya Sharma") |
-| transport | String | Yes | Delivery channel: `sms`, `email`, `ftp`, or `post` |
+| Field            | Type   | Required | Description                                               |
+|------------------|--------|----------|-----------------------------------------------------------|
+| message          | String | Yes      | Message body content entered in compose_message_input     |
+| from_department  | String | Yes      | Department sending the message (e.g., "Field Operations") |
+| from_person      | String | Yes      | Name of the field officer sending the message             |
+| transport        | String | Yes      | "email" — default channel; or "sms"                       |
 
-### Response
+### Sample Request Body
 
-No body on 201 Created. Subsequent GET call refreshes the thread list.
+```json
+{
+  "message": "Your account application has been approved. Please visit the branch to collect your card.",
+  "from_department": "Field Operations",
+  "from_person": "Agent Kamau",
+  "transport": "email"
+}
+```
+
+### Response Fields
+
+| Field      | Type   | Description                             |
+|------------|--------|-----------------------------------------|
+| message_id | String | Unique ID of the created message        |
+| date       | String | ISO-8601 timestamp the message was sent |
 
 ### Error Codes
 
-| Code | Meaning |
-|---|---|
-| 400 | BAD_REQUEST — invalid transport value or missing required field |
-| 401 | UNAUTHORIZED |
-| 404 | CUSTOMER_NOT_FOUND |
-| 500 | SEND_FAILED — downstream delivery failure |
+| Code | Message                                            |
+|------|----------------------------------------------------|
+| 400  | BAD_REQUEST — missing required field (e.g. transport)|
+| 401  | UNAUTHORIZED — DirectLogin token expired           |
+| 404  | CUSTOMER_NOT_FOUND — target customerId invalid     |
+| 500  | OBP server error                                   |
 
 ---
 
-_Generated by /idea export | 2026-05-25_
+_Generated by /idea export | 2026-05-29_

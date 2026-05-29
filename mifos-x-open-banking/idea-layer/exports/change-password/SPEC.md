@@ -1,107 +1,143 @@
 # SPEC — Change Password
 
-| Field | Value |
-|---|---|
-| Feature | change-password |
-| Flavor | shared |
-| Status | approved |
-| Quality | 95 |
-| ViewModel | ChangePasswordViewModel |
-| Archetype | form |
-| Dependencies | shared-core, obp-auth |
+| Field         | Value                    |
+|---------------|--------------------------|
+| Feature       | change-password          |
+| Flavor        | shared                   |
+| Status        | approved                 |
+| Quality Score | 95                       |
+| ViewModel     | ChangePasswordViewModel  |
+
+---
 
 ## Overview
 
-The Change Password screen allows authenticated users to update their account password through a secure three-field form: current password verification, new password entry with real-time strength evaluation, and confirmation. A live strength indicator (progress bar + label) provides immediate feedback as the user types the new password. On successful submission the screen presents a success banner; on failure an inline error banner surfaces the API error reason. The screen is guarded against unauthenticated access and handles the full error surface of the OBP v7.0.0 password change endpoint.
+The Change Password screen allows both Consumer and Field Officer users to update their account password from within the app. It presents a single-page form (no bottom navigation, top app bar with back arrow) containing three password fields — Current Password, New Password, and Confirm New Password — a real-time password strength indicator, contextual feedback banners, and a primary "Update Password" action button. Validation occurs on submit: the current password must match the server-side value, the new password must reach a minimum strength threshold, and both new password fields must match. On success, a green banner is shown and the user is auto-navigated back to the Profile screen after 2 seconds. On API error, a red banner describes the failure without clearing the form.
+
+---
 
 ## Screens
 
-| Screen ID | Display Name | Shell |
-|---|---|---|
-| change-password/idle | Change Password — Idle | Top app bar "Change Password" + back arrow, no bottom nav |
-| change-password/loading | Change Password — Loading | Top app bar "Change Password" + back arrow, no bottom nav |
-| change-password/submitting | Change Password — Submitting | Top app bar "Change Password" + back arrow, no bottom nav |
-| change-password/success | Change Password — Success | Top app bar "Change Password" + back arrow, no bottom nav |
-| change-password/error | Change Password — Error | Top app bar "Change Password" + back arrow, no bottom nav |
-| change-password/content | Change Password — Content | Top app bar "Change Password" + back arrow, no bottom nav |
-| change-password/empty | Change Password — Empty | Top app bar "Change Password" + back arrow, no bottom nav |
+| ID              | Name              | Route            | Layout | Scroll   |
+|-----------------|-------------------|------------------|--------|----------|
+| change-password | Change Password   | /change-password | Column | Vertical |
+
+**Shell:** Top app bar ("Change Password", back arrow → Profile). No bottom navigation bar.
+
+---
 
 ## Components
 
-| Component | Type | States Present | Notes |
-|---|---|---|---|
-| Header section | text_header | all | Title "Update Your Password", subtitle |
-| Form card | card | idle, submitting, error, content | Contains all three password fields |
-| Current password field | text_field_password | idle, submitting, error, content | Masked input, show/hide toggle |
-| New password field | text_field_password | idle, submitting, error, content | Masked input, show/hide toggle |
-| Password strength indicator | progress_indicator + label | idle, submitting, error, content | Float progress (0.0–1.0) + strength label |
-| Confirm password field | text_field_password | idle, submitting, error, content | Masked input, show/hide toggle |
-| Error banner | banner_error | error | Inline; surfaces API error message |
-| Success banner | banner_success | success | Confirms password updated |
-| Submit button | button_primary | idle, error, content | Label "Update Password"; disabled during submitting |
-| Loading spinner | loading_indicator | loading, submitting | Full-screen on loading; inline on submitting |
+| ID                          | Type         | Description                                                                                          |
+|-----------------------------|--------------|------------------------------------------------------------------------------------------------------|
+| chpw_root                   | stack        | Root column; background `#F9FAEF`; padding `spacing.lg` (24dp)                                      |
+| chpw_header_section         | stack        | Column; padding-bottom `spacing.xl` (32dp)                                                          |
+| chpw_header_title           | text         | "Update Your Password" — `headline_small` (24sp/SemiBold), color `#4C662B`                          |
+| chpw_header_subtitle        | text         | "Choose a strong password that you don't use elsewhere." — `body_medium` (14sp), color `#44483D`    |
+| chpw_form_card              | card         | White card (`#FFFFFF`); border-radius 12dp; padding `spacing.md` (16dp); margin-bottom `spacing.md` |
+| chpw_current_password_input | input        | Label "Current Password"; placeholder "Enter your current password"; password variant; border `#C5C8BA`; focused `#4C662B`; error `#BA1A1A` |
+| chpw_divider_1              | divider      | Color `#E1E4D5`; separates current and new password fields                                           |
+| chpw_new_password_input     | input        | Label "New Password"; placeholder "At least 8 characters"; password variant; triggers strength update on each keystroke |
+| chpw_strength_indicator     | stack        | Column container for strength bar + label                                                            |
+| chpw_strength_bar           | progress_bar | Linear bar 4dp height; color_low `#BA1A1A` / color_medium `#F4B400` / color_high `#4C662B`; driven by `passwordStrengthProgress` (0–1) |
+| chpw_strength_label         | text         | "Password strength: Good" — `body_small` (12sp), color `#44483D`; driven by `passwordStrengthLabel` (Weak / Fair / Good / Strong) |
+| chpw_divider_2              | divider      | Color `#E1E4D5`; separates new and confirm fields                                                    |
+| chpw_confirm_password_input | input        | Label "Confirm New Password"; placeholder "Re-enter your new password"; password variant; IME action: done |
+| chpw_error_banner           | banner       | "Password change failed. Please check your current password and try again." — background `#FFDAD6`; text `#BA1A1A`; 8dp radius; visible in `error` state |
+| chpw_success_banner         | banner       | "Your password has been changed successfully." — background `#D8EED0`; text `#4C662B`; 8dp radius; visible in `success` state |
+| chpw_submit_button          | button       | "Update Password" — filled; background `#4C662B`; white text; `label_large`; 12dp radius; loading spinner in `submitting` state |
+
+---
 
 ## States
 
-| State | Description | Components Visible |
-|---|---|---|
-| loading | Screen initialising / auth check in progress | Header section, Loading spinner |
-| idle | Form ready for input | Header section, Form card, Submit button |
-| submitting | API request in-flight; form locked | Header section, Form card (disabled), Loading spinner |
-| success | Password updated successfully | Header section, Success banner |
-| error | API returned an error | Header section, Error banner, Form card, Submit button |
-| content | Alias for idle with pre-populated state context | Header section, Form card, Submit button |
-| empty | Password change unavailable (feature flag off / unsupported account type) | Header section (title + "Password change unavailable" message) |
+| ID         | Trigger                                     | Description                                                                |
+|------------|---------------------------------------------|----------------------------------------------------------------------------|
+| loading    | Screen entry — auth session validation      | Header visible; brief skeleton while local auth resolves; transitions immediately to `idle` |
+| idle       | Default after load                          | Header + form card + submit button visible; all fields empty               |
+| submitting | `OnSubmitClicked` while form is valid       | Submit button shows loading spinner; all fields disabled                   |
+| success    | API returns 200 OK                          | Success banner visible; form card hidden; auto-navigate to profile after 2s |
+| error      | API returns 400/401 or network failure      | Error banner + form card + submit button visible; user can correct and retry |
+| content    | Alias for `idle`                            | Header + form card + submit button                                         |
+| empty      | Session invalid / endpoint unavailable      | Header only; empty state with `lock_reset` icon and "Password change unavailable. Please try again later." |
+
+---
 
 ## State Model
 
-```kotlin
-data class ChangePasswordUiState(
-    val currentPassword: String,
-    val newPassword: String,
-    val confirmPassword: String,
-    val passwordStrengthProgress: Float,       // 0.0 – 1.0
-    val passwordStrengthLabel: String,          // e.g. "Weak", "Fair", "Strong"
-    val isSubmitting: Boolean,
-    val errorMessage: String?,
-    val isSuccess: Boolean,
-)
-```
+**ViewModel:** `ChangePasswordViewModel`
+**Screen State Type:** `ChangePasswordUiState`
 
-### Events
+| Name                     | Type    | Default              |
+|--------------------------|---------|----------------------|
+| currentPassword          | String  | `""`                 |
+| newPassword              | String  | `""`                 |
+| confirmPassword          | String  | `""`                 |
+| passwordStrengthProgress | Float   | `0f`                 |
+| passwordStrengthLabel    | String  | `"Enter a password"` |
+| isSubmitting             | Boolean | `false`              |
+| errorMessage             | String? | `null`               |
+| isSuccess                | Boolean | `false`              |
 
-| Event | Trigger |
-|---|---|
-| OnCurrentPasswordChanged | User edits current password field |
-| OnNewPasswordChanged | User edits new password field (also triggers strength re-evaluation) |
-| OnConfirmPasswordChanged | User edits confirm password field |
-| OnSubmitClicked | User taps "Update Password" button |
+**Events:** `OnCurrentPasswordChanged`, `OnNewPasswordChanged`, `OnConfirmPasswordChanged`, `OnSubmitClicked`
 
-### Dependency Injection
+**Actions:**
+- `onCurrentPasswordChanged(value: String)` — updates `currentPassword`
+- `onNewPasswordChanged(value: String)` — updates `newPassword`; triggers `PasswordStrengthEvaluator`
+- `onConfirmPasswordChanged(value: String)` — updates `confirmPassword`
+- `onSubmitClicked()` — validates then calls `PUT /obp/v5.0.0/users/{userId}/password`
 
-| Dependency | Role |
-|---|---|
-| AuthRepository | Calls OBP v7.0.0 password change endpoint |
-| PasswordStrengthEvaluator | Computes `passwordStrengthProgress` + `passwordStrengthLabel` on each keystroke |
+**DI Dependencies:** `AuthRepository`, `PasswordStrengthEvaluator`
+
+**Errors:**
+- `WRONG_CURRENT_PASSWORD`: "Password change failed. Please check your current password and try again."
+- `PASSWORDS_DO_NOT_MATCH`: "New passwords do not match. Please re-enter."
+- `WEAK_PASSWORD`: "Your new password is too weak. Please choose a stronger one."
+- `NETWORK_ERROR`: "Could not connect. Please check your connection and try again."
+
+---
 
 ## Navigation
 
-| Action | Destination | Type |
-|---|---|---|
-| nav_back_to_profile | profile | Back stack pop to profile screen |
-| Back arrow | Previous screen | Back stack pop |
+| From            | To       | Trigger                                | Type       |
+|-----------------|----------|----------------------------------------|------------|
+| change-password | profile  | Back arrow in top app bar              | pop        |
+| change-password | profile  | `success` state — auto after 2 seconds | pop (auto) |
 
-## Dependencies
+---
 
-| Dependency | Purpose |
-|---|---|
-| shared-core | Common UI primitives, navigation utilities, design tokens |
-| obp-auth | AuthRepository wrapping OBP v7.0.0 `/users/current/password` endpoint |
+## API Endpoints
+
+| Endpoint                                | Auth        | Tag   | Purpose                                     |
+|-----------------------------------------|-------------|-------|---------------------------------------------|
+| PUT /obp/v5.0.0/users/{userId}/password | DirectLogin | Users | Update authenticated user's account password |
+
+---
 
 ## Design Tokens
 
-| Token | Value |
-|---|---|
-| Accent color | #4C662B (Earth-green) |
-| Typography | Outfit |
-| Design system | Material 3 (M3) |
+| Token                          | Value   | Usage                                                                     |
+|--------------------------------|---------|---------------------------------------------------------------------------|
+| color.light.primary            | #4C662B | Header title, focused field border, strength bar high, submit button bg, success banner text |
+| color.light.background         | #F9FAEF | Screen background                                                         |
+| color.light.surface            | #FFFFFF | Form card background                                                      |
+| color.light.on_surface_variant | #44483D | Header subtitle text, strength label text                                 |
+| color.light.outline_variant    | #C5C8BA | Default input border, dividers                                            |
+| color.light.error              | #BA1A1A | Error banner text, error field border, strength bar low fill              |
+| color.light.error_container    | #FFDAD6 | Error banner background                                                   |
+| color.semantic.success_bg      | #D8EED0 | Success banner background                                                 |
+| color.semantic.strength_medium | #F4B400 | Strength bar medium fill                                                  |
+| color.light.surface_variant    | #E1E4D5 | Divider color, strength bar track background                              |
+| typography.headline_small      | —       | "Update Your Password" header title (24sp/SemiBold)                       |
+| typography.body_medium         | —       | Header subtitle, input values (14sp)                                      |
+| typography.body_small          | —       | Password strength label (12sp)                                            |
+| typography.label_large         | —       | Submit button text (14sp/Medium)                                          |
+| spacing.lg                     | 24dp    | Root column padding                                                       |
+| spacing.xl                     | 32dp    | Header section bottom padding                                             |
+| spacing.md                     | 16dp    | Card padding, margin-bottom                                               |
+| radius.md                      | 12dp    | Form card and submit button border-radius                                 |
+| radius.sm                      | 8dp     | Banner border-radius                                                      |
+
+---
+
+_Generated by /idea export | 2026-05-29_

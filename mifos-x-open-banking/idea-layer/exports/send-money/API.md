@@ -1,237 +1,178 @@
-# Send Money — API Reference
+# API Reference — Send Money
 
-| Field | Value |
-|---|---|
-| Feature | send-money |
+| Field    | Value                                  |
+|----------|----------------------------------------|
+| Feature  | send-money                             |
 | Base URL | https://apisandbox.openbankproject.com |
-| Auth | DirectLogin (header: `DirectLogin token=<token>`) |
 
 ---
 
-## 1. List Accounts
-
-**GET** `/obp/v5.1.0/banks/{bankId}/accounts`
+## GET /obp/v5.1.0/banks/{bankId}/accounts
 
 **Auth:** DirectLogin
+**Tag:** Accounts
+**Trigger:** Screen entry — populate `from_account_selector`
 
-**Path Parameters:**
+### Path Parameters
 
-| Param | Type | Description |
-|---|---|---|
-| bankId | String | OBP bank identifier |
+| Name   | Type   | Value    |
+|--------|--------|----------|
+| bankId | String | gh.29.uk |
 
-**Response Fields:**
+### Response Fields
 
-| Field | Type | Description |
-|---|---|---|
-| accounts | List\<Account\> | User's bank accounts |
-| accounts[].id | String | Account ID |
-| accounts[].label | String | Display name (e.g., "Primary Checking") |
-| accounts[].balance | Amount | Current balance |
-| accounts[].currency | String | ISO 4217 currency code |
+| Field             | Type               | Description                                    |
+|-------------------|--------------------|------------------------------------------------|
+| accounts          | List\<Account\>    | Accounts for the authenticated user            |
+| accounts[].id     | String             | Account identifier                             |
+| accounts[].label  | String             | Display name e.g. "Primary Checking"           |
+| accounts[].balance| Amount             | Contains `currency` (String) and `amount` (String) |
+| accounts[].currency | String           | Currency code e.g. "GBP"                       |
 
-**Error Codes:**
+**Pre-fill display:** "Primary Checking — £4,250.00 available"
 
-| Code | Message |
-|---|---|
-| 400 | INVALID_BANK_ID |
-| 401 | USER_NOT_LOGGED_IN |
-| 404 | BANK_NOT_FOUND |
+### Error Codes
+
+| Code | Message          |
+|------|------------------|
+| 400  | INVALID_BANK_ID  |
+| 401  | USER_NOT_LOGGED_IN|
+| 404  | BANK_NOT_FOUND   |
 
 ---
 
-## 2. List Counterparties (Beneficiaries)
-
-**GET** `/obp/v4.0.0/banks/{bankId}/accounts/{accountId}/{viewId}/counterparties`
+## GET /obp/v4.0.0/banks/{bankId}/accounts/{accountId}/{viewId}/counterparties
 
 **Auth:** DirectLogin
+**Tag:** Counterparties
+**Trigger:** Screen entry — populate `beneficiary_search` and `recent_beneficiaries_row`
 
-**Path Parameters:**
+### Path Parameters
 
-| Param | Type | Description |
-|---|---|---|
-| bankId | String | OBP bank identifier |
-| accountId | String | Source account ID |
-| viewId | String | Account view (e.g., "owner") |
+| Name      | Type   | Value            |
+|-----------|--------|------------------|
+| bankId    | String | gh.29.uk         |
+| accountId | String | Primary account ID from accounts response |
+| viewId    | String | owner            |
 
-**Response Fields:**
+### Response Fields
 
-| Field | Type | Description |
-|---|---|---|
-| counterparties | List\<Counterparty\> | Saved beneficiaries |
-| counterparties[].id | String | Counterparty ID |
-| counterparties[].name | String | Beneficiary display name |
-| counterparties[].other_bank_routing_address | String | Beneficiary bank identifier |
-| counterparties[].other_account_routing_address | String | Beneficiary account/IBAN |
+| Field                                    | Type                    | Description                              |
+|------------------------------------------|-------------------------|------------------------------------------|
+| counterparties                           | List\<Counterparty\>    | Saved beneficiaries                      |
+| counterparties[].id                      | String                  | Counterparty identifier                  |
+| counterparties[].name                    | String                  | Beneficiary display name                 |
+| counterparties[].other_bank_routing_address | String               | Beneficiary bank e.g. "Barclays UK"      |
+| counterparties[].other_account_routing_address | String            | Beneficiary account number / IBAN        |
 
-**Error Codes:**
+**Recent beneficiaries (sample):** John Smith (Barclays UK), Sarah Williams (HSBC UK)
 
-| Code | Message |
-|---|---|
-| 400 | INVALID_BANK_ID |
-| 401 | USER_NOT_LOGGED_IN |
+### Error Codes
 
----
-
-## 3. Initiate Payment — 4 Payment Type Variants
-
-All payment types share the same base path pattern, substituting the transaction-request-type slug.
+| Code | Message          |
+|------|------------------|
+| 400  | INVALID_BANK_ID  |
+| 401  | USER_NOT_LOGGED_IN|
 
 ---
 
-### 3a. SEPA Payment
-
-**POST** `/obp/v5.1.0/banks/{bankId}/accounts/{accountId}/owner/transaction-request-types/SEPA/transaction-requests`
-
-**Request Body:**
-
-```json
-{
-  "value": {
-    "currency": "GBP",
-    "amount": "500.00"
-  },
-  "to": {
-    "iban": "GB29NWBK60161331926819"
-  },
-  "description": "Rent August 2026",
-  "charge_policy": "SHARED"
-}
-```
-
----
-
-### 3b. COUNTERPARTY Payment
-
-**POST** `/obp/v5.1.0/banks/{bankId}/accounts/{accountId}/owner/transaction-request-types/COUNTERPARTY/transaction-requests`
-
-**Request Body:**
-
-```json
-{
-  "value": {
-    "currency": "GBP",
-    "amount": "500.00"
-  },
-  "to": {
-    "counterparty_id": "9fg8a7e4-6d02-40e3-a129-0b2bf89de8uh"
-  },
-  "description": "Rent August 2026",
-  "charge_policy": "SHARED"
-}
-```
-
----
-
-### 3c. ACCOUNT (Domestic) Payment
-
-**POST** `/obp/v5.1.0/banks/{bankId}/accounts/{accountId}/owner/transaction-request-types/ACCOUNT/transaction-requests`
-
-**Request Body:**
-
-```json
-{
-  "value": {
-    "currency": "GBP",
-    "amount": "500.00"
-  },
-  "to": {
-    "bank_id": "gb.barclays",
-    "account_id": "8ca8a7e4-6d02-40e3-a129-0b2bf89de9aa"
-  },
-  "description": "Rent August 2026",
-  "charge_policy": "SHARED"
-}
-```
-
----
-
-### 3d. SANDBOX_TAN (Test/Sandbox) Payment
-
-**POST** `/obp/v5.1.0/banks/{bankId}/accounts/{accountId}/owner/transaction-request-types/SANDBOX_TAN/transaction-requests`
-
-**Request Body:**
-
-```json
-{
-  "value": {
-    "currency": "GBP",
-    "amount": "500.00"
-  },
-  "to": {
-    "bank_id": "gb.barclays",
-    "account_id": "8ca8a7e4-6d02-40e3-a129-0b2bf89de9aa"
-  },
-  "description": "Rent August 2026"
-}
-```
-
-**Response Fields (all payment types):**
-
-| Field | Type | Description |
-|---|---|---|
-| id | String | Transaction request ID |
-| type | String | Payment type used |
-| status | String | INITIATED / COMPLETED / FAILED |
-| start_date | DateTime | Payment initiation timestamp |
-| end_date | DateTime | Payment completion timestamp |
-| challenge | Challenge | Challenge object if SCA required |
-| charge | Charge | Fee details |
-
-**Error Codes (all payment types):**
-
-| Code | Message |
-|---|---|
-| 400 | INVALID_JSON_FORMAT |
-| 403 | INSUFFICIENT_AUTHORISATION |
-| 404 | BANK_ACCOUNT_NOT_FOUND |
-| 422 | INSUFFICIENT_FUNDS |
-
----
-
-## 4. Validate IBAN
-
-**POST** `/obp/v4.0.0/account/check/scheme/iban`
+## POST /obp/v4.0.0/account/check/scheme/iban
 
 **Auth:** DirectLogin
+**Tag:** Account
+**Trigger:** User manually enters an IBAN in `beneficiary_search` — validate before enabling Continue
 
-**Request Body:**
+### Request Fields
+
+| Field   | Type   | Description                              |
+|---------|--------|------------------------------------------|
+| address | String | The IBAN to validate (field named "address" in OBP schema) |
+
+### Response Fields
+
+| Field    | Type    | Description                        |
+|----------|---------|------------------------------------|
+| is_valid | Boolean | `true` if IBAN checksum is valid   |
+
+---
+
+## GET /obp/v3.1.0/banks/{bankId}/accounts/{accountId}/owner/funds-available
+
+**Auth:** DirectLogin
+**Tag:** Account
+**Trigger:** After Continue tap — verify sufficient funds before navigating to confirmation
+
+### Path Parameters
+
+| Name      | Type   | Value         |
+|-----------|--------|---------------|
+| bankId    | String | gh.29.uk      |
+| accountId | String | selectedAccountId |
+
+### Query Parameters
+
+| Name     | Type   | Example | Description           |
+|----------|--------|---------|-----------------------|
+| amount   | String | "100.00"| Payment amount string |
+| currency | String | "GBP"   | Payment currency      |
+
+### Response Fields
+
+| Field  | Type   | Description                                     |
+|--------|--------|-------------------------------------------------|
+| answer | String | `"yes"` if funds available, `"no"` if insufficient |
+
+---
+
+## POST /obp/v5.1.0/banks/{bankId}/accounts/{accountId}/owner/transaction-request-types/SEPA/transaction-requests
+
+**Auth:** DirectLogin
+**Tag:** TransactionRequests
+**Trigger:** User confirms payment on `send-money-confirm` screen — not sent directly from this screen
+
+### Path Parameters
+
+| Name      | Type   | Value                         |
+|-----------|--------|-------------------------------|
+| bankId    | String | gh.29.uk                      |
+| accountId | String | selectedAccountId             |
+
+### Request Body (SEPA)
 
 ```json
 {
-  "address": "GB29NWBK60161331926819"
+  "to": {
+    "iban": "<beneficiary IBAN>"
+  },
+  "value": {
+    "currency": "GBP",
+    "amount": "100.00"
+  },
+  "description": "Payment for invoice #1234"
 }
 ```
 
-> Note: The field name is `address`, not `iban`.
+### Response Fields
 
-**Response Fields:**
+| Field      | Type      | Description                                |
+|------------|-----------|--------------------------------------------|
+| id         | String    | Transaction request ID                     |
+| type       | String    | "SEPA"                                     |
+| status     | String    | "INITIATED" or "COMPLETED"                 |
+| start_date | DateTime  | ISO-8601 request creation timestamp        |
+| end_date   | DateTime  | ISO-8601 expected completion timestamp     |
+| challenge  | Challenge | SCA challenge (if applicable)              |
+| charge     | Charge    | Applied fee details                        |
 
-| Field | Type | Description |
-|---|---|---|
-| is_valid | Boolean | true if IBAN is structurally valid |
+### Error Codes
 
----
-
-## 5. Check Funds Available
-
-**GET** `/obp/v3.1.0/banks/{bankId}/accounts/{accountId}/owner/funds-available`
-
-**Auth:** DirectLogin
-
-**Query Parameters:**
-
-| Param | Type | Description |
-|---|---|---|
-| amount | String | Amount to check (e.g., "500.00") |
-| currency | String | ISO 4217 currency code (e.g., "GBP") |
-
-**Response Fields:**
-
-| Field | Type | Description |
-|---|---|---|
-| answer | String | "yes" if funds sufficient, "no" if not |
+| Code | Message                   | UI Behaviour                               |
+|------|---------------------------|--------------------------------------------|
+| 400  | INVALID_JSON_FORMAT       | Error banner with field guidance           |
+| 403  | INSUFFICIENT_AUTHORISATION| Navigate to login                          |
+| 404  | BANK_ACCOUNT_NOT_FOUND    | Error banner on confirmation screen        |
+| 422  | INSUFFICIENT_FUNDS        | Error: "Insufficient funds in account."    |
 
 ---
 
-*Generated by /idea export | 2026-05-25*
+_Generated by /idea export | 2026-05-29_

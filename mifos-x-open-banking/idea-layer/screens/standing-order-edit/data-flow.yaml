@@ -1,0 +1,58 @@
+sibling: data-flow
+schema_version: "4.0"
+feature_id: standing-order-edit
+entries:
+  - screen_id: standing-order-edit
+    trigger: on_interact
+    event: OnSave
+    endpoints:
+      - obp_update_standing_order
+    direction: write
+    dtos:
+      - name: StandingOrderUpdateRequest
+        role: request
+        api_id: obp_update_standing_order
+      - name: StandingOrderDetail
+        role: response
+        api_id: obp_update_standing_order
+    produces_state: loading
+    success_state: content
+    error_paths:
+      - error_code: 400
+        behavior: error_state
+      - error_code: 401
+        behavior: navigate_login
+      - error_code: 403
+        behavior: error_state
+      - error_code: 404
+        behavior: error_state
+      - error_code: 409
+        behavior: error_state
+    notes: "PUT save; on 2xx pop back to standing-order-detail (which reloads), on 4xx show inline error banner"
+
+  - screen_id: standing-order-edit
+    trigger: on_interact
+    event: OnFrequencyChange
+    endpoints: []
+    direction: write
+    dtos: []
+    produces_state: content
+    notes: "Client-side frequency picker; mutates form field, no network call"
+
+  - screen_id: standing-order-edit
+    trigger: on_interact
+    event: OnStartDateChange
+    endpoints: []
+    direction: write
+    dtos: []
+    produces_state: content
+    notes: "Client-side date picker for start_date; no network call"
+
+  - screen_id: standing-order-edit
+    trigger: on_interact
+    event: OnEndDateChange
+    endpoints: []
+    direction: write
+    dtos: []
+    produces_state: content
+    notes: "Client-side date picker for optional final_date; no network call"

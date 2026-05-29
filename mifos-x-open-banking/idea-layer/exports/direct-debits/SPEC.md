@@ -1,197 +1,163 @@
-# Direct Debits — Feature Specification
+# SPEC — Direct Debits
 
-| Field | Value |
-|---|---|
-| Feature | direct-debits |
-| Flavor | consumer |
-| Status | designed |
-| Quality Score | 88 |
-| Contract Version | 1.1.0 |
+| Field         | Value                    |
+|---------------|--------------------------|
+| Feature       | direct-debits            |
+| Flavor        | consumer                 |
+| Status        | approved                 |
+| Quality Score | 97                       |
+| ViewModel     | DirectDebitsViewModel    |
 
 ---
 
 ## Overview
 
-The Direct Debits screen displays all direct debit mandates (active and cancelled) for the consumer's account. Unlike standing orders (user-initiated recurring payments), direct debits are authorised by the account holder but executed by the payee on agreed collection dates. The screen lists mandates with payee name, collection amount, frequency, next collection date, status badge, and mandate reference. Users can view mandate details, cancel active mandates via a confirmation dialog, and set up new direct debits via a floating action button.
-
-Mandate cancellation is a destructive, irreversible action — a confirmation dialog guards it. Cancelled mandates remain visible in a muted style for audit traceability.
+The Direct Debits screen is the central mandate management surface for Consumer persona users. It lists all active and cancelled direct debit mandates set up against the user's primary account — Netflix (£15.99/month), Spotify (£10.99/month), and a cancelled PureGym membership (£29.99/month). Each mandate card shows merchant name, status badge, amount with frequency, next collection date, and OBP mandate reference. An active count chip ("3 active") sits beside the screen title. A floating action button lets users set up new mandates. Tapping a card navigates to the detail screen. A confirmation dialog guards the destructive cancel action with a scrim overlay. Data is fetched from OBP Direct-Debit endpoints on screen entry and on retry.
 
 ---
 
 ## Screens
 
-| Screen ID | Route | Layout | Scroll |
-|---|---|---|---|
-| direct-debits | /direct-debits | index_list | vertical |
+| ID            | Name          | Route           | Layout | Scroll   |
+|---------------|---------------|-----------------|--------|----------|
+| direct-debits | Direct Debits | /direct-debits  | Column | Vertical |
 
-**Shell:** Back navigation (`arrow_back` → accounts). Top app bar titled "Direct Debits" with `more_vert` overflow action. No bottom navigation.
+**Shell:** Top app bar ("Direct Debits") with back arrow and overflow menu. No bottom navigation bar.
+
+| Shell Element        | Type | Value                                    |
+|----------------------|------|------------------------------------------|
+| Top app bar title    | text | "Direct Debits"                          |
+| Navigation icon      | icon | arrow_back → navigate_back               |
+| Overflow action      | icon | more_vert → open_direct_debit_options    |
 
 ---
 
 ## Components
 
-| ID | Type | Description |
-|---|---|---|
-| title_count_row | stack | Horizontal header row containing title and active-count chip |
-| direct_debits_title | text | "Direct Debits", headline_large, #1800B1, bold |
-| active_count_chip | box | "3 active" — #E8F5E9 background, #4CAF50 text, label_medium semibold, r=12dp |
-| direct_debit_netflix | box | Tappable card for Netflix mandate — white card, elevation 2, r=16dp |
-| netflix_header_row | stack | Horizontal row: merchant name left, status badge right |
-| netflix_payee | text | "Netflix", title_medium, #111111, semibold |
-| netflix_active_badge | box | "Active" — #E8F5E9/#4CAF50, label_small, r=10dp |
-| netflix_amount_row | stack | Horizontal row: amount left, next-date right |
-| netflix_amount | text | "£15.99 / month", body_large, #1800B1, semibold |
-| netflix_next_date | text | "Next: 3 Jun 2026", body_small, #888888 |
-| netflix_mandate_ref | text | "Ref: DD-NF-20240301", label_small, #AAAAAA |
-| direct_debit_spotify | box | Tappable card for Spotify mandate — white card, elevation 2, r=16dp |
-| spotify_header_row | stack | Horizontal row: merchant name left, status badge right |
-| spotify_payee | text | "Spotify", title_medium, #111111, semibold |
-| spotify_active_badge | box | "Active" — #E8F5E9/#4CAF50, label_small, r=10dp |
-| spotify_amount_row | stack | Horizontal row: amount left, next-date right |
-| spotify_amount | text | "£10.99 / month", body_large, #1800B1, semibold |
-| spotify_next_date | text | "Next: 12 Jun 2026", body_small, #888888 |
-| spotify_mandate_ref | text | "Ref: DD-SP-20231115", label_small, #AAAAAA |
-| direct_debit_gym | box | Tappable card for PureGym mandate (cancelled) — muted #FAFAFA background, no elevation |
-| gym_header_row | stack | Horizontal row: merchant name left, cancelled badge right |
-| gym_payee | text | "PureGym", title_medium, #888888, semibold (greyed out) |
-| gym_cancelled_badge | box | "Cancelled" — #F5F5F5/#9E9E9E, label_small, r=10dp |
-| gym_amount | text | "£29.99 / month", body_large, #AAAAAA, normal weight |
-| gym_mandate_ref | text | "Ref: DD-GYM-20220601", label_small, #CCCCCC |
-| cancel_confirm_dialog | dialog | Modal confirmation dialog for mandate cancellation — r=20dp, elevation 8 |
-| cancel_dialog_title | text | "Cancel Direct Debit?", headline_small, #111111, bold |
-| cancel_dialog_body | text | Dynamic: "{merchantName} ({mandateRef}) will stop collecting payments. This cannot be undone." |
-| cancel_confirm_cta | button | "Yes, Cancel Mandate" — filled, #D32F2F, full-width, r=12dp |
-| cancel_dismiss_cta | button | "Keep Mandate" — outlined, #1800B1, full-width, r=12dp |
-| setup_direct_debit_fab | button | FAB "Set Up Direct Debit" — #1800B1, add icon, elevation 6, r=16dp |
+| ID                      | Type    | Description                                                                                                         |
+|-------------------------|---------|---------------------------------------------------------------------------------------------------------------------|
+| title_count_row         | stack   | Horizontal row containing screen title + active count chip; 20dp horizontal padding, 16dp vertical padding         |
+| direct_debits_title     | text    | "Direct Debits" — Outfit/headline_large, #4C662B, bold                                                             |
+| active_count_chip       | box     | "3 active" — #CDEDA3 fill, #4C662B text, 12dp radius, 10dp horizontal pad, Outfit/label_medium semibold            |
+| direct_debit_netflix    | box     | Netflix mandate card — #FFFFFF fill, 16dp radius, 2dp elevation, 20dp horizontal margin, 12dp bottom margin        |
+| netflix_header_row      | stack   | Horizontal row: merchant name (left) + status badge (right)                                                        |
+| netflix_payee           | text    | "Netflix" — Outfit/title_medium, #1A1C16, semibold                                                                 |
+| netflix_active_badge    | box     | "Active" — #CDEDA3 fill, #4C662B text, 10dp radius, Outfit/label_small                                             |
+| netflix_amount_row      | stack   | Horizontal row: amount (left) + next date (right)                                                                  |
+| netflix_amount          | text    | "£15.99 / month" — Outfit/body_large, #4C662B, semibold                                                            |
+| netflix_next_date       | text    | "Next: 3 Jun 2026" — Outfit/body_small, #44483D                                                                    |
+| netflix_mandate_ref     | text    | "Ref: DD-NF-20240301" — Outfit/label_small, #44483D                                                                |
+| direct_debit_spotify    | box     | Spotify mandate card — #FFFFFF fill, 16dp radius, 2dp elevation, 20dp horizontal margin                            |
+| spotify_header_row      | stack   | Horizontal row: merchant name + status badge                                                                       |
+| spotify_payee           | text    | "Spotify" — Outfit/title_medium, #1A1C16, semibold                                                                 |
+| spotify_active_badge    | box     | "Active" — #CDEDA3 fill, #4C662B text, Outfit/label_small                                                          |
+| spotify_amount_row      | stack   | Horizontal row: amount + next date                                                                                 |
+| spotify_amount          | text    | "£10.99 / month" — Outfit/body_large, #4C662B, semibold                                                            |
+| spotify_next_date       | text    | "Next: 12 Jun 2026" — Outfit/body_small, #44483D                                                                   |
+| spotify_mandate_ref     | text    | "Ref: DD-SP-20231115" — Outfit/label_small, #44483D                                                                |
+| direct_debit_gym        | box     | PureGym cancelled mandate — #F9FAEF fill, #E1E4D5 border, 16dp radius, 0dp elevation — muted styling              |
+| gym_header_row          | stack   | Horizontal row: merchant name + cancelled badge                                                                    |
+| gym_payee               | text    | "PureGym" — Outfit/title_medium, #44483D semibold (greyed out for cancelled state)                                 |
+| gym_cancelled_badge     | box     | "Cancelled" — #F9FAEF fill, #44483D text, 10dp radius, Outfit/label_small                                          |
+| gym_amount              | text    | "£29.99 / month" — Outfit/body_large, #44483D, normal weight (muted)                                               |
+| gym_mandate_ref         | text    | "Ref: DD-GYM-20220601" — Outfit/label_small, #E1E4D5                                                               |
+| cancel_confirm_dialog   | dialog  | Modal — #FFFFFF fill, 20dp radius, 8dp elevation, 24dp padding; keyboard: Escape closes                           |
+| cancel_dialog_title     | text    | "Cancel Direct Debit?" — Outfit/headline_small, #1A1C16, bold                                                      |
+| cancel_dialog_body      | text    | "Netflix (DD-NF-20240301) will stop collecting payments. This cannot be undone." — Outfit/body_medium, #44483D     |
+| cancel_confirm_cta      | button  | "Yes, Cancel Mandate" — filled, #BA1A1A fill, #FFFFFF text, 12dp radius, full width                               |
+| cancel_dismiss_cta      | button  | "Keep Mandate" — outlined, #4C662B border + text, 12dp radius, full width                                          |
+| setup_direct_debit_fab  | button  | "Set Up Direct Debit" — FAB, #4C662B fill, add leading icon, 16dp radius, 6dp elevation, floating                 |
 
 ---
 
 ## States
 
-| State ID | Trigger | Visible Components |
-|---|---|---|
-| loading | Screen entry, before API response | title_count_row, direct_debits_title; skeleton list (3 cards, 110dp height each) |
-| populated | API returns mandate list | All mandate cards (Netflix, Spotify, PureGym), title row with active_count_chip, setup FAB |
-| empty | API returns zero mandates | title_count_row, direct_debits_title, setup FAB; empty state: account_balance_wallet icon + "No direct debits set up" |
-| cancel_confirm | User taps cancel on active mandate | Full populated list visible + modal dialog overlay (50% dimmed background) with cancel_confirm_dialog components |
-| error | API call fails | title_count_row, direct_debits_title, setup FAB; error state: cloud_off icon + "Unable to load direct debits" + retry button |
-
-### State Transitions
-
-```
-Screen Entry → loading
-loading → populated   (API success, mandates present)
-loading → empty       (API success, no mandates)
-loading → error       (API failure)
-populated → cancel_confirm  (user taps "Cancel mandate" action on active card)
-cancel_confirm → populated  (user taps "Keep Mandate" / cancel API success)
-cancel_confirm → populated  (confirm_cancel_direct_debit → reload)
-error → loading       (RetryLoad event)
-populated → loading   (RefreshTriggered event)
-```
+| ID             | Trigger                              | Description                                                                                |
+|----------------|--------------------------------------|--------------------------------------------------------------------------------------------|
+| loading        | Screen entry / RetryLoad             | Title row visible; 3 skeleton cards (height 110dp each) shimmer in mandate list            |
+| populated      | API returns mandates                 | All 3 mandate cards (Netflix, Spotify, PureGym) + active count chip + FAB visible         |
+| empty          | API returns empty mandate list       | Title + FAB + empty state (wallet icon, "No direct debits set up", setup instruction copy)|
+| cancel_confirm | User triggers cancel action          | Full mandate list behind 50% alpha scrim overlay + cancel confirmation dialog              |
+| error          | Network or auth failure              | Title + FAB + error state (cloud_off icon, "Unable to load direct debits", retry button)  |
 
 ---
 
 ## State Model
 
 **ViewModel:** `DirectDebitsViewModel`
+**Screen State Type:** `DirectDebitsUiState`
 
-| Field | Type | Default | Description |
-|---|---|---|---|
-| directDebits | List\<DirectDebit\> | emptyList() | Full mandate list from OBP API |
-| activeCount | Int | 0 | Count of mandates with status active |
-| uiState | DirectDebitsUiState | Loading | Controls which state layout is rendered |
-| selectedMandate | DirectDebit? | null | Mandate selected for cancellation confirmation |
-| showCancelDialog | Boolean | false | Drives cancel_confirm dialog visibility |
-| error | UiError? | null | Error details for error state display |
+| Name              | Type                    | Default        |
+|-------------------|-------------------------|----------------|
+| directDebits      | List\<DirectDebit\>     | emptyList()    |
+| activeCount       | Int                     | 0              |
+| uiState           | DirectDebitsUiState     | Loading        |
+| selectedMandate   | DirectDebit?            | null           |
+| showCancelDialog  | Boolean                 | false          |
+| error             | UiError?                | null           |
 
-**Events:**
+**Events:** `DirectDebitsLoaded`, `ViewDirectDebitClicked`, `SetUpDirectDebitClicked`, `CancelDirectDebitClicked`, `CancelConfirmed`, `CancelDismissed`, `RefreshTriggered`, `RetryLoad`
 
-| Event | Trigger |
-|---|---|
-| DirectDebitsLoaded | API response received |
-| ViewDirectDebitClicked | Mandate card tapped |
-| SetUpDirectDebitClicked | FAB tapped |
-| CancelDirectDebitClicked | Cancel action triggered on a mandate |
-| CancelConfirmed | "Yes, Cancel Mandate" button tapped |
-| CancelDismissed | "Keep Mandate" button tapped |
-| RefreshTriggered | Pull-to-refresh gesture |
-| RetryLoad | Retry button tapped in error state |
+**Actions:** `view_direct_debit`, `setup_direct_debit`, `confirm_cancel_direct_debit`, `dismiss_cancel_dialog`, `open_direct_debit_options`
 
-**Actions:**
+**DI Dependencies:** `DirectDebitRepository`, `AccountRepository`
 
-| Action | Handler |
-|---|---|
-| view_direct_debit | Navigate to direct-debit-detail bottom sheet |
-| setup_direct_debit | Open new mandate setup bottom sheet |
-| confirm_cancel_direct_debit | Call DELETE API, reload mandate list |
-| dismiss_cancel_dialog | Set showCancelDialog = false, clear selectedMandate |
-| open_direct_debit_options | Open top bar overflow menu |
-
-**DI Dependencies:** DirectDebitRepository, AccountRepository
-
-**Error Codes:**
-
-| Field | Code | Message |
-|---|---|---|
-| global | LOAD_FAILED | "Unable to load direct debits. Please try again." |
-| cancel | CANCEL_FAILED | "Could not cancel mandate. Please try again." |
-| create | CREATE_FAILED | "Could not set up direct debit. Please try again." |
+**Errors:**
+- `LOAD_FAILED`: "Unable to load direct debits. Please try again."
+- `CANCEL_FAILED`: "Could not cancel mandate. Please try again."
+- `CREATE_FAILED`: "Could not set up direct debit. Please try again."
 
 ---
 
 ## Navigation
 
-| From | To | Trigger | Type |
-|---|---|---|---|
-| direct-debits | direct-debit-detail | Tap mandate card (view_direct_debit) | bottom sheet |
-| direct-debits | (setup sheet) | Tap FAB (setup_direct_debit) | bottom sheet |
-| direct-debits | direct-debits | confirm_cancel_direct_debit | reload in-place |
-| direct-debits | accounts | arrow_back / navigate_back | pop |
+| From          | To                  | Trigger                              | Type    |
+|---------------|---------------------|--------------------------------------|---------|
+| direct-debits | direct-debit-detail | Mandate card tap (any of 3)          | push    |
+| direct-debits | direct-debits       | cancel_confirm_cta tap (mandate cancelled + reload) | replace |
+| direct-debits | accounts            | navigate_back (top app bar arrow)    | pop     |
+| direct-debits | standing-orders     | nav_standing_orders                  | push    |
+| direct-debits | cards               | nav_cards                            | push    |
+| direct-debits | account-detail      | nav_account_detail                   | push    |
+| direct-debits | home                | nav_home                             | push    |
+
+---
+
+## API Endpoints
+
+| Endpoint                                                                              | Auth        | Tag          | Purpose                                    |
+|---------------------------------------------------------------------------------------|-------------|--------------|--------------------------------------------|
+| GET /obp/v4.0.0/banks/{bankId}/accounts/{accountId}/owner/direct-debits              | DirectLogin | Direct-Debit | Retrieve all mandates for the account      |
+| POST /obp/v4.0.0/banks/{bankId}/accounts/{accountId}/owner/direct-debit              | DirectLogin | Direct-Debit | Create a new direct debit mandate          |
 
 ---
 
 ## Design Tokens
 
-| Token | Value | Usage |
-|---|---|---|
-| primary | #1800B1 | Title text, amount text, FAB background, outlined button border |
-| active_badge_bg | #E8F5E9 | Active status badge background |
-| active_badge_text | #4CAF50 | Active status badge text |
-| cancelled_badge_bg | #F5F5F5 | Cancelled status badge background |
-| cancelled_badge_text | #9E9E9E | Cancelled status badge text |
-| surface | #FFFFFF | Active mandate card background |
-| surface_muted | #FAFAFA | Cancelled mandate card background |
-| card_border | #F0F0F0 | Active card border |
-| card_border_muted | #E0E0E0 | Cancelled card border |
-| label_muted | #888888 | Next-date text, greyed payee name |
-| label_faint | #AAAAAA | Mandate reference text (active) |
-| label_ghost | #CCCCCC | Mandate reference text (cancelled) |
-| destructive | #D32F2F | Cancel confirm CTA background |
-| background | #FCF8FF | Screen background |
+| Token                              | Value     | Usage                                                               |
+|------------------------------------|-----------|---------------------------------------------------------------------|
+| colors.light.primary               | #4C662B   | Title text, active badge text, active amounts, FAB fill, dismiss CTA|
+| colors.light.primary_container     | #CDEDA3   | Active count chip fill, active status badge fill                    |
+| colors.light.background            | #F9FAEF   | Screen base, cancelled card fill, cancelled badge fill              |
+| colors.light.surface               | #FFFFFF   | Active mandate card fill, cancel dialog fill                        |
+| colors.light.surface_variant       | #E1E4D5   | Cancelled card border, cancelled mandate ref text color             |
+| colors.light.on_surface            | #1A1C16   | Active payee names, dialog title                                    |
+| colors.light.on_surface_variant    | #44483D   | Next-date text, mandate refs, cancelled payee, cancelled amount     |
+| colors.light.error                 | #BA1A1A   | Cancel confirm CTA background                                       |
+| colors.light.on_error              | #FFFFFF   | Cancel confirm CTA text                                             |
+| typography.headline_large          | Outfit 32sp | Screen title                                                      |
+| typography.headline_small          | Outfit 24sp/600 | Cancel dialog title                                           |
+| typography.title_medium            | Outfit 16sp/500 | Mandate merchant names                                        |
+| typography.body_large              | Outfit 16sp/400 | Mandate amounts                                               |
+| typography.body_medium             | Outfit 14sp/400 | Cancel dialog body                                            |
+| typography.body_small              | Outfit 12sp/400 | Next collection dates                                         |
+| typography.label_medium            | Outfit 12sp/500 | Active count chip                                             |
+| typography.label_small             | Outfit 11sp/500 | Status badges, mandate reference IDs                          |
+| radius.md                          | 12dp      | Active count chip, cancel confirm buttons                           |
+| radius.lg                          | 16dp      | Mandate cards, FAB                                                  |
+| elevation.level2                   | 3dp       | Active mandate cards                                                |
+| elevation.level4                   | 8dp       | Cancel confirmation dialog                                          |
 
 ---
 
-## Content Data (Populated State)
-
-| Mandate | Merchant | Amount | Frequency | Next Date | Status | Mandate Ref |
-|---|---|---|---|---|---|---|
-| 1 | Netflix | £15.99 | Monthly | 3 Jun 2026 | Active | DD-NF-20240301 |
-| 2 | Spotify | £10.99 | Monthly | 12 Jun 2026 | Active | DD-SP-20231115 |
-| 3 | PureGym | £29.99 | Monthly | — (cancelled) | Cancelled | DD-GYM-20220601 |
-
-Active count chip: "3 active"
-
----
-
-## Accessibility
-
-- All mandate cards have descriptive `content_description` including payee, amount, frequency, next date, status, and mandate reference.
-- Status badges carry `role: status` for screen reader announcement.
-- Cancel confirm dialog has `role: dialog` — focus traps inside when open.
-- Cancel CTA: "Confirm cancellation of direct debit mandate" (destructive action is announced).
-- FAB: "Set up a new direct debit" (imperative description).
-
----
-
-*Generated by /idea export | 2026-05-25*
+_Generated by /idea export | 2026-05-29_

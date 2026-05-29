@@ -4,6 +4,9 @@ All notable changes to the idea-layer are documented here. Format inspired by [K
 
 ## [Unreleased]
 
+### Exported (design)
+- [idea-export] 2026-05-29 — Generated design exports for all 45 features (135 artifacts: 45× SPEC.md + API.md + MOCKUP.md). 6 features exported for the first time (consumer-home, licenses, privacy-policy, standing-order-detail, standing-order-edit, terms-of-service); 39 re-exported from current source YAML (stale brand tokens corrected to v3.0.0 `#4C662B`/Outfit). 2 features transitioned `enriched → designed` (consumer-home, standing-order-edit); 43 already-approved left unchanged. EXPORT_MATRIX.yaml rebuilt: 45 rows, spec/api/mockup all current. Zero placeholders. Roundtrip: 45/45 pass.
+
 ### Added
 - **consumer-home** — new consumer-persona home dashboard screen (FR-019): balance card, income/spend summary, quick actions (Send/Accounts/Standing Orders/Cards), recent transactions list, 4 states (loading/content/error/empty). Scaffolded: `docs.yaml`, `ui.yaml`, `api.yaml`, `flow.yaml`, `tests.yaml`.
 - **standing-order-edit** — scaffolded missing siblings for existing draft screen (FR-006): `ui.yaml` (edit form: amount, currency, frequency, start/end date), `api.yaml` (PUT endpoint), `flow.yaml`, `tests.yaml`.

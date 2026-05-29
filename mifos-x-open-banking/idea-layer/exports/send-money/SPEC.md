@@ -1,126 +1,141 @@
-# Send Money — Feature Specification
+# SPEC — Send Money
 
-| Field | Value |
-|---|---|
-| Feature | send-money |
-| Flavor | consumer |
-| Status | enriched |
-| Quality Score | 82 |
+| Field         | Value               |
+|---------------|---------------------|
+| Feature       | send-money          |
+| Flavor        | consumer            |
+| Status        | approved            |
+| Quality Score | 95                  |
+| ViewModel     | SendMoneyViewModel  |
 
 ---
 
 ## Overview
 
-The Send Money screen is the primary payment initiation surface in the Mifos X Open Banking consumer app. Users select a source account, enter an amount and currency, choose or search for a beneficiary, enter a payment reference, and select a payment type (SEPA, Domestic, or International). The screen performs real-time fee estimation and IBAN/funds validation before routing to the confirmation step.
+Send Money is the payment initiation form for Consumer persona users. It allows users to select a source account, enter an amount with currency, choose a beneficiary (via search or recent beneficiaries), add a payment reference, pick a payment type (SEPA / Domestic / International), and see an estimated fee before proceeding to confirmation.
+
+The form integrates four OBP endpoints: account listing (v5.1.0), counterparties (v4.0.0), IBAN validation (v4.0.0), funds availability check (v3.1.0), and SEPA transaction request submission (v5.1.0). The Continue button navigates to send-money-confirm after client-side validation passes. No bottom navigation — this is a focused form flow.
+
+Pre-filled account: Primary Checking — £4,250.00 available. Recent beneficiaries: John Smith (Barclays UK) and Sarah Williams (HSBC UK). Default payment type: SEPA. Default fee estimate: Free.
 
 ---
 
 ## Screens
 
-| Screen ID | Route | Layout | Scroll |
-|---|---|---|---|
-| send-money | /send-money | form | vertical |
+| ID         | Name       | Route | Layout | Scroll   |
+|------------|------------|-------|--------|----------|
+| send-money | Send Money | —     | Column | Vertical |
+
+**Shell:** Top app bar ("Send Money", back arrow, no actions). No bottom navigation bar.
 
 ---
 
 ## Components
 
-| ID | Type | Description |
-|---|---|---|
-| send_money_title | text | Headline "Send Money" in primary #1800B1 |
-| from_account_selector | input | Outlined dropdown — "Primary Checking — £4,250.00 available" |
-| amount_input | input | Decimal number field with £ prefix, placeholder "0.00" |
-| currency_selector | input | Filter chip — "GBP ▾", opens currency picker |
-| beneficiary_search | input | Search field — "Search beneficiary or enter account..." |
-| recent_beneficiaries_row | stack | Horizontal scroll row of recent beneficiary chips |
-| recent_beneficiary_john | box | Chip — "John Smith · Barclays UK" |
-| recent_beneficiary_sarah | box | Chip — "Sarah Williams · HSBC UK" |
-| reference_input | input | Text field, max 35 chars, placeholder "Payment for invoice #1234" |
-| payment_type_selector | stack | Horizontal radio-chip group |
-| payment_type_sepa | input | Filter chip — "SEPA", selected by default (#1800B1) |
-| payment_type_domestic | input | Filter chip — "Domestic", unselected |
-| payment_type_international | input | Filter chip — "International", unselected |
-| fee_estimate_banner | box | Green info banner — "Estimated fee: Free (SEPA)" |
-| continue_button | button | Filled primary button — "Continue" → send-money-confirm |
+| ID                        | Type   | Description                                                                                       |
+|---------------------------|--------|---------------------------------------------------------------------------------------------------|
+| send_money_title          | text   | "Send Money" — Outfit/headline_large, #4C662B                                                   |
+| from_account_selector     | input  | "From Account" — outlined, leading account_balance icon, trailing expand_more; pre-filled "Primary Checking — £4,250.00 available"; bg #F9FAEF, radius 12 |
+| amount_input              | input  | "Amount" — number variant, prefix "£", placeholder "0.00", decimal keyboard, radius 12           |
+| currency_selector         | input  | "Currency" — chip style, "GBP ▾"; opens currency picker; min_height 44dp                        |
+| beneficiary_search        | input  | "To" — search variant, leading search icon, placeholder "Search beneficiary or enter account…", radius 12 |
+| recent_beneficiaries_row  | stack  | Horizontal scroll row — recent beneficiary chips                                                  |
+| recent_beneficiary_john   | box    | "John Smith · Barclays UK" — #CDEDA3 bg, radius 12; fires select_beneficiary                    |
+| recent_beneficiary_sarah  | box    | "Sarah Williams · HSBC UK" — #CDEDA3 bg, radius 12; fires select_beneficiary                    |
+| reference_input           | input  | "Reference" — text variant, placeholder "Payment for invoice #1234", max_length 35, helper "Max 35 characters", radius 12 |
+| payment_type_selector     | stack  | Horizontal row of 3 payment type chips                                                           |
+| payment_type_sepa         | input  | "SEPA" — chip, selected: bg #4C662B text #FFFFFF, radius 20; default selected                   |
+| payment_type_domestic     | input  | "Domestic" — chip, unselected, radius 20                                                         |
+| payment_type_international| input  | "International" — chip, unselected, radius 20                                                    |
+| fee_estimate_banner       | box    | "Estimated fee: Free (SEPA)" — bg #CDEDA3, border #4C662B, radius 8, leading info_outline icon #4C662B |
+| continue_button           | button | "Continue" — filled, bg #4C662B, text #FFFFFF, radius 12, full width, Outfit/label_large; navigates to send-money-confirm after validation |
 
 ---
 
 ## States
 
-| State ID | Trigger | Description |
-|---|---|---|
-| draft | Screen load | Empty form, all fields ready, continue disabled, recent beneficiaries visible |
-| validating | User taps Continue | Continue button shows loading indicator, linear progress bar shown |
-| error | Validation fails | Inline field errors on amount / beneficiary, continue disabled |
+| ID          | Trigger                                 | Description                                                                              |
+|-------------|-----------------------------------------|------------------------------------------------------------------------------------------|
+| loading     | Screen entry — accounts + beneficiaries being fetched | Title + form skeleton; Continue disabled; linear progress indicator     |
+| draft       | Accounts and beneficiaries loaded       | All form fields visible; Continue disabled (form incomplete); fee: "Free (SEPA)"        |
+| content     | Alias for draft (default loaded state)  | Same as draft                                                                            |
+| validating  | User taps Continue — validation in flight | Continue button loading spinner; linear progress indicator; inputs disabled             |
+| empty       | No beneficiaries available              | Form with accounts; empty state message "No beneficiaries… Add a beneficiary first."     |
+| error       | Validation failed / network error       | Field-level error messages on amount + beneficiary; network error banner with Retry      |
 
 ---
 
 ## State Model
 
 **ViewModel:** `SendMoneyViewModel`
+**Screen State Type:** `SendMoneyUiState`
 
-| Field | Type | Default |
-|---|---|---|
-| selectedAccountId | String | "" |
-| selectedAccountLabel | String | "Primary Checking — £4,250.00 available" |
-| amount | String | "" |
-| currency | String | "GBP" |
-| beneficiaryId | String | "" |
-| beneficiaryName | String | "" |
-| reference | String | "" |
-| paymentType | PaymentType | SEPA |
-| estimatedFee | String | "Free" |
-| uiState | SendMoneyUiState | Draft |
+| Name                  | Type          | Default                                    |
+|-----------------------|---------------|--------------------------------------------|
+| selectedAccountId     | String        | ""                                         |
+| selectedAccountLabel  | String        | "Primary Checking — £4,250.00 available"   |
+| amount                | String        | ""                                         |
+| currency              | String        | "GBP"                                      |
+| beneficiaryId         | String        | ""                                         |
+| beneficiaryName       | String        | ""                                         |
+| reference             | String        | ""                                         |
+| paymentType           | PaymentType   | SEPA                                       |
+| estimatedFee          | String        | "Free"                                     |
+| uiState               | SendMoneyUiState | Draft                                   |
 
-**Events:** AccountSelected, AmountChanged, CurrencyChanged, BeneficiarySelected, ReferenceChanged, PaymentTypeChanged, ContinueClicked, ValidationFailed, ValidationSucceeded
+**Events:** `AccountSelected`, `AmountChanged`, `CurrencyChanged`, `BeneficiarySelected`, `ReferenceChanged`, `PaymentTypeChanged`, `ContinueClicked`, `ValidationFailed`, `ValidationSucceeded`
 
-**Actions:** select_account, search_beneficiary, select_beneficiary, select_currency, select_payment_type_sepa, select_payment_type_domestic, select_payment_type_international, validate, focus_amount, focus_reference
+**DI Dependencies:** `AccountRepository`, `BeneficiaryRepository`, `PaymentRepository`, `FeeCalculatorUseCase`
 
-**DI Dependencies:** AccountRepository, BeneficiaryRepository, PaymentRepository, FeeCalculatorUseCase
-
-**Validation Errors:**
-
-| Field | Code | Message |
-|---|---|---|
-| amount | AMOUNT_REQUIRED | "Please enter a valid amount greater than £0.01" |
-| beneficiary | BENEFICIARY_REQUIRED | "Please select a valid beneficiary" |
-| account | ACCOUNT_REQUIRED | "Please select a source account" |
-| reference | REFERENCE_TOO_LONG | "Reference must be 35 characters or fewer" |
+**Errors:**
+- `AMOUNT_REQUIRED`: "Please enter a valid amount greater than £0.01"
+- `BENEFICIARY_REQUIRED`: "Please select a valid beneficiary"
+- `ACCOUNT_REQUIRED`: "Please select a source account"
+- `REFERENCE_TOO_LONG`: "Reference must be 35 characters or fewer"
 
 ---
 
 ## Navigation
 
-| From | To | Trigger | Type |
-|---|---|---|---|
-| send-money | send-money-confirm | continue_button tap (after validation) | push |
+| From       | To                | Trigger                                | Type  |
+|------------|-------------------|----------------------------------------|-------|
+| send-money | send-money-confirm| Continue tap + validation passes       | push  |
+| send-money | (back)            | Back arrow tap                         | pop   |
+| send-money | beneficiaries     | Add beneficiary (empty state CTA)      | push  |
 
 ---
 
 ## API Endpoints
 
-| Endpoint | Auth | Purpose |
-|---|---|---|
-| GET /obp/v5.1.0/banks/{bankId}/accounts | DirectLogin | Load user accounts for "From" selector |
-| GET /obp/v4.0.0/banks/{bankId}/accounts/{accountId}/{viewId}/counterparties | DirectLogin | Load beneficiary list for search |
-| POST /obp/v5.1.0/banks/{bankId}/accounts/{accountId}/owner/transaction-request-types/SEPA/transaction-requests | DirectLogin | Initiate SEPA payment request |
-| POST /obp/v4.0.0/account/check/scheme/iban | DirectLogin | Validate IBAN before payment |
-| GET /obp/v3.1.0/banks/{bankId}/accounts/{accountId}/owner/funds-available | DirectLogin | Check sufficient funds pre-submission |
+| Endpoint                                                                                   | Auth        | Tag                 | Purpose                                  |
+|--------------------------------------------------------------------------------------------|-------------|---------------------|------------------------------------------|
+| GET /obp/v5.1.0/banks/{bankId}/accounts                                                   | DirectLogin | Accounts            | Populate from_account_selector           |
+| GET /obp/v4.0.0/banks/{bankId}/accounts/{accountId}/{viewId}/counterparties               | DirectLogin | Counterparties      | Populate beneficiary_search + recents    |
+| POST /obp/v4.0.0/account/check/scheme/iban                                                | DirectLogin | Account             | Validate IBAN entered by user            |
+| GET /obp/v3.1.0/banks/{bankId}/accounts/{accountId}/owner/funds-available                 | DirectLogin | Account             | Check sufficient funds before Continue   |
+| POST /obp/v5.1.0/banks/{bankId}/accounts/{accountId}/owner/transaction-request-types/SEPA/transaction-requests | DirectLogin | TransactionRequests | Initiate SEPA payment (on confirm screen)|
 
 ---
 
 ## Design Tokens
 
-| Token | Value | Usage |
-|---|---|---|
-| primary | #1800B1 | Title, SEPA chip selected, continue button |
-| background | #FCF8FF | Screen background |
-| surface | #F5F5FF | Account selector background |
-| success | #4CAF50 | Fee banner border and icon |
-| fee_banner_bg | #E8F5E9 | Fee estimate banner background |
-| recent_chip_bg | #F0F0FF | Recent beneficiary chip background |
-| error | #BA1A1A | Field validation error text |
+| Token                           | Value   | Usage                                                            |
+|---------------------------------|---------|------------------------------------------------------------------|
+| colors.light.primary            | #4C662B | Screen title, Continue button bg, SEPA chip bg, fee banner border+icon, recent beneficiary border |
+| colors.light.primary_container  | #CDEDA3 | Fee estimate banner bg, recent beneficiary chip bg               |
+| colors.light.on_primary         | #FFFFFF | Continue button text, SEPA chip text                             |
+| colors.light.background         | #F9FAEF | Account selector bg, amount input bg                             |
+| colors.light.outline            | #75796C | Input field borders (default state)                              |
+| colors.light.surface_container  | #F0F1E6 | —                                                                |
+| typography.headline_large       | —       | "Send Money" title                                               |
+| typography.body_large           | —       | Input field values                                               |
+| typography.label_large          | —       | Continue button text                                             |
+| typography.label_medium         | —       | Currency selector, payment type chips                            |
+| typography.body_medium          | —       | Recent beneficiary names, reference placeholder                  |
+| radius.md                       | 12dp    | Account selector, amount input, beneficiary search, recent beneficiary chips, Continue button |
+| radius.sm                       | 8dp     | Fee estimate banner                                              |
+| radius.pill                     | 20dp    | Payment type selection chips                                     |
 
 ---
 
-*Generated by /idea export | 2026-05-25*
+_Generated by /idea export | 2026-05-29_

@@ -1,119 +1,61 @@
 # API Reference — Account Applications
 
-| Field      | Value                                        |
-|------------|----------------------------------------------|
-| Feature    | account-applications                         |
-| Base URL   | https://apisandbox.openbankproject.com       |
-| Auth       | DirectLogin — header: `DirectLogin token=<token>` |
+| Field    | Value                                       |
+|----------|---------------------------------------------|
+| Feature  | account-applications                        |
+| Base URL | https://apisandbox.openbankproject.com      |
 
 ---
 
-## Fetch All Account Applications
-
-**GET** `/obp/v5.1.0/banks/{bankId}/account-applications`
+## GET /obp/v5.1.0/banks/{bankId}/account-applications
 
 **Auth:** DirectLogin
+**Tag:** Account-Applications
+**Trigger:** `loadApplications()` on screen open / `RetryLoad` event; re-triggered on filter change (client-side only after initial load)
 
-**Path Params:**
+### Path Parameters
 
-| Param  | Type   | Description         |
-|--------|--------|---------------------|
-| bankId | String | OBP bank identifier |
+| Name   | Type   | Value    |
+|--------|--------|----------|
+| bankId | String | gh.29.uk |
 
-**Response Example:**
+### Response Fields
+
+| Field                    | Type   | Description                                              |
+|--------------------------|--------|----------------------------------------------------------|
+| account_application_id   | String | Unique identifier for the application                    |
+| product_code             | String | Requested product e.g. "KCB_SAVINGS", "MSHWARI_CHECKING"|
+| user                     | Object | User reference (id, email, username)                     |
+| customer                 | Object | Customer reference (id, name)                            |
+| date_of_application      | String | ISO-8601 application submission timestamp                |
+| date_last_modified       | String | ISO-8601 last modified timestamp                         |
+| status                   | String | Enum: `PENDING`, `APPROVED`, `REJECTED`                  |
+
+### Sample Response (abbreviated)
+
 ```json
 {
   "account_applications": [
     {
-      "account_application_id": "app-uuid-001",
-      "product_code": "SAVINGS_KCB_001",
-      "user": {
-        "user_id": "obp-user-uuid",
-        "provider": "obp",
-        "username": "john.mwangi"
-      },
-      "customer": {
-        "customer_id": "customer-uuid-001",
-        "customer_number": "CUST-20260520-001"
-      },
-      "date_of_application": "2026-05-20T10:30:00Z",
-      "date_last_modified": "2026-05-20T10:30:00Z",
+      "account_application_id": "app-001-john-mwangi",
+      "product_code": "KCB_SAVINGS",
+      "customer": { "customer_id": "cust-001", "legal_name": "John Mwangi" },
+      "date_of_application": "2026-05-20T08:30:00Z",
       "status": "PENDING"
-    },
-    {
-      "account_application_id": "app-uuid-002",
-      "product_code": "CHECKING_MSHWARI_001",
-      "user": {
-        "user_id": "obp-user-uuid-002",
-        "provider": "obp",
-        "username": "sarah.odhiambo"
-      },
-      "customer": {
-        "customer_id": "customer-uuid-002",
-        "customer_number": "CUST-20260518-001"
-      },
-      "date_of_application": "2026-05-18T09:00:00Z",
-      "date_last_modified": "2026-05-19T14:00:00Z",
-      "status": "APPROVED"
-    },
-    {
-      "account_application_id": "app-uuid-003",
-      "product_code": "BUSINESS_CURRENT_001",
-      "user": {
-        "user_id": "obp-user-uuid-003",
-        "provider": "obp",
-        "username": "peter.kamau"
-      },
-      "customer": {
-        "customer_id": "customer-uuid-003",
-        "customer_number": "CUST-20260512-001"
-      },
-      "date_of_application": "2026-05-12T08:00:00Z",
-      "date_last_modified": "2026-05-14T11:00:00Z",
-      "status": "REJECTED"
     }
   ]
 }
 ```
 
-**Response Fields:**
+### Error Codes
 
-| Field                  | Type   | Description                                      |
-|------------------------|--------|--------------------------------------------------|
-| account_application_id | String | Application UUID                                 |
-| product_code           | String | Banking product code (e.g. SAVINGS_KCB_001)     |
-| user.user_id           | String | OBP user UUID                                    |
-| user.username          | String | OBP username                                     |
-| customer.customer_id   | String | Customer UUID                                    |
-| customer.customer_number| String | Bank-assigned customer number                   |
-| date_of_application    | String | ISO-8601 submission timestamp                    |
-| date_last_modified     | String | ISO-8601 last update timestamp                   |
-| status                 | String | PENDING \| APPROVED \| REJECTED                 |
-
-**Status Values:**
-
-| Status   | Display Label  | Color Token  |
-|----------|----------------|--------------|
-| PENDING  | Pending Review | #E65100      |
-| APPROVED | Approved ✓     | #2E7D32      |
-| REJECTED | Rejected ✗     | #C62828      |
-
-**Client-Side Filter Mapping:**
-
-| Filter Chip  | Filters to status | Count (demo) |
-|--------------|-------------------|--------------|
-| All (8)      | —                 | 8 total      |
-| Pending (3)  | PENDING           | 3            |
-| Approved (3) | APPROVED          | 3            |
-| Rejected (2) | REJECTED          | 2            |
-
-**Errors:**
-
-| Code | Error         | Description                           |
-|------|---------------|---------------------------------------|
-| 400  | BAD_REQUEST   | Invalid bankId or query params        |
-| 401  | UNAUTHORIZED  | Invalid or expired DirectLogin token  |
+| Code | Message                                            |
+|------|----------------------------------------------------|
+| 400  | `BAD_REQUEST` — Invalid bankId or query parameters |
+| 401  | `UNAUTHORIZED` — DirectLogin token missing/expired |
+| 404  | `BANK_NOT_FOUND` — bankId does not exist           |
+| 500  | OBP server error                                   |
 
 ---
 
-*Generated by /idea export | 2026-05-25*
+_Generated by /idea export | 2026-05-29_

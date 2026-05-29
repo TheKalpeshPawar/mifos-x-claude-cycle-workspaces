@@ -1,134 +1,148 @@
-# Feature Specification — Application Detail
+# SPEC — Application Detail
 
 | Field         | Value                          |
-|---------------|-------------------------------|
-| Feature       | application-detail            |
-| Flavor        | fieldOfficer                  |
-| Status        | enriched                      |
-| Quality Score | 82                            |
+|---------------|--------------------------------|
+| Feature       | application-detail             |
+| Flavor        | fieldOfficer                   |
+| Status        | approved                       |
+| Quality Score | 94                             |
+| ViewModel     | ApplicationDetailViewModel     |
 
 ---
 
 ## Overview
 
-The Application Detail screen gives a Field Officer a complete view of a single account application and the tools to act on it. A branded deep-purple header carries the application reference number, status chip, and submission date. Two cards below present customer info (with a "View Profile" link) and application details (account type, requested limit KES 500,000, purpose). A KYC verified status row and document cards (National ID verified, proof of address pending) follow. The officer adds internal review notes and taps Approve, Reject, or Request Information.
+The Application Detail screen is the Field Officer's primary review surface for a pending account application. It presents the full application record — reference number, status chip, applicant identity, account type, requested credit limit, stated purpose, KYC verification status, and supporting document thumbnails — in a scrollable detail layout. Officers can add internal review notes, then approve, reject, or request additional information from the applicant. The approved path navigates back to Customer Detail; the request-info path opens a Customer Messages thread with the applicant.
 
 ---
 
 ## Screens
 
-| Screen ID               | Route                                              | Layout        | Scroll   |
-|-------------------------|----------------------------------------------------|---------------|----------|
-| application-detail-main | /applications/{applicationId}                      | detail_screen | vertical |
+| ID                       | Name                 | Route               | Layout | Scroll   |
+|--------------------------|----------------------|---------------------|--------|----------|
+| application-detail-main  | Application Review   | /application-detail | Column | Vertical |
+
+**Shell:** Top app bar with back navigation. No bottom navigation bar (fieldOfficer detail flow).
 
 ---
 
 ## Components
 
-| ID                        | Type   | Description                                                                        |
-|---------------------------|--------|------------------------------------------------------------------------------------|
-| application_header        | box    | Deep purple header: ref number "Application #OBP-2026-00234", status chip, submitted date |
-| app_reference_number      | text   | "Application #OBP-2026-00234" — title_large, white, weight 700                    |
-| app_status_chip           | box    | Amber chip: bg #FFF8E1, "Pending Review" in #E65100, weight 600                   |
-| app_submitted_date        | text   | "Submitted: 20 May 2026" — body_small, color #B0B8FF (lavender on purple)         |
-| customer_info_card        | box    | White card: "CUSTOMER" label + "John Kamau Mwangi" + "View Profile" link          |
-| customer_name             | text   | "John Kamau Mwangi" — title_medium, weight 700, #1A1A1A                           |
-| customer_profile_link     | link   | "View Profile" — label_medium, #1800B1, underlined → customer-detail              |
-| application_details_card  | box    | White card: account type row + requested limit row + purpose row                  |
-| account_type_value        | text   | "KCB Savings Account" — body_medium, weight 600, #1A1A1A                         |
-| limit_value               | text   | "KES 500,000" — body_medium, weight 600, monospace                               |
-| purpose_value             | text   | "Personal savings and salary credit" — body_medium, #1A1A1A                      |
-| kyc_status_row            | box    | Green row (bg #E8F5E9, border #4CAF50): verified_user icon + "KYC Status: Verified ✓" |
-| documents_heading         | text   | "Supporting Documents" — title_medium, role heading h2                            |
-| doc_national_id_card      | box    | Document card: ID thumbnail with green border + "National ID" Verified ✓ + View link |
-| doc_proof_address_card    | box    | Document card: home icon placeholder + "Proof of Address" Pending Upload + Upload button |
-| review_notes_input        | input  | Outlined textarea, 3-6 lines, internal review notes (not visible to customer)     |
-| approve_application_button| button | Filled green (#4CAF50) "Approve Application" → customer-detail                   |
-| reject_application_button | button | Outlined red (#FF5252) "Reject Application" → stays on screen                    |
-| request_info_button       | button | Text button, #1800B1 "Request Information" → customer-messages                   |
+| ID                        | Type    | Description                                                                                                    |
+|---------------------------|---------|----------------------------------------------------------------------------------------------------------------|
+| application_header        | box     | #4C662B header bar containing reference number and status/date meta row                                        |
+| app_reference_number      | text    | "Application #OBP-2026-00234" — Outfit/title_large, #FFFFFF, weight 700                                       |
+| app_status_chip           | box     | Rounded chip (#CDEDA3, radius 12) showing current status                                                       |
+| app_status_text           | text    | "Pending Review" — Outfit/label_small, #44483D, weight 600                                                     |
+| app_submitted_date        | text    | "Submitted: 20 May 2026" — Outfit/body_small, #CDEDA3                                                         |
+| customer_info_card        | box     | White card (radius 12, elevation 2, 16dp padding) with customer name + View Profile link                       |
+| customer_card_heading     | text    | "CUSTOMER" — Outfit/label_medium, #44483D, uppercase, letter-spacing 0.8                                       |
+| customer_name             | text    | "John Kamau Mwangi" — Outfit/title_medium, #1A1C16, weight 700                                                 |
+| customer_profile_link     | link    | "View Profile" — Outfit/label_medium, #4C662B, underline; navigates to customer-detail                        |
+| application_details_card  | box     | White card (radius 12, elevation 2) with account type, requested limit, purpose rows                           |
+| account_type_value        | text    | "KCB Savings Account" — Outfit/body_medium, #1A1C16, weight 600                                               |
+| limit_value               | text    | "KES 500,000" — Outfit/body_medium, #1A1C16, weight 600, monospace                                            |
+| purpose_value             | text    | "Personal savings and salary credit" — Outfit/body_medium, #1A1C16                                            |
+| kyc_status_row            | box     | #CDEDA3 banner (radius 12, #4C662B 1px border) with verified_user icon + status label                         |
+| kyc_status_label          | text    | "KYC Status: Verified ✓" — Outfit/body_medium, #4C662B, weight 600                                            |
+| documents_heading         | text    | "Supporting Documents" — Outfit/title_medium, #1A1C16, role heading                                           |
+| doc_national_id_card      | box     | White card (radius 10, elevation 1, #E1E4D5 border) with National ID thumbnail, "Verified ✓", View link       |
+| doc_id_title              | text    | "National ID" — Outfit/body_large, #1A1C16, weight 600                                                        |
+| doc_id_status             | text    | "Verified ✓" — Outfit/body_small, #4C662B                                                                     |
+| doc_id_view_link          | link    | "View" — Outfit/label_medium, #4C662B; triggers view_document for national_id_doc                             |
+| doc_proof_address_card    | box     | White card (radius 10, elevation 1, #E1E4D5 border) with address icon placeholder + "Pending Upload" status   |
+| doc_address_title         | text    | "Proof of Address" — Outfit/body_large, #1A1C16, weight 600                                                   |
+| doc_address_status        | text    | "Pending Upload" — Outfit/body_small, #44483D                                                                 |
+| upload_address_doc_button | button  | "Upload" — outlined, #4C662B border/text; triggers upload_document for proof_of_address                       |
+| review_notes_input        | input   | "Review Notes" textarea (3–6 lines) — placeholder: "Add internal notes about this application…"               |
+| approve_application_button| button  | "Approve Application" — filled #4C662B, full-width; navigates to customer-detail on success                   |
+| reject_application_button | button  | "Reject Application" — outlined #BA1A1A border/text, full-width                                               |
+| request_info_button       | button  | "Request Information" — text #4C662B; navigates to customer-messages                                          |
 
 ---
 
 ## States
 
-| ID        | Trigger                           | Description                                                         |
-|-----------|-----------------------------------|---------------------------------------------------------------------|
-| loading   | Screen open                       | Shimmer skeleton while fetching GET account-applications/{id}       |
-| reviewing | Data loaded, no decision yet      | Full detail view, all action buttons enabled, bg #F5F5F5            |
-| approved  | Approve Application succeeds      | Success banner: "Application approved successfully", bg #F5F5F5     |
-| rejected  | Reject Application succeeds       | Rejection banner shown, bg #F5F5F5                                  |
-| error     | API call fails                    | Error banner with retry                                             |
+| ID        | Trigger                                | Description                                                                              |
+|-----------|----------------------------------------|------------------------------------------------------------------------------------------|
+| loading   | Screen entry / data fetch              | Skeleton shimmer over header, cards, document rows; no interactive elements              |
+| content   | Data load success                      | All components visible; alias for reviewing state                                        |
+| reviewing | Application loaded, decision pending   | Full layout — header, customer card, application card, KYC row, documents, review notes  |
+| approved  | approve_application action success     | Success banner "Application approved successfully" shown above layout                    |
+| rejected  | reject_application action success      | Rejection banner shown above layout                                                      |
+| empty     | Application record not found           | Empty state card "Application details not available" centred with 16dp padding           |
+| error     | Network or auth failure                | Error banner with retry option                                                           |
 
 ---
 
 ## State Model
 
 **ViewModel:** `ApplicationDetailViewModel`
+**Screen State Type:** `ApplicationDetailUiState`
 
-| State Field   | Type                     | Default | Values                     |
-|---------------|--------------------------|---------|----------------------------|
-| applicationId | String                   | —       | —                          |
-| application   | AccountApplicationDetail (nullable) | null | —             |
-| reviewNotes   | String                   | ""      | —                          |
-| isSubmitting  | Boolean                  | false   | —                          |
-| decisionMade  | ApplicationDecision      | PENDING | PENDING, APPROVED, REJECTED |
+| Name             | Type                     | Default   |
+|------------------|--------------------------|-----------|
+| applicationId    | String                   | ""        |
+| application      | AccountApplicationDetail? | null     |
+| reviewNotes      | String                   | ""        |
+| isSubmitting     | Boolean                  | false     |
+| decisionMade     | ApplicationDecision      | PENDING   |
 
-**Events:** ApplicationApproved, ApplicationRejected, InfoRequested, DocumentViewed, CustomerProfileOpened
+**Events:** `ApplicationApproved`, `ApplicationRejected`, `InfoRequested`, `DocumentViewed`, `CustomerProfileOpened`
 
-**Actions:** approve_application, reject_application, request_info, view_document, upload_document, navigate
+**Actions:** `approve_application()`, `reject_application()`, `request_info()`, `view_document()`, `upload_document()`, `navigate()`
 
-**DI Dependencies:** AccountApplicationRepository, CustomerMessagingService
+**DI Dependencies:** `AccountApplicationRepository`, `CustomerMessagingService`
 
-**Errors:** APPROVAL_FAILED, REJECTION_FAILED, LOAD_FAILED, NETWORK_UNAVAILABLE
+**Errors:**
+- `APPROVAL_FAILED`: "Failed to approve application. Please try again."
+- `REJECTION_FAILED`: "Failed to reject application. Please try again."
+- `LOAD_FAILED`: "Unable to load application details. Check your connection."
+- `NETWORK_UNAVAILABLE`: "No network connection. Please try again."
 
 ---
 
 ## Navigation
 
-| From                | To                  | Trigger                   | Type     |
-|---------------------|---------------------|---------------------------|----------|
-| application-detail  | customer-detail     | Approve Application       | navigate |
-| application-detail  | customer-detail     | "View Profile" link       | navigate |
-| application-detail  | customer-messages   | Request Information       | navigate |
-| application-detail  | application-detail  | Reject (stays, banner)    | refresh  |
+| From               | To               | Trigger                          | Type |
+|--------------------|------------------|----------------------------------|------|
+| application-detail | customer-detail  | customer_profile_link tap        | push |
+| application-detail | customer-detail  | approve_application_button tap   | pop  |
+| application-detail | customer-messages| request_info_button tap          | push |
 
 ---
 
 ## API Endpoints
 
-| Endpoint                                                             | Auth        | Purpose                                               |
-|----------------------------------------------------------------------|-------------|-------------------------------------------------------|
-| GET /obp/v5.1.0/banks/{bankId}/account-applications/{applicationId} | DirectLogin | Fetch full application detail                         |
-| PUT /obp/v5.1.0/banks/{bankId}/account-applications/{applicationId} | DirectLogin | Update application status (APPROVED or REJECTED)     |
-
-**GET Response fields:** account_application_id, product_code, user, customer, date_of_application, date_last_modified, status, account_routing
-
-**PUT Response fields:** account_application_id, status, date_last_modified
-
-**Errors:** 400 VALIDATION_FAILED · 401 UNAUTHORIZED · 404 APPLICATION_NOT_FOUND
+| Endpoint                                                                       | Auth        | Tag                  | Purpose                                          |
+|--------------------------------------------------------------------------------|-------------|----------------------|--------------------------------------------------|
+| GET /obp/v5.1.0/banks/{bankId}/account-applications/{applicationId}           | DirectLogin | Account-Applications | Load application record, customer, KYC status    |
+| PUT /obp/v5.1.0/banks/{bankId}/account-applications/{applicationId}           | DirectLogin | Account-Applications | Submit approval or rejection decision            |
 
 ---
 
 ## Design Tokens
 
-| Token          | Value   | Usage                                                       |
-|----------------|---------|-------------------------------------------------------------|
-| primary        | #1800B1 | Header background, "View Profile" link, product text, Request Info button |
-| on_primary     | #FFFFFF | Header text                                                 |
-| avatar_muted   | #B0B8FF | Submitted date in header (lavender on purple)               |
-| success_bg     | #E8F5E9 | KYC verified row background                                |
-| success_border | #4CAF50 | KYC verified row border, approve button, doc thumbnail border |
-| success_text   | #2E7D32 | KYC status label text                                       |
-| error_action   | #FF5252 | Reject button border and text                               |
-| pending_bg     | #FFF8E1 | Status chip background                                      |
-| pending_border | #FFB300 | Status chip border; proof-of-address placeholder border     |
-| pending_text   | #E65100 | Status chip text                                            |
-| pending_amber  | #FF8F00 | "Pending Upload" document status text                       |
-| surface        | #FFFFFF | Customer info card, application details card, document cards |
-| background     | #F5F5F5 | Screen background                                           |
-| section_label  | #999999 | Card heading labels ("CUSTOMER", "APPLICATION DETAILS")     |
-| monospace      | system  | "KES 500,000" requested limit value                        |
+| Token                           | Value     | Usage                                                              |
+|---------------------------------|-----------|--------------------------------------------------------------------|
+| colors.light.primary            | #4C662B   | Header background, KYC border, profile/view links, approve button  |
+| colors.light.primary_container  | #CDEDA3   | Status chip background, KYC banner fill, submitted date color      |
+| colors.light.on_primary         | #FFFFFF   | Header text, approve button text                                   |
+| colors.light.error              | #BA1A1A   | Reject button border and text                                      |
+| colors.light.on_surface         | #1A1C16   | Customer name, document titles, purpose text                       |
+| colors.light.on_surface_variant | #44483D   | Status chip text, section headings (CUSTOMER), pending upload text |
+| colors.light.surface            | #FFFFFF   | Customer info card, application details card, document cards       |
+| colors.light.surface_variant    | #E1E4D5   | Document card borders                                              |
+| colors.light.background         | #F9FAEF   | Screen background, document address placeholder fill               |
+| typography.title_large          | 22sp/400  | Application reference number                                       |
+| typography.title_medium         | 16sp/500  | Customer name, documents section heading                           |
+| typography.body_medium          | 14sp/400  | Field labels and values throughout                                 |
+| typography.body_large           | 16sp/400  | Document card titles                                               |
+| typography.label_medium         | 12sp/500  | Section headings (uppercase), View/Upload links                    |
+| typography.label_small          | 11sp/500  | Status chip text                                                   |
+| radius.md                       | 12dp      | Customer info card, application details card, KYC row              |
+| elevation.level2                | 3dp       | Customer info card and application details card shadows            |
 
 ---
 
-*Generated by /idea export | 2026-05-25*
+_Generated by /idea export | 2026-05-29_
