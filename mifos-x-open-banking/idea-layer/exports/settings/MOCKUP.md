@@ -33,6 +33,9 @@
 │  │  Transaction Alerts [●──]    │  │  ← Switch (on) #386663 teal
 │  │  Notify me for every debit    │  │
 │  │  and credit activity          │  │
+│  │  ─────────────────────────── │  │
+│  │  Marketing Updates  [○──]    │  │  ← Switch (off) active=#4C662B
+│  │  Product news and promotions  │  │
 │  └───────────────────────────────┘  │
 │                                     │
 │  ┌───────────────────────────────┐  │
@@ -45,12 +48,22 @@
 │  │  Data & Consent            >  │  │  ← chevron #C5C8BA, tappable row
 │  │  Manage your data sharing     │  │
 │  │  consents                     │  │
+│  │  ─────────────────────────── │  │  ← divider #E1E4D5
+│  │  Change Password           >  │  │  ← chevron #C5C8BA, tappable row
+│  │  Update your account login    │  │
+│  │  password                     │  │
 │  └───────────────────────────────┘  │
 │                                     │
 │  ┌───────────────────────────────┐  │
 │  │  About                        │  │  ← title_medium, #4C662B
 │  │  ─────────────────────────── │  │
 │  │  About Mifos X Open Banking > │  │  ← link body_large #1A1C16 + chevron
+│  │  ─────────────────────────── │  │
+│  │  Terms of Service          >  │  │  ← link + chevron, navigates terms-of-service
+│  │  ─────────────────────────── │  │
+│  │  Privacy Policy            >  │  │  ← link + chevron, navigates privacy-policy
+│  │  ─────────────────────────── │  │
+│  │  Open-source Licences      >  │  │  ← link + chevron, navigates licenses
 │  │  ─────────────────────────── │  │
 │  │  App Version         v1.0.0   │  │  ← label #1A1C16 / value #44483D body_small
 │  └───────────────────────────────┘  │
@@ -119,9 +132,12 @@
 - [ ] Each row: body_large label + body_small description left; toggle or chevron right
 - [ ] Dark mode + push notifications + biometric switches: active color #4C662B
 - [ ] Transaction alerts switch: active color #386663 (secondary teal), disabled when push=off
+- [ ] Marketing Updates switch: active color #4C662B, default off
 - [ ] Biometric switch: disabled on devices without biometric hardware (grey #C5C8BA)
 - [ ] Data & Consent row: trailing chevron_right 20dp #C5C8BA, navigates to consent-manager
+- [ ] Change Password row: trailing chevron_right 20dp #C5C8BA, navigates to change-password
 - [ ] About link: body_large #1A1C16 + trailing chevron, navigates to about
+- [ ] Terms of Service / Privacy Policy / Open-source Licences links: body_large #1A1C16 + chevron, navigate to respective legal screens
 - [ ] App Version: "v1.0.0" in body_small #44483D
 - [ ] Dividers: #E1E4D5 single-pixel between rows
 - [ ] Loading: shimmer blocks matching row dimensions in each card
