@@ -8,7 +8,7 @@ content_hash: 4dee9455c7f85b13b6b2f0a1a51b731e48a2886781da4674a5e50f6c9c395fa9
 design_read_aesthetic: taste-default
 design_read_dials: {variance: 4, motion: 3, density: 5}
 aesthetic_variant_override: null
-archetype: detail_screen
+archetype: screen
 
 feature: send-money-confirm
 state: review
@@ -34,7 +34,7 @@ Design the **review** state of the Send-money-confirm screen for **mifos-x-open-
 
 Palette: primary #B2D188, on_primary #1F3701, primary_container #354E16, on_primary_container #CDEDA3, secondary #A0CFCB, on_secondary #003735, secondary_container #1F4E4B, on_secondary_container #BCEBE7, tertiary #A0CFCB, on_tertiary #003735, tertiary_container #1F4E4B, on_tertiary_container #BCEBE7, error #FFB4AB, on_error #690005.
 
-**Component 1 - Text** (full width minus 32dp insets): rendered per design system component spec. detail_screen archetype.
+**Component 1 - Text** (full width minus 32dp insets): rendered per design system component spec.
 
 **Component 2 - Text** (full width minus 32dp insets): rendered per design system component spec.
 

@@ -1,5 +1,5 @@
 ---
-ui_yaml_sha: 73e1c63ef37c85347158f83462161f918cc4af61a59317d34eee7b7231f33fd6
+ui_yaml_sha: f78a3dba3aff3089e2451e41f32781ab4fe14bcec47d87ec57ad572302aa3a0c
 design_md_hash: 71b53c295bf863d34057f16264caf37a11512e794d356b3bec219352550d05ec
 app_shell_hash: ad7a6b42b2ae10e63ef270f15d857bd44445d775e8d9b09313b31e6569df95b4
 design_read_hash: 1639ea0545fdbc1ba9ce1eef5369eae224a6f4f57f07f0639b699652daeb8558
@@ -24,76 +24,28 @@ craft_rules_version: v1.0.0
 
 # standing-orders — error state
 
-> Auto-generated from screens/standing-orders/ui.yaml @ SHA 7836d4c4b3fcda75
+> Auto-generated from screens/standing-orders/ui.yaml @ SHA ec1cd458ecdffea9
 > Stitch DesignSystem: (pending DESIGN.md upload — run /idea-export-stitch sub-plan 02)
 > DO NOT redeclare colors / fonts / spacing — they live in DESIGN.md.
 
 ↓↓↓ MOCKUP PROMPT
+Design the error state of the standing-orders screen for **Mifos X Open Banking**, a Open Banking KMP super-app — consumer retail banking + field officer agent banking powered by Open Bank Project API v7, built with Compose Multiplatform across Android, iOS, Desktop, and Web.
 
-Design the **error** state of the Standing-orders screen for **mifos-x-open-banking**, a Open Banking KMP super-app - consumer retail banking + field officer agent banking powered by Open Bank Project API v7, built with Compose Multiplatform across Android, iOS, Desktop, and Web Material 3 balanced dark theme, 393×852dp (Pixel 5), Outfit font throughout.
+Palette: primary #B2D188, on_primary #1F3701, primary_container #354E16, on_primary_container #CDEDA3, secondary #A0CFCB, on_secondary #003735, secondary_container #1F4E4B, on_secondary_container #BCEBE7, background #12140E, surface #12140E, on_surface #E3E3D8, surface_variant #44483D, on_surface_variant #C5C8BA, surface_container #1E201A, surface_container_high #282A24, outline #8F9285, outline_variant #44483D, error #FFB4AB, pending #E8A317.
 
-Palette: primary #B2D188, on_primary #1F3701, primary_container #354E16, on_primary_container #CDEDA3, secondary #A0CFCB, on_secondary #003735, secondary_container #1F4E4B, on_secondary_container #BCEBE7, tertiary #A0CFCB, on_tertiary #003735, tertiary_container #1F4E4B, on_tertiary_container #BCEBE7, error #FFB4AB, on_error #690005.
+**Component 1 — App Bar** (64dp tall, full width): Title "Standing Orders" Outfit Medium 18sp #E3E3D8 centered. Zero elevation, background #12140E.
 
-**Component 1 - Stack** (centered, generous vertical breathing room): rendered per design system component spec. error_state archetype.
+**Component 2 — Hero** (centered, top margin 64dp): 160dp wide illustration of a broken link or disconnected recurring-arrows icon rendered in #44483D / #8F9285 charcoal tones on #12140E, conveying connectivity loss without alarm. error_state archetype.
 
-**Component 2 - Text** (centered, generous vertical breathing room): rendered per design system component spec.
+**Component 3 — Text** (centered, top margin 24dp, horizontal padding 32dp): "Could Not Load Standing Orders" Outfit SemiBold 20sp #E3E3D8 centered, max 2 lines.
 
-**Component 3 - Box** (centered, generous vertical breathing room): rendered per design system component spec.
+**Component 4 — Text** (centered, top margin 8dp, horizontal padding 48dp): "Check your connection and try again. Your scheduled payments remain active on the bank side." Outfit Regular 14sp #8F9285 centered, max 25 words, line-height 20sp.
 
-**Component 4 - Box** (centered, generous vertical breathing room): rendered per design system component spec.
+**Component 5 — Button** (full width minus 64dp insets, top margin 32dp): Filled pill button 48dp tall, 100dp corner radius, background #B2D188, leading refresh icon 20dp #1F3701, label "Retry" Outfit SemiBold 16sp #1F3701.
 
-**Component 5 - Stack** (centered, generous vertical breathing room): rendered per design system component spec.
+**Component 6 — Text** (centered, top margin 16dp): Text link "Go back" Outfit Medium 14sp #8F9285, no background, no underline, 48dp tap target.
 
-**Component 6 - Text** (centered, generous vertical breathing room): rendered per design system component spec.
+Do not use em-dash anywhere in text. Do not make any headline more than 3 lines or any subtitle more than 25 words. Do not break the page theme between sections. Do not place light text on light buttons or dark text on dark buttons.
 
-**Component 7 - Box** (centered, generous vertical breathing room): rendered per design system component spec.
-
-**Component 8 - Text** (centered, generous vertical breathing room): rendered per design system component spec.
-
-**Component 9 - Stack** (centered, generous vertical breathing room): rendered per design system component spec.
-
-**Component 10 - Text** (centered, generous vertical breathing room): rendered per design system component spec.
-
-**Component 11 - Text** (centered, generous vertical breathing room): rendered per design system component spec.
-
-**Component 12 - Stack** (centered, generous vertical breathing room): rendered per design system component spec.
-
-**Component 13 - Icon** (centered, generous vertical breathing room): rendered per design system component spec.
-
-**Component 14 - Icon** (centered, generous vertical breathing room): rendered per design system component spec.
-
-**Component 15 - Box** (centered, generous vertical breathing room): rendered per design system component spec.
-
-**Component 16 - Text** (centered, generous vertical breathing room): rendered per design system component spec.
-
-**Component 17 - Box** (centered, generous vertical breathing room): rendered per design system component spec.
-
-**Component 18 - Text** (centered, generous vertical breathing room): rendered per design system component spec.
-
-**Component 19 - Text** (centered, generous vertical breathing room): rendered per design system component spec.
-
-**Component 20 - Icon** (centered, generous vertical breathing room): rendered per design system component spec.
-
-**Component 21 - Icon** (centered, generous vertical breathing room): rendered per design system component spec.
-
-**Component 22 - Box** (centered, generous vertical breathing room): rendered per design system component spec.
-
-**Component 23 - Text** (centered, generous vertical breathing room): rendered per design system component spec.
-
-**Component 24 - Box** (centered, generous vertical breathing room): rendered per design system component spec.
-
-**Component 25 - Text** (centered, generous vertical breathing room): rendered per design system component spec.
-
-**Component 26 - Text** (centered, generous vertical breathing room): rendered per design system component spec.
-
-**Component 27 - Icon** (centered, generous vertical breathing room): rendered per design system component spec.
-
-**Component 28 - Icon** (centered, generous vertical breathing room): rendered per design system component spec.
-
-**Component 29 - Button** (centered, generous vertical breathing room): rendered per design system component spec.
-
-DO NOT use em-dash anywhere in text. DO NOT make any headline >3 lines or any subtitle >25 words. DO NOT break the page theme between sections. DO NOT place light text on light buttons or dark text on dark buttons.
-
-Full scrollable layout on #B2D188. The #B2D188 accent creates a balanced and premium feel calibrated to the taste-default aesthetic.
-
+Centered layout on #12140E with generous vertical breathing room. The earth-green accent #B2D188 on the Retry button provides a warm, non-alarming recovery action calibrated to the trustworthy open banking aesthetic; error tones stay neutral to avoid unsettling the user over a transient network issue.
 ↑↑↑ MOCKUP PROMPT

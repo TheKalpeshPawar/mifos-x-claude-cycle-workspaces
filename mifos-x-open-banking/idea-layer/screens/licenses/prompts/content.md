@@ -1,5 +1,5 @@
 ---
-ui_yaml_sha: 2d576f5747882053b54deab0b3a1e4c81842ad0c0f6a9ff700582afe77d3bcbf
+ui_yaml_sha: f316c63cf4b428a045711a6ca035c8032a7d7e10a53174b70f5945acf9b40fae
 design_md_hash: 71b53c295bf863d34057f16264caf37a11512e794d356b3bec219352550d05ec
 app_shell_hash: ad7a6b42b2ae10e63ef270f15d857bd44445d775e8d9b09313b31e6569df95b4
 design_read_hash: 1639ea0545fdbc1ba9ce1eef5369eae224a6f4f57f07f0639b699652daeb8558
@@ -24,110 +24,68 @@ craft_rules_version: v1.0.0
 
 # licenses — content state
 
-> Auto-generated from screens/licenses/ui.yaml @ SHA 38af9115eea0a8c0
+> Auto-generated from screens/licenses/ui.yaml @ SHA 15f52fd30fcdc469
 > Stitch DesignSystem: (pending DESIGN.md upload — run /idea-export-stitch sub-plan 02)
 > DO NOT redeclare colors / fonts / spacing — they live in DESIGN.md.
 
 ↓↓↓ MOCKUP PROMPT
 
-Design the **content** state of the Licenses screen for **mifos-x-open-banking**, a Open Banking KMP super-app - consumer retail banking + field officer agent banking powered by Open Bank Project API v7, built with Compose Multiplatform across Android, iOS, Desktop, and Web Material 3 balanced dark theme, 393×852dp (Pixel 5), Outfit font throughout.
+Design the content state of the licenses screen for **Mifos X Open Banking**, a Open Banking KMP super-app for consumer retail banking and field officer agent banking in emerging markets.
 
-Palette: primary #B2D188, on_primary #1F3701, primary_container #354E16, on_primary_container #CDEDA3, secondary #A0CFCB, on_secondary #003735, secondary_container #1F4E4B, on_secondary_container #BCEBE7, tertiary #A0CFCB, on_tertiary #003735, tertiary_container #1F4E4B, on_tertiary_container #BCEBE7, error #FFB4AB, on_error #690005.
+Palette: primary #B2D188, on_primary #1F3701, primary_container #354E16, on_primary_container #CDEDA3, secondary #A0CFCB, on_secondary #003735, secondary_container #1F4E4B, error #FFB4AB, background #12140E, on_surface #E3E3D8, on_surface_variant #C5C8BA, surface_container #1E201A, outline #8F9285, pending #E8A317.
 
-**Component 1 - Stack** (full width minus 32dp insets): rendered per design system component spec. index_list archetype.
+**Component 1 — App Bar** (full width, 56dp tall): Title "Open Source Licenses" Outfit Medium 18sp #E3E3D8 centered. Leading back-arrow 24dp #B2D188. Background #12140E. Subtitle "Mifos X Open Banking is built on these outstanding open-source libraries." Outfit Regular 12sp #C5C8BA below centered.
 
-**Component 2 - Text** (full width minus 32dp insets): rendered per design system component spec.
+**Component 2 — List Row** (full width minus 32dp insets, top margin 16dp): 8 list item rows each 64dp tall separated by 1dp divider #44483D. index_list archetype. Each row: library name Outfit SemiBold 14sp #E3E3D8 left, meta below Outfit Regular 12sp #C5C8BA, badge right. Libraries in order: "Compose Multiplatform" meta "v1.8.2 · JetBrains" badge "Apache 2.0" Outfit Medium 11sp #CDEDA3 filled #354E16 pill 6dp padding. "Ktor" meta "v3.2.0 · JetBrains" badge "Apache 2.0" same style. "Koin" meta "v4.1.0 · insert-koin.io" badge "Apache 2.0". "Store5" meta "v5.1.0 · Mobile Kotlin" badge "Apache 2.0". "Room KMP" meta "v2.7.0 · Google / AndroidX" badge "Apache 2.0". "kotlinx.serialization" meta "v1.8.1 · JetBrains" badge "Apache 2.0". "kotlinx.coroutines" meta "v1.10.1 · JetBrains" badge "Apache 2.0". "Material3" meta "v1.3.2 · Google / Compose" badge "Apache 2.0".
 
-**Component 3 - Stack** (full width minus 32dp insets): rendered per design system component spec.
+Do not use em-dash anywhere in text. Do not make any headline more than 3 lines or any subtitle more than 25 words. Do not break the page theme between sections. Do not place light text on light buttons or dark text on dark buttons.
 
-**Component 4 - List Item** (full width minus 32dp insets): rendered per design system component spec.
+Full scrollable layout on #12140E. The soft earth-green #B2D188 on badge fills and the back-arrow acknowledges the open-source foundation with quiet gratitude calibrated to the trust-first financial aesthetic.
 
-**Component 5 - Text** (full width minus 32dp insets): rendered per design system component spec.
+## State-specific behavior
+- Fully populated with the real demo content listed below.
 
-**Component 6 - Text** (full width minus 32dp insets): rendered per design system component spec.
+## Content source manifest
+- demo-data.demo_entries[0..7]
+- demo-data.demo_entries[0..7]
+- demo-data.demo_entries[0..7]
+- demo-data.demo_entries[0..7]
+- demo-data.demo_entries[0..7]
+- demo-data.demo_entries[0..7]
+- demo-data.demo_entries[0..7]
+- demo-data.demo_entries[0..7]
+- demo-data.demo_entries[0..7]
+- demo-data.demo_entries[0..7]
+- demo-data.demo_entries[0..7]
 
-**Component 7 - Badge** (full width minus 32dp insets): rendered per design system component spec.
+## Components (vocabulary used in this prompt)
+- (no named components extracted — see composition)
 
-**Component 8 - Divider** (full width minus 32dp insets): rendered per design system component spec.
+## Shell (app-shell resolved for this state)
+- App-shell rules are defined per project; per-screen overrides are merged in.
+- Render MUST keep nav/bar elements consistent with the resolved shell — present or absent, never partial.
 
-**Component 9 - List Item** (full width minus 32dp insets): rendered per design system component spec.
+## Tokens (design-tokens roles consumed)
+- Colors: primary / secondary / surface / on-surface / on-surface-variant / error (M3 standard roles).
+- Typography: body-large / title-large (M3 standard roles).
+- Spacing: gap.sm / gap.md / gap.lg.
+- ALL token references are by name from the uploaded design system — no hex literals, no inline size values.
 
-**Component 10 - Text** (full width minus 32dp insets): rendered per design system component spec.
+## Self-Validation Checklist (MANDATORY)
 
-**Component 11 - Text** (full width minus 32dp insets): rendered per design system component spec.
+Before returning the rendered mockup, verify ALL of these are true. If any fails, FIX the output and re-render.
 
-**Component 12 - Badge** (full width minus 32dp insets): rendered per design system component spec.
+- [ ] **Per-state shape:** the render shows ONLY this state ("content"). Do not blend multiple states into one mockup.
+- [ ] **Real content:** every text label, image, and data point reflects the content source manifest above — no numbered generic items, no filler text, no dummy text, no empty strings.
+- [ ] **Token fidelity:** colors come from the uploaded design system (primary/secondary/surface/etc.) by name; spacing comes from declared scale tokens. No invented hex codes, no invented size literals.
+- [ ] **Component vocabulary:** every component in the render maps to a named design-system component (Card, FAB, BottomBar, etc.) — no invented or off-system components.
+- [ ] **Archetype honored:** the layout follows the "index_list" archetype skeleton — composition order top → bottom matches the Composition section.
+- [ ] **App-shell parity:** if a bottom nav, top app bar, or FAB appears in the render, it matches the resolved shell from the app-shell config. Shell elements are either present-and-consistent OR absent — never partial.
 
-**Component 13 - Divider** (full width minus 32dp insets): rendered per design system component spec.
+If any of these fail and the fix isn't clear → halt rendering and surface "Self-validation failed at: {checkpoint}."
 
-**Component 14 - List Item** (full width minus 32dp insets): rendered per design system component spec.
+Return ONLY when all 6 checkpoints pass.
 
-**Component 15 - Text** (full width minus 32dp insets): rendered per design system component spec.
-
-**Component 16 - Text** (full width minus 32dp insets): rendered per design system component spec.
-
-**Component 17 - Badge** (full width minus 32dp insets): rendered per design system component spec.
-
-**Component 18 - Divider** (full width minus 32dp insets): rendered per design system component spec.
-
-**Component 19 - List Item** (full width minus 32dp insets): rendered per design system component spec.
-
-**Component 20 - Text** (full width minus 32dp insets): rendered per design system component spec.
-
-**Component 21 - Text** (full width minus 32dp insets): rendered per design system component spec.
-
-**Component 22 - Badge** (full width minus 32dp insets): rendered per design system component spec.
-
-**Component 23 - Divider** (full width minus 32dp insets): rendered per design system component spec.
-
-**Component 24 - List Item** (full width minus 32dp insets): rendered per design system component spec.
-
-**Component 25 - Text** (full width minus 32dp insets): rendered per design system component spec.
-
-**Component 26 - Text** (full width minus 32dp insets): rendered per design system component spec.
-
-**Component 27 - Badge** (full width minus 32dp insets): rendered per design system component spec.
-
-**Component 28 - Divider** (full width minus 32dp insets): rendered per design system component spec.
-
-**Component 29 - List Item** (full width minus 32dp insets): rendered per design system component spec.
-
-**Component 30 - Text** (full width minus 32dp insets): rendered per design system component spec.
-
-**Component 31 - Text** (full width minus 32dp insets): rendered per design system component spec.
-
-**Component 32 - Badge** (full width minus 32dp insets): rendered per design system component spec.
-
-**Component 33 - Divider** (full width minus 32dp insets): rendered per design system component spec.
-
-**Component 34 - List Item** (full width minus 32dp insets): rendered per design system component spec.
-
-**Component 35 - Text** (full width minus 32dp insets): rendered per design system component spec.
-
-**Component 36 - Text** (full width minus 32dp insets): rendered per design system component spec.
-
-**Component 37 - Badge** (full width minus 32dp insets): rendered per design system component spec.
-
-**Component 38 - Divider** (full width minus 32dp insets): rendered per design system component spec.
-
-**Component 39 - List Item** (full width minus 32dp insets): rendered per design system component spec.
-
-**Component 40 - Text** (full width minus 32dp insets): rendered per design system component spec.
-
-**Component 41 - Text** (full width minus 32dp insets): rendered per design system component spec.
-
-**Component 42 - Badge** (full width minus 32dp insets): rendered per design system component spec.
-
-**Component 43 - Skeleton** (full width minus 32dp insets): rendered per design system component spec.
-
-**Component 44 - Stack** (full width minus 32dp insets): rendered per design system component spec.
-
-**Component 45 - Icon** (full width minus 32dp insets): rendered per design system component spec.
-
-**Component 46 - Text** (full width minus 32dp insets): rendered per design system component spec.
-
-DO NOT use em-dash anywhere in text. DO NOT make any headline >3 lines or any subtitle >25 words. DO NOT break the page theme between sections. DO NOT place light text on light buttons or dark text on dark buttons.
-
-Full scrollable layout on #B2D188. The #B2D188 accent creates a balanced and premium feel calibrated to the taste-default aesthetic.
+Anchored by the earth-green #B2D188 on license badges and the back-arrow, the screen stays refined and balanced in its acknowledgment of open-source foundations.
 
 ↑↑↑ MOCKUP PROMPT

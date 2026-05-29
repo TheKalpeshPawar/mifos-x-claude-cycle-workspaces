@@ -1,5 +1,5 @@
 ---
-ui_yaml_sha: d2e7280e5af5a6e406074f676ab7e0f72f189c2bf10e4cca3b59b268ef7fb572
+ui_yaml_sha: 5b4e63fd968d1623f04fb68f35f8d1f64c6a5215034b56bce2efabe7cb563790
 design_md_hash: 71b53c295bf863d34057f16264caf37a11512e794d356b3bec219352550d05ec
 app_shell_hash: ad7a6b42b2ae10e63ef270f15d857bd44445d775e8d9b09313b31e6569df95b4
 design_read_hash: 1639ea0545fdbc1ba9ce1eef5369eae224a6f4f57f07f0639b699652daeb8558
@@ -24,90 +24,64 @@ craft_rules_version: v1.0.0
 
 # fx-rates — empty state
 
-> Auto-generated from screens/fx-rates/ui.yaml @ SHA c62ded7e389a27ad
+> Auto-generated from screens/fx-rates/ui.yaml @ SHA 7504059146816f6a
 > Stitch DesignSystem: (pending DESIGN.md upload — run /idea-export-stitch sub-plan 02)
 > DO NOT redeclare colors / fonts / spacing — they live in DESIGN.md.
 
 ↓↓↓ MOCKUP PROMPT
 
-Design the **empty** state of the Fx-rates screen for **mifos-x-open-banking**, a Open Banking KMP super-app - consumer retail banking + field officer agent banking powered by Open Bank Project API v7, built with Compose Multiplatform across Android, iOS, Desktop, and Web Material 3 balanced dark theme, 393×852dp (Pixel 5), Outfit font throughout.
+Design the empty state of the fx-rates screen for **Mifos X Open Banking**, a Open Banking KMP super-app for consumer retail banking and field officer agent banking in emerging markets.
 
-Palette: primary #B2D188, on_primary #1F3701, primary_container #354E16, on_primary_container #CDEDA3, secondary #A0CFCB, on_secondary #003735, secondary_container #1F4E4B, on_secondary_container #BCEBE7, tertiary #A0CFCB, on_tertiary #003735, tertiary_container #1F4E4B, on_tertiary_container #BCEBE7, error #FFB4AB, on_error #690005.
+Palette: primary #B2D188, on_primary #1F3701, primary_container #354E16, on_primary_container #CDEDA3, secondary #A0CFCB, on_secondary #003735, secondary_container #1F4E4B, error #FFB4AB, background #12140E, on_surface #E3E3D8, on_surface_variant #C5C8BA, surface_container #1E201A, outline #8F9285, pending #E8A317.
 
-**Component 1 - Text** (centered, generous vertical breathing room): rendered per design system component spec. empty_state archetype.
+**Component 1 — App Bar** (full width, 56dp tall): Title "Exchange Rates" Outfit Medium 18sp #E3E3D8 centered. Background #12140E. Zero elevation.
 
-**Component 2 - Text** (centered, generous vertical breathing room): rendered per design system component spec.
+**Component 2 — Hero** (centered, top margin 80dp, horizontal padding 48dp): Illustration of currency symbols or globe rendered in #1E201A surface tones on #12140E background. empty_state archetype.
 
-**Component 3 - Box** (centered, generous vertical breathing room): rendered per design system component spec.
+**Component 3 — App Bar** (centered, top margin 24dp, horizontal padding 32dp): Title "Rates unavailable" Outfit SemiBold 22sp #E3E3D8 centered.
 
-**Component 4 - Input** (centered, generous vertical breathing room): rendered per design system component spec.
+**Component 4 — List Row** (centered, top margin 8dp, horizontal padding 48dp): Subtext "Exchange rate data is not available at the moment. Check back shortly." Outfit Regular 14sp #C5C8BA line-height 20sp centered max 25 words.
 
-**Component 5 - Input** (centered, generous vertical breathing room): rendered per design system component spec.
+**Component 5 — Button** (full width minus 64dp insets, top margin 32dp): Filled pill button 48dp tall, 999dp corner radius, background #B2D188, label "Refresh Rates" Outfit SemiBold 16sp #1F3701.
 
-**Component 6 - Icon** (centered, generous vertical breathing room): rendered per design system component spec.
+Do not use em-dash anywhere in text. Do not make any headline more than 3 lines or any subtitle more than 25 words. Do not break the page theme between sections. Do not place light text on light buttons or dark text on dark buttons.
 
-**Component 7 - Input** (centered, generous vertical breathing room): rendered per design system component spec.
+Centered layout on #12140E with generous vertical breathing room. The earth-green #B2D188 on the refresh button communicates that recovery is close, keeping the experience calm and balanced throughout.
 
-**Component 8 - Text** (centered, generous vertical breathing room): rendered per design system component spec.
+## State-specific behavior
+- Show an empty-state illustration, a friendly message, and one primary call-to-action button.
 
-**Component 9 - Text** (centered, generous vertical breathing room): rendered per design system component spec.
+## Content source manifest
+- (no demo collections bound for this state)
 
-**Component 10 - Button** (centered, generous vertical breathing room): rendered per design system component spec.
+## Components (vocabulary used in this prompt)
+- (no named components extracted — see composition)
 
-**Component 11 - Divider** (centered, generous vertical breathing room): rendered per design system component spec.
+## Shell (app-shell resolved for this state)
+- App-shell rules are defined per project; per-screen overrides are merged in.
+- Render MUST keep nav/bar elements consistent with the resolved shell — present or absent, never partial.
 
-**Component 12 - Text** (centered, generous vertical breathing room): rendered per design system component spec.
+## Tokens (design-tokens roles consumed)
+- Colors: primary / secondary / surface / on-surface / on-surface-variant / error (M3 standard roles).
+- Typography: body-large / title-large (M3 standard roles).
+- Spacing: gap.sm / gap.md / gap.lg.
+- ALL token references are by name from the uploaded design system — no hex literals, no inline size values.
 
-**Component 13 - Box** (centered, generous vertical breathing room): rendered per design system component spec.
+## Self-Validation Checklist (MANDATORY)
 
-**Component 14 - Text** (centered, generous vertical breathing room): rendered per design system component spec.
+Before returning the rendered mockup, verify ALL of these are true. If any fails, FIX the output and re-render.
 
-**Component 15 - Text** (centered, generous vertical breathing room): rendered per design system component spec.
+- [ ] **Per-state shape:** the render shows ONLY this state ("empty"). Do not blend multiple states into one mockup.
+- [ ] **Real content:** every text label, image, and data point reflects the content source manifest above — no numbered generic items, no filler text, no dummy text, no empty strings.
+- [ ] **Token fidelity:** colors come from the uploaded design system (primary/secondary/surface/etc.) by name; spacing comes from declared scale tokens. No invented hex codes, no invented size literals.
+- [ ] **Component vocabulary:** every component in the render maps to a named design-system component (Card, FAB, BottomBar, etc.) — no invented or off-system components.
+- [ ] **Archetype honored:** the layout follows the "screen" archetype skeleton — composition order top → bottom matches the Composition section.
+- [ ] **App-shell parity:** if a bottom nav, top app bar, or FAB appears in the render, it matches the resolved shell from the app-shell config. Shell elements are either present-and-consistent OR absent — never partial.
 
-**Component 16 - Text** (centered, generous vertical breathing room): rendered per design system component spec.
+If any of these fail and the fix isn't clear → halt rendering and surface "Self-validation failed at: {checkpoint}."
 
-**Component 17 - Box** (centered, generous vertical breathing room): rendered per design system component spec.
+Return ONLY when all 6 checkpoints pass.
 
-**Component 18 - Text** (centered, generous vertical breathing room): rendered per design system component spec.
-
-**Component 19 - Text** (centered, generous vertical breathing room): rendered per design system component spec.
-
-**Component 20 - Text** (centered, generous vertical breathing room): rendered per design system component spec.
-
-**Component 21 - Box** (centered, generous vertical breathing room): rendered per design system component spec.
-
-**Component 22 - Text** (centered, generous vertical breathing room): rendered per design system component spec.
-
-**Component 23 - Text** (centered, generous vertical breathing room): rendered per design system component spec.
-
-**Component 24 - Text** (centered, generous vertical breathing room): rendered per design system component spec.
-
-**Component 25 - Box** (centered, generous vertical breathing room): rendered per design system component spec.
-
-**Component 26 - Text** (centered, generous vertical breathing room): rendered per design system component spec.
-
-**Component 27 - Text** (centered, generous vertical breathing room): rendered per design system component spec.
-
-**Component 28 - Text** (centered, generous vertical breathing room): rendered per design system component spec.
-
-**Component 29 - Box** (centered, generous vertical breathing room): rendered per design system component spec.
-
-**Component 30 - Text** (centered, generous vertical breathing room): rendered per design system component spec.
-
-**Component 31 - Text** (centered, generous vertical breathing room): rendered per design system component spec.
-
-**Component 32 - Text** (centered, generous vertical breathing room): rendered per design system component spec.
-
-**Component 33 - Box** (centered, generous vertical breathing room): rendered per design system component spec.
-
-**Component 34 - Text** (centered, generous vertical breathing room): rendered per design system component spec.
-
-**Component 35 - Text** (centered, generous vertical breathing room): rendered per design system component spec.
-
-**Component 36 - Text** (centered, generous vertical breathing room): rendered per design system component spec.
-
-DO NOT use em-dash anywhere in text. DO NOT make any headline >3 lines or any subtitle >25 words. DO NOT break the page theme between sections. DO NOT place light text on light buttons or dark text on dark buttons.
-
-Full scrollable layout on #B2D188. The #B2D188 accent creates a balanced and premium feel calibrated to the taste-default aesthetic.
+Anchored by the earth-green #B2D188 on the refresh action, the layout stays calm and balanced through the absence of data.
 
 ↑↑↑ MOCKUP PROMPT

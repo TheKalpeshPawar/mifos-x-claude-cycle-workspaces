@@ -1,5 +1,5 @@
 ---
-ui_yaml_sha: dfe33c908d0f5113f9d67374b4185f788e28a318a7a67cb30b90f5349a499746
+ui_yaml_sha: 77ef7dbe843044a66b73b3c529d340294fe8b8804fa009b3a4c22aa5f5ddacab
 design_md_hash: 71b53c295bf863d34057f16264caf37a11512e794d356b3bec219352550d05ec
 app_shell_hash: ad7a6b42b2ae10e63ef270f15d857bd44445d775e8d9b09313b31e6569df95b4
 design_read_hash: 1639ea0545fdbc1ba9ce1eef5369eae224a6f4f57f07f0639b699652daeb8558
@@ -8,7 +8,7 @@ content_hash: 4384143762671e7b118d749bc872ea86452982c2c1fb8133b639b0d084b90784
 design_read_aesthetic: taste-default
 design_read_dials: {variance: 4, motion: 3, density: 5}
 aesthetic_variant_override: null
-archetype: detail_screen
+archetype: screen
 
 feature: consent-manager
 state: populated
@@ -24,106 +24,26 @@ craft_rules_version: v1.0.0
 
 # consent-manager — populated state
 
-> Auto-generated from screens/consent-manager/ui.yaml @ SHA db5c11965e69a395
+> Auto-generated from screens/consent-manager/ui.yaml @ SHA 461e90ba4dc00485
 > Stitch DesignSystem: (pending DESIGN.md upload — run /idea-export-stitch sub-plan 02)
 > DO NOT redeclare colors / fonts / spacing — they live in DESIGN.md.
 
 ↓↓↓ MOCKUP PROMPT
 
-Design the **populated** state of the Consent-manager screen for **mifos-x-open-banking**, a Open Banking KMP super-app - consumer retail banking + field officer agent banking powered by Open Bank Project API v7, built with Compose Multiplatform across Android, iOS, Desktop, and Web Material 3 balanced dark theme, 393×852dp (Pixel 5), Outfit font throughout.
+Design the populated state of the consent manager screen for **Mifos X Open Banking**, a professional open banking KMP super-app for consumer retail banking and field officer agent banking powered by Open Bank Project API v7.
 
-Palette: primary #B2D188, on_primary #1F3701, primary_container #354E16, on_primary_container #CDEDA3, secondary #A0CFCB, on_secondary #003735, secondary_container #1F4E4B, on_secondary_container #BCEBE7, tertiary #A0CFCB, on_tertiary #003735, tertiary_container #1F4E4B, on_tertiary_container #BCEBE7, error #FFB4AB, on_error #690005.
+Palette: primary #B2D188, on_primary #1F3701, primary_container #354E16, secondary #A0CFCB, error #FFB4AB, background #12140E, on_surface #E3E3D8, on_surface_variant #C5C8BA, surface_container #1E201A, surface_container_high #282A24, outline #8F9285, outline_variant #44483D, pending #E8A317.
 
-**Component 1 - Text** (full width minus 32dp insets): rendered per design system component spec. detail_screen archetype.
+**Component 1 — App Bar** (64dp tall, full width): Title "Connected Apps" Outfit Medium 18sp #E3E3D8, leading back-arrow 24dp #B2D188, background #12140E.
 
-**Component 2 - Text** (full width minus 32dp insets): rendered per design system component spec.
+**Component 2 — Card** (MoneyManager Pro consent card, full width minus 32dp insets, 12dp corner radius, background #1E201A, top margin 24dp): App name "MoneyManager Pro" Outfit SemiBold 15sp #E3E3D8, dates "Granted 1 Mar 2026 - Expires 1 Mar 2027" Outfit Regular 12sp #C5C8BA, "ACTIVE" badge filled #354E16 Outfit Medium 11sp #B2D188. Chip Row: "Read Accounts", "View Transactions", "Check Balances" chips outlined 1dp #44483D Outfit Regular 12sp #C5C8BA. Button "Revoke Access" outlined 1dp #FFB4AB label Outfit Medium 14sp #FFB4AB.
 
-**Component 3 - Box** (full width minus 32dp insets): rendered per design system component spec.
+**Component 3 — Card** (TaxHelper consent card, same style, top margin 12dp): "TaxHelper" Outfit SemiBold 15sp, "Granted 15 Jan 2026 - Expires 15 Jan 2027", "ACTIVE" badge. Chip Row: "View Transactions", "Read Accounts". Button "Revoke Access".
 
-**Component 4 - Stack** (full width minus 32dp insets): rendered per design system component spec.
+**Component 4 — Card** (BudgetWise consent card, top margin 12dp): "BudgetWise" Outfit SemiBold 15sp, "Granted 10 Oct 2025 - Expired 10 Apr 2026", "EXPIRED" badge outlined 1dp #8F9285 label #8F9285. Chip Row: "Check Balances". Button "Remove" outlined 1dp #8F9285.
 
-**Component 5 - Image** (full width minus 32dp insets): rendered per design system component spec.
+Do not use em-dash anywhere in text. Do not make any headline more than 3 lines or any subtitle more than 25 words. Do not break the dark page theme between sections. Do not place light text on light buttons or dark text on dark buttons.
 
-**Component 6 - Stack** (full width minus 32dp insets): rendered per design system component spec.
-
-**Component 7 - Text** (full width minus 32dp insets): rendered per design system component spec.
-
-**Component 8 - Text** (full width minus 32dp insets): rendered per design system component spec.
-
-**Component 9 - Box** (full width minus 32dp insets): rendered per design system component spec.
-
-**Component 10 - Stack** (full width minus 32dp insets): rendered per design system component spec.
-
-**Component 11 - Box** (full width minus 32dp insets): rendered per design system component spec.
-
-**Component 12 - Box** (full width minus 32dp insets): rendered per design system component spec.
-
-**Component 13 - Box** (full width minus 32dp insets): rendered per design system component spec.
-
-**Component 14 - Button** (full width minus 32dp insets): rendered per design system component spec.
-
-**Component 15 - Box** (full width minus 32dp insets): rendered per design system component spec.
-
-**Component 16 - Stack** (full width minus 32dp insets): rendered per design system component spec.
-
-**Component 17 - Image** (full width minus 32dp insets): rendered per design system component spec.
-
-**Component 18 - Stack** (full width minus 32dp insets): rendered per design system component spec.
-
-**Component 19 - Text** (full width minus 32dp insets): rendered per design system component spec.
-
-**Component 20 - Text** (full width minus 32dp insets): rendered per design system component spec.
-
-**Component 21 - Box** (full width minus 32dp insets): rendered per design system component spec.
-
-**Component 22 - Stack** (full width minus 32dp insets): rendered per design system component spec.
-
-**Component 23 - Box** (full width minus 32dp insets): rendered per design system component spec.
-
-**Component 24 - Box** (full width minus 32dp insets): rendered per design system component spec.
-
-**Component 25 - Button** (full width minus 32dp insets): rendered per design system component spec.
-
-**Component 26 - Box** (full width minus 32dp insets): rendered per design system component spec.
-
-**Component 27 - Stack** (full width minus 32dp insets): rendered per design system component spec.
-
-**Component 28 - Image** (full width minus 32dp insets): rendered per design system component spec.
-
-**Component 29 - Stack** (full width minus 32dp insets): rendered per design system component spec.
-
-**Component 30 - Text** (full width minus 32dp insets): rendered per design system component spec.
-
-**Component 31 - Text** (full width minus 32dp insets): rendered per design system component spec.
-
-**Component 32 - Box** (full width minus 32dp insets): rendered per design system component spec.
-
-**Component 33 - Stack** (full width minus 32dp insets): rendered per design system component spec.
-
-**Component 34 - Box** (full width minus 32dp insets): rendered per design system component spec.
-
-**Component 35 - Button** (full width minus 32dp insets): rendered per design system component spec.
-
-**Component 36 - Box** (full width minus 32dp insets): rendered per design system component spec.
-
-**Component 37 - Text** (full width minus 32dp insets): rendered per design system component spec.
-
-**Component 38 - Text** (full width minus 32dp insets): rendered per design system component spec.
-
-**Component 39 - Stack** (full width minus 32dp insets): rendered per design system component spec.
-
-**Component 40 - Button** (full width minus 32dp insets): rendered per design system component spec.
-
-**Component 41 - Button** (full width minus 32dp insets): rendered per design system component spec.
-
-**Component 42 - Image** (full width minus 32dp insets): rendered per design system component spec.
-
-**Component 43 - Text** (full width minus 32dp insets): rendered per design system component spec.
-
-**Component 44 - Text** (full width minus 32dp insets): rendered per design system component spec.
-
-DO NOT use em-dash anywhere in text. DO NOT make any headline >3 lines or any subtitle >25 words. DO NOT break the page theme between sections. DO NOT place light text on light buttons or dark text on dark buttons.
-
-Full scrollable layout on #B2D188. The #B2D188 accent creates a balanced and premium feel calibrated to the taste-default aesthetic.
+Scrollable layout on #12140E. The sage-green #B2D188 on active consent badges signals healthy, authorized connections, projecting calm financial oversight suited to the taste-default aesthetic.
 
 ↑↑↑ MOCKUP PROMPT

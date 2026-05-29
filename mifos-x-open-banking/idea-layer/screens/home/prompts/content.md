@@ -1,5 +1,5 @@
 ---
-ui_yaml_sha: a574db0835367d71b15650135b39b1420d4c79ed53118ef031635df642260620
+ui_yaml_sha: b89d839e6c9e3be9d2a9ef40cf53bd6b62a21124885037343b404ee39dd8d76d
 design_md_hash: 71b53c295bf863d34057f16264caf37a11512e794d356b3bec219352550d05ec
 app_shell_hash: ad7a6b42b2ae10e63ef270f15d857bd44445d775e8d9b09313b31e6569df95b4
 design_read_hash: 1639ea0545fdbc1ba9ce1eef5369eae224a6f4f57f07f0639b699652daeb8558
@@ -24,42 +24,64 @@ craft_rules_version: v1.0.0
 
 # home — content state
 
-> Auto-generated from screens/home/ui.yaml @ SHA 0a8d8789e95dcb3c
+> Auto-generated from screens/home/ui.yaml @ SHA 39c82f1bfadd4407
 > Stitch DesignSystem: (pending DESIGN.md upload — run /idea-export-stitch sub-plan 02)
 > DO NOT redeclare colors / fonts / spacing — they live in DESIGN.md.
 
 ↓↓↓ MOCKUP PROMPT
 
-Design the **content** state of the Home screen for **Mifos X Open Banking**, a open banking KMP super-app delivering consumer retail banking and field officer agent banking powered by Open Bank Project API v7 across Android, iOS, Desktop, and Web.
+Design the content state of the home screen for **Mifos X Open Banking**, a Open Banking KMP super-app for consumer retail banking and field officer agent banking in emerging markets.
 
-Palette: background #12140E, surface #12140E, onSurface #E3E3D8, primary #B2D188, onPrimary #1F3701, primaryContainer #354E16, onPrimaryContainer #CDEDA3, secondary #A0CFCB, onSecondary #003735, secondaryContainer #1F4E4B, surfaceContainer #1E201A, surfaceContainerHigh #282A24, outline #8F9285, outlineVariant #44483D, onSurfaceVariant #C5C8BA, error #FFB4AB, pending #E8A317, navActiveIndicator #354E16.
+Palette: primary #B2D188, on_primary #1F3701, primary_container #354E16, on_primary_container #CDEDA3, secondary #A0CFCB, on_secondary #003735, secondary_container #1F4E4B, error #FFB4AB, background #12140E, on_surface #E3E3D8, on_surface_variant #C5C8BA, surface_container #1E201A, outline #8F9285, pending #E8A317.
 
-**Component 1 - Greeting Text** (full width minus 32dp insets, top margin 24dp): "Good morning, Alex." Outfit SemiBold 22sp #E3E3D8, left-aligned. No background. Baseline sits 24dp below the status bar.
+**Component 1 — App Bar** (full width, 56dp tall): Greeting "Good morning, Alex" Outfit SemiBold 18sp #E3E3D8 left-aligned 16dp padding. Date "Monday, 25 May 2026" Outfit Regular 12sp #C5C8BA below greeting. Background #12140E. Zero elevation.
 
-**Component 2 - Greeting Date** (full width minus 32dp insets, top margin 4dp): "Wednesday, 28 May 2026" Outfit Regular 13sp #C5C8BA, left-aligned. Zero background, single line.
+**Component 2 — Card** (full width minus 32dp insets, top margin 16dp, 16dp corner radius, background #354E16, 20dp padding): Primary account card. Label "Primary Checking" Outfit Regular 12sp #CDEDA3. Balance "£4,250.00" Outfit SemiBold 28sp #E3E3D8 top margin 4dp. IBAN "•••• •••• •••• 0130" Outfit Regular 12sp #A0CFCB top margin 4dp. Row of 3 Chip Row items top margin 16dp each filled #1F4E4B 32dp tall 8dp padding: "Send Money" Outfit Medium 13sp #BCEBE7, "Beneficiaries" same, "View Cards" same. dashboard archetype.
 
-**Component 3 - Primary Account Card** (full width minus 32dp insets, 148dp tall, 16dp corner radius, top margin 20dp): dashboard hero card. Background #1E201A, 1dp border #44483D. Left column: label "Main Savings Account" Outfit Medium 12sp #C5C8BA; account number "GHS - 1002345678" Outfit Regular 11sp #8F9285, top margin 4dp; balance label "Available Balance" Outfit Regular 11sp #C5C8BA, top margin 16dp; balance amount "GHS 4,250.00" Outfit Bold 28sp #B2D188. Right column, top-right corner: 40dp circular avatar filled #354E16 with initials "AO" Outfit SemiBold 16sp #CDEDA3. Bottom row, top margin 16dp: four 68dp-wide action chips (pill radius, 32dp tall, filled #282A24 with 1dp border #44483D each): "Transfer" Outfit Medium 12sp #E3E3D8, "Pay Bill" Outfit Medium 12sp #E3E3D8, "Top-up" Outfit Medium 12sp #E3E3D8, "More" Outfit Medium 12sp #C5C8BA. Gap between chips 8dp.
+**Component 3 — Card** (full width minus 32dp insets, top margin 12dp, 12dp corner radius, background #1E201A, 12dp padding): Balance chip row. Wallet icon 20dp #B2D188. Text "Total across 3 accounts: £12,480.50" Outfit Regular 14sp #E3E3D8.
 
-**Component 4 - Total Balance Chip** (full width minus 32dp insets, 48dp tall, 12dp corner radius, top margin 12dp): single wide pill card background #282A24. Left: label "Total Portfolio" Outfit Regular 12sp #C5C8BA; right-aligned total "GHS 11,890.50" Outfit SemiBold 15sp #B2D188. Right edge: chevron-right icon 18dp tinted #8F9285. Vertically centered content with 16dp horizontal padding.
+**Component 4 — List Row** (full width minus 32dp insets, top margin 24dp): Section row header "Recent Transactions" Outfit SemiBold 14sp #E3E3D8 left, "View All" Outfit Medium 14sp #B2D188 right. Three transaction rows each 64dp tall with 1dp divider #44483D. Row 1: shopping_cart icon 40dp background #282A24, "Tesco Supermarket" Outfit Medium 14sp #E3E3D8, "23 May 2026 · Groceries" Outfit Regular 12sp #C5C8BA, amount "-£42.50" Outfit Medium 14sp #FFB4AB, badge "DEBIT" Outfit Regular 11sp #FFB4AB. Row 2: payments icon, "Salary Payment", "22 May 2026 · Income", "+£3,200.00" Outfit Medium 14sp #B2D188, badge "CREDIT" Outfit Regular 11sp #B2D188. Row 3: bolt icon, "EDF Energy", "20 May 2026 · Utilities", "-£94.20" #FFB4AB, badge "DEBIT".
 
-**Component 5 - Recent Transactions Header** (full width minus 32dp insets, 40dp tall, top margin 24dp): horizontal Stack. Left: "Recent Transactions" Outfit SemiBold 16sp #E3E3D8. Right: text button "See All" Outfit Medium 13sp #B2D188 with data-nav-to="transactions". Aligned baseline, space-between layout.
+**Component 5 — Grid** (full width minus 32dp insets, top margin 24dp, 2-column grid 12dp gap): Section title "Services" Outfit SemiBold 14sp #E3E3D8. Three service Cards each 80dp tall 12dp corner radius background #1E201A centered icon 24dp #A0CFCB and label below: "Standing Orders" Outfit Regular 12sp #C5C8BA, "ATM & Branches", "FX Rates".
 
-**Component 6 - Transaction Row 1** (full width minus 32dp insets, 64dp tall, 12dp corner radius, top margin 8dp): card background #1E201A, 1dp border #44483D. Leading 40dp circle icon container background #354E16 with upward-arrow icon 20dp tinted #CDEDA3. Center column: primary label "Mobile Top-up - Vodafone" Outfit Medium 14sp #E3E3D8; secondary label "Today, 08:42" Outfit Regular 12sp #8F9285. Trailing amount "-GHS 42.50" Outfit SemiBold 14sp #FFB4AB, right-aligned. 16dp horizontal padding, vertically centered rows.
+Do not use em-dash anywhere in text. Do not make any headline more than 3 lines or any subtitle more than 25 words. Do not break the page theme between sections. Do not place light text on light buttons or dark text on dark buttons.
 
-**Component 7 - Transaction Row 2** (full width minus 32dp insets, 64dp tall, 12dp corner radius, top margin 8dp): card background #1E201A, 1dp border #44483D. Leading 40dp circle icon container background #1F4E4B with downward-arrow icon 20dp tinted #A0CFCB. Center column: primary label "Salary Credit - MBS Corp" Outfit Medium 14sp #E3E3D8; secondary label "Yesterday, 17:15" Outfit Regular 12sp #8F9285. Trailing amount "+GHS 3,200.00" Outfit SemiBold 14sp #B2D188, right-aligned. 16dp horizontal padding, vertically centered rows.
+Full scrollable layout on #12140E. The earth-green #B2D188 on credit amounts and the "View All" link anchors positive financial moments with warmth and growth energy calibrated to the trust-first banking aesthetic.
 
-**Component 8 - Transaction Row 3** (full width minus 32dp insets, 64dp tall, 12dp corner radius, top margin 8dp): card background #1E201A, 1dp border #44483D. Leading 40dp circle icon container background #44483D with transfer icon 20dp tinted #C5C8BA. Center column: primary label "Transfer to James Asante" Outfit Medium 14sp #E3E3D8; secondary label "27 May, 14:03" Outfit Regular 12sp #8F9285. Trailing amount "-GHS 500.00" Outfit SemiBold 14sp #FFB4AB, right-aligned. Trailing right edge: status badge 6dp filled circle #E8A317 indicating pending state, vertically centered. 16dp horizontal padding.
+## State-specific behavior
+- Fully populated with the real demo content listed below.
 
-**Component 9 - Services Section Title** (full width minus 32dp insets, 40dp tall, top margin 24dp): "Banking Services" Outfit SemiBold 16sp #E3E3D8, left-aligned, vertically centered.
+## Content source manifest
+- (no demo collections bound for this state)
 
-**Component 10 - Services Grid** (full width minus 32dp insets, top margin 8dp, 2x3 grid with 12dp gaps): six service tile cards each 88dp tall, 12dp corner radius, background #1E201A, 1dp border #44483D. Each tile: centered icon 28dp tinted #B2D188 at top-center with 16dp top padding, label Outfit Medium 12sp #C5C8BA centered below with 8dp top gap. Tiles in order: (1) icon bank-outline, label "Accounts"; (2) icon repeat-arrows, label "Transfers"; (3) icon document-text, label "Statements"; (4) icon credit-card, label "Cards"; (5) icon location-marker, label "Find ATM"; (6) icon headset, label "Support". All labels single-line.
+## Components (vocabulary used in this prompt)
+- (no named components extracted — see composition)
 
-**Component 11 - Bottom Spacer** (full width, 80dp tall): transparent spacer providing clearance above the bottom navigation bar so final grid row is not clipped on scroll.
+## Shell (app-shell resolved for this state)
+- App-shell rules are defined per project; per-screen overrides are merged in.
+- Render MUST keep nav/bar elements consistent with the resolved shell — present or absent, never partial.
 
-**Component 12 - Bottom Navigation** (full width, 64dp tall, anchored bottom): 5 tabs: "Home" (selected, indicator pill #354E16 48dp wide 32dp tall, icon 24dp tinted #B2D188, label Outfit Medium 11sp #B2D188), "Accounts" (icon 24dp tinted #8F9285, label Outfit Regular 11sp #8F9285), "Transfers" (icon 24dp tinted #8F9285, label Outfit Regular 11sp #8F9285), "Loans" (icon 24dp tinted #8F9285, label Outfit Regular 11sp #8F9285), "Profile" (icon 24dp tinted #8F9285, label Outfit Regular 11sp #8F9285). Background #1E201A, top divider 1dp #44483D. Tab width equal-distributed.
+## Tokens (design-tokens roles consumed)
+- Colors: primary / secondary / surface / on-surface / on-surface-variant / error (M3 standard roles).
+- Typography: body-large / title-large (M3 standard roles).
+- Spacing: gap.sm / gap.md / gap.lg.
+- ALL token references are by name from the uploaded design system — no hex literals, no inline size values.
 
-DO NOT use em-dash anywhere in text. DO NOT make any headline more than 3 lines or any subtitle more than 25 words. DO NOT break the page theme between sections. DO NOT place light text on light buttons or dark text on dark buttons.
+## Self-Validation Checklist (MANDATORY)
 
-The earth-green primary #B2D188 anchors every trust signal - selected navigation, positive transaction amounts, account balance display, and service tile icons - building a calm, professional financial tone that communicates stability without austerity. Generous 24dp section breaks and #1E201A card surfaces lift content off the near-black background, giving the dashboard a structured, breathable density calibrated for daily financial monitoring by both retail consumers and field officers.
+Before returning the rendered mockup, verify ALL of these are true. If any fails, FIX the output and re-render.
+
+- [ ] **Per-state shape:** the render shows ONLY this state ("content"). Do not blend multiple states into one mockup.
+- [ ] **Real content:** every text label, image, and data point reflects the content source manifest above — no numbered generic items, no filler text, no dummy text, no empty strings.
+- [ ] **Token fidelity:** colors come from the uploaded design system (primary/secondary/surface/etc.) by name; spacing comes from declared scale tokens. No invented hex codes, no invented size literals.
+- [ ] **Component vocabulary:** every component in the render maps to a named design-system component (Card, FAB, BottomBar, etc.) — no invented or off-system components.
+- [ ] **Archetype honored:** the layout follows the "dashboard" archetype skeleton — composition order top → bottom matches the Composition section.
+- [ ] **App-shell parity:** if a bottom nav, top app bar, or FAB appears in the render, it matches the resolved shell from the app-shell config. Shell elements are either present-and-consistent OR absent — never partial.
+
+If any of these fail and the fix isn't clear → halt rendering and surface "Self-validation failed at: {checkpoint}."
+
+Return ONLY when all 6 checkpoints pass.
+
+Anchored by the earth-green #B2D188 on credit moments and quick-links, the home screen stays warm and balanced across all account states.
 
 ↑↑↑ MOCKUP PROMPT

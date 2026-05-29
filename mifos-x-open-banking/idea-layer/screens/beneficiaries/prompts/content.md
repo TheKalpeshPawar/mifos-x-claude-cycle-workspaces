@@ -1,5 +1,5 @@
 ---
-ui_yaml_sha: c55e58b10001c7a22c30894d53f85eb09192ae14c32eebaea444249406e163a6
+ui_yaml_sha: a37ab086ed21a953df7bf0a7272221f8d846dd091086643f77aeaf43d90882ef
 design_md_hash: 71b53c295bf863d34057f16264caf37a11512e794d356b3bec219352550d05ec
 app_shell_hash: ad7a6b42b2ae10e63ef270f15d857bd44445d775e8d9b09313b31e6569df95b4
 design_read_hash: 1639ea0545fdbc1ba9ce1eef5369eae224a6f4f57f07f0639b699652daeb8558
@@ -8,7 +8,7 @@ content_hash: e97f6122a8f2576f1c7f27128cb98f5511b5b2a355f2e74067555d69d89c239a
 design_read_aesthetic: taste-default
 design_read_dials: {variance: 4, motion: 3, density: 5}
 aesthetic_variant_override: null
-archetype: detail_screen
+archetype: screen
 
 feature: beneficiaries
 state: content
@@ -24,68 +24,36 @@ craft_rules_version: v1.0.0
 
 # beneficiaries — content state
 
-> Auto-generated from screens/beneficiaries/ui.yaml @ SHA bdf8398224879603
+> Auto-generated from screens/beneficiaries/ui.yaml @ SHA 9ede893bad343e00
 > Stitch DesignSystem: (pending DESIGN.md upload — run /idea-export-stitch sub-plan 02)
 > DO NOT redeclare colors / fonts / spacing — they live in DESIGN.md.
 
 ↓↓↓ MOCKUP PROMPT
+Design the content state of the Beneficiaries screen for **Mifos X Open Banking**, a open banking KMP super-app for consumer retail banking and field officer agent banking powered by Open Bank Project API v7.
 
-Design the **content** state of the Beneficiaries screen for **mifos-x-open-banking**, a Open Banking KMP super-app - consumer retail banking + field officer agent banking powered by Open Bank Project API v7, built with Compose Multiplatform across Android, iOS, Desktop, and Web Material 3 balanced dark theme, 393×852dp (Pixel 5), Outfit font throughout.
+Palette: primary #B2D188, on_primary #1F3701, primary_container #354E16, on_primary_container #CDEDA3, secondary #A0CFCB, on_secondary #003735, background #12140E, on_surface #E3E3D8, on_surface_variant #C5C8BA, surface_container #1E201A, surface_container_high #282A24, outline #8F9285, error #FFB4AB.
 
-Palette: primary #B2D188, on_primary #1F3701, primary_container #354E16, on_primary_container #CDEDA3, secondary #A0CFCB, on_secondary #003735, secondary_container #1F4E4B, on_secondary_container #BCEBE7, tertiary #A0CFCB, on_tertiary #003735, tertiary_container #1F4E4B, on_tertiary_container #BCEBE7, error #FFB4AB, on_error #690005.
+**Component 1 — App Bar** (64dp tall, full width): Title "Beneficiaries" Outfit Medium 18sp #E3E3D8 centered. Leading back-arrow icon 24dp tinted #B2D188. Zero elevation, background #12140E.
 
-**Component 1 - Input** (full width minus 32dp insets): rendered per design system component spec. detail_screen archetype.
+**Component 2 — Text Field** (full width minus 32dp insets, top margin 16dp): Outlined lookup field 48dp tall, 24dp corner radius pill shape, label "Search" Outfit Regular 14sp #8F9285, leading lookup icon 20dp #C5C8BA, outline 1dp #44483D.
 
-**Component 2 - Text** (full width minus 32dp insets): rendered per design system component spec.
+**Component 3 — List Row** (full width minus 32dp insets, top margin 16dp): Section label "Recently Used" Outfit SemiBold 13sp #8F9285 uppercase.
 
-**Component 3 - Box** (full width minus 32dp insets): rendered per design system component spec.
+**Component 4 — List Row** (full width minus 32dp insets, top margin 8dp, 72dp tall): Leading 40dp circular avatar background #354E16, initials "JS" Outfit SemiBold 16sp #CDEDA3. Title "John Smith" Outfit SemiBold 15sp #E3E3D8. Subtitle "Barclays UK" Outfit Regular 13sp #C5C8BA. Trailing metadata "500 GBP, 2 days ago" Outfit Regular 12sp #8F9285.
 
-**Component 4 - Box** (full width minus 32dp insets): rendered per design system component spec.
+**Component 5 — List Row** (full width minus 32dp insets, top margin 4dp, 72dp tall): Leading 40dp circular avatar #1F4E4B, initials "SW" Outfit SemiBold 16sp #BCEBE7. Title "Sarah Williams" Outfit SemiBold 15sp #E3E3D8. Subtitle "HSBC UK" Outfit Regular 13sp #C5C8BA. Trailing "1200 GBP, 5 days ago" Outfit Regular 12sp #8F9285.
 
-**Component 5 - Text** (full width minus 32dp insets): rendered per design system component spec.
+**Component 6 — List Row** (full width minus 32dp insets, top margin 4dp, 72dp tall): Leading 40dp circular avatar #44483D, initials "MC" Outfit SemiBold 16sp #C5C8BA. Title "Michael Chen" Outfit SemiBold 15sp #E3E3D8. Subtitle "Lloyds Bank" Outfit Regular 13sp #C5C8BA.
 
-**Component 6 - Text** (full width minus 32dp insets): rendered per design system component spec.
+**Component 7 — List Row** (full width minus 32dp insets, top margin 16dp): Row with label "All Beneficiaries" Outfit SemiBold 15sp #E3E3D8 left-aligned, sort icon 20dp #C5C8BA right-aligned.
 
-**Component 7 - Box** (full width minus 32dp insets): rendered per design system component spec.
+**Component 8 — Card** (full width minus 32dp insets, top margin 8dp): surfaceContainer #1E201A background, 12dp corner radius, 16dp padding. Leading NatWest bank logo 32dp rounded square. Title "James Anderson" Outfit SemiBold 15sp #E3E3D8. Subtitle "GB29 NWBK 8819" Outfit Regular 13sp #C5C8BA. Footer "Last payment: 12 May 2026" Outfit Regular 12sp #8F9285.
 
-**Component 8 - Box** (full width minus 32dp insets): rendered per design system component spec.
+**Component 9 — Card** (full width minus 32dp insets, top margin 8dp, bottom 80dp): Same shape. Leading Santander logo. Title "Priya Patel" Outfit SemiBold 15sp #E3E3D8. Subtitle "GB72 ABBY 4421" Outfit Regular 13sp #C5C8BA.
 
-**Component 9 - Text** (full width minus 32dp insets): rendered per design system component spec.
+**Component 10 — FAB** (56dp diameter, anchored bottom-right 16dp from edges): Circular FAB background #B2D188, plus icon 24dp #1F3701.
 
-**Component 10 - Text** (full width minus 32dp insets): rendered per design system component spec.
+Do not use em-dash anywhere in text. Do not make any headline more than 3 lines or any subtitle more than 25 words. Do not break the dark theme between sections. Do not place light text on light buttons or dark text on dark buttons.
 
-**Component 11 - Box** (full width minus 32dp insets): rendered per design system component spec.
-
-**Component 12 - Box** (full width minus 32dp insets): rendered per design system component spec.
-
-**Component 13 - Text** (full width minus 32dp insets): rendered per design system component spec.
-
-**Component 14 - Divider** (full width minus 32dp insets): rendered per design system component spec.
-
-**Component 15 - Stack** (full width minus 32dp insets): rendered per design system component spec.
-
-**Component 16 - Text** (full width minus 32dp insets): rendered per design system component spec.
-
-**Component 17 - Icon** (full width minus 32dp insets): rendered per design system component spec.
-
-**Component 18 - Box** (full width minus 32dp insets): rendered per design system component spec.
-
-**Component 19 - Image** (full width minus 32dp insets): rendered per design system component spec.
-
-**Component 20 - Text** (full width minus 32dp insets): rendered per design system component spec.
-
-**Component 21 - Text** (full width minus 32dp insets): rendered per design system component spec.
-
-**Component 22 - Box** (full width minus 32dp insets): rendered per design system component spec.
-
-**Component 23 - Image** (full width minus 32dp insets): rendered per design system component spec.
-
-**Component 24 - Text** (full width minus 32dp insets): rendered per design system component spec.
-
-**Component 25 - Button** (full width minus 32dp insets): rendered per design system component spec.
-
-DO NOT use em-dash anywhere in text. DO NOT make any headline >3 lines or any subtitle >25 words. DO NOT break the page theme between sections. DO NOT place light text on light buttons or dark text on dark buttons.
-
-Full scrollable layout on #B2D188. The #B2D188 accent creates a balanced and premium feel calibrated to the taste-default aesthetic.
-
+Full scrollable layout on #12140E. Anchored by the earth-green accent #B2D188 on the FAB and avatar highlights, the layout stays calm, balanced, and refined throughout the regulated-industry banking experience.
 ↑↑↑ MOCKUP PROMPT

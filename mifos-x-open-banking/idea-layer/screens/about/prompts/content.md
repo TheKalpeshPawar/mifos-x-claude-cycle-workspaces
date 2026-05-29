@@ -1,5 +1,5 @@
 ---
-ui_yaml_sha: 9f1eac58254bbc4f4797c44e0c02658b07c6ffb7937c1e934de1c2f61ee0f2a2
+ui_yaml_sha: cef07cfa2ad24b80737c28638685e2e4d53b2eb4711914b0fcd2363e8d0b95e7
 design_md_hash: 71b53c295bf863d34057f16264caf37a11512e794d356b3bec219352550d05ec
 app_shell_hash: ad7a6b42b2ae10e63ef270f15d857bd44445d775e8d9b09313b31e6569df95b4
 design_read_hash: 1639ea0545fdbc1ba9ce1eef5369eae224a6f4f57f07f0639b699652daeb8558
@@ -24,80 +24,26 @@ craft_rules_version: v1.0.0
 
 # about — content state
 
-> Auto-generated from screens/about/ui.yaml @ SHA bb5e03361516ab76
+> Auto-generated from screens/about/ui.yaml @ SHA aa6d8b32b2f7e7ef
 > Stitch DesignSystem: (pending DESIGN.md upload — run /idea-export-stitch sub-plan 02)
 > DO NOT redeclare colors / fonts / spacing — they live in DESIGN.md.
 
 ↓↓↓ MOCKUP PROMPT
+Design the content state of the about screen for **Mifos X Open Banking**, a professional open banking KMP super-app serving consumer retail banking and field officer agent banking powered by Open Bank Project API v7.
 
-Design the **content** state of the About screen for **mifos-x-open-banking**, a Open Banking KMP super-app - consumer retail banking + field officer agent banking powered by Open Bank Project API v7, built with Compose Multiplatform across Android, iOS, Desktop, and Web Material 3 balanced dark theme, 393×852dp (Pixel 5), Outfit font throughout.
+Palette: primary #B2D188, on_primary #1F3701, primary_container #354E16, on_primary_container #CDEDA3, secondary #A0CFCB, on_secondary #003735, secondary_container #1F4E4B, on_secondary_container #BCEBE7, tertiary #A0CFCB, on_tertiary #003735, error #FFB4AB, on_error #690005, error_container #93000A, background #12140E, on_background #E3E3D8, surface #12140E, on_surface #E3E3D8, surface_variant #44483D, on_surface_variant #C5C8BA, surface_container #1E201A, surface_container_high #282A24, outline #8F9285, outline_variant #44483D, pending #E8A317, nav_active_indicator #354E16, scrim #000000.
 
-Palette: primary #B2D188, on_primary #1F3701, primary_container #354E16, on_primary_container #CDEDA3, secondary #A0CFCB, on_secondary #003735, secondary_container #1F4E4B, on_secondary_container #BCEBE7, tertiary #A0CFCB, on_tertiary #003735, tertiary_container #1F4E4B, on_tertiary_container #BCEBE7, error #FFB4AB, on_error #690005.
+**Component 1 — App Bar** (64dp tall, full width): Title "About" Outfit Medium 18sp #E3E3D8 centered. Leading back-arrow icon 24dp tinted #B2D188. Background #12140E, zero elevation, 1dp bottom divider #44483D.
 
-**Component 1 - Stack** (full width minus 32dp insets): rendered per design system component spec. settings archetype.
+**Component 2 — Card** (full width minus 32dp insets, 12dp corner radius, top margin 24dp, background #1E201A): Logo image centered 72dp diameter with 16dp top padding. Below logo: "Mifos X Open Banking" Outfit SemiBold 20sp #E3E3D8 centered, top margin 12dp. "Open Banking for Everyone" Outfit Regular 13sp #C5C8BA centered, top margin 4dp. settings archetype.
 
-**Component 2 - Stack** (full width minus 32dp insets): rendered per design system component spec.
+**Component 3 — Card** (full width minus 32dp insets, 12dp corner radius, top margin 16dp, background #1E201A): Two List Row items separated by 1dp divider #44483D. Row 1: "Version" Outfit Regular 14sp #C5C8BA on left, "1.0.0" Outfit Medium 14sp #E3E3D8 on right, 56dp tall. Row 2: "Build" Outfit Regular 14sp #C5C8BA on left, "2026.05.001" Outfit Medium 14sp #E3E3D8 on right, 56dp tall.
 
-**Component 3 - Image** (full width minus 32dp insets): rendered per design system component spec.
+**Component 4 — Card** (full width minus 32dp insets, 12dp corner radius, top margin 16dp, background #1E201A): Header "Legal" Outfit Medium 12sp #B2D188 with 16dp horizontal padding, 40dp tall. Three List Row items, each 56dp tall, separated by 1dp dividers #44483D. "Terms of Service" Outfit Regular 14sp #E3E3D8 with trailing open-in-new icon 18dp #8F9285. "Privacy Policy" Outfit Regular 14sp #E3E3D8 with trailing open-in-new icon 18dp #8F9285. "Open Source Licenses" Outfit Regular 14sp #E3E3D8 with trailing chevron-right icon 18dp #8F9285.
 
-**Component 4 - Text** (full width minus 32dp insets): rendered per design system component spec.
+**Component 5 — Button** (full width minus 64dp insets, 48dp tall, 24dp corner radius, top margin 24dp, bottom 32dp): Outlined button, outline 1dp #B2D188, label "Rate This App" Outfit Medium 14sp #B2D188 centered.
 
-**Component 5 - Text** (full width minus 32dp insets): rendered per design system component spec.
+Do not use em-dash anywhere in text. Do not make any headline more than 3 lines or any subtitle more than 25 words. Do not break the dark theme between sections. Do not place light text on light buttons or dark text on dark buttons.
 
-**Component 6 - Card** (full width minus 32dp insets): rendered per design system component spec.
-
-**Component 7 - Stack** (full width minus 32dp insets): rendered per design system component spec.
-
-**Component 8 - Text** (full width minus 32dp insets): rendered per design system component spec.
-
-**Component 9 - Text** (full width minus 32dp insets): rendered per design system component spec.
-
-**Component 10 - Divider** (full width minus 32dp insets): rendered per design system component spec.
-
-**Component 11 - Stack** (full width minus 32dp insets): rendered per design system component spec.
-
-**Component 12 - Text** (full width minus 32dp insets): rendered per design system component spec.
-
-**Component 13 - Text** (full width minus 32dp insets): rendered per design system component spec.
-
-**Component 14 - Card** (full width minus 32dp insets): rendered per design system component spec.
-
-**Component 15 - Text** (full width minus 32dp insets): rendered per design system component spec.
-
-**Component 16 - Stack** (full width minus 32dp insets): rendered per design system component spec.
-
-**Component 17 - Link** (full width minus 32dp insets): rendered per design system component spec.
-
-**Component 18 - Icon** (full width minus 32dp insets): rendered per design system component spec.
-
-**Component 19 - Divider** (full width minus 32dp insets): rendered per design system component spec.
-
-**Component 20 - Stack** (full width minus 32dp insets): rendered per design system component spec.
-
-**Component 21 - Link** (full width minus 32dp insets): rendered per design system component spec.
-
-**Component 22 - Icon** (full width minus 32dp insets): rendered per design system component spec.
-
-**Component 23 - Divider** (full width minus 32dp insets): rendered per design system component spec.
-
-**Component 24 - Stack** (full width minus 32dp insets): rendered per design system component spec.
-
-**Component 25 - Link** (full width minus 32dp insets): rendered per design system component spec.
-
-**Component 26 - Icon** (full width minus 32dp insets): rendered per design system component spec.
-
-**Component 27 - Button** (full width minus 32dp insets): rendered per design system component spec.
-
-**Component 28 - Skeleton** (full width minus 32dp insets): rendered per design system component spec.
-
-**Component 29 - Stack** (full width minus 32dp insets): rendered per design system component spec.
-
-**Component 30 - Icon** (full width minus 32dp insets): rendered per design system component spec.
-
-**Component 31 - Text** (full width minus 32dp insets): rendered per design system component spec.
-
-DO NOT use em-dash anywhere in text. DO NOT make any headline >3 lines or any subtitle >25 words. DO NOT break the page theme between sections. DO NOT place light text on light buttons or dark text on dark buttons.
-
-Full scrollable layout on #B2D188. The #B2D188 accent creates a balanced and premium feel calibrated to the taste-default aesthetic.
-
+The earth-green accent #B2D188 on the app bar back arrow, legal section header, and rate button outline creates a calm, growth-oriented feel calibrated to the trust-first financial aesthetic, keeping the dark settings surface professional and unfussy.
 ↑↑↑ MOCKUP PROMPT

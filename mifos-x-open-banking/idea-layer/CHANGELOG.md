@@ -50,3 +50,4 @@ Initial post-import idea-layer scaffold after `/project-import`.
 - 4 feature screen directories (home, profile, settings, splash) with ui.yaml stubs.
 - PROJECT.md, PROJECT_CONFIG.yaml.
 - idea-plan.yaml (output of `/idea-plan --from-source` 4-agent deep import).
+- [design-system-stitch] 2026-05-29 — DESIGN.md uploaded to Stitch (asset_id=2005644667042354169, design_md_sha=71b53c295bf8)

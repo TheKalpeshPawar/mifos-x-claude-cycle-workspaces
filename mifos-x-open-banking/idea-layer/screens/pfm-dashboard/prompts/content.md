@@ -1,14 +1,14 @@
 ---
-ui_yaml_sha: 38fb7ae896eff8064f28174f9cdcc4db8c6611e8307f78b58f16827a2255bc96
+ui_yaml_sha: 0bdbdfde5fd7ed1e026905eb4d108b80cd86d133a71869b65d6b021e69bfe215
 design_md_hash: 71b53c295bf863d34057f16264caf37a11512e794d356b3bec219352550d05ec
 app_shell_hash: ad7a6b42b2ae10e63ef270f15d857bd44445d775e8d9b09313b31e6569df95b4
 design_read_hash: 1639ea0545fdbc1ba9ce1eef5369eae224a6f4f57f07f0639b699652daeb8558
-content_hash: 062b51523c2337caf029007928ef496fbc193ad05ea3b0337c91f830b14001ef
+content_hash: 035cd25e1b1ee44d9564df2fca69d83135ff881cebbc9b815353362b05fa4d09
 
 design_read_aesthetic: taste-default
 design_read_dials: {variance: 4, motion: 3, density: 5}
 aesthetic_variant_override: null
-archetype: detail_screen
+archetype: screen
 
 feature: pfm-dashboard
 state: content
@@ -24,7 +24,7 @@ craft_rules_version: v1.0.0
 
 # pfm-dashboard — content state
 
-> Auto-generated from screens/pfm-dashboard/ui.yaml @ SHA faa7f4e1922c4b3a
+> Auto-generated from screens/pfm-dashboard/ui.yaml @ SHA aef534c365877d82
 > Stitch DesignSystem: (pending DESIGN.md upload — run /idea-export-stitch sub-plan 02)
 > DO NOT redeclare colors / fonts / spacing — they live in DESIGN.md.
 > Composition split across section files (Stitch composes them by name).
@@ -48,226 +48,32 @@ craft_rules_version: v1.0.0
 
 ↓↓↓ MOCKUP PROMPT
 
-Design the **content** state of the Pfm-dashboard screen for **mifos-x-open-banking**, a Open Banking KMP super-app - consumer retail banking + field officer agent banking powered by Open Bank Project API v7, built with Compose Multiplatform across Android, iOS, Desktop, and Web Material 3 balanced dark theme, 393×852dp (Pixel 5), Outfit font throughout.
+Design the content state of the pfm-dashboard screen for **Mifos X Open Banking**, a professional open banking super-app for consumer retail banking and field officer workflows.
 
-Palette: primary #B2D188, on_primary #1F3701, primary_container #354E16, on_primary_container #CDEDA3, secondary #A0CFCB, on_secondary #003735, secondary_container #1F4E4B, on_secondary_container #BCEBE7, tertiary #A0CFCB, on_tertiary #003735, tertiary_container #1F4E4B, on_tertiary_container #BCEBE7, error #FFB4AB, on_error #690005.
+Palette: primary #B2D188, on_primary #1F3701, primary_container #354E16, on_primary_container #CDEDA3, secondary #A0CFCB, on_secondary #003735, secondary_container #1F4E4B, background #12140E, on_surface #E3E3D8, surface_container #1E201A, surface_container_high #282A24, outline #8F9285, pending #E8A317.
 
-**Component 1 - Text** (full width minus 32dp insets): rendered per design system component spec. detail_screen archetype.
+**Component 1 — App Bar** (64dp tall, full width): Title "Money Overview" Outfit Medium 18sp #E3E3D8 left-aligned 16dp. Background #12140E, 1dp bottom divider #44483D.
 
-**Component 2 - Stack** (full width minus 32dp insets): rendered per design system component spec.
+**Component 2 — Chip Row** (full width minus 32dp insets, top margin 12dp, horizontally scrollable): 4 filter chips, 32dp tall, 16dp corner radius, 8dp gap. "This Month" filled #354E16 label #CDEDA3 Outfit Medium 13sp. "Last Month", "Last 3 Months", "Custom" outlined 1dp #44483D label #C5C8BA Outfit Regular 13sp.
 
-**Component 3 - Chip** (full width minus 32dp insets): rendered per design system component spec.
+**Component 3 — Summary Card** (full width minus 32dp insets, top margin 16dp, 100dp tall, 12dp radius): Surface #1E201A, 16dp padding. Three columns: "Spent" label Outfit Regular 12sp #8F9285 + "£1,847.32" Outfit SemiBold 20sp #E3E3D8. "Received" label + "£3,200.00" #B2D188. "Net" label + "+£1,352.68" #B2D188.
 
-**Component 4 - Chip** (full width minus 32dp insets): rendered per design system component spec.
+**Component 4 — Budget Progress Card** (full width minus 32dp insets, top margin 12dp, 12dp radius): Surface #1E201A, 16dp padding. Header row: "Overall Budget" Outfit Medium 14sp #E3E3D8 left, "73%" Outfit SemiBold 14sp #B2D188 right. Amounts row: "£1,847 spent" left #C5C8BA, "£683 remaining" right #8F9285. Progress track 6dp tall, 8dp radius, base #44483D, fill 73% width #B2D188. Footnote "of £2,530 monthly budget" Outfit Regular 11sp #8F9285.
 
-**Component 5 - Chip** (full width minus 32dp insets): rendered per design system component spec.
+**Component 5 — Category Section Header** (full width minus 32dp insets, top margin 20dp): "Spending by Category" Outfit SemiBold 14sp #E3E3D8.
 
-**Component 6 - Chip** (full width minus 32dp insets): rendered per design system component spec.
+**Component 6 — Category List** (full width minus 32dp insets, top margin 8dp, surface #1E201A, 12dp radius): 5 List Row rows 48dp each, 1dp dividers #44483D. Food & Dining: dot #B2D188, "£624.18" trailing. Transport: dot #A0CFCB, "£287.50". Shopping: dot #CDEDA3, "£531.90". Bills: dot #8F9285, "£245.00". Entertainment: dot #44483D, "£158.74".
 
-**Component 7 - Text** (full width minus 32dp insets): rendered per design system component spec.
+**Component 7 — Budgets Section Header** (full width minus 32dp insets, top margin 20dp): "Budget Breakdown" Outfit SemiBold 14sp #E3E3D8. "Manage" text Button Outfit Medium 13sp #B2D188 trailing.
 
-**Component 8 - Box** (full width minus 32dp insets): rendered per design system component spec.
+**Component 8 — Budget Cards** (full width minus 32dp insets, top margin 8dp): 5 Cards, each 80dp tall, 12dp radius, surface #1E201A. Each shows category name Outfit Medium 14sp + "£X spent / £Y budget" Outfit Regular 12sp #8F9285 + progress bar 4dp fill: Food #B2D188, Transport #A0CFCB, Shopping #CDEDA3, Bills #8F9285, Entertainment #44483D.
 
-**Component 9 - Text** (full width minus 32dp insets): rendered per design system component spec.
+**Component 9 — Top Merchants Header** (full width minus 32dp insets, top margin 20dp): "Top Merchants" Outfit SemiBold 14sp #E3E3D8.
 
-**Component 10 - Stack** (full width minus 32dp insets): rendered per design system component spec.
+**Component 10 — Merchants List** (full width minus 32dp insets, top margin 8dp, surface #1E201A, 12dp radius): 4 List Rows. Tesco, Netflix, Spotify, TfL — each row shows merchant name Outfit Medium 14sp #E3E3D8, category Outfit Regular 12sp #8F9285, amount Outfit SemiBold 14sp #E3E3D8 trailing.
 
-**Component 11 - Stack** (full width minus 32dp insets): rendered per design system component spec.
+Do not use em-dash anywhere in text. Do not make any headline more than 3 lines or any subtitle more than 25 words. Do not break the dark theme between sections. Do not place light text on light buttons or dark text on dark buttons.
 
-**Component 12 - Text** (full width minus 32dp insets): rendered per design system component spec.
-
-**Component 13 - Text** (full width minus 32dp insets): rendered per design system component spec.
-
-**Component 14 - Stack** (full width minus 32dp insets): rendered per design system component spec.
-
-**Component 15 - Text** (full width minus 32dp insets): rendered per design system component spec.
-
-**Component 16 - Text** (full width minus 32dp insets): rendered per design system component spec.
-
-**Component 17 - Stack** (full width minus 32dp insets): rendered per design system component spec.
-
-**Component 18 - Text** (full width minus 32dp insets): rendered per design system component spec.
-
-**Component 19 - Text** (full width minus 32dp insets): rendered per design system component spec.
-
-**Component 20 - Box** (full width minus 32dp insets): rendered per design system component spec.
-
-**Component 21 - Stack** (full width minus 32dp insets): rendered per design system component spec.
-
-**Component 22 - Text** (full width minus 32dp insets): rendered per design system component spec.
-
-**Component 23 - Text** (full width minus 32dp insets): rendered per design system component spec.
-
-**Component 24 - Stack** (full width minus 32dp insets): rendered per design system component spec.
-
-**Component 25 - Text** (full width minus 32dp insets): rendered per design system component spec.
-
-**Component 26 - Text** (full width minus 32dp insets): rendered per design system component spec.
-
-**Component 27 - Box** (full width minus 32dp insets): rendered per design system component spec.
-
-**Component 28 - Box** (full width minus 32dp insets): rendered per design system component spec.
-
-**Component 29 - Text** (full width minus 32dp insets): rendered per design system component spec.
-
-**Component 30 - Text** (full width minus 32dp insets): rendered per design system component spec.
-
-**Component 31 - Box** (full width minus 32dp insets): rendered per design system component spec.
-
-**Component 32 - Stack** (full width minus 32dp insets): rendered per design system component spec.
-
-**Component 33 - Stack** (full width minus 32dp insets): rendered per design system component spec.
-
-**Component 34 - Box** (full width minus 32dp insets): rendered per design system component spec.
-
-**Component 35 - Text** (full width minus 32dp insets): rendered per design system component spec.
-
-**Component 36 - Text** (full width minus 32dp insets): rendered per design system component spec.
-
-**Component 37 - Stack** (full width minus 32dp insets): rendered per design system component spec.
-
-**Component 38 - Box** (full width minus 32dp insets): rendered per design system component spec.
-
-**Component 39 - Text** (full width minus 32dp insets): rendered per design system component spec.
-
-**Component 40 - Text** (full width minus 32dp insets): rendered per design system component spec.
-
-**Component 41 - Stack** (full width minus 32dp insets): rendered per design system component spec.
-
-**Component 42 - Box** (full width minus 32dp insets): rendered per design system component spec.
-
-**Component 43 - Text** (full width minus 32dp insets): rendered per design system component spec.
-
-**Component 44 - Text** (full width minus 32dp insets): rendered per design system component spec.
-
-**Component 45 - Stack** (full width minus 32dp insets): rendered per design system component spec.
-
-**Component 46 - Box** (full width minus 32dp insets): rendered per design system component spec.
-
-**Component 47 - Text** (full width minus 32dp insets): rendered per design system component spec.
-
-**Component 48 - Text** (full width minus 32dp insets): rendered per design system component spec.
-
-**Component 49 - Stack** (full width minus 32dp insets): rendered per design system component spec.
-
-**Component 50 - Box** (full width minus 32dp insets): rendered per design system component spec.
-
-**Component 51 - Text** (full width minus 32dp insets): rendered per design system component spec.
-
-**Component 52 - Text** (full width minus 32dp insets): rendered per design system component spec.
-
-**Component 53 - Text** (full width minus 32dp insets): rendered per design system component spec.
-
-**Component 54 - Box** (full width minus 32dp insets): rendered per design system component spec.
-
-**Component 55 - Stack** (full width minus 32dp insets): rendered per design system component spec.
-
-**Component 56 - Text** (full width minus 32dp insets): rendered per design system component spec.
-
-**Component 57 - Text** (full width minus 32dp insets): rendered per design system component spec.
-
-**Component 58 - Box** (full width minus 32dp insets): rendered per design system component spec.
-
-**Component 59 - Box** (full width minus 32dp insets): rendered per design system component spec.
-
-**Component 60 - Box** (full width minus 32dp insets): rendered per design system component spec.
-
-**Component 61 - Stack** (full width minus 32dp insets): rendered per design system component spec.
-
-**Component 62 - Text** (full width minus 32dp insets): rendered per design system component spec.
-
-**Component 63 - Text** (full width minus 32dp insets): rendered per design system component spec.
-
-**Component 64 - Box** (full width minus 32dp insets): rendered per design system component spec.
-
-**Component 65 - Box** (full width minus 32dp insets): rendered per design system component spec.
-
-**Component 66 - Box** (full width minus 32dp insets): rendered per design system component spec.
-
-**Component 67 - Stack** (full width minus 32dp insets): rendered per design system component spec.
-
-**Component 68 - Text** (full width minus 32dp insets): rendered per design system component spec.
-
-**Component 69 - Text** (full width minus 32dp insets): rendered per design system component spec.
-
-**Component 70 - Box** (full width minus 32dp insets): rendered per design system component spec.
-
-**Component 71 - Box** (full width minus 32dp insets): rendered per design system component spec.
-
-**Component 72 - Box** (full width minus 32dp insets): rendered per design system component spec.
-
-**Component 73 - Stack** (full width minus 32dp insets): rendered per design system component spec.
-
-**Component 74 - Text** (full width minus 32dp insets): rendered per design system component spec.
-
-**Component 75 - Text** (full width minus 32dp insets): rendered per design system component spec.
-
-**Component 76 - Box** (full width minus 32dp insets): rendered per design system component spec.
-
-**Component 77 - Box** (full width minus 32dp insets): rendered per design system component spec.
-
-**Component 78 - Box** (full width minus 32dp insets): rendered per design system component spec.
-
-**Component 79 - Stack** (full width minus 32dp insets): rendered per design system component spec.
-
-**Component 80 - Text** (full width minus 32dp insets): rendered per design system component spec.
-
-**Component 81 - Text** (full width minus 32dp insets): rendered per design system component spec.
-
-**Component 82 - Box** (full width minus 32dp insets): rendered per design system component spec.
-
-**Component 83 - Box** (full width minus 32dp insets): rendered per design system component spec.
-
-**Component 84 - Button** (full width minus 32dp insets): rendered per design system component spec.
-
-**Component 85 - Text** (full width minus 32dp insets): rendered per design system component spec.
-
-**Component 86 - Box** (full width minus 32dp insets): rendered per design system component spec.
-
-**Component 87 - List Item** (full width minus 32dp insets): rendered per design system component spec.
-
-**Component 88 - Text** (full width minus 32dp insets): rendered per design system component spec.
-
-**Component 89 - Text** (full width minus 32dp insets): rendered per design system component spec.
-
-**Component 90 - Text** (full width minus 32dp insets): rendered per design system component spec.
-
-**Component 91 - List Item** (full width minus 32dp insets): rendered per design system component spec.
-
-**Component 92 - Text** (full width minus 32dp insets): rendered per design system component spec.
-
-**Component 93 - Text** (full width minus 32dp insets): rendered per design system component spec.
-
-**Component 94 - Text** (full width minus 32dp insets): rendered per design system component spec.
-
-**Component 95 - List Item** (full width minus 32dp insets): rendered per design system component spec.
-
-**Component 96 - Text** (full width minus 32dp insets): rendered per design system component spec.
-
-**Component 97 - Text** (full width minus 32dp insets): rendered per design system component spec.
-
-**Component 98 - Text** (full width minus 32dp insets): rendered per design system component spec.
-
-**Component 99 - List Item** (full width minus 32dp insets): rendered per design system component spec.
-
-**Component 100 - Text** (full width minus 32dp insets): rendered per design system component spec.
-
-**Component 101 - Text** (full width minus 32dp insets): rendered per design system component spec.
-
-**Component 102 - Text** (full width minus 32dp insets): rendered per design system component spec.
-
-**Component 103 - Button** (full width minus 32dp insets): rendered per design system component spec.
-
-**Component 104 - Box** (full width minus 32dp insets): rendered per design system component spec.
-
-**Component 105 - Text** (full width minus 32dp insets): rendered per design system component spec.
-
-**Component 106 - Text** (full width minus 32dp insets): rendered per design system component spec.
-
-**Component 107 - Button** (full width minus 32dp insets): rendered per design system component spec.
-
-DO NOT use em-dash anywhere in text. DO NOT make any headline >3 lines or any subtitle >25 words. DO NOT break the page theme between sections. DO NOT place light text on light buttons or dark text on dark buttons.
-
-Full scrollable layout on #B2D188. The #B2D188 accent creates a balanced and premium feel calibrated to the taste-default aesthetic.
+The sage-green #B2D188 progress fills and budget percentages keep financial oversight calm and balanced, reinforcing a restrained, purposeful approach to personal money management.
 
 ↑↑↑ MOCKUP PROMPT

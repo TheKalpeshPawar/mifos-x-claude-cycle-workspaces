@@ -1,5 +1,5 @@
 ---
-ui_yaml_sha: abc33e6707cc11c5fe0a359689b385a20a3144a49516d10707c61fed9195e458
+ui_yaml_sha: 886497acc937d3f77eee431d1ffe01ed5447c84b05aaf98a8bff4c5dc9157014
 design_md_hash: 71b53c295bf863d34057f16264caf37a11512e794d356b3bec219352550d05ec
 app_shell_hash: ad7a6b42b2ae10e63ef270f15d857bd44445d775e8d9b09313b31e6569df95b4
 design_read_hash: 1639ea0545fdbc1ba9ce1eef5369eae224a6f4f57f07f0639b699652daeb8558
@@ -24,66 +24,28 @@ craft_rules_version: v1.0.0
 
 # card-detail — empty state
 
-> Auto-generated from screens/card-detail/ui.yaml @ SHA bfec8632b73e5ccc
+> Auto-generated from screens/card-detail/ui.yaml @ SHA 908744ce01844d8d
 > Stitch DesignSystem: (pending DESIGN.md upload — run /idea-export-stitch sub-plan 02)
 > DO NOT redeclare colors / fonts / spacing — they live in DESIGN.md.
 
 ↓↓↓ MOCKUP PROMPT
+Design the empty state of the Card Detail screen for **Mifos X Open Banking**, a open banking KMP super-app for consumer retail banking and field officer agent banking powered by Open Bank Project API v7.
 
-Design the **empty** state of the Card-detail screen for **mifos-x-open-banking**, a Open Banking KMP super-app - consumer retail banking + field officer agent banking powered by Open Bank Project API v7, built with Compose Multiplatform across Android, iOS, Desktop, and Web Material 3 balanced dark theme, 393×852dp (Pixel 5), Outfit font throughout.
+Palette: primary #B2D188, on_primary #1F3701, primary_container #354E16, on_primary_container #CDEDA3, secondary #A0CFCB, on_secondary #003735, background #12140E, on_surface #E3E3D8, on_surface_variant #C5C8BA, surface_container #1E201A, surface_container_high #282A24, outline #8F9285, error #FFB4AB.
 
-Palette: primary #B2D188, on_primary #1F3701, primary_container #354E16, on_primary_container #CDEDA3, secondary #A0CFCB, on_secondary #003735, secondary_container #1F4E4B, on_secondary_container #BCEBE7, tertiary #A0CFCB, on_tertiary #003735, tertiary_container #1F4E4B, on_tertiary_container #BCEBE7, error #FFB4AB, on_error #690005.
+**Component 1 — App Bar** (64dp tall, full width): Title "Card Details" Outfit Medium 18sp #E3E3D8 centered. Leading back-arrow icon 24dp tinted #B2D188. Zero elevation, background #12140E. empty_state archetype.
 
-**Component 1 - Box** (centered, generous vertical breathing room): rendered per design system component spec. empty_state archetype.
+**Component 2 — Hero** (centered, top margin 80dp): 120dp wide by 120dp tall illustration of a credit card outline with a question mark, rendered in #44483D tones on #12140E.
 
-**Component 2 - Text** (centered, generous vertical breathing room): rendered per design system component spec.
+**Component 3 — Hero** (centered, top margin 24dp, horizontal padding 32dp): "No Card Found" Outfit SemiBold 22sp #E3E3D8 centered.
 
-**Component 3 - Text** (centered, generous vertical breathing room): rendered per design system component spec.
+**Component 4 — List Row** (centered, top margin 8dp, horizontal padding 48dp): "This card is no longer available. Order a replacement or contact support." Outfit Regular 14sp #8F9285 centered, max 25 words.
 
-**Component 4 - Text** (centered, generous vertical breathing room): rendered per design system component spec.
+**Component 5 — Button** (full width minus 48dp insets, top margin 32dp): Filled button 48dp tall, 12dp corner radius, background #B2D188, label "Order New Card" Outfit SemiBold 16sp #1F3701 centered.
 
-**Component 5 - Image** (centered, generous vertical breathing room): rendered per design system component spec.
+**Component 6 — Button** (centered, top margin 12dp, bottom 32dp): Text button "Contact Support" Outfit Medium 14sp #8F9285, no background.
 
-**Component 6 - Link** (centered, generous vertical breathing room): rendered per design system component spec.
+Do not use em-dash anywhere in text. Do not make any headline more than 3 lines or any subtitle more than 25 words. Do not break the dark theme between sections. Do not place light text on light buttons or dark text on dark buttons.
 
-**Component 7 - Stack** (centered, generous vertical breathing room): rendered per design system component spec.
-
-**Component 8 - Text** (centered, generous vertical breathing room): rendered per design system component spec.
-
-**Component 9 - Input** (centered, generous vertical breathing room): rendered per design system component spec.
-
-**Component 10 - Box** (centered, generous vertical breathing room): rendered per design system component spec.
-
-**Component 11 - Text** (centered, generous vertical breathing room): rendered per design system component spec.
-
-**Component 12 - Stack** (centered, generous vertical breathing room): rendered per design system component spec.
-
-**Component 13 - Text** (centered, generous vertical breathing room): rendered per design system component spec.
-
-**Component 14 - Text** (centered, generous vertical breathing room): rendered per design system component spec.
-
-**Component 15 - Icon** (centered, generous vertical breathing room): rendered per design system component spec.
-
-**Component 16 - Divider** (centered, generous vertical breathing room): rendered per design system component spec.
-
-**Component 17 - Stack** (centered, generous vertical breathing room): rendered per design system component spec.
-
-**Component 18 - Text** (centered, generous vertical breathing room): rendered per design system component spec.
-
-**Component 19 - Text** (centered, generous vertical breathing room): rendered per design system component spec.
-
-**Component 20 - Icon** (centered, generous vertical breathing room): rendered per design system component spec.
-
-**Component 21 - Spacer** (centered, generous vertical breathing room): rendered per design system component spec.
-
-**Component 22 - Button** (centered, generous vertical breathing room): rendered per design system component spec.
-
-**Component 23 - Button** (centered, generous vertical breathing room): rendered per design system component spec.
-
-**Component 24 - Button** (centered, generous vertical breathing room): rendered per design system component spec.
-
-DO NOT use em-dash anywhere in text. DO NOT make any headline >3 lines or any subtitle >25 words. DO NOT break the page theme between sections. DO NOT place light text on light buttons or dark text on dark buttons.
-
-Full scrollable layout on #B2D188. The #B2D188 accent creates a balanced and premium feel calibrated to the taste-default aesthetic.
-
+Centered layout on #12140E. The earth-green accent #B2D188 on the primary action provides a clear path forward — calm, balanced, and refined within the regulated financial context.
 ↑↑↑ MOCKUP PROMPT

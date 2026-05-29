@@ -1,5 +1,5 @@
 ---
-ui_yaml_sha: 3f296bb40b535ee7843f61cb139133e3880b40ee0ed468e8f1e0a7751bc9d19d
+ui_yaml_sha: f162f673e5eabb53b6f5fc399cb0b97950ede9692369889ef42ab38f8db913ef
 design_md_hash: 71b53c295bf863d34057f16264caf37a11512e794d356b3bec219352550d05ec
 app_shell_hash: ad7a6b42b2ae10e63ef270f15d857bd44445d775e8d9b09313b31e6569df95b4
 design_read_hash: 1639ea0545fdbc1ba9ce1eef5369eae224a6f4f57f07f0639b699652daeb8558
@@ -24,72 +24,28 @@ craft_rules_version: v1.0.0
 
 # transaction-tags — empty state
 
-> Auto-generated from screens/transaction-tags/ui.yaml @ SHA fe66ec4478e2d00b
+> Auto-generated from screens/transaction-tags/ui.yaml @ SHA 489c77893c32d160
 > Stitch DesignSystem: (pending DESIGN.md upload — run /idea-export-stitch sub-plan 02)
 > DO NOT redeclare colors / fonts / spacing — they live in DESIGN.md.
 
 ↓↓↓ MOCKUP PROMPT
+Design the empty state of the transaction-tags screen for **Mifos X Open Banking**, a Open Banking KMP super-app — consumer retail banking + field officer agent banking powered by Open Bank Project API v7, built with Compose Multiplatform across Android, iOS, Desktop, and Web.
 
-Design the **empty** state of the Transaction-tags screen for **mifos-x-open-banking**, a Open Banking KMP super-app - consumer retail banking + field officer agent banking powered by Open Bank Project API v7, built with Compose Multiplatform across Android, iOS, Desktop, and Web Material 3 balanced dark theme, 393×852dp (Pixel 5), Outfit font throughout.
+Palette: primary #B2D188, on_primary #1F3701, primary_container #354E16, on_primary_container #CDEDA3, secondary #A0CFCB, on_secondary #003735, secondary_container #1F4E4B, on_secondary_container #BCEBE7, background #12140E, surface #12140E, on_surface #E3E3D8, surface_variant #44483D, on_surface_variant #C5C8BA, surface_container #1E201A, surface_container_high #282A24, outline #8F9285, outline_variant #44483D, error #FFB4AB, pending #E8A317.
 
-Palette: primary #B2D188, on_primary #1F3701, primary_container #354E16, on_primary_container #CDEDA3, secondary #A0CFCB, on_secondary #003735, secondary_container #1F4E4B, on_secondary_container #BCEBE7, tertiary #A0CFCB, on_tertiary #003735, tertiary_container #1F4E4B, on_tertiary_container #BCEBE7, error #FFB4AB, on_error #690005.
+**Component 1 — App Bar** (64dp tall, full width): Title "Tag Transaction" Outfit Medium 18sp #E3E3D8 centered. Leading back-arrow 24dp #B2D188. Zero elevation, background #12140E.
 
-**Component 1 - Box** (centered, generous vertical breathing room): rendered per design system component spec. empty_state archetype.
+**Component 2 — Card** (full width minus 32dp insets, top margin 16dp, 12dp corner radius, background #1E201A): "Whole Foods Market" Outfit SemiBold 16sp #E3E3D8, "-£67.84" Outfit Bold 18sp #FFB4AB right, "23 May 2026 at 14:32" Outfit Regular 12sp #8F9285.
 
-**Component 2 - Text** (centered, generous vertical breathing room): rendered per design system component spec.
+**Component 3 — Hero** (centered, top margin 64dp): 120dp tag/label icon in #44483D / #8F9285 on #12140E, conveying "no tags yet." empty_state archetype.
 
-**Component 3 - Text** (centered, generous vertical breathing room): rendered per design system component spec.
+**Component 4 — Text** (centered, top margin 24dp, horizontal padding 48dp): "No Tags Yet" Outfit SemiBold 20sp #E3E3D8 centered, max 2 lines.
 
-**Component 4 - Text** (centered, generous vertical breathing room): rendered per design system component spec.
+**Component 5 — Text** (centered, top margin 8dp, horizontal padding 48dp): "Add tags like #groceries or #work-expense to categorize this transaction." Outfit Regular 14sp #8F9285 centered, max 25 words.
 
-**Component 5 - Text** (centered, generous vertical breathing room): rendered per design system component spec.
+**Component 6 — Button** (full width minus 64dp insets, top margin 32dp): Filled button 48dp tall, 24dp corner radius, background #B2D188, label "Add First Tag" Outfit SemiBold 15sp #1F3701.
 
-**Component 6 - Text** (centered, generous vertical breathing room): rendered per design system component spec.
+Do not use em-dash anywhere in text. Do not make any headline more than 3 lines or any subtitle more than 25 words. Do not break the page theme between sections. Do not place light text on light buttons or dark text on dark buttons.
 
-**Component 7 - Stack** (centered, generous vertical breathing room): rendered per design system component spec.
-
-**Component 8 - Box** (centered, generous vertical breathing room): rendered per design system component spec.
-
-**Component 9 - Box** (centered, generous vertical breathing room): rendered per design system component spec.
-
-**Component 10 - Box** (centered, generous vertical breathing room): rendered per design system component spec.
-
-**Component 11 - Box** (centered, generous vertical breathing room): rendered per design system component spec.
-
-**Component 12 - Box** (centered, generous vertical breathing room): rendered per design system component spec.
-
-**Component 13 - Stack** (centered, generous vertical breathing room): rendered per design system component spec.
-
-**Component 14 - Input** (centered, generous vertical breathing room): rendered per design system component spec.
-
-**Component 15 - Button** (centered, generous vertical breathing room): rendered per design system component spec.
-
-**Component 16 - Divider** (centered, generous vertical breathing room): rendered per design system component spec.
-
-**Component 17 - Text** (centered, generous vertical breathing room): rendered per design system component spec.
-
-**Component 18 - Input** (centered, generous vertical breathing room): rendered per design system component spec.
-
-**Component 19 - Divider** (centered, generous vertical breathing room): rendered per design system component spec.
-
-**Component 20 - Text** (centered, generous vertical breathing room): rendered per design system component spec.
-
-**Component 21 - Box** (centered, generous vertical breathing room): rendered per design system component spec.
-
-**Component 22 - Icon** (centered, generous vertical breathing room): rendered per design system component spec.
-
-**Component 23 - Text** (centered, generous vertical breathing room): rendered per design system component spec.
-
-**Component 24 - Button** (centered, generous vertical breathing room): rendered per design system component spec.
-
-**Component 25 - Button** (centered, generous vertical breathing room): rendered per design system component spec.
-
-**Component 26 - Box** (centered, generous vertical breathing room): rendered per design system component spec.
-
-**Component 27 - Icon** (centered, generous vertical breathing room): rendered per design system component spec.
-
-DO NOT use em-dash anywhere in text. DO NOT make any headline >3 lines or any subtitle >25 words. DO NOT break the page theme between sections. DO NOT place light text on light buttons or dark text on dark buttons.
-
-Full scrollable layout on #B2D188. The #B2D188 accent creates a balanced and premium feel calibrated to the taste-default aesthetic.
-
+Centered layout on #12140E with generous vertical breathing room. The earth-green accent #B2D188 on the Add First Tag button provides a calm, warm invitation to begin tagging; tag illustration in neutral tones keeps this empty_state minimal and balanced.
 ↑↑↑ MOCKUP PROMPT

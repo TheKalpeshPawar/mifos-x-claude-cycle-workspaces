@@ -1,5 +1,5 @@
 ---
-ui_yaml_sha: abc33e6707cc11c5fe0a359689b385a20a3144a49516d10707c61fed9195e458
+ui_yaml_sha: 886497acc937d3f77eee431d1ffe01ed5447c84b05aaf98a8bff4c5dc9157014
 design_md_hash: 71b53c295bf863d34057f16264caf37a11512e794d356b3bec219352550d05ec
 app_shell_hash: ad7a6b42b2ae10e63ef270f15d857bd44445d775e8d9b09313b31e6569df95b4
 design_read_hash: 1639ea0545fdbc1ba9ce1eef5369eae224a6f4f57f07f0639b699652daeb8558
@@ -24,66 +24,30 @@ craft_rules_version: v1.0.0
 
 # card-detail — loading state
 
-> Auto-generated from screens/card-detail/ui.yaml @ SHA 07095f14afe925fa
+> Auto-generated from screens/card-detail/ui.yaml @ SHA 7a62a1d97c0c3090
 > Stitch DesignSystem: (pending DESIGN.md upload — run /idea-export-stitch sub-plan 02)
 > DO NOT redeclare colors / fonts / spacing — they live in DESIGN.md.
 
 ↓↓↓ MOCKUP PROMPT
+Design the loading state of the Card Detail screen for **Mifos X Open Banking**, a open banking KMP super-app for consumer retail banking and field officer agent banking powered by Open Bank Project API v7.
 
-Design the **loading** state of the Card-detail screen for **mifos-x-open-banking**, a Open Banking KMP super-app - consumer retail banking + field officer agent banking powered by Open Bank Project API v7, built with Compose Multiplatform across Android, iOS, Desktop, and Web Material 3 balanced dark theme, 393×852dp (Pixel 5), Outfit font throughout.
+Palette: primary #B2D188, on_primary #1F3701, primary_container #354E16, on_primary_container #CDEDA3, secondary #A0CFCB, on_secondary #003735, background #12140E, on_surface #E3E3D8, on_surface_variant #C5C8BA, surface_container #1E201A, surface_container_high #282A24, outline #8F9285, error #FFB4AB.
 
-Palette: primary #B2D188, on_primary #1F3701, primary_container #354E16, on_primary_container #CDEDA3, secondary #A0CFCB, on_secondary #003735, secondary_container #1F4E4B, on_secondary_container #BCEBE7, tertiary #A0CFCB, on_tertiary #003735, tertiary_container #1F4E4B, on_tertiary_container #BCEBE7, error #FFB4AB, on_error #690005.
+**Component 1 — App Bar Shimmer** (64dp tall, full width): Centered shimmer rectangle 120dp by 24dp. Base #1E201A, highlight #282A24, 1200ms sweep. Background #12140E. skeleton_screen archetype.
 
-**Component 1 - Box** (shimmer placeholder, layout-matching): rendered per design system component spec. skeleton_screen archetype.
+**Component 2 — Card Shimmer** (full width minus 32dp insets, top margin 24dp, 192dp tall): Large rectangular shimmer 16dp corner radius, same sweep animation. Two thin shimmer lines at bottom (pan, cardholder), one top-right shimmer spot.
 
-**Component 2 - Text** (shimmer placeholder, layout-matching): rendered per design system component spec.
+**Component 3 — Card Shimmer** (full width minus 32dp insets, top margin 16dp, 56dp tall): surfaceContainer #1E201A, 12dp corner radius. Row with 180dp shimmer label left, 40dp toggle-shape shimmer right.
 
-**Component 3 - Text** (shimmer placeholder, layout-matching): rendered per design system component spec.
+**Component 4 — Card Shimmer** (full width minus 32dp insets, top margin 12dp, 112dp tall): surfaceContainer #1E201A, 12dp corner radius. Header shimmer 120dp, two rows each with 100dp + 80dp shimmers.
 
-**Component 4 - Text** (shimmer placeholder, layout-matching): rendered per design system component spec.
+**Component 5 — Button Shimmer** (full width minus 32dp insets, top margin 16dp, 48dp tall): Outlined shimmer rectangle 12dp corner radius, base #1E201A.
 
-**Component 5 - Image** (shimmer placeholder, layout-matching): rendered per design system component spec.
+**Component 6 — Button Shimmer** (full width minus 32dp insets, top margin 8dp, 48dp tall): Same shape.
 
-**Component 6 - Link** (shimmer placeholder, layout-matching): rendered per design system component spec.
+**Component 7 — Button Shimmer** (full width minus 32dp insets, top margin 8dp, bottom 32dp, 48dp tall): Filled shimmer #282A24 corner radius 12dp.
 
-**Component 7 - Stack** (shimmer placeholder, layout-matching): rendered per design system component spec.
+Do not use em-dash anywhere in text. Do not make any headline more than 3 lines or any subtitle more than 25 words. Do not break the dark theme between sections. Do not place light text on light buttons or dark text on dark buttons.
 
-**Component 8 - Text** (shimmer placeholder, layout-matching): rendered per design system component spec.
-
-**Component 9 - Input** (shimmer placeholder, layout-matching): rendered per design system component spec.
-
-**Component 10 - Box** (shimmer placeholder, layout-matching): rendered per design system component spec.
-
-**Component 11 - Text** (shimmer placeholder, layout-matching): rendered per design system component spec.
-
-**Component 12 - Stack** (shimmer placeholder, layout-matching): rendered per design system component spec.
-
-**Component 13 - Text** (shimmer placeholder, layout-matching): rendered per design system component spec.
-
-**Component 14 - Text** (shimmer placeholder, layout-matching): rendered per design system component spec.
-
-**Component 15 - Icon** (shimmer placeholder, layout-matching): rendered per design system component spec.
-
-**Component 16 - Divider** (shimmer placeholder, layout-matching): rendered per design system component spec.
-
-**Component 17 - Stack** (shimmer placeholder, layout-matching): rendered per design system component spec.
-
-**Component 18 - Text** (shimmer placeholder, layout-matching): rendered per design system component spec.
-
-**Component 19 - Text** (shimmer placeholder, layout-matching): rendered per design system component spec.
-
-**Component 20 - Icon** (shimmer placeholder, layout-matching): rendered per design system component spec.
-
-**Component 21 - Spacer** (shimmer placeholder, layout-matching): rendered per design system component spec.
-
-**Component 22 - Button** (shimmer placeholder, layout-matching): rendered per design system component spec.
-
-**Component 23 - Button** (shimmer placeholder, layout-matching): rendered per design system component spec.
-
-**Component 24 - Button** (shimmer placeholder, layout-matching): rendered per design system component spec.
-
-DO NOT use em-dash anywhere in text. DO NOT make any headline >3 lines or any subtitle >25 words. DO NOT break the page theme between sections. DO NOT place light text on light buttons or dark text on dark buttons.
-
-Full scrollable layout on #B2D188. The #B2D188 accent creates a balanced and premium feel calibrated to the taste-default aesthetic.
-
+Full scrollable layout on #12140E. Shimmer uses surfaceContainer #1E201A rest with #282A24 sweep, producing a calm, professional loading state that matches the financial app trust profile.
 ↑↑↑ MOCKUP PROMPT

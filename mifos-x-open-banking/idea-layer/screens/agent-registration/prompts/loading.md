@@ -117,5 +117,4 @@ Palette: primary #B2D188, on_primary #1F3701, primary_container #354E16, on_prim
 DO NOT use em-dash anywhere in text. DO NOT make any headline >3 lines or any subtitle >25 words. DO NOT break the page theme between sections. DO NOT place light text on light buttons or dark text on dark buttons.
 
 Full scrollable layout on #B2D188. The #B2D188 accent creates a balanced and premium feel calibrated to the taste-default aesthetic.
-
 ↑↑↑ MOCKUP PROMPT

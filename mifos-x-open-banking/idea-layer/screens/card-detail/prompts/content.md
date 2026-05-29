@@ -1,5 +1,5 @@
 ---
-ui_yaml_sha: abc33e6707cc11c5fe0a359689b385a20a3144a49516d10707c61fed9195e458
+ui_yaml_sha: 886497acc937d3f77eee431d1ffe01ed5447c84b05aaf98a8bff4c5dc9157014
 design_md_hash: 71b53c295bf863d34057f16264caf37a11512e794d356b3bec219352550d05ec
 app_shell_hash: ad7a6b42b2ae10e63ef270f15d857bd44445d775e8d9b09313b31e6569df95b4
 design_read_hash: 1639ea0545fdbc1ba9ce1eef5369eae224a6f4f57f07f0639b699652daeb8558
@@ -8,7 +8,7 @@ content_hash: 8a5c8199c7c455d840a272424967a247adc1defcb1fe3bad42267023324ef519
 design_read_aesthetic: taste-default
 design_read_dials: {variance: 4, motion: 3, density: 5}
 aesthetic_variant_override: null
-archetype: detail_screen
+archetype: screen
 
 feature: card-detail
 state: content
@@ -24,66 +24,30 @@ craft_rules_version: v1.0.0
 
 # card-detail — content state
 
-> Auto-generated from screens/card-detail/ui.yaml @ SHA c0081ff803ad28e0
+> Auto-generated from screens/card-detail/ui.yaml @ SHA 9bd5650486b22725
 > Stitch DesignSystem: (pending DESIGN.md upload — run /idea-export-stitch sub-plan 02)
 > DO NOT redeclare colors / fonts / spacing — they live in DESIGN.md.
 
 ↓↓↓ MOCKUP PROMPT
+Design the content state of the Card Detail screen for **Mifos X Open Banking**, a open banking KMP super-app for consumer retail banking and field officer agent banking powered by Open Bank Project API v7.
 
-Design the **content** state of the Card-detail screen for **mifos-x-open-banking**, a Open Banking KMP super-app - consumer retail banking + field officer agent banking powered by Open Bank Project API v7, built with Compose Multiplatform across Android, iOS, Desktop, and Web Material 3 balanced dark theme, 393×852dp (Pixel 5), Outfit font throughout.
+Palette: primary #B2D188, on_primary #1F3701, primary_container #354E16, on_primary_container #CDEDA3, secondary #A0CFCB, on_secondary #003735, background #12140E, on_surface #E3E3D8, on_surface_variant #C5C8BA, surface_container #1E201A, surface_container_high #282A24, outline #8F9285, error #FFB4AB.
 
-Palette: primary #B2D188, on_primary #1F3701, primary_container #354E16, on_primary_container #CDEDA3, secondary #A0CFCB, on_secondary #003735, secondary_container #1F4E4B, on_secondary_container #BCEBE7, tertiary #A0CFCB, on_tertiary #003735, tertiary_container #1F4E4B, on_tertiary_container #BCEBE7, error #FFB4AB, on_error #690005.
+**Component 1 — App Bar** (64dp tall, full width): Title "Card Details" Outfit Medium 18sp #E3E3D8 centered. Leading back-arrow icon 24dp tinted #B2D188. Zero elevation, background #12140E.
 
-**Component 1 - Box** (full width minus 32dp insets): rendered per design system component spec. detail_screen archetype.
+**Component 2 — Card** (full width minus 32dp insets, top margin 24dp, 192dp tall): Rounded card visual 16dp corner radius, background linear gradient from #354E16 to #1E201A. Top row: Mifos X wordmark Outfit Bold 14sp #CDEDA3 left, Visa logo right #E3E3D8. Middle: masked PAN "4521" Outfit Medium 20sp letter-spacing 2sp #E3E3D8. Bottom left: cardholder name "ALEX JOHNSON" Outfit Medium 13sp #C5C8BA. Bottom right: expiry "09/29" Outfit Regular 13sp #C5C8BA. Trailing "Show card details" text link 12sp #B2D188 below the card.
 
-**Component 2 - Text** (full width minus 32dp insets): rendered per design system component spec.
+**Component 3 — Card** (full width minus 32dp insets, top margin 16dp): surfaceContainer #1E201A, 12dp corner radius, 16dp padding. Row with "Card Active" Outfit SemiBold 15sp #E3E3D8 left, active toggle switch right with track #354E16 and thumb #B2D188.
 
-**Component 3 - Text** (full width minus 32dp insets): rendered per design system component spec.
+**Component 4 — Card** (full width minus 32dp insets, top margin 12dp): surfaceContainer #1E201A, 12dp corner radius, 16dp padding. Header "Spending Limits" Outfit SemiBold 15sp #E3E3D8. Row 1: "Daily limit" Outfit Regular 14sp #C5C8BA, "2500 GBP" Outfit SemiBold 14sp #E3E3D8, edit pencil icon 18dp #B2D188. Divider 1dp #44483D. Row 2: "Monthly limit" Outfit Regular 14sp #C5C8BA, "10000 GBP" Outfit SemiBold 14sp #E3E3D8, edit pencil icon 18dp #B2D188.
 
-**Component 4 - Text** (full width minus 32dp insets): rendered per design system component spec.
+**Component 5 — Button** (full width minus 32dp insets, top margin 16dp): Outlined button 48dp tall, 12dp corner radius, outline 1dp #44483D, leading snowflake icon 20dp #A0CFCB, label "Freeze Card" Outfit Medium 15sp #E3E3D8.
 
-**Component 5 - Image** (full width minus 32dp insets): rendered per design system component spec.
+**Component 6 — Button** (full width minus 32dp insets, top margin 8dp): Outlined button 48dp tall, 12dp corner radius, outline 1dp #93000A, leading warning icon 20dp #FFB4AB, label "Report Lost/Stolen" Outfit Medium 15sp #FFB4AB.
 
-**Component 6 - Link** (full width minus 32dp insets): rendered per design system component spec.
+**Component 7 — Button** (full width minus 32dp insets, top margin 8dp, bottom 32dp): Filled button 48dp tall, 12dp corner radius, background #354E16, leading list icon 20dp #CDEDA3, label "View Transactions" Outfit Medium 15sp #CDEDA3.
 
-**Component 7 - Stack** (full width minus 32dp insets): rendered per design system component spec.
+Do not use em-dash anywhere in text. Do not make any headline more than 3 lines or any subtitle more than 25 words. Do not break the dark theme between sections. Do not place light text on light buttons or dark text on dark buttons.
 
-**Component 8 - Text** (full width minus 32dp insets): rendered per design system component spec.
-
-**Component 9 - Input** (full width minus 32dp insets): rendered per design system component spec.
-
-**Component 10 - Box** (full width minus 32dp insets): rendered per design system component spec.
-
-**Component 11 - Text** (full width minus 32dp insets): rendered per design system component spec.
-
-**Component 12 - Stack** (full width minus 32dp insets): rendered per design system component spec.
-
-**Component 13 - Text** (full width minus 32dp insets): rendered per design system component spec.
-
-**Component 14 - Text** (full width minus 32dp insets): rendered per design system component spec.
-
-**Component 15 - Icon** (full width minus 32dp insets): rendered per design system component spec.
-
-**Component 16 - Divider** (full width minus 32dp insets): rendered per design system component spec.
-
-**Component 17 - Stack** (full width minus 32dp insets): rendered per design system component spec.
-
-**Component 18 - Text** (full width minus 32dp insets): rendered per design system component spec.
-
-**Component 19 - Text** (full width minus 32dp insets): rendered per design system component spec.
-
-**Component 20 - Icon** (full width minus 32dp insets): rendered per design system component spec.
-
-**Component 21 - Spacer** (full width minus 32dp insets): rendered per design system component spec.
-
-**Component 22 - Button** (full width minus 32dp insets): rendered per design system component spec.
-
-**Component 23 - Button** (full width minus 32dp insets): rendered per design system component spec.
-
-**Component 24 - Button** (full width minus 32dp insets): rendered per design system component spec.
-
-DO NOT use em-dash anywhere in text. DO NOT make any headline >3 lines or any subtitle >25 words. DO NOT break the page theme between sections. DO NOT place light text on light buttons or dark text on dark buttons.
-
-Full scrollable layout on #B2D188. The #B2D188 accent creates a balanced and premium feel calibrated to the taste-default aesthetic.
-
+Full scrollable layout on #12140E. The earth-green accent #B2D188 on the active toggle, edit controls, and primary action creates a confident atmosphere — calm, balanced, and refined for the regulated-industry banking context.
 ↑↑↑ MOCKUP PROMPT

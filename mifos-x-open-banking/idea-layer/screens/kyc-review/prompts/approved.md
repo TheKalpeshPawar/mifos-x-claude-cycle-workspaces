@@ -8,7 +8,7 @@ content_hash: 586dff19b6e23fd92077fb25cdd44cf2e7e5907fff629f0f8e8f4e601a2643aa
 design_read_aesthetic: taste-default
 design_read_dials: {variance: 4, motion: 3, density: 5}
 aesthetic_variant_override: null
-archetype: detail_screen
+archetype: screen
 
 feature: kyc-review
 state: approved
@@ -34,7 +34,7 @@ Design the **approved** state of the Kyc-review screen for **mifos-x-open-bankin
 
 Palette: primary #B2D188, on_primary #1F3701, primary_container #354E16, on_primary_container #CDEDA3, secondary #A0CFCB, on_secondary #003735, secondary_container #1F4E4B, on_secondary_container #BCEBE7, tertiary #A0CFCB, on_tertiary #003735, tertiary_container #1F4E4B, on_tertiary_container #BCEBE7, error #FFB4AB, on_error #690005.
 
-**Component 1 - Box** (full width minus 32dp insets): rendered per design system component spec. detail_screen archetype.
+**Component 1 - Box** (full width minus 32dp insets): rendered per design system component spec.
 
 **Component 2 - Box** (full width minus 32dp insets): rendered per design system component spec.
 

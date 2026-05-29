@@ -1,5 +1,5 @@
 ---
-ui_yaml_sha: f03df06405ee88c9e74975e749c7421a30c9ffd350d633e033384f30df5d26f5
+ui_yaml_sha: 0a37b7fd9f646c61727fc05be65e3aeffc9773a1b4f8cf66f1064cde39077166
 design_md_hash: 71b53c295bf863d34057f16264caf37a11512e794d356b3bec219352550d05ec
 app_shell_hash: ad7a6b42b2ae10e63ef270f15d857bd44445d775e8d9b09313b31e6569df95b4
 design_read_hash: 1639ea0545fdbc1ba9ce1eef5369eae224a6f4f57f07f0639b699652daeb8558
@@ -24,84 +24,28 @@ craft_rules_version: v1.0.0
 
 # privacy-policy — empty state
 
-> Auto-generated from screens/privacy-policy/ui.yaml @ SHA 0fae745edcaafba9
+> Auto-generated from screens/privacy-policy/ui.yaml @ SHA 44f9c29cb5a372a3
 > Stitch DesignSystem: (pending DESIGN.md upload — run /idea-export-stitch sub-plan 02)
 > DO NOT redeclare colors / fonts / spacing — they live in DESIGN.md.
 
 ↓↓↓ MOCKUP PROMPT
 
-Design the **empty** state of the Privacy-policy screen for **mifos-x-open-banking**, a Open Banking KMP super-app - consumer retail banking + field officer agent banking powered by Open Bank Project API v7, built with Compose Multiplatform across Android, iOS, Desktop, and Web Material 3 balanced dark theme, 393×852dp (Pixel 5), Outfit font throughout.
+Design the empty state of the privacy-policy screen for **Mifos X Open Banking**, a professional open banking super-app for consumer retail banking and field officer workflows.
 
-Palette: primary #B2D188, on_primary #1F3701, primary_container #354E16, on_primary_container #CDEDA3, secondary #A0CFCB, on_secondary #003735, secondary_container #1F4E4B, on_secondary_container #BCEBE7, tertiary #A0CFCB, on_tertiary #003735, tertiary_container #1F4E4B, on_tertiary_container #BCEBE7, error #FFB4AB, on_error #690005.
+Palette: primary #B2D188, on_primary #1F3701, primary_container #354E16, on_primary_container #CDEDA3, secondary #A0CFCB, on_secondary #003735, secondary_container #1F4E4B, background #12140E, on_surface #E3E3D8, surface_container #1E201A, surface_container_high #282A24, outline #8F9285, pending #E8A317.
 
-**Component 1 - Stack** (centered, generous vertical breathing room): rendered per design system component spec. empty_state archetype.
+**Component 1 — App Bar** (64dp tall, full width): Title "Privacy Policy" Outfit Medium 18sp #E3E3D8 centered. Leading back-arrow 24dp #B2D188. Background #12140E, 1dp bottom divider #44483D. empty_state archetype.
 
-**Component 2 - Banner** (centered, generous vertical breathing room): rendered per design system component spec.
+**Component 2 — Empty Illustration** (centered, top margin 80dp, 160dp tall): Muted document or shield outline in #44483D / #8F9285 on #12140E. No text in illustration. Conveys policy document not yet loaded.
 
-**Component 3 - Text** (centered, generous vertical breathing room): rendered per design system component spec.
+**Component 3 — Empty Title** (centered, top margin 24dp, horizontal padding 32dp): "Policy not available" Outfit SemiBold 22sp #E3E3D8, centered.
 
-**Component 4 - Stack** (centered, generous vertical breathing room): rendered per design system component spec.
+**Component 4 — Empty Subtext** (centered, top margin 8dp, horizontal padding 48dp): "Our privacy policy is temporarily unavailable. Please check back shortly." Outfit Regular 14sp #8F9285, line-height 20sp.
 
-**Component 5 - Card** (centered, generous vertical breathing room): rendered per design system component spec.
+**Component 5 — Button** (full width minus 64dp insets, top margin 32dp): Filled pill Button 48dp tall, corner radius 999dp, background #B2D188, label "Refresh" Outfit SemiBold 16sp #1F3701.
 
-**Component 6 - Text** (centered, generous vertical breathing room): rendered per design system component spec.
+Do not use em-dash anywhere in text. Do not make any headline more than 3 lines or any subtitle more than 25 words. Do not break the dark theme between sections. Do not place light text on light buttons or dark text on dark buttons.
 
-**Component 7 - Text** (centered, generous vertical breathing room): rendered per design system component spec.
-
-**Component 8 - Card** (centered, generous vertical breathing room): rendered per design system component spec.
-
-**Component 9 - Text** (centered, generous vertical breathing room): rendered per design system component spec.
-
-**Component 10 - Text** (centered, generous vertical breathing room): rendered per design system component spec.
-
-**Component 11 - Card** (centered, generous vertical breathing room): rendered per design system component spec.
-
-**Component 12 - Text** (centered, generous vertical breathing room): rendered per design system component spec.
-
-**Component 13 - Text** (centered, generous vertical breathing room): rendered per design system component spec.
-
-**Component 14 - Card** (centered, generous vertical breathing room): rendered per design system component spec.
-
-**Component 15 - Text** (centered, generous vertical breathing room): rendered per design system component spec.
-
-**Component 16 - Text** (centered, generous vertical breathing room): rendered per design system component spec.
-
-**Component 17 - Card** (centered, generous vertical breathing room): rendered per design system component spec.
-
-**Component 18 - Text** (centered, generous vertical breathing room): rendered per design system component spec.
-
-**Component 19 - Text** (centered, generous vertical breathing room): rendered per design system component spec.
-
-**Component 20 - Card** (centered, generous vertical breathing room): rendered per design system component spec.
-
-**Component 21 - Text** (centered, generous vertical breathing room): rendered per design system component spec.
-
-**Component 22 - Text** (centered, generous vertical breathing room): rendered per design system component spec.
-
-**Component 23 - Card** (centered, generous vertical breathing room): rendered per design system component spec.
-
-**Component 24 - Text** (centered, generous vertical breathing room): rendered per design system component spec.
-
-**Component 25 - Text** (centered, generous vertical breathing room): rendered per design system component spec.
-
-**Component 26 - Text** (centered, generous vertical breathing room): rendered per design system component spec.
-
-**Component 27 - Text** (centered, generous vertical breathing room): rendered per design system component spec.
-
-**Component 28 - Text** (centered, generous vertical breathing room): rendered per design system component spec.
-
-**Component 29 - Skeleton** (centered, generous vertical breathing room): rendered per design system component spec.
-
-**Component 30 - Stack** (centered, generous vertical breathing room): rendered per design system component spec.
-
-**Component 31 - Icon** (centered, generous vertical breathing room): rendered per design system component spec.
-
-**Component 32 - Text** (centered, generous vertical breathing room): rendered per design system component spec.
-
-**Component 33 - Button** (centered, generous vertical breathing room): rendered per design system component spec.
-
-DO NOT use em-dash anywhere in text. DO NOT make any headline >3 lines or any subtitle >25 words. DO NOT break the page theme between sections. DO NOT place light text on light buttons or dark text on dark buttons.
-
-Full scrollable layout on #B2D188. The #B2D188 accent creates a balanced and premium feel calibrated to the taste-default aesthetic.
+The #B2D188 Refresh button in this empty_state provides a calm, minimal recovery path, with the dark #12140E background keeping the regulated-industry tone restrained while signaling that policy content is temporarily unavailable.
 
 ↑↑↑ MOCKUP PROMPT

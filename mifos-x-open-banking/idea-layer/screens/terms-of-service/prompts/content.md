@@ -1,5 +1,5 @@
 ---
-ui_yaml_sha: 5007fcffae10070af1e5fc7acd69d81d0a2952f2c841e51c0d4499ed6df0dcd5
+ui_yaml_sha: 516c2b85d35f0d9def8fe28aea29060f67cb264db1e67fc0370922dde9b3af78
 design_md_hash: 71b53c295bf863d34057f16264caf37a11512e794d356b3bec219352550d05ec
 app_shell_hash: ad7a6b42b2ae10e63ef270f15d857bd44445d775e8d9b09313b31e6569df95b4
 design_read_hash: 1639ea0545fdbc1ba9ce1eef5369eae224a6f4f57f07f0639b699652daeb8558
@@ -24,82 +24,36 @@ craft_rules_version: v1.0.0
 
 # terms-of-service — content state
 
-> Auto-generated from screens/terms-of-service/ui.yaml @ SHA 44ca2e3805af9c39
+> Auto-generated from screens/terms-of-service/ui.yaml @ SHA df10651bc8b83369
 > Stitch DesignSystem: (pending DESIGN.md upload — run /idea-export-stitch sub-plan 02)
 > DO NOT redeclare colors / fonts / spacing — they live in DESIGN.md.
 
 ↓↓↓ MOCKUP PROMPT
+Design the content state of the terms-of-service screen for **Mifos X Open Banking**, a Open Banking KMP super-app — consumer retail banking + field officer agent banking powered by Open Bank Project API v7, built with Compose Multiplatform across Android, iOS, Desktop, and Web.
 
-Design the **content** state of the Terms-of-service screen for **mifos-x-open-banking**, a Open Banking KMP super-app - consumer retail banking + field officer agent banking powered by Open Bank Project API v7, built with Compose Multiplatform across Android, iOS, Desktop, and Web Material 3 balanced dark theme, 393×852dp (Pixel 5), Outfit font throughout.
+Palette: primary #B2D188, on_primary #1F3701, primary_container #354E16, on_primary_container #CDEDA3, secondary #A0CFCB, on_secondary #003735, secondary_container #1F4E4B, on_secondary_container #BCEBE7, background #12140E, surface #12140E, on_surface #E3E3D8, surface_variant #44483D, on_surface_variant #C5C8BA, surface_container #1E201A, surface_container_high #282A24, outline #8F9285, outline_variant #44483D, error #FFB4AB, pending #E8A317.
 
-Palette: primary #B2D188, on_primary #1F3701, primary_container #354E16, on_primary_container #CDEDA3, secondary #A0CFCB, on_secondary #003735, secondary_container #1F4E4B, on_secondary_container #BCEBE7, tertiary #A0CFCB, on_tertiary #003735, tertiary_container #1F4E4B, on_tertiary_container #BCEBE7, error #FFB4AB, on_error #690005.
+**Component 1 — App Bar** (64dp tall, full width): Title "Terms of Service" Outfit Medium 18sp #E3E3D8 centered. Leading back-arrow icon 24dp #B2D188. Zero elevation, background #12140E.
 
-**Component 1 - Stack** (full width minus 32dp insets): rendered per design system component spec. settings archetype.
+**Component 2 — Card** (full width minus 32dp insets, top margin 16dp, 12dp corner radius, background #1E201A): Header "Agreement Overview" Outfit SemiBold 15sp #E3E3D8 top padding 16dp. Body "These Terms of Service govern your use of Mifos X Open Banking, provided by the Mifos Initiative." Outfit Regular 14sp #C5C8BA top margin 8dp. settings archetype.
 
-**Component 2 - Stack** (full width minus 32dp insets): rendered per design system component spec.
+**Component 3 — Card** (full width minus 32dp insets, top margin 8dp, same spec): Header "Account Usage" Outfit SemiBold 15sp #E3E3D8. Body "You are responsible for maintaining the confidentiality of your DirectLogin credentials. Report unauthorized access immediately." Outfit Regular 14sp #C5C8BA.
 
-**Component 3 - Card** (full width minus 32dp insets): rendered per design system component spec.
+**Component 4 — Card** (full width minus 32dp insets, top margin 8dp): Header "Acceptance of Terms" Outfit SemiBold 15sp #E3E3D8. Body "By creating an account or continuing to use Mifos X Open Banking after changes take effect, you accept these terms." Outfit Regular 14sp #C5C8BA.
 
-**Component 4 - Text** (full width minus 32dp insets): rendered per design system component spec.
+**Component 5 — Card** (full width minus 32dp insets, top margin 8dp): Header "Data Handling via Open Bank Project API" Outfit SemiBold 15sp #E3E3D8. Body "This application connects to banking services via the Open Bank Project (OBP) REST API. Data is processed per applicable PSD2 and regional open banking regulations." Outfit Regular 14sp #C5C8BA.
 
-**Component 5 - Text** (full width minus 32dp insets): rendered per design system component spec.
+**Component 6 — Card** (full width minus 32dp insets, top margin 8dp): Header "Prohibited Uses" Outfit SemiBold 15sp #E3E3D8. Body "You must not use this application to initiate fraudulent or unauthorised transactions, reverse-engineer the OBP integration, or share access credentials." Outfit Regular 14sp #C5C8BA.
 
-**Component 6 - Card** (full width minus 32dp insets): rendered per design system component spec.
+**Component 7 — Card** (full width minus 32dp insets, top margin 8dp): Header "Limitation of Liability" Outfit SemiBold 15sp #E3E3D8. Body "To the maximum extent permitted by law, the Mifos Initiative shall not be liable for indirect or consequential damages arising from service interruptions." Outfit Regular 14sp #C5C8BA.
 
-**Component 7 - Text** (full width minus 32dp insets): rendered per design system component spec.
+**Component 8 — Card** (full width minus 32dp insets, top margin 8dp): Header "Dispute Resolution" Outfit SemiBold 15sp #E3E3D8. Body "Contact us at legal@mifos.org before initiating any formal dispute proceedings. We aim to resolve all issues within 30 business days." Outfit Regular 14sp #C5C8BA.
 
-**Component 8 - Text** (full width minus 32dp insets): rendered per design system component spec.
+**Component 9 — Card** (full width minus 32dp insets, top margin 8dp, bottom margin 16dp): Header "Governing Law" Outfit SemiBold 15sp #E3E3D8. Body "These Terms of Service are governed by and construed in accordance with the laws of the applicable jurisdiction." Outfit Regular 14sp #C5C8BA.
 
-**Component 9 - Card** (full width minus 32dp insets): rendered per design system component spec.
+**Component 10 — Text** (centered, top margin 16dp, bottom padding 32dp): "Last updated: 28 May 2026. Version 1.0" Outfit Regular 12sp #8F9285 centered.
 
-**Component 10 - Text** (full width minus 32dp insets): rendered per design system component spec.
+Do not use em-dash anywhere in text. Do not make any headline more than 3 lines or any subtitle more than 25 words. Do not break the page theme between sections. Do not place light text on light buttons or dark text on dark buttons.
 
-**Component 11 - Text** (full width minus 32dp insets): rendered per design system component spec.
-
-**Component 12 - Card** (full width minus 32dp insets): rendered per design system component spec.
-
-**Component 13 - Text** (full width minus 32dp insets): rendered per design system component spec.
-
-**Component 14 - Text** (full width minus 32dp insets): rendered per design system component spec.
-
-**Component 15 - Card** (full width minus 32dp insets): rendered per design system component spec.
-
-**Component 16 - Text** (full width minus 32dp insets): rendered per design system component spec.
-
-**Component 17 - Text** (full width minus 32dp insets): rendered per design system component spec.
-
-**Component 18 - Card** (full width minus 32dp insets): rendered per design system component spec.
-
-**Component 19 - Text** (full width minus 32dp insets): rendered per design system component spec.
-
-**Component 20 - Text** (full width minus 32dp insets): rendered per design system component spec.
-
-**Component 21 - Card** (full width minus 32dp insets): rendered per design system component spec.
-
-**Component 22 - Text** (full width minus 32dp insets): rendered per design system component spec.
-
-**Component 23 - Text** (full width minus 32dp insets): rendered per design system component spec.
-
-**Component 24 - Card** (full width minus 32dp insets): rendered per design system component spec.
-
-**Component 25 - Text** (full width minus 32dp insets): rendered per design system component spec.
-
-**Component 26 - Text** (full width minus 32dp insets): rendered per design system component spec.
-
-**Component 27 - Text** (full width minus 32dp insets): rendered per design system component spec.
-
-**Component 28 - Skeleton** (full width minus 32dp insets): rendered per design system component spec.
-
-**Component 29 - Stack** (full width minus 32dp insets): rendered per design system component spec.
-
-**Component 30 - Icon** (full width minus 32dp insets): rendered per design system component spec.
-
-**Component 31 - Text** (full width minus 32dp insets): rendered per design system component spec.
-
-**Component 32 - Button** (full width minus 32dp insets): rendered per design system component spec.
-
-DO NOT use em-dash anywhere in text. DO NOT make any headline >3 lines or any subtitle >25 words. DO NOT break the page theme between sections. DO NOT place light text on light buttons or dark text on dark buttons.
-
-Full scrollable layout on #B2D188. The #B2D188 accent creates a balanced and premium feel calibrated to the taste-default aesthetic.
-
+Scrollable layout on #12140E. The earth-green accent #B2D188 on the back-arrow provides a calm navigation anchor; card borders in #44483D keep each legal section restrained and refined for this regulated open banking context.
 ↑↑↑ MOCKUP PROMPT

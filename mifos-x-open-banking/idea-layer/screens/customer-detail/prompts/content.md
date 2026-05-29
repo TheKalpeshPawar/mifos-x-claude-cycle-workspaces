@@ -1,5 +1,5 @@
 ---
-ui_yaml_sha: 30bc78e0606aecbf26fa48747170363d026885f8cad09b0b2b1aa28ad6591eb8
+ui_yaml_sha: 446998a2d04bdffe5c3942db1e66ab81cccc8fbd49ed6f0a6c91223077a1b2ce
 design_md_hash: 71b53c295bf863d34057f16264caf37a11512e794d356b3bec219352550d05ec
 app_shell_hash: ad7a6b42b2ae10e63ef270f15d857bd44445d775e8d9b09313b31e6569df95b4
 design_read_hash: 1639ea0545fdbc1ba9ce1eef5369eae224a6f4f57f07f0639b699652daeb8558
@@ -8,7 +8,7 @@ content_hash: 86ca3583de5deb958474de13e6178ebd61e24f2d738875d6e6ff3d07e2b7efd6
 design_read_aesthetic: taste-default
 design_read_dials: {variance: 4, motion: 3, density: 5}
 aesthetic_variant_override: null
-archetype: detail_screen
+archetype: screen
 
 feature: customer-detail
 state: content
@@ -24,90 +24,32 @@ craft_rules_version: v1.0.0
 
 # customer-detail — content state
 
-> Auto-generated from screens/customer-detail/ui.yaml @ SHA 0de0d17a92d45b06
+> Auto-generated from screens/customer-detail/ui.yaml @ SHA 1d83aeb650b81c24
 > Stitch DesignSystem: (pending DESIGN.md upload — run /idea-export-stitch sub-plan 02)
 > DO NOT redeclare colors / fonts / spacing — they live in DESIGN.md.
 
 ↓↓↓ MOCKUP PROMPT
 
-Design the **content** state of the Customer-detail screen for **mifos-x-open-banking**, a Open Banking KMP super-app - consumer retail banking + field officer agent banking powered by Open Bank Project API v7, built with Compose Multiplatform across Android, iOS, Desktop, and Web Material 3 balanced dark theme, 393×852dp (Pixel 5), Outfit font throughout.
+Design the content state of the customer detail screen for **Mifos X Open Banking**, a professional open banking KMP super-app for consumer retail banking and field officer agent banking powered by Open Bank Project API v7.
 
-Palette: primary #B2D188, on_primary #1F3701, primary_container #354E16, on_primary_container #CDEDA3, secondary #A0CFCB, on_secondary #003735, secondary_container #1F4E4B, on_secondary_container #BCEBE7, tertiary #A0CFCB, on_tertiary #003735, tertiary_container #1F4E4B, on_tertiary_container #BCEBE7, error #FFB4AB, on_error #690005.
+Palette: primary #B2D188, on_primary #1F3701, primary_container #354E16, secondary #A0CFCB, error #FFB4AB, background #12140E, on_surface #E3E3D8, on_surface_variant #C5C8BA, surface_container #1E201A, surface_container_high #282A24, outline #8F9285, outline_variant #44483D, pending #E8A317.
 
-**Component 1 - Box** (full width minus 32dp insets): rendered per design system component spec. detail_screen archetype.
+**Component 1 — App Bar** (64dp tall, full width): Title "Customer Detail" Outfit Medium 18sp #E3E3D8, leading back-arrow 24dp #B2D188, trailing "Send Message" text button Outfit Medium 14sp #B2D188. Background #12140E.
 
-**Component 2 - Box** (full width minus 32dp insets): rendered per design system component spec.
+**Component 2 — Hero** (full width, background #1E201A, 24dp padding): Avatar circle 64dp initials "JM" Outfit Bold 22sp #1F3701 background #B2D188, centered. "John Mwangi" Outfit SemiBold 20sp #E3E3D8 top margin 12dp centered. "Customer since Jan 2024" Outfit Regular 13sp #C5C8BA. "KYC Verified" chip 28dp tall filled #354E16 Outfit Medium 11sp #B2D188 top margin 8dp.
 
-**Component 3 - Text** (full width minus 32dp insets): rendered per design system component spec.
+**Component 3 — Chip Row** (stats, full width minus 32dp insets, top margin 16dp): "2 Accounts", "KES 145,200", "3 days ago" each chip 32dp tall background #1E201A outline 1dp #44483D Outfit Regular 12sp #C5C8BA, 8dp gap.
 
-**Component 4 - Text** (full width minus 32dp insets): rendered per design system component spec.
+**Component 4 — Card** (personal info, full width minus 32dp insets, 12dp corner radius background #1E201A, top margin 16dp): Header "Personal Information" Outfit SemiBold 14sp #C5C8BA. Rows: "John Kamau Mwangi", "DOB: 14 Mar 1985", "National ID: KE12345678", "Phone: +254 722 123 456", "Email: john.mwangi@gmail.com" each Outfit Regular 14sp #E3E3D8 56dp tall, dividers 1dp #44483D between rows. "View Full Profile" text link Outfit Medium 13sp #B2D188 bottom 12dp.
 
-**Component 5 - Box** (full width minus 32dp insets): rendered per design system component spec.
+**Component 5 — Card** (address, same style, top margin 8dp): Header "Address". Row "123 Moi Avenue, Nairobi, Kenya" Outfit Regular 14sp #E3E3D8.
 
-**Component 6 - Stack** (full width minus 32dp insets): rendered per design system component spec.
+**Component 6 — Card** (relationship manager, same style, top margin 8dp): "Assigned to: Priya Sharma" Outfit Regular 14sp #E3E3D8, "Reassign" text link Outfit Medium 13sp #B2D188 right.
 
-**Component 7 - Text** (full width minus 32dp insets): rendered per design system component spec.
+**Component 7 — FAB** (bottom right, 56dp diameter, background #B2D188, + icon 24dp #1F3701, label "Create Application" Outfit Medium 13sp #1F3701).
 
-**Component 8 - Text** (full width minus 32dp insets): rendered per design system component spec.
+Do not use em-dash anywhere in text. Do not make any headline more than 3 lines or any subtitle more than 25 words. Do not break the dark page theme between sections. Do not place light text on light buttons or dark text on dark buttons.
 
-**Component 9 - Text** (full width minus 32dp insets): rendered per design system component spec.
-
-**Component 10 - Stack** (full width minus 32dp insets): rendered per design system component spec.
-
-**Component 11 - Input** (full width minus 32dp insets): rendered per design system component spec.
-
-**Component 12 - Input** (full width minus 32dp insets): rendered per design system component spec.
-
-**Component 13 - Input** (full width minus 32dp insets): rendered per design system component spec.
-
-**Component 14 - Input** (full width minus 32dp insets): rendered per design system component spec.
-
-**Component 15 - Input** (full width minus 32dp insets): rendered per design system component spec.
-
-**Component 16 - Box** (full width minus 32dp insets): rendered per design system component spec.
-
-**Component 17 - Text** (full width minus 32dp insets): rendered per design system component spec.
-
-**Component 18 - Text** (full width minus 32dp insets): rendered per design system component spec.
-
-**Component 19 - Text** (full width minus 32dp insets): rendered per design system component spec.
-
-**Component 20 - Text** (full width minus 32dp insets): rendered per design system component spec.
-
-**Component 21 - Text** (full width minus 32dp insets): rendered per design system component spec.
-
-**Component 22 - Text** (full width minus 32dp insets): rendered per design system component spec.
-
-**Component 23 - Link** (full width minus 32dp insets): rendered per design system component spec.
-
-**Component 24 - Box** (full width minus 32dp insets): rendered per design system component spec.
-
-**Component 25 - Text** (full width minus 32dp insets): rendered per design system component spec.
-
-**Component 26 - Text** (full width minus 32dp insets): rendered per design system component spec.
-
-**Component 27 - Box** (full width minus 32dp insets): rendered per design system component spec.
-
-**Component 28 - Text** (full width minus 32dp insets): rendered per design system component spec.
-
-**Component 29 - Link** (full width minus 32dp insets): rendered per design system component spec.
-
-**Component 30 - Box** (full width minus 32dp insets): rendered per design system component spec.
-
-**Component 31 - Text** (full width minus 32dp insets): rendered per design system component spec.
-
-**Component 32 - Box** (full width minus 32dp insets): rendered per design system component spec.
-
-**Component 33 - Text** (full width minus 32dp insets): rendered per design system component spec.
-
-**Component 34 - Spacer** (full width minus 32dp insets): rendered per design system component spec.
-
-**Component 35 - Button** (full width minus 32dp insets): rendered per design system component spec.
-
-**Component 36 - Button** (full width minus 32dp insets): rendered per design system component spec.
-
-DO NOT use em-dash anywhere in text. DO NOT make any headline >3 lines or any subtitle >25 words. DO NOT break the page theme between sections. DO NOT place light text on light buttons or dark text on dark buttons.
-
-Full scrollable layout on #B2D188. The #B2D188 accent creates a balanced and premium feel calibrated to the taste-default aesthetic.
+Scrollable layout on #12140E. Anchored by the accent #B2D188 on the KYC badge and FAB, the composition stays calm and refined, projecting credibility for the field officer workflow.
 
 ↑↑↑ MOCKUP PROMPT

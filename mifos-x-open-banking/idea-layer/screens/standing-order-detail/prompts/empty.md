@@ -1,5 +1,5 @@
 ---
-ui_yaml_sha: b9bc20bdac5aa610c7ef9ecc54346a7d13c65889021c2399186157370a54da3b
+ui_yaml_sha: a1448cadef7246768dbb0cfbf2db2a732fde45be45f4f072a644677b222e1f9f
 design_md_hash: 71b53c295bf863d34057f16264caf37a11512e794d356b3bec219352550d05ec
 app_shell_hash: ad7a6b42b2ae10e63ef270f15d857bd44445d775e8d9b09313b31e6569df95b4
 design_read_hash: 1639ea0545fdbc1ba9ce1eef5369eae224a6f4f57f07f0639b699652daeb8558
@@ -24,180 +24,26 @@ craft_rules_version: v1.0.0
 
 # standing-order-detail — empty state
 
-> Auto-generated from screens/standing-order-detail/ui.yaml @ SHA 9941004c83e9da9e
+> Auto-generated from screens/standing-order-detail/ui.yaml @ SHA 4ffb6ddb318e1b3f
 > Stitch DesignSystem: (pending DESIGN.md upload — run /idea-export-stitch sub-plan 02)
 > DO NOT redeclare colors / fonts / spacing — they live in DESIGN.md.
 
 ↓↓↓ MOCKUP PROMPT
+Design the empty state of the standing order detail screen for **Mifos X Open Banking**, a Open Banking KMP super-app — consumer retail banking + field officer agent banking powered by Open Bank Project API v7, built with Compose Multiplatform across Android, iOS, Desktop, and Web.
 
-Design the **empty** state of the Standing-order-detail screen for **mifos-x-open-banking**, a Open Banking KMP super-app - consumer retail banking + field officer agent banking powered by Open Bank Project API v7, built with Compose Multiplatform across Android, iOS, Desktop, and Web Material 3 balanced dark theme, 393×852dp (Pixel 5), Outfit font throughout.
+Palette: primary #B2D188, on_primary #1F3701, primary_container #354E16, on_primary_container #CDEDA3, secondary #A0CFCB, on_secondary #003735, secondary_container #1F4E4B, on_secondary_container #BCEBE7, background #12140E, on_background #E3E3D8, surface #12140E, on_surface #E3E3D8, surface_variant #44483D, on_surface_variant #C5C8BA, surface_container #1E201A, surface_container_high #282A24, outline #8F9285, outline_variant #44483D, error #FFB4AB, pending #E8A317, nav_active_indicator #354E16.
 
-Palette: primary #B2D188, on_primary #1F3701, primary_container #354E16, on_primary_container #CDEDA3, secondary #A0CFCB, on_secondary #003735, secondary_container #1F4E4B, on_secondary_container #BCEBE7, tertiary #A0CFCB, on_tertiary #003735, tertiary_container #1F4E4B, on_tertiary_container #BCEBE7, error #FFB4AB, on_error #690005.
+**Component 1 — App Bar** (64dp tall, full width): Title "Standing Order Detail" Outfit Medium 18sp #E3E3D8 centered. Leading back-arrow 24dp tinted #B2D188. Background #12140E, zero elevation.
 
-**Component 1 - Stack** (centered, generous vertical breathing room): rendered per design system component spec. empty_state archetype.
+**Component 2 — Hero** (centered, top margin 80dp): 120dp x 120dp illustration of a circular arrows icon with a disconnected link rendered in neutral tones #44483D / #8F9285 on #12140E. Conveys "no data found" without alarm. empty_state archetype.
 
-**Component 2 - Card** (centered, generous vertical breathing room): rendered per design system component spec.
+**Component 3 — Text** (centered, top margin 32dp, horizontal padding 48dp): "No details are available for this standing order." Outfit SemiBold 20sp #E3E3D8 centered, max 2 lines.
 
-**Component 3 - Text** (centered, generous vertical breathing room): rendered per design system component spec.
+**Component 4 — Text** (centered, top margin 8dp, horizontal padding 48dp): "This standing order may have been cancelled or the details could not be retrieved." Outfit Regular 14sp #8F9285 centered, line-height 20sp, max 25 words.
 
-**Component 4 - Stack** (centered, generous vertical breathing room): rendered per design system component spec.
+**Component 5 — Button** (full width minus 64dp insets, top margin 32dp): Filled pill button 48dp tall, 999dp corner radius, background #B2D188, leading list icon 20dp #1F3701, label "Back to Standing Orders" Outfit SemiBold 15sp #1F3701 centered.
 
-**Component 5 - Badge** (centered, generous vertical breathing room): rendered per design system component spec.
+Do not use em-dash anywhere in text. Do not make any headline more than 3 lines or any subtitle more than 25 words. Do not break the page theme between sections. Do not place light text on light buttons or dark text on dark buttons.
 
-**Component 6 - Card** (centered, generous vertical breathing room): rendered per design system component spec.
-
-**Component 7 - Text** (centered, generous vertical breathing room): rendered per design system component spec.
-
-**Component 8 - Stack** (centered, generous vertical breathing room): rendered per design system component spec.
-
-**Component 9 - Text** (centered, generous vertical breathing room): rendered per design system component spec.
-
-**Component 10 - Text** (centered, generous vertical breathing room): rendered per design system component spec.
-
-**Component 11 - Stack** (centered, generous vertical breathing room): rendered per design system component spec.
-
-**Component 12 - Text** (centered, generous vertical breathing room): rendered per design system component spec.
-
-**Component 13 - Text** (centered, generous vertical breathing room): rendered per design system component spec.
-
-**Component 14 - Stack** (centered, generous vertical breathing room): rendered per design system component spec.
-
-**Component 15 - Text** (centered, generous vertical breathing room): rendered per design system component spec.
-
-**Component 16 - Text** (centered, generous vertical breathing room): rendered per design system component spec.
-
-**Component 17 - Card** (centered, generous vertical breathing room): rendered per design system component spec.
-
-**Component 18 - Text** (centered, generous vertical breathing room): rendered per design system component spec.
-
-**Component 19 - Stack** (centered, generous vertical breathing room): rendered per design system component spec.
-
-**Component 20 - Text** (centered, generous vertical breathing room): rendered per design system component spec.
-
-**Component 21 - Text** (centered, generous vertical breathing room): rendered per design system component spec.
-
-**Component 22 - Divider** (centered, generous vertical breathing room): rendered per design system component spec.
-
-**Component 23 - Stack** (centered, generous vertical breathing room): rendered per design system component spec.
-
-**Component 24 - Text** (centered, generous vertical breathing room): rendered per design system component spec.
-
-**Component 25 - Text** (centered, generous vertical breathing room): rendered per design system component spec.
-
-**Component 26 - Divider** (centered, generous vertical breathing room): rendered per design system component spec.
-
-**Component 27 - Stack** (centered, generous vertical breathing room): rendered per design system component spec.
-
-**Component 28 - Text** (centered, generous vertical breathing room): rendered per design system component spec.
-
-**Component 29 - Text** (centered, generous vertical breathing room): rendered per design system component spec.
-
-**Component 30 - Divider** (centered, generous vertical breathing room): rendered per design system component spec.
-
-**Component 31 - Stack** (centered, generous vertical breathing room): rendered per design system component spec.
-
-**Component 32 - Text** (centered, generous vertical breathing room): rendered per design system component spec.
-
-**Component 33 - Text** (centered, generous vertical breathing room): rendered per design system component spec.
-
-**Component 34 - Card** (centered, generous vertical breathing room): rendered per design system component spec.
-
-**Component 35 - Text** (centered, generous vertical breathing room): rendered per design system component spec.
-
-**Component 36 - Stack** (centered, generous vertical breathing room): rendered per design system component spec.
-
-**Component 37 - Text** (centered, generous vertical breathing room): rendered per design system component spec.
-
-**Component 38 - Badge** (centered, generous vertical breathing room): rendered per design system component spec.
-
-**Component 39 - Card** (centered, generous vertical breathing room): rendered per design system component spec.
-
-**Component 40 - Text** (centered, generous vertical breathing room): rendered per design system component spec.
-
-**Component 41 - List Item** (centered, generous vertical breathing room): rendered per design system component spec.
-
-**Component 42 - Text** (centered, generous vertical breathing room): rendered per design system component spec.
-
-**Component 43 - Text** (centered, generous vertical breathing room): rendered per design system component spec.
-
-**Component 44 - Text** (centered, generous vertical breathing room): rendered per design system component spec.
-
-**Component 45 - Divider** (centered, generous vertical breathing room): rendered per design system component spec.
-
-**Component 46 - List Item** (centered, generous vertical breathing room): rendered per design system component spec.
-
-**Component 47 - Text** (centered, generous vertical breathing room): rendered per design system component spec.
-
-**Component 48 - Text** (centered, generous vertical breathing room): rendered per design system component spec.
-
-**Component 49 - Text** (centered, generous vertical breathing room): rendered per design system component spec.
-
-**Component 50 - Divider** (centered, generous vertical breathing room): rendered per design system component spec.
-
-**Component 51 - List Item** (centered, generous vertical breathing room): rendered per design system component spec.
-
-**Component 52 - Text** (centered, generous vertical breathing room): rendered per design system component spec.
-
-**Component 53 - Text** (centered, generous vertical breathing room): rendered per design system component spec.
-
-**Component 54 - Text** (centered, generous vertical breathing room): rendered per design system component spec.
-
-**Component 55 - Divider** (centered, generous vertical breathing room): rendered per design system component spec.
-
-**Component 56 - List Item** (centered, generous vertical breathing room): rendered per design system component spec.
-
-**Component 57 - Text** (centered, generous vertical breathing room): rendered per design system component spec.
-
-**Component 58 - Text** (centered, generous vertical breathing room): rendered per design system component spec.
-
-**Component 59 - Text** (centered, generous vertical breathing room): rendered per design system component spec.
-
-**Component 60 - Divider** (centered, generous vertical breathing room): rendered per design system component spec.
-
-**Component 61 - List Item** (centered, generous vertical breathing room): rendered per design system component spec.
-
-**Component 62 - Text** (centered, generous vertical breathing room): rendered per design system component spec.
-
-**Component 63 - Text** (centered, generous vertical breathing room): rendered per design system component spec.
-
-**Component 64 - Text** (centered, generous vertical breathing room): rendered per design system component spec.
-
-**Component 65 - Stack** (centered, generous vertical breathing room): rendered per design system component spec.
-
-**Component 66 - Button** (centered, generous vertical breathing room): rendered per design system component spec.
-
-**Component 67 - Button** (centered, generous vertical breathing room): rendered per design system component spec.
-
-**Component 68 - Dialog** (centered, generous vertical breathing room): rendered per design system component spec.
-
-**Component 69 - Button** (centered, generous vertical breathing room): rendered per design system component spec.
-
-**Component 70 - Button** (centered, generous vertical breathing room): rendered per design system component spec.
-
-**Component 71 - Spacer** (centered, generous vertical breathing room): rendered per design system component spec.
-
-**Component 72 - Skeleton** (centered, generous vertical breathing room): rendered per design system component spec.
-
-**Component 73 - Stack** (centered, generous vertical breathing room): rendered per design system component spec.
-
-**Component 74 - Icon** (centered, generous vertical breathing room): rendered per design system component spec.
-
-**Component 75 - Text** (centered, generous vertical breathing room): rendered per design system component spec.
-
-**Component 76 - Text** (centered, generous vertical breathing room): rendered per design system component spec.
-
-**Component 77 - Button** (centered, generous vertical breathing room): rendered per design system component spec.
-
-**Component 78 - Stack** (centered, generous vertical breathing room): rendered per design system component spec.
-
-**Component 79 - Icon** (centered, generous vertical breathing room): rendered per design system component spec.
-
-**Component 80 - Text** (centered, generous vertical breathing room): rendered per design system component spec.
-
-**Component 81 - Button** (centered, generous vertical breathing room): rendered per design system component spec.
-
-DO NOT use em-dash anywhere in text. DO NOT make any headline >3 lines or any subtitle >25 words. DO NOT break the page theme between sections. DO NOT place light text on light buttons or dark text on dark buttons.
-
-Full scrollable layout on #B2D188. The #B2D188 accent creates a balanced and premium feel calibrated to the taste-default aesthetic.
-
+Centered layout with generous vertical breathing room on #12140E. The earthy green accent #B2D188 on the back button provides a clear recovery action, keeping the no-data state calm and composed within the trust-first open banking atmosphere.
 ↑↑↑ MOCKUP PROMPT
