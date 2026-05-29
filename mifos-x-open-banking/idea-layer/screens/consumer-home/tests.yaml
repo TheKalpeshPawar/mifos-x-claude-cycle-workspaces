@@ -1,0 +1,64 @@
+sibling: tests
+schema_version: "4.0"
+feature_id: consumer-home
+tests:
+  - id: ch_test_content_loads
+    description: "Home loads with balance card and recent transactions"
+    type: ui
+    given: "User is authenticated and has accounts"
+    when: "Consumer Home screen loads"
+    then:
+      - assert_tag: ch_balance_amount
+        assert_visible: true
+        assert_state: content
+      - assert_tag: ch_transaction_item_1
+        assert_visible: true
+
+  - id: ch_test_greeting_personalised
+    description: "Greeting shows user's first name"
+    type: ui
+    given: "User profile has first name 'Alex'"
+    when: "Screen is in content state"
+    then:
+      - assert_tag: ch_greeting_text
+        assert_contains: "Alex"
+
+  - id: ch_test_error_state_shown_on_api_failure
+    description: "Error state shows with retry button on API failure"
+    type: ui
+    given: "API returns 5xx"
+    when: "Screen attempts to load"
+    then:
+      - assert_tag: ch_error_state
+        assert_visible: true
+      - assert_tag: ch_retry_button
+        assert_visible: true
+
+  - id: ch_test_navigate_send_money
+    description: "Quick action Send navigates to send-money"
+    type: ui
+    given: "Screen in content state"
+    when: "User taps Send quick action"
+    then:
+      - assert_tag: ch_action_send
+        interaction: tap
+      - assert_navigation: send-money
+
+  - id: ch_test_navigate_transactions
+    description: "See all link navigates to transactions"
+    type: ui
+    given: "Screen in content state"
+    when: "User taps See all"
+    then:
+      - assert_tag: ch_see_all_link
+        interaction: tap
+      - assert_navigation: transactions
+
+  - id: ch_test_loading_shimmer
+    description: "Shimmer shows while data loads"
+    type: ui
+    given: "API call in flight"
+    when: "Screen is in loading state"
+    then:
+      - assert_tag: ch_loading_shimmer
+        assert_visible: true

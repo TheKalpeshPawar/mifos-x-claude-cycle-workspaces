@@ -4,7 +4,12 @@ All notable changes to the idea-layer are documented here. Format inspired by [K
 
 ## [Unreleased]
 
+### Added
+- **consumer-home** — new consumer-persona home dashboard screen (FR-019): balance card, income/spend summary, quick actions (Send/Accounts/Standing Orders/Cards), recent transactions list, 4 states (loading/content/error/empty). Scaffolded: `docs.yaml`, `ui.yaml`, `api.yaml`, `flow.yaml`, `tests.yaml`.
+- **standing-order-edit** — scaffolded missing siblings for existing draft screen (FR-006): `ui.yaml` (edit form: amount, currency, frequency, start/end date), `api.yaml` (PUT endpoint), `flow.yaml`, `tests.yaml`.
+
 ### Changed (design-system)
+- [design-system] v3.0.0 force-regenerate (2026-05-29): Clean schema v3.0 regeneration from scratch — same Figma-sourced palette `#4C662B` + Outfit typeface, no content change. Versioned snapshot `design-tokens.v3.0.0.yaml` created. WCAG AA: 12 pairs, 0 failures. DESIGN.md coherence: PASS (all 5 checks).
 - [design-system] v2.0.0 → v3.0.0 (2026-05-28): Schema bump to v3.0 — fixes RULE-DS-TOKEN-VALIDATE-001 DST3 (added top-level `metadata` + `touchTargets` blocks) and DST4 (renamed `color:` → `colors:` plural). Added dark scheme (29 roles), 4 mood gradients (growth_dawn, financial_stability, field_dusk, trust_horizon), M3 emphasized easing curves. DESIGN.md + COMPONENTS.md refreshed to v3.0.0. WCAG AA: 12 pairs, 0 failures. Backup: `design-tokens.v2.0.0.yaml.bak-20260528T155300Z`.
 - [design-system] v1.0.0 → v2.0.0: Full regeneration from Figma source (file tEEJwW4HkUR75fKhDq73Jz). Primary color `#1800B1` → `#4C662B`, font Inter/Space Grotesk → Outfit, background `#FCF8FF` → `#F9FAEF`. 14 component specs (12 universal + 2 banking). WCAG AA validated (12 pairs, 0 failures). App-shell colors updated.
 

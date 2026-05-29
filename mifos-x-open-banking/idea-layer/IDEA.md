@@ -469,3 +469,11 @@ Splash → Login → Dashboard (Bottom Nav)
 - **M2 (Apr–Jun):** Field Officer MVP (Search, Onboarding, KYC)
 - **M3 (Jul–Sep):** Enhancement (Cards, ATM, Standing Orders)
 - **M4 (Oct–Dec):** Production hardening, scale testing
+
+---
+
+## Ideas Backlog
+
+| # | Description | Feature | Status |
+|---|---|---|---|
+| 1 | Consumer-specific home dashboard with balance card, quick actions, and recent transactions | consumer-home | draft |

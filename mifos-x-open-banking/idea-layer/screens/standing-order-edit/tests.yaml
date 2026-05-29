@@ -1,0 +1,43 @@
+sibling: tests
+schema_version: "4.0"
+feature_id: standing-order-edit
+tests:
+  - id: soe_test_form_loads_with_existing_values
+    description: "Form pre-populates all fields from existing standing order data"
+    type: ui
+    given: "User navigates from standing-order-detail with valid standingOrderId"
+    when: "Screen loads"
+    then:
+      - assert_tag: soe_amount_input
+        assert_value: "1200.00"
+      - assert_tag: soe_frequency_selector
+        assert_text: "Monthly"
+      - assert_tag: soe_beneficiary_name
+        assert_visible: true
+
+  - id: soe_test_save_success
+    description: "Save success navigates back to standing-order-detail"
+    type: ui
+    given: "All required fields are filled"
+    when: "User taps Save Changes"
+    then:
+      - assert_tag: soe_save_button
+        interaction: tap
+      - assert_navigation: standing-order-detail
+
+  - id: soe_test_save_error_banner
+    description: "API error shows inline error banner"
+    type: ui
+    given: "API returns 4xx error on save"
+    when: "User taps Save Changes"
+    then:
+      - assert_tag: soe_error_banner
+        assert_visible: true
+
+  - id: soe_test_back_navigation
+    description: "Back arrow discards changes and returns to detail"
+    type: ui
+    given: "User has unsaved edits"
+    when: "User taps back arrow"
+    then:
+      - assert_navigation: standing-order-detail

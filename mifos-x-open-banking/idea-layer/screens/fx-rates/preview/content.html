@@ -1,65 +1,171 @@
 <!doctype html>
+<!-- render-hash: f3c0n6t526a1 -->
 <html lang="en" data-screen="fx-rates" data-state="content" data-feature="fx-rates" data-flavor="consumer">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>FX Rates — Mifos X Open Banking</title>
-  <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;500;600;700&display=swap" rel="stylesheet">
-  <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet">
-  <style>
-    :root { --primary: #4C662B; --on-primary: #FFFFFF; --primary-container: #CDEDA3; --on-primary-container: #102000; --secondary: #386663; --on-secondary: #FFFFFF; --error: #BA1A1A; --on-error: #FFFFFF; --background: #F9FAEF; --on-background: #1A1C16; --surface: #FFFFFF; --on-surface: #1A1C16; --surface-variant: #E1E4D5; --on-surface-variant: #44483D; --outline: #75796C; --outline-variant: #C5C8BA; --warning: #E8A317; }
-    * { margin: 0; padding: 0; box-sizing: border-box; }
-    body { font-family: 'Outfit', sans-serif; background: var(--background); color: var(--on-background); display: flex; flex-direction: column; min-height: 100vh; }
-    main { flex: 1; display: flex; flex-direction: column; }
-    .top-bar { display: flex; align-items: center; gap: 12px; padding: 12px 20px; }
-    .top-bar .material-icons { font-size: 24px; color: var(--on-surface-variant); cursor: pointer; }
-    .top-bar h1 { font-size: 18px; font-weight: 600; }
-    .converter-card { background: var(--surface); border-radius: 16px; margin: 8px 20px 16px; padding: 20px; box-shadow: 0 2px 8px rgba(0,0,0,0.08); }
-    .converter-row { display: flex; align-items: center; gap: 12px; margin-bottom: 12px; }
-    .amount-input { flex: 1; padding: 12px 14px; background: var(--background); border: 1px solid var(--outline-variant); border-radius: 10px; font-family: 'Outfit', sans-serif; font-size: 16px; font-weight: 600; color: var(--on-surface); }
-    .currency-chip { padding: 8px 14px; border-radius: 10px; background: var(--primary-container); color: var(--primary); font-size: 14px; font-weight: 600; cursor: pointer; display: flex; align-items: center; gap: 4px; }
-    .currency-chip .material-icons { font-size: 16px; }
-    .swap-btn { width: 40px; height: 40px; border-radius: 20px; background: var(--primary); display: flex; align-items: center; justify-content: center; border: none; cursor: pointer; margin: 0 auto 12px; }
-    .swap-btn .material-icons { font-size: 20px; color: var(--on-primary); }
-    .result-text { font-size: 24px; font-weight: 700; color: var(--primary); text-align: center; padding: 8px 0; }
-    .rate-info { font-size: 13px; color: var(--on-surface-variant); text-align: center; }
-    .cta-btn { width: 100%; padding: 14px; background: var(--primary); color: var(--on-primary); border: none; border-radius: 12px; font-family: 'Outfit', sans-serif; font-size: 15px; font-weight: 700; cursor: pointer; margin-top: 16px; }
-    .section-title { font-size: 16px; font-weight: 700; color: var(--on-background); padding: 8px 20px; }
-    .rate-row { display: flex; align-items: center; justify-content: space-between; padding: 14px 20px; border-bottom: 1px solid var(--surface-variant); }
-    .rate-pair { font-size: 14px; font-weight: 600; color: var(--on-background); }
-    .rate-value { font-size: 14px; color: var(--on-surface-variant); }
-    .rate-change { font-size: 12px; font-weight: 600; }
-    .rate-change.up { color: var(--primary); }
-    .rate-change.down { color: var(--error); }
-    @media (prefers-color-scheme: dark) { :root { --primary: #B2D188; --on-primary: #1F3701; --primary-container: #354E16; --on-primary-container: #CDEDA3; --secondary: #A0CFCB; --on-secondary: #003735; --error: #FFB4AB; --on-error: #690005; --background: #12140E; --on-background: #E3E3D8; --surface: #12140E; --on-surface: #E3E3D8; --surface-variant: #44483D; --on-surface-variant: #C5C8BA; --outline: #8F9285; --outline-variant: #44483D; --warning: #E8A317; } }
-  </style>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Exchange Rates</title>
+<link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;500;600;700&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet">
+<style>
+  :root {
+    --primary: #4C662B; --on-primary: #FFFFFF; --primary-container: #CDEDA3; --on-primary-container: #102000;
+    --secondary: #386663; --on-secondary: #FFFFFF; --secondary-container: #DCE7C8; --on-secondary-container: #1A2A29;
+    --error: #BA1A1A; --on-error: #FFFFFF; --error-container: #FFDAD6;
+    --background: #F9FAEF; --on-background: #1A1C16; --surface: #FFFFFF; --on-surface: #1A1C16;
+    --surface-variant: #E1E4D5; --on-surface-variant: #44483D; --outline: #75796C; --outline-variant: #C5C8BA;
+    --positive: #2E7D32; --negative: #BA1A1A;
+    --radius-soft: 12px; --radius-lg: 20px;
+    --shadow-1: 0 1px 2px rgba(0,0,0,0.06); --shadow-2: 0 4px 12px rgba(0,0,0,0.10);
+  }
+  [data-theme="dark"] {
+    --primary: #B2D188; --on-primary: #1F3701; --primary-container: #354E16; --on-primary-container: #CDEDA3;
+    --secondary: #A0CFCB; --on-secondary: #003735; --secondary-container: #1F4E4B; --on-secondary-container: #BCECE7;
+    --error: #FFB4AB; --on-error: #690005; --error-container: #93000A;
+    --background: #12140E; --on-background: #E3E3D8; --surface: #1A1C16; --on-surface: #E3E3D8;
+    --surface-variant: #44483D; --on-surface-variant: #C5C8BA; --outline: #8F9285; --outline-variant: #44483D;
+    --positive: #82E085; --negative: #FFB4AB;
+    --shadow-1: 0 1px 2px rgba(0,0,0,0.4); --shadow-2: 0 4px 12px rgba(0,0,0,0.5);
+  }
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+      --primary: #B2D188; --on-primary: #1F3701; --primary-container: #354E16; --on-primary-container: #CDEDA3;
+      --secondary: #A0CFCB; --on-secondary: #003735; --secondary-container: #1F4E4B; --on-secondary-container: #BCECE7;
+      --error: #FFB4AB; --on-error: #690005; --error-container: #93000A;
+      --background: #12140E; --on-background: #E3E3D8; --surface: #1A1C16; --on-surface: #E3E3D8;
+      --surface-variant: #44483D; --on-surface-variant: #C5C8BA; --outline: #8F9285; --outline-variant: #44483D;
+      --positive: #82E085; --negative: #FFB4AB;
+      --shadow-1: 0 1px 2px rgba(0,0,0,0.4); --shadow-2: 0 4px 12px rgba(0,0,0,0.5);
+    }
+  }
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body { font-family: 'Outfit', sans-serif; background: var(--background); color: var(--on-background); min-height: 100vh; display: flex; flex-direction: column; padding-bottom: 72px; }
+  .top-bar { display: flex; align-items: center; justify-content: space-between; padding: 14px 16px 4px; }
+  .top-bar h1 { font-size: 24px; font-weight: 700; color: var(--primary); letter-spacing: -0.3px; }
+  .icon-btn { width: 40px; height: 40px; border-radius: 20px; background: transparent; border: none; cursor: pointer; display: inline-flex; align-items: center; justify-content: center; color: var(--on-surface-variant); }
+  .icon-btn:hover, .icon-btn:focus-visible { background: var(--surface-variant); outline: none; }
+  .updated { font-size: 12px; color: var(--on-surface-variant); padding: 0 16px 16px; display: flex; align-items: center; gap: 4px; }
+  .updated .material-icons { font-size: 14px; }
+  .converter { background: var(--surface); border-radius: var(--radius-lg); margin: 0 16px 16px; padding: 20px; box-shadow: var(--shadow-2); }
+  .field-label { font-size: 11px; font-weight: 600; color: var(--on-surface-variant); text-transform: uppercase; letter-spacing: 0.6px; margin-bottom: 6px; }
+  .amount-row { display: flex; align-items: center; gap: 10px; margin-bottom: 4px; }
+  .amount-input { flex: 1; min-width: 0; padding: 12px 14px; background: var(--background); border: 1px solid var(--outline-variant); border-radius: 10px; font-family: 'Outfit', sans-serif; font-size: 22px; font-weight: 700; color: var(--primary); outline: none; }
+  .amount-input:focus-visible { border-color: var(--primary); }
+  .currency-pill { display: inline-flex; align-items: center; gap: 6px; padding: 10px 12px; border-radius: 10px; background: var(--primary-container); color: var(--on-primary-container); font-size: 15px; font-weight: 700; cursor: pointer; border: none; font-family: 'Outfit', sans-serif; min-width: 96px; }
+  .currency-pill:focus-visible { outline: 2px solid var(--primary); outline-offset: 2px; }
+  .currency-pill .flag { font-size: 18px; }
+  .currency-pill .material-icons { font-size: 16px; margin-left: auto; }
+  .swap-row { display: flex; align-items: center; gap: 10px; margin: 12px 0; }
+  .swap-line { flex: 1; height: 1px; background: var(--outline-variant); }
+  .swap-btn { width: 44px; height: 44px; border-radius: 22px; background: var(--primary); color: var(--on-primary); border: none; cursor: pointer; display: inline-flex; align-items: center; justify-content: center; box-shadow: var(--shadow-1); }
+  .swap-btn:focus-visible { outline: 2px solid var(--primary); outline-offset: 3px; }
+  .swap-btn .material-icons { font-size: 22px; }
+  .result-amount { font-size: 32px; font-weight: 700; color: var(--on-background); letter-spacing: -0.5px; padding: 4px 14px 2px; background: var(--background); border-radius: 10px; }
+  .rate-info { font-size: 12px; color: var(--on-surface-variant); margin-top: 14px; text-align: center; line-height: 1.45; }
+  .rate-info strong { color: var(--on-background); font-weight: 600; }
+  .send-btn { display: flex; align-items: center; justify-content: center; gap: 8px; width: 100%; padding: 14px; background: var(--primary); color: var(--on-primary); border-radius: 12px; font-family: 'Outfit', sans-serif; font-size: 15px; font-weight: 700; border: none; cursor: pointer; margin-top: 18px; }
+  .send-btn:focus-visible { outline: 2px solid var(--primary); outline-offset: 3px; }
+  .send-btn .material-icons { font-size: 18px; }
+  .section-header { display: flex; justify-content: space-between; align-items: center; padding: 8px 20px 12px; }
+  .section-header h2 { font-size: 16px; font-weight: 700; color: var(--on-background); }
+  .section-header a { font-size: 12px; color: var(--primary); font-weight: 600; cursor: pointer; }
+  .rate-list { background: var(--surface); border-radius: var(--radius-soft); margin: 0 16px 16px; box-shadow: var(--shadow-1); overflow: hidden; }
+  .rate-row { display: flex; align-items: center; gap: 12px; padding: 14px 16px; border-bottom: 1px solid var(--surface-variant); cursor: pointer; }
+  .rate-row:last-child { border-bottom: none; }
+  .rate-row:focus-visible { outline: 2px solid var(--primary); outline-offset: -2px; }
+  .rate-row:hover { background: var(--background); }
+  .rate-pair { display: flex; flex-direction: column; flex: 1; min-width: 0; }
+  .rate-pair-code { font-size: 14px; font-weight: 700; color: var(--on-background); }
+  .rate-pair-name { font-size: 11px; color: var(--on-surface-variant); margin-top: 2px; }
+  .rate-value { font-size: 15px; font-weight: 600; color: var(--on-background); font-variant-numeric: tabular-nums; }
+  .rate-change { font-size: 12px; font-weight: 600; min-width: 64px; text-align: right; display: inline-flex; align-items: center; justify-content: flex-end; gap: 2px; }
+  .rate-change.up { color: var(--positive); }
+  .rate-change.down { color: var(--negative); }
+  .rate-change .material-icons { font-size: 13px; }
+  .bottom-nav { position: fixed; bottom: 0; left: 0; right: 0; display: flex; background: var(--surface); border-top: 1px solid var(--outline-variant); padding: 6px 0 10px; }
+  .nav-item { flex: 1; display: flex; flex-direction: column; align-items: center; gap: 2px; padding: 6px 0; color: var(--on-surface-variant); font-size: 11px; font-weight: 500; text-decoration: none; cursor: pointer; }
+  .nav-item.active { color: var(--primary); }
+  .nav-item .material-icons { font-size: 22px; }
+</style>
 </head>
 <body>
-  <main>
-    <div class="top-bar">
-      <span class="material-icons" data-action="navigate_back" tabindex="0" aria-label="Go back">arrow_back</span>
-      <h1>Exchange Rates</h1>
+<main role="main">
+  <header class="top-bar" data-shell="top-bar">
+    <h1 data-component-type="text" data-component-id="fx_rates_title">Exchange Rates</h1>
+    <button class="icon-btn" data-action="open_rate_alerts" aria-label="Manage rate alerts"><span class="material-icons">notifications_active</span></button>
+  </header>
+  <p class="updated" data-component-type="text" data-component-id="last_updated_text"><span class="material-icons" aria-hidden="true">schedule</span>Updated 26 May 2026, 09:42 EAT · Live</p>
+
+  <section class="converter" data-component-type="box" data-component-id="converter_card" aria-label="Currency converter">
+    <div class="field-label">I want to send</div>
+    <div class="amount-row">
+      <input type="text" class="amount-input" value="1,000" inputmode="decimal" data-action="update_amount" aria-label="Amount to send" data-component-type="input" data-component-id="send_amount_input">
+      <button class="currency-pill" data-action="select_from_currency" aria-label="From currency, currently British Pound" data-component-type="input" data-component-id="from_currency_select"><span class="flag">&#127468;&#127463;</span>GBP<span class="material-icons">expand_more</span></button>
     </div>
-    <div class="converter-card">
-      <div class="converter-row">
-        <input type="text" class="amount-input" value="1,000" data-action="update_amount" aria-label="Amount to convert" tabindex="0">
-        <span class="currency-chip" data-action="select_from_currency" tabindex="0" aria-label="From currency: KES">KES <span class="material-icons">expand_more</span></span>
-      </div>
-      <button class="swap-btn" data-action="swap_currencies" tabindex="0" aria-label="Swap currencies"><span class="material-icons">swap_vert</span></button>
-      <div class="converter-row">
-        <span class="currency-chip" data-action="select_to_currency" tabindex="0" aria-label="To currency: USD">USD <span class="material-icons">expand_more</span></span>
-      </div>
-      <div class="result-text">$7.75</div>
-      <div class="rate-info">1 USD = 129.03 KES · Updated 5 min ago</div>
-      <button class="cta-btn" data-nav-to="send-money" tabindex="0" aria-label="Send Money">Send Money</button>
+
+    <div class="swap-row">
+      <div class="swap-line"></div>
+      <button class="swap-btn" data-action="swap_currencies" aria-label="Swap source and destination currencies" data-component-type="icon" data-component-id="swap_currencies_icon"><span class="material-icons">swap_vert</span></button>
+      <div class="swap-line"></div>
     </div>
-    <div class="section-title">Popular Pairs</div>
-    <div class="rate-row"><span class="rate-pair">GBP / EUR</span><span class="rate-value">1.1642</span><span class="rate-change up">+0.12%</span></div>
-    <div class="rate-row"><span class="rate-pair">GBP / USD</span><span class="rate-value">1.2714</span><span class="rate-change up">+0.08%</span></div>
-    <div class="rate-row"><span class="rate-pair">GBP / JPY</span><span class="rate-value">195.42</span><span class="rate-change down">-0.15%</span></div>
-    <div class="rate-row"><span class="rate-pair">EUR / USD</span><span class="rate-value">1.0921</span><span class="rate-change up">+0.03%</span></div>
-    <div class="rate-row"><span class="rate-pair">USD / KES</span><span class="rate-value">129.03</span><span class="rate-change down">-0.21%</span></div>
-  </main>
-  <script src="../../preview/_shared/preview-runtime.js"></script>
+
+    <div class="field-label">You'll receive</div>
+    <div class="amount-row">
+      <div class="result-amount" aria-live="polite" aria-label="Result: 163,870 Kenyan Shillings">163,870</div>
+      <button class="currency-pill" data-action="select_to_currency" aria-label="To currency, currently Kenyan Shilling"><span class="flag">&#127472;&#127466;</span>KES<span class="material-icons">expand_more</span></button>
+    </div>
+
+    <p class="rate-info">1 GBP = <strong>163.87 KES</strong> · Mid-market rate · Equity Bank fees apply</p>
+    <button class="send-btn" data-nav-to="send-money" aria-label="Continue to send money" data-component-type="button" data-component-id="send_money_cta"><span class="material-icons">send</span>Send 1,000 GBP</button>
+  </section>
+
+  <section class="section-header">
+    <h2 data-component-type="text" data-component-id="popular_pairs_header">Popular Pairs</h2>
+    <a data-action="view_all_rates" tabindex="0">View all</a>
+  </section>
+
+  <div class="rate-list" role="list" aria-label="Popular currency pairs">
+    <div class="rate-row" role="listitem" tabindex="0" data-action="select_pair" data-target="USD_KES">
+      <div class="rate-pair"><span class="rate-pair-code">USD / KES</span><span class="rate-pair-name">US Dollar → Kenyan Shilling</span></div>
+      <span class="rate-value">129.45</span>
+      <span class="rate-change down" aria-label="Down 0.21 percent"><span class="material-icons">arrow_drop_down</span>0.21%</span>
+    </div>
+    <div class="rate-row" role="listitem" tabindex="0" data-action="select_pair" data-target="EUR_KES">
+      <div class="rate-pair"><span class="rate-pair-code">EUR / KES</span><span class="rate-pair-name">Euro → Kenyan Shilling</span></div>
+      <span class="rate-value">140.22</span>
+      <span class="rate-change up" aria-label="Up 0.08 percent"><span class="material-icons">arrow_drop_up</span>0.08%</span>
+    </div>
+    <div class="rate-row" role="listitem" tabindex="0" data-action="select_pair" data-target="GBP_KES">
+      <div class="rate-pair"><span class="rate-pair-code">GBP / KES</span><span class="rate-pair-name">British Pound → Kenyan Shilling</span></div>
+      <span class="rate-value">163.87</span>
+      <span class="rate-change up" aria-label="Up 0.12 percent"><span class="material-icons">arrow_drop_up</span>0.12%</span>
+    </div>
+    <div class="rate-row" role="listitem" tabindex="0" data-action="select_pair" data-target="UGX_KES">
+      <div class="rate-pair"><span class="rate-pair-code">UGX / KES</span><span class="rate-pair-name">Ugandan → Kenyan Shilling</span></div>
+      <span class="rate-value">0.034</span>
+      <span class="rate-change down" aria-label="Down 0.05 percent"><span class="material-icons">arrow_drop_down</span>0.05%</span>
+    </div>
+    <div class="rate-row" role="listitem" tabindex="0" data-action="select_pair" data-target="ZAR_KES">
+      <div class="rate-pair"><span class="rate-pair-code">ZAR / KES</span><span class="rate-pair-name">SA Rand → Kenyan Shilling</span></div>
+      <span class="rate-value">7.03</span>
+      <span class="rate-change up" aria-label="Up 0.03 percent"><span class="material-icons">arrow_drop_up</span>0.03%</span>
+    </div>
+    <div class="rate-row" role="listitem" tabindex="0" data-action="select_pair" data-target="AED_KES">
+      <div class="rate-pair"><span class="rate-pair-code">AED / KES</span><span class="rate-pair-name">UAE Dirham → Kenyan Shilling</span></div>
+      <span class="rate-value">35.24</span>
+      <span class="rate-change down" aria-label="Down 0.11 percent"><span class="material-icons">arrow_drop_down</span>0.11%</span>
+    </div>
+  </div>
+
+</main>
+  <nav class="bottom-nav" data-shell="bottom-nav" aria-label="Primary navigation">
+    <a class="nav-item" data-nav-to="home" tabindex="0"><span class="material-icons">home</span>Home</a>
+    <a class="nav-item" data-nav-to="accounts" tabindex="0"><span class="material-icons">account_balance</span>Accounts</a>
+    <a class="nav-item active" data-nav-to="send-money" tabindex="0"><span class="material-icons">send</span>Pay</a>
+    <a class="nav-item" data-nav-to="cards" tabindex="0"><span class="material-icons">credit_card</span>Cards</a>
+    <a class="nav-item" data-nav-to="settings" tabindex="0"><span class="material-icons">more_horiz</span>More</a>
+  </nav>
+
+  <script src="../../../preview/_shared/preview-runtime.js"></script>
 </body>
 </html>

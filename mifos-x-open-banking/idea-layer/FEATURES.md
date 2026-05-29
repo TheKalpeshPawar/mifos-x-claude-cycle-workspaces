@@ -1,7 +1,7 @@
 # Features — Mifos X Open Banking
 
-All 43 features organized by flavor and OBP API integration points.
-Updated 2026-05-28 — added terms-of-service, privacy-policy, licenses, standing-order-detail.
+All 45 features organized by flavor and OBP API integration points.
+Updated 2026-05-29 — added consumer-home, standing-order-edit.
 
 ---
 
@@ -20,6 +20,9 @@ Updated 2026-05-28 — added terms-of-service, privacy-policy, licenses, standin
 | **beneficiaries** | Beneficiaries | `GET /banks/{bank}/counterparties` | Manage payee list |
 | **cards** | Cards, Card Detail | `GET /accounts/{account_id}/cards` | View card details, transactions |
 | **standing-orders** | Standing Orders | `GET /accounts/{account_id}/standing-orders` | Create & manage recurring payments |
+
+| **consumer-home** | Consumer Home | `GET /my/accounts`, `GET /accounts/{id}/transactions` | Personalised consumer home dashboard — balance, quick actions, recent transactions |
+| **standing-order-edit** | Standing Order Edit | `PUT /accounts/{accountId}/standing-order/{id}` | Edit amount, frequency, start/end date for existing standing order |
 
 ### Enhancement Features (4 features)
 
@@ -66,25 +69,35 @@ Updated 2026-05-28 — added terms-of-service, privacy-policy, licenses, standin
 
 ---
 
-## Complete Screen List (30 Screens)
+## Complete Screen List (45 Screens)
 
-### Consumer Screens (13)
+### Consumer Screens (23)
 
-1. **splash** — `consumer`
-2. **login** — shared
-3. **home** — `consumer`
-4. **accounts** — `consumer`
-5. **account-detail** — `consumer`
-6. **transactions** — `consumer`
-7. **transaction-detail** — `consumer`
+1. **home** — `consumer`
+2. **consumer-home** — `consumer`
+3. **accounts** — `consumer`
+4. **account-detail** — `consumer`
+5. **transactions** — `consumer`
+6. **transaction-detail** — `consumer`
+7. **transaction-tags** — `consumer`
 8. **send-money** — `consumer`
 9. **send-money-confirm** — `consumer`
 10. **beneficiaries** — `consumer`
 11. **cards** — `consumer`
 12. **card-detail** — `consumer`
 13. **standing-orders** — `consumer`
+14. **standing-order-detail** — `consumer`
+15. **standing-order-edit** — `consumer`
+16. **direct-debits** — `consumer`
+17. **direct-debit-detail** — `consumer`
+18. **atm-locator** — `consumer`
+19. **fx-rates** — `consumer`
+20. **consent-manager** — `consumer`
+21. **notifications** — `consumer`
+22. **pfm-dashboard** — `consumer`
+23. **products** — `consumer`
 
-### Field Officer Screens (11)
+### Field Officer Screens (12)
 
 1. **fo-dashboard** — `fieldOfficer`
 2. **customer-search** — `fieldOfficer`
@@ -97,18 +110,20 @@ Updated 2026-05-28 — added terms-of-service, privacy-policy, licenses, standin
 9. **application-detail** — `fieldOfficer`
 10. **customer-messages** — `fieldOfficer`
 11. **meetings** — `fieldOfficer`
+12. **agent-registration** — `fieldOfficer`
 
-### Shared Screens (4)
+### Shared Screens (10)
 
 1. **splash** — both
 2. **login** — both
-3. **profile** — both
-4. **settings** — both
-
-### Additional Screens (2)
-
-1. **fx-rates** — `consumer` enhancement
-2. **atm-locator** — `consumer` enhancement
+3. **forgot-password** — both
+4. **change-password** — both
+5. **profile** — both
+6. **settings** — both
+7. **about** — both
+8. **terms-of-service** — both
+9. **privacy-policy** — both
+10. **licenses** — both
 
 ---
 

@@ -1,0 +1,308 @@
+sibling: ui
+schema_version: "4.0"
+feature_id: standing-order-edit
+id: standing-order-edit
+name: "Standing Order Edit"
+feature: standing-orders
+flavor: consumer
+status: draft
+quality_score: 50
+contract_version: "1.0.0"
+capabilities:
+  - has_ui
+tags: [FR-006, standing-orders, payments, form, edit]
+status_history:
+  - status: draft
+    timestamp: "2026-05-29T00:00:00Z"
+    by: "/idea add"
+
+screens:
+  - id: standing-order-edit
+    name: "Standing Order Edit"
+    archetype: form
+    route: /standing-orders/{standingOrderId}/edit
+    viewmodel: "StandingOrderEditViewModel"
+    shell:
+      top_app_bar:
+        show: true
+        title: "Edit Standing Order"
+        navigation_icon: arrow_back
+        navigation_action: navigate_back
+        actions: []
+      bottom_nav: false
+
+states:
+  - id: idle
+    label: "Form ready"
+  - id: loading
+    label: "Saving changes"
+  - id: success
+    label: "Saved — navigate back to detail"
+  - id: error
+    label: "Save failed — inline error shown"
+
+components:
+  - type: stack
+    id: soe_root
+    variant: column
+    supported_states: [idle, loading, error]
+    style:
+      background: "#F9FAEF"
+      padding_horizontal: spacing.md
+      padding_top: spacing.lg
+    children:
+      - soe_beneficiary_row
+      - soe_amount_input
+      - soe_currency_selector
+      - soe_frequency_selector
+      - soe_start_date_input
+      - soe_end_date_input
+      - soe_error_banner
+      - soe_save_button
+
+  # ── Beneficiary (readonly) ────────────────────────────────────────────
+
+  - type: stack
+    id: soe_beneficiary_row
+    variant: row
+    supported_states: [idle]
+    style:
+      orientation: horizontal
+      spacing: spacing.sm
+      padding_bottom: spacing.md
+      align: center
+      background: "#FFFFFF"
+      border_radius: 12
+      padding_horizontal: spacing.md
+      padding_vertical: spacing.md
+      border_width: 1
+      border_color: "#E0E0E0"
+    a11y:
+      label: "Beneficiary — read-only"
+      role: group
+    children:
+      - soe_beneficiary_icon
+      - soe_beneficiary_info
+
+  - type: icon
+    id: soe_beneficiary_icon
+    content: "person"
+    style:
+      color: "#4C662B"
+      size: 24
+    a11y:
+      label: ""
+      role: presentation
+
+  - type: stack
+    id: soe_beneficiary_info
+    variant: column
+    children:
+      - soe_beneficiary_label
+      - soe_beneficiary_name
+
+  - type: text
+    id: soe_beneficiary_label
+    content: "Paying to"
+    style:
+      typography: "Outfit/label_small"
+      color: "#757575"
+    a11y:
+      label: "Paying to label"
+      role: none
+    test_context:
+      tag: soe_beneficiary_label
+      assert_text: "Paying to"
+
+  - type: text
+    id: soe_beneficiary_name
+    content: "Landlord Holdings Ltd"
+    style:
+      typography: "Outfit/body_large"
+      color: "#1A1C16"
+      font_weight: medium
+    a11y:
+      label: "Landlord Holdings Ltd"
+      role: text
+    test_context:
+      tag: soe_beneficiary_name
+      assert_text: "Landlord Holdings Ltd"
+      data_driven: true
+
+  # ── Amount ────────────────────────────────────────────────────────────
+
+  - type: input
+    id: soe_amount_input
+    label: "Amount"
+    content: "1200.00"
+    supported_states: [idle, hover, focus_visible, pressed, error]
+    style:
+      variant: outlined
+      input_type: number
+      placeholder: "0.00"
+      border_radius: 12
+      prefix_text: "£"
+      keyboard_type: decimal
+      margin_top: spacing.md
+    on_click:
+      action: focus_amount
+      target: ""
+    a11y:
+      label: "Enter payment amount"
+      role: text_field
+      label_source: visible_label
+    keyboard:
+      focusable: true
+    test_context:
+      tag: soe_amount_input
+      assert_hint: "0.00"
+      data_driven: true
+
+  # ── Currency ──────────────────────────────────────────────────────────
+
+  - type: input
+    id: soe_currency_selector
+    label: "Currency"
+    content: "GBP"
+    supported_states: [idle, hover, focus_visible, pressed]
+    style:
+      variant: outlined
+      trailing_icon: expand_more
+      border_radius: 12
+      margin_top: spacing.sm
+    on_click:
+      action: select_currency
+      target: ""
+    a11y:
+      label: "Select currency. Currently: GBP"
+      role: button
+    keyboard:
+      focusable: true
+    test_context:
+      tag: soe_currency_selector
+      assert_text: "GBP"
+
+  # ── Frequency ─────────────────────────────────────────────────────────
+
+  - type: input
+    id: soe_frequency_selector
+    label: "Frequency"
+    content: "Monthly"
+    supported_states: [idle, hover, focus_visible, pressed]
+    style:
+      variant: outlined
+      trailing_icon: expand_more
+      leading_icon: repeat
+      border_radius: 12
+      margin_top: spacing.sm
+    on_click:
+      action: select_frequency
+      target: ""
+    a11y:
+      label: "Select payment frequency. Currently: Monthly"
+      role: button
+    keyboard:
+      focusable: true
+    test_context:
+      tag: soe_frequency_selector
+      assert_text: "Monthly"
+
+  # ── Start Date ────────────────────────────────────────────────────────
+
+  - type: input
+    id: soe_start_date_input
+    label: "Start Date"
+    content: "01 Jun 2026"
+    supported_states: [idle, hover, focus_visible, pressed, error]
+    style:
+      variant: outlined
+      trailing_icon: calendar_today
+      border_radius: 12
+      margin_top: spacing.sm
+    on_click:
+      action: pick_start_date
+      target: ""
+    a11y:
+      label: "Select start date. Currently: 1 June 2026"
+      role: button
+    keyboard:
+      focusable: true
+    test_context:
+      tag: soe_start_date_input
+      data_driven: true
+
+  # ── End Date ──────────────────────────────────────────────────────────
+
+  - type: input
+    id: soe_end_date_input
+    label: "End Date (optional)"
+    content: ""
+    supported_states: [idle, hover, focus_visible, pressed, error]
+    style:
+      variant: outlined
+      trailing_icon: calendar_today
+      border_radius: 12
+      margin_top: spacing.sm
+    on_click:
+      action: pick_end_date
+      target: ""
+    a11y:
+      label: "Select end date — optional"
+      role: button
+    keyboard:
+      focusable: true
+    test_context:
+      tag: soe_end_date_input
+      data_driven: true
+
+  # ── Error Banner ──────────────────────────────────────────────────────
+
+  - type: box
+    id: soe_error_banner
+    content: "Failed to save changes. Please try again."
+    supported_states: [error]
+    visible_in_states: [error]
+    style:
+      background: "#FDECEA"
+      border_radius: 8
+      padding_horizontal: spacing.md
+      padding_vertical: spacing.sm
+      margin_top: spacing.md
+      border_color: "#D32F2F"
+      border_width: 1
+    a11y:
+      label: "Error: Failed to save changes. Please try again."
+      role: alert
+      live: assertive
+    test_context:
+      tag: soe_error_banner
+      assert_visible_in: [error]
+      assert_text: "Failed to save changes. Please try again."
+
+  # ── Save Button ───────────────────────────────────────────────────────
+
+  - type: button
+    id: soe_save_button
+    label: "Save Changes"
+    supported_states: [idle, hover, focus_visible, pressed, disabled, loading]
+    style:
+      variant: filled
+      background: "#4C662B"
+      text_color: "#FFFFFF"
+      border_radius: 24
+      min_height: 56
+      width: fill
+      margin_top: spacing.xl
+      typography: "Outfit/label_large"
+    on_click:
+      action: save_standing_order
+      target: ""
+    a11y:
+      label: "Save changes to standing order"
+      role: button
+    keyboard:
+      focusable: true
+    test_context:
+      tag: soe_save_button
+      assert_text: "Save Changes"
+      interaction_type: action

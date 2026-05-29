@@ -1,0 +1,65 @@
+sibling: api
+schema_version: "4.0"
+feature_id: consumer-home
+api:
+  - id: obp_get_accounts
+    endpoint: "GET /obp/v4.0.0/my/accounts"
+    tag: Accounts
+    note: "Fetch all consumer accounts for balance summary card."
+    response:
+      fields:
+        - name: accounts
+          type: List<Account>
+        - name: id
+          type: String
+        - name: bank_id
+          type: String
+        - name: label
+          type: String
+        - name: balance.amount
+          type: String
+        - name: balance.currency
+          type: String
+    errors:
+      - code: 401
+        message: "USER_NOT_LOGGED_IN"
+      - code: 404
+        message: "BANK_NOT_FOUND"
+
+  - id: obp_get_transactions
+    endpoint: "GET /obp/v4.0.0/banks/{bankId}/accounts/{accountId}/transactions"
+    tag: Transactions
+    note: "Fetch last 3 transactions for recent activity section on home. Use limit=3 param."
+    request:
+      params:
+        - name: limit
+          type: Int
+          default: 3
+        - name: sort_direction
+          type: String
+          default: DESC
+    response:
+      fields:
+        - name: transactions
+          type: List<Transaction>
+        - name: id
+          type: String
+        - name: this_account.id
+          type: String
+        - name: other_account.holder.name
+          type: String
+        - name: details.type
+          type: String
+        - name: details.description
+          type: String
+        - name: details.posted
+          type: String
+        - name: details.value.amount
+          type: String
+        - name: details.value.currency
+          type: String
+    errors:
+      - code: 401
+        message: "USER_NOT_LOGGED_IN"
+      - code: 404
+        message: "BANK_ACCOUNT_NOT_FOUND"

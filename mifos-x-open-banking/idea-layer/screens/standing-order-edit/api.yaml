@@ -1,0 +1,61 @@
+sibling: api
+schema_version: "4.0"
+feature_id: standing-order-edit
+api:
+  - id: obp_update_standing_order
+    endpoint: "PUT /obp/v4.0.0/banks/{bankId}/accounts/{accountId}/owner/standing-order/{standingOrderId}"
+    tag: Standing-Orders
+    note: "Update mutable fields of an existing standing order. Beneficiary is immutable after creation."
+    request:
+      fields:
+        - name: amount_value
+          type: String
+          required: true
+        - name: amount_currency
+          type: String
+          required: true
+        - name: when.frequency
+          type: String
+          required: true
+          enum: [DAILY, WEEKLY, MONTHLY, YEARLY]
+        - name: when.start_date
+          type: String
+          required: true
+          format: "YYYY-MM-DD"
+        - name: when.final_date
+          type: String
+          required: false
+          format: "YYYY-MM-DD"
+    response:
+      fields:
+        - name: id
+          type: String
+        - name: bank_id
+          type: String
+        - name: account_id
+          type: String
+        - name: counterparty.name
+          type: String
+        - name: amount_value
+          type: String
+        - name: amount_currency
+          type: String
+        - name: when.frequency
+          type: String
+        - name: when.start_date
+          type: String
+        - name: when.final_date
+          type: String
+        - name: active
+          type: Boolean
+    errors:
+      - code: 400
+        message: "INVALID_STANDING_ORDER_ID"
+      - code: 401
+        message: "USER_NOT_LOGGED_IN"
+      - code: 403
+        message: "INSUFFICIENT_AUTHORISATION"
+      - code: 404
+        message: "BANK_ACCOUNT_NOT_FOUND"
+      - code: 409
+        message: "STANDING_ORDER_ALREADY_CANCELLED"
