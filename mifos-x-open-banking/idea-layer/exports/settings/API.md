@@ -13,17 +13,20 @@ The Settings screen reads and writes all preference state from/to the local `Set
 
 **Local data flows:**
 
-| Preference                   | Platform Manager    | Storage                    |
-|------------------------------|---------------------|----------------------------|
-| isDarkModeEnabled            | LocaleManager       | DataStore (Preferences)    |
-| selectedLanguage             | LocaleManager       | DataStore (Preferences)    |
-| isPushNotificationsEnabled   | NotificationManager | DataStore (Preferences)    |
-| isTransactionAlertsEnabled   | NotificationManager | DataStore (Preferences)    |
-| isBiometricLoginEnabled      | BiometricManager    | DataStore (Preferences)    |
+| Preference                   | Platform Manager    | Storage                        |
+|------------------------------|---------------------|-------------------------------|
+| isDarkModeEnabled            | LocaleManager       | DataStore (Preferences)        |
+| selectedLanguage             | LocaleManager       | DataStore (Preferences)        |
+| isPushNotificationsEnabled   | NotificationManager | DataStore (Preferences)        |
+| isTransactionAlertsEnabled   | NotificationManager | DataStore (Preferences)        |
+| isMarketingEnabled           | NotificationManager | DataStore (Preferences)        |
+| isBiometricLoginEnabled      | BiometricManager    | DataStore (Preferences)        |
 | isBiometricAvailableOnDevice | BiometricManager    | Runtime BiometricManager query |
-| appVersion                   | —                   | BuildConfig.VERSION_NAME   |
+| appVersion                   | —                   | BuildConfig.VERSION_NAME       |
 
-Navigation to `about` and `consent-manager` passes no parameters — those screens load their own data independently.
+**Cascading disable rule:** `isTransactionAlertsEnabled` toggle is disabled in the UI when `isPushNotificationsEnabled == false`. Both persist independently to DataStore.
+
+Navigation to `about`, `consent-manager`, `change-password`, `terms-of-service`, `privacy-policy`, and `licenses` passes no parameters — those screens load their own data independently.
 
 ---
 
