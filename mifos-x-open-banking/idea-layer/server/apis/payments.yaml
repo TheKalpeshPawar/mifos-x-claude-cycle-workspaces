@@ -1,0 +1,326 @@
+schema_version: "4.0"
+api_group: payments
+name: "Payments & Transaction Requests API"
+base_url: "https://apisandbox.openbankproject.com/obp"
+auth_scheme: DirectLogin
+generated_at: "2026-05-30"
+
+endpoints:
+
+  - id: initiate_sepa_payment
+    method: POST
+    path: "/v4.0.0/banks/{bank_id}/accounts/{account_id}/transaction-request-types/SEPA/transaction-requests"
+    description: "Initiate a SEPA credit transfer from the authenticated user's account to a beneficiary IBAN. Used on the send-money-confirm screen after IBAN validation and funds check pass."
+    auth_required: true
+    request_schema:
+      - field: to.iban
+        type: String
+        required: true
+        validation: "Valid IBAN string. Pre-validate via /obp/v4.0.0/account/check/scheme/iban before submitting."
+      - field: value.amount
+        type: String
+        required: true
+        validation: "Non-negative decimal string (e.g. '150.00'). Cannot exceed available balance."
+      - field: value.currency
+        type: String
+        required: true
+        validation: "ISO 4217 currency code (e.g. 'EUR'). Must match the source account currency."
+      - field: description
+        type: String
+        required: false
+        validation: "Payment narration / reference. Max 140 characters."
+    response_schema:
+      - field: id
+        type: String
+        nullable: false
+        description: "Unique transaction request identifier."
+      - field: type
+        type: String
+        nullable: false
+        description: "Always 'SEPA' for this endpoint."
+      - field: status
+        type: String
+        nullable: false
+        description: "Transaction request status — 'INITIATED', 'COMPLETED', or 'FAILED'."
+      - field: start_date
+        type: String
+        format: ISO-8601 Instant
+        nullable: false
+        description: "Timestamp the payment request was initiated."
+      - field: end_date
+        type: String
+        format: ISO-8601 Instant
+        nullable: true
+        description: "Timestamp the payment settled; null if still in progress."
+      - field: challenge
+        type: Object
+        nullable: true
+        description: "SCA challenge details if two-factor authentication is required by the bank."
+      - field: charge
+        type: Object
+        nullable: true
+        description: "Fee information for this payment if applicable."
+      - field: charge.summary
+        type: String
+        nullable: true
+        description: "Human-readable fee description."
+      - field: charge.value.amount
+        type: String
+        nullable: true
+        description: "Fee amount as decimal string."
+      - field: charge.value.currency
+        type: String
+        nullable: true
+        description: "ISO 4217 fee currency code."
+    error_codes:
+      - code: 400
+        message: "INVALID_JSON_FORMAT"
+        retry: false
+      - code: 400
+        message: "INVALID_IBAN"
+        retry: false
+      - code: 400
+        message: "INVALID_AMOUNT"
+        retry: false
+      - code: 401
+        message: "USER_NOT_LOGGED_IN"
+        retry: false
+      - code: 403
+        message: "INSUFFICIENT_AUTHORISATION"
+        retry: false
+      - code: 404
+        message: "BANK_ACCOUNT_NOT_FOUND"
+        retry: false
+      - code: 422
+        message: "INSUFFICIENT_FUNDS"
+        retry: false
+      - code: 500
+        message: "OBP_SERVER_ERROR"
+        retry: true
+
+  - id: initiate_sandbox_transfer
+    method: POST
+    path: "/v4.0.0/banks/{bank_id}/accounts/{account_id}/transaction-request-types/SANDBOX_TAN/transaction-requests"
+    description: "Initiate a sandbox internal transfer between OBP test accounts using the SANDBOX_TAN type. Used during development / QA in place of real SEPA when both accounts exist within the OBP sandbox."
+    auth_required: true
+    request_schema:
+      - field: to.bank_id
+        type: String
+        required: true
+        validation: "Target bank identifier in the OBP sandbox."
+      - field: to.account_id
+        type: String
+        required: true
+        validation: "Target account identifier within the bank."
+      - field: value.amount
+        type: String
+        required: true
+        validation: "Non-negative decimal string. Cannot exceed available balance."
+      - field: value.currency
+        type: String
+        required: true
+        validation: "ISO 4217 currency code matching the source account."
+      - field: description
+        type: String
+        required: false
+        validation: "Payment reference text. Max 140 characters."
+    response_schema:
+      - field: id
+        type: String
+        nullable: false
+        description: "Unique transaction request identifier."
+      - field: type
+        type: String
+        nullable: false
+        description: "Always 'SANDBOX_TAN' for this endpoint."
+      - field: status
+        type: String
+        nullable: false
+        description: "Transaction request status — 'INITIATED', 'COMPLETED', or 'FAILED'."
+      - field: start_date
+        type: String
+        format: ISO-8601 Instant
+        nullable: false
+        description: "Timestamp the transfer was initiated."
+      - field: end_date
+        type: String
+        format: ISO-8601 Instant
+        nullable: true
+        description: "Settlement timestamp; null while in progress."
+      - field: challenge
+        type: Object
+        nullable: true
+        description: "SCA challenge object if further authentication is required."
+    error_codes:
+      - code: 400
+        message: "INVALID_JSON_FORMAT"
+        retry: false
+      - code: 400
+        message: "INVALID_AMOUNT"
+        retry: false
+      - code: 401
+        message: "USER_NOT_LOGGED_IN"
+        retry: false
+      - code: 403
+        message: "INSUFFICIENT_AUTHORISATION"
+        retry: false
+      - code: 404
+        message: "BANK_ACCOUNT_NOT_FOUND"
+        retry: false
+      - code: 422
+        message: "INSUFFICIENT_FUNDS"
+        retry: false
+      - code: 500
+        message: "OBP_SERVER_ERROR"
+        retry: true
+
+  - id: list_counterparties
+    method: GET
+    path: "/v3.0.0/banks/{bank_id}/accounts/{account_id}/counterparties"
+    description: "List saved beneficiaries (counterparties) for an account. Powers the beneficiaries screen list and the send-money beneficiary picker."
+    auth_required: true
+    request_schema: []
+    response_schema:
+      - field: counterparties
+        type: "List<Counterparty>"
+        nullable: false
+        description: "All counterparties linked to the account."
+      - field: counterparties[].counterparty_id
+        type: String
+        nullable: false
+        description: "Unique counterparty identifier."
+      - field: counterparties[].name
+        type: String
+        nullable: false
+        description: "Display name for this beneficiary."
+      - field: counterparties[].description
+        type: String
+        nullable: true
+        description: "Optional note about this beneficiary."
+      - field: counterparties[].other_bank_routing_scheme
+        type: String
+        nullable: true
+        description: "Routing scheme for the beneficiary bank (e.g. 'BIC')."
+      - field: counterparties[].other_bank_routing_address
+        type: String
+        nullable: true
+        description: "Beneficiary bank routing address (BIC value)."
+      - field: counterparties[].other_account_routing_scheme
+        type: String
+        nullable: false
+        description: "Routing scheme for the beneficiary account (e.g. 'IBAN')."
+      - field: counterparties[].other_account_routing_address
+        type: String
+        nullable: false
+        description: "Beneficiary account routing address (IBAN value)."
+      - field: counterparties[].is_beneficiary
+        type: Boolean
+        nullable: false
+        description: "True if this counterparty is whitelisted as a trusted beneficiary."
+    error_codes:
+      - code: 401
+        message: "USER_NOT_LOGGED_IN"
+        retry: false
+      - code: 403
+        message: "INSUFFICIENT_AUTHORISATION"
+        retry: false
+      - code: 404
+        message: "BANK_ACCOUNT_NOT_FOUND"
+        retry: false
+      - code: 500
+        message: "OBP_SERVER_ERROR"
+        retry: true
+
+  - id: create_counterparty
+    method: POST
+    path: "/v3.0.0/banks/{bank_id}/accounts/{account_id}/counterparties"
+    description: "Save a new beneficiary (counterparty) for future payments. Triggered from the beneficiaries screen add-beneficiary flow."
+    auth_required: true
+    request_schema:
+      - field: name
+        type: String
+        required: true
+        validation: "Non-empty beneficiary display name. Max 255 characters."
+      - field: description
+        type: String
+        required: false
+        validation: "Optional note. Max 2000 characters."
+      - field: other_bank_id
+        type: String
+        required: false
+        validation: "OBP bank identifier for the beneficiary's bank."
+      - field: other_account_id
+        type: String
+        required: false
+        validation: "OBP account identifier for the beneficiary (sandbox use)."
+      - field: other_account_routing_scheme
+        type: String
+        required: true
+        validation: "Routing scheme — typically 'IBAN'."
+      - field: other_account_routing_address
+        type: String
+        required: true
+        validation: "IBAN of the beneficiary account. Must pass IBAN format validation."
+      - field: other_account_secondary_routing_scheme
+        type: String
+        required: false
+        validation: "Secondary routing scheme (e.g. 'SortCode')."
+      - field: other_account_secondary_routing_address
+        type: String
+        required: false
+        validation: "Secondary routing address value."
+      - field: other_branch_routing_scheme
+        type: String
+        required: false
+        validation: "Branch routing scheme (e.g. 'BIC')."
+      - field: other_branch_routing_address
+        type: String
+        required: false
+        validation: "BIC / SWIFT code of the beneficiary's bank."
+      - field: is_beneficiary
+        type: Boolean
+        required: true
+        validation: "Must be true to whitelist as a trusted payment destination."
+    response_schema:
+      - field: counterparty_id
+        type: String
+        nullable: false
+        description: "Unique identifier for the created counterparty."
+      - field: name
+        type: String
+        nullable: false
+        description: "Beneficiary display name."
+      - field: other_account_routing_scheme
+        type: String
+        nullable: false
+        description: "Routing scheme stored for this beneficiary."
+      - field: other_account_routing_address
+        type: String
+        nullable: false
+        description: "Routing address (IBAN) stored for this beneficiary."
+      - field: is_beneficiary
+        type: Boolean
+        nullable: false
+        description: "Trust status of the counterparty."
+    error_codes:
+      - code: 400
+        message: "INVALID_JSON_FORMAT"
+        retry: false
+      - code: 400
+        message: "INVALID_IBAN"
+        retry: false
+      - code: 401
+        message: "USER_NOT_LOGGED_IN"
+        retry: false
+      - code: 403
+        message: "INSUFFICIENT_AUTHORISATION"
+        retry: false
+      - code: 404
+        message: "BANK_ACCOUNT_NOT_FOUND"
+        retry: false
+      - code: 409
+        message: "COUNTERPARTY_ALREADY_EXISTS"
+        retry: false
+      - code: 500
+        message: "OBP_SERVER_ERROR"
+        retry: true

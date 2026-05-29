@@ -1,7 +1,7 @@
 # MOCKUP — My Cards
 
 **Archetype:** index_list
-**Shell:** Bottom navigation bar (Home/Accounts/Pay/Cards/More). Top app bar ("My Cards") with notifications_outlined action.
+**Shell:** Top app bar ("My Cards", no back icon, notifications_outlined action) + bottom navigation bar (Home/Accounts/Pay/Cards/More). Cards active.
 **Accent:** #4C662B (Earth-green). Typography: Outfit. Design system: M3.
 
 ---
@@ -10,37 +10,36 @@
 
 ```
 ┌─────────────────────────────────────┐
-│  My Cards                  [🔔]     │  ← TopAppBar, notifications_outlined, #F9FAEF
+│  My Cards              [🔔]         │  ← Top app bar, headline_large #4C662B
 ├─────────────────────────────────────┤
 │                                     │
-│  My Cards                           │  ← headline_large, #4C662B (visible during load)
+│  ┌─────────────────────────────┐    │  ← Skeleton card chip #E1E4D5, 20dp radius, 200dp tall
+│  │ ████████████████████████    │    │
+│  │ ████████████████████████    │    │
+│  │ ████████████████████████    │    │
+│  │ ████████████████████████    │    │
+│  └─────────────────────────────┘    │
 │                                     │
-│  ┌──────────────────────────────┐   │
-│  │  ████████████████████████   │   │  ← Card carousel skeleton (320×200dp shimmer)
-│  │  ████████████████████████   │   │
-│  │  ████████████████████████   │   │
-│  └──────────────────────────────┘   │
+│  ██████  ██████  ██████  ██████     │  ← Skeleton quick actions (4 buttons)
 │                                     │
-│  [████] [████] [████] [████]        │  ← Quick action buttons skeleton (4 pills)
+│  ████████████████████████████████   │  ← Skeleton transactions header
 │                                     │
-│  ████████████████████████           │  ← "Card Transactions" header skeleton
-│                                     │
-│  ┌─────────────────────────────────┐│
-│  │  ████████████████  ████████████ ││  ← Transaction row skeleton 1
-│  └─────────────────────────────────┘│
-│  ┌─────────────────────────────────┐│
-│  │  ████████████████  ████████████ ││  ← Transaction row skeleton 2
-│  └─────────────────────────────────┘│
-│  ┌─────────────────────────────────┐│
-│  │  ████████████████  ████████████ ││  ← Transaction row skeleton 3
-│  └─────────────────────────────────┘│
+│  ┌───────────────────────────────┐  │  ← Skeleton txn row 1
+│  │ ██████████████████  ████████  │  │
+│  └───────────────────────────────┘  │
+│  ┌───────────────────────────────┐  │  ← Skeleton txn row 2
+│  │ ██████████████████  ████████  │  │
+│  └───────────────────────────────┘  │
+│  ┌───────────────────────────────┐  │  ← Skeleton txn row 3 (skeleton_count: 3)
+│  │ ██████████████████  ████████  │  │
+│  └───────────────────────────────┘  │
 │                                     │
 ├─────────────────────────────────────┤
-│ 🏠    🏦    ↗    💳    ···          │  ← Bottom nav, Cards tab active (#DCE7C8 indicator)
+│  [🏠] [💳*] [💸] [💳] [•••]        │  ← Bottom nav, Cards active (#DCE7C8 indicator pill)
 └─────────────────────────────────────┘
 ```
 
-**Layout notes:** Carousel skeleton is 320×200dp matching card visual dimensions. Quick-action skeleton shows 4 evenly-spaced pill placeholders. 3 transaction row skeletons.
+**Layout notes:** Skeleton shimmer uses #E1E4D5 (surface_variant) with 200ms (short4) animation; reduced_motion_fallback renders static placeholder blocks. No quick-action interactivity or transactions visible during loading.
 
 ---
 
@@ -48,66 +47,66 @@
 
 ```
 ┌─────────────────────────────────────┐
-│  My Cards                  [🔔]     │  ← TopAppBar
+│  My Cards              [🔔]         │  ← Top app bar
 ├─────────────────────────────────────┤
 │                                     │
-│  My Cards                           │  ← headline_large, #4C662B, 4dp bottom
+│  ◀ ┌──────────────────────────────┐ ▶│  ← Carousel, horizontal scroll, 16dp spacing
+│    │  •••• •••• •••• 4521         │  │  ← title_large, #FFFFFF, monospace
+│    │                              │  │    Card chip: #4C662B gradient, 320×200dp
+│    │  ALEX JOHNSON      [Active]  │  │  ← body_large #CDEDA3 uppercase | chip #4C662B
+│    │                     [VISA]   │  │  ← Visa logo 56×20dp #FFFFFF tint
+│    └──────────────────────────────┘  │
 │                                     │
-│  ← ┌────────────────────────────┐ → │  ← horizontal scroll carousel
-│    │                            │   │
-│    │  •••• •••• •••• 4521       │   │  ← title_large/#FFFFFF/monospace/spacing 4
-│    │                            │   │  ← #4C662B gradient card, 320×200dp, radius 20
-│    │  Alex Johnson        [VISA]│   │  ← body_large/#CDEDA3 upper · Visa logo 56×20
-│    │  [Active]                  │   │  ← badge: #4C662B bg/#FFFFFF text, radius 12
-│    └────────────────────────────┘   │
-│       ┌──────────────────────────┐  │
-│       │  •••• •••• •••• 7834    │  │  ← 2nd card (partially visible in carousel)
-│       │  #386663 gradient       │  │
-│       │  [Frozen]               │  │  ← badge: #C5C8BA bg/#FFFFFF text
-│       └──────────────────────────┘  │
+│  ┌──────────────────────────────┐   │  ← (card 2 — partially visible, snap on scroll)
+│  │  •••• •••• •••• 7834        …   │  ← #386663 gradient (secondary)
+│  │  ALEX JOHNSON      [Frozen]  …  │  ← Frozen chip #C5C8BA fill
+│  │                  [Mastercard]…  │  ← Mastercard logo 48×30dp
+│  └──────────────────────────────…  │
 │                                     │
-│   [❄ Freeze] [⚙ Limit] [# PIN] [⚠ Report]│ ← quick actions, evenly spaced
-│    #4C662B ×3             #BA1A1A   │  ← label_small, icon above label
+│  ┌──────────────────────────────────┐│  ← Quick actions row, space-evenly
+│  │ [❄️ Freeze] [⚙ Set Limit]       ││
+│  │ [🔑 View PIN] [⚠ Report Lost]   ││  ← Report Lost: icon+text #BA1A1A
+│  └──────────────────────────────────┘│
 │                                     │
 │  Card Transactions                  │  ← title_large, #1A1C16, weight 600
 │                                     │
-│  ┌─────────────────────────────────┐│
-│  │  Netflix            -£15.99     ││  ← merchant body_large/#1A1C16 · amount #BA1A1A
-│  │  20 May 2026                    ││  ← body_small/#44483D
-│  └─────────────────────────────────┘│
-│  ┌─────────────────────────────────┐│
-│  │  Tesco Express      -£34.56     ││
-│  │  19 May 2026                    ││
-│  └─────────────────────────────────┘│
-│  ┌─────────────────────────────────┐│
-│  │  Uber               -£12.40     ││
-│  │  18 May 2026                    ││
-│  └─────────────────────────────────┘│
-│  ┌─────────────────────────────────┐│
-│  │  Amazon.co.uk       -£67.99     ││
-│  │  17 May 2026                    ││
-│  └─────────────────────────────────┘│
-│  ┌─────────────────────────────────┐│
-│  │  Starbucks           -£5.85     ││
-│  │  17 May 2026                    ││
-│  └─────────────────────────────────┘│
+│  ┌───────────────────────────────┐  │  ← Netflix row: #FFFFFF, 12dp radius, 1dp elev
+│  │  Netflix          −£15.99    │  │  ← merchant body_large #1A1C16 | amount #BA1A1A w500
+│  │  20 May 2026                 │  │  ← body_small, #44483D
+│  └───────────────────────────────┘  │
+│  ┌───────────────────────────────┐  │
+│  │  Tesco Express    −£34.56    │  │
+│  │  19 May 2026                 │  │
+│  └───────────────────────────────┘  │
+│  ┌───────────────────────────────┐  │
+│  │  Uber             −£12.40    │  │
+│  │  18 May 2026                 │  │
+│  └───────────────────────────────┘  │
+│  ┌───────────────────────────────┐  │
+│  │  Amazon.co.uk     −£67.99    │  │
+│  │  17 May 2026                 │  │
+│  └───────────────────────────────┘  │
+│  ┌───────────────────────────────┐  │
+│  │  Starbucks         −£5.85    │  │
+│  │  17 May 2026                 │  │
+│  └───────────────────────────────┘  │
 │                                     │
-│  ┌─────────────────────────────────┐│
-│  │ [+] Order New Card              ││  ← outlined #4C662B, full-width, add_card icon
+│  ┌─────────────────────────────────┐│  ← Order New Card: outlined, #4C662B, full-width
+│  │  [+] Order New Card             ││  ← label_large, 14dp vertical padding, 12dp radius
 │  └─────────────────────────────────┘│
 │                                     │
 ├─────────────────────────────────────┤
-│ 🏠    🏦    ↗    💳    ···          │  ← Cards tab active, #DCE7C8 indicator
+│  [🏠] [⚖] [💸] [💳*] [•••]        │  ← Cards tab active (#DCE7C8 pill indicator)
 └─────────────────────────────────────┘
 ```
 
 **Layout notes:**
-- Carousel: horizontal scroll with 16dp gap between cards, 4dp horizontal padding, 8dp vertical. Cards snap to start alignment. Second card partially visible to communicate scrollability.
-- Debit Visa card: 320×200dp, radius 20, elevation 8, #4C662B fill. PAN title_large/white/monospace/spacing 4. Name body_large/#CDEDA3/uppercase. Active chip: #4C662B bg, label_small/white.
-- Business Mastercard: same dimensions, #386663 fill. Frozen chip: #C5C8BA bg, label_small/white.
-- Quick-action row: 4 buttons evenly spaced, each vertical-orientation (icon 20dp above label_small). Freeze/Limit/PIN use #4C662B. Report uses #BA1A1A.
-- Transaction cards: white fill, 12dp radius, 1dp elevation, 16dp horizontal/14dp vertical padding, 8dp vertical gap. Amount body_large/#BA1A1A. Date body_small/#44483D.
-- Order New Card: outlined, full-width, radius 12, 14dp vertical padding, add_card icon leading, label_large.
+- Card chips: 320×200dp, 20dp radius, elevation 8. Debit Visa: #4C662B solid (diagonal gradient start+end same). Business Mastercard: #386663 diagonal gradient.
+- Carousel snaps at start alignment. Second card partially visible (~15dp) to hint scrollability.
+- Quick action buttons: vertical layout (icon above label), 8dp padding, 48dp minimum touch target. Report Lost uses #BA1A1A for both icon (report_problem) and text — visually communicates destructive action.
+- View PIN button requires `BiometricAuthUseCase` — displayed as enabled but triggers biometric prompt on tap.
+- Transaction rows: all amounts in #BA1A1A (debit sign). No credit transactions in the card-linked demo data.
+- Order New Card button: full-width, outlined style (#4C662B border + text), add_card leading icon. Visible in content, empty, and implicitly accessible in error state via nav.
 
 ---
 
@@ -115,28 +114,29 @@
 
 ```
 ┌─────────────────────────────────────┐
-│  My Cards                  [🔔]     │
+│  My Cards              [🔔]         │
 ├─────────────────────────────────────┤
 │                                     │
-│  My Cards                           │
 │                                     │
-│         credit_card_off             │  ← 48dp icon, #44483D, centered
 │                                     │
-│         No cards yet                │  ← body_large, #1A1C16, centered
+│       [credit_card_off icon]        │  ← icon-2xl (48dp), #44483D
 │                                     │
-│  Order your first Mifos card        │
-│   to start making payments          │  ← body_medium, #44483D, centered
+│         No cards yet                │  ← title_large, #1A1C16, center
+│                                     │
+│   Order your first Mifos card to    │  ← body_medium, #44483D, center
+│   start making payments             │
 │                                     │
 │  ┌─────────────────────────────────┐│
-│  │ [+] Order New Card              ││  ← outlined #4C662B, full-width
+│  │  [+] Order New Card             ││  ← outlined, #4C662B, full-width
 │  └─────────────────────────────────┘│
 │                                     │
+│                                     │
 ├─────────────────────────────────────┤
-│ 🏠    🏦    ↗    💳    ···          │
+│  [🏠] [⚖] [💸] [💳*] [•••]        │
 └─────────────────────────────────────┘
 ```
 
-**Layout notes:** Empty state icon + title + description centered. Order New Card button full-width with 16dp horizontal margin.
+**Layout notes:** Empty state centres vertically in available space between top bar and bottom nav. Only cards_title (in top bar) and order_new_card_button visible per state model. Icon uses icon-2xl token (48dp). No carousel, quick actions, or transaction rows shown.
 
 ---
 
@@ -144,45 +144,56 @@
 
 ```
 ┌─────────────────────────────────────┐
-│  My Cards                  [🔔]     │
+│  My Cards              [🔔]         │
 ├─────────────────────────────────────┤
 │                                     │
-│  My Cards                           │
 │                                     │
-│           cloud_off                 │  ← 48dp icon, #44483D, centered
 │                                     │
-│      Unable to load cards           │  ← body_large, #1A1C16, centered
-│   Check your connection             │
-│       and try again                 │  ← body_medium, #44483D, centered
+│         [cloud_off icon]            │  ← icon-2xl (48dp), #44483D
 │                                     │
-│          [ Try Again ]              │  ← filled #4C662B, centered
+│       Unable to load cards          │  ← title_large, #1A1C16, center
+│                                     │
+│   Check your connection and         │  ← body_medium, #44483D, center
+│   try again                         │
+│                                     │
+│         [   Retry   ]               │  ← outlined button, #4C662B, center
+│                                     │
 │                                     │
 ├─────────────────────────────────────┤
-│ 🏠    🏦    ↗    💳    ···          │
+│  [🏠] [⚖] [💸] [💳*] [•••]        │
 └─────────────────────────────────────┘
 ```
 
-**Layout notes:** Error icon + message + retry centered vertically below title.
+**Layout notes:** Error state mirrors empty state layout. Only cards_title visible per state model (show_retry_button: true). Retry triggers `RetryLoad` event → re-calls `GET /obp/v5.1.0/cards`.
 
 ---
 
 ## Design Checklist (Figma / Stitch)
 
-- [ ] M3 TopAppBar with "My Cards" title and notifications_outlined action
-- [ ] Screen title headline_large in #4C662B with 4dp bottom padding
-- [ ] Card carousel: horizontal scroll, 16dp gap, snap to start, cards 320×200dp
-- [ ] Debit Visa card: #4C662B fill, radius 20, elevation 8 — PAN white monospace, name #CDEDA3 uppercase
-- [ ] Active chip: #4C662B fill, #FFFFFF text, radius 12, label_small
-- [ ] Business Mastercard: #386663 fill — same layout; Frozen chip #C5C8BA fill
-- [ ] Mastercard logo 48×30dp, Visa logo 56×20dp, both white tinted
-- [ ] Quick-action row: 4 evenly-spaced vertical text buttons; Report Lost uses #BA1A1A
-- [ ] "Card Transactions" header title_large/#1A1C16/weight 600
-- [ ] Transaction rows: white fill, 12dp radius, 1dp elevation; all amounts in #BA1A1A body_large
-- [ ] Transaction dates body_small/#44483D
-- [ ] "Order New Card" outlined full-width button, #4C662B, add_card icon leading
-- [ ] Skeleton carousel proportional to card dimensions; 3 transaction row skeletons
-- [ ] Empty state: credit_card_off 48dp icon, descriptive copy, order button
-- [ ] Error state: cloud_off 48dp icon, copy, retry button
-- [ ] Bottom nav visible, Cards tab active indicator #DCE7C8
-- [ ] All text Outfit typeface; minimum 14sp body content
-- [ ] 16dp horizontal content padding throughout
+- [ ] Top app bar: "My Cards" title, no back arrow, notifications_outlined action icon (24dp), #F9FAEF background, 56dp height
+- [ ] cards_title in top bar: headline_large (Outfit 32sp/400), #4C662B
+- [ ] Card carousel: horizontal scroll, 16dp item gap, snap-start, cards 320×200dp
+- [ ] Debit Visa chip: #4C662B solid fill (gradient start=end), 20dp radius, elevation 8, 24dp padding
+- [ ] Card number: title_large (Outfit 22sp), #FFFFFF, monospace font, 4dp letter-spacing
+- [ ] Cardholder name: body_large (Outfit 16sp), #CDEDA3, uppercase transform
+- [ ] Active chip: #4C662B fill, 12dp radius, #FFFFFF label_small text
+- [ ] Visa logo: 56×20dp, fit scale, #FFFFFF tint — bottom-right of card
+- [ ] Mastercard chip: #386663 gradient fill, 20dp radius, elevation 8
+- [ ] Frozen chip: #C5C8BA fill (#outline_variant token), 12dp radius, #FFFFFF label_small text
+- [ ] Mastercard logo: 48×30dp, fit scale — bottom-right of card (no tint)
+- [ ] Quick actions row: 4 vertical-layout text buttons, space-evenly, 48dp min touch target
+- [ ] Freeze/Set Limit/View PIN icons+text: #4C662B. Report Lost icon+text: #BA1A1A
+- [ ] Card Transactions header: title_large (22sp), #1A1C16, weight 600, 20dp top padding
+- [ ] Transaction rows: #FFFFFF fill, 12dp radius, elevation 1, 1dp #F9FAEF border, 16dp horizontal/14dp vertical padding
+- [ ] All transaction amounts: body_large (16sp), #BA1A1A, weight 500 (all are debits in this feature)
+- [ ] Transaction dates: body_small (12sp), #44483D
+- [ ] Order New Card: outlined, #4C662B border + text, full-width, 12dp radius, 14dp vertical padding, add_card leading icon, label_large
+- [ ] Empty state: credit_card_off icon 48dp (#44483D), "No cards yet" title_large center, message body_medium center, Order New Card CTA
+- [ ] Error state: cloud_off icon 48dp (#44483D), "Unable to load cards" title_large center, message + Retry outlined button
+- [ ] Skeleton shimmer: #E1E4D5 blocks (surface_variant), 200ms short4 animation, 20dp radius for card skeleton, 12dp for txn skeletons
+- [ ] Bottom nav: 5 tabs, Cards active with #DCE7C8 indicator pill, 80dp height, Outfit labels
+- [ ] All text: Outfit typeface. Touch targets 48dp minimum. 16dp horizontal content padding.
+
+---
+
+_Generated by /idea export | 2026-05-30_

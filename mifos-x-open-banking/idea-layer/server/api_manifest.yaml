@@ -1,11 +1,13 @@
 # server/api_manifest.yaml — OBP API manifest for mifos-x-open-banking
 # Generated 2026-05-25 by /idea sync STEP 4g
+# Updated 2026-05-30 by /idea sync STEP 4g — registered 6 screens, added field_officer+pfm groups
 # API: Open Bank Project Sandbox — https://apisandbox.openbankproject.com
 
 schema_version: "1.0"
-generated_at: "2026-05-25"
+generated_at: "2026-05-30"
 base_url: "https://apisandbox.openbankproject.com/obp"
 default_version: "v4.0.0"
+version_policy: multi  # screens legitimately use v3-v7 OBP endpoints; default_version is the baseline
 auth_scheme: "DirectLogin"
 sandbox_bank_id: "rbs" # OBP sandbox default
 
@@ -26,7 +28,7 @@ api_groups:
 
   - id: accounts
     name: Accounts
-    screens: [home, accounts, account-detail]
+    screens: [home, accounts, account-detail, consumer-home]
     spec_file: "server/apis/accounts.yaml"
     endpoints:
       - method: GET
@@ -40,6 +42,15 @@ api_groups:
       - method: GET
         path: "/v4.0.0/banks/{bank_id}/balances"
         description: "Get balances for all accounts"
+      - method: GET
+        path: "/v4.0.0/my/accounts"
+        description: "Fetch all consumer accounts for balance summary card (consumer-home)"
+        response_fields: [accounts, id, bank_id, label, balance.amount, balance.currency]
+      - method: GET
+        path: "/v4.0.0/banks/{bank_id}/accounts/{account_id}/transactions"
+        description: "Fetch recent transactions for consumer-home activity section (limit=3)"
+        query_params: [limit, sort_direction]
+        response_fields: [transactions, id, this_account.id, other_account.holder.name, details.type, details.description, details.posted, details.value.amount, details.value.currency]
 
   - id: transactions
     name: Transactions
@@ -100,7 +111,7 @@ api_groups:
 
   - id: standing_orders
     name: Standing Orders
-    screens: [standing-orders, standing-order-detail]
+    screens: [standing-orders, standing-order-detail, standing-order-edit]
     spec_file: "server/apis/standing-orders.yaml"
     endpoints:
       - method: GET
@@ -130,10 +141,15 @@ api_groups:
         path: "/v4.0.0/banks/{bank_id}/accounts/{account_id}/standing-orders/{standing_order_id}"
         description: "Soft-delete (cancel) a standing order"
         spec_file: "server/apis/standing-orders-detail.yaml"
+      - method: PUT
+        path: "/v4.0.0/banks/{bank_id}/accounts/{account_id}/owner/standing-order/{standing_order_id}"
+        description: "Update mutable fields of an existing standing order (standing-order-edit) — beneficiary and currency are immutable"
+        request_fields: [amount_value, amount_currency, when.frequency, when.start_date, when.final_date]
+        response_fields: [id, bank_id, account_id, counterparty.name, amount_value, amount_currency, when.frequency, when.start_date, when.final_date, active]
 
   - id: direct_debits
     name: Direct Debits
-    screens: [direct-debits]
+    screens: [direct-debits, direct-debit-detail]
     spec_file: "server/apis/direct-debits.yaml"
     endpoints:
       - method: GET
@@ -143,6 +159,14 @@ api_groups:
       - method: DELETE
         path: "/v3.0.0/banks/{bank_id}/accounts/{account_id}/direct-debits/{direct_debit_id}"
         description: "Cancel direct debit mandate"
+      - method: GET
+        path: "/v7.0.0/banks/{bank_id}/accounts/{account_id}/standing-orders/{standing_order_id}"
+        description: "Retrieve full details of a specific direct debit mandate / standing order (direct-debit-detail)"
+        response_fields: [standing_order_id, bank_id, account_id, counterparty_name, amount_value, amount_currency, frequency, start_date, next_payment_date, status, reference, recent_payments]
+      - method: DELETE
+        path: "/v7.0.0/banks/{bank_id}/accounts/{account_id}/standing-orders/{standing_order_id}"
+        description: "Cancel an active direct debit mandate / standing order (direct-debit-detail)"
+        response_fields: [success, message]
 
   - id: fx
     name: Foreign Exchange
@@ -310,3 +334,44 @@ api_groups:
         auth_required: true
         request_fields: [current_password, new_password]
         response_fields: [message]
+
+  - id: field_officer
+    name: "Field Officer Dashboard & Agent Registration"
+    screens: [fo-dashboard, agent-registration]
+    spec_file: "server/apis/field-officer.yaml"
+    endpoints:
+      - method: GET
+        path: "/v5.1.0/banks/{bank_id}/customers"
+        description: "List customers assigned to field officer — used in fo-dashboard customer roster"
+        query_params: [bankId]
+        response_fields: [customers, customer_id, legal_name, kyc_status, customer_number, mobile_phone_number, date_of_birth]
+      - method: GET
+        path: "/v5.1.0/banks/{bank_id}/account-applications"
+        description: "List pending account applications for field officer review — fo-dashboard"
+        query_params: [bankId]
+        response_fields: [account_applications, account_application_id, product_code, proposed_balance, status, date_of_application]
+      - method: POST
+        path: "/v5.1.0/banks/{bank_id}/agents"
+        description: "Register the field officer as an OBP bank agent (agent-registration)"
+        request_fields: [legal_name, mobile_phone_number, agent_number, currency, supported_services, commission_rate]
+        response_fields: [agent_id, is_pending_agent, is_confirmed_agent, legal_name, mobile_phone_number]
+
+  - id: pfm
+    name: "Personal Finance Management"
+    screens: [pfm-dashboard]
+    spec_file: "server/apis/pfm.yaml"
+    endpoints:
+      - method: GET
+        path: "/v6.0.0/my/personal-data-fields"
+        description: "Read PFM budgets stored as personal data fields (convention: pfm_budget_<categoryId>)"
+        response_fields: [personal_data_fields, name, value]
+      - method: POST
+        path: "/v6.0.0/my/personal-data-fields"
+        description: "Create or update a PFM budget entry by category"
+        request_fields: [name, value]
+        response_fields: [name, value]
+      - method: GET
+        path: "/v6.0.0/my/accounts/{account_id}/transactions"
+        description: "Fetch transactions for PFM analysis — filtered by date range for selected period"
+        query_params: [from_date, to_date, limit]
+        response_fields: [transactions, transaction_id, this_account, details, value]

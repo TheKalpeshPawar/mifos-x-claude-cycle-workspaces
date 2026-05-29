@@ -11,35 +11,51 @@
 
 **Auth:** DirectLogin
 **Tag:** Cards
-**Trigger:** Screen entry — fetches all cards for the authenticated user across all banks
+**Trigger:** `loadDashboardData()` on screen entry / `RetryLoad` event
 
-### Path Parameters
+Fetches all payment cards associated with the authenticated user across all connected banks. The CardsViewModel maps each card to a display chip in the horizontal carousel. `enabled: false` cards (e.g. Co-op Visa) are still shown in the carousel but rendered with the Frozen status chip. Card network (`card_network`) determines which logo image is displayed (Visa / Mastercard).
 
-_None — returns all cards for the authenticated user._
+### Request
+
+No request body. Authentication token supplied via `DirectLogin` header.
+
+| Header        | Value                                              |
+|---------------|----------------------------------------------------|
+| Authorization | DirectLogin token="eyJhbGci..."                    |
 
 ### Response Fields
 
-| Field                     | Type           | Description                                                 |
-|---------------------------|----------------|-------------------------------------------------------------|
-| cards                     | List\<Object\> | All user payment cards                                      |
-| cards[].id                | String         | Unique card identifier                                      |
-| cards[].bank_id           | String         | Bank that issued the card (e.g. "gb.mifos")                |
-| cards[].bank_card_number  | String         | Masked PAN (e.g. "************4521")                       |
-| cards[].name_on_card      | String         | Cardholder name (e.g. "Alex Johnson")                      |
-| cards[].card_type         | String         | "debit" or "credit"                                         |
-| cards[].card_description  | String         | Display description (e.g. "Mifos Debit Visa")              |
-| cards[].card_network      | String         | "VISA" or "MASTERCARD"                                      |
-| cards[].allows            | List\<String\> | Permitted operations (e.g. "credit", "debit", "cash")      |
-| cards[].enabled           | Boolean        | false when card is frozen or disabled                       |
+| Field            | Type           | Description                                                    |
+|------------------|----------------|----------------------------------------------------------------|
+| cards            | List\<Card\>   | Array of card objects for the authenticated user               |
+| id               | String         | Unique card identifier (e.g. "card-kcb-visa-mwangi-001")      |
+| bank_id          | String         | Bank identifier (e.g. "kcb-ke", "equity-bank-ke", "coop-bank-ke") |
+| bank_card_number | String         | Masked card number (e.g. "4111 **** **** 3421")               |
+| name_on_card     | String         | Cardholder name in uppercase (e.g. "JOHN K MWANGI")           |
+| card_type        | String         | "DEBIT" or "CREDIT"                                            |
+| card_description | String         | Human-readable card product name                               |
+| card_network     | String         | "VISA" or "MASTERCARD" — drives logo asset selection           |
+| allows           | List\<String\> | Permitted capabilities: "credit", "debit", "cash_withdrawal", "online_payment", "contactless", "installment" |
+| enabled          | Boolean        | true = Active; false = Frozen / disabled                       |
+
+### Demo Data
+
+| id                              | bank_id          | bank_card_number    | name_on_card    | card_type | card_network | enabled |
+|---------------------------------|------------------|---------------------|-----------------|-----------|--------------|---------|
+| card-kcb-visa-mwangi-001        | kcb-ke           | 4111 **** **** 3421 | JOHN K MWANGI   | DEBIT     | VISA         | true    |
+| card-equity-mastercard-mwangi-002 | equity-bank-ke | 5399 **** **** 8812 | JOHN K MWANGI   | CREDIT    | MASTERCARD   | true    |
+| card-coop-visa-mwangi-003       | coop-bank-ke     | 4532 **** **** 6670 | JOHN K MWANGI   | DEBIT     | VISA         | false   |
+
+**Note:** The UI layer (ui.yaml) renders the carousel with the "Alex Johnson" / "•••• 4521" and "•••• 7834" demo values for visual fidelity — these differ from the OBP API demo data above which reflects realistic Kenyan open-banking data (JOHN K MWANGI). The CardsViewModel maps `name_on_card` directly from the API response at runtime.
 
 ### Error Codes
 
-| Code | Message                    | UI Behaviour                                         |
-|------|----------------------------|------------------------------------------------------|
-| 400  | INVALID_BANK_ID            | Show error state with retry button                   |
-| 401  | USER_NOT_LOGGED_IN         | Redirect to login screen                             |
-| 403  | INSUFFICIENT_AUTHORISATION | Show error state with support contact message        |
+| Code | Message                    | UI Handling                              |
+|------|----------------------------|------------------------------------------|
+| 400  | INVALID_BANK_ID            | Show error state, log to analytics       |
+| 401  | USER_NOT_LOGGED_IN         | Navigate to login screen                 |
+| 403  | INSUFFICIENT_AUTHORISATION | Show error state with support contact CTA|
 
 ---
 
-_Generated by /idea export | 2026-05-29_
+_Generated by /idea export | 2026-05-30_

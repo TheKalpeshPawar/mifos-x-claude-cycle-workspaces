@@ -1,0 +1,162 @@
+schema_version: "4.0"
+api_group: atm
+name: "ATM & Branches API"
+base_url: "https://apisandbox.openbankproject.com/obp"
+auth_scheme: DirectLogin
+generated_at: "2026-05-30"
+
+endpoints:
+
+  - id: list_atms
+    method: GET
+    path: "/v5.1.0/banks/{bank_id}/atms"
+    description: "List ATMs for the bank, optionally filtered by proximity. Supports latitude/longitude query params and a limit cap (default 10)."
+    auth_required: true
+    request_schema:
+      - field: latitude
+        type: Double
+        required: false
+        validation: "Decimal degrees −90 to +90. Used for proximity ordering when provided with longitude."
+      - field: longitude
+        type: Double
+        required: false
+        validation: "Decimal degrees −180 to +180. Used for proximity ordering when provided with latitude."
+      - field: limit
+        type: Integer
+        required: false
+        validation: "Maximum number of ATMs to return. Default: 10. Max: 100."
+    response_schema:
+      - field: id
+        type: String
+        nullable: false
+        description: "Unique ATM identifier"
+      - field: bank_id
+        type: String
+        nullable: false
+        description: "Bank identifier that owns this ATM"
+      - field: name
+        type: String
+        nullable: false
+        description: "ATM display name / location label"
+      - field: address
+        type: Object
+        nullable: false
+        description: "Physical address object with line1, line2, city, county, state, postcode, country_code"
+      - field: location
+        type: Object
+        nullable: false
+        description: "Geographic coordinates object"
+      - field: location.latitude
+        type: Double
+        nullable: false
+        description: "Latitude in decimal degrees"
+      - field: location.longitude
+        type: Double
+        nullable: false
+        description: "Longitude in decimal degrees"
+      - field: open_24_hours
+        type: Boolean
+        nullable: false
+        description: "Whether this ATM operates around the clock"
+      - field: cash_withdrawal_national_amount
+        type: String
+        nullable: true
+        description: "Daily cash withdrawal limit in the national currency; null if unlimited"
+      - field: supported_languages
+        type: "List<String>"
+        nullable: false
+        description: "ISO 639-1 language codes for ATM UI languages"
+      - field: services
+        type: "List<String>"
+        nullable: false
+        description: "Available services e.g. CASH_WITHDRAWAL, BALANCE_ENQUIRY, DEPOSITS, FOREIGN_CURRENCY"
+      - field: meta
+        type: Object
+        nullable: true
+        description: "Additional metadata including license info"
+    error_codes:
+      - code: 401
+        message: "USER_NOT_LOGGED_IN"
+        retry: false
+      - code: 403
+        message: "INSUFFICIENT_AUTHORISATION"
+        retry: false
+      - code: 404
+        message: "BANK_NOT_FOUND"
+        retry: false
+      - code: 500
+        message: "OBP_SERVER_ERROR"
+        retry: true
+
+  - id: list_branches
+    method: GET
+    path: "/v5.1.0/banks/{bank_id}/branches"
+    description: "List bank branches, optionally filtered by proximity using latitude/longitude query params."
+    auth_required: true
+    request_schema:
+      - field: latitude
+        type: Double
+        required: false
+        validation: "Decimal degrees −90 to +90. Used for proximity ordering when provided with longitude."
+      - field: longitude
+        type: Double
+        required: false
+        validation: "Decimal degrees −180 to +180. Used for proximity ordering when provided with latitude."
+    response_schema:
+      - field: id
+        type: String
+        nullable: false
+        description: "Unique branch identifier"
+      - field: bank_id
+        type: String
+        nullable: false
+        description: "Bank identifier that owns this branch"
+      - field: name
+        type: String
+        nullable: false
+        description: "Branch display name"
+      - field: address
+        type: Object
+        nullable: false
+        description: "Physical address object with line1, line2, city, county, state, postcode, country_code"
+      - field: location
+        type: Object
+        nullable: false
+        description: "Geographic coordinates object"
+      - field: location.latitude
+        type: Double
+        nullable: false
+        description: "Latitude in decimal degrees"
+      - field: location.longitude
+        type: Double
+        nullable: false
+        description: "Longitude in decimal degrees"
+      - field: lobby
+        type: Object
+        nullable: true
+        description: "Lobby opening hours structured by day with open/close times"
+      - field: drive_up
+        type: Object
+        nullable: true
+        description: "Drive-up window hours structured by day with open/close times"
+      - field: branch_routings
+        type: "List<BranchRouting>"
+        nullable: false
+        description: "Branch routing information (scheme + address, e.g. SORT_CODE: 040004)"
+      - field: meta
+        type: Object
+        nullable: true
+        description: "Additional metadata including license info"
+    error_codes:
+      - code: 401
+        message: "USER_NOT_LOGGED_IN"
+        retry: false
+      - code: 403
+        message: "INSUFFICIENT_AUTHORISATION"
+        retry: false
+      - code: 404
+        message: "BANK_NOT_FOUND"
+        retry: false
+      - code: 500
+        message: "OBP_SERVER_ERROR"
+        retry: true

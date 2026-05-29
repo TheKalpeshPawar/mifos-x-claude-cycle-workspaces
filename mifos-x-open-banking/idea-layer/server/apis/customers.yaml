@@ -1,0 +1,922 @@
+schema_version: "4.0"
+api_group: customers
+name: "Customers (Field Officer) API"
+base_url: "https://apisandbox.openbankproject.com/obp"
+auth_scheme: DirectLogin
+generated_at: "2026-05-30"
+
+endpoints:
+
+  - id: search_customers
+    method: GET
+    path: "/v5.1.0/banks/{bank_id}/customers"
+    description: "Search customers by query parameters — supports name, phone, email, customer number, or status filter. Used on customer-search screen roster."
+    auth_required: true
+    request_schema:
+      - field: query
+        type: String
+        required: false
+        validation: "Free-text search term matched against legal_name and customer_number."
+      - field: status
+        type: String
+        required: false
+        validation: "Filter by KYC status — e.g. 'VERIFIED', 'PENDING', 'REJECTED'."
+      - field: customer_number
+        type: String
+        required: false
+        validation: "Exact match on customer_number field."
+      - field: email
+        type: String
+        required: false
+        validation: "Exact match on email — must be valid RFC 5321 format."
+      - field: mobile_phone_number
+        type: String
+        required: false
+        validation: "E.164 format preferred (e.g. +254712345678)."
+      - field: legal_name
+        type: String
+        required: false
+        validation: "Partial match allowed. Max 255 characters."
+    response_schema:
+      - field: customers
+        type: "List<Customer>"
+        nullable: false
+        description: "Ordered list of matching customer records."
+      - field: customer_id
+        type: String
+        format: UUID
+        nullable: false
+        description: "OBP-assigned unique customer identifier."
+      - field: legal_name
+        type: String
+        nullable: false
+        description: "Full legal name of the customer."
+      - field: kyc_status
+        type: String
+        nullable: false
+        description: "Current KYC status — VERIFIED | PENDING | REJECTED | INCOMPLETE."
+      - field: customer_number
+        type: String
+        nullable: false
+        description: "Bank-assigned customer reference number."
+      - field: mobile_phone_number
+        type: String
+        nullable: true
+        description: "Primary mobile number in E.164 format."
+      - field: email
+        type: String
+        format: email
+        nullable: true
+        description: "Registered email address."
+      - field: date_of_birth
+        type: String
+        format: ISO-8601 date
+        nullable: true
+        description: "Customer date of birth (YYYY-MM-DD)."
+      - field: last_ok_date
+        type: String
+        format: ISO-8601 Instant
+        nullable: true
+        description: "Timestamp of last successful KYC verification."
+    error_codes:
+      - code: 400
+        message: "INVALID_SEARCH_PARAMETERS"
+        retry: false
+      - code: 401
+        message: "USER_NOT_LOGGED_IN"
+        retry: false
+      - code: 403
+        message: "INSUFFICIENT_AUTHORISATION"
+        retry: false
+      - code: 500
+        message: "OBP_SERVER_ERROR"
+        retry: true
+
+  - id: search_customers_by_phone
+    method: POST
+    path: "/v4.0.0/banks/{bank_id}/search/customers/mobile-phone-number"
+    description: "Search customer by exact mobile phone number match. Returns list of matching customers."
+    auth_required: true
+    request_schema:
+      - field: mobile_phone_number
+        type: String
+        required: true
+        validation: "E.164 format required (e.g. +254712345678). Exact match only."
+    response_schema:
+      - field: customers
+        type: "List<Customer>"
+        nullable: false
+        description: "Customers matching the provided mobile number."
+      - field: customer_id
+        type: String
+        format: UUID
+        nullable: false
+        description: "OBP-assigned unique customer identifier."
+      - field: legal_name
+        type: String
+        nullable: false
+        description: "Full legal name of the customer."
+    error_codes:
+      - code: 400
+        message: "INVALID_PHONE_NUMBER"
+        retry: false
+      - code: 401
+        message: "USER_NOT_LOGGED_IN"
+        retry: false
+      - code: 403
+        message: "INSUFFICIENT_AUTHORISATION"
+        retry: false
+      - code: 500
+        message: "OBP_SERVER_ERROR"
+        retry: true
+
+  - id: get_customer
+    method: GET
+    path: "/v5.1.0/banks/{bank_id}/customers/{customer_id}"
+    description: "Retrieve full customer record including KYC status, credit details, and demographic information. Used on customer-detail and customer-profile screens."
+    auth_required: true
+    request_schema: []
+    response_schema:
+      - field: customer_id
+        type: String
+        format: UUID
+        nullable: false
+        description: "OBP-assigned unique customer identifier."
+      - field: bank_id
+        type: String
+        nullable: false
+        description: "Bank identifier (e.g. 'rbs')."
+      - field: customer_number
+        type: String
+        nullable: false
+        description: "Bank-assigned customer reference number."
+      - field: legal_name
+        type: String
+        nullable: false
+        description: "Full legal name."
+      - field: title
+        type: String
+        nullable: true
+        description: "Salutation title — Mr, Mrs, Dr, etc."
+      - field: name_suffix
+        type: String
+        nullable: true
+        description: "Name suffix — Jr, Sr, II, etc."
+      - field: mobile_phone_number
+        type: String
+        nullable: true
+        description: "Primary mobile in E.164 format."
+      - field: email
+        type: String
+        format: email
+        nullable: true
+        description: "Registered email address."
+      - field: national_id_number
+        type: String
+        nullable: true
+        description: "Government-issued national ID number."
+      - field: tax_pin
+        type: String
+        nullable: true
+        description: "Tax identification number."
+      - field: date_of_birth
+        type: String
+        format: ISO-8601 date
+        nullable: true
+        description: "Date of birth (YYYY-MM-DD)."
+      - field: relationship_status
+        type: String
+        nullable: true
+        description: "Marital/relationship status — SINGLE | MARRIED | DIVORCED | WIDOWED."
+      - field: dependants
+        type: Int
+        nullable: true
+        description: "Number of financial dependants."
+      - field: dob_of_dependants
+        type: "List<String>"
+        nullable: true
+        description: "List of dependants' dates of birth (ISO-8601 date)."
+      - field: highest_education_attained
+        type: String
+        nullable: true
+        description: "Highest completed education level."
+      - field: employment_status
+        type: String
+        nullable: true
+        description: "Employment status — EMPLOYED | SELF_EMPLOYED | UNEMPLOYED | RETIRED | STUDENT."
+      - field: credit_rating
+        type: CreditRating
+        nullable: true
+        description: "Object containing rating and source."
+      - field: credit_limit
+        type: Amount
+        nullable: true
+        description: "Object containing amount and currency."
+      - field: face_image
+        type: FaceImage
+        nullable: true
+        description: "Object containing url and date."
+      - field: address
+        type: Address
+        nullable: true
+        description: "Object containing line1, line2, city, county, state, postcode, country_code."
+      - field: employment_details
+        type: EmploymentDetails
+        nullable: true
+        description: "Object containing employer_name, title, employment_type, start_date."
+      - field: kyc_status
+        type: Boolean
+        nullable: false
+        description: "True if KYC is complete and verified."
+      - field: last_ok_date
+        type: String
+        format: ISO-8601 Instant
+        nullable: true
+        description: "Timestamp of last successful KYC verification."
+      - field: branch_id
+        type: String
+        nullable: true
+        description: "Assigned branch identifier."
+    error_codes:
+      - code: 401
+        message: "USER_NOT_LOGGED_IN"
+        retry: false
+      - code: 403
+        message: "INSUFFICIENT_AUTHORISATION"
+        retry: false
+      - code: 404
+        message: "CUSTOMER_NOT_FOUND"
+        retry: false
+      - code: 500
+        message: "OBP_SERVER_ERROR"
+        retry: true
+
+  - id: get_customer_accounts
+    method: GET
+    path: "/v5.1.0/banks/{bank_id}/customers/{customer_id}/accounts"
+    description: "List all accounts linked to this customer. Used on customer-detail screen to show account balances and types."
+    auth_required: true
+    request_schema: []
+    response_schema:
+      - field: accounts
+        type: "List<Account>"
+        nullable: false
+        description: "Ordered list of accounts linked to this customer."
+      - field: id
+        type: String
+        nullable: false
+        description: "Account identifier."
+      - field: label
+        type: String
+        nullable: false
+        description: "Human-readable account label."
+      - field: number
+        type: String
+        nullable: true
+        description: "Account number displayed to customer."
+      - field: bank_id
+        type: String
+        nullable: false
+        description: "Bank identifier."
+      - field: account_type
+        type: String
+        nullable: false
+        description: "Account product type — CHECKING | SAVINGS | LOAN | INVESTMENT."
+      - field: balance
+        type: Amount
+        nullable: false
+        description: "Object containing amount and currency."
+      - field: account_routings
+        type: "List<AccountRouting>"
+        nullable: false
+        description: "List of routing schemes — IBAN, SWIFT, local sort code."
+    error_codes:
+      - code: 401
+        message: "USER_NOT_LOGGED_IN"
+        retry: false
+      - code: 403
+        message: "INSUFFICIENT_AUTHORISATION"
+        retry: false
+      - code: 404
+        message: "CUSTOMER_NOT_FOUND"
+        retry: false
+      - code: 500
+        message: "OBP_SERVER_ERROR"
+        retry: true
+
+  - id: get_customer_account_links
+    method: GET
+    path: "/v5.0.0/banks/{bank_id}/customers/{customer_id}/customer-account-links"
+    description: "Retrieve account-customer relationship links for a customer. Used to enumerate accounts associated on customer-detail."
+    auth_required: true
+    request_schema: []
+    response_schema:
+      - field: links
+        type: "List<CustomerAccountLink>"
+        nullable: false
+        description: "Account-customer link records."
+      - field: customer_account_link_id
+        type: String
+        format: UUID
+        nullable: false
+        description: "Unique identifier for this link."
+      - field: account_id
+        type: String
+        nullable: false
+        description: "Linked account identifier."
+      - field: customer_id
+        type: String
+        format: UUID
+        nullable: false
+        description: "Customer identifier."
+      - field: relationship_type
+        type: String
+        nullable: false
+        description: "Relationship type — OWNER | JOINT | BENEFICIARY."
+    error_codes:
+      - code: 401
+        message: "USER_NOT_LOGGED_IN"
+        retry: false
+      - code: 403
+        message: "INSUFFICIENT_AUTHORISATION"
+        retry: false
+      - code: 404
+        message: "CUSTOMER_NOT_FOUND"
+        retry: false
+      - code: 500
+        message: "OBP_SERVER_ERROR"
+        retry: true
+
+  - id: create_customer
+    method: POST
+    path: "/v5.0.0/banks/{bank_id}/customers"
+    description: "Create a new individual customer record (step 1 of customer-onboarding flow). Returns the new customer_id for subsequent onboarding steps."
+    auth_required: true
+    request_schema:
+      - field: legal_name
+        type: String
+        required: true
+        validation: "Full legal name. Min 2, max 255 characters."
+      - field: mobile_phone_number
+        type: String
+        required: true
+        validation: "E.164 format (e.g. +254712345678). Must be unique per bank."
+      - field: email
+        type: String
+        required: false
+        validation: "Valid RFC 5321 email. Max 254 characters."
+      - field: date_of_birth
+        type: String
+        required: true
+        validation: "ISO-8601 date (YYYY-MM-DD). Must be ≥18 years ago."
+      - field: title
+        type: String
+        required: false
+        validation: "One of: Mr | Mrs | Ms | Dr | Prof | Rev."
+      - field: relationship_status
+        type: String
+        required: false
+        validation: "One of: SINGLE | MARRIED | DIVORCED | WIDOWED."
+      - field: employment_status
+        type: String
+        required: false
+        validation: "One of: EMPLOYED | SELF_EMPLOYED | UNEMPLOYED | RETIRED | STUDENT."
+      - field: credit_rating
+        type: CreditRating
+        required: false
+        validation: "Object with rating (String) and source (String)."
+      - field: credit_limit
+        type: Amount
+        required: false
+        validation: "Object with amount (String, numeric) and currency (ISO-4217 3-letter code)."
+      - field: face_image
+        type: FaceImage
+        required: false
+        validation: "Object with url (HTTPS) and date (ISO-8601)."
+      - field: branch_id
+        type: String
+        required: false
+        validation: "Valid branch identifier within the bank."
+    response_schema:
+      - field: customer_id
+        type: String
+        format: UUID
+        nullable: false
+        description: "OBP-assigned unique customer identifier — required for subsequent onboarding steps."
+      - field: legal_name
+        type: String
+        nullable: false
+        description: "Confirmed legal name stored."
+      - field: customer_number
+        type: String
+        nullable: false
+        description: "Bank-assigned customer reference number."
+      - field: customer_type
+        type: String
+        nullable: false
+        description: "INDIVIDUAL for this endpoint."
+      - field: kyc_status
+        type: Boolean
+        nullable: false
+        description: "False on creation — KYC steps complete this."
+    error_codes:
+      - code: 400
+        message: "INVALID_CUSTOMER_DATA"
+        retry: false
+      - code: 400
+        message: "INVALID_DATE_OF_BIRTH"
+        retry: false
+      - code: 401
+        message: "USER_NOT_LOGGED_IN"
+        retry: false
+      - code: 403
+        message: "INSUFFICIENT_AUTHORISATION"
+        retry: false
+      - code: 409
+        message: "CUSTOMER_ALREADY_EXISTS"
+        retry: false
+      - code: 500
+        message: "OBP_SERVER_ERROR"
+        retry: true
+
+  - id: create_corporate_customer
+    method: POST
+    path: "/v5.1.0/banks/{bank_id}/customers"
+    description: "Create a new corporate/business customer record (corporate-onboarding screen). Variant of create_customer with corporate type payload."
+    auth_required: true
+    request_schema:
+      - field: legal_name
+        type: String
+        required: true
+        validation: "Registered company legal name. Max 255 characters."
+      - field: mobile_phone_number
+        type: String
+        required: true
+        validation: "Corporate contact number in E.164 format."
+      - field: email
+        type: String
+        required: false
+        validation: "Corporate email. Valid RFC 5321. Max 254 characters."
+      - field: customer_type
+        type: String
+        required: true
+        validation: "Must be CORPORATE."
+      - field: title
+        type: String
+        required: false
+        validation: "Corporate designation e.g. Ltd, Inc, PLC."
+      - field: employment_status
+        type: String
+        required: false
+        validation: "For corporate: INCORPORATED | PARTNERSHIP | SOLE_TRADER."
+      - field: credit_rating
+        type: CreditRating
+        required: false
+        validation: "Object with rating and source."
+      - field: credit_limit
+        type: Amount
+        required: false
+        validation: "Object with amount and ISO-4217 currency."
+      - field: branch_id
+        type: String
+        required: false
+        validation: "Assigned branch identifier."
+    response_schema:
+      - field: customer_id
+        type: String
+        format: UUID
+        nullable: false
+        description: "OBP-assigned unique customer identifier."
+      - field: legal_name
+        type: String
+        nullable: false
+        description: "Confirmed legal name stored."
+      - field: customer_number
+        type: String
+        nullable: false
+        description: "Bank-assigned customer reference number."
+      - field: customer_type
+        type: String
+        nullable: false
+        description: "CORPORATE for this endpoint."
+      - field: kyc_status
+        type: Boolean
+        nullable: false
+        description: "False on creation."
+    error_codes:
+      - code: 400
+        message: "VALIDATION_FAILED"
+        retry: false
+      - code: 401
+        message: "USER_NOT_LOGGED_IN"
+        retry: false
+      - code: 403
+        message: "INSUFFICIENT_AUTHORISATION"
+        retry: false
+      - code: 409
+        message: "CUSTOMER_ALREADY_EXISTS"
+        retry: false
+      - code: 500
+        message: "OBP_SERVER_ERROR"
+        retry: true
+
+  - id: update_customer
+    method: PUT
+    path: "/v5.1.0/banks/{bank_id}/customers/{customer_id}"
+    description: "Update mutable customer fields on customer-profile screen. Returns the updated customer record."
+    auth_required: true
+    request_schema:
+      - field: legal_name
+        type: String
+        required: false
+        validation: "Full legal name. Min 2, max 255 characters."
+      - field: mobile_phone_number
+        type: String
+        required: false
+        validation: "E.164 format. Must be unique per bank."
+      - field: email
+        type: String
+        required: false
+        validation: "Valid RFC 5321 email. Max 254 characters."
+      - field: title
+        type: String
+        required: false
+        validation: "One of: Mr | Mrs | Ms | Dr | Prof | Rev."
+      - field: relationship_status
+        type: String
+        required: false
+        validation: "One of: SINGLE | MARRIED | DIVORCED | WIDOWED."
+      - field: dependants
+        type: Int
+        required: false
+        validation: "Non-negative integer. Max 20."
+      - field: highest_education_attained
+        type: String
+        required: false
+        validation: "Free text. Max 100 characters."
+      - field: employment_status
+        type: String
+        required: false
+        validation: "One of: EMPLOYED | SELF_EMPLOYED | UNEMPLOYED | RETIRED | STUDENT."
+      - field: credit_rating
+        type: CreditRating
+        required: false
+        validation: "Object with rating and source."
+      - field: credit_limit
+        type: Amount
+        required: false
+        validation: "Object with amount (String) and currency (ISO-4217)."
+      - field: face_image
+        type: FaceImage
+        required: false
+        validation: "Object with url (HTTPS) and date (ISO-8601)."
+      - field: branch_id
+        type: String
+        required: false
+        validation: "Valid branch identifier."
+    response_schema:
+      - field: customer_id
+        type: String
+        format: UUID
+        nullable: false
+        description: "Customer identifier (unchanged)."
+      - field: legal_name
+        type: String
+        nullable: false
+        description: "Updated legal name."
+      - field: last_ok_date
+        type: String
+        format: ISO-8601 Instant
+        nullable: true
+        description: "Updated last-ok timestamp."
+    error_codes:
+      - code: 400
+        message: "VALIDATION_FAILED"
+        retry: false
+      - code: 401
+        message: "USER_NOT_LOGGED_IN"
+        retry: false
+      - code: 403
+        message: "INSUFFICIENT_AUTHORISATION"
+        retry: false
+      - code: 404
+        message: "CUSTOMER_NOT_FOUND"
+        retry: false
+      - code: 500
+        message: "OBP_SERVER_ERROR"
+        retry: true
+
+  - id: add_customer_address
+    method: POST
+    path: "/v3.1.0/banks/{bank_id}/customers/{customer_id}/address"
+    description: "Add a physical address to a customer record (step 2 of customer-onboarding flow)."
+    auth_required: true
+    request_schema:
+      - field: line_1
+        type: String
+        required: true
+        validation: "Street address line 1. Max 255 characters."
+      - field: line_2
+        type: String
+        required: false
+        validation: "Street address line 2. Max 255 characters."
+      - field: line_3
+        type: String
+        required: false
+        validation: "Street address line 3. Max 255 characters."
+      - field: city
+        type: String
+        required: true
+        validation: "City name. Max 100 characters."
+      - field: county
+        type: String
+        required: false
+        validation: "County or district. Max 100 characters."
+      - field: state
+        type: String
+        required: false
+        validation: "State or province. Max 100 characters."
+      - field: postcode
+        type: String
+        required: true
+        validation: "Postal code. Max 20 characters."
+      - field: country_code
+        type: String
+        required: true
+        validation: "ISO-3166-1 alpha-2 country code (e.g. 'KE', 'GB')."
+      - field: tags
+        type: "List<String>"
+        required: false
+        validation: "Address tags — HOME | WORK | CORRESPONDENCE. At least one required if specified."
+      - field: status
+        type: String
+        required: false
+        validation: "One of: VERIFIED | UNVERIFIED. Defaults to UNVERIFIED."
+    response_schema:
+      - field: customer_address_id
+        type: String
+        format: UUID
+        nullable: false
+        description: "OBP-assigned address identifier."
+      - field: customer_id
+        type: String
+        format: UUID
+        nullable: false
+        description: "Parent customer identifier."
+      - field: line_1
+        type: String
+        nullable: false
+        description: "Stored address line 1."
+      - field: city
+        type: String
+        nullable: false
+        description: "Stored city."
+      - field: country_code
+        type: String
+        nullable: false
+        description: "ISO-3166-1 alpha-2 code."
+      - field: status
+        type: String
+        nullable: false
+        description: "VERIFIED or UNVERIFIED."
+      - field: insert_date
+        type: String
+        format: ISO-8601 Instant
+        nullable: false
+        description: "Timestamp address was added."
+    error_codes:
+      - code: 400
+        message: "INVALID_ADDRESS_DATA"
+        retry: false
+      - code: 401
+        message: "USER_NOT_LOGGED_IN"
+        retry: false
+      - code: 403
+        message: "INSUFFICIENT_AUTHORISATION"
+        retry: false
+      - code: 404
+        message: "CUSTOMER_NOT_FOUND"
+        retry: false
+      - code: 500
+        message: "OBP_SERVER_ERROR"
+        retry: true
+
+  - id: add_tax_residence
+    method: POST
+    path: "/v3.1.0/banks/{bank_id}/customers/{customer_id}/tax-residence"
+    description: "Record tax residence jurisdiction for a customer (step 3 of customer-onboarding flow)."
+    auth_required: true
+    request_schema:
+      - field: domain
+        type: String
+        required: true
+        validation: "Tax jurisdiction domain (e.g. 'KE', 'GB'). ISO-3166-1 alpha-2."
+      - field: tax_number
+        type: String
+        required: true
+        validation: "Tax identification number in that jurisdiction. Max 50 characters."
+    response_schema:
+      - field: tax_residence_id
+        type: String
+        format: UUID
+        nullable: false
+        description: "OBP-assigned tax residence identifier."
+      - field: customer_id
+        type: String
+        format: UUID
+        nullable: false
+        description: "Parent customer identifier."
+      - field: domain
+        type: String
+        nullable: false
+        description: "Tax jurisdiction."
+      - field: tax_number
+        type: String
+        nullable: false
+        description: "Tax identification number."
+    error_codes:
+      - code: 400
+        message: "INVALID_TAX_DATA"
+        retry: false
+      - code: 401
+        message: "USER_NOT_LOGGED_IN"
+        retry: false
+      - code: 403
+        message: "INSUFFICIENT_AUTHORISATION"
+        retry: false
+      - code: 404
+        message: "CUSTOMER_NOT_FOUND"
+        retry: false
+      - code: 500
+        message: "OBP_SERVER_ERROR"
+        retry: true
+
+  - id: add_customer_attribute
+    method: POST
+    path: "/v4.0.0/banks/{bank_id}/customers/{customer_id}/attribute"
+    description: "Add a custom attribute to a customer record (step 7 of customer-onboarding). Used for extended profile fields not in the core schema."
+    auth_required: true
+    request_schema:
+      - field: name
+        type: String
+        required: true
+        validation: "Attribute key name. Must be unique per customer. Max 50 characters, snake_case."
+      - field: type
+        type: String
+        required: true
+        validation: "One of: STRING | INTEGER | DOUBLE | DATE_WITH_DAY | BOOLEAN."
+      - field: value
+        type: String
+        required: true
+        validation: "Attribute value serialized as string. Must match declared type."
+    response_schema:
+      - field: customer_attribute_id
+        type: String
+        format: UUID
+        nullable: false
+        description: "OBP-assigned attribute identifier."
+      - field: customer_id
+        type: String
+        format: UUID
+        nullable: false
+        description: "Parent customer identifier."
+      - field: name
+        type: String
+        nullable: false
+        description: "Attribute key name."
+      - field: type
+        type: String
+        nullable: false
+        description: "Data type."
+      - field: value
+        type: String
+        nullable: false
+        description: "Stored value."
+    error_codes:
+      - code: 400
+        message: "INVALID_CUSTOMER_ATTRIBUTE"
+        retry: false
+      - code: 401
+        message: "USER_NOT_LOGGED_IN"
+        retry: false
+      - code: 403
+        message: "INSUFFICIENT_AUTHORISATION"
+        retry: false
+      - code: 404
+        message: "CUSTOMER_NOT_FOUND"
+        retry: false
+      - code: 500
+        message: "OBP_SERVER_ERROR"
+        retry: true
+
+  - id: link_user_to_customer
+    method: POST
+    path: "/v4.0.0/banks/{bank_id}/user_customer_links"
+    description: "Link an OBP user account to a customer record (step 8 of customer-onboarding). Grants the user access to this customer's accounts."
+    auth_required: true
+    request_schema:
+      - field: user_id
+        type: String
+        required: true
+        validation: "OBP user_id (UUID) of the user to link."
+      - field: customer_id
+        type: String
+        required: true
+        validation: "OBP customer_id (UUID) of the target customer."
+    response_schema:
+      - field: user_customer_link_id
+        type: String
+        format: UUID
+        nullable: false
+        description: "OBP-assigned link identifier."
+      - field: user_id
+        type: String
+        format: UUID
+        nullable: false
+        description: "Linked user identifier."
+      - field: customer_id
+        type: String
+        format: UUID
+        nullable: false
+        description: "Linked customer identifier."
+      - field: date_inserted
+        type: String
+        format: ISO-8601 Instant
+        nullable: false
+        description: "Timestamp the link was created."
+    error_codes:
+      - code: 400
+        message: "INVALID_USER_CUSTOMER_LINK"
+        retry: false
+      - code: 401
+        message: "USER_NOT_LOGGED_IN"
+        retry: false
+      - code: 403
+        message: "INSUFFICIENT_AUTHORISATION"
+        retry: false
+      - code: 404
+        message: "CUSTOMER_NOT_FOUND"
+        retry: false
+      - code: 404
+        message: "USER_NOT_FOUND"
+        retry: false
+      - code: 500
+        message: "OBP_SERVER_ERROR"
+        retry: true
+
+  - id: link_customer_to_account
+    method: POST
+    path: "/v5.0.0/banks/{bank_id}/customer-account-links"
+    description: "Link an existing customer to an account (step 10 of customer-onboarding). Completes the account-customer ownership relationship."
+    auth_required: true
+    request_schema:
+      - field: customer_id
+        type: String
+        required: true
+        validation: "OBP customer_id (UUID)."
+      - field: account_id
+        type: String
+        required: true
+        validation: "OBP account_id to link."
+      - field: relationship_type
+        type: String
+        required: true
+        validation: "One of: OWNER | JOINT | BENEFICIARY."
+    response_schema:
+      - field: customer_account_link_id
+        type: String
+        format: UUID
+        nullable: false
+        description: "OBP-assigned link identifier."
+      - field: customer_id
+        type: String
+        format: UUID
+        nullable: false
+        description: "Customer identifier."
+      - field: account_id
+        type: String
+        nullable: false
+        description: "Linked account identifier."
+      - field: relationship_type
+        type: String
+        nullable: false
+        description: "Relationship type stored."
+    error_codes:
+      - code: 400
+        message: "INVALID_CUSTOMER_ACCOUNT_LINK"
+        retry: false
+      - code: 401
+        message: "USER_NOT_LOGGED_IN"
+        retry: false
+      - code: 403
+        message: "INSUFFICIENT_AUTHORISATION"
+        retry: false
+      - code: 404
+        message: "CUSTOMER_NOT_FOUND"
+        retry: false
+      - code: 404
+        message: "ACCOUNT_NOT_FOUND"
+        retry: false
+      - code: 500
+        message: "OBP_SERVER_ERROR"
+        retry: true

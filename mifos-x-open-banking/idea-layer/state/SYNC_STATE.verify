@@ -1,0 +1,70 @@
+schema_version: "1.0"
+run_at: "2026-05-29T00:00:00Z"
+actor: claude
+command: /idea verify
+project: mifos-x/mifos-x-open-banking
+overall: fail
+checks_run: 67
+checks_passed: 61
+checks_failed: 2
+checks_warned: 2
+checks_skipped: 2
+# REMEDIATION (2026-05-30): resolved this session —
+#   • V1-RENDER-ARCHETYPE-DECLARED (27 screens) → top-level archetype: added (values from nested screens[])
+#   • RULE-LEGAL-DOCS-001 (8 sub-checks) → legal/ scaffolded (PRIVACY/TERMS/DATA_SAFETY/APP_PRIVACY + deploy/)
+#   • RULE-JOURNEY-001 J2 (6 features) → covered in consumer-{authentication,cards-financing,profile-settings} journeys
+#   • V1-FEATURES-SUM-MATCHES (warn) → FEATURES.md Core Banking header 9→11 + orphan rows merged into table
+#   • V1-PIPELINE-STATE-DESIGN-BLOCK (warn) → FALSE POSITIVE: capabilities.design-system IS fully populated
+#     (last_run+metrics+detail_ref); agent flagged the legacy top-level design_system: stitch-only block.
+# Remaining = 2 errors (stitch, BLOCKED ON QUOTA — Stitch daily limit exhausted 2026-05-30) + 2 warns
+#   (stitch-logs auto-created; products-prompts blocked on a screen-split design decision + same quota).
+# Errors/warns not fixable locally today; retry stitch after quota reset.
+
+# CORRECTION (2026-05-29): RULE-IDEA-SERVER-DATA-001 was MISFIRED in the original run.
+# This is a pure-KMP app that CONSUMES an external REST API (Open Bank Project) and owns
+# NO backend / NO database. Two independent gates require this rule to be SKIPPED:
+#   1. requires_capability: has_api — ZERO screens declare `has_api` (all declare only
+#      `capabilities: [has_ui]`). The original run inferred has_api from the presence of
+#      api.yaml siblings, which violates the capability-declaration contract.
+#   2. PROJECT_CONFIG.yaml has no `server.backends` block → whole-rule skip precondition
+#      (RULE-IDEA-SERVER-DATA-001 Enforcement line 145 / Evaluation line 168).
+# server/tables/ (owned DB schema) and apis↔flows 1:1 do NOT apply to an external-API
+# consumer. The OBP contracts under server/apis/ + api_manifest.yaml remain valid as
+# CLIENT contracts for Ktorfit codegen — they are not owned-backend artifacts.
+
+skipped:
+  - rule: RULE-IDEA-SERVER-DATA-001
+    sub_check: V1-TABLES-DIR
+    reason: "no owned backend — pure KMP consuming external OBP REST API; no has_api capability declared, no server.backends in PROJECT_CONFIG"
+  - rule: RULE-IDEA-SERVER-DATA-001
+    sub_check: V1-APIS-FLOWS-1TO1
+    reason: "no owned backend — apis↔flows 1:1 is an owned-backend completeness check; OBP contracts are external client contracts only"
+
+failures:
+  - rule: RULE-IDEA-SCAFFOLD-001
+    sub_check: V1-STITCH-LOGS-DIR
+    severity: warn
+    message: "idea-layer/state/stitch-logs/ was missing — auto-created"
+    fix_applied: true
+
+  - rule: RULE-STITCH-PROMPT-CANONICAL-001
+    sub_check: PC-PROMPTS-DIR
+    severity: warn
+    blocked_on: design-decision
+    message: "products screen prompts cannot be built — STN2 cap: all 4 states produce ~8189-char prompts (cap 8000). products/ui.yaml is 1553 lines / 79 components — far over typical. Needs the shrink ladder or a screen split (e.g. products-list + product-detail)."
+    fix_hint: "DESIGN DECISION: split products into list+detail OR trim components via /idea-enrich, then re-run stitch-prompt-build. (Generation also quota-blocked today.)"
+
+  - rule: RULE-STITCH-STATE-001
+    sub_check: V1-STITCH-NO-CANONICAL-4
+    severity: error
+    blocked_on: quota
+    message: "STITCH_STATUS.yaml tracks only 10 features — 35 untracked. Cannot generate the rest: Stitch daily quota exhausted (2026-05-30)."
+    fix_hint: "BLOCKED: Stitch daily API quota full. Retry after quota reset (next day) — run /idea-export-stitch for all features."
+
+  - rule: RULE-STITCH-STATE-001
+    sub_check: V1-STITCH-STATE-COMPLETE
+    severity: error
+    blocked_on: quota
+    message: "All 10 tracked stitch features show status: failed / screen_id: null. Prompts WERE built (prompt_sha present); SDK calls errored on Stitch daily quota exhaustion."
+    fix_hint: "BLOCKED: Stitch daily quota full. Retry after reset — re-run /idea-export-stitch --features <list>."
+

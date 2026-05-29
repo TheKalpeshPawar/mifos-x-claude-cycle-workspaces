@@ -38,8 +38,18 @@ tech:
 # ─── Backend ─────────────────────────────────────────────────────────────────
 # Primary backend: Open Bank Project (OBP) API v7.0.0
 # Secondary: Firebase (observability only — Crashlytics + Performance)
+#
+# IMPORTANT — EXTERNAL API CONSUMER, NO OWNED BACKEND:
+# This project OWNS NO backend and NO database. It is a pure KMP client that
+# CONSUMES the external OBP REST API. There is intentionally NO `server.backends`
+# block → RULE-IDEA-SERVER-DATA-001 (owned-DB checks: server/tables/, apis↔flows
+# 1:1) MUST SKIP entirely (rule Enforcement line 145 / Evaluation line 168).
+# The artifacts under idea-layer/server/apis/ + api_manifest.yaml are CLIENT
+# contracts for Ktorfit codegen — they are NOT owned-backend schema. Screens
+# declare `capabilities: [has_ui]` only; none declare `has_api` (no owned data layer).
 backend:
-  provider: rest                     # OBP REST API (not Supabase/Firebase data)
+  owned: false                       # no backend/DB built or owned by this project
+  provider: rest                     # OBP REST API (external, not Supabase/Firebase data)
   environments:
     local:
       api_base_url: https://apisandbox.openbankproject.com

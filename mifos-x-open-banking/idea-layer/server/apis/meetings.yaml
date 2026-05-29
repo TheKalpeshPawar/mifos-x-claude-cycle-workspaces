@@ -1,0 +1,165 @@
+schema_version: "4.0"
+api_group: meetings
+name: "Meetings API"
+base_url: "https://apisandbox.openbankproject.com/obp"
+auth_scheme: DirectLogin
+generated_at: "2026-05-30"
+
+endpoints:
+
+  - id: list_meetings
+    method: GET
+    path: "/v3.1.0/banks/{bank_id}/meetings"
+    description: "List all scheduled meetings for the authenticated bank staff member. Returns meeting IDs, provider details, purpose, and participant presence information."
+    auth_required: true
+    request_schema: []
+    response_schema:
+      - field: meeting_id
+        type: String
+        format: UUID
+        nullable: false
+        description: "Unique identifier for the meeting"
+      - field: provider
+        type: String
+        nullable: false
+        description: "Meeting provider identifier (e.g. 'SUMO', 'ZOOM')"
+      - field: provider_id
+        type: String
+        nullable: false
+        description: "Provider-specific meeting room or session ID"
+      - field: purpose_id
+        type: String
+        nullable: false
+        description: "Purpose category identifier for the meeting (e.g. 'MORTGAGE', 'KYC_REVIEW')"
+      - field: bank_id
+        type: String
+        nullable: false
+        description: "Bank identifier the meeting belongs to"
+      - field: present
+        type: "Map<String, Boolean>"
+        nullable: false
+        description: "Presence map — key is participant role (e.g. 'customer', 'staff'), value is whether they joined"
+      - field: keys
+        type: List<String>
+        nullable: false
+        description: "List of participant or metadata key names included in meeting context"
+      - field: values
+        type: List<String>
+        nullable: false
+        description: "Corresponding values for the keys array — aligned by index"
+    error_codes:
+      - code: 400
+        message: "BAD_REQUEST"
+        retry: false
+      - code: 401
+        message: "USER_NOT_LOGGED_IN"
+        retry: false
+      - code: 403
+        message: "INSUFFICIENT_AUTHORISATION"
+        retry: false
+      - code: 404
+        message: "CUSTOMER_NOT_FOUND"
+        retry: false
+      - code: 500
+        message: "OBP_SERVER_ERROR"
+        retry: true
+
+  - id: create_meeting
+    method: POST
+    path: "/v3.1.0/banks/{bank_id}/meetings"
+    description: "Schedule a new meeting with a customer. The creator object identifies the staff member; invitees list contains the customer and any co-attendees with their contact details and RSVP status."
+    auth_required: true
+    request_schema:
+      - field: provider
+        type: String
+        required: true
+        validation: "Supported provider identifier (e.g. 'SUMO'). Max 32 characters."
+      - field: provider_id
+        type: String
+        required: true
+        validation: "Provider-specific meeting room or session reference. Max 128 characters."
+      - field: date
+        type: String
+        required: true
+        validation: "ISO-8601 date-time string for the scheduled meeting start time (e.g. '2026-06-15T09:00:00Z')."
+      - field: date_string
+        type: String
+        required: true
+        validation: "Human-readable date string for display (e.g. 'Mon 15 Jun 2026, 09:00 UTC'). Max 64 characters."
+      - field: purpose_message
+        type: String
+        required: true
+        validation: "Description of the meeting purpose. Max 256 characters."
+      - field: creator.name
+        type: String
+        required: true
+        validation: "Full name of the staff member scheduling the meeting. Max 128 characters."
+      - field: creator.email_address
+        type: String
+        required: true
+        validation: "Valid RFC 5321 email address for the staff creator."
+      - field: creator.mobile_phone
+        type: String
+        required: false
+        validation: "E.164 phone number for the creator (e.g. '+254712345678')."
+      - field: invitees
+        type: "List<Invitee>"
+        required: true
+        validation: "Non-empty list of meeting invitees. Each invitee must have contact_details.name, contact_details.email_address, and status."
+      - field: invitees[].contact_details.name
+        type: String
+        required: true
+        validation: "Full name of the invitee. Max 128 characters."
+      - field: invitees[].contact_details.email_address
+        type: String
+        required: true
+        validation: "Valid email address for the invitee."
+      - field: invitees[].contact_details.mobile_phone
+        type: String
+        required: false
+        validation: "E.164 phone number for the invitee."
+      - field: invitees[].status
+        type: String
+        required: true
+        validation: "Initial RSVP status. Enum: PENDING, ACCEPTED, DECLINED."
+    response_schema:
+      - field: meeting_id
+        type: String
+        format: UUID
+        nullable: false
+        description: "Unique identifier for the newly created meeting"
+      - field: provider
+        type: String
+        nullable: false
+        description: "Meeting provider as submitted"
+      - field: provider_id
+        type: String
+        nullable: false
+        description: "Provider-specific meeting room or session ID as submitted"
+      - field: purpose_id
+        type: String
+        nullable: false
+        description: "Server-assigned purpose category identifier derived from purpose_message"
+      - field: bank_id
+        type: String
+        nullable: false
+        description: "Bank the meeting belongs to"
+    error_codes:
+      - code: 400
+        message: "VALIDATION_FAILED"
+        retry: false
+      - code: 400
+        message: "INVALID_DATE_FORMAT"
+        retry: false
+      - code: 401
+        message: "USER_NOT_LOGGED_IN"
+        retry: false
+      - code: 403
+        message: "INSUFFICIENT_AUTHORISATION"
+        retry: false
+      - code: 404
+        message: "CUSTOMER_NOT_FOUND"
+        retry: false
+      - code: 500
+        message: "OBP_SERVER_ERROR"
+        retry: true

@@ -1,0 +1,298 @@
+schema_version: "4.0"
+api_group: direct_debits
+name: "Direct Debits API"
+base_url: "https://apisandbox.openbankproject.com/obp"
+auth_scheme: DirectLogin
+generated_at: "2026-05-30"
+
+endpoints:
+
+  - id: list_direct_debits
+    method: GET
+    path: "/v3.0.0/banks/{bank_id}/accounts/{account_id}/direct-debits"
+    description: "List all direct debit mandates for the authenticated account."
+    auth_required: true
+    request_schema: []
+    response_schema:
+      - field: id
+        type: String
+        nullable: false
+        description: "Unique direct debit mandate identifier"
+      - field: bank_id
+        type: String
+        nullable: false
+        description: "Bank identifier"
+      - field: date_signed
+        type: String
+        format: ISO-8601 Instant
+        nullable: false
+        description: "Timestamp the mandate was authorised by the account holder"
+      - field: active
+        type: Boolean
+        nullable: false
+        description: "Whether the mandate is currently active"
+      - field: date_cancelled
+        type: "String?"
+        format: ISO-8601 Instant
+        nullable: true
+        description: "Cancellation timestamp; null if still active"
+    error_codes:
+      - code: 401
+        message: "USER_NOT_LOGGED_IN"
+        retry: false
+      - code: 403
+        message: "INSUFFICIENT_AUTHORISATION"
+        retry: false
+      - code: 404
+        message: "BANK_ACCOUNT_NOT_FOUND"
+        retry: false
+      - code: 500
+        message: "OBP_SERVER_ERROR"
+        retry: true
+
+  - id: get_direct_debits_v4
+    method: GET
+    path: "/v4.0.0/banks/{bank_id}/accounts/{account_id}/owner/direct-debits"
+    description: "Retrieve all direct debit mandates for the account using v4 owner endpoint."
+    auth_required: true
+    request_schema: []
+    response_schema:
+      - field: direct_debits
+        type: "List<DirectDebit>"
+        nullable: false
+        description: "Array of direct debit mandate objects"
+    error_codes:
+      - code: 401
+        message: "USER_NOT_LOGGED_IN"
+        retry: false
+      - code: 403
+        message: "INSUFFICIENT_AUTHORISATION"
+        retry: false
+      - code: 404
+        message: "BANK_ACCOUNT_NOT_FOUND"
+        retry: false
+      - code: 500
+        message: "OBP_SERVER_ERROR"
+        retry: true
+
+  - id: create_direct_debit
+    method: POST
+    path: "/v4.0.0/banks/{bank_id}/accounts/{account_id}/owner/direct-debit"
+    description: "Create a new direct debit mandate authorising recurring debits from this account."
+    auth_required: true
+    request_schema:
+      - field: start_date
+        type: String
+        required: true
+        validation: "ISO date YYYY-MM-DD; must be today or a future date."
+      - field: end_date
+        type: String
+        required: false
+        validation: "ISO date YYYY-MM-DD; must be after start_date if provided."
+      - field: to
+        type: Object
+        required: true
+        validation: "DirectDebitCounterparty object — counterparty_id or routing details required."
+      - field: amount_value
+        type: String
+        required: true
+        validation: "Positive numeric string representing the fixed debit amount; max 2 decimal places."
+      - field: amount_currency
+        type: String
+        required: true
+        validation: "ISO 4217 three-letter currency code."
+    response_schema:
+      - field: direct_debit_id
+        type: String
+        nullable: false
+        description: "Unique identifier of the newly created mandate"
+      - field: bank_id
+        type: String
+        nullable: false
+        description: "Bank identifier"
+      - field: account_id
+        type: String
+        nullable: false
+        description: "Account identifier"
+      - field: counterparty_id
+        type: String
+        nullable: false
+        description: "Counterparty (payee) identifier"
+      - field: amount_value
+        type: String
+        nullable: false
+        description: "Fixed debit amount as decimal string"
+      - field: amount_currency
+        type: String
+        nullable: false
+        description: "ISO 4217 currency code"
+      - field: start_date
+        type: String
+        format: YYYY-MM-DD
+        nullable: false
+        description: "First debit date"
+      - field: end_date
+        type: "String?"
+        format: YYYY-MM-DD
+        nullable: true
+        description: "Final debit date; null for open-ended mandates"
+      - field: active
+        type: Boolean
+        nullable: false
+        description: "Whether the mandate is active"
+    error_codes:
+      - code: 400
+        message: "INVALID_BANK_ID"
+        retry: false
+      - code: 400
+        message: "INVALID_DIRECT_DEBIT_VALUES"
+        retry: false
+      - code: 401
+        message: "USER_NOT_LOGGED_IN"
+        retry: false
+      - code: 403
+        message: "INSUFFICIENT_AUTHORISATION"
+        retry: false
+      - code: 404
+        message: "BANK_ACCOUNT_NOT_FOUND"
+        retry: false
+      - code: 500
+        message: "OBP_SERVER_ERROR"
+        retry: true
+
+  - id: cancel_direct_debit_v3
+    method: DELETE
+    path: "/v3.0.0/banks/{bank_id}/accounts/{account_id}/direct-debits/{direct_debit_id}"
+    description: "Cancel a direct debit mandate — v3 endpoint used from the mandate list screen."
+    auth_required: true
+    request_schema: []
+    response_schema:
+      - field: id
+        type: String
+        nullable: false
+        description: "Identifier of the cancelled mandate"
+      - field: active
+        type: Boolean
+        nullable: false
+        description: "false after cancellation"
+      - field: date_cancelled
+        type: String
+        format: ISO-8601 Instant
+        nullable: false
+        description: "Timestamp the cancellation was applied"
+    error_codes:
+      - code: 401
+        message: "USER_NOT_LOGGED_IN"
+        retry: false
+      - code: 403
+        message: "INSUFFICIENT_AUTHORISATION"
+        retry: false
+      - code: 404
+        message: "DIRECT_DEBIT_NOT_FOUND"
+        retry: false
+      - code: 500
+        message: "OBP_SERVER_ERROR"
+        retry: true
+
+  - id: get_mandate_detail
+    method: GET
+    path: "/v7.0.0/banks/{bank_id}/accounts/{account_id}/standing-orders/{standing_order_id}"
+    description: "Retrieve full details of a specific direct debit mandate / standing order (used on direct-debit-detail screen)."
+    auth_required: true
+    request_schema: []
+    response_schema:
+      - field: standing_order_id
+        type: String
+        nullable: false
+        description: "Unique mandate / standing order identifier"
+      - field: bank_id
+        type: String
+        nullable: false
+        description: "Bank identifier"
+      - field: account_id
+        type: String
+        nullable: false
+        description: "Account identifier"
+      - field: counterparty_name
+        type: String
+        nullable: false
+        description: "Display name of the originator / payee"
+      - field: amount_value
+        type: String
+        nullable: false
+        description: "Debit amount as decimal string"
+      - field: amount_currency
+        type: String
+        nullable: false
+        description: "ISO 4217 currency code"
+      - field: frequency
+        type: String
+        nullable: false
+        description: "Collection frequency: DAILY | WEEKLY | MONTHLY | YEARLY"
+      - field: start_date
+        type: String
+        format: YYYY-MM-DD
+        nullable: false
+        description: "First collection date"
+      - field: next_payment_date
+        type: String
+        format: YYYY-MM-DD
+        nullable: true
+        description: "Next scheduled collection; null if cancelled or expired"
+      - field: status
+        type: String
+        nullable: false
+        description: "ACTIVE | PAUSED | CANCELLED | EXPIRED"
+      - field: reference
+        type: String
+        nullable: false
+        description: "Mandate reference number / description visible on statement"
+      - field: recent_payments
+        type: "List<Payment>"
+        nullable: false
+        description: "Last 5 collected payment records with date, amount, and status"
+    error_codes:
+      - code: 401
+        message: "USER_NOT_LOGGED_IN"
+        retry: false
+      - code: 403
+        message: "INSUFFICIENT_AUTHORISATION"
+        retry: false
+      - code: 404
+        message: "MANDATE_NOT_FOUND"
+        retry: false
+      - code: 500
+        message: "OBP_SERVER_ERROR"
+        retry: true
+
+  - id: cancel_mandate
+    method: DELETE
+    path: "/v7.0.0/banks/{bank_id}/accounts/{account_id}/standing-orders/{standing_order_id}"
+    description: "Cancel an active direct debit mandate / standing order (used on direct-debit-detail screen)."
+    auth_required: true
+    request_schema: []
+    response_schema:
+      - field: success
+        type: Boolean
+        nullable: false
+        description: "true when the cancellation was accepted"
+      - field: message
+        type: String
+        nullable: false
+        description: "Human-readable confirmation message"
+    error_codes:
+      - code: 401
+        message: "USER_NOT_LOGGED_IN"
+        retry: false
+      - code: 403
+        message: "INSUFFICIENT_AUTHORISATION"
+        retry: false
+      - code: 404
+        message: "MANDATE_NOT_FOUND"
+        retry: false
+      - code: 500
+        message: "CANCEL_FAILED"
+        retry: true
+      - code: 500
+        message: "OBP_SERVER_ERROR"
+        retry: true

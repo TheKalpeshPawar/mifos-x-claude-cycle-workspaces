@@ -1,7 +1,7 @@
 # MOCKUP — Send Money
 
 **Archetype:** form
-**Shell:** Top app bar ("Send Money", back arrow, no actions). No bottom navigation bar.
+**Shell:** Top app bar ("Send Money", arrow_back navigation icon, no action icons). No bottom navigation bar.
 **Accent:** #4C662B (Earth-green). Typography: Outfit. Design system: M3.
 
 ---
@@ -10,93 +10,93 @@
 
 ```
 ┌─────────────────────────────────────┐
-│ ←  Send Money                       │  ← TopAppBar, back arrow
-│  ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━  │  ← Linear progress indicator
+│ ←  Send Money                       │  ← M3 TopAppBar, arrow_back icon, bg #F9FAEF
+│  ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━  │  ← Linear progress indicator, #4C662B
 ├─────────────────────────────────────┤
 │                                     │
-│  Send Money                         │  ← headline_large, #4C662B
+│  Send Money                         │  ← headline_large (32sp/400), #4C662B
 │                                     │
-│  ████████████████████████████████   │  ← Account selector skeleton
-│  ████████████████████████████████   │  ← Amount input skeleton
-│  ████████████████████████████████   │  ← Beneficiary search skeleton
+│  ████████████████████████████████   │  ← from_account_selector skeleton (#E1E4D5, r12)
+│  ████████████████████████████████   │  ← amount_input skeleton
+│  ████████████████████████████████   │  ← beneficiary_search skeleton
 │                                     │
-│  ████████████ ██████████ ██████████ │  ← Recent beneficiary chips skeleton
+│  ████████████████  ████████████████ │  ← recent beneficiary chips skeleton
 │                                     │
-│  ████████████████████████████████   │  ← Reference input skeleton
-│  ████████████████████████████████   │  ← Fee banner skeleton
+│  ████████████████████████████████   │  ← reference_input skeleton
+│  ████████████████████████████████   │  ← fee_estimate_banner skeleton
 │                                     │
 │  ┌─────────────────────────────┐    │
-│  │         Continue            │    │  ← Filled button, #4C662B, disabled
+│  │         Continue            │    │  ← Filled, #4C662B, disabled
 │  └─────────────────────────────┘    │
 │                                     │
 └─────────────────────────────────────┘
 ```
 
-**Layout notes:** Shimmer on account selector, amount, beneficiary search, recent chips, reference, fee banner. Continue disabled.
+**Layout notes:** Title visible immediately. Shimmer (#E1E4D5) on from_account_selector, amount_input, beneficiary_search, both recent beneficiary chips, reference_input, and fee_estimate_banner. Continue disabled. currency_selector and payment_type chips hidden during loading.
 
 ---
 
-## Screen: draft
+## Screen: draft / content
 
 ```
 ┌─────────────────────────────────────┐
-│ ←  Send Money                       │
+│ ←  Send Money                       │  ← TopAppBar, #F9FAEF bg
 ├─────────────────────────────────────┤
 │                                     │
-│  Send Money                         │  ← headline_large, #4C662B
+│  Send Money                         │  ← headline_large (32sp/400), #4C662B
 │                                     │
-│  From Account                       │
+│  From Account                       │  ← label_medium, #44483D
 │  ┌─────────────────────────────┐    │
-│  │ 🏦 Primary Checking — £4,250.00 ▾│ ← Outlined input, account_balance icon
-│  └─────────────────────────────┘    │  ← bg #F9FAEF, radius 12
+│  │🏦 Primary Checking—£4,250 ▾ │    │  ← account_balance + expand_more icons
+│  └─────────────────────────────┘    │  ← outlined, bg #F9FAEF, border #75796C, r12
+│                                     │    Demo: "Equity Jijenge Savings — *4521"
+│  Amount                             │  ← label_medium, #44483D
+│  ┌────────────────────┐  [GBP ▾]   │
+│  │ £    0.00          │             │  ← prefix "£", placeholder 0.00, r12
+│  └────────────────────┘             │  ← currency chip: filter, r8, min-h 44dp
 │                                     │
-│  Amount                             │
+│  To                                 │  ← label_medium, #44483D
 │  ┌─────────────────────────────┐    │
-│  │ £  [         0.00         ] │    │  ← Prefix "£", decimal keyboard, radius 12
-│  └─────────────────────────────┘    │
-│  [GBP ▾]                            │  ← Currency chip, radius 8, min 44dp
-│                                     │
-│  To                                 │
-│  ┌─────────────────────────────┐    │
-│  │ 🔍 Search beneficiary…      │    │  ← Search icon, placeholder, radius 12
-│  └─────────────────────────────┘    │
-│                                     │
-│  ┌──────────────┐ ┌────────────────┐│  ← Recent beneficiary chips
-│  │  John Smith  │ │ Sarah Williams ││  ← #CDEDA3 bg, radius 12
-│  │  Barclays UK │ │   HSBC UK      ││
-│  └──────────────┘ └────────────────┘│
-│                                     │
-│  Reference                          │
-│  ┌─────────────────────────────┐    │
-│  │ Payment for invoice #1234   │    │  ← Placeholder, max 35 chars, radius 12
-│  └─────────────────────────────┘    │
-│  Max 35 characters                  │  ← helper text, body_small, #44483D
-│                                     │
-│  Payment Type                       │
-│  [●SEPA]  [Domestic]  [International]│ ← Chips: selected bg #4C662B text white; radius 20
-│                                     │
-│  ┌─────────────────────────────┐    │
-│  │ ℹ  Estimated fee: Free (SEPA)│   │  ← #CDEDA3 bg, #4C662B border, info icon
+│  │🔍 Search beneficiary…       │    │  ← leading search icon, r12
 │  └─────────────────────────────┘    │
 │                                     │
+│  ←─── horizontal scroll ────────→   │  ← recent_beneficiaries_row
+│  ┌───────────────┐ ┌─────────────┐  │
+│  │ John Smith    │ │Sarah Williams│  │  ← #CDEDA3 bg, #CDEDA3 border, r12
+│  │ Barclays UK   │ │ HSBC UK     │  │  ← body_medium, name+bank 2-line layout
+│  └───────────────┘ └─────────────┘  │    Demo: Wycliffe Ochieng/KCB, Naomi Gitau/Co-op
+│                                     │
+│  Reference                          │  ← label_medium, #44483D
 │  ┌─────────────────────────────┐    │
-│  │         Continue            │    │  ← Filled #4C662B, disabled (form incomplete)
+│  │ Payment for invoice #1234   │    │  ← placeholder, max_length 35, r12
 │  └─────────────────────────────┘    │
+│  Max 35 characters                  │  ← helper, body_small (12sp), #75796C
+│                                     │
+│  Payment Type                       │  ← label_medium, #44483D
+│  [● SEPA]  [ Domestic]  [International] │
+│    ↑ selected: bg #4C662B, text #FFF    ← r20dp, filter chips, spacing 8dp
+│                                     │
+│  ┌─────────────────────────────┐    │
+│  │ ℹ  Estimated fee: Free (SEPA)│   │  ← bg #CDEDA3, border #4C662B 1dp, r8
+│  └─────────────────────────────┘    │  ← info_outline icon #4C662B, body_medium
+│                                     │
+│  ┌─────────────────────────────┐    │
+│  │           Continue          │    │  ← filled, bg #4C662B, text #FFF, r12
+│  └─────────────────────────────┘    │  ← full width, label_large, disabled
 │                                     │
 └─────────────────────────────────────┘
 ```
 
 **Layout notes:**
-- 16dp horizontal content padding.
-- All inputs use bg #F9FAEF, border outline color, radius 12.
-- Account selector: leading account_balance icon + trailing expand_more icon.
-- Beneficiary search: leading search icon.
-- Currency chip: right-aligned next to amount input, min-height 44dp.
-- Recent beneficiaries: horizontal scroll, #CDEDA3 bg chips with name + bank sub-label.
-- Reference helper text below field.
-- Payment type chips: horizontal row, SEPA selected by default.
-- Fee banner: full-width, info_outline icon, #CDEDA3 bg, #4C662B border 1dp.
-- Continue: full-width, pill-like radius 12, disabled until all required fields filled.
+- 16dp horizontal content padding throughout.
+- All outlined inputs: bg #F9FAEF, border #75796C (outline), radius 12dp, height 56dp.
+- from_account_selector: leading account_balance icon + trailing expand_more — pre-filled with first account. Demo data: "Equity Jijenge Savings — *4521 / KES 87,430.50".
+- currency_selector chip floats right of amount_input in a horizontal row; min-height 44dp (⚠ below 48dp M3 minimum — verify padding compensation in implementation).
+- Recent beneficiary chips: horizontal scroll, 12dp spacing, #CDEDA3 bg, radius 12dp. Component labels: John Smith (Barclays UK) / Sarah Williams (HSBC UK). Current demo data maps to: Wycliffe Ochieng (KCB) / Naomi Gitau (Co-op Bank) — chips are dynamic; component IDs remain the same.
+- Reference helper text: body_small (12sp/400), #75796C, placed 4dp below input.
+- Payment type chips: horizontal row, spacing 8dp; SEPA default selected — bg #4C662B, text #FFFFFF; unselected chips have outline style.
+- Fee banner: full-width, info_outline icon left, padding 16×12dp, radius 8dp, #4C662B border 1dp.
+- Continue: full-width, radius 12dp, disabled until selectedAccountId + amount + beneficiaryId are non-empty.
 
 ---
 
@@ -105,19 +105,24 @@
 ```
 ┌─────────────────────────────────────┐
 │ ←  Send Money                       │
-│  ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━  │  ← Linear progress indicator
+│  ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━  │  ← Linear progress indicator, #4C662B
 ├─────────────────────────────────────┤
-│  [All form fields as in draft]      │
-│  [Inputs disabled — greyed out]     │
+│  Send Money                         │
+│  [from_account_selector — filled]   │
+│  [amount_input — filled]  [GBP ▾]  │
+│  [beneficiary_search — filled]      │
+│  [reference_input — filled]         │
+│  [Payment type chips — disabled]    │
+│  [fee_estimate_banner]              │
 │                                     │
 │  ┌─────────────────────────────┐    │
-│  │   ⟳  Validating…           │    │  ← Loading spinner in button
-│  └─────────────────────────────┘    │
+│  │   ⟳   Validating…          │    │  ← Circular progress in button, text grey
+│  └─────────────────────────────┘    │  ← bg #4C662B, full width
 │                                     │
 └─────────────────────────────────────┘
 ```
 
-**Layout notes:** All inputs greyed out. Continue button shows circular progress indicator text "Validating…".
+**Layout notes:** All inputs show as disabled/greyed (surface_variant fill). Linear progress at top of screen. Continue button shows CircularProgressIndicator replacing label text. Recent beneficiary chips hidden (same as validating state in ui.yaml).
 
 ---
 
@@ -128,35 +133,43 @@
 │ ←  Send Money                       │
 ├─────────────────────────────────────┤
 │  Send Money                         │
-│  [Account selector — ok]            │
+│                                     │
+│  From Account                       │
+│  ┌─────────────────────────────┐    │
+│  │🏦 Primary Checking — £4,250 ▾│   │  ← OK — no error on account
+│  └─────────────────────────────┘    │
 │                                     │
 │  Amount                             │
 │  ┌─────────────────────────────┐    │
-│  │ £  [     0.00          ]    │    │  ← Border #BA1A1A (error state)
+│  │ £   0.00                    │    │  ← Border #BA1A1A (error state)
 │  └─────────────────────────────┘    │
-│  ⚠ Please enter a valid amount      │  ← error text, body_small, #BA1A1A
+│  ⚠ Please enter a valid amount      │  ← body_small (12sp), #BA1A1A
 │    greater than £0.01               │
 │                                     │
 │  To                                 │
 │  ┌─────────────────────────────┐    │
 │  │ 🔍                          │    │  ← Border #BA1A1A
 │  └─────────────────────────────┘    │
-│  ⚠ Please select a valid            │  ← error text, body_small, #BA1A1A
+│  ⚠ Please select a valid            │  ← body_small, #BA1A1A
 │    beneficiary                      │
 │                                     │
-│  ┌─────────────────────────────┐    │
-│  │ ⚠ Could not process payment │    │  ← Error banner, error_outline icon
-│  │   Check connection. [Retry] │    │  ← body_medium + text-button Retry
-│  └─────────────────────────────┘    │
+│  [Payment type chips — visible]     │
+│  [fee_estimate_banner]              │
 │                                     │
 │  ┌─────────────────────────────┐    │
-│  │         Continue            │    │  ← Disabled
+│  │ ⚠ Could not process payment │    │  ← error_outline icon, title_sm, #1A1C16
+│  │   Check your connection and │    │
+│  │   try again.    [ Retry ]   │    │  ← text button, #4C662B
+│  └─────────────────────────────┘    │  ← error_container bg #FFDAD6, r8
+│                                     │
+│  ┌─────────────────────────────┐    │
+│  │           Continue          │    │  ← Filled #4C662B, disabled
 │  └─────────────────────────────┘    │
 │                                     │
 └─────────────────────────────────────┘
 ```
 
-**Layout notes:** Field-level errors show below the relevant input with #BA1A1A border on the field. Network error banner shows above Continue with inline Retry action.
+**Layout notes:** Field-level errors show directly below the errored input with #BA1A1A border on the field and error_container (#FFDAD6) highlight. Network error banner uses error_outline icon and inline Retry text button. Continue remains disabled until errors are resolved.
 
 ---
 
@@ -167,39 +180,62 @@
 │ ←  Send Money                       │
 ├─────────────────────────────────────┤
 │  Send Money                         │
-│  [Account selector]                 │
-│  [Amount input + GBP chip]          │
-│  [Beneficiary search]               │
 │                                     │
+│  From Account                       │
 │  ┌─────────────────────────────┐    │
-│  │  No beneficiaries available.│    │  ← body_medium, #44483D
-│  │  Add a beneficiary first.   │    │
+│  │🏦 Equity Jijenge Savings ▾  │    │  ← Accounts loaded OK
+│  └─────────────────────────────┘    │
+│                                     │
+│  Amount                             │
+│  ┌──────────────┐  [GBP ▾]         │
+│  │ £  0.00      │                   │
+│  └──────────────┘                   │
+│                                     │
+│  To                                 │
+│  ┌─────────────────────────────┐    │
+│  │ 🔍 Search beneficiary…      │    │
 │  └─────────────────────────────┘    │
 │                                     │
 │  ┌─────────────────────────────┐    │
-│  │         Continue            │    │  ← Disabled
+│  │  No beneficiaries available │    │  ← body_medium, #1A1C16, center
+│  │  to send money to. Add a    │    │
+│  │  beneficiary first.         │    │  ← body_small, #44483D
+│  └─────────────────────────────┘    │
+│                                     │
+│  ┌─────────────────────────────┐    │
+│  │           Continue          │    │  ← Filled #4C662B, disabled
 │  └─────────────────────────────┘    │
 │                                     │
 └─────────────────────────────────────┘
 ```
 
-**Layout notes:** No recent beneficiary chips row. Empty state message replaces the chips. Continue disabled.
+**Layout notes:** No recent_beneficiaries_row or chips rendered. Empty state message block replaces the chips area. reference_input, payment_type_selector, and fee_estimate_banner also hidden in this state (per ui.yaml empty state visible_components). Continue disabled.
 
 ---
 
 ## Design Checklist (Figma / Stitch)
 
-- [ ] M3 TopAppBar with back navigation only; linear progress on loading/validating
-- [ ] "From Account" outlined input: leading account_balance icon + trailing expand_more, bg #F9FAEF
-- [ ] Amount input: "£" prefix, decimal keyboard type, radius 12
-- [ ] Currency chip: "GBP ▾", min-height 44dp, right-aligned row with amount
-- [ ] Beneficiary search: leading search icon, placeholder text
-- [ ] Recent beneficiary chips: #CDEDA3 bg, radius 12, 2-line (name + bank)
-- [ ] Reference input: max 35 chars, helper text below
-- [ ] Payment type chips: SEPA selected (#4C662B bg + white text), radius 20dp
-- [ ] Fee estimate banner: #CDEDA3 bg, #4C662B border + info icon
-- [ ] Continue button: full-width, radius 12, #4C662B — disabled until form complete
-- [ ] Error state: #BA1A1A border on errored fields + error text below + network error banner
-- [ ] Loading: shimmer on account, amount, beneficiary, recent chips, reference, fee banner
-- [ ] No bottom navigation bar — focused form flow
-- [ ] 16dp horizontal content padding; 8dp spacing between form elements
+- [ ] M3 TopAppBar — arrow_back navigation icon only, no action icons; bg #F9FAEF; title "Send Money" (title_large)
+- [ ] Linear progress indicator (#4C662B) at top of screen during loading and validating states
+- [ ] "Send Money" headline: Outfit headline_large (32sp/400), #4C662B, sm bottom padding
+- [ ] "From Account" outlined input: account_balance leading icon + expand_more trailing; bg #F9FAEF; radius 12dp; border #75796C
+- [ ] Amount input: "£" prefix text, placeholder "0.00", decimal keyboard type, radius 12dp; height 56dp
+- [ ] Currency chip ("GBP ▾"): filter chip style, radius 8dp, min-height 44dp, right-aligned in amount row
+- [ ] "To" beneficiary search: leading search icon, placeholder "Search beneficiary or enter account...", radius 12dp
+- [ ] Recent beneficiary chips: horizontal scroll row, spacing 12dp; each chip bg #CDEDA3, border #CDEDA3 1dp, radius 12dp, padding 12×8dp; 2-line (name + bank)
+- [ ] Reference input: placeholder "Payment for invoice #1234", max 35 chars, helper text "Max 35 characters" below (body_small #75796C)
+- [ ] Payment type chips (SEPA / Domestic / International): horizontal row spacing 8dp; SEPA selected default — bg #4C662B, text #FFFFFF; others unselected outline; radius 20dp
+- [ ] Fee estimate banner: bg #CDEDA3, border #4C662B 1dp, radius 8dp, info_outline icon #4C662B; content "Estimated fee: Free (SEPA)"
+- [ ] Continue button: full-width, bg #4C662B, text #FFFFFF, label_large (14sp/500), radius 12dp, padding_vertical 16dp; disabled until required fields filled
+- [ ] Loading: shimmer (#E1E4D5) on account selector, amount, beneficiary search, recent chips, reference, fee banner
+- [ ] Error fields: border #BA1A1A; error text body_small #BA1A1A directly below field
+- [ ] Network error banner: error_outline icon, #FFDAD6 bg, radius 8dp, inline Retry text button #4C662B
+- [ ] Empty state: no chips row, no reference/payment-type/fee-banner; message "No beneficiaries available..."
+- [ ] No bottom navigation bar — focused form flow (shell.bottom_nav: false)
+- [ ] 16dp horizontal content padding; 8dp vertical spacing between form sections
+- [ ] All text: Outfit typeface. Touch targets 48dp minimum (check currency chip at 44dp)
+- [ ] Dark mode: primary #B2D188, primary_container #354E16, background #12140E
+
+---
+
+_Generated by /idea export | 2026-05-30_

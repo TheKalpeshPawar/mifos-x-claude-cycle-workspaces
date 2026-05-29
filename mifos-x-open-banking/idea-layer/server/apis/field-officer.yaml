@@ -1,0 +1,186 @@
+schema_version: "4.0"
+api_group: field_officer
+name: "Field Officer Dashboard & Agent Registration API"
+base_url: "https://apisandbox.openbankproject.com/obp"
+auth_scheme: DirectLogin
+generated_at: "2026-05-30"
+
+endpoints:
+
+  - id: get_fo_customers
+    method: GET
+    path: "/v5.1.0/banks/{bank_id}/customers"
+    description: "List all customers assigned to the authenticated field officer. Used to populate the customer roster on the fo-dashboard screen. Supports filtering by bankId."
+    auth_required: true
+    request_schema:
+      - field: bank_id
+        type: String
+        required: true
+        validation: "Path parameter. Valid OBP bank identifier (e.g. 'rbs'). Max 36 characters."
+    response_schema:
+      - field: customers
+        type: "List<Customer>"
+        nullable: false
+        description: "Array of customers associated with the field officer at this bank"
+      - field: customer_id
+        type: String
+        format: UUID
+        nullable: false
+        description: "Unique OBP customer identifier"
+      - field: legal_name
+        type: String
+        nullable: false
+        description: "Full legal name of the customer as registered"
+      - field: kyc_status
+        type: String
+        nullable: false
+        description: "Current KYC verification status. Enum: PENDING, VERIFIED, REJECTED, EXPIRED"
+      - field: customer_number
+        type: String
+        nullable: false
+        description: "Bank-assigned customer reference number"
+      - field: mobile_phone_number
+        type: String
+        nullable: true
+        description: "Customer's registered mobile phone number in E.164 format"
+      - field: date_of_birth
+        type: String
+        format: ISO-8601 Date
+        nullable: true
+        description: "Customer's date of birth (YYYY-MM-DD). May be null if not collected."
+    error_codes:
+      - code: 401
+        message: "USER_NOT_LOGGED_IN"
+        retry: false
+      - code: 403
+        message: "INSUFFICIENT_AUTHORISATION"
+        retry: false
+      - code: 404
+        message: "BANK_NOT_FOUND"
+        retry: false
+      - code: 500
+        message: "OBP_SERVER_ERROR"
+        retry: true
+
+  - id: get_fo_account_applications
+    method: GET
+    path: "/v5.1.0/banks/{bank_id}/account-applications"
+    description: "List pending account applications for field officer review. Displayed in the Applications section of the fo-dashboard. Supports filtering by bankId."
+    auth_required: true
+    request_schema:
+      - field: bank_id
+        type: String
+        required: true
+        validation: "Path parameter. Valid OBP bank identifier. Max 36 characters."
+    response_schema:
+      - field: account_applications
+        type: "List<AccountApplication>"
+        nullable: false
+        description: "Array of account applications submitted at this bank"
+      - field: account_application_id
+        type: String
+        format: UUID
+        nullable: false
+        description: "Unique identifier for the account application"
+      - field: product_code
+        type: String
+        nullable: false
+        description: "Code of the product the customer applied for (e.g. 'SAVINGS_BASIC')"
+      - field: proposed_balance
+        type: Amount
+        nullable: true
+        description: "Opening balance proposed by applicant — object with amount (String) and currency (String ISO-4217)"
+      - field: status
+        type: String
+        nullable: false
+        description: "Application processing status. Enum: PENDING, ACCEPTED, CANCELLED"
+      - field: date_of_application
+        type: String
+        format: ISO-8601 Instant
+        nullable: false
+        description: "Timestamp when the application was submitted"
+    error_codes:
+      - code: 401
+        message: "USER_NOT_LOGGED_IN"
+        retry: false
+      - code: 403
+        message: "INSUFFICIENT_AUTHORISATION"
+        retry: false
+      - code: 404
+        message: "BANK_NOT_FOUND"
+        retry: false
+      - code: 500
+        message: "OBP_SERVER_ERROR"
+        retry: true
+
+  - id: create_agent
+    method: POST
+    path: "/v5.1.0/banks/{bank_id}/agents"
+    description: "Register the authenticated field officer as an OBP bank agent for the specified bank. Used in the agent-registration screen. Agent starts in PENDING state pending admin confirmation."
+    auth_required: true
+    request_schema:
+      - field: legal_name
+        type: String
+        required: true
+        validation: "Full legal name of the agent. Max 128 characters. Must match government-issued ID."
+      - field: mobile_phone_number
+        type: String
+        required: true
+        validation: "E.164 format mobile number (e.g. '+254712345678'). Used for agent contact and OTP."
+      - field: agent_number
+        type: String
+        required: true
+        validation: "Bank-assigned agent reference number (e.g. 'AGT-2026-00142'). Max 32 characters. Must be unique per bank."
+      - field: currency
+        type: String
+        required: true
+        validation: "ISO-4217 currency code for the agent's operating currency. Supported values: EUR, GBP, KES, USD."
+      - field: supported_services
+        type: "List<String>"
+        required: true
+        validation: "Non-empty list of services the agent will offer. Valid values: cash_deposit, cash_withdrawal, account_opening, bill_payment, fund_transfer."
+      - field: commission_rate
+        type: Number
+        required: true
+        validation: "Commission percentage rate for agent transactions. Decimal between 0.01 and 10.00 (e.g. 1.5 = 1.5%)."
+    response_schema:
+      - field: agent_id
+        type: String
+        format: UUID
+        nullable: false
+        description: "Unique OBP identifier for the newly registered agent"
+      - field: is_pending_agent
+        type: Boolean
+        nullable: false
+        description: "True immediately after registration — agent is awaiting admin approval"
+      - field: is_confirmed_agent
+        type: Boolean
+        nullable: false
+        description: "True once an administrator has approved the agent; false until then"
+      - field: legal_name
+        type: String
+        nullable: false
+        description: "Agent's legal name as registered"
+      - field: mobile_phone_number
+        type: String
+        nullable: false
+        description: "Agent's registered mobile phone number"
+    error_codes:
+      - code: 400
+        message: "INVALID_BANK_ID"
+        retry: false
+      - code: 400
+        message: "INVALID_PHONE_NUMBER"
+        retry: false
+      - code: 401
+        message: "USER_NOT_LOGGED_IN"
+        retry: false
+      - code: 403
+        message: "INSUFFICIENT_AUTHORISATION"
+        retry: false
+      - code: 409
+        message: "AGENT_ALREADY_EXISTS"
+        retry: false
+      - code: 500
+        message: "OBP_SERVER_ERROR"
+        retry: true

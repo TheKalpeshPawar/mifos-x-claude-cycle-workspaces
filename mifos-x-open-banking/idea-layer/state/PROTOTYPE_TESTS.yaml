@@ -1,50 +1,58 @@
 # PROTOTYPE_TESTS.yaml — Navigation & Interaction Audit Results
-# Written by /idea verify on 2026-05-28T22:00:00Z
+# Written by /idea verify api-specs on 2026-05-30T00:00:00Z
 # Project: mifos-x/mifos-x-open-banking
-# Screens tested: 43 (includes 4 new: terms-of-service, privacy-policy, licenses, standing-order-detail)
+# Screens tested: 45 (full set — includes consumer-home, standing-order-edit added 2026-05-29)
 
 version: 1
-ran_at: "2026-05-28T22:00:00Z"
-ran_at: "2026-05-28T15:00:00Z"
+ran_at: "2026-05-30T00:00:00Z"
 
 passes:
   navigation:
-    total: 39
-    passed: 39
+    total: 45
+    passed: 45
     failed: []
-    note: "navigates_to targets: 0 broken across all 39 features"
+    note: "navigates_to targets: 0 broken across all 45 features"
 
   interaction:
-    total: 39
-    passed: 35
-    failed:
-      - "splash/ui.yaml -> consumer-home (invalid screen ID)"
-      - "login/ui.yaml -> consumer-home (invalid screen ID)"
-      - "about/ui.yaml -> terms-of-service, privacy-policy, licenses (screens don't exist)"
-      - "standing-orders/ui.yaml -> standing-order-detail (screen doesn't exist)"
+    total: 45
+    passed: 45
+    failed: []
+    note: "Previously-failing targets (consumer-home, standing-order-detail, terms-of-service, privacy-policy, licenses) now resolved — all screens exist"
 
   states:
-    total: 39
-    passed: 39
+    total: 45
+    passed: 43
     failed: []
-    note: "All 39 screens have required states per ui.yaml; 157 preview HTML rendered"
+    warned:
+      - "consumer-home: state coverage not verified (added 2026-05-29, needs /idea verify --render)"
+      - "standing-order-edit: state coverage not verified (added 2026-05-29, needs /idea verify --render)"
+    note: "39 original screens verified 2026-05-28; 6 new screens need render validation"
 
   api:
-    total: 36
-    passed: 36
+    total: 45
+    passed: 39
     failed: []
-    note: "36 screens with api.yaml; api_manifest.yaml references 16 spec_files all missing from server/apis/"
+    warned:
+      - "consumer-home: api.yaml present but screen missing from api_manifest.yaml"
+      - "standing-order-edit: api.yaml present but screen missing from api_manifest.yaml"
+      - "fo-dashboard: api.yaml present but screen missing from api_manifest.yaml"
+      - "pfm-dashboard: api.yaml present but screen missing from api_manifest.yaml"
+      - "direct-debit-detail: api.yaml present but screen missing from api_manifest.yaml"
+      - "agent-registration: api.yaml present but screen missing from api_manifest.yaml"
+    note: "api_manifest.yaml has 16 of 19 spec_files missing from server/apis/"
 
   reachability:
-    total: 39
-    passed: 37
+    total: 45
+    passed: 44
     failed:
-      - "agent-registration: not referenced in any navigates_to or navigation target"
-      - "consent-manager: not referenced in any navigates_to or navigation target"
+      - "agent-registration: no incoming navigates_to edge in any flow.yaml"
+    warned:
+      - "consent-manager: reachable only via settings/flow.yaml (no direct feature nav edge)"
 
 summary:
   total_passes: 5
-  total_failures: 9
+  total_failures: 1
+  total_warnings: 8
   blocking: true
-  blocking_reason: "V1-NAV-TARGET-RESOLVES + V1-SCREEN-REACHABLE failures require fix before /idea approve can re-validate"
-  next: "/idea enrich --feature splash,login,about,standing-orders,fo-dashboard,settings"
+  blocking_reason: "agent-registration unreachable (V1-SCREEN-REACHABLE). API manifest has 16 missing spec_files and 6 unregistered API-backed screens."
+  next: "/idea verify --fix to see remediation commands; fix api_manifest.yaml + agent-registration nav"

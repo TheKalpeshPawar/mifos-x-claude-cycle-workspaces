@@ -12,7 +12,7 @@
 
 ## Overview
 
-The ATM & Branch Locator screen enables Consumer persona users to find nearby Mifos ATMs and branches using GPS or manual address search. A 240dp map area renders pin locations when location permission is granted; below it a horizontally-scrollable filter chip row narrows results to ATMs only, Branches only, or 24/7 locations. A dynamic results header reports the current count ("3 ATMs found within 500m") and scrollable result cards each display name, distance, opening hours, withdrawal limit, and a "Get Directions" link that opens the native maps app. A location permission banner prompts users who have not yet granted location access.
+The ATM & Branch Locator is a consumer utility screen that lets Mifos X Open Banking users find nearby ATMs and branches. At the top, the headline "ATM & Branches" (headline_large, #4C662B) anchors the screen with 24dp top padding. A pill-shaped search input (#F9FAEF background, 28dp radius, leading search icon) accepts a city, postcode, or address, triggering the `search_location` action. When location permission has not been granted, a teal-bordered banner (#DCE7C8 fill, #4C662B 1dp border) appears below the search bar with an inline "Enable" text button that requests the system permission. A 240dp map tile (12dp radius, #E1E4D5 placeholder) renders geographic context in content state. Below the map, a horizontally-scrollable chip row provides four filter modes: "All" (selected by default — #4C662B fill/#FFFFFF text), "ATMs", "Branches", and "24/7". A reactive results header ("3 ATMs found within 500m") precedes up to three result cards (white, 12dp radius, 2dp elevation), each showing location name (title_small, #1A1C16, weight 600), distance (body_small, #44483D), hours/status, optional withdrawal limit or service list, and a "Get Directions" link (#4C662B, trailing directions icon) that opens the native maps app. API data comes from OBP v5.1.0 ATM and Branch endpoints keyed by the user's latitude/longitude; demo data covers 4 ATMs and 3 branches across Nairobi, Kenya (KCB Westlands, Equity CBD, Co-op Karen, NCBA Mombasa Road). An a11y colour fix is applied to branch hours: was #E8A317 (2.17:1 contrast ratio, WCAG fail) — corrected to #44483D (8.91:1, WCAG AA pass).
 
 ---
 
@@ -36,49 +36,49 @@ The ATM & Branch Locator screen enables Consumer persona users to find nearby Mi
 
 ## Components
 
-| ID                         | Type  | Description                                                                                                    |
-|----------------------------|-------|----------------------------------------------------------------------------------------------------------------|
-| atm_locator_title          | text  | "ATM & Branches" — headline_large, #4C662B, 24dp padding top, role heading h1                                  |
-| location_search_input      | input | Search field (pill radius 28, #F9FAEF bg) — placeholder "Enter city, postcode or address...", leading search icon |
-| location_permission_banner | box   | #DCE7C8 bg, 1px #4C662B border, radius 8 — shown only when location_not_granted                               |
-| enable_location_button     | button| "Enable" — text variant, #4C662B; triggers request_location_permission                                        |
-| atm_map_area               | image | 240dp tall map area (#E1E4D5 bg placeholder), radius 12; renders ATM pins in content state                     |
-| filter_chips_row           | stack | Horizontal scrollable chip row (h-scroll, 8dp spacing, 16dp horizontal padding)                               |
-| filter_all                 | input | "All" chip — selected by default (#4C662B fill, #FFFFFF text), radius 16                                       |
-| filter_atms                | input | "ATMs" chip — radio chip, radius 16; filters to ATM type only                                                  |
-| filter_branches            | input | "Branches" chip — radio chip, radius 16; filters to branch type only                                           |
-| filter_24_7                | input | "24/7" chip — radio chip, radius 16; filters to 24/7 locations only                                           |
-| nearby_results_header      | text  | "3 ATMs found within 500m" — title_medium, #1A1C16, role heading h2; count updates on filter change           |
-| atm_result_oxford_street   | box   | White card (radius 12, elevation 2, 16dp padding) for Mifos ATM Oxford Street                                  |
-| atm_oxford_name            | text  | "Mifos ATM — Oxford Street" — title_small, #1A1C16, weight 600                                                |
-| atm_oxford_distance        | text  | "0.2km away" — body_small, #44483D                                                                            |
-| atm_oxford_hours           | text  | "Open 24/7" — body_small, #4C662B, weight 500                                                                 |
-| atm_oxford_limit           | text  | "£300 max withdrawal" — body_small, #44483D                                                                   |
-| atm_oxford_directions      | link  | "Get Directions" — label_medium, #4C662B, trailing directions icon; opens native maps                          |
-| atm_result_bond_street     | box   | White card (radius 12, elevation 2) for Mifos ATM Bond Street Station                                          |
-| atm_bond_name              | text  | "Mifos ATM — Bond Street Station" — title_small, #1A1C16, weight 600                                          |
-| atm_bond_distance          | text  | "0.5km away" — body_small, #44483D                                                                            |
-| atm_bond_hours             | text  | "Open 24/7" — body_small, #4C662B, weight 500                                                                 |
-| atm_bond_directions        | link  | "Get Directions" — label_medium, #4C662B; opens native maps                                                   |
-| atm_result_mayfair_branch  | box   | White card (radius 12, elevation 2) for Mifos Branch Mayfair                                                   |
-| branch_mayfair_name        | text  | "Mifos Branch — Mayfair" — title_small, #1A1C16, weight 600                                                   |
-| branch_mayfair_distance    | text  | "0.8km away" — body_small, #44483D                                                                            |
-| branch_mayfair_hours       | text  | "Mon–Fri 9am–5pm" — body_small, #44483D, weight 500                                                           |
-| branch_mayfair_services    | text  | "Services: Cashier · FX · Safe Deposit" — body_small, #44483D                                                 |
-| branch_mayfair_directions  | link  | "Get Directions" — label_medium, #4C662B; opens native maps                                                   |
-| results_divider            | divider| Horizontal rule, #E1E4D5, 16dp horizontal margin                                                             |
+| ID                         | Type    | Description                                                                                                              |
+|----------------------------|---------|--------------------------------------------------------------------------------------------------------------------------|
+| atm_locator_title          | text    | "ATM & Branches" — headline_large (32sp/400), #4C662B, 24dp top padding, 16dp h-padding; a11y heading h1               |
+| location_search_input      | input   | Search variant, 28dp radius pill, #F9FAEF bg, leading search icon; placeholder "Enter city, postcode or address…"; triggers `search_location` |
+| location_permission_banner | box     | #DCE7C8 fill, 1dp #4C662B border, 8dp radius, 12dp padding, row layout; conditional on `location_not_granted`          |
+| enable_location_button     | button  | "Enable" — text variant, #4C662B, label_medium, 8dp h-padding; triggers `request_location_permission`                  |
+| atm_map_area               | image   | 240dp height, #E1E4D5 placeholder bg, 12dp radius, cover fit; skeleton during loading; a11y img "ATM map showing nearby locations" |
+| filter_chips_row           | stack   | Horizontal scroll, 8dp item spacing, 16dp h-padding, 12dp v-padding; wraps 4 filter chips                              |
+| filter_all                 | input   | Radio chip "All"; default selected — #4C662B fill/#FFFFFF text; 16dp radius, 16dp h-pad, 8dp v-pad                     |
+| filter_atms                | input   | Radio chip "ATMs"; unselected style; triggers `filter_type` action with value `atm`                                     |
+| filter_branches            | input   | Radio chip "Branches"; triggers `filter_type` with value `branch`                                                       |
+| filter_24_7                | input   | Radio chip "24/7"; triggers `filter_type` with value `24_7`                                                             |
+| nearby_results_header      | text    | "3 ATMs found within 500m" — title_medium (16sp/500), #1A1C16, 16dp h-pad, 8dp top pad; updates reactively on filter; h2 |
+| atm_result_oxford_street   | box     | Result card: #FFFFFF fill, 12dp radius, 2dp elevation, 16dp padding, 16dp h-margin, 8dp bottom margin; tappable → `view_atm_detail` |
+| atm_oxford_name            | text    | "Mifos ATM — Oxford Street" — title_small (14sp/500), #1A1C16, weight 600                                              |
+| atm_oxford_distance        | text    | "0.2km away" — body_small (12sp/400), #44483D                                                                           |
+| atm_oxford_hours           | text    | "Open 24/7" — body_small, #4C662B, weight 500                                                                           |
+| atm_oxford_limit           | text    | "£300 max withdrawal" — body_small, #44483D                                                                              |
+| atm_oxford_directions      | link    | "Get Directions" — label_medium, #4C662B, trailing directions icon; triggers `open_directions`                           |
+| atm_result_bond_street     | box     | Result card: same style; a11y label "Mifos ATM Bond Street Station, 0.5km, Open 24/7"                                  |
+| atm_bond_name              | text    | "Mifos ATM — Bond Street Station" — title_small, #1A1C16, weight 600                                                   |
+| atm_bond_distance          | text    | "0.5km away" — body_small, #44483D                                                                                      |
+| atm_bond_hours             | text    | "Open 24/7" — body_small, #4C662B, weight 500                                                                           |
+| atm_bond_directions        | link    | "Get Directions" — label_medium, #4C662B, trailing directions icon; triggers `open_directions`                           |
+| atm_result_mayfair_branch  | box     | Result card: same style; a11y label "Mifos Branch Mayfair, 0.8km, Mon–Fri 9am–5pm"                                    |
+| branch_mayfair_name        | text    | "Mifos Branch — Mayfair" — title_small, #1A1C16, weight 600                                                            |
+| branch_mayfair_distance    | text    | "0.8km away" — body_small, #44483D                                                                                      |
+| branch_mayfair_hours       | text    | "Mon–Fri 9am–5pm" — body_small, **#44483D**, weight 500 (**a11y fix A11Y-002**: was #E8A317 at 2.17:1 contrast, WCAG fail → #44483D at 8.91:1, WCAG AA pass) |
+| branch_mayfair_services    | text    | "Services: Cashier · FX · Safe Deposit" — body_small, #44483D                                                          |
+| branch_mayfair_directions  | link    | "Get Directions" — label_medium, #4C662B, trailing directions icon; triggers `open_directions`                           |
+| results_divider            | divider | Horizontal separator, #E1E4D5, 16dp h-margin                                                                            |
 
 ---
 
 ## States
 
-| ID              | Trigger                                       | Description                                                                                        |
-|-----------------|-----------------------------------------------|----------------------------------------------------------------------------------------------------|
-| loading         | Screen entry / API calls in flight            | Title, search, filter chips visible; map area and all result cards shown as skeleton shimmer blocks |
-| content         | Location + API data available                 | Map renders, result count header active, all 3 result cards visible with full details               |
-| error           | Network or API failure                        | Title and search input only; map and result cards hidden; error message shown with retry             |
-| empty           | Search returns no results for current filter  | Title, search, filter chips; empty message "No ATMs or branches found in this area"                |
-| location_denied | Location permission not granted               | Permission banner + Enable button shown; map area hidden; manual search still active                |
+| ID              | Trigger                                           | Description                                                                                                  |
+|-----------------|---------------------------------------------------|--------------------------------------------------------------------------------------------------------------|
+| loading         | Screen entry / API calls in flight                | Title + search input + filter chips visible; map area and all 3 result cards shown as skeleton shimmer (short4 = 200ms, reduced-motion: static placeholder); permission banner hidden |
+| content         | Location + OBP API data available                 | Full layout: map tile renders, results count header active, 3 result cards with name/distance/hours/limit/directions; permission banner hidden |
+| error           | Network failure or OBP 401/500 response           | Title + search visible; map, results header, result cards all hidden; inline error "Unable to load ATMs. Check your connection and try again." |
+| empty           | Search/filter returns zero results                | Title + search + filter chips visible; map, results header, result cards hidden; "No ATMs or branches found in this area" |
+| location_denied | Location permission not granted by OS             | Title + search + permission banner + Enable button + filter chips shown; map tile hidden; manual search active |
 
 ---
 
@@ -87,21 +87,21 @@ The ATM & Branch Locator screen enables Consumer persona users to find nearby Mi
 **ViewModel:** `AtmLocatorViewModel`
 **Screen State Type:** `AtmLocatorUiState`
 
-| Name                      | Type              | Default          |
-|---------------------------|-------------------|------------------|
-| atmList                   | List\<AtmLocation\> | emptyList()    |
-| searchQuery               | String            | ""               |
-| selectedFilter            | AtmFilter         | AtmFilter.ALL    |
-| userLocation              | LatLng?           | null             |
-| locationPermissionGranted | Boolean           | false            |
-| isLoading                 | Boolean           | true             |
-| resultCount               | Int               | 0                |
-| networkError              | String?           | null             |
-| locationError             | String?           | null             |
+| Name                      | Type                 | Default          |
+|---------------------------|----------------------|------------------|
+| atmList                   | List\<AtmLocation\>  | emptyList()      |
+| searchQuery               | String               | ""               |
+| selectedFilter            | AtmFilter            | AtmFilter.ALL    |
+| userLocation              | LatLng?              | null             |
+| locationPermissionGranted | Boolean              | false            |
+| isLoading                 | Boolean              | true             |
+| resultCount               | Int                  | 0                |
+| networkError              | String?              | null             |
+| locationError             | String?              | null             |
 
 **Events:** `SearchLocationEvent`, `FilterChangedEvent`, `RequestLocationPermissionEvent`, `AtmSelectedEvent`, `DirectionsRequestedEvent`
 
-**Actions:** `search_location()`, `filter_type()`, `request_location_permission()`, `view_atm_detail()`, `open_directions()`
+**Actions:** `search_location()`, `filter_type(value: AtmFilter)`, `request_location_permission()`, `view_atm_detail(id: String)`, `open_directions(lat: Double, lng: Double, label: String)`
 
 **DI Dependencies:** `AtmRepository`, `LocationService`, `NavigationService`
 
@@ -113,48 +113,50 @@ The ATM & Branch Locator screen enables Consumer persona users to find nearby Mi
 
 ## Navigation
 
-| From             | To               | Trigger                          | Type             |
-|------------------|------------------|----------------------------------|------------------|
-| atm-locator      | (native maps)    | Any Get Directions link tap      | external intent  |
-| bottom nav       | home             | nav_home tab tap                 | tab              |
-| bottom nav       | accounts         | nav_accounts tab tap             | tab              |
-| bottom nav       | send-money       | nav_pay tab tap                  | tab              |
-| bottom nav       | cards            | nav_cards tab tap                | tab              |
-| bottom nav       | settings         | nav_more tab tap                 | tab              |
+| From             | To             | Trigger                     | Type            |
+|------------------|----------------|-----------------------------|-----------------|
+| atm-locator      | (native maps)  | Any "Get Directions" link   | external intent |
+| bottom nav       | home           | nav_home tab tap            | tab             |
+| bottom nav       | accounts       | nav_accounts tab tap        | tab             |
+| bottom nav       | send-money     | nav_pay tab tap             | tab             |
+| bottom nav       | cards          | nav_cards tab tap           | tab             |
+| bottom nav       | settings       | nav_more tab tap            | tab             |
 
 ---
 
 ## API Endpoints
 
-| Endpoint                                     | Auth        | Tag    | Purpose                                                    |
-|----------------------------------------------|-------------|--------|------------------------------------------------------------|
-| GET /obp/v5.1.0/banks/{bankId}/atms          | DirectLogin | ATM    | Fetch nearby ATMs by latitude/longitude; limit 10          |
-| GET /obp/v5.1.0/banks/{bankId}/branches      | DirectLogin | Branch | Fetch nearby branches by latitude/longitude                |
+| Endpoint                                | Auth        | Tag    | Purpose                                         |
+|-----------------------------------------|-------------|--------|-------------------------------------------------|
+| GET /obp/v5.1.0/banks/{bankId}/atms     | DirectLogin | ATM    | Fetch nearby ATMs by latitude/longitude; limit 10 |
+| GET /obp/v5.1.0/banks/{bankId}/branches | DirectLogin | Branch | Fetch nearby branches by latitude/longitude     |
 
 ---
 
 ## Design Tokens
 
-| Token                           | Value     | Usage                                                           |
-|---------------------------------|-----------|-----------------------------------------------------------------|
-| colors.light.primary            | #4C662B   | Title color, selected chip fill, "Open 24/7" text, direction links, Enable button |
-| colors.light.on_primary         | #FFFFFF   | Selected chip label text                                        |
-| colors.light.nav_active_indicator | #DCE7C8 | Location permission banner background                          |
-| colors.light.surface            | #FFFFFF   | ATM and branch result cards                                     |
-| colors.light.surface_variant    | #E1E4D5   | Map placeholder background, divider, unselected chip border     |
-| colors.light.on_surface         | #1A1C16   | ATM and branch name text                                        |
-| colors.light.on_surface_variant | #44483D   | Distance, non-24/7 hours, services text                        |
-| colors.light.background         | #F9FAEF   | Screen background, search input background                      |
-| colors.light.outline_variant    | #C5C8BA   | Result card borders                                             |
-| typography.headline_large       | 32sp/400  | Screen title "ATM & Branches"                                   |
-| typography.title_medium         | 16sp/500  | Results count header                                            |
-| typography.title_small          | 14sp/500  | ATM and branch name in result cards                             |
-| typography.body_small           | 12sp/400  | Distance, hours, limit, services text                           |
-| typography.label_medium         | 12sp/500  | "Get Directions" link, "Enable" button                          |
-| radius.pill                     | 999dp     | Filter chip radius (radius 16dp in YAML — pill-style)           |
-| radius.md                       | 12dp      | Result card corners, map area corners                           |
-| elevation.level2                | 3dp       | Result card elevation                                           |
+| Token                             | Value      | Usage                                                                              |
+|-----------------------------------|------------|------------------------------------------------------------------------------------|
+| colors.light.primary              | #4C662B    | Screen title, selected filter chip fill, "Open 24/7" hours text, direction links, "Enable" button |
+| colors.light.on_primary           | #FFFFFF    | Selected filter chip label text                                                    |
+| colors.light.nav_active_indicator | #DCE7C8    | Location permission banner background fill                                         |
+| colors.light.surface              | #FFFFFF    | ATM and branch result card fill                                                    |
+| colors.light.surface_variant      | #E1E4D5    | Map placeholder background, divider, unselected chip border                        |
+| colors.light.on_surface           | #1A1C16    | ATM/branch name text, results count header                                         |
+| colors.light.on_surface_variant   | #44483D    | Distance text, branch hours (a11y-corrected), services text                        |
+| colors.light.background           | #F9FAEF    | Screen background, search input background                                         |
+| colors.light.outline              | #4C662B    | Permission banner border                                                            |
+| typography.headline_large         | Outfit 32sp/400  | Screen title "ATM & Branches"                                               |
+| typography.title_medium           | Outfit 16sp/500  | Results count header                                                         |
+| typography.title_small            | Outfit 14sp/500  | ATM/branch name per result card                                              |
+| typography.body_small             | Outfit 12sp/400  | Distance, hours, withdrawal limit, services                                  |
+| typography.label_medium           | Outfit 12sp/500  | "Get Directions" links, "Enable" button                                      |
+| radius.md                         | 12dp       | Result card corners, map area corners                                              |
+| radius.pill                       | 999dp      | Search input (28dp in source ≈ pill), filter chips (16dp in source)                |
+| elevation.level2                  | 3dp        | Result card elevation (2dp specified in source — nearest M3 level is level2)       |
+| motion.duration.short4            | 200ms      | Loading skeleton shimmer duration                                                  |
+| touchTargets.min_touch_target     | 48dp       | Filter chips, direction links, Enable button                                       |
 
 ---
 
-_Generated by /idea export | 2026-05-29_
+_Generated by /idea export | 2026-05-30_

@@ -1,0 +1,142 @@
+schema_version: "4.0"
+api_group: pfm
+name: "Personal Finance Management API"
+base_url: "https://apisandbox.openbankproject.com/obp"
+auth_scheme: DirectLogin
+generated_at: "2026-05-30"
+
+endpoints:
+
+  - id: get_pfm_budgets
+    method: GET
+    path: "/v6.0.0/my/personal-data-fields"
+    description: "Read all personal data fields for the authenticated user. PFM budgets are stored by convention as fields named 'pfm_budget_<categoryId>' (e.g. 'pfm_budget_food_dining'). The pfm-dashboard reads all fields and filters by the pfm_budget_ prefix to reconstruct the budget configuration."
+    auth_required: true
+    request_schema: []
+    response_schema:
+      - field: personal_data_fields
+        type: "List<PersonalDataField>"
+        nullable: false
+        description: "All personal data fields stored for the authenticated user"
+      - field: name
+        type: String
+        nullable: false
+        description: "Field name key. PFM budget fields follow the convention 'pfm_budget_<categoryId>' (e.g. 'pfm_budget_food_dining', 'pfm_budget_transport')"
+      - field: value
+        type: String
+        nullable: false
+        description: "Stored value as a string. For budget fields this is a numeric string representing the monthly budget amount in the user's base currency (e.g. '350')."
+    error_codes:
+      - code: 401
+        message: "USER_NOT_LOGGED_IN"
+        retry: false
+      - code: 403
+        message: "INSUFFICIENT_AUTHORISATION"
+        retry: false
+      - code: 500
+        message: "OBP_SERVER_ERROR"
+        retry: true
+
+  - id: set_pfm_budget
+    method: POST
+    path: "/v6.0.0/my/personal-data-fields"
+    description: "Create or update a single PFM budget entry for the authenticated user. Call once per category when the user saves their budget configuration on the pfm-dashboard. The OBP personal-data-fields endpoint is upsert-by-name: if a field with the given name already exists it will be overwritten."
+    auth_required: true
+    request_schema:
+      - field: name
+        type: String
+        required: true
+        validation: "Personal data field name. For PFM budgets must follow the convention 'pfm_budget_<categoryId>'. Max 64 characters. Allowed characters: alphanumerics and underscores only."
+      - field: value
+        type: String
+        required: true
+        validation: "String-encoded numeric budget amount in the user's base currency (e.g. '350'). Must be parseable as a positive decimal. Max 16 characters."
+    response_schema:
+      - field: name
+        type: String
+        nullable: false
+        description: "Persisted field name, echoed back from the server"
+      - field: value
+        type: String
+        nullable: false
+        description: "Persisted field value, echoed back from the server"
+    error_codes:
+      - code: 400
+        message: "INVALID_FIELD_NAME"
+        retry: false
+      - code: 400
+        message: "INVALID_REQUEST"
+        retry: false
+      - code: 401
+        message: "USER_NOT_LOGGED_IN"
+        retry: false
+      - code: 403
+        message: "INSUFFICIENT_AUTHORISATION"
+        retry: false
+      - code: 500
+        message: "OBP_SERVER_ERROR"
+        retry: true
+
+  - id: get_pfm_transactions
+    method: GET
+    path: "/v6.0.0/my/accounts/{account_id}/transactions"
+    description: "Fetch transactions for the selected account within a date range for PFM spending analysis. The pfm-dashboard uses this to categorise spending, compute period totals, and compare actuals against budget. Use a high limit (e.g. 500) to capture the full selected period."
+    auth_required: true
+    request_schema:
+      - field: account_id
+        type: String
+        required: true
+        validation: "Path parameter. Valid OBP account identifier for the user's primary account."
+      - field: from_date
+        type: String
+        required: true
+        validation: "ISO-8601 date-time string for the start of the analysis period (e.g. '2026-05-01T00:00:00Z')."
+      - field: to_date
+        type: String
+        required: true
+        validation: "ISO-8601 date-time string for the end of the analysis period (e.g. '2026-05-31T23:59:59Z'). Must be after from_date."
+      - field: limit
+        type: Int
+        required: false
+        validation: "Maximum number of transactions to return. Default 100. Recommended 500 for PFM period analysis. Maximum 10000."
+    response_schema:
+      - field: transactions
+        type: "List<Transaction>"
+        nullable: false
+        description: "Array of transactions within the requested date range"
+      - field: transaction_id
+        type: String
+        format: UUID
+        nullable: false
+        description: "Unique transaction identifier"
+      - field: this_account
+        type: AccountInfo
+        nullable: false
+        description: "Summary of the account the transaction belongs to (id, bank_id, label)"
+      - field: details
+        type: TransactionDetails
+        nullable: false
+        description: "Transaction details including type, description, posted timestamp, completed timestamp"
+      - field: value
+        type: AmountOfMoney
+        nullable: false
+        description: "Transaction monetary value — object with amount (String numeric, negative for debits) and currency (String ISO-4217)"
+    error_codes:
+      - code: 400
+        message: "INVALID_DATE_FORMAT"
+        retry: false
+      - code: 400
+        message: "INVALID_REQUEST"
+        retry: false
+      - code: 401
+        message: "USER_NOT_LOGGED_IN"
+        retry: false
+      - code: 403
+        message: "INSUFFICIENT_AUTHORISATION"
+        retry: false
+      - code: 404
+        message: "ACCOUNT_NOT_FOUND"
+        retry: false
+      - code: 500
+        message: "OBP_SERVER_ERROR"
+        retry: true

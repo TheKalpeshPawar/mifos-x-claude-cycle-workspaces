@@ -1,0 +1,92 @@
+schema_version: "4.0"
+api_group: consents
+name: "Consents API"
+base_url: "https://apisandbox.openbankproject.com/obp"
+auth_scheme: DirectLogin
+generated_at: "2026-05-30"
+
+endpoints:
+
+  - id: list_consents
+    method: GET
+    path: "/v5.1.0/my/consents"
+    description: "List all PSD2 consents granted by the authenticated consumer user, including status, validity period, and linked consumer app."
+    auth_required: true
+    request_schema: []
+    response_schema:
+      - field: consents
+        type: "List<Consent>"
+        nullable: false
+        description: "Array of consent objects belonging to the authenticated user"
+      - field: consent_id
+        type: String
+        nullable: false
+        description: "Unique consent identifier"
+      - field: status
+        type: String
+        nullable: false
+        description: "Consent lifecycle state: INITIATED | ACCEPTED | REVOKED | EXPIRED"
+      - field: created_at
+        type: String
+        format: ISO-8601 Instant
+        nullable: false
+        description: "Timestamp when the consent was created"
+      - field: valid_until
+        type: String
+        format: ISO-8601 Instant
+        nullable: true
+        description: "Expiry timestamp; null for indefinite consents"
+      - field: consumer_id
+        type: String
+        nullable: false
+        description: "Identifier of the third-party app / connected service that holds this consent"
+      - field: redirects
+        type: "List<ConsentRedirect>"
+        nullable: false
+        description: "Redirect URIs registered for this consent (used during OAuth confirmation flows)"
+      - field: json_web_token
+        type: String
+        nullable: false
+        description: "JWT encoding the consent claims — scope, expiry, bank/account references"
+    error_codes:
+      - code: 401
+        message: "USER_NOT_LOGGED_IN"
+        retry: false
+      - code: 403
+        message: "INSUFFICIENT_AUTHORISATION"
+        retry: false
+      - code: 500
+        message: "OBP_SERVER_ERROR"
+        retry: true
+
+  - id: revoke_consent
+    method: DELETE
+    path: "/v5.1.0/my/consents/{consent_id}"
+    description: "Revoke a specific PSD2 consent by ID, immediately terminating third-party access to the account data covered by that consent."
+    auth_required: true
+    request_schema: []
+    response_schema:
+      - field: consent_id
+        type: String
+        nullable: false
+        description: "Identifier of the revoked consent"
+      - field: status
+        type: String
+        nullable: false
+        description: "REVOKED — always set after a successful delete"
+    error_codes:
+      - code: 401
+        message: "USER_NOT_LOGGED_IN"
+        retry: false
+      - code: 403
+        message: "INSUFFICIENT_AUTHORISATION"
+        retry: false
+      - code: 404
+        message: "CONSENT_NOT_FOUND"
+        retry: false
+      - code: 409
+        message: "CONSENT_ALREADY_REVOKED"
+        retry: false
+      - code: 500
+        message: "OBP_SERVER_ERROR"
+        retry: true

@@ -12,79 +12,88 @@
 
 ## Overview
 
-Customer Profile is a detail_screen for Field Officers to view and optionally edit a customer's full record. It is accessed from customer-detail or customer-search and presents three collapsible sections: Personal Information (full name, date of birth, national ID, KRA tax PIN, phone, email), Address (street, county, postcode), and Employment (employer, monthly income, employment type). Each data row is a white horizontal row with a label in body_medium #44483D and a value in body_large #1A1C16, grouped on #F9FAEF background with #E1E4D5 dividers between sections. Phone and email values are tappable links — phone initiates a dialler intent, email opens mail client. The Edit Information button at the bottom transitions the screen to editing mode. Data is loaded from the OBP Customer endpoint; errors surface with a retry banner.
+Customer Profile is a `detail_screen` for Field Officers to view and optionally edit a customer's full record. It is accessed from the customer-list and kyc-review flows and presents three labelled sections: **Personal Information** (full name, date of birth, national ID, KRA tax PIN, phone, email), **Address** (street, county, postcode), and **Employment** (employer, monthly income, employment type). Each data row is a white horizontal box (8dp radius, 16dp horizontal padding, 12dp vertical padding) with a label in body_medium `#44483D` on the left and a value in body_large `#1A1C16` on the right. Phone and email values are tappable links — phone initiates a dialler intent (`tel:`), email opens the mail client (`mailto:`). An **Edit Information** outlined button at the bottom transitions the screen to editing mode.
+
+Data is loaded from `GET /obp/v5.1.0/banks/{bankId}/customers/{customerId}` (OBP Customers tag). Each row declares component_states: a skeleton shimmer on loading, a retry banner on error, and a contextual empty box when the field is absent. The initial state is `loading`. Transitions: `loading → content`, `loading → error`, `content → editing`, `editing → saving`, `saving → content`, `saving → error`. Sections are separated by `#E1E4D5` dividers. Screen background: `#F9FAEF`.
 
 ---
 
 ## Screens
 
-| ID                    | Name                 | Route              | Layout | Scroll   |
-|-----------------------|----------------------|--------------------|--------|----------|
-| customer-profile-main | Customer Information | /customer-profile  | Column | Vertical |
+| ID                     | Name                  | Route              | Layout | Scroll   |
+|------------------------|-----------------------|--------------------|--------|----------|
+| customer-profile-main  | Customer Information  | /customer-profile  | Column | Vertical |
 
-**Shell:** Field Officer top app bar with back navigation (no bottom nav on detail screens).
-
-| Nav Item  | ID          | Icon          | Target          |
-|-----------|-------------|---------------|-----------------|
-| Back      | nav_back    | arrow_back    | customer-detail |
-| Search    | nav_search  | search        | customer-search |
-| Profile   | nav_profile | account_circle| profile         |
+**Shell:** Standard top app bar ("Customer Profile", back arrow). No bottom navigation bar on this detail screen.
 
 ---
 
 ## Components
 
-| ID                    | Type    | Description                                                                                              |
-|-----------------------|---------|----------------------------------------------------------------------------------------------------------|
-| personal_info_heading | text    | "Personal Information" — Outfit/title_large, #4C662B; heading level 2                                   |
-| full_name_row         | box     | Horizontal row: "Full Name" label + "John Kamau Mwangi" value; #FFFFFF bg, radius 8, pad V12/H16        |
-| full_name_label       | text    | "Full Name" — Outfit/body_medium, #44483D, weight 500                                                   |
-| full_name_value       | text    | "John Kamau Mwangi" — Outfit/body_large, #1A1C16, weight 600                                            |
-| dob_row               | box     | Horizontal row: "Date of Birth" label + "14 March 1985 (Age: 41)" value                                  |
-| dob_label             | text    | "Date of Birth" — Outfit/body_medium, #44483D, weight 500                                               |
-| dob_value             | text    | "14 March 1985 (Age: 41)" — Outfit/body_large, #1A1C16                                                  |
-| national_id_row       | box     | Horizontal row: "National ID" label + "KE12345678" value (monospace)                                     |
-| national_id_label     | text    | "National ID" — Outfit/body_medium, #44483D, weight 500                                                  |
-| national_id_value     | text    | "KE12345678" — Outfit/body_large, #1A1C16, monospace font family                                        |
-| tax_pin_row           | box     | Horizontal row: "Tax PIN (KRA)" label + "A001234567M" value (monospace)                                  |
-| tax_pin_label         | text    | "Tax PIN (KRA)" — Outfit/body_medium, #44483D, weight 500                                               |
-| tax_pin_value         | text    | "A001234567M" — Outfit/body_large, #1A1C16, monospace                                                   |
-| phone_row             | box     | Horizontal row: "Phone" label + tappable "+254 722 123 456" link                                         |
-| phone_label           | text    | "Phone" — Outfit/body_medium, #44483D, weight 500                                                       |
-| phone_link            | link    | "+254 722 123 456" — Outfit/body_large, #4C662B, underline; navigates tel:+254722123456                 |
-| email_row             | box     | Horizontal row: "Email" label + tappable "john.mwangi@gmail.com" link                                    |
-| email_label           | text    | "Email" — Outfit/body_medium, #44483D, weight 500                                                       |
-| email_link            | link    | "john.mwangi@gmail.com" — Outfit/body_large, #4C662B, underline; navigates mailto:                      |
-| address_divider       | divider | Horizontal divider #E1E4D5, margin V16 — separates Personal from Address                                 |
-| address_heading       | text    | "Address" — Outfit/title_large, #4C662B; heading level 2                                                 |
-| address_street_row    | box     | "123 Moi Avenue, Nairobi" — Outfit/body_large, #1A1C16; #FFFFFF bg, radius 8                            |
-| address_county_row    | box     | "Nairobi County, Kenya" — Outfit/body_large, #1A1C16                                                    |
-| address_postcode_row  | box     | "Postcode: 00100" — Outfit/body_large, #1A1C16                                                          |
-| employment_divider    | divider | Horizontal divider #E1E4D5, margin V16 — separates Address from Employment                               |
-| employment_heading    | text    | "Employment" — Outfit/title_large, #4C662B; heading level 2                                              |
-| employer_row          | box     | "Employer" label + "Safaricom PLC" value                                                                 |
-| employer_label        | text    | "Employer" — Outfit/body_medium, #44483D, weight 500                                                     |
-| employer_value        | text    | "Safaricom PLC" — Outfit/body_large, #1A1C16                                                            |
-| income_row            | box     | "Monthly Income" label + "KES 85,000" value (monospace)                                                  |
-| income_label          | text    | "Monthly Income" — Outfit/body_medium, #44483D, weight 500                                               |
-| income_value          | text    | "KES 85,000" — Outfit/body_large, #1A1C16, monospace                                                    |
-| employment_type_row   | box     | "Employment Type" label + "Permanent" value                                                              |
-| employment_type_label | text    | "Employment Type" — Outfit/body_medium, #44483D, weight 500                                              |
-| employment_type_value | text    | "Permanent" — Outfit/body_large, #1A1C16                                                                 |
-| edit_info_button      | button  | Outlined full-width "Edit Information" — #4C662B border+text, margin T8/B24                              |
+| ID                     | Type    | Description                                                                                                    |
+|------------------------|---------|----------------------------------------------------------------------------------------------------------------|
+| personal_info_heading  | text    | "Personal Information" — Outfit/title_large, #4C662B, 20dp top padding, 8dp bottom padding; heading level 2  |
+| full_name_row          | box     | Horizontal row — white fill, 8dp radius, 16dp h-pad, 12dp v-pad, 2dp margin-bottom; api: obp_get_customer_profile |
+| full_name_label        | text    | "Full Name" — Outfit/body_medium, #44483D, weight 500                                                        |
+| full_name_value        | text    | "Wanjiru Kamau" — Outfit/body_large, #1A1C16, weight 600                                                     |
+| dob_row                | box     | Horizontal row — same card style; api: obp_get_customer_profile                                               |
+| dob_label              | text    | "Date of Birth" — Outfit/body_medium, #44483D, weight 500                                                    |
+| dob_value              | text    | "22 March 1988 (Age: 38)" — Outfit/body_large, #1A1C16                                                       |
+| national_id_row        | box     | Horizontal row — same card style; api: obp_get_customer_profile                                               |
+| national_id_label      | text    | "National ID" — Outfit/body_medium, #44483D, weight 500                                                      |
+| national_id_value      | text    | "28456789" — Outfit/body_large, #1A1C16, monospace                                                           |
+| tax_pin_row            | box     | Horizontal row — same card style; api: obp_get_customer_profile                                               |
+| tax_pin_label          | text    | "Tax PIN (KRA)" — Outfit/body_medium, #44483D, weight 500                                                    |
+| tax_pin_value          | text    | "A987654321W" — Outfit/body_large, #1A1C16, monospace                                                        |
+| phone_row              | box     | Horizontal row — same card style; api: obp_get_customer_profile                                               |
+| phone_label            | text    | "Phone" — Outfit/body_medium, #44483D, weight 500                                                            |
+| phone_link             | link    | "+254 712 345 678" — Outfit/body_large, #4C662B, underline; on_click: call_customer (tel:+254712345678)      |
+| email_row              | box     | Horizontal row — same card style; api: obp_get_customer_profile                                               |
+| email_label            | text    | "Email" — Outfit/body_medium, #44483D, weight 500                                                            |
+| email_link             | link    | "wanjiru.kamau@gmail.com" — Outfit/body_large, #4C662B, underline; on_click: email_customer (mailto:)        |
+| address_divider        | divider | Horizontal rule — 16dp margin-vertical, #E1E4D5                                                               |
+| address_heading        | text    | "Address" — Outfit/title_large, #4C662B, 8dp bottom padding; heading level 2                                 |
+| address_street_row     | box     | Single-value row — white fill, 8dp radius, 10dp v-pad, 16dp h-pad, 2dp margin-bottom                         |
+| address_street         | text    | "26 Westlands Road, Westlands" — Outfit/body_large, #1A1C16                                                  |
+| address_county_row     | box     | Single-value row — same style                                                                                  |
+| address_county         | text    | "Nairobi County, Kenya" — Outfit/body_large, #1A1C16                                                         |
+| address_postcode_row   | box     | Single-value row — same style                                                                                  |
+| address_postcode       | text    | "Postcode: 00100" — Outfit/body_large, #1A1C16                                                               |
+| employment_divider     | divider | Horizontal rule — 16dp margin-vertical, #E1E4D5                                                               |
+| employment_heading     | text    | "Employment" — Outfit/title_large, #4C662B, 8dp bottom padding; heading level 2                              |
+| employer_row           | box     | Horizontal row — white fill, 8dp radius, 16dp h-pad, 12dp v-pad, 2dp margin-bottom                           |
+| employer_label         | text    | "Employer" — Outfit/body_medium, #44483D, weight 500                                                         |
+| employer_value         | text    | "Safaricom PLC" — Outfit/body_large, #1A1C16                                                                 |
+| income_row             | box     | Horizontal row — same card style                                                                               |
+| income_label           | text    | "Monthly Income" — Outfit/body_medium, #44483D, weight 500                                                   |
+| income_value           | text    | "KES 85,000" — Outfit/body_large, #1A1C16, monospace                                                         |
+| employment_type_row    | box     | Horizontal row — same card style, 16dp margin-bottom                                                          |
+| employment_type_label  | text    | "Employment Type" — Outfit/body_medium, #44483D, weight 500                                                  |
+| employment_type_value  | text    | "Permanent" — Outfit/body_large, #1A1C16                                                                     |
+| edit_info_button       | button  | "Edit Information" — outlined, #4C662B border + text, pill radius, fill-width, 8dp margin-top                 |
+
+### Component States (per data row)
+
+Each `box` data row declares three component states bound to `obp_get_customer_profile`:
+
+| State   | Type     | Behaviour                                                                   |
+|---------|----------|-----------------------------------------------------------------------------|
+| loading | skeleton | 1 shimmer row matching the label-value layout (short4 = 200ms duration)    |
+| error   | banner   | "Could not load customer profile. Please try again." with retry affordance  |
+| empty   | box      | Contextual message per field (e.g. "Customer name not available.") with icon |
 
 ---
 
 ## States
 
-| ID      | Trigger                       | Description                                                                              |
-|---------|-------------------------------|------------------------------------------------------------------------------------------|
-| loading | Screen entry                  | Skeleton shimmer on all data rows; section headings visible; #F9FAEF background          |
-| content | API load success              | All data rows populated with John Kamau Mwangi's real data; Edit button active           |
-| editing | edit_info_button tap          | Inline edit mode — data row values become editable inputs; keyboard shown                |
-| saving  | Save changes tapped           | Progress overlay "Saving changes…"; inputs locked                                        |
-| error   | Network or API failure        | Error banner "Could not load customer profile. Please try again." + Retry button         |
-| empty   | Customer data unavailable     | "Customer profile data not available" message centered                                   |
+| ID      | Trigger                              | Description                                                                                       |
+|---------|--------------------------------------|---------------------------------------------------------------------------------------------------|
+| loading | Screen entry (initial_state)         | All data rows show skeleton shimmers; shimmer duration short4 (200ms); reduced motion → static placeholder |
+| content | API load success                     | All three sections populated with live data; Edit Information button active                       |
+| editing | edit_customer_info action            | Screen enters edit mode — fields become editable inputs; keyboard shown                           |
+| saving  | save_customer_info action            | Progress overlay shown while PUT request in flight                                                |
+| error   | Network or OBP error on load         | Error banner per affected row with retry; full-screen error if all rows fail                      |
+| empty   | Field value absent in API response   | Per-row empty box with contextual icon and message                                                |
 
 ---
 
@@ -93,63 +102,71 @@ Customer Profile is a detail_screen for Field Officers to view and optionally ed
 **ViewModel:** `CustomerProfileViewModel`
 **Screen State Type:** `CustomerProfileScreenState`
 
-| Name       | Type               | Default |
-|------------|--------------------|---------|
-| customer   | CustomerDetail?    | null    |
-| isLoading  | Boolean            | true    |
-| isEditing  | Boolean            | false   |
-| isSaving   | Boolean            | false   |
-| editDraft  | CustomerEditDraft? | null    |
-| loadError  | String?            | null    |
+| Name        | Type                | Default  |
+|-------------|---------------------|----------|
+| customer    | CustomerDetail?     | null     |
+| isLoading   | Boolean             | true     |
+| isEditing   | Boolean             | false    |
+| isSaving    | Boolean             | false    |
+| editDraft   | CustomerEditDraft?  | null     |
+| loadError   | String?             | null     |
 
 **Events:** `EditStarted`, `EditCancelled`, `CustomerSaved`, `CallInitiated`, `EmailInitiated`
 
 **Actions:** `edit_customer_info`, `save_customer_info`, `cancel_edit`, `call_customer`, `email_customer`
 
-**DI Dependencies:** `CustomerRepository`, `ContactActionHandler`
-
 **Errors:**
 - `CUSTOMER_LOAD_FAILED`: "Could not load customer profile. Please try again."
-- `SAVE_FAILED`: "Changes could not be saved. Please try again."
-- `NETWORK_UNAVAILABLE`: "No internet connection."
+- `SAVE_FAILED`: "Unable to save changes. Please check your connection."
+- `NETWORK_UNAVAILABLE`: "No network connection. Please try again."
+
+**DI Dependencies:** `CustomerRepository`, `ContactActionHandler`
 
 ---
 
 ## Navigation
 
-| From             | To              | Trigger                          | Type  |
-|------------------|-----------------|----------------------------------|-------|
-| customer-profile | customer-detail | top app bar back arrow           | pop   |
-| customer-profile | tel: dialler    | phone_link tap (call_customer)   | intent|
-| customer-profile | mail client     | email_link tap (email_customer)  | intent|
+| From             | To                  | Trigger                    | Type |
+|------------------|---------------------|----------------------------|------|
+| customer-profile | customer-list       | Back arrow tap             | pop  |
+| customer-profile | kyc-review          | Back (from KYC flow)       | pop  |
+| customer-profile | customer-messages   | (future — deep link)       | push |
+| customer-profile | tel:+254712345678   | phone_link tap             | intent |
+| customer-profile | mailto:wanjiru...   | email_link tap             | intent |
 
 ---
 
 ## API Endpoints
 
-| Endpoint                                                       | Auth        | Tag       | Purpose                                       |
-|----------------------------------------------------------------|-------------|-----------|-----------------------------------------------|
-| GET /obp/v5.1.0/banks/{bankId}/customers/{customerId}          | DirectLogin | Customers | Load full customer record for profile display |
-| PUT /obp/v5.1.0/banks/{bankId}/customers/{customerId}          | DirectLogin | Customers | Save edited customer details                  |
+| Endpoint                                                              | Auth        | Tag       | Purpose                                            |
+|-----------------------------------------------------------------------|-------------|-----------|----------------------------------------------------|
+| GET /obp/v5.1.0/banks/{bankId}/customers/{customerId}                | DirectLogin | Customers | Fetch full customer record for profile display     |
+| PUT /obp/v5.1.0/banks/{bankId}/customers/{customerId}                | DirectLogin | Customers | Submit updated customer information                |
 
 ---
 
 ## Design Tokens
 
-| Token                          | Value   | Usage                                                                    |
-|--------------------------------|---------|--------------------------------------------------------------------------|
-| color.light.primary            | #4C662B | Section headings, phone/email link text, edit button border+text         |
-| color.light.on_surface_variant | #44483D | Row label text (body_medium)                                             |
-| color.light.on_surface         | #1A1C16 | Row value text (body_large)                                              |
-| color.light.surface            | #FFFFFF | Data row card backgrounds                                                |
-| color.light.background         | #F9FAEF | Screen background                                                        |
-| color.light.surface_variant    | #E1E4D5 | Section dividers                                                         |
-| typography.title_large         | —       | Section heading labels                                                   |
-| typography.body_large          | —       | Data row values                                                          |
-| typography.body_medium         | —       | Data row labels                                                          |
-| radius.sm                      | 8dp     | Data row cards                                                           |
-| radius.pill                    | 999dp   | Edit Information button                                                  |
+| Token                           | Value     | Usage                                                                                  |
+|---------------------------------|-----------|----------------------------------------------------------------------------------------|
+| colors.light.primary            | #4C662B   | Section headings (Personal Info / Address / Employment), phone + email link colour      |
+| colors.light.on_surface         | #1A1C16   | Data value text (full_name_value, dob_value, national_id_value, etc.)                 |
+| colors.light.on_surface_variant | #44483D   | Label text (full_name_label, dob_label, phone_label, etc.)                             |
+| colors.light.surface            | #FFFFFF   | Data row card fill                                                                      |
+| colors.light.surface_variant    | #E1E4D5   | Section dividers; skeleton shimmer base colour                                          |
+| colors.light.background         | #F9FAEF   | Screen background                                                                       |
+| colors.light.error              | #BA1A1A   | Error banner text                                                                       |
+| colors.light.error_container    | #FFDAD6   | Error banner background                                                                 |
+| typography.title_large          | Outfit 22sp/400 | Section headings                                                                   |
+| typography.body_large           | Outfit 16sp/400 | Data values; phone and email link text                                             |
+| typography.body_medium          | Outfit 14sp/400 | Field labels                                                                       |
+| radius.sm                       | 8dp       | Data row card corners                                                                   |
+| radius.pill                     | 999dp     | Edit Information button                                                                 |
+| motion.duration.short4          | 200ms     | Skeleton shimmer animation duration                                                     |
+| spacing.md                      | 16dp      | Horizontal content padding, row h-pad                                                   |
+| spacing.lg                      | 24dp      | Section spacing (title paddingTop)                                                      |
+| touchTargets.min_touch_target   | 48dp      | phone_link and email_link tap zones                                                     |
 
 ---
 
-_Generated by /idea export | 2026-05-29_
+_Generated by /idea export | 2026-05-30_

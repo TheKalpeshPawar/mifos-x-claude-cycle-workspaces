@@ -1,0 +1,231 @@
+schema_version: "4.0"
+api_group: account_applications
+name: "Account Applications API"
+base_url: "https://apisandbox.openbankproject.com/obp"
+auth_scheme: DirectLogin
+generated_at: "2026-05-30"
+
+endpoints:
+
+  - id: list_account_applications
+    method: GET
+    path: "/v5.1.0/banks/{bank_id}/account-applications"
+    description: "List all account applications for the bank. Used on account-applications screen to display the application queue with status and applicant details."
+    auth_required: true
+    request_schema: []
+    response_schema:
+      - field: account_application_id
+        type: String
+        format: UUID
+        nullable: false
+        description: "OBP-assigned unique application identifier."
+      - field: product_code
+        type: String
+        nullable: false
+        description: "Bank product code the applicant applied for (e.g. 'CURRENT', 'SAVINGS_PLUS')."
+      - field: user
+        type: User
+        nullable: true
+        description: "OBP user who submitted the application — object containing user_id, username, email."
+      - field: customer
+        type: Customer
+        nullable: true
+        description: "Customer linked to this application — object containing customer_id, legal_name, customer_number."
+      - field: date_of_application
+        type: String
+        format: ISO-8601 Instant
+        nullable: false
+        description: "Timestamp the application was submitted."
+      - field: date_last_modified
+        type: String
+        format: ISO-8601 Instant
+        nullable: true
+        description: "Timestamp of the most recent status update."
+      - field: status
+        type: String
+        nullable: false
+        description: "Application lifecycle status — SUBMITTED | PENDING | PROCESSING | APPROVED | REJECTED | CANCELLED."
+    error_codes:
+      - code: 400
+        message: "BAD_REQUEST"
+        retry: false
+      - code: 401
+        message: "USER_NOT_LOGGED_IN"
+        retry: false
+      - code: 403
+        message: "INSUFFICIENT_AUTHORISATION"
+        retry: false
+      - code: 500
+        message: "OBP_SERVER_ERROR"
+        retry: true
+
+  - id: get_account_application
+    method: GET
+    path: "/v5.1.0/banks/{bank_id}/account-applications/{account_application_id}"
+    description: "Retrieve full details of a specific account application. Used on application-detail screen to show complete application record including account routing and review history."
+    auth_required: true
+    request_schema: []
+    response_schema:
+      - field: account_application_id
+        type: String
+        format: UUID
+        nullable: false
+        description: "OBP-assigned unique application identifier."
+      - field: product_code
+        type: String
+        nullable: false
+        description: "Bank product code applied for."
+      - field: user
+        type: User
+        nullable: true
+        description: "Submitting OBP user — object containing user_id, username, email, provider."
+      - field: customer
+        type: Customer
+        nullable: true
+        description: "Linked customer — object containing customer_id, legal_name, customer_number, mobile_phone_number, email, kyc_status."
+      - field: date_of_application
+        type: String
+        format: ISO-8601 Instant
+        nullable: false
+        description: "Timestamp the application was submitted."
+      - field: date_last_modified
+        type: String
+        format: ISO-8601 Instant
+        nullable: true
+        description: "Timestamp of the most recent update."
+      - field: status
+        type: String
+        nullable: false
+        description: "Application lifecycle status — SUBMITTED | PENDING | PROCESSING | APPROVED | REJECTED | CANCELLED."
+      - field: account_routing
+        type: AccountRouting
+        nullable: true
+        description: "Routing information for the provisioned account (populated only after APPROVED). Object containing scheme and address."
+    error_codes:
+      - code: 400
+        message: "BAD_REQUEST"
+        retry: false
+      - code: 401
+        message: "USER_NOT_LOGGED_IN"
+        retry: false
+      - code: 403
+        message: "INSUFFICIENT_AUTHORISATION"
+        retry: false
+      - code: 404
+        message: "APPLICATION_NOT_FOUND"
+        retry: false
+      - code: 500
+        message: "OBP_SERVER_ERROR"
+        retry: true
+
+  - id: update_account_application
+    method: PUT
+    path: "/v5.1.0/banks/{bank_id}/account-applications/{account_application_id}"
+    description: "Update the status of an account application. Used on application-detail screen by field officers and bank staff to approve, reject, or progress an application."
+    auth_required: true
+    request_schema:
+      - field: status
+        type: String
+        required: true
+        validation: "New application status — one of: PENDING | PROCESSING | APPROVED | REJECTED | CANCELLED. Transitions must follow the lifecycle: SUBMITTED→PENDING→PROCESSING→APPROVED or REJECTED. CANCELLED is always terminal."
+    response_schema:
+      - field: account_application_id
+        type: String
+        format: UUID
+        nullable: false
+        description: "Application identifier (unchanged)."
+      - field: status
+        type: String
+        nullable: false
+        description: "Updated application status."
+      - field: date_last_modified
+        type: String
+        format: ISO-8601 Instant
+        nullable: false
+        description: "Timestamp of this status change."
+    error_codes:
+      - code: 400
+        message: "VALIDATION_FAILED"
+        retry: false
+      - code: 400
+        message: "INVALID_APPLICATION_STATUS"
+        retry: false
+      - code: 401
+        message: "USER_NOT_LOGGED_IN"
+        retry: false
+      - code: 403
+        message: "INSUFFICIENT_AUTHORISATION"
+        retry: false
+      - code: 404
+        message: "APPLICATION_NOT_FOUND"
+        retry: false
+      - code: 409
+        message: "APPLICATION_STATUS_CONFLICT"
+        retry: false
+      - code: 500
+        message: "OBP_SERVER_ERROR"
+        retry: true
+
+  - id: create_account_application
+    method: POST
+    path: "/v3.1.0/banks/{bank_id}/account-applications"
+    description: "Submit a new account application for a customer (step 9 of customer-onboarding flow). Creates the application record in SUBMITTED state."
+    auth_required: true
+    request_schema:
+      - field: product_code
+        type: String
+        required: true
+        validation: "Valid bank product code from /banks/{bank_id}/products. Max 50 characters."
+      - field: user_id
+        type: String
+        required: false
+        validation: "OBP user_id (UUID) of the applicant. If omitted, defaults to authenticated user."
+      - field: customer_id
+        type: String
+        required: false
+        validation: "OBP customer_id (UUID) to link to this application."
+      - field: proposed_account_routings
+        type: "List<AccountRouting>"
+        required: false
+        validation: "Proposed routing — list of objects with scheme and address."
+    response_schema:
+      - field: account_application_id
+        type: String
+        format: UUID
+        nullable: false
+        description: "OBP-assigned unique application identifier."
+      - field: product_code
+        type: String
+        nullable: false
+        description: "Product code stored."
+      - field: status
+        type: String
+        nullable: false
+        description: "Always SUBMITTED on creation."
+      - field: date_of_application
+        type: String
+        format: ISO-8601 Instant
+        nullable: false
+        description: "Creation timestamp."
+    error_codes:
+      - code: 400
+        message: "INVALID_PRODUCT_CODE"
+        retry: false
+      - code: 400
+        message: "INVALID_APPLICATION_DATA"
+        retry: false
+      - code: 401
+        message: "USER_NOT_LOGGED_IN"
+        retry: false
+      - code: 403
+        message: "INSUFFICIENT_AUTHORISATION"
+        retry: false
+      - code: 404
+        message: "CUSTOMER_NOT_FOUND"
+        retry: false
+      - code: 409
+        message: "APPLICATION_ALREADY_EXISTS"
+        retry: false
+      - code: 500
+        message: "OBP_SERVER_ERROR"
+        retry: true

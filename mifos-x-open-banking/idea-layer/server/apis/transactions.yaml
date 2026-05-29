@@ -1,0 +1,342 @@
+schema_version: "4.0"
+api_group: transactions
+name: "Transactions API"
+base_url: "https://apisandbox.openbankproject.com/obp"
+auth_scheme: DirectLogin
+generated_at: "2026-05-30"
+
+endpoints:
+
+  - id: list_transactions
+    method: GET
+    path: "/v3.0.0/banks/{bank_id}/accounts/{account_id}/transactions"
+    description: "List transactions for an account with date-range filtering, pagination, and sort control. Powers the transactions screen list and account-detail recent-activity section."
+    auth_required: true
+    request_schema:
+      - field: limit
+        type: Int
+        required: false
+        validation: "Maximum number of transactions to return. Default 20. Max 1000."
+      - field: offset
+        type: Int
+        required: false
+        validation: "Zero-based pagination offset. Default 0."
+      - field: from_date
+        type: String
+        required: false
+        validation: "ISO-8601 date-time string (e.g. '2026-04-25T00:00:00.000Z'). Start of date range filter."
+      - field: to_date
+        type: String
+        required: false
+        validation: "ISO-8601 date-time string (e.g. '2026-05-25T23:59:59.999Z'). End of date range filter."
+      - field: sort_direction
+        type: String
+        required: false
+        validation: "Sort order by posted date — 'ASC' or 'DESC'. Default 'DESC'."
+    response_schema:
+      - field: id
+        type: String
+        nullable: false
+        description: "Unique transaction identifier."
+      - field: this_account
+        type: Object
+        nullable: false
+        description: "The account this transaction belongs to."
+      - field: this_account.id
+        type: String
+        nullable: false
+        description: "Account identifier."
+      - field: other_account
+        type: Object
+        nullable: false
+        description: "The counterparty account involved in this transaction."
+      - field: other_account.holder
+        type: Object
+        nullable: true
+        description: "Counterparty holder details."
+      - field: other_account.holder.name
+        type: String
+        nullable: true
+        description: "Display name of the counterparty."
+      - field: other_account.metadata
+        type: Object
+        nullable: true
+        description: "Optional metadata including image_url for counterparty."
+      - field: details
+        type: Object
+        nullable: false
+        description: "Transaction detail payload."
+      - field: details.type
+        type: String
+        nullable: false
+        description: "Transaction type — e.g. 'SEPA_CREDIT_TRANSFERS', 'DEBIT', 'CREDIT', 'UK_FASTER_PAYMENTS_SEND'."
+      - field: details.description
+        type: String
+        nullable: true
+        description: "Free-text narration or payment reference."
+      - field: details.posted
+        type: String
+        format: ISO-8601 Instant
+        nullable: false
+        description: "Timestamp the transaction was posted to the account."
+      - field: details.completed
+        type: String
+        format: ISO-8601 Instant
+        nullable: true
+        description: "Timestamp the transaction settled / completed."
+      - field: details.new_balance.currency
+        type: String
+        nullable: false
+        description: "ISO 4217 currency code for the balance after this transaction."
+      - field: details.new_balance.amount
+        type: String
+        nullable: false
+        description: "Account balance after this transaction as a decimal string."
+      - field: details.value.currency
+        type: String
+        nullable: false
+        description: "ISO 4217 currency code for the transaction amount."
+      - field: details.value.amount
+        type: String
+        nullable: false
+        description: "Transaction amount as a decimal string. Negative for debits."
+      - field: metadata
+        type: Object
+        nullable: true
+        description: "User-generated metadata (narrative, comments, tags) associated with this transaction."
+    error_codes:
+      - code: 400
+        message: "INVALID_DATE_RANGE"
+        retry: false
+      - code: 400
+        message: "INVALID_SORT_DIRECTION"
+        retry: false
+      - code: 401
+        message: "USER_NOT_LOGGED_IN"
+        retry: false
+      - code: 403
+        message: "INSUFFICIENT_AUTHORISATION"
+        retry: false
+      - code: 404
+        message: "BANK_ACCOUNT_NOT_FOUND"
+        retry: false
+      - code: 500
+        message: "OBP_SERVER_ERROR"
+        retry: true
+
+  - id: get_transaction_detail
+    method: GET
+    path: "/v3.0.0/banks/{bank_id}/accounts/{account_id}/transactions/{transaction_id}/transaction"
+    description: "Get full detail for a single transaction including counterparty routing, settled balance, and user-generated metadata. Powers the transaction-detail screen."
+    auth_required: true
+    request_schema: []
+    response_schema:
+      - field: id
+        type: String
+        nullable: false
+        description: "Unique transaction identifier."
+      - field: this_account.id
+        type: String
+        nullable: false
+        description: "The account ID this transaction belongs to."
+      - field: this_account.account_routings
+        type: "List<AccountRouting>"
+        nullable: false
+        description: "Routing identifiers for the owning account."
+      - field: other_account.id
+        type: String
+        nullable: true
+        description: "Counterparty account identifier if known."
+      - field: other_account.holder.name
+        type: String
+        nullable: true
+        description: "Counterparty display name."
+      - field: other_account.holder.is_alias
+        type: Boolean
+        nullable: false
+        description: "True if the counterparty name is a display alias rather than the real name."
+      - field: other_account.account_routings
+        type: "List<AccountRouting>"
+        nullable: true
+        description: "Counterparty routing identifiers (IBAN, etc.) if available."
+      - field: other_account.metadata.image_url
+        type: "String?"
+        nullable: true
+        description: "Avatar/logo URL for the counterparty, used in the transaction-detail header."
+      - field: details.type
+        type: String
+        nullable: false
+        description: "Transaction type identifier."
+      - field: details.description
+        type: String
+        nullable: true
+        description: "Payment narration or reference text."
+      - field: details.posted
+        type: String
+        format: ISO-8601 Instant
+        nullable: false
+        description: "Timestamp the transaction was posted."
+      - field: details.completed
+        type: String
+        format: ISO-8601 Instant
+        nullable: true
+        description: "Settlement completion timestamp."
+      - field: details.new_balance.currency
+        type: String
+        nullable: false
+        description: "Currency of the post-transaction balance."
+      - field: details.new_balance.amount
+        type: String
+        nullable: false
+        description: "Account balance after this transaction."
+      - field: details.value.currency
+        type: String
+        nullable: false
+        description: "Transaction currency code."
+      - field: details.value.amount
+        type: String
+        nullable: false
+        description: "Transaction amount (negative for debits)."
+      - field: metadata.narrative
+        type: "String?"
+        nullable: true
+        description: "User-written note about this transaction."
+      - field: metadata.comments
+        type: "List<Comment>"
+        nullable: true
+        description: "User comments thread on this transaction."
+      - field: metadata.tags
+        type: "List<Tag>"
+        nullable: true
+        description: "User-applied tags for categorisation."
+    error_codes:
+      - code: 401
+        message: "USER_NOT_LOGGED_IN"
+        retry: false
+      - code: 403
+        message: "INSUFFICIENT_AUTHORISATION"
+        retry: false
+      - code: 404
+        message: "TRANSACTION_NOT_FOUND"
+        retry: false
+      - code: 500
+        message: "OBP_SERVER_ERROR"
+        retry: true
+
+  - id: add_transaction_tag
+    method: POST
+    path: "/v3.0.0/banks/{bank_id}/accounts/{account_id}/transactions/{transaction_id}/metadata/tags"
+    description: "Add a user-defined tag to a transaction for categorisation. Tags are displayed on the transaction-tags screen and the transaction-detail tags section."
+    auth_required: true
+    request_schema:
+      - field: value
+        type: String
+        required: true
+        validation: "Non-empty tag string. Max 255 characters. No whitespace trimming — normalise on client before sending."
+    response_schema:
+      - field: id
+        type: String
+        nullable: false
+        description: "Unique identifier for the newly created tag."
+      - field: value
+        type: String
+        nullable: false
+        description: "The tag string as stored."
+      - field: date
+        type: String
+        format: ISO-8601 Instant
+        nullable: false
+        description: "Timestamp when the tag was created."
+      - field: user
+        type: Object
+        nullable: false
+        description: "The user who created the tag."
+    error_codes:
+      - code: 400
+        message: "INVALID_TAG_VALUE"
+        retry: false
+      - code: 401
+        message: "USER_NOT_LOGGED_IN"
+        retry: false
+      - code: 403
+        message: "INSUFFICIENT_AUTHORISATION"
+        retry: false
+      - code: 404
+        message: "TRANSACTION_NOT_FOUND"
+        retry: false
+      - code: 500
+        message: "OBP_SERVER_ERROR"
+        retry: true
+
+  - id: delete_transaction_tag
+    method: DELETE
+    path: "/v3.0.0/banks/{bank_id}/accounts/{account_id}/transactions/{transaction_id}/metadata/tags/{tag_id}"
+    description: "Remove a previously added tag from a transaction. Triggered from the transaction-tags screen tag chip dismiss action."
+    auth_required: true
+    request_schema: []
+    response_schema:
+      - field: message
+        type: String
+        nullable: false
+        description: "Confirmation message — 'Tag deleted successfully'."
+    error_codes:
+      - code: 401
+        message: "USER_NOT_LOGGED_IN"
+        retry: false
+      - code: 403
+        message: "INSUFFICIENT_AUTHORISATION"
+        retry: false
+      - code: 404
+        message: "TRANSACTION_NOT_FOUND"
+        retry: false
+      - code: 404
+        message: "TAG_NOT_FOUND"
+        retry: false
+      - code: 500
+        message: "OBP_SERVER_ERROR"
+        retry: true
+
+  - id: add_transaction_comment
+    method: POST
+    path: "/v3.0.0/banks/{bank_id}/accounts/{account_id}/transactions/{transaction_id}/metadata/comments"
+    description: "Add a free-text comment or note to a transaction. Displayed in the transaction-detail comments section."
+    auth_required: true
+    request_schema:
+      - field: value
+        type: String
+        required: true
+        validation: "Non-empty comment string. Max 2000 characters."
+    response_schema:
+      - field: id
+        type: String
+        nullable: false
+        description: "Unique identifier for the created comment."
+      - field: value
+        type: String
+        nullable: false
+        description: "The comment text as stored."
+      - field: date
+        type: String
+        format: ISO-8601 Instant
+        nullable: false
+        description: "Timestamp when the comment was created."
+      - field: user
+        type: Object
+        nullable: false
+        description: "The user who created the comment."
+    error_codes:
+      - code: 400
+        message: "INVALID_COMMENT_VALUE"
+        retry: false
+      - code: 401
+        message: "USER_NOT_LOGGED_IN"
+        retry: false
+      - code: 403
+        message: "INSUFFICIENT_AUTHORISATION"
+        retry: false
+      - code: 404
+        message: "TRANSACTION_NOT_FOUND"
+        retry: false
+      - code: 500
+        message: "OBP_SERVER_ERROR"
+        retry: true

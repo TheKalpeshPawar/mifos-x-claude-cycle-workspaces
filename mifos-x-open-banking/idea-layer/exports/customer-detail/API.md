@@ -11,49 +11,71 @@
 
 **Auth:** DirectLogin
 **Tag:** Customers
-**Trigger:** `loadCustomerDetail(customerId)` on screen open / `RetryLoadEvent`
+**Trigger:** `loadDashboardData()` on screen entry; `RetryLoadEvent` on retry tap
+
+Fetches the full customer record for the given `customerId` within the bank. Drives the hero header (name, initials, member-since, KYC badge), quick-stats (KYC status), personal information card (legal name, DOB, email, phone), and KYC banners. The `kyc_status` boolean controls which KYC banner renders and whether the KYC Verified badge appears.
 
 ### Path Parameters
 
-| Name       | Type   | Description                           |
-|------------|--------|---------------------------------------|
-| bankId     | String | Bank identifier (e.g. "gh.29.uk")     |
-| customerId | String | OBP customer ID from customer-search  |
+| Name       | Type   | Example               | Description           |
+|------------|--------|-----------------------|-----------------------|
+| bankId     | String | ke.equity.001         | Bank identifier       |
+| customerId | String | cust-ke-001-wanjiru   | Customer identifier   |
 
 ### Response Fields
 
-| Field                     | Type       | Description                                                |
-|---------------------------|------------|------------------------------------------------------------|
-| bank_id                   | String     | Bank identifier                                            |
-| customer_id               | String     | Unique customer identifier                                 |
-| customer_number           | String     | Bank-assigned customer reference number                    |
-| legal_name                | String     | Full legal name (e.g. "John Kamau Mwangi")                |
-| mobile_phone_number       | String     | Contact phone (e.g. "+254 722 123 456")                    |
-| email                     | String     | Email address (e.g. "john.mwangi@gmail.com")               |
-| face_image.url            | String     | Profile photo URL (if present)                             |
-| face_image.date           | String     | Photo capture date                                         |
-| date_of_birth             | String     | ISO-8601 date of birth (e.g. "1985-03-14")                |
-| relationship_status       | String     | Relationship status string                                 |
-| dependants                | Int        | Number of dependants                                       |
-| credit_rating.rating      | String     | Credit rating code                                         |
-| credit_limit.currency     | String     | Credit limit currency                                      |
-| credit_limit.amount       | String     | Credit limit amount                                        |
-| highest_education_attained| String     | Education level                                            |
-| employment_status         | String     | Employment status                                          |
-| kyc_status                | Boolean    | `true` = KYC verified; `false` = pending                  |
-| last_ok_date              | String     | ISO-8601 timestamp of last KYC check / last account OK     |
-| title                     | String     | Title (Mr/Mrs/Dr etc.)                                     |
-| branch_id                 | String     | Assigned branch identifier                                 |
-| name_suffix               | String     | Name suffix if applicable                                  |
+| Field                       | Type                | Description                                                     |
+|-----------------------------|---------------------|-----------------------------------------------------------------|
+| bank_id                     | String              | Bank identifier                                                 |
+| customer_id                 | String              | Customer unique identifier                                      |
+| customer_number             | String              | Human-readable account reference (e.g. "EQKE-2024-00147")     |
+| legal_name                  | String              | Full legal name — drives `customer_full_name` text component    |
+| mobile_phone_number         | String              | E.164 format — drives `personal_info_phone`                     |
+| email                       | String              | Email address — drives `personal_info_email`                    |
+| face_image                  | FaceImage           | `{ url: String, date: String }` — avatar image URL             |
+| date_of_birth               | String              | ISO date (YYYY-MM-DD) — drives `personal_info_dob`             |
+| relationship_status         | String              | Enum: SINGLE / MARRIED / DIVORCED / WIDOWED                    |
+| dependants                  | Int                 | Number of dependants                                            |
+| dob_of_dependants           | List\<String\>      | ISO dates of dependant DOBs                                     |
+| credit_rating               | CreditRating        | `{ rating: String, source: String }` e.g. `{ "A", "CRB Africa" }` |
+| credit_limit                | Amount              | `{ currency: String, amount: String }` credit limit             |
+| highest_education_attained  | String              | e.g. "UNIVERSITY"                                               |
+| employment_status           | String              | e.g. "EMPLOYED"                                                 |
+| kyc_status                  | Boolean             | `true` = verified → show verified banner; `false` → pending banner |
+| last_ok_date                | String              | ISO-8601 timestamp of last KYC check — drives KYC banner date   |
+| title                       | String              | Honorific (Mr / Mrs / Dr etc.)                                  |
+| branch_id                   | String              | Assigned branch identifier                                      |
+| name_suffix                 | String              | Suffix (Jr / Sr etc.), may be empty                             |
+
+### Demo Data
+
+| Field               | Value                                    |
+|---------------------|------------------------------------------|
+| bank_id             | ke.equity.001                            |
+| customer_id         | cust-ke-001-wanjiru                      |
+| customer_number     | EQKE-2024-00147                          |
+| legal_name          | Wanjiru Kamau                            |
+| mobile_phone_number | +254712345678                            |
+| email               | wanjiru.kamau@gmail.com                  |
+| date_of_birth       | 1988-03-22                               |
+| relationship_status | MARRIED                                  |
+| dependants          | 2                                        |
+| credit_rating       | { rating: "A", source: "CRB Africa" }   |
+| credit_limit        | { currency: "KES", amount: "500000.00" } |
+| employment_status   | EMPLOYED                                 |
+| kyc_status          | true                                     |
+| last_ok_date        | 2026-05-10T09:30:00Z                     |
+| title               | Mrs                                      |
+| branch_id           | branch-westlands-nbi                     |
 
 ### Error Codes
 
-| Code | OBP Error Key          | UI Behaviour                                               |
-|------|------------------------|------------------------------------------------------------|
-| 401  | USER_NOT_LOGGED_IN     | Navigate to login                                          |
-| 403  | INSUFFICIENT_AUTHORISATION | Show error state                                       |
-| 404  | CUSTOMER_NOT_FOUND     | Show `empty` state — customer archived or ID invalid       |
-| 500  | INTERNAL_SERVER_ERROR  | Show `error` state with retry                              |
+| Code | Message                                     | UI Handling                                    |
+|------|---------------------------------------------|------------------------------------------------|
+| 401  | Unauthorized — missing or invalid token     | Navigate to login screen                       |
+| 403  | Forbidden — insufficient permissions        | Show error state with contact support message  |
+| 404  | Customer not found                          | Transition to `empty` state                    |
+| 500  | Internal server error                       | Transition to `error` state with retry button  |
 
 ---
 
@@ -61,41 +83,49 @@
 
 **Auth:** DirectLogin
 **Tag:** Accounts
-**Trigger:** `loadCustomerDetail(customerId)` on screen open — parallel to customer fetch
+**Trigger:** `loadDashboardData()` on screen entry — parallel to customer fetch; `RetryLoadEvent` on retry tap
+
+Fetches all accounts associated with this customer. The `CustomerDetailViewModel` sums `balance.amount` values to compute `totalBalance` shown in `stat_total_balance`, and counts entries for `stat_accounts_count`. Account details also populate the Accounts tab content.
 
 ### Path Parameters
 
-| Name       | Type   | Description                           |
-|------------|--------|---------------------------------------|
-| bankId     | String | Bank identifier                       |
-| customerId | String | OBP customer ID                       |
+| Name       | Type   | Example               | Description         |
+|------------|--------|-----------------------|---------------------|
+| bankId     | String | ke.equity.001         | Bank identifier     |
+| customerId | String | cust-ke-001-wanjiru   | Customer identifier |
 
 ### Response Fields
 
-| Field                    | Type                    | Description                               |
-|--------------------------|-------------------------|-------------------------------------------|
-| accounts                 | List\<Account\>         | All accounts linked to the customer        |
-| id                       | String                  | Account identifier                        |
-| label                    | String                  | Account display name                      |
-| number                   | String                  | Account number                            |
-| bank_id                  | String                  | Bank identifier                           |
-| account_routings         | List\<AccountRouting\>  | Routing numbers / IBANs                   |
-| balance.currency         | String                  | Account currency                          |
-| balance.amount           | String                  | Account balance                           |
-| account_type             | String                  | e.g. "CHECKING", "SAVINGS"                |
+| Field                          | Type                   | Description                                              |
+|--------------------------------|------------------------|----------------------------------------------------------|
+| accounts                       | List\<Account\>        | Array of account objects                                 |
+| accounts[].id                  | String                 | Account unique identifier                                |
+| accounts[].label               | String                 | Display label (e.g. "Wanjiru Savings Account")          |
+| accounts[].number              | String                 | Account number                                           |
+| accounts[].bank_id             | String                 | Bank identifier                                          |
+| accounts[].account_type        | String                 | SAVINGS / CURRENT / CHECKING                             |
+| accounts[].balance             | Amount                 | `{ currency: String, amount: String }`                  |
+| accounts[].account_routings    | List\<AccountRouting\> | `[{ scheme: String, address: String }]` e.g. IBAN       |
 
-### Sample Display Mapping
+### Demo Data
 
-- `stat_accounts_count`: `accounts.size` → "2 Accounts"
-- `stat_total_balance`: sum of `balance.amount` across all accounts → "KES 145,200"
+| id                    | label                      | account_type | balance.currency | balance.amount |
+|-----------------------|----------------------------|--------------|------------------|----------------|
+| acct-ke-001-savings   | Wanjiru Savings Account    | SAVINGS      | KES              | 187450.00      |
+| acct-ke-002-current   | Wanjiru Current Account    | CURRENT      | KES              | 42800.00       |
+
+**Aggregated display values:**
+- `stat_accounts_count` → "2 Accounts"
+- `stat_total_balance` → "KES 230,250" (sum of 187,450 + 42,800)
 
 ### Error Codes
 
-| Code | OBP Error Key              | UI Behaviour                                         |
-|------|----------------------------|------------------------------------------------------|
-| 401  | USER_NOT_LOGGED_IN         | Navigate to login                                    |
-| 403  | INSUFFICIENT_AUTHORISATION | Stats row shows "—" for balance                      |
-| 404  | CUSTOMER_NOT_FOUND         | Stats row shows "0 Accounts"                         |
+| Code | Message                                     | UI Handling                                   |
+|------|---------------------------------------------|-----------------------------------------------|
+| 401  | Unauthorized — missing or invalid token     | Navigate to login screen                      |
+| 403  | Forbidden — insufficient permissions        | Show error state; stats row shows "—"         |
+| 404  | Customer or bank not found                  | Stats row shows "0 Accounts"                  |
+| 500  | Internal server error                       | Transition to `error` state with retry button |
 
 ---
 
@@ -103,30 +133,41 @@
 
 **Auth:** DirectLogin
 **Tag:** Customer
-**Trigger:** Optional supplementary load for Accounts tab content
+**Trigger:** `loadDashboardData()` on screen entry — supplementary load; retrieves link records joining customer to accounts when ownership is managed via the link table
+
+Returns customer-account link records used by `CustomerRepository` to resolve the canonical set of accounts belonging to this customer.
 
 ### Path Parameters
 
-| Name       | Type   | Description             |
-|------------|--------|-------------------------|
-| bankId     | String | Bank identifier         |
-| customerId | String | OBP customer ID         |
+| Name       | Type   | Example               | Description         |
+|------------|--------|-----------------------|---------------------|
+| bankId     | String | ke.equity.001         | Bank identifier     |
+| customerId | String | cust-ke-001-wanjiru   | Customer identifier |
 
 ### Response Fields
 
-| Field                      | Type   | Description                                    |
-|----------------------------|--------|------------------------------------------------|
-| links                      | List\<CustomerAccountLink\> | All account links for the customer |
-| customer_account_link_id   | String | Link record identifier                         |
-| account_id                 | String | Linked account ID (references accounts list)   |
+| Field                            | Type                        | Description                               |
+|----------------------------------|-----------------------------|-------------------------------------------|
+| links                            | List\<CustomerAccountLink\> | Array of link objects                     |
+| links[].customer_account_link_id | String                      | Unique link record identifier             |
+| links[].account_id               | String                      | References the linked account `id`        |
+
+### Demo Data
+
+| customer_account_link_id      | account_id              |
+|-------------------------------|-------------------------|
+| cal-001-wanjiru-savings        | acct-ke-001-savings     |
+| cal-002-wanjiru-current        | acct-ke-002-current     |
 
 ### Error Codes
 
-| Code | OBP Error Key              | UI Behaviour              |
-|------|----------------------------|---------------------------|
-| 401  | USER_NOT_LOGGED_IN         | Navigate to login         |
-| 404  | CUSTOMER_NOT_FOUND         | Empty accounts tab        |
+| Code | Message                                     | UI Handling                                   |
+|------|---------------------------------------------|-----------------------------------------------|
+| 401  | Unauthorized — missing or invalid token     | Navigate to login screen                      |
+| 403  | Forbidden — insufficient permissions        | Show error state with contact support message |
+| 404  | Customer not found                          | Empty accounts tab                            |
+| 500  | Internal server error                       | Transition to `error` state with retry button |
 
 ---
 
-_Generated by /idea export | 2026-05-29_
+_Generated by /idea export | 2026-05-30_

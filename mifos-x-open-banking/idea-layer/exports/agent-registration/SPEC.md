@@ -12,7 +12,7 @@
 
 ## Overview
 
-The Agent Registration screen allows a Field Officer to self-register as an authorized OBP bank agent. On entry, the screen performs a pre-flight status check against OBP — if the officer is already pending approval, a `status_banner_pending` informs them and the form is read-only; if confirmed, a `status_banner_confirmed` with a "Go to Dashboard" CTA is shown. Otherwise, the form collects: Legal Name, Mobile Phone Number (+254 Kenya prefix), Agent Number (AGT-YYYY-NNNNN format), Operating Currency (dropdown: EUR/GBP/KES/USD), a multi-select chip group for Supported Services (Cash Deposit, Cash Withdrawal, Account Opening, Bill Payment, Fund Transfer), and Commission Rate (0.5–5.0%). On submit, the form calls `POST /obp/v5.1.0/banks/{bankId}/agents`. Inline validation errors appear per-field; a global error banner covers API-level failures.
+The Agent Registration screen enables a Field Officer to self-register as an authorised OBP bank agent. On entry the screen performs a pre-flight OBP status check (`isLoading=true`): if the officer is already pending, a `status_banner_pending` (#CDEDA3 bg / #E8A317 border, `hourglass_empty` icon, `#44483D` text) informs them and the form is fully read-only with the Register button hidden; if already confirmed, a `status_banner_confirmed` (#CDEDA3 bg / #CDEDA3 border, `verified_outlined` icon, #4C662B text) is shown alongside the "Go to Dashboard" CTA that navigates to `fo-dashboard`. When no prior agent record exists the idle form renders: Legal Name (text input, placeholder "e.g. Priya Chakraborty"), Mobile Phone Number (horizontal row — static +254 Kenya prefix box + 9-digit phone input), Agent Number (text input, placeholder "e.g. AGT-2026-00142", format AGT-YYYY-NNNNN), Operating Currency (combobox: EUR / GBP / KES / USD, trailing `expand_more`), Supported Services (multi-select wrap chip group: Cash Deposit / Cash Withdrawal / Account Opening / Bill Payment / Fund Transfer), and Commission Rate (decimal input 0.5–5.0, trailing `percent` icon). Submitting calls `POST /obp/v5.1.0/banks/{bankId}/agents`; inline per-field errors cover client-side validation failures; a global error banner covers OBP 4xx/5xx responses. There is no bottom navigation bar — only a top app bar with back arrow navigating to `fo-dashboard`.
 
 ---
 
@@ -22,63 +22,70 @@ The Agent Registration screen allows a Field Officer to self-register as an auth
 |--------------------|--------------------|---------------------|--------|----------|
 | agent-registration | Agent Registration | /agent-registration | Column | Vertical |
 
-**Shell:** Top app bar, title "Agent Registration", back arrow. No bottom navigation bar.
+**Shell:** Top app bar — title "Agent Registration", `arrow_back` navigation icon → `navigate_back` → `fo-dashboard`. No bottom navigation bar.
 
 ---
 
 ## Components
 
-| ID                      | Type             | Description                                                                                            |
-|-------------------------|------------------|--------------------------------------------------------------------------------------------------------|
-| agent_reg_title         | text             | "Agent Registration" — headline_large (32sp/Bold), color `#4C662B`                                    |
-| agent_reg_subtitle      | text             | "Register to become an authorised OBP field agent with your bank" — body_medium, color `#44483D`      |
-| registration_loading_spinner | loading_indicator | Spinner 48dp `#4C662B`, centred — shown during pre-flight OBP status check                  |
-| loading_label           | text             | "Checking registration status…" — body_medium, color `#44483D`, centred                               |
-| status_banner_pending   | box              | `#CDEDA3` bg, `#E8A317` border, 14dp radius; contains pending icon + title + message                  |
-| pending_icon            | icon             | `hourglass_empty`, 22dp, color `#44483D`; decorative                                                  |
-| pending_banner_title    | text             | "Pending Approval" — body_medium/SemiBold, color `#44483D`                                            |
-| pending_banner_message  | text             | "Your agent application is under review. You will be notified once your bank confirms your registration." — body_small, `#44483D` |
-| status_banner_confirmed | box              | `#CDEDA3` bg, `#CDEDA3` border, 14dp radius; contains verified icon + title + message                 |
-| confirmed_icon          | icon             | `verified_outlined`, 22dp, color `#4C662B`; decorative                                                |
-| confirmed_banner_title  | text             | "Agent Confirmed" — body_medium/SemiBold, color `#4C662B`                                             |
-| confirmed_banner_message| text             | "You are registered as an active Mifos field agent. You can now onboard customers and process transactions." — body_small, `#4C662B` |
-| go_to_dashboard_button  | button           | "Go to Dashboard" — filled `#4C662B`/white, full-width, 14dp radius, label_large; navigates to fo-dashboard |
-| legal_name_label        | text             | "Legal Name" — label_medium/SemiBold, color `#44483D`                                                 |
-| legal_name_input        | input            | Outlined text field, placeholder "e.g. Priya Chakraborty"; maps to OBP `legal_name`                   |
-| legal_name_error        | text             | "Legal name is required" — body_small, color `#BA1A1A`; alert role                                    |
-| phone_label             | text             | "Mobile Phone Number" — label_medium/SemiBold, color `#44483D`                                        |
-| phone_prefix_box        | box              | "+254" static badge — `#F9FAEF` bg, 12dp radius, body_medium/SemiBold `#1A1C16`                       |
-| phone_number_input      | input            | Outlined tel field, placeholder "712 345 678"; combined with +254 prefix for OBP                       |
-| phone_error             | text             | "Enter a valid 9-digit phone number" — body_small, color `#BA1A1A`; alert role                        |
-| agent_number_label      | text             | "Agent Number" — label_medium/SemiBold, color `#44483D`                                               |
-| agent_number_input      | input            | Outlined text field, placeholder "e.g. AGT-2026-00142"; maps to OBP `agent_number`                    |
-| agent_number_error      | text             | "Agent number is required" — body_small, color `#BA1A1A`; reused for DUPLICATE_AGENT error            |
-| currency_label          | text             | "Operating Currency" — label_medium/SemiBold, color `#44483D`                                         |
-| currency_select         | input            | Dropdown combobox, trailing `expand_more` icon; options: EUR, GBP, KES, USD                           |
-| currency_error          | text             | "Select an operating currency" — body_small, color `#BA1A1A`; alert role                              |
-| services_section_label  | text             | "Supported Services" — label_medium/SemiBold, color `#44483D`                                         |
-| services_chip_group     | stack            | Wrap chip group — Cash Deposit, Cash Withdrawal, Account Opening, Bill Payment, Fund Transfer. Selected: `#4C662B` bg/white; unselected: `#CDEDA3` bg/`#4C662B` text |
-| commission_label        | text             | "Commission Rate (%)" — label_medium/SemiBold, color `#44483D`                                        |
-| commission_rate_input   | input            | Decimal outlined field, placeholder "e.g. 1.5", trailing `percent` icon; range 0.5–5.0                |
-| global_error_banner     | box              | `#CDEDA3` bg, `#BA1A1A` border, 12dp radius; contains `error_outline` icon + error message text       |
-| register_agent_button   | button           | "Register as Agent" — filled `#4C662B`/white, full-width, 14dp radius, label_large; triggers OBP POST |
-| terms_notice            | text             | "By registering, you agree to the Mifos Agent Terms and Conditions" — body_small, `#44483D`, centred  |
+| ID                          | Type              | Description                                                                                                                                |
+|-----------------------------|-------------------|--------------------------------------------------------------------------------------------------------------------------------------------|
+| agent_reg_title             | text              | "Agent Registration" — Outfit/headline_large (32sp/Bold), color `#4C662B`, 20dp H padding, 16dp top / 4dp bottom padding                  |
+| agent_reg_subtitle          | text              | "Register to become an authorised OBP field agent with your bank" — body_medium, `#44483D`, 20dp H / 24dp bottom padding                  |
+| registration_loading_spinner| loading_indicator | 48dp circular indicator, `#4C662B`; centred with 80dp top margin; shown during pre-flight OBP status check                                 |
+| loading_label               | text              | "Checking registration status…" — body_medium, `#44483D`, centred; 16dp bottom margin; shown below spinner                                |
+| status_banner_pending       | box               | `#CDEDA3` bg, `#E8A317` border (1dp), 14dp radius, 16dp H / 14dp V padding, 20dp H / 20dp bottom margin                                   |
+| pending_banner_row          | stack             | Horizontal row, 10dp spacing, aligned centre — holds `pending_icon` + `pending_text_col`                                                   |
+| pending_icon                | icon              | `hourglass_empty`, 22dp, `#44483D`; decorative (role: none)                                                                                |
+| pending_text_col            | stack             | Vertical column (flex 1) — holds `pending_banner_title` + `pending_banner_message`                                                         |
+| pending_banner_title        | text              | "Pending Approval" — body_medium/SemiBold, `#44483D`                                                                                       |
+| pending_banner_message      | text              | "Your agent application is under review. You will be notified once your bank confirms your registration." — body_small, `#44483D`          |
+| status_banner_confirmed     | box               | `#CDEDA3` bg, `#CDEDA3` border (1dp), 14dp radius, 16dp H / 14dp V padding, 20dp H / 20dp bottom margin                                   |
+| confirmed_banner_row        | stack             | Horizontal row, 10dp spacing, aligned centre — holds `confirmed_icon` + confirmed text nodes                                               |
+| confirmed_icon              | icon              | `verified_outlined`, 22dp, `#4C662B`; decorative (role: none)                                                                              |
+| confirmed_banner_title      | text              | "Agent Confirmed" — body_medium/SemiBold, `#4C662B`                                                                                        |
+| confirmed_banner_message    | text              | "You are registered as an active Mifos field agent. You can now onboard customers and process transactions." — body_small, `#4C662B`       |
+| go_to_dashboard_button      | button            | "Go to Dashboard" — filled, `#4C662B` bg / `#FFFFFF` text, full-width, 14dp radius, label_large, 24dp H / 16dp V padding, 2dp elevation; `on_click: navigate_to_dashboard → fo-dashboard` |
+| legal_name_label            | text              | "Legal Name" — label_medium/SemiBold, `#44483D`, 20dp H padding, 6dp bottom                                                                |
+| legal_name_input            | input             | Outlined text field; placeholder "e.g. Priya Chakraborty"; 12dp radius; `#E1E4D5` border; maps to OBP `legal_name`                         |
+| legal_name_error            | text              | "Legal name is required" — body_small, `#BA1A1A`; `role: alert`; `live: assertive`                                                         |
+| phone_label                 | text              | "Mobile Phone Number" — label_medium/SemiBold, `#44483D`, 20dp H padding, 6dp bottom                                                       |
+| phone_input_row             | stack             | Horizontal, 8dp gap, 20dp H margin — contains `phone_prefix_box` + `phone_number_input`                                                    |
+| phone_prefix_box            | box               | "+254" — static Kenya dialling code; `#F9FAEF` bg, 12dp radius, 14dp H/V padding, `#E1E4D5` border (1dp), `#1A1C16` body_medium/SemiBold  |
+| phone_number_input          | input             | Outlined tel input (flex 1); placeholder "712 345 678"; keyboard: phone; combined with +254 prefix → `+254XXXXXXXXX` sent to OBP           |
+| phone_error                 | text              | "Enter a valid 9-digit phone number" — body_small, `#BA1A1A`; `role: alert`; `live: assertive`                                             |
+| agent_number_label          | text              | "Agent Number" — label_medium/SemiBold, `#44483D`, 20dp H padding, 6dp bottom                                                              |
+| agent_number_input          | input             | Outlined text field; placeholder "e.g. AGT-2026-00142"; 12dp radius; format AGT-YYYY-NNNNN; maps to OBP `agent_number`                     |
+| agent_number_error          | text              | "Agent number is required" — body_small, `#BA1A1A`; also shown for `DUPLICATE_AGENT` error from OBP                                        |
+| currency_label              | text              | "Operating Currency" — label_medium/SemiBold, `#44483D`, 20dp H padding, 6dp bottom                                                        |
+| currency_select             | input             | Combobox (dropdown), `expand_more` trailing icon; options: EUR — Euro, GBP — British Pound, KES — Kenyan Shilling, USD — US Dollar         |
+| currency_error              | text              | "Select an operating currency" — body_small, `#BA1A1A`; `role: alert`; `live: assertive`                                                   |
+| services_section_label      | text              | "Supported Services" — label_medium/SemiBold, `#44483D`, 20dp H padding, 8dp top / 10dp bottom; `role: heading`                            |
+| services_chip_group         | stack             | Wrap chip group, 8dp gap, 20dp H margin; chips: Cash Deposit / Cash Withdrawal / Account Opening / Bill Payment / Fund Transfer. Selected: `#4C662B` bg / `#FFFFFF` text; unselected: `#CDEDA3` bg / `#4C662B` text / `#4C662B` border (1dp) / 20dp radius |
+| commission_label            | text              | "Commission Rate (%)" — label_medium/SemiBold, `#44483D`, 20dp H padding, 6dp bottom                                                       |
+| commission_rate_input       | input             | Decimal outlined field; placeholder "e.g. 1.5"; trailing `percent` icon; keyboard: decimal; range 0.5–5.0; 28dp bottom margin              |
+| global_error_banner         | box               | `#CDEDA3` bg, `#BA1A1A` border (1dp), 12dp radius, 16dp H / 12dp V padding, 20dp H / 16dp bottom margin; holds `error_icon` + `global_error_message` |
+| global_error_row            | stack             | Horizontal, 10dp spacing, centre-aligned — icon + message                                                                                  |
+| error_icon                  | icon              | `error_outline`, 20dp, `#BA1A1A`; decorative (role: none)                                                                                  |
+| global_error_message        | text              | "Registration failed. Please check your details and try again." — body_small, `#BA1A1A`; driven by `error.message`                         |
+| register_agent_button       | button            | "Register as Agent" — filled, `#4C662B` bg / `#FFFFFF` text, full-width, 14dp radius, label_large, 2dp elevation; disabled + loading during `submitting` state |
+| terms_notice                | text              | "By registering, you agree to the Mifos Agent Terms and Conditions" — body_small, `#44483D`, centred, 20dp H / 24dp bottom padding         |
 
 ---
 
 ## States
 
-| ID               | Trigger                                           | Description                                                                               |
-|------------------|---------------------------------------------------|-------------------------------------------------------------------------------------------|
-| loading          | Screen entry — OBP status pre-check in flight     | Spinner + "Checking registration status…" text; form hidden                               |
-| idle             | Status check returned no existing agent record    | Full registration form ready; no errors shown                                             |
-| submitting       | Register button tapped, OBP call in flight        | Form inputs disabled; register button shows loading indicator                             |
-| validation_error | Submit attempted with invalid fields              | Inline error messages shown per-field; form inputs re-enabled                             |
-| pending_approval | OBP returned `is_pending_agent=true`              | Pending banner shown; form fields read-only; Register button hidden                       |
-| confirmed        | OBP returned `is_confirmed_agent=true`            | Confirmed banner + "Go to Dashboard" button; form hidden                                  |
-| content          | Alias for idle — form ready state                 | Same as idle; used as the default loaded state                                            |
-| empty            | OBP returns no valid bank context                 | Title only + empty message; form unavailable                                              |
-| error            | OBP API returned 4xx/5xx on submit                | Global error banner above re-enabled form                                                 |
+| ID               | Trigger                                              | Description                                                                                               |
+|------------------|------------------------------------------------------|-----------------------------------------------------------------------------------------------------------|
+| loading          | Screen entry — OBP status pre-check in flight        | Spinner (48dp `#4C662B`) + "Checking registration status…" centred; form hidden; `isLoading=true`         |
+| idle             | Status check returned no existing agent record       | Full registration form ready; no error messages shown; `isLoading=false`                                  |
+| content          | Alias for idle — default loaded state                | Same layout as idle; used by dashboard/pipeline as the canonical "loaded" state                           |
+| submitting       | Register button tapped, OBP POST in flight           | Form inputs disabled (`inputs_enabled=false`); register button shows loading indicator                    |
+| validation_error | Submit attempted with invalid field values           | Inline error messages per-field (`legal_name_error`, `phone_error`, `agent_number_error`, `currency_error`); form re-enabled |
+| pending_approval | OBP pre-check or POST returned `is_pending_agent=true` | Pending banner shown; all form inputs read-only; Register button hidden; terms notice hidden              |
+| confirmed        | OBP pre-check or POST returned `is_confirmed_agent=true` | Confirmed banner + "Go to Dashboard" button; form hidden                                             |
+| error            | OBP API returned 4xx/5xx on registration POST        | Global error banner above re-enabled form; `show_error_snackbar=false`                                    |
+| empty            | OBP returns no valid bank context for current user   | Page title only + empty message "Registration form not available"; form unavailable                       |
 
 ---
 
@@ -87,80 +94,87 @@ The Agent Registration screen allows a Field Officer to self-register as an auth
 **ViewModel:** `AgentRegistrationViewModel`
 **Screen State Type:** `AgentRegistrationUiState`
 
-| Name              | Type                  | Default        |
-|-------------------|-----------------------|----------------|
-| legalName         | `String`              | `""`           |
-| phoneNumber       | `String`              | `""`           |
-| agentNumber       | `String`              | `""`           |
-| currency          | `String`              | `"KES"`        |
-| selectedServices  | `List<String>`        | `emptyList()`  |
-| commissionRate    | `String`              | `""`           |
-| isSubmitting      | `Boolean`             | `false`        |
-| isLoading         | `Boolean`             | `true`         |
-| agentId           | `String?`             | `null`         |
-| isPendingAgent    | `Boolean`             | `false`        |
-| isConfirmedAgent  | `Boolean`             | `false`        |
-| uiState           | `AgentRegistrationUiState` | `Loading` |
-| validationErrors  | `Map<String, String>` | `emptyMap()`   |
-| error             | `UiError?`            | `null`         |
+| Name              | Type                       | Default        |
+|-------------------|----------------------------|----------------|
+| legalName         | `String`                   | `""`           |
+| phoneNumber       | `String`                   | `""`           |
+| agentNumber       | `String`                   | `""`           |
+| currency          | `String`                   | `"KES"`        |
+| selectedServices  | `List<String>`             | `emptyList()`  |
+| commissionRate    | `String`                   | `""`           |
+| isSubmitting      | `Boolean`                  | `false`        |
+| isLoading         | `Boolean`                  | `true`         |
+| agentId           | `String?`                  | `null`         |
+| isPendingAgent    | `Boolean`                  | `false`        |
+| isConfirmedAgent  | `Boolean`                  | `false`        |
+| uiState           | `AgentRegistrationUiState` | `Loading`      |
+| validationErrors  | `Map<String, String>`      | `emptyMap()`   |
+| error             | `UiError?`                 | `null`         |
 
-**Events:** `LegalNameChanged(value)`, `PhoneNumberChanged(value)`, `AgentNumberChanged(value)`, `CurrencySelected(value)`, `ServiceToggled(service)`, `CommissionRateChanged(value)`, `SubmitClicked`, `RegistrationSuccess(agentId, isPending)`, `RegistrationFailed(error)`, `CurrencyPickerOpened`, `StatusCheckSuccess(isPending, isConfirmed)`, `StatusCheckFailed`
+**Events:** `LegalNameChanged(value: String)`, `PhoneNumberChanged(value: String)`, `AgentNumberChanged(value: String)`, `CurrencySelected(value: String)`, `ServiceToggled(service: String)`, `CommissionRateChanged(value: String)`, `SubmitClicked`, `RegistrationSuccess(agentId: String, isPending: Boolean)`, `RegistrationFailed(error: UiError)`, `CurrencyPickerOpened`, `StatusCheckSuccess(isPending: Boolean, isConfirmed: Boolean)`, `StatusCheckFailed`
 
 **Actions:** `focus_legal_name`, `focus_phone`, `focus_agent_number`, `open_currency_picker`, `toggle_service`, `focus_commission_rate`, `submit_registration`, `navigate_to_dashboard`
 
 **DI Dependencies:** `AgentRepository`, `BankRepository`, `ValidationService`
 
 **Errors:**
-- `legal_name / REQUIRED`: "Legal name is required"
-- `phone_number / INVALID_FORMAT`: "Enter a valid 9-digit phone number"
-- `agent_number / REQUIRED`: "Agent number is required"
-- `agent_number / DUPLICATE_AGENT`: "An agent with this number already exists"
-- `currency / REQUIRED`: "Select an operating currency"
-- `services / REQUIRED`: "Select at least one supported service"
-- `global / SUBMIT_FAILED`: "Registration failed. Please check your details and try again."
-- `global / NETWORK_ERROR`: "No internet connection. Please check your network and retry."
+
+| Field        | Code              | Message                                                             |
+|--------------|-------------------|---------------------------------------------------------------------|
+| legal_name   | REQUIRED          | "Legal name is required"                                            |
+| phone_number | INVALID_FORMAT    | "Enter a valid 9-digit phone number"                                |
+| agent_number | REQUIRED          | "Agent number is required"                                          |
+| agent_number | DUPLICATE_AGENT   | "An agent with this number already exists"                          |
+| currency     | REQUIRED          | "Select an operating currency"                                      |
+| services     | REQUIRED          | "Select at least one supported service"                             |
+| global       | SUBMIT_FAILED     | "Registration failed. Please check your details and try again."     |
+| global       | NETWORK_ERROR     | "No internet connection. Please check your network and retry."      |
 
 ---
 
 ## Navigation
 
-| From               | To           | Trigger                                  | Type     |
-|--------------------|--------------|------------------------------------------|----------|
-| agent-registration | fo-dashboard | go_to_dashboard_button tap (confirmed)   | replace  |
-| agent-registration | fo-dashboard | Top app bar back arrow                   | pop      |
+| From               | To           | Trigger                                              | Type    |
+|--------------------|--------------|------------------------------------------------------|---------|
+| agent-registration | fo-dashboard | `go_to_dashboard_button` tap (confirmed state)       | replace |
+| agent-registration | fo-dashboard | Top app bar `arrow_back` → `navigate_back` action    | pop     |
+| agent-registration | —            | `submit_registration` success: transitions to `pending_approval` or `confirmed` inline (no navigation) | inline |
 
 ---
 
 ## API Endpoints
 
-| Endpoint                                        | Auth        | Tag   | Purpose                                               |
-|-------------------------------------------------|-------------|-------|-------------------------------------------------------|
-| POST /obp/v5.1.0/banks/{bankId}/agents           | DirectLogin | Agent | Register field officer as an OBP bank agent           |
+| Endpoint                                            | Auth        | Tag   | Purpose                                            |
+|-----------------------------------------------------|-------------|-------|----------------------------------------------------|
+| POST /obp/v5.1.0/banks/{bankId}/agents              | DirectLogin | Agent | Register field officer as an OBP bank agent        |
 
 ---
 
 ## Design Tokens
 
-| Token                           | Value     | Usage                                                              |
-|---------------------------------|-----------|--------------------------------------------------------------------|
-| colors.light.primary            | `#4C662B` | Page title, confirmed banner text, chip selected state, submit btn |
-| colors.light.on_primary         | `#FFFFFF` | Submit button text, selected service chip text                     |
-| colors.light.primary_container  | `#CDEDA3` | Pending + confirmed banner bg, unselected service chip bg          |
-| colors.light.on_surface         | `#1A1C16` | Phone prefix badge text                                            |
-| colors.light.on_surface_variant | `#44483D` | Subtitle, field labels, pending banner text (a11y-corrected)       |
-| colors.light.error              | `#BA1A1A` | Inline validation error text, global error banner border + icon    |
-| colors.light.pending            | `#E8A317` | Pending banner border                                              |
-| colors.light.surface_variant    | `#E1E4D5` | Input field border color                                           |
-| colors.light.background         | `#F9FAEF` | Screen background, phone prefix box background                     |
-| typography.headline_large       | 32sp/Bold | Page title                                                        |
-| typography.body_medium          | 14sp/Regular | Subtitle, banner messages, loading label, input values          |
-| typography.label_medium         | 12sp/Medium  | Field labels, service chip labels                               |
-| typography.label_large          | 14sp/Medium  | Submit and Go to Dashboard button labels                        |
-| typography.body_small           | 12sp/Regular | Inline validation errors, terms notice                         |
-| radius.lg                       | 16dp      | Submit + Go to Dashboard button radius (14dp specified)             |
-| radius.md                       | 12dp      | Input fields, global error banner                                  |
-| spacing.md                      | 16dp      | Standard horizontal margin for inputs and banners                  |
+| Token                           | Value     | Usage                                                                                           |
+|---------------------------------|-----------|-------------------------------------------------------------------------------------------------|
+| colors.light.primary            | `#4C662B` | Page title, confirmed banner text+icon, selected chip bg, Register + Go to Dashboard button fill |
+| colors.light.on_primary         | `#FFFFFF` | Button text, selected chip text                                                                 |
+| colors.light.primary_container  | `#CDEDA3` | Pending + confirmed banner bg, unselected chip bg, global error banner bg                       |
+| colors.light.on_surface         | `#1A1C16` | Phone prefix badge text (`body_medium/SemiBold`)                                                |
+| colors.light.on_surface_variant | `#44483D` | Subtitle text, all field labels, pending banner text (a11y-corrected from `#E8A317`)            |
+| colors.light.error              | `#BA1A1A` | Inline validation error text, global error banner border, `error_outline` icon                  |
+| colors.light.pending            | `#E8A317` | Pending banner border only                                                                      |
+| colors.light.surface_variant    | `#E1E4D5` | Input field outline border                                                                      |
+| colors.light.background         | `#F9FAEF` | Screen base, phone prefix box background                                                        |
+| typography.headline_large       | Outfit 32sp / Bold    | Page title `agent_reg_title`                                                   |
+| typography.body_medium          | Outfit 14sp / Regular | Subtitle, banner messages, loading label, input placeholder text               |
+| typography.label_medium         | Outfit 12sp / Medium  | Field labels, chip labels                                                      |
+| typography.label_large          | Outfit 14sp / Medium  | Register + Go to Dashboard button labels                                       |
+| typography.body_small           | Outfit 12sp / Regular | Inline validation errors, terms notice, banner body text                       |
+| radius.md                       | 12dp      | Input fields, phone prefix box, global error banner                                             |
+| radius.lg                       | 16dp      | Button radius (14dp specified in source — nearest token)                                        |
+| spacing.md                      | 16dp      | Standard horizontal padding and banner padding                                                  |
+| spacing.lg                      | 24dp      | Button horizontal padding, bottom-of-form breathing room                                        |
+| elevation.level2                | 3dp       | Register + Go to Dashboard button elevation (2dp specified)                                     |
+| touchTargets.min_touch_target   | 48dp      | All inputs and buttons minimum touch target                                                     |
 
 ---
 
-_Generated by /idea export | 2026-05-29_
+_Generated by /idea export | 2026-05-30_

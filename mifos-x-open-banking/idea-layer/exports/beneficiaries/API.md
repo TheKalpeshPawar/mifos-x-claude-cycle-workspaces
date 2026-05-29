@@ -11,38 +11,48 @@
 
 **Auth:** DirectLogin
 **Tag:** Counterparties
-**Trigger:** `ScreenOpened` / `RefreshTriggered` — loads full beneficiary list for the authenticated user's primary account view
+**Trigger:** `ScreenOpened` / `RefreshTriggered` — loads full beneficiary list for the authenticated user's primary account view. BeneficiariesViewModel filters the response by `is_beneficiary: true` and splits into `recentBeneficiaries` (last-accessed order) and `beneficiaries` (full list, sorted by `sortOrder`).
 
 ### Path Parameters
 
-| Name      | Type   | Description                                          |
-|-----------|--------|------------------------------------------------------|
-| bankId    | String | OBP bank identifier (e.g. "gh.29.uk")               |
-| accountId | String | Account UUID from authenticated user's accounts list |
-| viewId    | String | Account view (e.g. "owner")                          |
+| Name      | Type   | Value      | Description                                                     |
+|-----------|--------|------------|-----------------------------------------------------------------|
+| bankId    | String | gh.29.uk   | OBP bank identifier                                             |
+| accountId | String | (dynamic)  | Account UUID from the authenticated user's accounts list        |
+| viewId    | String | owner      | Account view granting counterparty access                       |
 
 ### Response Fields
 
-| Field                                        | Type           | Description                                                  |
-|----------------------------------------------|----------------|--------------------------------------------------------------|
-| counterparties                               | List\<Object\> | Array of counterparty objects                                |
-| counterparties[].id                          | String         | Unique counterparty identifier                               |
-| counterparties[].name                        | String         | Beneficiary display name (e.g. "John Smith")                |
-| counterparties[].description                 | String         | Optional relationship note                                   |
-| counterparties[].other_bank_routing_address  | String         | Beneficiary sort code or BIC                                 |
-| counterparties[].other_account_routing_address| String        | Beneficiary IBAN or account number (e.g. "GB29 BARC …")     |
-| counterparties[].other_account_routing_scheme| String         | Routing scheme: "IBAN", "AccountNumber", etc.               |
-| counterparties[].is_beneficiary              | Boolean        | true when counterparty is flagged as trusted beneficiary     |
-| counterparties[].created_by_user_id          | String         | OBP user ID who created this counterparty                    |
+| Field                                         | Type           | Description                                                              |
+|-----------------------------------------------|----------------|--------------------------------------------------------------------------|
+| counterparties                                | List\<Object\> | Array of counterparty objects                                            |
+| counterparties[].id                           | String         | Unique counterparty identifier (e.g. "cp-odhiambo-001")                 |
+| counterparties[].name                         | String         | Beneficiary display name (e.g. "Sarah Odhiambo")                       |
+| counterparties[].description                  | String         | Optional relationship note (e.g. "Sister — Monthly Support")           |
+| counterparties[].other_bank_routing_address   | String         | Beneficiary bank code or BIC (e.g. "equity-bank-ke")                   |
+| counterparties[].other_account_routing_address| String         | Account number or biller code (e.g. "0110345678901")                   |
+| counterparties[].other_account_routing_scheme | String         | Routing scheme: "AccountNumber", "BillerCode", etc.                     |
+| counterparties[].is_beneficiary               | Boolean        | true when counterparty is flagged as trusted beneficiary                 |
+| counterparties[].created_by_user_id           | String         | OBP user ID who created this counterparty (e.g. "usr-mwangi-001")      |
+
+### Demo Data
+
+| id                   | name                     | description                        | other_bank_routing_address | other_account_routing_address | other_account_routing_scheme | is_beneficiary |
+|----------------------|--------------------------|------------------------------------|----------------------------|-------------------------------|------------------------------|----------------|
+| cp-odhiambo-001      | Sarah Odhiambo           | Sister — Monthly Support           | equity-bank-ke             | 0110345678901                 | AccountNumber                | true           |
+| cp-kamau-002         | Peter Kamau Supplies Ltd | Hardware Supplier — Ngong Road     | coop-bank-ke               | 0110987654321                 | AccountNumber                | true           |
+| cp-wanjiru-003       | Grace Wanjiru            | Business Partner — Kikuyu          | ncba-ke                    | 0110112233445                 | AccountNumber                | true           |
+| cp-kipchoge-004      | David Kipchoge Farms     | Rift Valley Farm Produce           | kcb-ke                     | 1100556677889                 | AccountNumber                | true           |
+| cp-nairobi-power-005 | Kenya Power & Lighting   | Electricity Bill — Meter 12345678  | kcb-ke                     | KPLC-BILL-PAY-001             | BillerCode                   | true           |
 
 ### Error Codes
 
-| Code | Message               | Description                                      |
-|------|-----------------------|--------------------------------------------------|
-| 400  | INVALID_BANK_ID       | Verify bankId value                              |
-| 401  | USER_NOT_LOGGED_IN    | Re-authenticate via POST /my/logins/direct       |
-| 404  | BANK_ACCOUNT_NOT_FOUND| Verify accountId against authenticated accounts  |
+| Code | Message                | Description                                                | UI Handling                                           |
+|------|------------------------|------------------------------------------------------------|-------------------------------------------------------|
+| 400  | INVALID_BANK_ID        | bankId value is not recognised by OBP                      | Show error state, surface retry                       |
+| 401  | USER_NOT_LOGGED_IN     | DirectLogin token absent or expired                        | Re-authenticate via POST /my/logins/direct            |
+| 404  | BANK_ACCOUNT_NOT_FOUND | accountId or viewId not found for authenticated user       | Show error state with "Check your connection" message |
 
 ---
 
-_Generated by /idea export | 2026-05-29_
+_Generated by /idea export | 2026-05-30_

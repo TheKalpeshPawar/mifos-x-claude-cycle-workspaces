@@ -1,0 +1,460 @@
+schema_version: "4.0"
+api_group: standing_orders
+name: "Standing Orders API"
+base_url: "https://apisandbox.openbankproject.com/obp"
+auth_scheme: DirectLogin
+generated_at: "2026-05-30"
+
+endpoints:
+
+  - id: list_standing_orders
+    method: GET
+    path: "/v3.0.0/banks/{bank_id}/accounts/{account_id}/standing-orders"
+    description: "List all standing orders for the authenticated account."
+    auth_required: true
+    request_schema: []
+    response_schema:
+      - field: id
+        type: String
+        nullable: false
+        description: "Unique standing order identifier"
+      - field: start_date
+        type: String
+        format: YYYY-MM-DD
+        nullable: false
+        description: "Date the standing order begins execution"
+      - field: next_execution_date
+        type: String
+        format: YYYY-MM-DD
+        nullable: true
+        description: "Next scheduled execution date; null if paused or cancelled"
+      - field: amount
+        type: Object
+        nullable: false
+        description: "Payment amount object with value and currency"
+      - field: to
+        type: Object
+        nullable: false
+        description: "Beneficiary counterparty reference"
+    error_codes:
+      - code: 401
+        message: "USER_NOT_LOGGED_IN"
+        retry: false
+      - code: 403
+        message: "INSUFFICIENT_AUTHORISATION"
+        retry: false
+      - code: 404
+        message: "BANK_ACCOUNT_NOT_FOUND"
+        retry: false
+      - code: 500
+        message: "OBP_SERVER_ERROR"
+        retry: true
+
+  - id: create_standing_order
+    method: POST
+    path: "/v4.0.0/banks/{bank_id}/accounts/{account_id}/owner/standing-order"
+    description: "Create a new standing order for the authenticated account."
+    auth_required: true
+    request_schema:
+      - field: counterparty_id
+        type: String
+        required: true
+        validation: "Valid OBP counterparty ID belonging to the account owner."
+      - field: amount_value
+        type: String
+        required: true
+        validation: "Positive numeric string; max 2 decimal places."
+      - field: amount_currency
+        type: String
+        required: true
+        validation: "ISO 4217 three-letter currency code (e.g. GBP, EUR, USD)."
+      - field: when.frequency
+        type: String
+        required: true
+        validation: "Enum: DAILY | WEEKLY | MONTHLY | YEARLY."
+      - field: when.start_date
+        type: String
+        required: true
+        validation: "ISO date YYYY-MM-DD; must be today or a future date."
+      - field: when.final_date
+        type: String
+        required: false
+        validation: "ISO date YYYY-MM-DD; must be after start_date if provided."
+    response_schema:
+      - field: id
+        type: String
+        nullable: false
+        description: "Unique identifier of the newly created standing order"
+      - field: bank_id
+        type: String
+        nullable: false
+        description: "Bank identifier"
+      - field: account_id
+        type: String
+        nullable: false
+        description: "Account identifier"
+      - field: counterparty
+        type: Object
+        nullable: false
+        description: "Beneficiary counterparty details"
+      - field: counterparty.name
+        type: String
+        nullable: false
+        description: "Beneficiary display name"
+      - field: amount_value
+        type: String
+        nullable: false
+        description: "Payment amount as decimal string"
+      - field: amount_currency
+        type: String
+        nullable: false
+        description: "ISO 4217 currency code"
+      - field: when
+        type: Object
+        nullable: false
+        description: "Schedule object containing frequency and dates"
+      - field: when.frequency
+        type: String
+        nullable: false
+        description: "Recurrence: DAILY | WEEKLY | MONTHLY | YEARLY"
+      - field: when.start_date
+        type: String
+        format: YYYY-MM-DD
+        nullable: false
+        description: "First execution date"
+      - field: when.final_date
+        type: "String?"
+        format: YYYY-MM-DD
+        nullable: true
+        description: "Last execution date; null for indefinite orders"
+      - field: active
+        type: Boolean
+        nullable: false
+        description: "Whether the standing order is currently active"
+    error_codes:
+      - code: 400
+        message: "INVALID_BANK_ID"
+        retry: false
+      - code: 400
+        message: "INVALID_STANDING_ORDER_VALUES"
+        retry: false
+      - code: 401
+        message: "USER_NOT_LOGGED_IN"
+        retry: false
+      - code: 403
+        message: "INSUFFICIENT_AUTHORISATION"
+        retry: false
+      - code: 404
+        message: "BANK_ACCOUNT_NOT_FOUND"
+        retry: false
+      - code: 500
+        message: "OBP_SERVER_ERROR"
+        retry: true
+
+  - id: cancel_standing_order_v3
+    method: DELETE
+    path: "/v3.0.0/banks/{bank_id}/accounts/{account_id}/standing-orders/{standing_order_id}"
+    description: "Cancel (delete) a standing order — v3 endpoint used from the list screen."
+    auth_required: true
+    request_schema: []
+    response_schema:
+      - field: id
+        type: String
+        nullable: false
+        description: "Identifier of the cancelled standing order"
+      - field: status
+        type: String
+        nullable: false
+        description: "CANCELLED"
+    error_codes:
+      - code: 401
+        message: "USER_NOT_LOGGED_IN"
+        retry: false
+      - code: 403
+        message: "INSUFFICIENT_AUTHORISATION"
+        retry: false
+      - code: 404
+        message: "STANDING_ORDER_NOT_FOUND"
+        retry: false
+      - code: 500
+        message: "OBP_SERVER_ERROR"
+        retry: true
+
+  - id: get_standing_order_detail
+    method: GET
+    path: "/v4.0.0/banks/{bank_id}/accounts/{account_id}/standing-orders/{standing_order_id}"
+    description: "Retrieve full detail of a specific standing order including beneficiary info, schedule, status, and last 5 execution records."
+    auth_required: true
+    request_schema: []
+    response_schema:
+      - field: id
+        type: String
+        nullable: false
+        description: "Unique standing order identifier"
+      - field: bank_id
+        type: String
+        nullable: false
+        description: "Bank identifier"
+      - field: account_id
+        type: String
+        nullable: false
+        description: "Account identifier"
+      - field: beneficiary_name
+        type: String
+        nullable: false
+        description: "Display name of the beneficiary"
+      - field: beneficiary_iban
+        type: String
+        nullable: false
+        description: "IBAN of the beneficiary account"
+      - field: beneficiary_bank
+        type: String
+        nullable: false
+        description: "BIC / name of the beneficiary bank"
+      - field: amount_value
+        type: String
+        nullable: false
+        description: "Payment amount as decimal string"
+      - field: amount_currency
+        type: String
+        nullable: false
+        description: "ISO 4217 currency code"
+      - field: frequency
+        type: String
+        nullable: false
+        description: "Recurrence: DAILY | WEEKLY | MONTHLY | YEARLY"
+      - field: start_date
+        type: String
+        format: YYYY-MM-DD
+        nullable: false
+        description: "First execution date"
+      - field: next_payment_date
+        type: String
+        format: YYYY-MM-DD
+        nullable: true
+        description: "Next scheduled payment; null if paused or cancelled"
+      - field: final_date
+        type: "String?"
+        format: YYYY-MM-DD
+        nullable: true
+        description: "Last scheduled payment date; null for open-ended orders"
+      - field: status
+        type: String
+        nullable: false
+        description: "ACTIVE | PAUSED | CANCELLED | COMPLETED"
+      - field: execution_history
+        type: "List<StandingOrderExecution>"
+        nullable: false
+        description: "Last 5 execution records with date, amount, and outcome"
+    error_codes:
+      - code: 401
+        message: "USER_NOT_LOGGED_IN"
+        retry: false
+      - code: 403
+        message: "INSUFFICIENT_AUTHORISATION"
+        retry: false
+      - code: 404
+        message: "STANDING_ORDER_NOT_FOUND"
+        retry: false
+      - code: 500
+        message: "OBP_SERVER_ERROR"
+        retry: true
+
+  - id: pause_standing_order
+    method: POST
+    path: "/v4.0.0/banks/{bank_id}/accounts/{account_id}/standing-orders/{standing_order_id}/pause"
+    description: "Pause an active standing order. Idempotent — 409 STANDING_ORDER_ALREADY_PAUSED treated as success."
+    auth_required: true
+    request_schema: []
+    response_schema:
+      - field: id
+        type: String
+        nullable: false
+        description: "Identifier of the paused standing order"
+      - field: status
+        type: String
+        nullable: false
+        description: "PAUSED"
+      - field: paused_at
+        type: String
+        format: ISO-8601 Instant
+        nullable: false
+        description: "Timestamp the pause was applied"
+    error_codes:
+      - code: 401
+        message: "USER_NOT_LOGGED_IN"
+        retry: false
+      - code: 404
+        message: "STANDING_ORDER_NOT_FOUND"
+        retry: false
+      - code: 409
+        message: "STANDING_ORDER_ALREADY_PAUSED"
+        retry: false
+      - code: 500
+        message: "OBP_SERVER_ERROR"
+        retry: true
+
+  - id: resume_standing_order
+    method: POST
+    path: "/v4.0.0/banks/{bank_id}/accounts/{account_id}/standing-orders/{standing_order_id}/resume"
+    description: "Resume a paused standing order. Idempotent — 409 STANDING_ORDER_NOT_PAUSED treated as success."
+    auth_required: true
+    request_schema: []
+    response_schema:
+      - field: id
+        type: String
+        nullable: false
+        description: "Identifier of the resumed standing order"
+      - field: status
+        type: String
+        nullable: false
+        description: "ACTIVE"
+      - field: resumed_at
+        type: String
+        format: ISO-8601 Instant
+        nullable: false
+        description: "Timestamp the resume was applied"
+      - field: next_payment_date
+        type: String
+        format: YYYY-MM-DD
+        nullable: false
+        description: "Recalculated next payment date after resume"
+    error_codes:
+      - code: 401
+        message: "USER_NOT_LOGGED_IN"
+        retry: false
+      - code: 404
+        message: "STANDING_ORDER_NOT_FOUND"
+        retry: false
+      - code: 409
+        message: "STANDING_ORDER_NOT_PAUSED"
+        retry: false
+      - code: 500
+        message: "OBP_SERVER_ERROR"
+        retry: true
+
+  - id: cancel_standing_order_v4
+    method: DELETE
+    path: "/v4.0.0/banks/{bank_id}/accounts/{account_id}/standing-orders/{standing_order_id}"
+    description: "Soft-cancel a standing order — v4 endpoint used from the detail screen. Record remains accessible in read-only mode."
+    auth_required: true
+    request_schema: []
+    response_schema:
+      - field: id
+        type: String
+        nullable: false
+        description: "Identifier of the cancelled standing order"
+      - field: status
+        type: String
+        nullable: false
+        description: "CANCELLED"
+      - field: cancelled_at
+        type: String
+        format: ISO-8601 Instant
+        nullable: false
+        description: "Timestamp the cancellation was applied"
+    error_codes:
+      - code: 401
+        message: "USER_NOT_LOGGED_IN"
+        retry: false
+      - code: 403
+        message: "INSUFFICIENT_AUTHORISATION"
+        retry: false
+      - code: 404
+        message: "STANDING_ORDER_NOT_FOUND"
+        retry: false
+      - code: 409
+        message: "STANDING_ORDER_ALREADY_CANCELLED"
+        retry: false
+      - code: 500
+        message: "OBP_SERVER_ERROR"
+        retry: true
+
+  - id: update_standing_order
+    method: PUT
+    path: "/v4.0.0/banks/{bank_id}/accounts/{account_id}/owner/standing-order/{standing_order_id}"
+    description: "Update mutable fields of an existing standing order. Beneficiary and currency are immutable after creation."
+    auth_required: true
+    request_schema:
+      - field: amount_value
+        type: String
+        required: true
+        validation: "Positive numeric string; max 2 decimal places."
+      - field: amount_currency
+        type: String
+        required: true
+        validation: "ISO 4217 three-letter currency code. Must match original currency."
+      - field: when.frequency
+        type: String
+        required: true
+        validation: "Enum: DAILY | WEEKLY | MONTHLY | YEARLY."
+      - field: when.start_date
+        type: String
+        required: true
+        validation: "ISO date YYYY-MM-DD; must be today or a future date."
+      - field: when.final_date
+        type: String
+        required: false
+        validation: "ISO date YYYY-MM-DD; must be after start_date if provided. Omit to keep open-ended."
+    response_schema:
+      - field: id
+        type: String
+        nullable: false
+        description: "Standing order identifier"
+      - field: bank_id
+        type: String
+        nullable: false
+        description: "Bank identifier"
+      - field: account_id
+        type: String
+        nullable: false
+        description: "Account identifier"
+      - field: counterparty.name
+        type: String
+        nullable: false
+        description: "Beneficiary display name (immutable)"
+      - field: amount_value
+        type: String
+        nullable: false
+        description: "Updated payment amount"
+      - field: amount_currency
+        type: String
+        nullable: false
+        description: "ISO 4217 currency code"
+      - field: when.frequency
+        type: String
+        nullable: false
+        description: "Updated recurrence frequency"
+      - field: when.start_date
+        type: String
+        format: YYYY-MM-DD
+        nullable: false
+        description: "Updated start date"
+      - field: when.final_date
+        type: "String?"
+        format: YYYY-MM-DD
+        nullable: true
+        description: "Updated final date; null for open-ended"
+      - field: active
+        type: Boolean
+        nullable: false
+        description: "Whether the standing order remains active after update"
+    error_codes:
+      - code: 400
+        message: "INVALID_STANDING_ORDER_VALUES"
+        retry: false
+      - code: 401
+        message: "USER_NOT_LOGGED_IN"
+        retry: false
+      - code: 403
+        message: "INSUFFICIENT_AUTHORISATION"
+        retry: false
+      - code: 404
+        message: "STANDING_ORDER_NOT_FOUND"
+        retry: false
+      - code: 409
+        message: "STANDING_ORDER_ALREADY_CANCELLED"
+        retry: false
+      - code: 500
+        message: "OBP_SERVER_ERROR"
+        retry: true

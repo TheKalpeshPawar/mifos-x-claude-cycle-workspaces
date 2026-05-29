@@ -10,34 +10,35 @@
 
 ```
 ┌─────────────────────────────────────┐
-│ ←  Direct Debits          ⋮         │  ← M3 TopAppBar, back arrow, overflow
+│ ←  Direct Debits              ⋮     │  ← Top app bar; #1A1C16 title, arrow_back, more_vert
 ├─────────────────────────────────────┤
 │                                     │
-│  Direct Debits   [████████]         │  ← Title + skeleton active-count chip
+│  ┌──────────────┐                   │  ← title_count_row (visible, data-free row)
+│  │ Direct Debits│                   │  ← headline_large, #4C662B, bold
+│  └──────────────┘                   │
 │                                     │
-│  ┌───────────────────────────────┐  │
-│  │ ████████████████   [██████]   │  │  ← Skeleton mandate card 1 (110dp)
-│  │ ████████████████              │  │
-│  │ ████████  ████████████████    │  │
-│  └───────────────────────────────┘  │
+│  ┌──────────────────────────────┐   │  ← Skeleton card 1 (110dp, #E1E4D5, 16dp radius)
+│  │ ████████████       ████████  │   │     shimmer, 200ms (short4)
+│  │ ██████████████████████████   │   │
+│  │ ████████████████████         │   │
+│  └──────────────────────────────┘   │
 │                                     │
-│  ┌───────────────────────────────┐  │
-│  │ ████████████████   [██████]   │  │  ← Skeleton mandate card 2 (110dp)
-│  │ ████████████████              │  │
-│  │ ████████  ████████████████    │  │
-│  └───────────────────────────────┘  │
+│  ┌──────────────────────────────┐   │  ← Skeleton card 2
+│  │ ████████████       ████████  │   │
+│  │ ██████████████████████████   │   │
+│  │ ████████████████████         │   │
+│  └──────────────────────────────┘   │
 │                                     │
-│  ┌───────────────────────────────┐  │
-│  │ ████████████████   [██████]   │  │  ← Skeleton mandate card 3 (110dp)
-│  │ ████████████████              │  │
-│  │ ████████  ████████████████    │  │
-│  └───────────────────────────────┘  │
+│  ┌──────────────────────────────┐   │  ← Skeleton card 3
+│  │ ████████████       ████████  │   │
+│  │ ██████████████████████████   │   │
+│  │ ████████████████████         │   │
+│  └──────────────────────────────┘   │
 │                                     │
-│                       [+ Set Up DD] │  ← FAB, earth-green, bottom-right
 └─────────────────────────────────────┘
 ```
 
-**Layout notes:** Shimmer animation on 3 skeleton cards, each 110dp height. FAB always visible.
+**Layout notes:** Top app bar and "Direct Debits" title always visible during loading. Active count chip suppressed. Three 110dp skeleton cards shimmer with #E1E4D5 fill, 16dp radius. No FAB during loading (initial_state).
 
 ---
 
@@ -45,38 +46,43 @@
 
 ```
 ┌─────────────────────────────────────┐
-│ ←  Direct Debits          ⋮         │
+│ ←  Direct Debits              ⋮     │  ← Top app bar; more_vert opens options sheet
 ├─────────────────────────────────────┤
 │                                     │
-│  Direct Debits   [3 active]         │  ← Title (headline_large, #4C662B) + chip (#CDEDA3)
+│  Direct Debits   [ 3 active ]       │  ← headline_large #4C662B + chip #CDEDA3/#4C662B label_medium
 │                                     │
-│  ┌───────────────────────────────┐  │
-│  │  Netflix              [Active]│  │  ← title_medium + green badge
-│  │  £15.99 / month  Next: 3 Jun  │  │  ← body_large green + body_small grey
-│  │  Ref: DD-NF-20240301          │  │  ← label_small grey
-│  └───────────────────────────────┘  │
+│  ┌──────────────────────────────┐   │  ← Netflix card: #FFFFFF, 16dp radius, 2dp elev, 20dp h-margin
+│  │ Netflix            [Active]  │   │  ← title_medium #1A1C16 + badge #CDEDA3/#4C662B label_small
+│  │                              │   │
+│  │ £15.99 / month               │   │  ← body_large #4C662B semibold
+│  │ Next: 3 Jun 2026             │   │  ← body_small #44483D
+│  │ Ref: DD-NF-20240301          │   │  ← label_small #44483D
+│  └──────────────────────────────┘   │
 │                                     │
-│  ┌───────────────────────────────┐  │
-│  │  Spotify              [Active]│  │
-│  │  £10.99 / month  Next: 12 Jun │  │
-│  │  Ref: DD-SP-20231115          │  │
-│  └───────────────────────────────┘  │
+│  ┌──────────────────────────────┐   │  ← Spotify card: #FFFFFF, same style
+│  │ Spotify            [Active]  │   │
+│  │                              │   │
+│  │ £10.99 / month               │   │
+│  │ Next: 12 Jun 2026            │   │
+│  │ Ref: DD-SP-20231115          │   │
+│  └──────────────────────────────┘   │
 │                                     │
-│  ┌ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ┐  │
-│  │  PureGym          [Cancelled] │  │  ← Muted card (#F9FAEF fill, grey text)
-│  │  £29.99 / month               │  │
-│  │  Ref: DD-GYM-20220601         │  │
-│  └ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ┘  │
+│  ┌──────────────────────────────┐   │  ← PureGym card: #F9FAEF fill (muted), 0dp elev, #E1E4D5 border
+│  │ PureGym         [Cancelled]  │   │  ← title_medium #44483D + badge #F9FAEF/#44483D
+│  │                              │   │
+│  │ £29.99 / month               │   │  ← body_large #44483D normal weight
+│  │ Ref: DD-GYM-20220601         │   │  ← label_small #E1E4D5 (very muted)
+│  └──────────────────────────────┘   │
 │                                     │
-│                       [+ Set Up DD] │
+│                      [+ Set Up DD]  │  ← FAB: #4C662B, 16dp radius, add icon, elevation 6dp
 └─────────────────────────────────────┘
 ```
 
 **Layout notes:**
-- Active cards: white fill (#FFFFFF), 16dp radius, 2dp elevation, 20dp horizontal margin.
-- Cancelled card: #F9FAEF fill, #E1E4D5 border, 0dp elevation — visually recedes.
-- Badge: Active = #CDEDA3 + #4C662B; Cancelled = #F9FAEF + #44483D.
-- Amount: Active = #4C662B semibold; Cancelled = #44483D normal weight.
+- Title row: "Direct Debits" headline_large #4C662B + "3 active" chip (#CDEDA3 fill, 12dp radius, 10dp h-pad, label_medium semibold).
+- Active mandate cards (Netflix, Spotify): #FFFFFF fill, 16dp radius, 2dp elevation, 16dp internal padding, 20dp horizontal screen margin, 12dp bottom margin. Merchant name in title_medium #1A1C16 semibold + green "Active" badge (#CDEDA3/#4C662B). Amount in body_large #4C662B semibold. Next date in body_small #44483D. Mandate ref in label_small #44483D.
+- Cancelled mandate card (PureGym): #F9FAEF fill, 16dp radius, 0dp elevation, 1dp #E1E4D5 border. Merchant text #44483D (greyed). "Cancelled" badge has #F9FAEF fill, #44483D text. Amount in body_large #44483D normal. Mandate ref label_small #E1E4D5 (barely visible — historical audit only).
+- FAB: "Set Up Direct Debit" floating bottom-right, #4C662B fill, add icon, 16dp radius, 6dp elevation.
 
 ---
 
@@ -84,25 +90,26 @@
 
 ```
 ┌─────────────────────────────────────┐
-│ ←  Direct Debits          ⋮         │
+│ ←  Direct Debits              ⋮     │
 ├─────────────────────────────────────┤
 │                                     │
-│  Direct Debits                      │
+│  Direct Debits                      │  ← No chip (no mandates)
 │                                     │
 │                                     │
-│         [account_balance_wallet]    │  ← icon 48dp, #44483D
+│         [account_balance_wallet]    │  ← icon-2xl (48dp), #44483D; empty state illustration
 │                                     │
-│       No direct debits set up       │  ← title_medium, #1A1C16, center
+│      No direct debits set up        │  ← title_medium, #1A1C16, center
 │                                     │
-│  Authorise merchants like Netflix   │  ← body_medium, #44483D, center
-│  or utility providers to collect    │
-│  payments automatically.            │
+│  Authorise merchants like Netflix   │
+│  or your utility providers to       │  ← body_medium, #44483D, center
+│  collect payments automatically     │
+│  on agreed dates                    │
 │                                     │
-│                       [+ Set Up DD] │
+│                      [+ Set Up DD]  │  ← FAB always visible
 └─────────────────────────────────────┘
 ```
 
-**Layout notes:** Empty state centred vertically in content area. FAB remains accessible.
+**Layout notes:** Empty state centred in available space. account_balance_wallet icon 48dp (#44483D). No mandate cards. FAB remains visible as primary entry point for new setup.
 
 ---
 
@@ -110,32 +117,53 @@
 
 ```
 ┌─────────────────────────────────────┐
-│ ←  Direct Debits          ⋮         │
+│ ←  Direct Debits              ⋮     │
 ├─────────────────────────────────────┤
-│░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░│  ← 50% alpha scrim over mandate list
-│░  Netflix              [Active]   ░│
-│░  £15.99 / month  Next: 3 Jun     ░│
-│░  ...                             ░│
-│░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░│
 │                                     │
-│  ┌───────────────────────────────┐  │  ← Dialog: white, 20dp radius, 8dp elevation
-│  │  Cancel Direct Debit?         │  │  ← headline_small, #1A1C16, bold
-│  │                               │  │
-│  │  Netflix (DD-NF-20240301)     │  │  ← body_medium, #44483D
-│  │  will stop collecting         │  │
-│  │  payments. Cannot be undone.  │  │
-│  │                               │  │
-│  │  ┌─────────────────────────┐  │  │  ← Filled button, #BA1A1A
-│  │  │   Yes, Cancel Mandate   │  │  │
-│  │  └─────────────────────────┘  │  │
-│  │  ┌─────────────────────────┐  │  │  ← Outlined button, #4C662B
-│  │  │      Keep Mandate       │  │  │
-│  │  └─────────────────────────┘  │  │
-│  └───────────────────────────────┘  │
+│  Direct Debits   [ 3 active ]       │
+│                                     │
+│  ┌──────────────────────────────┐   │  ← Mandate list (blurred/dimmed under overlay)
+│  │ Netflix            [Active]  │   │
+│  │ £15.99 / month               │   │
+│  │ Next: 3 Jun 2026             │   │
+│  │ Ref: DD-NF-20240301          │   │
+│  └──────────────────────────────┘   │
+│  ┌──────────────────────────────┐   │
+│  │ Spotify            [Active]  │   │
+│  └──────────────────────────────┘   │
+│                                     │
+│  ████████████████████████████████   │  ← 50% black overlay scrim
+│  ████████████████████████████████   │
+│  ┌──────────────────────────────┐   │  ← Dialog: #FFFFFF, 20dp radius, 8dp elevation, 24dp pad
+│  │                              │   │
+│  │  Cancel Direct Debit?        │   │  ← headline_small #1A1C16 bold
+│  │                              │   │
+│  │  Netflix (DD-NF-20240301)    │   │  ← body_medium #44483D
+│  │  will stop collecting        │   │
+│  │  payments. This cannot       │   │
+│  │  be undone.                  │   │
+│  │                              │   │
+│  │  ┌────────────────────────┐  │   │  ← "Yes, Cancel Mandate" filled #BA1A1A/#FFFFFF 12dp radius
+│  │  │  Yes, Cancel Mandate   │  │   │
+│  │  └────────────────────────┘  │   │
+│  │                              │   │
+│  │  ┌────────────────────────┐  │   │  ← "Keep Mandate" outlined #4C662B 12dp radius
+│  │  │     Keep Mandate       │  │   │
+│  │  └────────────────────────┘  │   │
+│  └──────────────────────────────┘   │
+│                                     │
+│                      [+ Set Up DD]  │
 └─────────────────────────────────────┘
 ```
 
-**Layout notes:** Dialog is centred with 24dp padding. Destructive action (red) above safe action (green). Esc / outside tap → dismiss.
+**Layout notes:**
+- Overlay scrim: 50% black (`colors.light.scrim` at 0.5 alpha) covers the full screen behind the dialog.
+- Dialog: #FFFFFF fill, 20dp radius, 8dp elevation (level4), 24dp padding all sides.
+- Dialog title: headline_small (Outfit 24sp/600), #1A1C16 bold.
+- Dialog body: body_medium (Outfit 14sp/400), #44483D; merchant name and mandate reference injected from `selectedMandate`.
+- "Yes, Cancel Mandate": filled button, #BA1A1A background, #FFFFFF text, 12dp radius, full-width.
+- "Keep Mandate": outlined button, #4C662B border + text, 12dp radius, full-width.
+- Keyboard shortcut: Escape key dismisses dialog (same as "Keep Mandate").
 
 ---
 
@@ -143,44 +171,56 @@
 
 ```
 ┌─────────────────────────────────────┐
-│ ←  Direct Debits          ⋮         │
+│ ←  Direct Debits              ⋮     │
 ├─────────────────────────────────────┤
 │                                     │
-│  Direct Debits                      │
+│  Direct Debits                      │  ← Title (no chip during error)
 │                                     │
 │                                     │
-│              [cloud_off]            │  ← icon 48dp, #44483D
+│            [cloud_off]              │  ← icon-2xl (48dp), #44483D
 │                                     │
-│    Unable to load direct debits     │  ← title_medium, center
-│  Check your connection and retry.   │  ← body_medium, #44483D, center
+│    Unable to load direct debits     │  ← title_medium #1A1C16 center
 │                                     │
-│         ┌─────────────┐             │
-│         │    Retry    │             │  ← outlined button, #4C662B
-│         └─────────────┘             │
+│    Check your connection and        │  ← body_medium #44483D center
+│    try again                        │
 │                                     │
-│                       [+ Set Up DD] │
+│         [  Retry  ]                 │  ← outlined button #4C662B, 12dp radius
+│                                     │
+│                      [+ Set Up DD]  │  ← FAB still visible
 └─────────────────────────────────────┘
 ```
 
-**Layout notes:** Error state centred. FAB remains visible for setup.
+**Layout notes:** cloud_off icon 48dp (#44483D) centred. Error title in title_medium #1A1C16. Error body in body_medium #44483D. "Retry" outlined button (#4C662B border + text, 12dp radius) triggers `RetryLoad` event. FAB remains accessible so users can set up mandates without waiting for load — defensive UX.
 
 ---
 
 ## Design Checklist (Figma / Stitch)
 
-- [ ] M3 TopAppBar with back navigation + overflow (more_vert) icon
-- [ ] Screen title in headline_large (Outfit 32sp), earth-green #4C662B
-- [ ] Active count chip: #CDEDA3 fill, #4C662B text, 12dp radius, label_medium semibold
-- [ ] Active mandate cards: #FFFFFF fill, 16dp radius, 2dp elevation; 20dp horizontal margin
-- [ ] Cancelled mandate card: #F9FAEF fill, #E1E4D5 border, 0dp elevation — muted visual
-- [ ] Status badge: Active = #CDEDA3 + #4C662B; Cancelled = #F9FAEF + #44483D
-- [ ] Amount text: Active = #4C662B semibold; Cancelled = #44483D normal
-- [ ] FAB: #4C662B fill, add icon, 16dp radius, always floating bottom-right
-- [ ] Cancel dialog: 20dp radius, 8dp elevation, 24dp padding, 50% scrim behind
-- [ ] Destructive CTA: #BA1A1A fill (Yes, Cancel Mandate)
-- [ ] Safe CTA: outlined #4C662B (Keep Mandate)
-- [ ] Skeleton cards: 3 shimmer blocks, 110dp height each
-- [ ] Empty state: account_balance_wallet icon + title + instruction copy
-- [ ] Error state: cloud_off icon + message + Retry button
-- [ ] All text: Outfit typeface. Touch targets: 48dp minimum.
-- [ ] 20dp horizontal content padding throughout
+- [ ] Top app bar: "Direct Debits" title_large #1A1C16; `arrow_back` navigation icon; `more_vert` action; no bottom nav
+- [ ] Title row: headline_large (Outfit 32sp/400) "Direct Debits" in #4C662B + "3 active" chip (#CDEDA3 fill, 12dp radius, 10dp h-pad, label_medium semibold #4C662B)
+- [ ] Active mandate cards: #FFFFFF fill, 16dp radius, 2dp elevation, 16dp pad, 20dp h-margin, 12dp bottom gap
+- [ ] Payee names on active cards: title_medium (Outfit 16sp/500) #1A1C16 semibold (Netflix, Spotify)
+- [ ] "Active" badge: #CDEDA3 fill, 10dp radius, 8dp h-pad; label_small (11sp/500) #4C662B
+- [ ] Mandate amounts on active cards: body_large (16sp/400) #4C662B semibold — e.g. "£15.99 / month"
+- [ ] Next collection date: body_small (12sp/400) #44483D — e.g. "Next: 3 Jun 2026"
+- [ ] Mandate reference: label_small (11sp/500) #44483D — e.g. "Ref: DD-NF-20240301"
+- [ ] Cancelled mandate card (PureGym): #F9FAEF fill, 0dp elevation, 1dp #E1E4D5 border
+- [ ] Cancelled payee name: title_medium #44483D (greyed, NOT #1A1C16)
+- [ ] "Cancelled" badge: #F9FAEF fill, 10dp radius; label_small #44483D
+- [ ] Cancelled amount: body_large #44483D normal weight (NOT semibold, NOT #4C662B)
+- [ ] Cancelled mandate ref: label_small #E1E4D5 (barely visible — intentional)
+- [ ] FAB: "Set Up Direct Debit" #4C662B fill, 16dp radius, add icon, 6dp elevation — always floating bottom-right
+- [ ] Cancel dialog: #FFFFFF fill, 20dp (xl) radius, 8dp elevation, 24dp all-sides padding
+- [ ] Dialog title: headline_small (24sp/600) #1A1C16 bold — "Cancel Direct Debit?"
+- [ ] Dialog body: body_medium (14sp/400) #44483D — merchant + mandate ref injected dynamically
+- [ ] "Yes, Cancel Mandate": filled #BA1A1A bg / #FFFFFF text, 12dp radius, full-width; destructive red
+- [ ] "Keep Mandate": outlined #4C662B border + text, 12dp radius, full-width; safe secondary
+- [ ] Overlay scrim: 50% black behind dialog in cancel_confirm state
+- [ ] Loading skeletons: 3 cards × 110dp, #E1E4D5 fill, 16dp radius; shimmer 200ms (short4); reduced-motion fallback → static placeholder
+- [ ] Empty state: account_balance_wallet icon 48dp #44483D; title_medium centre; body_medium #44483D help copy
+- [ ] Error state: cloud_off icon 48dp #44483D; title_medium centre; "Retry" outlined #4C662B button
+- [ ] All typography: Outfit typeface. Touch targets ≥ 48dp. Content padding 20dp horizontal.
+
+---
+
+_Generated by /idea export | 2026-05-30_

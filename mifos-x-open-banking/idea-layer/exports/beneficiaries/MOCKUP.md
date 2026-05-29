@@ -10,38 +10,42 @@
 
 ```
 ┌─────────────────────────────────────┐
-│ ←  Beneficiaries              [≡]   │  ← TopAppBar, arrow_back + filter_list action
+│ ←  Beneficiaries              [≡]   │  ← M3 TopAppBar: arrow_back + filter_list icon
 ├─────────────────────────────────────┤
 │                                     │
 │  ┌─────────────────────────────────┐│
-│  │ 🔍  Search beneficiaries...    ││  ← search input, pill radius, #F9FAEF
+│  │ 🔍  Search beneficiaries...    ││  ← search input, radius 28, #F9FAEF bg
 │  └─────────────────────────────────┘│
 │                                     │
-│  ████████████████                   │  ← "Recently Used" header skeleton
+│  ████████████████                   │  ← "Recently Used" header skeleton (#E1E4D5, 12dp radius)
 │                                     │
 │  ┌─────────────────────────────────┐│
-│  │  (●)  ████████████████████████  ││  ← avatar skeleton + name skeleton
-│  │       ████████   ██████████     ││  ← bank + payment skeletons
+│  │  (●)  ████████████████████████  ││  ← avatar circle skeleton (44dp) + name skeleton
+│  │       ████████████  ██████████  ││  ← bank name + last payment skeletons
 │  └─────────────────────────────────┘│
 │  ┌─────────────────────────────────┐│
 │  │  (●)  ████████████████████████  ││
+│  │       ████████████  ██████████  ││
 │  └─────────────────────────────────┘│
 │  ┌─────────────────────────────────┐│
 │  │  (●)  ████████████████████████  ││
+│  │       ████████████              ││
 │  └─────────────────────────────────┘│
 │  ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ │  ← divider skeleton
-│  ████████████████                   │  ← "All Beneficiaries" header skeleton
+│  ████████████████████               │  ← "All Beneficiaries" header skeleton
 │  ┌─────────────────────────────────┐│
-│  │  [●]  ████████████████████████  ││  ← bank logo skeleton + name
+│  │  [□]  ████████████████████████  ││  ← bank logo skeleton (32×32dp) + name
+│  │       ████████████  ██████████  ││
 │  └─────────────────────────────────┘│
 │  ┌─────────────────────────────────┐│
-│  │  [●]  ████████████████████████  ││
+│  │  [□]  ████████████████████████  ││
+│  │       ████████████  ██████████  ││
 │  └─────────────────────────────────┘│
 │                                     │
 └─────────────────────────────────────┘
 ```
 
-**Layout notes:** 6-item skeleton list. Avatar circles are 44dp. Bank logo placeholders are 32×32dp. No FAB during loading.
+**Layout notes:** 6-item skeleton list, short4 shimmer (200ms). Avatar circles 44dp; bank logo placeholders 32×32dp. FAB hidden during loading. Skeleton color: surface_variant (#E1E4D5), 12dp radius.
 
 ---
 
@@ -49,61 +53,61 @@
 
 ```
 ┌─────────────────────────────────────┐
-│ ←  Beneficiaries              [≡]   │  ← filter_list icon action
+│ ←  Beneficiaries              [≡]   │  ← filter_list icon → sort_beneficiaries
 ├─────────────────────────────────────┤
 │                                     │
 │  ┌─────────────────────────────────┐│
-│  │ 🔍  Search beneficiaries...    ││  ← search, pill radius 28, leading search icon
+│  │ 🔍  Search beneficiaries...    ││  ← search, radius 28, leading search icon
 │  └─────────────────────────────────┘│
 │                                     │
-│  Recently Used                      │  ← title_medium, #1A1C16, semibold
+│  Recently Used                      │  ← title_medium (16sp/500), #1A1C16, semibold
 │                                     │
-│  ┌─────────────────────────────────┐│
-│  │  (JS)  John Smith               ││  ← 44dp circle, #4C662B bg, #FFFFFF "JS"
-│  │        Barclays UK              ││  ← body_small, #44483D
+│  ┌─────────────────────────────────┐│  ← white card, radius 12, elevation 1, 14dp vert pad
+│  │  (JS)  John Smith               ││  ← 44dp circle, #4C662B bg, #FFFFFF "JS", title_medium/bold
+│  │        Barclays UK              ││  ← body_small (12sp/400), #44483D
 │  │        £500 · 2 days ago        ││  ← body_small, #386663
 │  └─────────────────────────────────┘│
 │                                     │
 │  ┌─────────────────────────────────┐│
 │  │  (SW)  Sarah Williams           ││  ← 44dp circle, #386663 bg, #FFFFFF "SW"
-│  │        HSBC UK                  ││
+│  │        HSBC UK                  ││  ← body_small, #44483D
 │  │        £1,200 · 5 days ago      ││  ← body_small, #386663
 │  └─────────────────────────────────┘│
 │                                     │
 │  ┌─────────────────────────────────┐│
 │  │  (MC)  Michael Chen             ││  ← 44dp circle, #4C662B bg, #FFFFFF "MC"
-│  │        Lloyds Bank              ││
+│  │        Lloyds Bank              ││  ← body_small, #44483D
 │  └─────────────────────────────────┘│
 │                                     │
-│  ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ │  ← divider #E1E4D5, 1px
+│  ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ │  ← divider #E1E4D5, 1px, 8dp vert padding
 │                                     │
-│  All Beneficiaries          [sort↕] │  ← title_medium + sort icon #4C662B
+│  All Beneficiaries          [sort↕] │  ← title_medium + sort icon 24dp #4C662B, space-between
 │                                     │
 │  ┌─────────────────────────────────┐│
-│  │  [NW]  James Anderson           ││  ← NatWest logo 32×32, radius 4
-│  │        GB29 NWBK ··· 8819       ││  ← body_small/#44483D, monospace
+│  │  [NW]  James Anderson           ││  ← NatWest logo 32×32dp, radius 4, content_scale fit
+│  │        GB29 NWBK ··· 8819       ││  ← body_small, #44483D, monospace
 │  │        Last: 12 May 2026        ││  ← body_small, #44483D
 │  └─────────────────────────────────┘│
 │                                     │
 │  ┌─────────────────────────────────┐│
-│  │  [S]   Priya Patel              ││  ← Santander logo 32×32
-│  │        GB72 ABBY ··· 4421       ││  ← monospace, #44483D
+│  │  [S]   Priya Patel              ││  ← Santander logo 32×32dp
+│  │        GB72 ABBY ··· 4421       ││  ← body_small, #44483D, monospace
 │  └─────────────────────────────────┘│
 │                                     │
-│                                     │
-│                          [+ Add Beneficiary]│ ← FAB: #4C662B fill, person_add icon,
-│                                     │        elevation 6, bottom-right floating
+│                   [+ Add Beneficiary]│  ← FAB: #4C662B fill, radius 16, elevation 6
+│                                     │     person_add icon, bottom-right, 16dp margin
 └─────────────────────────────────────┘
 ```
 
 **Layout notes:**
 - Search bar: 28dp radius (pill), 16dp horizontal margin, #F9FAEF background, leading search icon + trailing clear icon.
-- Avatar circles: 44dp diameter, initials in title_medium/bold/white.
-- Beneficiary cards: white fill, 12dp radius, 1dp elevation, 14dp vertical padding, 16dp horizontal padding.
+- Avatar circles: 44dp diameter, initials in title_medium/bold/#FFFFFF. JS + MC: #4C662B bg. SW: #386663 bg.
+- Beneficiary cards: #FFFFFF fill, 12dp radius, 1dp elevation, 14dp vertical padding, 16dp horizontal padding.
+- Last-payment text tinted with secondary (#386663); bank names + dates use on_surface_variant (#44483D).
 - Section divider: #E1E4D5, 1px, 8dp vertical padding.
-- "All Beneficiaries" row: space-between layout with sort icon 24dp in #4C662B.
+- "All Beneficiaries" header row: space-between alignment with sort icon 24dp in #4C662B.
 - Bank logos: 32×32dp, 4dp radius, content_scale fit.
-- IBAN text: body_small, #44483D, monospace font family.
+- IBAN/account text: body_small, #44483D, monospace font-family.
 - FAB: 56dp, #4C662B fill, 16dp radius, elevation 6, person_add icon, "Add Beneficiary" label, floating bottom-right with 16dp margin.
 
 ---
@@ -116,20 +120,20 @@
 ├─────────────────────────────────────┤
 │                                     │
 │  ┌─────────────────────────────────┐│
-│  │ 🔍  john                 [✕]   ││  ← search active, trailing clear button
+│  │ 🔍  john                 [✕]   ││  ← search active: typed query, trailing clear (X)
 │  └─────────────────────────────────┘│
 │                                     │
-│  ┌─────────────────────────────────┐│
-│  │  (JS)  John Smith               ││  ← filtered result
+│  ┌─────────────────────────────────┐│  ← filtered result card
+│  │  (JS)  John Smith               ││
 │  │        Barclays UK              ││
 │  │        £500 · 2 days ago        ││
 │  └─────────────────────────────────┘│
 │                                     │
-│                          [+ Add Beneficiary]│
+│                   [+ Add Beneficiary]│
 └─────────────────────────────────────┘
 ```
 
-**Layout notes:** Filtered results shown without section headers. Clear icon (✕) appears in trailing position while text is entered.
+**Layout notes:** Filtered results shown without section headers ("Recently Used" / "All Beneficiaries"). Trailing clear icon (✕) appears while text is entered. Results span both recent and all-beneficiaries sources.
 
 ---
 
@@ -145,19 +149,19 @@
 │  └─────────────────────────────────┘│
 │                                     │
 │                                     │
-│       person_off (48dp, #44483D)    │  ← centered empty icon
+│       person_off (48dp, #44483D)    │  ← empty icon, centered
 │                                     │
-│       No beneficiaries yet          │  ← body_large, #1A1C16, centered
+│       No beneficiaries yet          │  ← body_large (16sp/400), #1A1C16, centered
 │                                     │
 │  Add a beneficiary to start         │
-│     sending money quickly           │  ← body_medium, #44483D, centered
+│     sending money quickly           │  ← body_medium (14sp/400), #44483D, centered
 │                                     │
 │                                     │
-│                          [+ Add Beneficiary]│
+│                   [+ Add Beneficiary]│
 └─────────────────────────────────────┘
 ```
 
-**Layout notes:** Empty state icon + title + message centred vertically. FAB remains visible for primary action.
+**Layout notes:** Empty state icon + title + message centred vertically in the content area. FAB remains always visible as primary action anchor.
 
 ---
 
@@ -172,37 +176,42 @@
 │  │ 🔍  Search beneficiaries...    ││
 │  └─────────────────────────────────┘│
 │                                     │
-│         cloud_off (48dp, #44483D)   │  ← error icon
+│         cloud_off (48dp, #44483D)   │  ← error icon, centered
 │                                     │
-│    Unable to load beneficiaries     │  ← body_large, #1A1C16, centered
+│    Unable to load beneficiaries     │  ← body_large (16sp/400), #1A1C16, centered
 │    Check your connection            │
-│         and try again               │  ← body_medium, #44483D, centered
+│         and try again               │  ← body_medium (14sp/400), #44483D, centered
 │                                     │
-│          [ Try Again ]              │  ← filled #4C662B, centered
+│          [   Try Again   ]          │  ← filled button, #4C662B bg, centered
 │                                     │
-│                          [+ Add Beneficiary]│
+│                   [+ Add Beneficiary]│
 └─────────────────────────────────────┘
 ```
 
-**Layout notes:** Error icon + message + retry button centred. FAB remains visible.
+**Layout notes:** Error icon + message + retry button centred. Error icon uses on_surface_variant (#44483D) for WCAG AA contrast. FAB remains visible.
 
 ---
 
 ## Design Checklist (Figma / Stitch)
 
-- [ ] M3 TopAppBar with back arrow and filter_list action icon
-- [ ] Search input pill radius (28dp), leading search icon, trailing clear, #F9FAEF background
-- [ ] "Recently Used" section title_medium/#1A1C16 with 24dp top padding
-- [ ] Avatar circles 44dp: John+Michael #4C662B bg, Sarah #386663 bg, white initials title_medium bold
-- [ ] Beneficiary cards: white fill, 12dp radius, 1dp elevation, 14dp vertical padding
-- [ ] Last payment tint uses secondary color #386663
-- [ ] Section divider #E1E4D5, 1px
-- [ ] "All Beneficiaries" row: space-between with sort icon #4C662B 24dp
-- [ ] Bank logos 32×32dp, 4dp radius, content_scale fit
-- [ ] IBAN in monospace body_small, #44483D
-- [ ] FAB: #4C662B fill, 16dp radius, person_add icon, elevation 6, floating bottom-right
-- [ ] Empty state: person_off 48dp icon centered, descriptive copy
-- [ ] Error state: cloud_off 48dp icon + retry button centered
-- [ ] Skeleton 6 items matching card layout proportions
-- [ ] All text Outfit typeface; minimum 14sp body content
-- [ ] 16dp horizontal content padding throughout
+- [ ] M3 TopAppBar with back arrow (navigation_icon: arrow_back) and filter_list action icon
+- [ ] Search input: 28dp radius (pill), leading search icon, trailing clear icon (appears on input), #F9FAEF background
+- [ ] "Recently Used" section: title_medium (16sp/500) / #1A1C16 / semibold / 16dp top padding
+- [ ] Avatar circles 44dp: JS + MC use #4C662B bg; SW uses #386663 bg; all initials #FFFFFF title_medium/bold
+- [ ] Beneficiary cards: #FFFFFF fill, 12dp radius, 1dp elevation, 14dp vertical padding, 16dp horizontal padding
+- [ ] Last payment line tinted #386663 (secondary); bank name uses #44483D (on_surface_variant)
+- [ ] Section divider: #E1E4D5 (surface_variant), 1px, 8dp vertical padding
+- [ ] "All Beneficiaries" row: space-between with sort icon 24dp / #4C662B
+- [ ] Bank logos: 32×32dp, 4dp radius, content_scale fit
+- [ ] IBAN / account routing text: body_small (12sp), #44483D, monospace font-family
+- [ ] FAB: #4C662B fill, 16dp radius (radius.lg), elevation 6, person_add icon, "Add Beneficiary" label, floating bottom-right, 16dp margin
+- [ ] Loading skeleton: 6 items, short4 shimmer (200ms), #E1E4D5 skeleton blocks, 12dp radius
+- [ ] Empty state: person_off 48dp / #44483D icon centred; body_large title; body_medium description
+- [ ] Error state: cloud_off 48dp / #44483D icon centred; body_large message; filled retry button #4C662B
+- [ ] Searching state: trailing clear (✕) active; section headers suppressed; results from both sources
+- [ ] All text: Outfit typeface. Minimum touch target 48dp. 16dp horizontal content padding throughout.
+- [ ] No bottom navigation bar (bottom_nav: false)
+
+---
+
+_Generated by /idea export | 2026-05-30_

@@ -1,0 +1,232 @@
+schema_version: "4.0"
+api_group: auth
+name: "Authentication API"
+base_url: "https://apisandbox.openbankproject.com/obp"
+auth_scheme: DirectLogin
+generated_at: "2026-05-30"
+
+endpoints:
+
+  - id: direct_login
+    method: POST
+    path: "/v4.0.0/banks/{bank_id}/direct_login"
+    description: "Exchange DirectLogin credentials for a session token. Credentials are passed via Authorization header in the format: DirectLogin username='{username}', password='{password}', consumer_key='{consumer_key}'."
+    auth_required: false
+    request_schema:
+      - field: username
+        type: String
+        required: true
+        validation: "Non-empty string. The OBP registered username."
+      - field: password
+        type: String
+        required: true
+        validation: "Non-empty string. The OBP account password."
+      - field: consumer_key
+        type: String
+        required: true
+        validation: "Non-empty string. OBP consumer key obtained at app registration."
+    response_schema:
+      - field: token
+        type: String
+        nullable: false
+        description: "Session token to be sent as DirectLogin token in subsequent request Authorization headers."
+    error_codes:
+      - code: 400
+        message: "INVALID_CREDENTIALS"
+        retry: false
+      - code: 401
+        message: "USER_NOT_LOGGED_IN"
+        retry: false
+      - code: 500
+        message: "OBP_SERVER_ERROR"
+        retry: true
+
+  - id: oidc_authorize
+    method: GET
+    path: "/v4.0.0/oauth2/authorize"
+    description: "OIDC authorization code flow (alternative to DirectLogin). Opens system browser with PKCE parameters for OAuth sign-in. Redirects back to app via org.mifos.openbanking://oauth/callback with authorization code."
+    auth_required: false
+    request_schema:
+      - field: response_type
+        type: String
+        required: true
+        validation: "Must be 'code'."
+      - field: client_id
+        type: String
+        required: true
+        validation: "OBP consumer_key registered for this application."
+      - field: redirect_uri
+        type: String
+        required: true
+        validation: "Must match registered redirect URI: org.mifos.openbanking://oauth/callback"
+      - field: scope
+        type: String
+        required: true
+        validation: "Space-separated OIDC scopes. Minimum: 'openid profile email'."
+      - field: state
+        type: String
+        required: true
+        validation: "CSRF state token — random UUID, verified on callback."
+      - field: code_challenge
+        type: String
+        required: true
+        validation: "PKCE code challenge — base64url(SHA256(code_verifier))."
+      - field: code_challenge_method
+        type: String
+        required: true
+        validation: "Must be 'S256'."
+    response_schema:
+      - field: code
+        type: String
+        nullable: false
+        description: "Authorization code returned as query param on redirect. Single-use, short-lived."
+      - field: state
+        type: String
+        nullable: false
+        description: "Echo of the state param — verify matches the original value to prevent CSRF."
+    error_codes:
+      - code: 302
+        message: "OAUTH_CANCELLED"
+        retry: false
+      - code: 400
+        message: "INVALID_REQUEST"
+        retry: false
+      - code: 401
+        message: "USER_NOT_LOGGED_IN"
+        retry: false
+      - code: 500
+        message: "OBP_SERVER_ERROR"
+        retry: true
+
+  - id: oidc_token_exchange
+    method: POST
+    path: "/v4.0.0/oauth2/token"
+    description: "Exchange OIDC authorization code for access_token, id_token, and refresh_token. Uses PKCE code_verifier. Content-Type must be application/x-www-form-urlencoded."
+    auth_required: false
+    request_schema:
+      - field: grant_type
+        type: String
+        required: true
+        validation: "Must be 'authorization_code'."
+      - field: code
+        type: String
+        required: true
+        validation: "The authorization code received on OAuth callback. Single-use."
+      - field: redirect_uri
+        type: String
+        required: true
+        validation: "Must match the redirect_uri used in the authorization request."
+      - field: client_id
+        type: String
+        required: true
+        validation: "OBP consumer_key."
+      - field: code_verifier
+        type: String
+        required: true
+        validation: "PKCE code verifier — the random string from which code_challenge was derived."
+    response_schema:
+      - field: access_token
+        type: String
+        nullable: false
+        description: "Bearer access token for OBP API calls. Store securely."
+      - field: id_token
+        type: String
+        nullable: false
+        description: "JWT signed with RS256 containing sub, name, email, email_verified claims."
+      - field: refresh_token
+        type: String
+        nullable: false
+        description: "Token for silent re-authentication after access_token expires."
+      - field: token_type
+        type: String
+        nullable: false
+        description: "Always 'Bearer'."
+      - field: expires_in
+        type: Int
+        nullable: false
+        description: "Lifetime of access_token in seconds (typically 3600)."
+    error_codes:
+      - code: 400
+        message: "INVALID_REQUEST"
+        retry: false
+      - code: 400
+        message: "INVALID_GRANT"
+        retry: false
+      - code: 401
+        message: "UNAUTHORIZED"
+        retry: false
+      - code: 500
+        message: "OBP_SERVER_ERROR"
+        retry: true
+
+  - id: oidc_token_refresh
+    method: POST
+    path: "/v4.0.0/oauth2/token"
+    description: "Refresh expired access_token using stored refresh_token for silent re-authentication. Content-Type must be application/x-www-form-urlencoded."
+    auth_required: false
+    request_schema:
+      - field: grant_type
+        type: String
+        required: true
+        validation: "Must be 'refresh_token'."
+      - field: refresh_token
+        type: String
+        required: true
+        validation: "The refresh_token stored from the previous token exchange."
+      - field: client_id
+        type: String
+        required: true
+        validation: "OBP consumer_key."
+    response_schema:
+      - field: access_token
+        type: String
+        nullable: false
+        description: "New access token replacing the expired one."
+      - field: refresh_token
+        type: String
+        nullable: false
+        description: "Rotated refresh token — update stored value."
+      - field: expires_in
+        type: Int
+        nullable: false
+        description: "Lifetime of the new access_token in seconds."
+    error_codes:
+      - code: 400
+        message: "INVALID_GRANT"
+        retry: false
+      - code: 401
+        message: "USER_NOT_LOGGED_IN"
+        retry: false
+      - code: 500
+        message: "OBP_SERVER_ERROR"
+        retry: true
+
+  - id: oidc_token_revoke
+    method: POST
+    path: "/v4.0.0/oauth2/revoke"
+    description: "Revoke session tokens on logout. Invalidates both access_token and refresh_token. Content-Type must be application/x-www-form-urlencoded."
+    auth_required: true
+    request_schema:
+      - field: token
+        type: String
+        required: true
+        validation: "The access_token or refresh_token to revoke."
+      - field: client_id
+        type: String
+        required: true
+        validation: "OBP consumer_key."
+    response_schema:
+      - field: message
+        type: String
+        nullable: false
+        description: "Confirmation message — 'Token revoked successfully'."
+    error_codes:
+      - code: 400
+        message: "INVALID_REQUEST"
+        retry: false
+      - code: 401
+        message: "USER_NOT_LOGGED_IN"
+        retry: false
+      - code: 500
+        message: "OBP_SERVER_ERROR"
+        retry: true

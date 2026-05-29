@@ -1,0 +1,295 @@
+schema_version: "4.0"
+api_group: accounts
+name: "Accounts API"
+base_url: "https://apisandbox.openbankproject.com/obp"
+auth_scheme: DirectLogin
+generated_at: "2026-05-30"
+
+endpoints:
+
+  - id: list_accounts
+    method: GET
+    path: "/v3.0.0/banks/{bank_id}/accounts"
+    description: "List all accounts for the authenticated user at the given bank. Returns summary cards for the accounts screen and home screen balance widgets."
+    auth_required: true
+    request_schema: []
+    response_schema:
+      - field: id
+        type: String
+        nullable: false
+        description: "Unique account identifier."
+      - field: label
+        type: String
+        nullable: false
+        description: "Human-readable account label (e.g. 'Main Checking')."
+      - field: bank_id
+        type: String
+        nullable: false
+        description: "OBP bank identifier (e.g. 'gh.29.uk')."
+      - field: account_type
+        type: String
+        nullable: false
+        description: "Account product type — e.g. 'CURRENT', 'SAVINGS', 'LOAN'."
+      - field: balance
+        type: Object
+        nullable: false
+        description: "Current balance container."
+      - field: balance.currency
+        type: String
+        nullable: false
+        description: "ISO 4217 currency code (e.g. 'EUR', 'GBP')."
+      - field: balance.amount
+        type: String
+        nullable: false
+        description: "Balance value as decimal string (e.g. '1234.56')."
+      - field: account_routings
+        type: "List<AccountRouting>"
+        nullable: false
+        description: "Routing identifiers for the account (IBAN, sort code, etc.)."
+      - field: account_routings[].scheme
+        type: String
+        nullable: false
+        description: "Routing scheme identifier — e.g. 'IBAN', 'SortCode'."
+      - field: account_routings[].address
+        type: String
+        nullable: false
+        description: "Routing address value for the given scheme."
+    error_codes:
+      - code: 401
+        message: "USER_NOT_LOGGED_IN"
+        retry: false
+      - code: 403
+        message: "INSUFFICIENT_AUTHORISATION"
+        retry: false
+      - code: 404
+        message: "BANK_NOT_FOUND"
+        retry: false
+      - code: 500
+        message: "OBP_SERVER_ERROR"
+        retry: true
+
+  - id: get_account_detail
+    method: GET
+    path: "/v3.0.0/banks/{bank_id}/accounts/{account_id}/account"
+    description: "Get full detail for a single account including IBAN, BIC, owner list, and balance. Powers the account-detail screen."
+    auth_required: true
+    request_schema: []
+    response_schema:
+      - field: id
+        type: String
+        nullable: false
+        description: "Unique account identifier."
+      - field: label
+        type: String
+        nullable: false
+        description: "Human-readable account name."
+      - field: number
+        type: String
+        nullable: true
+        description: "Internal account number."
+      - field: swift_bic
+        type: "String?"
+        nullable: true
+        description: "SWIFT/BIC code of the account's bank."
+      - field: iban
+        type: "String?"
+        nullable: true
+        description: "International Bank Account Number."
+      - field: account_type
+        type: String
+        nullable: false
+        description: "Product type — 'CURRENT', 'SAVINGS', etc."
+      - field: owners
+        type: "List<Owner>"
+        nullable: false
+        description: "List of account owners with id and provider."
+      - field: balance
+        type: Object
+        nullable: false
+        description: "Current balance."
+      - field: balance.currency
+        type: String
+        nullable: false
+        description: "ISO 4217 currency code."
+      - field: balance.amount
+        type: String
+        nullable: false
+        description: "Balance value as decimal string."
+      - field: account_routings
+        type: "List<AccountRouting>"
+        nullable: false
+        description: "List of routing identifiers (IBAN, SortCode, AccountNumber)."
+      - field: account_routings[].scheme
+        type: String
+        nullable: false
+        description: "Routing scheme name."
+      - field: account_routings[].address
+        type: String
+        nullable: false
+        description: "Routing address value."
+    error_codes:
+      - code: 401
+        message: "USER_NOT_LOGGED_IN"
+        retry: false
+      - code: 403
+        message: "INSUFFICIENT_AUTHORISATION"
+        retry: false
+      - code: 404
+        message: "BANK_ACCOUNT_NOT_FOUND"
+        retry: false
+      - code: 500
+        message: "OBP_SERVER_ERROR"
+        retry: true
+
+  - id: get_balances
+    method: GET
+    path: "/v4.0.0/banks/{bank_id}/balances"
+    description: "Get balances for all accounts at the bank in a single call. Used for the home screen total-balance aggregation widget."
+    auth_required: true
+    request_schema: []
+    response_schema:
+      - field: accounts
+        type: "List<AccountBalance>"
+        nullable: false
+        description: "List of account balance summaries."
+      - field: accounts[].id
+        type: String
+        nullable: false
+        description: "Account identifier."
+      - field: accounts[].label
+        type: String
+        nullable: false
+        description: "Account label."
+      - field: accounts[].balance
+        type: Object
+        nullable: false
+        description: "Balance container."
+      - field: accounts[].balance.currency
+        type: String
+        nullable: false
+        description: "ISO 4217 currency code."
+      - field: accounts[].balance.amount
+        type: String
+        nullable: false
+        description: "Balance value as decimal string."
+    error_codes:
+      - code: 401
+        message: "USER_NOT_LOGGED_IN"
+        retry: false
+      - code: 403
+        message: "INSUFFICIENT_AUTHORISATION"
+        retry: false
+      - code: 404
+        message: "BANK_NOT_FOUND"
+        retry: false
+      - code: 500
+        message: "OBP_SERVER_ERROR"
+        retry: true
+
+  - id: get_my_accounts
+    method: GET
+    path: "/v4.0.0/my/accounts"
+    description: "Fetch all accounts for the authenticated consumer — used by the consumer-home screen balance summary card. Returns accounts across all banks the user has access to."
+    auth_required: true
+    request_schema: []
+    response_schema:
+      - field: accounts
+        type: "List<Account>"
+        nullable: false
+        description: "All accounts accessible to the authenticated user."
+      - field: accounts[].id
+        type: String
+        nullable: false
+        description: "Account identifier."
+      - field: accounts[].bank_id
+        type: String
+        nullable: false
+        description: "Bank identifier for this account."
+      - field: accounts[].label
+        type: String
+        nullable: false
+        description: "Account label."
+      - field: accounts[].balance.amount
+        type: String
+        nullable: false
+        description: "Current balance value as decimal string."
+      - field: accounts[].balance.currency
+        type: String
+        nullable: false
+        description: "ISO 4217 currency code."
+    error_codes:
+      - code: 401
+        message: "USER_NOT_LOGGED_IN"
+        retry: false
+      - code: 403
+        message: "INSUFFICIENT_AUTHORISATION"
+        retry: false
+      - code: 500
+        message: "OBP_SERVER_ERROR"
+        retry: true
+
+  - id: get_recent_transactions_for_home
+    method: GET
+    path: "/v4.0.0/banks/{bank_id}/accounts/{account_id}/transactions"
+    description: "Fetch recent transactions for the consumer-home activity section (limit=3, most recent first). Reuses the transactions endpoint with a small limit to populate the activity feed widget."
+    auth_required: true
+    request_schema:
+      - field: limit
+        type: Int
+        required: false
+        validation: "Number of transactions to return. Use 3 for home screen activity feed."
+      - field: sort_direction
+        type: String
+        required: false
+        validation: "Sort order — 'ASC' or 'DESC'. Use 'DESC' for most recent first."
+    response_schema:
+      - field: transactions
+        type: "List<Transaction>"
+        nullable: false
+        description: "List of transactions ordered by sort_direction."
+      - field: transactions[].id
+        type: String
+        nullable: false
+        description: "Unique transaction identifier."
+      - field: transactions[].this_account.id
+        type: String
+        nullable: false
+        description: "The account ID this transaction belongs to."
+      - field: transactions[].other_account.holder.name
+        type: String
+        nullable: true
+        description: "Name of the counterparty account holder."
+      - field: transactions[].details.type
+        type: String
+        nullable: false
+        description: "Transaction type — e.g. 'SEPA_CREDIT_TRANSFERS', 'DEBIT'."
+      - field: transactions[].details.description
+        type: String
+        nullable: true
+        description: "Free-text transaction description / narration."
+      - field: transactions[].details.posted
+        type: String
+        format: ISO-8601 Instant
+        nullable: false
+        description: "Timestamp when the transaction was posted."
+      - field: transactions[].details.value.amount
+        type: String
+        nullable: false
+        description: "Transaction amount as decimal string."
+      - field: transactions[].details.value.currency
+        type: String
+        nullable: false
+        description: "ISO 4217 currency code."
+    error_codes:
+      - code: 400
+        message: "INVALID_SORT_DIRECTION"
+        retry: false
+      - code: 401
+        message: "USER_NOT_LOGGED_IN"
+        retry: false
+      - code: 404
+        message: "BANK_ACCOUNT_NOT_FOUND"
+        retry: false
+      - code: 500
+        message: "OBP_SERVER_ERROR"
+        retry: true

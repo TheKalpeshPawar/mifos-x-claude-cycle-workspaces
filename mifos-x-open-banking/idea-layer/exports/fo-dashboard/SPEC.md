@@ -12,27 +12,19 @@
 
 ## Overview
 
-The Field Officer Dashboard is the primary landing screen for Field Officer persona users. It provides a personalized greeting ("Good morning, Priya"), today's date and branch context ("Monday, 25 May 2026 · Mifos Nairobi Branch"), a 2-column KPI stats grid (Active Customers: 124, Pending Applications: 5, KYC Pending: 3, Meetings Today: 2), an "Action Needed" section with urgency-coded alert rows for KYC expiry, overdue applications, new leads, corporate inquiries, and agent registration, followed by a "Today's Schedule" section with two time-slotted meetings. All data is fetched from OBP Customers and Account-Applications endpoints. The screen is responsive: single column on mobile, 2 columns on tablet (600dp+), 3 columns on desktop (840dp+).
+The Field Officer Dashboard is the primary landing screen for Field Officer persona users after authentication. It shows a personalised greeting ("Good morning, Priya 👋"), today's date and branch context ("Monday, 25 May 2026 · Mifos Nairobi Branch"), and a 2-column KPI grid with four tappable stat cards: Active Customers (124, border #4C662B), Pending Applications (5, border #E8A317), KYC Pending (3, border #BA1A1A), and Meetings Today (2, border #386663, fill #DCE7C8). Each KPI card navigates to its operational screen. Below the grid an "Action Needed" section surfaces three urgency-coded alert rows — John Mwangi KYC expires in 3 days (#E8A317 border, "Review KYC" button), Sarah Odhiambo application pending 7 days (#BA1A1A border, "View Application" button), and a new lead for Peter Kamau — Retail account request (#4C662B border, "Start Onboarding" button) — followed by two corporate-level action cards: Acme Trading Ltd new business account inquiry (→ corporate-onboarding) and a Complete Agent Registration prompt (→ agent-registration). A "Today's Schedule" section lists two meetings: 10:00 AM Mary Wanjiku · Loan Review, and 2:30 PM James Otieno · New Account Discussion. Data is fetched from OBP Customers and Account-Applications endpoints on screen entry and on RetryLoadEvent. initial_state is loading; shimmer skeleton renders for all cards during load.
 
 ---
 
 ## Screens
 
-| ID               | Name                    | Route        | Layout  | Scroll   |
-|------------------|-------------------------|--------------|---------|----------|
-| fo_dashboard_main| Field Officer Dashboard | /fo-dashboard| Column  | Vertical |
+| ID                | Name                    | Route         | Layout | Scroll   |
+|-------------------|-------------------------|---------------|--------|----------|
+| fo_dashboard_main | Field Officer Dashboard | /fo-dashboard | Column | Vertical |
 
-**Shell:** fieldOfficer flavor bottom navigation bar (5 items — Dashboard active).
+**Shell:** fieldOfficer flavor bottom navigation bar (M3, 80dp height, #F9FAEF background, #C5C8BA border-top). Active indicator: #DCE7C8 pill.
 
-| Nav Item     | ID                   | Icon        | Target              | Badge |
-|--------------|----------------------|-------------|---------------------|-------|
-| Dashboard    | nav_dashboard        | dashboard   | fo-dashboard        | true  |
-| Customers    | nav_customers        | people      | customer-search     | false |
-| Applications | nav_applications     | description | account-applications| true  |
-| Messages     | nav_messages         | mail        | customer-messages   | true  |
-| More         | nav_more             | more_vert   | settings            | false |
-
-**Top app bar:** Profile icon (account_circle, 32dp, #4C662B → profile) + Settings icon (settings, 24dp, #44483D → settings), positioned absolute top-right.
+**Top app bar (inline, not a separate component):** Profile icon (account_circle, 32dp, #4C662B, absolute top:20 right:16 → profile) + Settings icon (settings, 24dp, #44483D, absolute top:24 right:56 → settings).
 
 ---
 
@@ -85,12 +77,12 @@ The Field Officer Dashboard is the primary landing screen for Field Officer pers
 
 ## States
 
-| ID      | Trigger                          | Description                                                                               |
-|---------|----------------------------------|-------------------------------------------------------------------------------------------|
-| loading | Screen entry / RetryLoadEvent    | Greeting + date visible; stats grid, action cards, meeting rows all show skeleton shimmer |
-| content | Data load success                | All KPI cards, action alerts, schedule rows fully populated with live data                |
-| error   | Network or auth failure          | Greeting + date visible; stats/actions/schedule hidden; error message with retry          |
-| empty   | No customers / data returned yet | Greeting + date + empty state card ("No dashboard data, start by onboarding a customer") |
+| ID      | Trigger                             | Description                                                                                                                                                                                                          |
+|---------|-------------------------------------|----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| loading | Screen entry / RetryLoadEvent       | Greeting + date/branch always visible. Stats grid, all 4 KPI cards, all action alerts (kyc/application/lead/corporate/agent), both meeting rows show skeleton (shimmer_duration: short4 = 200ms; reduced-motion fallback: static_placeholder). |
+| content | Data load success                   | Full screen: greeting, date/branch, 2×2 KPI grid (124/5/3/2), action needed section (3 inline alerts + 2 action cards), today's schedule (2 meetings at 10:00 AM and 2:30 PM). |
+| error   | Network or API failure on any fetch | Greeting + date/branch visible. Stats grid, action section, schedule section hidden. Banner: "Unable to load dashboard data. Check your connection and try again." Retry button (id: error_retry_button, label: "Try Again", action: retry_load). |
+| empty   | All API responses return empty data | Greeting + date/branch visible. Stats/action/schedule sections hidden. Empty message: "No dashboard data available yet. Start by onboarding a customer." Icon: dashboard_customize. CTA: "Onboard a Customer" → customer-search. |
 
 ---
 
@@ -117,61 +109,74 @@ The Field Officer Dashboard is the primary landing screen for Field Officer pers
 
 **DI Dependencies:** `CustomerRepository`, `AccountApplicationRepository`, `MeetingRepository`, `NavigationService`
 
+**Errors:**
+- `networkError`: "Unable to load dashboard data. Check your connection and try again."
+
 ---
 
 ## Navigation
 
-| From         | To                   | Trigger                            | Type |
-|--------------|----------------------|------------------------------------|------|
-| fo-dashboard | customer-search      | stat_active_customers tap          | push |
-| fo-dashboard | account-applications | stat_pending_applications tap      | push |
-| fo-dashboard | kyc-review           | stat_kyc_pending tap               | push |
-| fo-dashboard | meetings             | stat_meetings_today tap            | push |
-| fo-dashboard | kyc-review           | alert_kyc_review_button tap        | push |
-| fo-dashboard | account-applications | alert_view_application_button tap  | push |
-| fo-dashboard | customer-search      | alert_start_onboarding_button tap  | push |
-| fo-dashboard | corporate-onboarding | action_corporate_btn tap           | push |
-| fo-dashboard | agent-registration   | action_register_as_agent_btn tap   | push |
-| fo-dashboard | meetings             | meeting_row_1 / meeting_row_2 tap  | push |
-| fo-dashboard | profile              | top_bar_profile_icon tap           | push |
-| fo-dashboard | settings             | top_bar_settings_icon tap          | push |
+| From         | To                   | Trigger                              | Type |
+|--------------|----------------------|--------------------------------------|------|
+| fo-dashboard | customer-search      | stat_active_customers tap            | push |
+| fo-dashboard | account-applications | stat_pending_applications tap        | push |
+| fo-dashboard | kyc-review           | stat_kyc_pending tap                 | push |
+| fo-dashboard | meetings             | stat_meetings_today tap              | push |
+| fo-dashboard | kyc-review           | alert_kyc_expiry_john tap            | push |
+| fo-dashboard | kyc-review           | alert_kyc_review_button tap          | push |
+| fo-dashboard | account-applications | alert_application_pending_sarah tap  | push |
+| fo-dashboard | account-applications | alert_view_application_button tap    | push |
+| fo-dashboard | customer-search      | alert_new_lead_peter tap             | push |
+| fo-dashboard | customer-search      | alert_start_onboarding_button tap    | push |
+| fo-dashboard | corporate-onboarding | action_corporate_onboard tap         | push |
+| fo-dashboard | corporate-onboarding | action_corporate_btn tap             | push |
+| fo-dashboard | agent-registration   | action_register_as_agent tap         | push |
+| fo-dashboard | agent-registration   | action_register_as_agent_btn tap     | push |
+| fo-dashboard | meetings             | meeting_row_1 tap                    | push |
+| fo-dashboard | meetings             | meeting_row_2 tap                    | push |
+| fo-dashboard | profile              | top_bar_profile_icon tap             | push |
+| fo-dashboard | settings             | top_bar_settings_icon tap            | push |
 
 ---
 
 ## API Endpoints
 
-| Endpoint                                              | Auth        | Tag                   | Purpose                                          |
-|-------------------------------------------------------|-------------|-----------------------|--------------------------------------------------|
-| GET /obp/v5.1.0/banks/{bankId}/customers              | DirectLogin | Customers             | Customer list: active count, KYC pending, new leads |
-| GET /obp/v5.1.0/banks/{bankId}/account-applications  | DirectLogin | Account-Applications  | Application count: pending + corporate inquiries |
+| Endpoint                                               | Auth        | Tag                  | Purpose                                                                      |
+|--------------------------------------------------------|-------------|----------------------|------------------------------------------------------------------------------|
+| GET /obp/v5.1.0/banks/{bankId}/customers               | DirectLogin | Customers            | Active customer count; KYC-pending count; expiring-soon filter; new-lead filter |
+| GET /obp/v5.1.0/banks/{bankId}/account-applications    | DirectLogin | Account-Applications | Pending application count; days-pending filter; corporate inquiry filter     |
 
 ---
 
 ## Design Tokens
 
-| Token                              | Value     | Usage                                                               |
-|------------------------------------|-----------|---------------------------------------------------------------------|
-| colors.light.primary               | #4C662B   | Greeting text, stat card border (customers), time labels, nav icons |
-| colors.light.primary_container     | #CDEDA3   | KPI card fills (3 of 4), alert card fills, corporate/agent cards    |
-| colors.light.nav_active_indicator  | #DCE7C8   | Meetings Today KPI card fill                                        |
-| colors.light.secondary             | #386663   | Meetings Today border accent, corporate + agent button text         |
-| colors.light.error                 | #BA1A1A   | KYC Pending value text, KYC border, application alert border        |
-| colors.light.pending               | #E8A317   | Pending Applications border accent, KYC expiry alert border         |
-| colors.light.on_surface            | #1A1C16   | Alert text, schedule details, section headers                       |
-| colors.light.on_surface_variant    | #44483D   | Date/branch context text, settings icon, KYC review button text     |
-| colors.light.surface               | #FFFFFF   | Meeting row cards                                                   |
-| typography.headline_medium         | Outfit 28sp | Greeting text                                                     |
-| typography.display_small           | Outfit 32sp/600 | KPI stat values (124, 5, 3, 2)                                |
-| typography.title_large             | Outfit 22sp | "Action Needed" section header                                    |
-| typography.title_medium            | Outfit 16sp/500 | "Today's Schedule" header                                     |
-| typography.body_medium             | Outfit 14sp/400 | Alert text, meeting details, date/branch context              |
-| typography.label_large             | Outfit 14sp/500 | Meeting time labels                                           |
-| typography.label_medium            | Outfit 12sp/500 | Corporate/agent button text                                   |
-| typography.label_small             | Outfit 11sp/500 | Alert action buttons (Review KYC, View Application, etc.)     |
-| radius.md                          | 12dp      | KPI stat cards, alert cards                                         |
-| radius.sm                          | 8dp       | Alert action buttons                                                |
-| elevation.level1                   | 1dp       | Meeting row cards                                                   |
+| Token                              | Value           | Usage                                                                                     |
+|------------------------------------|-----------------|-------------------------------------------------------------------------------------------|
+| colors.light.primary               | #4C662B         | Greeting text, active-customers KPI left border, new-lead alert border, meeting time labels, start-onboarding button border/text, profile icon |
+| colors.light.primary_container     | #CDEDA3         | Active-customers, pending-applications, and KYC-pending KPI card fills; all three alert card fills; corporate + agent card fills |
+| colors.light.nav_active_indicator  | #DCE7C8         | Meetings Today KPI card fill                                                              |
+| colors.light.secondary             | #386663         | Meetings Today KPI left border, corporate-onboarding btn text, agent-register btn text    |
+| colors.light.error                 | #BA1A1A         | KYC Pending KPI left border + value text; overdue application alert left border; "View Application" button border/text |
+| colors.light.pending               | #E8A317         | Pending Applications KPI left border; KYC-expiry alert left border                       |
+| colors.light.on_surface            | #1A1C16         | KPI label text, alert body text, schedule meeting details, section headers                |
+| colors.light.on_surface_variant    | #44483D         | Date/branch context, settings icon; stat_pending_applications_value (a11y fix: 7.26:1 PASS on #CDEDA3); "Review KYC" button border/text |
+| colors.light.surface               | #FFFFFF         | Meeting row card fills                                                                    |
+| colors.light.background            | #F9FAEF         | Screen base                                                                               |
+| typography.headline_medium         | Outfit 28sp/400 | Greeting text                                                                             |
+| typography.display_small           | Outfit 32sp/600 | KPI stat values (124, 5, 3, 2)                                                            |
+| typography.title_large             | Outfit 22sp/400 | "Action Needed" section header                                                            |
+| typography.title_medium            | Outfit 16sp/500 | "Today's Schedule" section header                                                         |
+| typography.body_medium             | Outfit 14sp/400 | Alert body text, meeting details, date/branch context, KPI labels                        |
+| typography.label_large             | Outfit 14sp/500 | Meeting time labels (10:00 AM, 2:30 PM)                                                  |
+| typography.label_medium            | Outfit 12sp/500 | Corporate "Start Corporate Onboarding" + "Register" button text                          |
+| typography.label_small             | Outfit 11sp/500 | Alert action buttons ("Review KYC", "View Application", "Start Onboarding")              |
+| radius.md                          | 12dp            | KPI stat cards, alert cards, corporate + agent action cards                               |
+| radius.sm                          | 8dp             | Alert action buttons (border-radius)                                                      |
+| elevation.level1                   | 1dp             | Meeting row cards                                                                         |
+| spacing.md                         | 16dp            | Horizontal content padding throughout                                                     |
+| spacing.sm                         | 8dp             | KPI grid gap, alert bottom margin                                                         |
+| motion.duration.short4             | 200ms           | Skeleton shimmer cycle during loading state                                               |
 
 ---
 
-_Generated by /idea export | 2026-05-29_
+_Generated by /idea export | 2026-05-30_

@@ -1,9 +1,9 @@
 # API Reference — Corporate Customer Onboarding
 
-| Field    | Value                                       |
-|----------|---------------------------------------------|
-| Feature  | corporate-onboarding                        |
-| Base URL | https://apisandbox.openbankproject.com      |
+| Field    | Value                                  |
+|----------|----------------------------------------|
+| Feature  | corporate-onboarding                   |
+| Base URL | https://apisandbox.openbankproject.com |
 
 ---
 
@@ -11,47 +11,67 @@
 
 **Auth:** DirectLogin
 **Tag:** Customers
-**Trigger:** `submit()` action — dispatched from `CorporateOnboardingViewModel` when the Field Officer taps "Submit Corporate Application" on step 4 after all validation passes
+**Trigger:** `submit()` action — dispatched by `CorporateOnboardingViewModel` when the Field Officer taps "Submit Corporate Application" on step 4 after all per-step validation passes (ownership sum validation + required field checks)
+
+Creates a new corporate customer record in the OBP core banking system. Called exactly once per successful wizard completion. On 200 OK the ViewModel emits `ApplicationSubmitted` and navigates to `account-applications`.
 
 ### Path Parameters
 
-| Name   | Type   | Value    | Description       |
-|--------|--------|----------|-------------------|
-| bankId | String | gh.29.uk | Target bank ID    |
+| Name   | Type   | Value    | Description                         |
+|--------|--------|----------|-------------------------------------|
+| bankId | String | gh.29.uk | Target bank identifier (OBP sandbox) |
 
 ### Request Body
 
-| Field                 | Type   | Required | Description                                                   |
-|-----------------------|--------|----------|---------------------------------------------------------------|
-| legal_name            | String | Yes      | Company legal name (e.g. "Kamau Enterprises Limited")         |
-| mobile_phone_number   | String | No       | Primary contact number for the corporate entity               |
-| email                 | String | No       | Corporate email address                                       |
-| date_of_birth         | String | No       | Year established in ISO format (e.g. "2019-01-01")            |
-| relationship_status   | String | No       | Entity type classification                                    |
-| employment_status     | String | No       | Industry classification                                       |
-| kyc_status            | Boolean| No       | Defaults to `false` until KYC documents verified              |
-| customer_number       | String | No       | Auto-generated or pre-assigned registration reference         |
-| face_image            | Object | No       | `{ url: String, date: String }` — company logo if applicable  |
+| Field               | Type    | Required | Description                                                                |
+|---------------------|---------|----------|----------------------------------------------------------------------------|
+| legal_name          | String  | Yes      | Company legal name from step 1 (e.g. "Kamau Enterprises Limited")          |
+| mobile_phone_number | String  | No       | Primary contact mobile for the corporate entity                             |
+| email               | String  | No       | Corporate email address                                                     |
+| date_of_birth       | String  | No       | Year established mapped to ISO-8601 date (e.g. "2019-01-01")               |
+| relationship_status | String  | No       | Entity type classification (e.g. "Limited Company")                         |
+| employment_status   | String  | No       | Industry classification (e.g. "Technology")                                 |
+| kyc_status          | Boolean | No       | Defaults to `false` until KYC documents are verified by back-office         |
+| customer_number     | String  | No       | Auto-generated or pre-assigned reference (e.g. OBP-assigned sequence)       |
+| face_image          | Object  | No       | `{ url: String, date: String }` — company logo URL if applicable            |
 
 ### Response Fields
 
-| Field           | Type   | Description                                         |
-|-----------------|--------|-----------------------------------------------------|
-| customer_id     | String | OBP-assigned unique customer ID for the new record  |
-| legal_name      | String | Echoes back the submitted company name              |
-| customer_number | String | Assigned customer reference number                  |
-| customer_type   | String | "CORPORATE" — type assigned at creation             |
-| kyc_status      | Boolean| Initial KYC status (false until verified)           |
+| Field           | Type    | Description                                                 |
+|-----------------|---------|-------------------------------------------------------------|
+| customer_id     | String  | OBP-assigned unique customer identifier for the new record  |
+| legal_name      | String  | Echoes submitted company legal name                         |
+| customer_number | String  | Assigned customer reference number                          |
+| customer_type   | String  | "CORPORATE" — type assigned at creation                     |
+| kyc_status      | Boolean | Initial KYC status (`false` until documents verified)       |
+
+### Demo Data
+
+| customer_id                         | legal_name                          | customer_number      | customer_type | kyc_status |
+|-------------------------------------|-------------------------------------|----------------------|---------------|------------|
+| cust-corp-001-ke-mwangi-holdings    | Mwangi Holdings Limited             | KCB-CORP-2026-001142 | CORPORATE     | VERIFIED   |
+| cust-corp-002-ke-odhiambo-logistics | Odhiambo Logistics & Freight Ltd    | EQT-CORP-2026-005381 | CORPORATE     | PENDING    |
+| cust-corp-003-ke-kamau-agri         | Kamau Agri-Business Co-operative    | COOP-CORP-2026-008820| COOPERATIVE   | VERIFIED   |
+
+**Representative submission payload (step 4 demo state):**
+
+| Field               | Demo Value                    |
+|---------------------|-------------------------------|
+| legal_name          | Kamau Enterprises Limited     |
+| date_of_birth       | 2019-01-01                    |
+| relationship_status | Limited Company               |
+| employment_status   | Technology                    |
+| kyc_status          | false                         |
 
 ### Error Codes
 
-| Code | OBP Error Key              | UI Behaviour                                                              |
-|------|----------------------------|---------------------------------------------------------------------------|
-| 400  | VALIDATION_FAILED          | Show error banner "Please correct the highlighted fields before continuing." |
-| 401  | USER_NOT_LOGGED_IN         | Navigate to login                                                         |
-| 409  | CUSTOMER_ALREADY_EXISTS    | Show error banner "A customer record with this registration number already exists." |
-| 500  | INTERNAL_SERVER_ERROR      | Show error banner "Could not submit application. Please try again."       |
+| Code | OBP Error Key           | UI Behaviour                                                                    |
+|------|-------------------------|---------------------------------------------------------------------------------|
+| 400  | VALIDATION_FAILED       | Show error banner "Please correct the highlighted fields before continuing."     |
+| 401  | USER_NOT_LOGGED_IN      | Navigate to login screen                                                         |
+| 409  | CUSTOMER_ALREADY_EXISTS | Show error banner "A customer with this registration number already exists."     |
+| 500  | INTERNAL_SERVER_ERROR   | Show error banner "Could not submit application. Please try again."              |
 
 ---
 
-_Generated by /idea export | 2026-05-29_
+_Generated by /idea export | 2026-05-30_

@@ -1,0 +1,91 @@
+schema_version: "4.0"
+api_group: fx
+name: "Foreign Exchange API"
+base_url: "https://apisandbox.openbankproject.com/obp"
+auth_scheme: DirectLogin
+generated_at: "2026-05-30"
+
+endpoints:
+
+  - id: list_currencies
+    method: GET
+    path: "/v5.1.0/banks/{bank_id}/currencies"
+    description: "List all currencies supported by the bank — used to populate the currency selector dropdowns on the FX Rates screen."
+    auth_required: true
+    request_schema: []
+    response_schema:
+      - field: currencies
+        type: "List<Currency>"
+        nullable: false
+        description: "Array of supported currency objects"
+      - field: currency_code
+        type: String
+        nullable: false
+        description: "ISO 4217 three-letter currency code (e.g. GBP, EUR, USD)"
+      - field: currency_name
+        type: String
+        nullable: false
+        description: "Human-readable currency name (e.g. British Pound Sterling)"
+      - field: country_code
+        type: String
+        nullable: true
+        description: "ISO 3166-1 alpha-2 country code associated with the currency"
+    error_codes:
+      - code: 401
+        message: "USER_NOT_LOGGED_IN"
+        retry: false
+      - code: 403
+        message: "INSUFFICIENT_AUTHORISATION"
+        retry: false
+      - code: 404
+        message: "BANK_NOT_FOUND"
+        retry: false
+      - code: 500
+        message: "OBP_SERVER_ERROR"
+        retry: true
+
+  - id: get_fx_rate
+    method: GET
+    path: "/v5.1.0/banks/{bank_id}/fx/{from_currency_code}/{to_currency_code}"
+    description: "Get the current exchange rate between two currencies for the given bank. Default example: GBP → EUR."
+    auth_required: true
+    request_schema: []
+    response_schema:
+      - field: bank_id
+        type: String
+        nullable: false
+        description: "Bank identifier"
+      - field: from_currency_code
+        type: String
+        nullable: false
+        description: "Source ISO 4217 currency code"
+      - field: to_currency_code
+        type: String
+        nullable: false
+        description: "Target ISO 4217 currency code"
+      - field: conversion_value
+        type: Double
+        nullable: false
+        description: "Number of target currency units per one unit of source currency"
+      - field: inverse_conversion_value
+        type: Double
+        nullable: false
+        description: "Number of source currency units per one unit of target currency"
+      - field: effective_date
+        type: String
+        format: ISO-8601 Instant
+        nullable: false
+        description: "Timestamp when this rate was last updated by the bank"
+    error_codes:
+      - code: 401
+        message: "USER_NOT_LOGGED_IN"
+        retry: false
+      - code: 403
+        message: "INSUFFICIENT_AUTHORISATION"
+        retry: false
+      - code: 404
+        message: "FX_CURRENCY_NOT_FOUND"
+        retry: false
+      - code: 500
+        message: "OBP_SERVER_ERROR"
+        retry: true

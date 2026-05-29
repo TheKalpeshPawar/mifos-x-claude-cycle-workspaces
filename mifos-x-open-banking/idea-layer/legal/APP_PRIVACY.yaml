@@ -1,0 +1,117 @@
+# Apple App Store Privacy Nutrition Labels — Mifos-X Open Banking
+# Platform: iOS (KMP - cmp-ios module)
+# Schema: Apple App Privacy Declaration (App Store Connect format)
+# Last updated: 2026-05-30
+
+app:
+  name: Mifos-X Open Banking
+  bundle_id: org.mifos.openbanking
+  apple_id: TBD                        # assigned on App Store Connect submission
+  version_applicable: "1.0.0+"
+
+# ─── Privacy Practices Overview ──────────────────────────────────────────────
+
+privacy_practices:
+  # Does the app collect data?
+  collects_data: true
+
+  # Does the app track users across apps/websites owned by other companies?
+  tracks_users: false
+  tracking_notes: "No third-party advertising networks or cross-app tracking SDKs on iOS. Firebase is Android-only."
+
+# ─── Data Used to Track You ──────────────────────────────────────────────────
+# Data linked to your identity, used to track you across apps and websites
+
+data_used_to_track_you: []            # None — Firebase (Crashlytics/Performance) is Android-only; no iOS tracking
+
+# ─── Data Linked to You ──────────────────────────────────────────────────────
+# Data collected and linked to your Apple ID / user identity
+
+data_linked_to_you:
+
+  - category: financial_info
+    data_types:
+      - bank_account_numbers
+      - credit_card_info           # Masked card data (PAN last 4, expiry) — Consumer persona
+      - transaction_history
+    purposes:
+      - app_functionality          # Core banking services — account view, transactions, cards
+    notes: "All financial data is accessed via OBP API and cached locally. Not shared with third parties."
+
+  - category: contact_info
+    data_types:
+      - name
+      - email_address
+      - phone_number               # Field Officer persona only — customer contact during KYC
+      - address                    # Field Officer persona only — customer address during KYC
+    purposes:
+      - app_functionality
+    notes: "Profile data from OBP API. Customer contact/address accessed by Field Officers only during authorized KYC workflows."
+
+  - category: identifiers
+    data_types:
+      - user_id                    # OBP user identifier
+    purposes:
+      - app_functionality
+    notes: "OBP user ID used for session management. Not used for advertising."
+
+  - category: credentials
+    data_types:
+      - auth_credentials           # OBP Direct Login session token (post-authentication)
+    purposes:
+      - app_functionality
+    notes: "Session token stored in iOS Keychain. Password is never stored."
+
+# ─── Data NOT Linked to You ──────────────────────────────────────────────────
+# Data collected but not linked to your identity
+
+data_not_linked_to_you:
+  # Firebase is Android-only — no crash or performance data collected on iOS
+  # App activity data on iOS is limited to local analytics not shared with third parties
+  []
+
+# ─── No Data Collected ───────────────────────────────────────────────────────
+
+no_data_collected_categories:
+  - health_and_fitness             # No health data
+  - location                       # ATM locator uses OBP API data; no device GPS collected
+  - sensitive_info                 # No biometrics, race, religion, sexual orientation
+  - contacts                       # No device address book access
+  - photos_and_videos              # No camera or photo library (except KYC document upload — see below)
+  - audio                          # No microphone
+  - gameplay_content               # N/A
+  - search_history                 # N/A
+  - browsing_history               # No in-app browser
+  - diagnostics                    # Firebase = Android only; no iOS diagnostics collected
+
+# ─── Special Case: KYC Document Upload (Field Officer) ───────────────────────
+
+kyc_document_note:
+  category: photos_and_videos
+  collected: conditional
+  condition: "Field Officer persona only — when uploading KYC identity documents"
+  purposes:
+    - app_functionality
+  linked_to_you: true
+  tracking: false
+  notes: >
+    If the Field Officer persona is enabled and the user uploads identity document
+    photos for KYC verification, the App accesses the camera or photo library
+    to capture/select the document. Photos are transmitted to the OBP API for
+    storage and are NOT retained locally or shared with third parties beyond the
+    connected banking institution.
+
+# ─── Privacy Policy URL ──────────────────────────────────────────────────────
+
+privacy_policy_url: "https://mifos.org/privacy-policy"
+
+# ─── App Store Connect Submission Notes ──────────────────────────────────────
+
+submission_notes:
+  - "Firebase Crashlytics and Firebase Performance Monitoring are Android-only. These SDKs are not compiled into the iOS (cmp-ios) build. Declare NO crash data or performance telemetry for iOS."
+  - "App does NOT use AppTrackingTransparency (ATT) — no cross-app tracking on iOS."
+  - "Session tokens stored in iOS Keychain (encrypted by Secure Enclave)."
+  - "App is categorized as Finance > Banking. Apple review note: Requires valid OBP API credentials for full functionality. Sandbox endpoint: https://apisandbox.openbankproject.com"
+  - "Consumer Key for App Store review: Provide sandbox consumer_key in review notes — never in the App binary."
+  - "Age rating: 4+ (banking app — no violent or adult content; age-gated at account level by banking institution)."
+  - "The Field Officer persona requires institutional authorization — not accessible to general App Store users without provisioning."

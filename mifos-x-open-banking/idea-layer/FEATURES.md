@@ -7,7 +7,7 @@ Updated 2026-05-29 — added consumer-home, standing-order-edit.
 
 ## Consumer Persona Features
 
-### Core Banking (9 features)
+### Core Banking (11 features)
 
 | Feature | Screen | OBP API Endpoint | Description |
 |---|---|---|---|
@@ -20,7 +20,6 @@ Updated 2026-05-29 — added consumer-home, standing-order-edit.
 | **beneficiaries** | Beneficiaries | `GET /banks/{bank}/counterparties` | Manage payee list |
 | **cards** | Cards, Card Detail | `GET /accounts/{account_id}/cards` | View card details, transactions |
 | **standing-orders** | Standing Orders | `GET /accounts/{account_id}/standing-orders` | Create & manage recurring payments |
-
 | **consumer-home** | Consumer Home | `GET /my/accounts`, `GET /accounts/{id}/transactions` | Personalised consumer home dashboard — balance, quick actions, recent transactions |
 | **standing-order-edit** | Standing Order Edit | `PUT /accounts/{accountId}/standing-order/{id}` | Edit amount, frequency, start/end date for existing standing order |
 
