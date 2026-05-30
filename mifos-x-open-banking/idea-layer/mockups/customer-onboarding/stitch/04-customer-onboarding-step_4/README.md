@@ -4,14 +4,14 @@
 |-------|-------|
 | Feature | customer-onboarding |
 | State | step_4 |
-| Screen ID | cfd877031cbc457f9246bf68010b05ab |
+| Screen ID | 38ffcfbcdb3243f89493646d64406965 |
 | Project ID | 17153754672098888646 |
 | Design System ID | 2005644667042354169 |
-| Generated At | 2026-05-29T17:00:11.459Z |
+| Generated At | 2026-05-30T06:50:33.863Z |
 | HTML Downloaded | Yes |
 | PNG Downloaded | Yes |
 | Figma Export | — |
-| Stitch Screen | [View](https://stitch.google.com/projects/17153754672098888646/screens/cfd877031cbc457f9246bf68010b05ab) |
+| Stitch Screen | [View](https://stitch.google.com/projects/17153754672098888646/screens/38ffcfbcdb3243f89493646d64406965) |
 | Attempts | 1 |
 
 ## Files

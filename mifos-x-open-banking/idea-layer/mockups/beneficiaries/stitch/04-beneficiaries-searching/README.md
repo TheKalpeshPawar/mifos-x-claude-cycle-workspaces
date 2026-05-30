@@ -4,14 +4,14 @@
 |-------|-------|
 | Feature | beneficiaries |
 | State | searching |
-| Screen ID | 75e9987e03ff4e678c30338d2a214dc4 |
+| Screen ID | 05df6943c673442f827b126554428dc8 |
 | Project ID | 17153754672098888646 |
 | Design System ID | 2005644667042354169 |
-| Generated At | 2026-05-29T16:56:53.582Z |
-| HTML Downloaded | No |
+| Generated At | 2026-05-30T06:42:21.893Z |
+| HTML Downloaded | Yes |
 | PNG Downloaded | Yes |
 | Figma Export | — |
-| Stitch Screen | [View](https://stitch.google.com/projects/17153754672098888646/screens/75e9987e03ff4e678c30338d2a214dc4) |
+| Stitch Screen | [View](https://stitch.google.com/projects/17153754672098888646/screens/05df6943c673442f827b126554428dc8) |
 | Attempts | 1 |
 
 ## Files

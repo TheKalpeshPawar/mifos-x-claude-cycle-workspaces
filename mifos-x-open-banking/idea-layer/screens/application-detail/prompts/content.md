@@ -33,23 +33,23 @@ Design the content state of the application-detail screen for **Mifos X Open Ban
 
 Palette: primary #B2D188, on_primary #1F3701, primary_container #354E16, on_primary_container #CDEDA3, secondary #A0CFCB, on_secondary #003735, secondary_container #1F4E4B, on_secondary_container #BCEBE7, tertiary #A0CFCB, on_tertiary #003735, error #FFB4AB, on_error #690005, error_container #93000A, background #12140E, on_background #E3E3D8, surface #12140E, on_surface #E3E3D8, surface_variant #44483D, on_surface_variant #C5C8BA, surface_container #1E201A, surface_container_high #282A24, outline #8F9285, outline_variant #44483D, pending #E8A317, nav_active_indicator #354E16, scrim #000000.
 
-**Component 1 — App Bar** (64dp tall, full width): Leading back-arrow 24dp #B2D188. Title "Application #OBP-2026-00234" Outfit Medium 16sp #E3E3D8 centered. Background #12140E, 1dp bottom divider #44483D. Below: status chip "Pending Review" 24dp tall, 12dp corner radius, background amber-tinted #1E201A, label Outfit Medium 12sp #E8A317. "Submitted: 20 May 2026" Outfit Regular 12sp #8F9285.
+**Component 1 — App Bar** (64dp, full width, background #12140E, 1dp bottom divider #44483D): Back-arrow 24dp #B2D188 leading. Title "Application #OBP-2026-00234" Outfit Medium 16sp #E3E3D8 centered. Below: chip "Pending Review" 24dp, 12dp radius, #1E201A fill, Outfit Medium 12sp #E8A317. "Submitted: 20 May 2026" Outfit Regular 12sp #8F9285.
 
-**Component 2 — Card** (full width minus 32dp insets, 12dp corner radius, top margin 16dp, background #1E201A, 16dp padding): Header "Customer" Outfit Medium 12sp #B2D188, 40dp tall row. Below row 56dp tall: "John Kamau Mwangi" Outfit SemiBold 16sp #E3E3D8 on left. Link "View Profile" Outfit Medium 14sp #A0CFCB on right.
+**Component 2 — Card** (full width, 32dp insets, 12dp radius, 16dp margin top, #1E201A, 16dp padding): Header "Customer" Outfit Medium 12sp #B2D188. Row 56dp: "John Kamau Mwangi" Outfit SemiBold 16sp #E3E3D8 left; "View Profile" Outfit Medium 14sp #A0CFCB right.
 
-**Component 3 — Card** (full width minus 32dp insets, 12dp corner radius, top margin 12dp, background #1E201A, 16dp padding): Header "Application Details" Outfit Medium 12sp #B2D188. Three List Row items each 56dp tall separated by 1dp dividers #44483D. Row 1: "Account Type" #C5C8BA left, "KCB Savings Account" #E3E3D8 right. Row 2: "Requested Limit" #C5C8BA left, "KES 500,000" #B2D188 right. Row 3: "Purpose" #C5C8BA left, "Personal savings and salary credit" #E3E3D8 right.
+**Component 3 — Card** (full width, 32dp insets, 12dp radius, 12dp margin top, #1E201A, 16dp padding): Header "Application Details" Outfit Medium 12sp #B2D188. Three rows 56dp each, 1dp dividers #44483D. Row 1: "Account Type" #C5C8BA / "KCB Savings Account" #E3E3D8. Row 2: "Requested Limit" #C5C8BA / "KES 500,000" #B2D188. Row 3: "Purpose" #C5C8BA / "Personal savings and salary credit" #E3E3D8.
 
-**Component 4 — List Row** (full width minus 32dp insets, top margin 12dp, 48dp tall, background #1E201A, 12dp corner radius, 16dp padding): verified-user icon 20dp #B2D188 on left. "KYC Status: Verified" Outfit Medium 14sp #E3E3D8 on left. Checkmark icon 16dp #B2D188 on right.
+**Component 4 — List Row** (full width, 32dp insets, 12dp margin top, 48dp, #1E201A, 12dp radius, 16dp padding): Verified-user icon 20dp #B2D188 left. "KYC Status: Verified" Outfit Medium 14sp #E3E3D8. Checkmark 16dp #B2D188 right.
 
-**Component 5 — Card** (full width minus 32dp insets, 12dp corner radius, top margin 16dp, background #1E201A, 16dp padding): Header "Supporting Documents" Outfit Medium 12sp #B2D188. Two document List Row items each 64dp tall with 1dp divider. Doc 1: home icon 40dp #1F4E4B background 8dp corner radius on left, "National ID" Outfit Medium 14sp #E3E3D8 + "Verified" Outfit Regular 12sp #B2D188 below. "View" link #A0CFCB on right. Doc 2: home icon 40dp #44483D background, "Proof of Address" + "Pending Upload" #8F9285 Outfit Regular 12sp. Button "Upload" 32dp tall 8dp radius #354E16 on right.
+**Component 5 — Card** (full width, 32dp insets, 12dp radius, 16dp margin top, #1E201A, 16dp padding): Header "Supporting Documents" Outfit Medium 12sp #B2D188. Two rows 64dp, 1dp divider. Doc 1: icon 40dp #1F4E4B fill 8dp radius, "National ID" Outfit Medium 14sp #E3E3D8 + "Verified" 12sp #B2D188; "View" link #A0CFCB right. Doc 2: icon 40dp #44483D fill, "Proof of Address" + "Pending Upload" 12sp #8F9285; "Upload" button 32dp 8dp radius #354E16 right.
 
-**Component 6 — Text Field** (full width minus 32dp insets, top margin 16dp, 96dp tall, 12dp corner radius, outlined 1dp #44483D): Label "Review Notes" Outfit Regular 12sp #8F9285. Focused outline on edit.
+**Component 6 — Text Field** (full width, 32dp insets, 16dp margin top, 96dp, 12dp radius, outlined 1dp #44483D): Label "Review Notes" Outfit Regular 12sp #8F9285. Focused outline on edit.
 
-**Component 7 — Button** (full width minus 32dp insets, 48dp tall, 24dp corner radius, top margin 16dp): Filled button background #B2D188, label "Approve Application" Outfit SemiBold 14sp #1F3701.
+**Component 7 — Button** (full width, 32dp insets, 48dp, 24dp radius, 16dp margin top): Filled #B2D188, label "Approve Application" Outfit SemiBold 14sp #1F3701.
 
-**Component 8 — Button** (full width minus 32dp insets, 48dp tall, 24dp corner radius, top margin 8dp): Outlined button outline 1dp #FFB4AB, label "Reject Application" Outfit Medium 14sp #FFB4AB.
+**Component 8 — Button** (full width, 32dp insets, 48dp, 24dp radius, 8dp margin top): Outlined 1dp #FFB4AB, label "Reject Application" Outfit Medium 14sp #FFB4AB.
 
-**Component 9 — Button** (full width minus 32dp insets, 48dp tall, 24dp corner radius, top margin 8dp, bottom 32dp): Outlined button outline 1dp #44483D, label "Request Information" Outfit Medium 14sp #C5C8BA.
+**Component 9 — Button** (full width, 32dp insets, 48dp, 24dp radius, 8dp margin top, 32dp bottom): Outlined 1dp #44483D, label "Request Information" Outfit Medium 14sp #C5C8BA.
 
 Do not use em-dash anywhere in text. Do not make any headline more than 3 lines or any subtitle more than 25 words. Do not break the dark theme between sections. Do not place light text on light buttons or dark text on dark buttons.
 

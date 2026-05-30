@@ -14,8 +14,8 @@ feature: privacy-policy
 state: loading
 state_visibility: loading
 
-project_id: 'null'
-design_system_id: 'null'
+project_id: '17153754672098888646'
+design_system_id: '2005644667042354169'
 
 generated_by: stitch-prompt-build.ts v2.0.0
 prompt_template_version: stitch-per-state-v3.0.0
@@ -25,31 +25,25 @@ craft_rules_version: v1.0.0
 # privacy-policy — loading state
 
 > Auto-generated from screens/privacy-policy/ui.yaml @ SHA b430a63027f14933
-> Stitch DesignSystem: (pending DESIGN.md upload — run /idea-export-stitch sub-plan 02)
+> Stitch DesignSystem: 2005644667042354169
 > DO NOT redeclare colors / fonts / spacing — they live in DESIGN.md.
 
 ↓↓↓ MOCKUP PROMPT
 
-Design the loading state of the privacy-policy screen for **Mifos X Open Banking**, a professional open banking super-app for consumer retail banking and field officer workflows.
+Design the loading state of the Privacy Policy screen for **mifos-x-open-banking**, a professional open banking KMP super-app serving retail banking consumers and field officers.
 
-Palette: primary #B2D188, on_primary #1F3701, primary_container #354E16, on_primary_container #CDEDA3, secondary #A0CFCB, on_secondary #003735, secondary_container #1F4E4B, background #12140E, on_surface #E3E3D8, surface_container #1E201A, surface_container_high #282A24, outline #8F9285, pending #E8A317.
+Palette: primary #B2D188, on_primary #1F3701, primary_container #354E16, on_primary_container #CDEDA3, secondary #A0CFCB, on_secondary #003735, surface #12140E, on_surface #E3E3D8, surface_variant #44483D, on_surface_variant #C5C8BA, surface_container #1E201A, error #FFB4AB, outline #8F9285.
 
-**Component 1 — App Bar Shimmer** (64dp tall, full width): Title placeholder shimmer 120dp wide, 20dp tall, centered. Back-arrow shimmer 24dp left. Shimmer base #1E201A, highlight #282A24, 1200ms. Background #12140E. skeleton_screen archetype.
+**Component 1 — Skeleton** (full width minus 32dp inset, shimmer placeholder, layout-matching): skeleton_screen archetype. Banner-shaped shimmer bar at top, 48dp tall, 8dp radius, surface_variant #44483D with animated wave sweep from left to right on surface #12140E.
 
-**Component 2 — GDPR Banner Shimmer** (full width minus 32dp insets, top margin 16dp, 48dp tall, 12dp radius): Surface #282A24, two text-line shimmers 240dp + 180dp.
+**Component 2 — Skeleton** (full width minus 32dp inset, shimmer placeholder): Card-shaped shimmer block, 96dp tall, 12dp radius, surface_container #1E201A. Two inner shimmer lines: title bar 16dp tall and body bar 12dp tall, both surface_variant #44483D.
 
-**Component 3 — Card Shimmer 1** (full width minus 32dp insets, top margin 12dp, 96dp tall, 12dp radius): Surface #1E201A. Section header shimmer 100dp. Three text-line shimmers 260dp / 220dp / 180dp.
+**Component 3 — Skeleton** (full width minus 32dp inset, shimmer placeholder): Repeat Card shimmer block at same dimensions for sections 2 through 6 (Data Retention, Lawful Basis, Purpose, Third-Party, User Rights). All blocks use identical shim pattern -- no real text visible.
 
-**Component 4 — Card Shimmer 2** (full width minus 32dp insets, top margin 8dp, 96dp tall, 12dp radius): Same structure as Component 3.
+**Component 4 — Skeleton** (full width minus 32dp inset, shimmer placeholder): Final Card shimmer block for DPO Contact section, 80dp tall, three shimmer lines stacked 8dp apart.
 
-**Component 5 — Card Shimmer 3** (full width minus 32dp insets, top margin 8dp, 80dp tall, 12dp radius): Surface #1E201A. Header shimmer 120dp. Two text-line shimmers 240dp / 200dp.
+Do not use em-dash anywhere in text. Do not make any headline longer than 3 lines or any subtitle longer than 25 words. Do not break the page theme between sections. Do not place light text on light buttons or dark text on dark buttons.
 
-**Component 6 — Card Shimmer 4** (full width minus 32dp insets, top margin 8dp, 80dp tall, 12dp radius): Same structure.
-
-**Component 7 — Card Shimmer 5** (full width minus 32dp insets, top margin 8dp, 64dp tall, 12dp radius): Header shimmer + one text-line shimmer.
-
-Do not use em-dash anywhere in text. Do not make any headline more than 3 lines or any subtitle more than 25 words. Do not break the dark theme between sections. Do not place light text on light buttons or dark text on dark buttons.
-
-The card-shaped skeleton_screen shimmers in #1E201A with #282A24 highlights mirror the policy content structure, keeping the loading state minimal and restrained, coherent with the overall screen layout.
+The pulsing surface_variant #44483D shimmer on the near-black #12140E canvas signals that privacy content is arriving, keeping the professional banking feel calm while data loads.
 
 ↑↑↑ MOCKUP PROMPT

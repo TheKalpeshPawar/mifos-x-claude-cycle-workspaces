@@ -4,14 +4,14 @@
 |-------|-------|
 | Feature | account-applications |
 | State | content |
-| Screen ID | 3dbfb62b0d864087b9d6f948ce977863 |
+| Screen ID | c957297e3a8b4ba8ade28dd1b2dc95ae |
 | Project ID | 17153754672098888646 |
 | Design System ID | 2005644667042354169 |
-| Generated At | 2026-05-29T16:55:22.674Z |
+| Generated At | 2026-05-30T06:36:32.988Z |
 | HTML Downloaded | Yes |
 | PNG Downloaded | Yes |
 | Figma Export | — |
-| Stitch Screen | [View](https://stitch.google.com/projects/17153754672098888646/screens/3dbfb62b0d864087b9d6f948ce977863) |
+| Stitch Screen | [View](https://stitch.google.com/projects/17153754672098888646/screens/c957297e3a8b4ba8ade28dd1b2dc95ae) |
 | Attempts | 1 |
 
 ## Files

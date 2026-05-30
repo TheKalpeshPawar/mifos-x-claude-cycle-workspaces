@@ -14,8 +14,8 @@ feature: privacy-policy
 state: error
 state_visibility: error
 
-project_id: 'null'
-design_system_id: 'null'
+project_id: '17153754672098888646'
+design_system_id: '2005644667042354169'
 
 generated_by: stitch-prompt-build.ts v2.0.0
 prompt_template_version: stitch-per-state-v3.0.0
@@ -25,29 +25,23 @@ craft_rules_version: v1.0.0
 # privacy-policy — error state
 
 > Auto-generated from screens/privacy-policy/ui.yaml @ SHA 10b53bf0f01737d3
-> Stitch DesignSystem: (pending DESIGN.md upload — run /idea-export-stitch sub-plan 02)
+> Stitch DesignSystem: 2005644667042354169
 > DO NOT redeclare colors / fonts / spacing — they live in DESIGN.md.
 
 ↓↓↓ MOCKUP PROMPT
 
-Design the error state of the privacy-policy screen for **Mifos X Open Banking**, a professional open banking super-app for consumer retail banking and field officer workflows.
+Design the error state of the Privacy Policy screen for **mifos-x-open-banking**, a professional open banking KMP super-app serving retail banking consumers and field officers.
 
-Palette: primary #B2D188, on_primary #1F3701, primary_container #354E16, on_primary_container #CDEDA3, secondary #A0CFCB, on_secondary #003735, secondary_container #1F4E4B, background #12140E, on_surface #E3E3D8, surface_container #1E201A, surface_container_high #282A24, outline #8F9285, pending #E8A317.
+Palette: primary #B2D188, on_primary #1F3701, primary_container #354E16, on_primary_container #CDEDA3, secondary #A0CFCB, on_secondary #003735, surface #12140E, on_surface #E3E3D8, surface_variant #44483D, on_surface_variant #C5C8BA, surface_container #1E201A, error #FFB4AB, outline #8F9285.
 
-**Component 1 — App Bar** (64dp tall, full width): Title "Privacy Policy" Outfit Medium 18sp #E3E3D8 centered. Leading back-arrow 24dp #B2D188. Background #12140E, 1dp bottom divider #44483D. error_state archetype.
+**Component 1 — Icon** (48x48dp, centered, 32dp padding from edges): error_state archetype. Material symbol "policy" rendered in error #FFB4AB on surface #12140E. No content rails visible below.
 
-**Component 2 — Error Illustration** (centered, top margin 64dp, 160dp wide, 160dp tall): Broken document or disconnected shield icon in #44483D / #8F9285 on #12140E. No red. Calm, neutral tone appropriate for a policy document failure.
+**Component 2 — Text** (full width, centered, 32dp inset): Outfit 16sp, on_surface #E3E3D8. Content: "Unable to load Privacy Policy. Please check your connection and try again."
 
-**Component 3 — Error Title** (centered, top margin 24dp, horizontal padding 32dp): "Unable to load Privacy Policy" Outfit SemiBold 22sp #E3E3D8, centered, max 2 lines.
+**Component 3 — Button** (full width minus 32dp inset, 48dp tall, 999dp radius pill, 16dp horizontal padding): Primary Button. Background primary_container #354E16, label "Retry" in on_primary_container #CDEDA3, Outfit 14sp medium. Centered below message with 24dp gap.
 
-**Component 4 — Error Subtext** (centered, top margin 8dp, horizontal padding 48dp): "Please check your connection and try again." Outfit Regular 14sp #8F9285, line-height 20sp, centered.
+Do not use em-dash anywhere in text. Do not make any headline longer than 3 lines or any subtitle longer than 25 words. Do not break the page theme between sections. Do not place light text on light buttons or dark text on dark buttons.
 
-**Component 5 — Button** (full width minus 64dp insets, top margin 32dp): Filled pill Button 48dp tall, corner radius 999dp, background #B2D188, leading refresh icon 20dp #1F3701, label "Retry" Outfit SemiBold 16sp #1F3701.
-
-**Component 6 — Secondary Action** (centered, top margin 16dp): Text Button "Go back" Outfit Medium 14sp #8F9285.
-
-Do not use em-dash anywhere in text. Do not make any headline more than 3 lines or any subtitle more than 25 words. Do not break the dark theme between sections. Do not place light text on light buttons or dark text on dark buttons.
-
-The #B2D188 Retry button in this error_state keeps the experience calm and balanced, ensuring users in a regulated-industry context feel composed rather than alarmed when a policy document fails to load.
+The error #FFB4AB icon on the near-black #12140E surface communicates failure without aggression, while the primary_container Retry button invites the user back toward restrained stability.
 
 ↑↑↑ MOCKUP PROMPT

@@ -14,8 +14,8 @@ feature: privacy-policy
 state: content
 state_visibility: content
 
-project_id: 'null'
-design_system_id: 'null'
+project_id: '17153754672098888646'
+design_system_id: '2005644667042354169'
 
 generated_by: stitch-prompt-build.ts v2.0.0
 prompt_template_version: stitch-per-state-v3.0.0
@@ -25,37 +25,35 @@ craft_rules_version: v1.0.0
 # privacy-policy — content state
 
 > Auto-generated from screens/privacy-policy/ui.yaml @ SHA 5e848da04d355a86
-> Stitch DesignSystem: (pending DESIGN.md upload — run /idea-export-stitch sub-plan 02)
+> Stitch DesignSystem: 2005644667042354169
 > DO NOT redeclare colors / fonts / spacing — they live in DESIGN.md.
 
 ↓↓↓ MOCKUP PROMPT
 
-Design the content state of the privacy-policy screen for **Mifos X Open Banking**, a professional open banking super-app for consumer retail banking and field officer workflows.
+Design the content state of the Privacy Policy screen for **mifos-x-open-banking**, a professional open banking KMP super-app serving retail banking consumers and field officers.
 
-Palette: primary #B2D188, on_primary #1F3701, primary_container #354E16, on_primary_container #CDEDA3, secondary #A0CFCB, on_secondary #003735, secondary_container #1F4E4B, background #12140E, on_surface #E3E3D8, surface_container #1E201A, surface_container_high #282A24, outline #8F9285, pending #E8A317.
+Palette: primary #B2D188, on_primary #1F3701, primary_container #354E16, on_primary_container #CDEDA3, secondary #A0CFCB, on_secondary #003735, surface #12140E, on_surface #E3E3D8, surface_variant #44483D, on_surface_variant #C5C8BA, surface_container #1E201A, error #FFB4AB, outline #8F9285.
 
-**Component 1 — App Bar** (64dp tall, full width): Title "Privacy Policy" Outfit Medium 18sp #E3E3D8 centered. Leading back-arrow 24dp #B2D188. Background #12140E, 1dp bottom divider #44483D. settings archetype.
+**Component 1 — Banner** (full width, 32dp inset): Outfit 14sp, on_surface_variant #C5C8BA on surface_container #1E201A, 8dp radius. Text: "This policy complies with UK GDPR, the Data Protection Act 2018, and EU GDPR."
 
-**Component 2 — GDPR Banner** (full width minus 32dp insets, top margin 16dp, 12dp radius, 12dp padding): Surface #282A24, left border 3dp #A0CFCB. Text "This policy complies with UK GDPR, the Data Protection Act 2018, and EU GDPR (Regulation 2016/679)." Outfit Regular 12sp #C5C8BA.
+**Component 2 — Card** (full width minus 32dp inset, 12dp radius, surface_container #1E201A): settings section "Data We Collect." Header — Outfit 16sp bold, on_surface #E3E3D8. Body — Outfit 14sp, on_surface_variant #C5C8BA: "We collect identity data (name, date of birth, national ID), contact data (email, phone), financial data (account numbers, balances, transaction history), and device/usage data. (Remaining categories follow same pattern.)"
 
-**Component 3 — Card: Data We Collect** (full width minus 32dp insets, top margin 12dp, 12dp radius): Surface #1E201A, 16dp padding. Header "Data We Collect" Outfit SemiBold 14sp #E3E3D8. Body "We collect identity data (name, date of birth, national ID), contact data (email, phone, address), financial data (account balances, transaction history), and device data (IP address, device ID)." Outfit Regular 13sp #C5C8BA, line-height 20sp.
+**Component 3 — Card** (full width minus 32dp inset, 12dp radius): "Lawful Basis for Processing." Header as above. Body: "Processing grounds include contractual necessity (account services), legal obligation (AML compliance), and legitimate interests (fraud prevention). (Additional bases follow same pattern.)"
 
-**Component 4 — Card: Lawful Basis** (full width minus 32dp insets, top margin 8dp, 12dp radius): Surface #1E201A, 16dp padding. Header "Lawful Basis for Processing" Outfit SemiBold 14sp #E3E3D8. Body "We process under: (a) Contract performance — account provision and payment services; (b) Legal obligation — UK Money Laundering Regulations 2017; (c) Legitimate interest — fraud prevention." Outfit Regular 13sp #C5C8BA.
+**Component 4 — Card** (full width minus 32dp inset, 12dp radius): "How We Use Your Data." Body: "Data is used to display account balances, process payments, perform KYC identity verification, and detect fraud. No data is used for advertising."
 
-**Component 5 — Card: How We Use Your Data** (full width minus 32dp insets, top margin 8dp, 12dp radius): Surface #1E201A, 16dp padding. Header "How We Use Your Data" Outfit SemiBold 14sp #E3E3D8. Body "Your data is used exclusively to: provide account balance and transaction display, process payments and direct debits, comply with KYC / AML obligations, and detect fraud." Outfit Regular 13sp #C5C8BA.
+**Component 5 — Card** (full width minus 32dp inset, 12dp radius): "Third-Party Data Sharing." Body: "Data is shared with GDPR-compliant processors: Open Bank Project Limited (API services), regulated payment networks, and mandatory regulatory bodies only."
 
-**Component 6 — Card: Third-Party Sharing** (full width minus 32dp insets, top margin 8dp, 12dp radius): Surface #1E201A, 16dp padding. Header "Third-Party Data Sharing" Outfit SemiBold 14sp #E3E3D8. Body "We share data with Open Bank Project Limited under GDPR-compliant Data Processing Agreements. No data is sold to advertisers or marketing platforms." Outfit Regular 13sp #C5C8BA.
+**Component 6 — Card** (full width minus 32dp inset, 12dp radius): "Data Retention." Body: "Transaction records: 7 years (UK Money Laundering Regulations). Account data: duration of relationship plus 6 years post-closure."
 
-**Component 7 — Card: Retention** (full width minus 32dp insets, top margin 8dp, 12dp radius): Surface #1E201A. Header "Data Retention" Outfit SemiBold 14sp #E3E3D8. Body "Transaction records: 7 years (UK Money Laundering Regulations 2017). Identity data: duration of account + 7 years. Device logs: 12 months." Outfit Regular 13sp #C5C8BA.
+**Component 7 — Card** (full width minus 32dp inset, 12dp radius): "Your Rights Under GDPR." Body: "Rights include access, rectification, erasure, restriction, portability, and objection. Contact privacy@mifos.org to exercise any right."
 
-**Component 8 — Card: Your Rights** (full width minus 32dp insets, top margin 8dp, 12dp radius): Surface #1E201A. Header "Your Rights Under GDPR" Outfit SemiBold 14sp #E3E3D8. Body "Right to: Access, Rectification, Erasure, Restriction of Processing, Data Portability, Object. Exercise via privacy@mifos.org." Outfit Regular 13sp #C5C8BA.
+**Component 8 — Card** (full width minus 32dp inset, 12dp radius): "Data Controller and DPO Contact." Body: "Controller: Mifos Initiative, 1 World Trade Center, New York, NY 10007. Processor: Open Bank Project Limited, 11 Leadenhall Street, London. DPO: privacy@mifos.org."
 
-**Component 9 — Card: DPO Contact** (full width minus 32dp insets, top margin 8dp, 12dp radius): Surface #1E201A. Header "Data Controller & DPO Contact" Outfit SemiBold 14sp #E3E3D8. Body "Controller: Mifos Initiative, 1 World Trade Center, New York, NY 10007. Processor: Open Bank Project Limited, 11 Leadenhall Street, London EC3V 4AB. DPO: privacy@mifos.org." Outfit Regular 13sp #C5C8BA.
+**Component 9 — Text** (full width, 32dp inset, Outfit 12sp, on_surface_variant #C5C8BA): "Last updated: 28 May 2026 -- Version 1.0."
 
-**Component 10 — Last Updated** (full width minus 32dp insets, top margin 16dp, bottom margin 32dp): "Last updated: 28 May 2026 - Version 1.0" Outfit Regular 11sp #8F9285, centered.
+Do not use em-dash anywhere in text. Do not make any headline longer than 3 lines or any subtitle longer than 25 words. Do not break the page theme between sections. Do not place light text on light buttons or dark text on dark buttons.
 
-Do not use em-dash anywhere in text. Do not make any headline more than 3 lines or any subtitle more than 25 words. Do not break the dark theme between sections. Do not place light text on light buttons or dark text on dark buttons.
-
-Anchored by #A0CFCB teal on the GDPR compliance banner and #B2D188 on the back-arrow, the layout stays calm and restrained, projecting regulatory transparency and balanced user confidence in data handling.
+The earth-green accent #4C662B anchors every interactive element, projecting financial stability and trust. Flat-card depth on a near-black #12140E canvas keeps the settings archetype minimal and regulation-ready.
 
 ↑↑↑ MOCKUP PROMPT

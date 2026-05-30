@@ -1,6 +1,6 @@
 # FIGMA_LINKS.md — customer-detail
 
-<!-- schema: v3.2 | generated: 2026-05-29T17:13:12.010Z -->
+<!-- schema: v3.2 | generated: 2026-05-30T05:57:49.185Z -->
 
 ## Stitch Project
 
@@ -8,8 +8,8 @@
 |-------|-------|
 | Project URL | [17153754672098888646](https://stitch.google.com/projects/17153754672098888646) |
 | Design System ID | 2005644667042354169 |
-| Generated | 2026-05-29T17:13:10.418Z |
-| Success | 2/4 states |
+| Generated | 2026-05-30T05:57:49.185Z |
+| Success | 4/4 states |
 
 ## Screen Status
 
@@ -17,8 +17,8 @@
 |-------|-----------|--------|-----|------|--------|
 | loading | ef7c4b1b846e49659f56a579b153c66b | 01-customer-detail-loading | PNG ✅ | HTML ✅ | ♻ resumed |
 | content | 079b64e94f3c4df4b5c8355c75cae0a8 | 02-customer-detail-content | PNG ✅ | HTML ✅ | ♻ resumed |
-| error | — | 03-customer-detail-error | PNG ❌ | HTML ❌ | ❌ StitchError: Tool Call Failed [generate_screen_from_text]: Resource has been exhausted (e.g. check quota). |
-| empty | — | 04-customer-detail-empty | PNG ❌ | HTML ❌ | ❌ StitchError: Tool Call Failed [generate_screen_from_text]: Resource has been exhausted (e.g. check quota). |
+| error | 0296eddf40984d9ca95287d3ece32b70 | 03-customer-detail-error | PNG ✅ | HTML ✅ | ✅ generated |
+| empty | bbb774ada2134ee7a020e1edb5e95f62 | 04-customer-detail-empty | PNG ✅ | HTML ✅ | ✅ generated |
 
 ## Open in Figma / Stitch
 
@@ -26,8 +26,8 @@
 |-------|--------------|--------------|
 | loading | [Open](https://stitch.google.com/projects/17153754672098888646/screens/ef7c4b1b846e49659f56a579b153c66b) | — |
 | content | [Open](https://stitch.google.com/projects/17153754672098888646/screens/079b64e94f3c4df4b5c8355c75cae0a8) | — |
-| error | — | — |
-| empty | — | — |
+| error | [Open](https://stitch.google.com/projects/17153754672098888646/screens/0296eddf40984d9ca95287d3ece32b70) | — |
+| empty | [Open](https://stitch.google.com/projects/17153754672098888646/screens/bbb774ada2134ee7a020e1edb5e95f62) | — |
 
 > **Figma Export**: direct download URL captured from Stitch SDK `screen.data.figmaExport.downloadUrl`. May be `—` if Stitch did not generate a Figma export for this screen.
 >

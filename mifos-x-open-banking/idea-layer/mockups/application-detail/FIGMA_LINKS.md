@@ -1,6 +1,6 @@
 # FIGMA_LINKS.md — application-detail
 
-<!-- schema: v3.2 | generated: 2026-05-29T17:13:09.192Z -->
+<!-- schema: v3.2 | generated: 2026-05-30T07:00:16.004Z -->
 
 ## Stitch Project
 
@@ -8,7 +8,7 @@
 |-------|-------|
 | Project URL | [17153754672098888646](https://stitch.google.com/projects/17153754672098888646) |
 | Design System ID | 2005644667042354169 |
-| Generated | 2026-05-29T17:13:09.192Z |
+| Generated | 2026-05-30T07:00:16.003Z |
 | Success | 0/7 states |
 
 ## Screen Status
@@ -19,7 +19,7 @@
 | reviewing | — | 02-application-detail-reviewing | PNG ❌ | HTML ❌ | ❌ StitchError: Tool Call Failed [generate_screen_from_text]: Resource has been exhausted (e.g. check quota). |
 | approved | — | 03-application-detail-approved | PNG ❌ | HTML ❌ | ❌ StitchError: Tool Call Failed [generate_screen_from_text]: Resource has been exhausted (e.g. check quota). |
 | rejected | — | 04-application-detail-rejected | PNG ❌ | HTML ❌ | ❌ StitchError: Tool Call Failed [generate_screen_from_text]: Resource has been exhausted (e.g. check quota). |
-| content | — | 05-application-detail-content | PNG ❌ | HTML ❌ | ❌ STN gate failure pre-API: STN2: prompt is 4180 chars (cap 4000) — apply the shrink ladder or split the screen |
+| content | — | 05-application-detail-content | PNG ❌ | HTML ❌ | ❌ StitchError: Tool Call Failed [generate_screen_from_text]: Resource has been exhausted (e.g. check quota). |
 | empty | — | 06-application-detail-empty | PNG ❌ | HTML ❌ | ❌ StitchError: Tool Call Failed [generate_screen_from_text]: Resource has been exhausted (e.g. check quota). |
 | error | — | 07-application-detail-error | PNG ❌ | HTML ❌ | ❌ StitchError: Tool Call Failed [generate_screen_from_text]: Resource has been exhausted (e.g. check quota). |
 

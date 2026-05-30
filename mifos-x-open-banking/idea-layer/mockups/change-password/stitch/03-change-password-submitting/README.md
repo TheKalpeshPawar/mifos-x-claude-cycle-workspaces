@@ -4,14 +4,14 @@
 |-------|-------|
 | Feature | change-password |
 | State | submitting |
-| Screen ID | c7d48493fd0040059aae60a76a72c723 |
+| Screen ID | e2133c76a0e94ee6b7dfe9b17edbc8e3 |
 | Project ID | 17153754672098888646 |
 | Design System ID | 2005644667042354169 |
-| Generated At | 2026-05-29T16:58:30.506Z |
+| Generated At | 2026-05-30T06:46:14.965Z |
 | HTML Downloaded | Yes |
 | PNG Downloaded | Yes |
 | Figma Export | — |
-| Stitch Screen | [View](https://stitch.google.com/projects/17153754672098888646/screens/c7d48493fd0040059aae60a76a72c723) |
+| Stitch Screen | [View](https://stitch.google.com/projects/17153754672098888646/screens/e2133c76a0e94ee6b7dfe9b17edbc8e3) |
 | Attempts | 1 |
 
 ## Files

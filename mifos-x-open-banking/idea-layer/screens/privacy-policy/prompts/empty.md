@@ -14,8 +14,8 @@ feature: privacy-policy
 state: empty
 state_visibility: empty
 
-project_id: 'null'
-design_system_id: 'null'
+project_id: '17153754672098888646'
+design_system_id: '2005644667042354169'
 
 generated_by: stitch-prompt-build.ts v2.0.0
 prompt_template_version: stitch-per-state-v3.0.0
@@ -25,27 +25,25 @@ craft_rules_version: v1.0.0
 # privacy-policy — empty state
 
 > Auto-generated from screens/privacy-policy/ui.yaml @ SHA 44f9c29cb5a372a3
-> Stitch DesignSystem: (pending DESIGN.md upload — run /idea-export-stitch sub-plan 02)
+> Stitch DesignSystem: 2005644667042354169
 > DO NOT redeclare colors / fonts / spacing — they live in DESIGN.md.
 
 ↓↓↓ MOCKUP PROMPT
 
-Design the empty state of the privacy-policy screen for **Mifos X Open Banking**, a professional open banking super-app for consumer retail banking and field officer workflows.
+Design the empty state of the Privacy Policy screen for **mifos-x-open-banking**, a professional open banking KMP super-app serving retail banking consumers and field officers.
 
-Palette: primary #B2D188, on_primary #1F3701, primary_container #354E16, on_primary_container #CDEDA3, secondary #A0CFCB, on_secondary #003735, secondary_container #1F4E4B, background #12140E, on_surface #E3E3D8, surface_container #1E201A, surface_container_high #282A24, outline #8F9285, pending #E8A317.
+Palette: primary #B2D188, on_primary #1F3701, primary_container #354E16, on_primary_container #CDEDA3, secondary #A0CFCB, on_secondary #003735, surface #12140E, on_surface #E3E3D8, surface_variant #44483D, on_surface_variant #C5C8BA, surface_container #1E201A, error #FFB4AB, outline #8F9285.
 
-**Component 1 — App Bar** (64dp tall, full width): Title "Privacy Policy" Outfit Medium 18sp #E3E3D8 centered. Leading back-arrow 24dp #B2D188. Background #12140E, 1dp bottom divider #44483D. empty_state archetype.
+**Component 1 -- Icon** (64x64dp, centered, 48dp top padding): empty_state archetype. Material symbol "policy" in on_surface_variant #C5C8BA on surface #12140E. Soft, non-alarming treatment.
 
-**Component 2 — Empty Illustration** (centered, top margin 80dp, 160dp tall): Muted document or shield outline in #44483D / #8F9285 on #12140E. No text in illustration. Conveys policy document not yet loaded.
+**Component 2 -- Text** (full width, centered, 32dp horizontal inset, 16dp below icon): Outfit 18sp medium, on_surface #E3E3D8. Content: "Privacy Policy Unavailable."
 
-**Component 3 — Empty Title** (centered, top margin 24dp, horizontal padding 32dp): "Policy not available" Outfit SemiBold 22sp #E3E3D8, centered.
+**Component 3 -- Text** (full width, centered, 32dp horizontal inset, 8dp below title): Outfit 14sp, on_surface_variant #C5C8BA. Content: "The privacy policy could not be retrieved. Please try again or contact support."
 
-**Component 4 — Empty Subtext** (centered, top margin 8dp, horizontal padding 48dp): "Our privacy policy is temporarily unavailable. Please check back shortly." Outfit Regular 14sp #8F9285, line-height 20sp.
+**Component 4 -- Button** (full width minus 32dp inset, 48dp tall, 999dp radius pill): Primary Button. Background primary_container #354E16, label "Try Again" in on_primary_container #CDEDA3, Outfit 14sp medium. 24dp gap below subtitle.
 
-**Component 5 — Button** (full width minus 64dp insets, top margin 32dp): Filled pill Button 48dp tall, corner radius 999dp, background #B2D188, label "Refresh" Outfit SemiBold 16sp #1F3701.
+Do not use em-dash anywhere in text. Do not make any headline longer than 3 lines or any subtitle longer than 25 words. Do not break the page theme between sections. Do not place light text on light buttons or dark text on dark buttons.
 
-Do not use em-dash anywhere in text. Do not make any headline more than 3 lines or any subtitle more than 25 words. Do not break the dark theme between sections. Do not place light text on light buttons or dark text on dark buttons.
-
-The #B2D188 Refresh button in this empty_state provides a calm, minimal recovery path, with the dark #12140E background keeping the regulated-industry tone restrained while signaling that policy content is temporarily unavailable.
+The muted on_surface_variant #C5C8BA icon and the earth-green primary_container button balance transparency with action, keeping the empty_state calm and trustworthy on a near-black #12140E surface.
 
 ↑↑↑ MOCKUP PROMPT

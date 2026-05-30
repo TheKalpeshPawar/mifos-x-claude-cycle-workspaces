@@ -1,6 +1,6 @@
 # FIGMA_LINKS.md — kyc-review
 
-<!-- schema: v3.2 | generated: 2026-05-29T17:13:16.345Z -->
+<!-- schema: v3.2 | generated: 2026-05-30T06:58:18.590Z -->
 
 ## Stitch Project
 
@@ -8,7 +8,7 @@
 |-------|-------|
 | Project URL | [17153754672098888646](https://stitch.google.com/projects/17153754672098888646) |
 | Design System ID | 2005644667042354169 |
-| Generated | 2026-05-29T17:13:15.866Z |
+| Generated | 2026-05-30T06:58:18.590Z |
 | Success | 0/8 states |
 
 ## Screen Status

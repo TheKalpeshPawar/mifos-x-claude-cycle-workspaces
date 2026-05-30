@@ -1,6 +1,6 @@
 # FIGMA_LINKS.md — direct-debit-detail
 
-<!-- schema: v3.2 | generated: 2026-05-29T17:13:13.516Z -->
+<!-- schema: v3.2 | generated: 2026-05-30T05:57:49.185Z -->
 
 ## Stitch Project
 
@@ -8,8 +8,8 @@
 |-------|-------|
 | Project URL | [17153754672098888646](https://stitch.google.com/projects/17153754672098888646) |
 | Design System ID | 2005644667042354169 |
-| Generated | 2026-05-29T17:13:12.814Z |
-| Success | 3/4 states |
+| Generated | 2026-05-30T05:55:01.024Z |
+| Success | 4/4 states |
 
 ## Screen Status
 
@@ -17,7 +17,7 @@
 |-------|-----------|--------|-----|------|--------|
 | loading | 77f939a1b2414d789526ca555ecdbe59 | 01-direct-debit-detail-loading | PNG ✅ | HTML ✅ | ♻ resumed |
 | content | d311989b4f8b48989970501015b52038 | 02-direct-debit-detail-content | PNG ✅ | HTML ✅ | ♻ resumed |
-| error | — | 03-direct-debit-detail-error | PNG ❌ | HTML ❌ | ❌ StitchError: Tool Call Failed [generate_screen_from_text]: Resource has been exhausted (e.g. check quota). |
+| error | 7e38c9eaa516438b933a6746f60e4af0 | 03-direct-debit-detail-error | PNG ✅ | HTML ✅ | ✅ generated |
 | empty | adf16c1dd16b4bed805a8c7677a74ebf | 04-direct-debit-detail-empty | PNG ✅ | HTML ✅ | ♻ resumed |
 
 ## Open in Figma / Stitch
@@ -26,7 +26,7 @@
 |-------|--------------|--------------|
 | loading | [Open](https://stitch.google.com/projects/17153754672098888646/screens/77f939a1b2414d789526ca555ecdbe59) | — |
 | content | [Open](https://stitch.google.com/projects/17153754672098888646/screens/d311989b4f8b48989970501015b52038) | — |
-| error | — | — |
+| error | [Open](https://stitch.google.com/projects/17153754672098888646/screens/7e38c9eaa516438b933a6746f60e4af0) | — |
 | empty | [Open](https://stitch.google.com/projects/17153754672098888646/screens/adf16c1dd16b4bed805a8c7677a74ebf) | — |
 
 > **Figma Export**: direct download URL captured from Stitch SDK `screen.data.figmaExport.downloadUrl`. May be `—` if Stitch did not generate a Figma export for this screen.

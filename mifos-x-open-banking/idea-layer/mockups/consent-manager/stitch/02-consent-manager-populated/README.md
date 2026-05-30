@@ -4,14 +4,14 @@
 |-------|-------|
 | Feature | consent-manager |
 | State | populated |
-| Screen ID | 790b7d07e5484450bd0a5f3929591fb9 |
+| Screen ID | d06f3118633e45758be22b4ccb217082 |
 | Project ID | 17153754672098888646 |
 | Design System ID | 2005644667042354169 |
-| Generated At | 2026-05-29T16:58:30.505Z |
+| Generated At | 2026-05-30T06:46:14.962Z |
 | HTML Downloaded | Yes |
 | PNG Downloaded | Yes |
 | Figma Export | — |
-| Stitch Screen | [View](https://stitch.google.com/projects/17153754672098888646/screens/790b7d07e5484450bd0a5f3929591fb9) |
+| Stitch Screen | [View](https://stitch.google.com/projects/17153754672098888646/screens/d06f3118633e45758be22b4ccb217082) |
 | Attempts | 1 |
 
 ## Files
