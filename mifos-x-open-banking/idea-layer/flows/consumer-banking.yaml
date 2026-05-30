@@ -1,7 +1,8 @@
 # flows/consumer-banking.yaml — Consumer persona full navigation flow
 # Generated 2026-05-25 by /idea sync STEP 4f
-# Covers 24 consumer + shared screens
+# Covers 26 consumer + shared screens
 # Updated 2026-05-28 by /idea setup-flows — added direct-debit-detail, change-password, about
+# Updated 2026-05-30 by /idea sync — grouped consumer-home + standing-order-edit (were ungrouped)
 
 schema_version: "1.0"
 id: consumer-banking
@@ -13,6 +14,7 @@ status: active
 entry_screen: home
 screens:
   - home
+  - consumer-home
   - accounts
   - account-detail
   - transactions
@@ -25,6 +27,7 @@ screens:
   - card-detail
   - standing-orders
   - standing-order-detail
+  - standing-order-edit
   - atm-locator
   - fx-rates
   - notifications
@@ -66,6 +69,8 @@ connections:
   - { from: fx-rates, to: send-money, type: push, label: "Convert currency" }
   - { from: standing-orders, to: standing-order-detail, type: push, label: "Standing order selected" }
   - { from: standing-order-detail, to: standing-orders, type: pop, label: "Back to list / after cancel" }
+  - { from: standing-order-detail, to: standing-order-edit, type: push, label: "Edit standing order" }
+  - { from: standing-order-edit, to: standing-order-detail, type: pop, label: "Save / cancel edit" }
   - { from: direct-debits, to: direct-debit-detail, type: push, label: "Direct debit selected" }
   - { from: direct-debits, to: accounts, type: push, label: "Linked account" }
   - { from: direct-debit-detail, to: direct-debits, type: pop, label: "Back to list" }
@@ -79,6 +84,14 @@ connections:
   - { from: settings, to: about, type: push, label: "About" }
   - { from: change-password, to: profile, type: pop, label: "Back to profile" }
   - { from: profile, to: login, type: replace, label: "Logout" }
+  # consumer-home — alternate consumer dashboard (mirrors home quick-actions)
+  - { from: consumer-home, to: accounts, type: push, label: "Accounts" }
+  - { from: consumer-home, to: transactions, type: push, label: "See all transactions" }
+  - { from: consumer-home, to: transaction-detail, type: push, label: "Transaction selected" }
+  - { from: consumer-home, to: send-money, type: push, label: "Send money" }
+  - { from: consumer-home, to: standing-orders, type: push, label: "Standing orders" }
+  - { from: consumer-home, to: cards, type: push, label: "Cards" }
+  - { from: consumer-home, to: notifications, type: push, label: "Notifications" }
 
 # ─── JIRA TICKET IDs (created 2026-05-28 by /flow-to-tickets-jira consumer-banking) ──
 ticket_ids:
