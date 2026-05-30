@@ -5,8 +5,8 @@ flavor: shared
 status: approved
 quality_score: 92
 contract_version: "1.1.0"
-approve_hash: "sha256:01af12bd8c96e4f037af12bd8c96e4f037af12bd8c96e4f037af12bd8c96e4f0"
-approved_at: "2026-05-25T13:45:00Z"
+approve_hash: "sha256:c1170816b39ae352970a1dd8361c173ac40dbb6597679d9bf4f4d5b884d111ce"
+approved_at: "2026-05-30T00:00:00Z"
 approved_by: "/idea approve"
 approve_predicate_version: "1.0.0"
 approve_contract_version: "1.1.0"
@@ -136,21 +136,23 @@ states:
 state_model:
   SplashViewModel:
     screen_state: SplashUiState
+    # RECONCILED 2026-05-30: session-check + auth routing is owned by RootNavViewModel
+    # (cmp-navigation/rootnav) via RootNavState (Splash/Auth/ShowOnboarding/UserLocked/
+    # UserUnlocked). SplashViewModel is a thin VISUAL HOST only — it drives the branded
+    # loading visual + reduced-motion fallback. It does NOT read auth state, hold
+    # ObpAuthRepository/SessionManager, or decide navigation targets.
     state:
-      - field: sessionCheckComplete
+      - field: reducedMotion
         type: Boolean
         default: "false"
-      - field: hasValidToken
-        type: Boolean
-        default: "false"
-      - field: isNavigating
-        type: Boolean
-        default: "false"
-    errors: [NETWORK_ERROR]
-    events: [CheckSession, NavigateToLogin, NavigateToHome]
-    actions: [onCheckSession(), onNavigateToLogin(), onNavigateToHome()]
-    di: [ObpAuthRepository, SessionManager]
+    errors: []
+    events: []
+    actions: []
+    di: []
 
+# Navigation targets below are RESOLVED BY RootNavViewModel (RootNavState → Auth /
+# UserUnlocked / ShowOnboarding), NOT by SplashViewModel. Retained for the app-flow
+# graph + journey linkage; trigger=auto reflects root-nav-driven transitions.
 navigation:
   - id: nav_to_login
     target: login
@@ -181,4 +183,6 @@ api: []
 
 dependencies:
   tier: feature
-  features: [shared-core, obp-auth]
+  # obp-auth dropped on reconcile: the splash VISUAL has no auth dependency. Auth state is
+  # consumed by RootNavViewModel (cmp-navigation), which owns the post-splash routing.
+  features: [shared-core]

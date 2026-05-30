@@ -12,7 +12,9 @@
 
 ## Overview
 
-The Splash screen is the application entry point on every cold start. It is shared across Consumer and Field Officer flavors. The screen displays the Mifos X logo, app name, and tagline while `SplashViewModel` runs a background session check via `ObpAuthRepository` and `SessionManager`. Navigation fires automatically: unauthenticated users are sent to Login after a 2 000 ms delay; users with a valid token are navigated immediately — Consumer users to Home, Field Officer users to the FO Dashboard. There are no user-interactive elements. The screen uses a vertical centered column layout, full-screen white surface, with a circular indeterminate progress indicator at the bottom of the composition.
+The Splash screen is the application entry point on every cold start. It is shared across Consumer and Field Officer flavors. The screen displays the Mifos X logo, app name, and tagline with a circular indeterminate progress indicator while the app resolves its initial route. There are no user-interactive elements. The screen uses a vertical centered column layout, full-screen surface, with the progress indicator at the bottom of the composition.
+
+**Routing ownership (reconciled 2026-05-30):** session check and post-splash routing are **owned by `RootNavViewModel`** (`cmp.navigation.rootnav`), not by `SplashViewModel`. `RootNavViewModel` reads the persisted auth/user state and maps it to a `RootNavState` (`Splash` → `Auth` / `ShowOnboarding` / `UserLocked` / `UserUnlocked`); `RootNavScreen` performs the navigation. `SplashViewModel` is therefore a **thin visual host only** — it drives the branded loading visual and the reduced-motion fallback and holds no repositories. This matches the kmp-project-template root-nav architecture; the splash visual lives in `cmp-navigation`, not in a feature module.
 
 ---
 
@@ -49,33 +51,35 @@ The Splash screen is the application entry point on every cold start. It is shar
 
 ## State Model
 
-**ViewModel:** `SplashViewModel`
+**ViewModel:** `SplashViewModel` (thin visual host — no routing, no repositories)
 **Screen State Type:** `SplashUiState`
 
-| Field                | Type    | Default |
-|----------------------|---------|---------|
-| sessionCheckComplete | Boolean | false   |
-| hasValidToken        | Boolean | false   |
-| isNavigating         | Boolean | false   |
+| Field         | Type    | Default | Purpose                          |
+|---------------|---------|---------|----------------------------------|
+| reducedMotion | Boolean | false   | Static-logo fallback for the loading indicator |
 
-**Events:** `CheckSession`, `NavigateToLogin`, `NavigateToHome`
+**Events:** _none_
 
-**Actions:** `onCheckSession()`, `onNavigateToLogin()`, `onNavigateToHome()`
+**Actions:** _none_
 
-**DI Dependencies:** `ObpAuthRepository`, `SessionManager`
+**DI Dependencies:** _none_
 
-**Errors:** `NETWORK_ERROR`
+**Errors:** _none_
+
+> Session check + auth routing are owned by `RootNavViewModel` (`cmp.navigation.rootnav`), which consumes the persisted user/auth state and emits `RootNavState`. `SplashViewModel` does not read auth state or decide navigation.
 
 ---
 
 ## Navigation
 
-| ID                        | From   | To           | Trigger     | Condition                                               | Delay   |
-|---------------------------|--------|--------------|-------------|----------------------------------------------------------|---------|
-| nav_to_login              | splash | login        | auto        | `hasValidToken == false`                                | 2 000 ms|
-| nav_to_consumer_home      | splash | home         | auto        | `hasValidToken == true && userRole == CONSUMER`         | 0 ms    |
-| nav_to_home_authenticated | splash | home         | token_exists| `isAuthenticated == true && userRole == CONSUMER`       | —       |
-| nav_to_fo_dashboard       | splash | fo-dashboard | auto        | `hasValidToken == true && userRole == FIELD_OFFICER`    | 0 ms    |
+Navigation away from the splash visual is **driven by `RootNavViewModel` / `RootNavScreen`**, not by `SplashViewModel`. The targets below document the intended transitions for the app-flow graph and journey linkage; the resolving owner is `RootNavViewModel` mapping `RootNavState`.
+
+| ID                        | From   | To           | Trigger      | Owner            | Maps from                                  |
+|---------------------------|--------|--------------|--------------|------------------|---------------------------------------------|
+| nav_to_login              | splash | login        | auto         | RootNavViewModel | `RootNavState.Auth` (unauthenticated)       |
+| nav_to_consumer_home      | splash | home         | auto         | RootNavViewModel | `RootNavState.UserUnlocked` (Consumer)      |
+| nav_to_home_authenticated | splash | home         | token_exists | RootNavViewModel | persisted token → `UserUnlocked` (Consumer) |
+| nav_to_fo_dashboard       | splash | fo-dashboard | auto         | RootNavViewModel | `RootNavState.UserUnlocked` (Field Officer) |
 
 ---
 
@@ -83,7 +87,7 @@ The Splash screen is the application entry point on every cold start. It is shar
 
 _No backend API dependencies — static/local screen._
 
-Session validation is performed entirely via local `SessionManager` reading the persisted DirectLogin token from `CredentialStore`. No HTTP requests are issued from this screen. Token refresh, if needed, is delegated to `ObpAuthRepository` without surfacing any loading state on this screen.
+The splash visual issues no HTTP requests and holds no repositories. Any session validation (local token read, refresh) happens in `RootNavViewModel` upstream of routing and never surfaces loading state on this screen.
 
 ---
 
@@ -103,4 +107,4 @@ Session validation is performed entirely via local `SessionManager` reading the 
 
 ---
 
-_Generated by /idea export | 2026-05-29_
+_Generated by /idea export | 2026-05-30 (reconciled: routing owned by RootNavViewModel)_
