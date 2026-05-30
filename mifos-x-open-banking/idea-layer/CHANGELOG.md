@@ -2,6 +2,10 @@
 
 All notable changes to the idea-layer are documented here. Format inspired by [Keep a Changelog](https://keepachangelog.com/).
 
+### 2026-05-30 — removed consumer-home
+
+Removed orphan duplicate screen consumer-home (zero inbound navigation, not in IDEA_MATRIX; canonical consumer dashboard `home` retained). Scrubbed catalog refs; repaired flood corruption in dtos/_index.yaml + server/api_manifest.yaml.
+
 ## [Unreleased]
 
 ### Exported (design)

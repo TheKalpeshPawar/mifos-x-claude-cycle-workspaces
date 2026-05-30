@@ -25,12 +25,6 @@
 | FR-004 | User can switch app language via LanguageDialog. |
 | FR-005 | User sees Notification placeholder screen (preferences UI not yet implemented). |
 
-### Consumer Home (FR-019)
-
-| ID | Description |
-|---|---|
-| FR-019 | Consumer user sees a personalised home dashboard with total balance, income/spend summary, quick actions (Send, Accounts, Standing Orders, Cards), and last 3 transactions after login. |
-
 ---
 
 ## Non-Functional Requirements

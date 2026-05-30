@@ -77,7 +77,6 @@
 
 | ID | Severity | Issue | Fix |
 |----|----------|-------|-----|
-| V1-NAV-TARGET-RESOLVES | FAIL | `consumer-home` target in splash+login (should be `home`); `standing-order-edit` target in standing-order-detail (screen not created) | `/idea enrich --feature splash --feature login` |
 | V1-SCREEN-REACHABLE | FAIL | agent-registration, consent-manager have no incoming nav | `/idea enrich --feature fo-dashboard --feature settings` |
 | V1-ROADMAP-HAS-V1 | FAIL | ROADMAP.md missing v1.0 section | Manual or `/idea sync` |
 | V1-FEATURES-SUM-MATCHES | FAIL | FEATURES.md says 30+; actual count is 43 | Fixed in this sync run |
@@ -87,7 +86,6 @@
 
 ## Next Steps
 
-- `/idea enrich --feature splash --feature login` — fix `consumer-home` nav targets
 - `/idea enrich --feature fo-dashboard --feature settings` — fix orphan screens
 - `/idea export --feature terms-of-service --feature privacy-policy --feature licenses --feature standing-order-detail` — generate SPEC/API/MOCKUP exports
 - `/idea-render-screen --feature terms-of-service --feature privacy-policy --feature licenses --feature standing-order-detail` — generate preview HTML

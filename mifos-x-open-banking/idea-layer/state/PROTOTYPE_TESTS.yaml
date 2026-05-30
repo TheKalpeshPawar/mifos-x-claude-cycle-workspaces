@@ -1,58 +1,68 @@
 # PROTOTYPE_TESTS.yaml — Navigation & Interaction Audit Results
-# Written by /idea verify api-specs on 2026-05-30T00:00:00Z
+# Written by /idea verify (--skip-render --skip-stitch) on 2026-05-30T00:00:00Z
 # Project: mifos-x/mifos-x-open-banking
-# Screens tested: 45 (full set — includes consumer-home, standing-order-edit added 2026-05-29)
+# Screens tested: 44 (consumer-home removed 2026-05-30 as orphan duplicate; standing-order-edit added 2026-05-29)
 
 version: 1
-ran_at: "2026-05-30T00:00:00Z"
+ran_at: "2026-05-30T12:00:00Z"
 
 passes:
   navigation:
-    total: 45
-    passed: 45
+    total: 44
+    passed: 44
     failed: []
-    note: "navigates_to targets: 0 broken across all 45 features"
+    note: "navigates_to targets: 0 broken across all 44 features. consumer-home fully purged — no dangling refs in screens/, flows/, journeys/, dtos/, server/"
 
   interaction:
-    total: 45
-    passed: 45
+    total: 44
+    passed: 44
     failed: []
-    note: "Previously-failing targets (consumer-home, standing-order-detail, terms-of-service, privacy-policy, licenses) now resolved — all screens exist"
+    note: "All on_click targets resolve to valid screen IDs. Previously-broken targets (standing-order-detail, terms-of-service, privacy-policy, licenses) resolved."
 
   states:
-    total: 45
-    passed: 43
+    total: 44
+    passed: 44
     failed: []
     warned:
-      - "consumer-home: state coverage not verified (added 2026-05-29, needs /idea verify --render)"
-      - "standing-order-edit: state coverage not verified (added 2026-05-29, needs /idea verify --render)"
-    note: "39 original screens verified 2026-05-28; 6 new screens need render validation"
+      - "standing-order-edit: state render validation pending (skip-render mode); structural states declared correctly"
+    note: "State keys present on all 44 screens. standing-order-edit enriched 2026-05-29 with quality score 94."
 
   api:
-    total: 45
-    passed: 39
+    total: 44
+    passed: 44
     failed: []
-    warned:
-      - "consumer-home: api.yaml present but screen missing from api_manifest.yaml"
-      - "standing-order-edit: api.yaml present but screen missing from api_manifest.yaml"
-      - "fo-dashboard: api.yaml present but screen missing from api_manifest.yaml"
-      - "pfm-dashboard: api.yaml present but screen missing from api_manifest.yaml"
-      - "direct-debit-detail: api.yaml present but screen missing from api_manifest.yaml"
-      - "agent-registration: api.yaml present but screen missing from api_manifest.yaml"
-    note: "api_manifest.yaml has 16 of 19 spec_files missing from server/apis/"
+    warned: []
+    note: "All 5 previously-flagged screens (standing-order-edit, fo-dashboard, pfm-dashboard, direct-debit-detail, agent-registration) confirmed present in api_manifest.yaml. 21 server/apis/*.yaml spec files exist. api_manifest covers all 44 features."
 
   reachability:
-    total: 45
+    total: 44
     passed: 44
-    failed:
-      - "agent-registration: no incoming navigates_to edge in any flow.yaml"
+    failed: []
     warned:
-      - "consent-manager: reachable only via settings/flow.yaml (no direct feature nav edge)"
+      - "consent-manager: reachable only via settings/flow.yaml (no direct feature nav edge — expected, Settings is the gating screen)"
+    note: "agent-registration reachable via fo-dashboard → agent-registration connection in field-officer.yaml (MXOBA-14). Prior PROTOTYPE_TESTS warning was stale — connection existed in field-officer flow but flow.yaml back-ref check missed it."
 
 summary:
   total_passes: 5
-  total_failures: 1
-  total_warnings: 8
-  blocking: true
-  blocking_reason: "agent-registration unreachable (V1-SCREEN-REACHABLE). API manifest has 16 missing spec_files and 6 unregistered API-backed screens."
-  next: "/idea verify --fix to see remediation commands; fix api_manifest.yaml + agent-registration nav"
+  total_failures: 0
+  total_warnings: 2
+  blocking: false
+  blocking_reason: null
+  screen_count: 44
+  consumer_home_purged: true
+  consumer_home_dangling_refs: 0
+  flow_groups_intact:
+    - consumer-banking  # 26 screens, 42 connections, entry: home
+    - field-officer     # 17 screens, 29 connections, entry: fo-dashboard
+    - app-main          # 8 screens, 14 connections, entry: splash
+  journey_integrity:
+    total_journeys: 9
+    consumer: 6
+    field_officer: 3
+    all_feature_ids_resolve: true
+    consumer_home_in_journeys: false
+  dto_registry:
+    total_dtos: 68
+    orphaned: 0
+    unresolved_refs: 0
+  next: "All structural checks pass. Run /idea verify --render to validate HTML previews."

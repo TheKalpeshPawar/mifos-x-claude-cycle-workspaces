@@ -476,4 +476,3 @@ Splash → Login → Dashboard (Bottom Nav)
 
 | # | Description | Feature | Status |
 |---|---|---|---|
-| 1 | Consumer-specific home dashboard with balance card, quick actions, and recent transactions | consumer-home | draft |

@@ -1,7 +1,7 @@
 # Features — Mifos X Open Banking
 
-All 45 features organized by flavor and OBP API integration points.
-Updated 2026-05-29 — added consumer-home, standing-order-edit.
+All 44 features organized by flavor and OBP API integration points.
+Updated 2026-05-29 — added standing-order-edit.
 
 ---
 
@@ -20,7 +20,6 @@ Updated 2026-05-29 — added consumer-home, standing-order-edit.
 | **beneficiaries** | Beneficiaries | `GET /banks/{bank}/counterparties` | Manage payee list |
 | **cards** | Cards, Card Detail | `GET /accounts/{account_id}/cards` | View card details, transactions |
 | **standing-orders** | Standing Orders | `GET /accounts/{account_id}/standing-orders` | Create & manage recurring payments |
-| **consumer-home** | Consumer Home | `GET /my/accounts`, `GET /accounts/{id}/transactions` | Personalised consumer home dashboard — balance, quick actions, recent transactions |
 | **standing-order-edit** | Standing Order Edit | `PUT /accounts/{accountId}/standing-order/{id}` | Edit amount, frequency, start/end date for existing standing order |
 
 ### Enhancement Features (4 features)
@@ -68,33 +67,32 @@ Updated 2026-05-29 — added consumer-home, standing-order-edit.
 
 ---
 
-## Complete Screen List (45 Screens)
+## Complete Screen List (44 Screens)
 
-### Consumer Screens (23)
+### Consumer Screens (22)
 
 1. **home** — `consumer`
-2. **consumer-home** — `consumer`
-3. **accounts** — `consumer`
-4. **account-detail** — `consumer`
-5. **transactions** — `consumer`
-6. **transaction-detail** — `consumer`
-7. **transaction-tags** — `consumer`
-8. **send-money** — `consumer`
-9. **send-money-confirm** — `consumer`
-10. **beneficiaries** — `consumer`
-11. **cards** — `consumer`
-12. **card-detail** — `consumer`
-13. **standing-orders** — `consumer`
-14. **standing-order-detail** — `consumer`
-15. **standing-order-edit** — `consumer`
-16. **direct-debits** — `consumer`
-17. **direct-debit-detail** — `consumer`
-18. **atm-locator** — `consumer`
-19. **fx-rates** — `consumer`
-20. **consent-manager** — `consumer`
-21. **notifications** — `consumer`
-22. **pfm-dashboard** — `consumer`
-23. **products** — `consumer`
+2. **accounts** — `consumer`
+3. **account-detail** — `consumer`
+4. **transactions** — `consumer`
+5. **transaction-detail** — `consumer`
+6. **transaction-tags** — `consumer`
+7. **send-money** — `consumer`
+8. **send-money-confirm** — `consumer`
+9. **beneficiaries** — `consumer`
+10. **cards** — `consumer`
+11. **card-detail** — `consumer`
+12. **standing-orders** — `consumer`
+13. **standing-order-detail** — `consumer`
+14. **standing-order-edit** — `consumer`
+15. **direct-debits** — `consumer`
+16. **direct-debit-detail** — `consumer`
+17. **atm-locator** — `consumer`
+18. **fx-rates** — `consumer`
+19. **consent-manager** — `consumer`
+20. **notifications** — `consumer`
+21. **pfm-dashboard** — `consumer`
+22. **products** — `consumer`
 
 ### Field Officer Screens (12)
 

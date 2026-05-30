@@ -49,7 +49,7 @@ Exit criteria: Field officer can search customers, onboard new ones, review KYC,
 
 Milestone: all 45 features shipped; iOS + Web (Wasm) builds passing.
 
-Features: `consumer-home`, `standing-order-edit`, `standing-orders`, `direct-debits`, `direct-debit-detail`, `atm-locator`, `fx-rates`, `consent-manager`, `notifications`, `pfm-dashboard`, `products`, `transaction-tags`, `customer-messages`, `meetings`, `agent-registration`
+Features: `standing-order-edit`, `standing-orders`, `direct-debits`, `direct-debit-detail`, `atm-locator`, `fx-rates`, `consent-manager`, `notifications`, `pfm-dashboard`, `products`, `transaction-tags`, `customer-messages`, `meetings`, `agent-registration`
 
 Platforms: Android · iOS · Desktop · Web
 

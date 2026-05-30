@@ -9,7 +9,7 @@
 
 | Journey | Screens | Tier | Status |
 |---------|---------|------|--------|
-| [consumer-authentication](./consumer-authentication.yaml) | splash, login, home, consumer-home | maximum | draft |
+| [consumer-authentication](./consumer-authentication.yaml) | splash, login, home | maximum | draft |
 | [consumer-forgot-password](./consumer-forgot-password.yaml) | login, forgot-password | maximum | draft |
 | [consumer-accounts-payments](./consumer-accounts-payments.yaml) | home, accounts, account-detail, transactions, transaction-detail, transaction-tags, send-money, send-money-confirm, beneficiaries | maximum | draft |
 | [consumer-cards-financing](./consumer-cards-financing.yaml) | cards, card-detail, transactions, standing-orders, direct-debits, direct-debit-detail, standing-order-detail, standing-order-edit | maximum | draft |
@@ -28,7 +28,7 @@
 
 ## Coverage
 
-All 45 screens are covered by at least one journey. Some screens appear in multiple journeys (shared screens: splash, login, home, profile, settings, fo-dashboard, customer-detail, customer-messages, transactions, send-money).
+All 44 screens are covered by at least one journey. Some screens appear in multiple journeys (shared screens: splash, login, home, profile, settings, fo-dashboard, customer-detail, customer-messages, transactions, send-money).
 
 ## Next Steps
 
