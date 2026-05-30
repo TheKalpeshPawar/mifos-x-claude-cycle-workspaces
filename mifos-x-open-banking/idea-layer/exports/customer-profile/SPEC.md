@@ -1,3 +1,10 @@
+<!-- source: screens/customer-profile/ui.yaml -->
+<!-- source_hash: sha256:309a5ac86cc382ad7b7333e325ccf5397a30c4efd14eef7be87a77946b59c13d -->
+<!-- generated: 2026-05-30T13:30:00Z -->
+<!-- generated_from_feature_version: 1.1.0 -->
+<!-- generated_from_contract_version: 1.1.0 -->
+<!-- prior_version: — -->
+
 # SPEC — Customer Profile
 
 | Field         | Value                       |
@@ -12,9 +19,18 @@
 
 ## Overview
 
-Customer Profile is a `detail_screen` for Field Officers to view and optionally edit a customer's full record. It is accessed from the customer-list and kyc-review flows and presents three labelled sections: **Personal Information** (full name, date of birth, national ID, KRA tax PIN, phone, email), **Address** (street, county, postcode), and **Employment** (employer, monthly income, employment type). Each data row is a white horizontal box (8dp radius, 16dp horizontal padding, 12dp vertical padding) with a label in body_medium `#44483D` on the left and a value in body_large `#1A1C16` on the right. Phone and email values are tappable links — phone initiates a dialler intent (`tel:`), email opens the mail client (`mailto:`). An **Edit Information** outlined button at the bottom transitions the screen to editing mode.
+Customer Profile is a `detail_screen` for Field Officers to view and optionally edit a customer's full record. It is accessed from the customer-search and kyc-review flows and presents three labelled sections: **Personal Information** (full name, date of birth, national ID, KRA tax PIN, phone, email), **Address** (street, county, postcode), and **Employment** (employer, monthly income, employment type). Each data row is a white horizontal box (8dp radius, 16dp horizontal padding, 12dp vertical padding) with a label in body_medium `#44483D` on the left and a value in body_large `#1A1C16` on the right. Phone and email values are tappable links — phone initiates a dialler intent (`tel:`), email opens the mail client (`mailto:`). An **Edit Information** outlined button at the bottom transitions the screen to editing mode.
 
 Data is loaded from `GET /obp/v5.1.0/banks/{bankId}/customers/{customerId}` (OBP Customers tag). Each row declares component_states: a skeleton shimmer on loading, a retry banner on error, and a contextual empty box when the field is absent. The initial state is `loading`. Transitions: `loading → content`, `loading → error`, `content → editing`, `editing → saving`, `saving → content`, `saving → error`. Sections are separated by `#E1E4D5` dividers. Screen background: `#F9FAEF`.
+
+---
+
+## Capabilities
+
+| Capability | Description |
+|------------|-------------|
+| has_ui     | Full screen UI with detail_screen archetype |
+| has_api    | OBP GET + PUT customer endpoints wired |
 
 ---
 
@@ -124,13 +140,26 @@ Each `box` data row declares three component states bound to `obp_get_customer_p
 
 ---
 
+## App-Shell
+
+Resolved shell for `customer-profile` (flavor: fieldOfficer, screen override: `bottom_nav: false`):
+
+| Element      | Value                                                   |
+|--------------|---------------------------------------------------------|
+| Bottom nav   | hidden (screen override suppresses fieldOfficer 5-tab)  |
+| Top app bar  | visible — title "Customer Profile", navigation_icon: arrow_back |
+| FAB          | not shown (suppressed on detail screens)                |
+| Safe area    | standard                                                |
+
+---
+
 ## Navigation
 
-| From             | To                  | Trigger                    | Type |
-|------------------|---------------------|----------------------------|------|
-| customer-profile | customer-list       | Back arrow tap             | pop  |
-| customer-profile | kyc-review          | Back (from KYC flow)       | pop  |
-| customer-profile | customer-messages   | (future — deep link)       | push |
+| From             | To                  | Trigger                    | Type   |
+|------------------|---------------------|----------------------------|--------|
+| customer-profile | customer-search     | Back arrow tap             | pop    |
+| customer-profile | kyc-review          | Back (from KYC flow)       | pop    |
+| customer-profile | customer-messages   | (future — deep link)       | push   |
 | customer-profile | tel:+254712345678   | phone_link tap             | intent |
 | customer-profile | mailto:wanjiru...   | email_link tap             | intent |
 
@@ -142,6 +171,16 @@ Each `box` data row declares three component states bound to `obp_get_customer_p
 |-----------------------------------------------------------------------|-------------|-----------|----------------------------------------------------|
 | GET /obp/v5.1.0/banks/{bankId}/customers/{customerId}                | DirectLogin | Customers | Fetch full customer record for profile display     |
 | PUT /obp/v5.1.0/banks/{bankId}/customers/{customerId}                | DirectLogin | Customers | Submit updated customer information                |
+
+---
+
+## Dependencies
+
+| Feature          | Type    | Required | Check                                      |
+|------------------|---------|----------|--------------------------------------------|
+| customer-search  | feature | true     | Entry point — navigates to this screen     |
+| kyc-review       | feature | false    | May navigate to this screen from KYC flow  |
+| customer-messages| feature | false    | Future deep-link target                    |
 
 ---
 
