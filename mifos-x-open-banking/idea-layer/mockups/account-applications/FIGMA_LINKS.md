@@ -1,6 +1,6 @@
 # FIGMA_LINKS.md — account-applications
 
-<!-- schema: v3.2 | generated: 2026-05-30T06:58:10.510Z -->
+<!-- schema: v3.2 | generated: 2026-05-31T05:03:08.615Z -->
 
 ## Stitch Project
 
@@ -8,26 +8,20 @@
 |-------|-------|
 | Project URL | [17153754672098888646](https://stitch.google.com/projects/17153754672098888646) |
 | Design System ID | 2005644667042354169 |
-| Generated | 2026-05-30T06:58:09.936Z |
-| Success | 0/4 states |
+| Generated | 2026-05-31T05:02:59.273Z |
+| Success | 1/1 states |
 
 ## Screen Status
 
 | State | Screen ID | Folder | PNG | HTML | Status |
 |-------|-----------|--------|-----|------|--------|
-| loading | — | 01-account-applications-loading | PNG ❌ | HTML ❌ | ❌ StitchError: Tool Call Failed [generate_screen_from_text]: Resource has been exhausted (e.g. check quota). |
-| content | — | 02-account-applications-content | PNG ❌ | HTML ❌ | ❌ StitchError: Tool Call Failed [generate_screen_from_text]: Resource has been exhausted (e.g. check quota). |
-| empty | — | 03-account-applications-empty | PNG ❌ | HTML ❌ | ❌ StitchError: Tool Call Failed [generate_screen_from_text]: Resource has been exhausted (e.g. check quota). |
-| error | — | 04-account-applications-error | PNG ❌ | HTML ❌ | ❌ StitchError: Tool Call Failed [generate_screen_from_text]: Resource has been exhausted (e.g. check quota). |
+| error | 53c133a827f442a38e5148fbfebae748 | 01-account-applications-error | PNG ✅ | HTML ✅ | ✅ generated |
 
 ## Open in Figma / Stitch
 
 | State | Stitch Screen | Figma Export |
 |-------|--------------|--------------|
-| loading | — | — |
-| content | — | — |
-| empty | — | — |
-| error | — | — |
+| error | [Open](https://stitch.google.com/projects/17153754672098888646/screens/53c133a827f442a38e5148fbfebae748) | — |
 
 > **Figma Export**: direct download URL captured from Stitch SDK `screen.data.figmaExport.downloadUrl`. May be `—` if Stitch did not generate a Figma export for this screen.
 >

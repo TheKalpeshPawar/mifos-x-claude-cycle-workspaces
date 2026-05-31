@@ -1,16 +1,22 @@
 sibling: api
 schema_version: "4.0"
 feature_id: cards
+# All endpoints verified live against apisandbox.openbankproject.com on 2026-05-31.
 api:
+  # ── Carousel data source (consumer, verified 200) ───────────────────────────
   - id: obp_get_cards
-    endpoint: "GET /obp/v5.1.0/cards"
-    tag: Cards
+    endpoint: "GET /obp/v7.0.0/cards"
+    tag: Card
+    summary: "Get cards for the current user"
+    auth: DirectLogin
+    trigger: "on screen entry / RetryLoad"
+    verified: "2026-05-31 — 200, consumer DirectLogin, no special role"
     response:
+      wrapper: cards
+      dto: Card
       fields:
         - name: cards
           type: List<Card>
-        - name: id
-          type: String
         - name: bank_id
           type: String
         - name: bank_card_number
@@ -19,18 +25,65 @@ api:
           type: String
         - name: card_type
           type: String
-        - name: card_description
-          type: String
-        - name: card_network
-          type: String
+        - name: networks
+          type: List<String>
         - name: allows
           type: List<String>
         - name: enabled
           type: Boolean
+        - name: cancelled
+          type: Boolean
+        - name: on_hot_list
+          type: Boolean
+        - name: account
+          type: CardAccountRef
     errors:
-      - code: 400
-        message: "INVALID_BANK_ID"
       - code: 401
-        message: "USER_NOT_LOGGED_IN"
-      - code: 403
-        message: "INSUFFICIENT_AUTHORISATION"
+        message: "OBP-20001: User not logged in. Authentication is required!"
+
+  # ── Card transactions section (per-account, verified 200) ───────────────────
+  # Card transactions are not a distinct OBP resource — they are the owning
+  # account's transactions, fetched via card.account.id. Verified: ac.checking.001
+  # returned 28 transactions.
+  - id: obp_get_card_transactions
+    endpoint: "GET /obp/v4.0.0/banks/{bankId}/accounts/{accountId}/owner/transactions"
+    tag: Transaction
+    summary: "Recent transactions for the account that owns a card"
+    auth: DirectLogin
+    trigger: "after cards load — accountId = card.account.id of the first/selected card"
+    verified: "2026-05-31 — 200, owner view, 28 transactions"
+    response:
+      wrapper: transactions
+      dto: Transaction
+      fields:
+        - name: transactions
+          type: List<Transaction>
+    errors:
+      - code: 401
+        message: "OBP-20001: User not logged in. Authentication is required!"
+
+# ── Deferred card controls (NOT consumer-functional — investigated + verified) ─
+# These power the Freeze / Set Limit / View PIN / Report Lost / Order New Card UI
+# affordances. Each is rendered in the design but its handler is deferred (no fake
+# behaviour) for a verified reason. See screens/cards/ui.yaml component notes.
+deferred_actions:
+  - action: toggle_freeze_card
+    reason: >-
+      OBP exposes card freeze only via PUT /obp/v3.1.0/management/banks/{bankId}/cards/{cardId}
+      (UpdatePhysicalCardJsonV310, enabled flag). VERIFIED working live (200) but it (a) requires
+      the CanUpdateCardsForBank entitlement (management role, not held by ordinary consumers) and
+      (b) is keyed by CARD_ID + customer_id, neither of which the consumer GET /obp/v7.0.0/cards
+      response exposes. Cannot be constructed from carousel data → deferred.
+  - action: report_card_lost
+    reason: >-
+      UpdatePhysicalCardJsonV310 has no writable cancelled/on_hot_list field (verified against the
+      endpoint's example_request_body), and the same CARD_ID/role constraints as freeze apply.
+      No consumer write path → deferred.
+  - action: open_set_limit_sheet
+    reason: "No spending-limit field on any consumer OBP card endpoint (UpdatePhysicalCardJson has no limit). Deferred."
+  - action: reveal_pin
+    reason: "OBP exposes no PIN-retrieval endpoint by design (security). Deferred."
+  - action: order_card
+    reason: >-
+      Card creation is POST /obp/v5.0.0/management/banks/{bankId}/cards (management role). Belongs to a
+      dedicated order flow, not the consumer carousel. Deferred.

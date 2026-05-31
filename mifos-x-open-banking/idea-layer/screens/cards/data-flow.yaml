@@ -11,11 +11,26 @@ entries:
       - name: Card
         role: response
         api_id: obp_get_cards
+      - name: CardAccountRef
+        role: nested
+        api_id: obp_get_cards
     produces_state: content
     error_paths:
-      - error_code: 400
-        behavior: error_state
       - error_code: 401
         behavior: navigate_login
-      - error_code: 403
-        behavior: error_state
+
+  - screen_id: cards
+    trigger: after_cards_loaded
+    endpoints:
+      - obp_get_card_transactions
+    direction: read
+    # accountId is resolved from the first (or selected) card's account.id.
+    depends_on: obp_get_cards
+    dtos:
+      - name: Transaction
+        role: response
+        api_id: obp_get_card_transactions
+    produces_state: content
+    error_paths:
+      - error_code: 401
+        behavior: navigate_login

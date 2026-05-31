@@ -1,6 +1,6 @@
 # FIGMA_LINKS.md — transaction-tags
 
-<!-- schema: v3.2 | generated: 2026-05-30T06:58:19.587Z -->
+<!-- schema: v3.2 | generated: 2026-05-31T03:25:41.638Z -->
 
 ## Stitch Project
 
@@ -8,8 +8,8 @@
 |-------|-------|
 | Project URL | [17153754672098888646](https://stitch.google.com/projects/17153754672098888646) |
 | Design System ID | 2005644667042354169 |
-| Generated | 2026-05-30T06:58:19.587Z |
-| Success | 6/7 states |
+| Generated | 2026-05-31T03:25:28.265Z |
+| Success | 7/7 states |
 
 ## Screen Status
 
@@ -21,7 +21,7 @@
 | save_success | 7e7f0348b7d043f381a73340384e7f0f | 04-transaction-tags-save_success | PNG ✅ | HTML ✅ | ♻ resumed |
 | content | 854a91946b9341e7b1e968d661aaaecf | 05-transaction-tags-content | PNG ✅ | HTML ✅ | ♻ resumed |
 | empty | 8398b08cc15842859005b0c408fe1d6c | 06-transaction-tags-empty | PNG ✅ | HTML ✅ | ♻ resumed |
-| error | — | 07-transaction-tags-error | PNG ❌ | HTML ❌ | ❌ StitchError: Tool Call Failed [generate_screen_from_text]: Resource has been exhausted (e.g. check quota). |
+| error | e7b209d5d0e744879e53544a04c74753 | 07-transaction-tags-error | PNG ✅ | HTML ✅ | ✅ generated |
 
 ## Open in Figma / Stitch
 
@@ -33,7 +33,7 @@
 | save_success | [Open](https://stitch.google.com/projects/17153754672098888646/screens/7e7f0348b7d043f381a73340384e7f0f) | — |
 | content | [Open](https://stitch.google.com/projects/17153754672098888646/screens/854a91946b9341e7b1e968d661aaaecf) | — |
 | empty | [Open](https://stitch.google.com/projects/17153754672098888646/screens/8398b08cc15842859005b0c408fe1d6c) | — |
-| error | — | — |
+| error | [Open](https://stitch.google.com/projects/17153754672098888646/screens/e7b209d5d0e744879e53544a04c74753) | — |
 
 > **Figma Export**: direct download URL captured from Stitch SDK `screen.data.figmaExport.downloadUrl`. May be `—` if Stitch did not generate a Figma export for this screen.
 >
