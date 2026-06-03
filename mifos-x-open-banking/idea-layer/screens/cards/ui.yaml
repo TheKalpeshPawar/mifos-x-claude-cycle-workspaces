@@ -3,7 +3,7 @@ name: My Cards
 feature: cards
 flavor: consumer
 status: enriched
-quality_score: 96
+quality_score: 98
 initial_state: loading
 contract_version: "1.1.0"
 approve_hash: "sha256:0baf12bd8c96e4f037af12bd8c96e4f037af12bd8c96e4f037af12bd8c96e4f0"
@@ -24,12 +24,20 @@ status_history:
     by: "/idea approve"
     contract_version: "1.1.0"
     bypass_flags: []
+  - from: approved
+    to: enriched
+    at: "2026-06-02"
+    by: "/idea enrich"
+    quality_score: 98
+    note: "Added viewmodel: CardsViewModel + states_handled to screens[] entry (Category 12); bound card_carousel→obp_get_cards and card_transactions_header→obp_get_card_transactions with per-component loading/error/empty component_states (API Coverage + state composition); verified all component types in components.yaml; deferred OBP-unsupported card actions preserved"
 
 
 screens:
   - id: cards
     name: My Cards
+    viewmodel: CardsViewModel
     archetype: index_list
+    states_handled: [loading, content, empty, error]
     shell:
       top_bar:
         title: "My Cards"
@@ -74,8 +82,25 @@ components:
     a11y:
       label: "Your payment cards, swipe to see more"
       role: list
+    api:
+      endpoint_id: obp_get_cards
+      binds: cards
+    component_states:
+      loading:
+        type: skeleton
+        count: 2
+        description: "2 shimmer card placeholders 320x200dp matching card carousel dimensions"
+      error:
+        type: banner
+        message: "Couldn't load your cards. Pull to retry."
+        retry: true
+      empty:
+        type: box
+        message: "No cards yet. Order your first Mifos card to start making payments."
+        icon: credit_card_off
     test_context:
       test_id: card_carousel
+      data_driven: true
 
   - type: box
     id: card_debit_visa
@@ -405,9 +430,26 @@ components:
     a11y:
       label: "Card transactions section"
       role: heading
+    api:
+      endpoint_id: obp_get_card_transactions
+      binds: cardTransactions
+    component_states:
+      loading:
+        type: skeleton
+        count: 3
+        description: "3 shimmer transaction rows matching card transaction list-item height"
+      error:
+        type: banner
+        message: "Couldn't load card transactions. Please try again."
+        retry: true
+      empty:
+        type: box
+        message: "No transactions on this card yet."
+        icon: receipt_long_outlined
     test_context:
       test_id: card_transactions_header
       assert_text: "Card Transactions"
+      data_driven: true
 
   - type: box
     id: card_tx_netflix

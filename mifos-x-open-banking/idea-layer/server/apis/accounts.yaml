@@ -3,7 +3,7 @@ api_group: accounts
 name: "Accounts API"
 base_url: "https://apisandbox.openbankproject.com/obp"
 auth_scheme: DirectLogin
-generated_at: "2026-05-30"
+generated_at: "2026-06-02"
 
 endpoints:
 
@@ -141,6 +141,60 @@ endpoints:
         message: "OBP_SERVER_ERROR"
         retry: true
 
+  - id: get_my_account_detail
+    method: GET
+    path: "/v7.0.0/my/banks/{bank_id}/accounts/{account_id}/account"
+    description: "Consumer-scoped account detail via the v7 'my' path. Added by source (myAccountDetail) as the offline-first canonical detail fetch — complements the bank-scoped v3 get_account_detail."
+    auth_required: true
+    request_schema: []
+    response_schema:
+      - field: id
+        type: String
+        nullable: false
+        description: "Unique account identifier."
+      - field: label
+        type: String
+        nullable: false
+        description: "Human-readable account name."
+      - field: number
+        type: String
+        nullable: true
+        description: "Internal account number."
+      - field: iban
+        type: "String?"
+        nullable: true
+        description: "International Bank Account Number."
+      - field: account_type
+        type: String
+        nullable: false
+        description: "Product type — 'CURRENT', 'SAVINGS', etc."
+      - field: balance
+        type: Object
+        nullable: false
+        description: "Current balance container."
+      - field: balance.currency
+        type: String
+        nullable: false
+        description: "ISO 4217 currency code."
+      - field: balance.amount
+        type: String
+        nullable: false
+        description: "Balance value as decimal string."
+      - field: account_routings
+        type: "List<AccountRouting>"
+        nullable: false
+        description: "Routing identifiers (IBAN, SortCode, AccountNumber)."
+    error_codes:
+      - code: 401
+        message: "USER_NOT_LOGGED_IN"
+        retry: false
+      - code: 404
+        message: "BANK_ACCOUNT_NOT_FOUND"
+        retry: false
+      - code: 500
+        message: "OBP_SERVER_ERROR"
+        retry: true
+
   - id: get_balances
     method: GET
     path: "/v4.0.0/banks/{bank_id}/balances"
@@ -188,7 +242,7 @@ endpoints:
 
   - id: get_my_accounts
     method: GET
-    path: "/v4.0.0/my/accounts"
+    path: "/v3.0.0/my/accounts"
     description: "Fetch all accounts for the authenticated consumer — used by the home screen balance summary card. Returns accounts across all banks the user has access to."
     auth_required: true
     request_schema: []
@@ -230,7 +284,7 @@ endpoints:
 
   - id: get_recent_transactions_for_home
     method: GET
-    path: "/v4.0.0/banks/{bank_id}/accounts/{account_id}/transactions"
+    path: "/v3.0.0/banks/{bank_id}/accounts/{account_id}/owner/transactions"
     description: "Fetch recent transactions for the home activity section (limit=3, most recent first). Reuses the transactions endpoint with a small limit to populate the activity feed widget."
     auth_required: true
     request_schema:

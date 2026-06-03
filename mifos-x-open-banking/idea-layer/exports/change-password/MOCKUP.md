@@ -1,8 +1,11 @@
 # MOCKUP — Change Password
 
 **Archetype:** form
-**Shell:** Top app bar ("Change Password") with back arrow. No bottom navigation bar.
+**ViewModel:** ChangePasswordViewModel
+**Shell:** Top app bar ("Change Password") with back arrow → Profile. No bottom navigation bar.
 **Accent:** #4C662B (Earth-green). Typography: Outfit. Design system: M3.
+**States:** loading, idle, submitting, success, error, content, empty
+**Updated:** 2026-06-02 (archetype + states_handled added; ChangePasswordViewModel confirmed)
 
 ---
 

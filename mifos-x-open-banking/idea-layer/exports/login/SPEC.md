@@ -4,7 +4,7 @@
 |---------------|----------------|
 | Feature       | login          |
 | Flavor        | shared         |
-| Status        | approved       |
+| Status        | designed       |
 | Quality Score | 95             |
 | ViewModel     | LoginViewModel |
 
@@ -12,7 +12,7 @@
 
 ## Overview
 
-The Login screen handles dual authentication for both Consumer and Field Officer personas: DirectLogin (form-based OBP header credential submission) and OAuth/OIDC via the OBP OIDC provider (authorization_code + PKCE flow). On successful authentication the screen reads the returned user role and navigates accordingly — Consumer users go to Home, Field Officers go to FO Dashboard. A "Forgot Password?" link provides a password recovery path. Six OAuth OIDC API calls cover the full auth lifecycle including token refresh and logout revocation.
+The Login screen handles dual authentication for both Consumer and Field Officer personas: DirectLogin (form-based OBP header credential submission) and OAuth/OIDC via the OBP OIDC provider (authorization_code + PKCE flow). On successful authentication the screen reads the returned user role and navigates accordingly — Consumer users go to Home, Field Officers go to FO Dashboard. A "Forgot Password?" link provides a password recovery path. A bold "Powered by Mifos" brand-attribution footer is pinned at the bottom of every form state. Six OAuth OIDC API calls cover the full auth lifecycle including token refresh and logout revocation.
 
 ---
 
@@ -32,7 +32,7 @@ The Login screen handles dual authentication for both Consumer and Field Officer
 |---------------------------|--------|--------------------------------------------------------------------------------------------------------------|
 | login_header_logo         | image  | Mifos X logo, 80×80dp, tint `#4C662B`, center-aligned, 16dp bottom padding                                  |
 | login_header_title        | text   | "Welcome Back" — headline_small, `#4C662B`, centered, heading level 1                                       |
-| login_header_subtitle     | text   | "Sign in to your Mifos X account" — body_medium, `#44483D`, centered, 32dp bottom padding                   |
+| login_footer              | text   | "Powered by Mifos" — body_medium, `#4C662B`, **font_weight 700**, centered. Brand-attribution footer pinned LAST in every form state (8dp top / 32dp bottom padding) |
 | login_username_input      | input  | Outlined text field, label "Username", placeholder "Enter your username". White bg, `#C5C8BA` border, `#4C662B` focus border. ime_action=next |
 | login_password_input      | input  | Outlined password field, label "Password", visibility_toggle trailing icon. Same border treatment as username. ime_action=done |
 | login_remember_me_row     | stack  | Horizontal row: checkbox (color `#4C662B`) + "Keep me signed in" (body_medium, `#1A1C16`, 8dp start padding)|
@@ -41,6 +41,7 @@ The Login screen handles dual authentication for both Consumer and Field Officer
 | login_or_divider_row      | stack  | Row: left divider (`#E1E4D5`, flex 1) + "OR" (label_medium, `#44483D`, 16dp horizontal padding) + right divider |
 | login_oauth_button        | button | Outlined, `#4C662B` border/text, label_large, 8dp radius, full-width. "Sign in with OBP Account". Leading open_in_browser icon. Launches system browser to OBP OIDC auth endpoint |
 | login_oauth_hint          | text   | "Redirects to Open Bank Project for secure authentication" — body_small, `#44483D`, centered, 4dp top padding|
+| login_bottom_divider      | divider| Full-width divider `#E1E4D5`, 16dp top/bottom margin, above the Forgot Password link                       |
 | login_forgot_password_link| link   | "Forgot Password?" — body_medium, `#386663`, centered, 44dp min touch target. Navigates to forgot-password  |
 | oauth_redirect_title      | text   | "Redirecting to Open Bank Project" — headline_small, `#1A1C16`, centered (oauth_redirecting state)          |
 | oauth_redirect_msg        | text   | "Opening your browser for secure OAuth authentication…" — body_medium, `#44483D`, centered                  |
@@ -49,20 +50,22 @@ The Login screen handles dual authentication for both Consumer and Field Officer
 | oauth_exchange_msg        | text   | "Exchanging authorization code for your session token…" — body_medium, `#44483D`, centered                  |
 | oauth_exchange_spinner    | loading_indicator | Circular indeterminate, `#4C662B`, 32dp (oauth_exchanging state)                             |
 
+> Note: the former `login_header_subtitle` component was removed in the 2026-06-02 design-resync. No subtitle is present; the logo and "Welcome Back" headline lead straight into the form.
+
 ---
 
 ## States
 
-| ID               | Trigger                               | Description                                                                     |
-|------------------|---------------------------------------|---------------------------------------------------------------------------------|
-| idle             | Screen open                           | All form fields and both auth buttons enabled; no error banner                  |
-| loading          | Alias for authenticating              | login_cta_button shows loading spinner; inputs and OAuth button disabled        |
-| authenticating   | "Sign In" tapped                      | login_cta_button loading; inputs disabled; same layout as loading               |
+| ID               | Trigger                               | Visible Components / Description                                                  |
+|------------------|---------------------------------------|----------------------------------------------------------------------------------|
+| idle             | Screen open                           | logo, title, username, password, remember-me, CTA, OR divider, OAuth button, OAuth hint, bottom divider, forgot-password, **footer**. All fields enabled; no error banner |
+| loading          | Alias for authenticating              | Same layout as idle; login_cta_button shows loading spinner; inputs and OAuth button disabled; **footer** present |
+| authenticating   | "Sign In" tapped                      | Same layout as idle; CTA loading; inputs disabled; **footer** present            |
 | oauth_redirecting| "Sign in with OBP Account" tapped     | Full-screen takeover: logo + redirect title + message + spinner. System browser opens |
 | oauth_exchanging | App returns from browser with code    | Full-screen takeover: logo + exchanging title + message + spinner                |
-| error            | DirectLogin 400/401 or OAuth failure  | login_error_banner visible above login_cta_button; inputs re-enabled            |
-| content          | Alias for idle                        | Same layout as idle; canonical loaded state                                     |
-| empty            | No accounts found (account_circle_off)| Logo + title + subtitle + empty state: "No accounts found. Contact your bank." |
+| error            | DirectLogin 400/401 or OAuth failure  | Same layout as idle plus login_error_banner above the CTA; inputs re-enabled; **footer** present |
+| content          | Alias for idle                        | Same layout as idle; canonical loaded state; **footer** present                  |
+| empty            | No accounts found (account_circle_off)| logo + title + **footer** + empty state: "No accounts found. Contact your bank." |
 
 ---
 
@@ -128,7 +131,7 @@ The Login screen handles dual authentication for both Consumer and Field Officer
 
 | Token                         | Value     | Usage                                                                     |
 |-------------------------------|-----------|---------------------------------------------------------------------------|
-| color.light.primary           | #4C662B   | Logo tint, heading title, checkbox, CTA button bg, input focus border, OAuth button border/text |
+| color.light.primary           | #4C662B   | Logo tint, heading title, checkbox, CTA button bg, input focus border, OAuth button border/text, footer text |
 | color.light.on_primary        | #FFFFFF   | CTA button text                                                           |
 | color.light.secondary         | #386663   | Forgot password link color                                                |
 | color.light.primary_container | #CDEDA3   | Error banner background                                                   |
@@ -136,20 +139,21 @@ The Login screen handles dual authentication for both Consumer and Field Officer
 | color.light.surface           | #FFFFFF   | Input field backgrounds                                                   |
 | color.light.background        | #F9FAEF   | Screen background                                                         |
 | color.light.on_surface        | #1A1C16   | Remember-me label text                                                    |
-| color.light.on_surface_variant| #44483D   | Subtitle, OAuth hint, OR divider text, input placeholder                  |
+| color.light.on_surface_variant| #44483D   | OAuth hint, OR divider text, input placeholder                            |
 | color.light.outline           | #75796C   | (reserved — input focus secondary)                                        |
 | color.light.outline_variant   | #C5C8BA   | Input default border, OR divider lines                                    |
 | typography.headline_small     | —         | "Welcome Back" title, OAuth state titles                                  |
-| typography.body_medium        | —         | Subtitle, remember-me label, OAuth hint, forgot password link             |
+| typography.body_medium        | —         | Footer ("Powered by Mifos", weight 700), remember-me label, forgot password link |
 | typography.body_large         | —         | Input field values                                                        |
-| typography.body_small         | —         | Error message text                                                        |
+| typography.body_small         | —         | Error message text, OAuth hint                                            |
 | typography.label_large        | —         | CTA button, OAuth button                                                  |
 | typography.label_medium       | —         | OR divider text                                                           |
 | spacing.lg                    | 24dp      | Screen padding, section gap between form and buttons                      |
 | spacing.md                    | 16dp      | Input field padding, error banner padding                                 |
-| spacing.xl                    | 32dp      | Subtitle bottom padding                                                   |
+| spacing.sm                    | 8dp       | Footer top padding, remember-me row padding                               |
+| spacing.xl                    | 32dp      | Footer bottom padding                                                     |
 | radius.xs                     | 4dp       | Input field border-radius                                                 |
 
 ---
 
-_Generated by /idea export | 2026-05-29_
+_Generated by /idea export | 2026-06-02_

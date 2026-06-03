@@ -17,7 +17,6 @@
 │            └──────────┘             │
 │                                     │
 │          Welcome Back               │  ← headline_small, #4C662B, centered
-│   Sign in to your Mifos X account   │  ← body_medium, #44483D, centered
 │                                     │
 │  ┌───────────────────────────────┐  │
 │  │ Username                      │  │  ← Outlined input, #C5C8BA border
@@ -47,18 +46,21 @@
 │                                     │
 │         Forgot Password?            │  ← body_medium #386663 centered, 44dp touch
 │                                     │
+│         Powered by Mifos            │  ← body_medium #4C662B, BOLD (700), centered
+│                                     │
 └─────────────────────────────────────┘
 ```
 
 **Layout notes:**
 - Screen padding: 24dp (`spacing.lg`) all sides.
-- Logo + title + subtitle: vertically centered in top ~35% of screen.
+- Logo + title: vertically centered in top ~30% of screen. No subtitle.
 - Username and password inputs: 56dp height, 4dp radius, 16dp internal padding.
 - Remember-me row: 8dp top/bottom padding.
 - CTA button: full-width, 40dp height, pill radius (999dp), 24dp top margin.
 - OR divider row: 24dp top/bottom padding.
 - OAuth button: full-width, same height/radius as CTA.
 - Bottom divider + forgot password: 16dp top margin.
+- **Footer ("Powered by Mifos"): body_medium, #4C662B, font_weight 700, centered, pinned LAST. 8dp top padding, 32dp bottom padding.**
 - Scroll: vertical (SingleChildScrollView) — content may overflow on short screens.
 
 ---
@@ -71,7 +73,6 @@
 │            │  [Logo]  │             │
 │            └──────────┘             │
 │          Welcome Back               │
-│   Sign in to your Mifos X account   │
 │                                     │
 │  ┌───────────────────────────────┐  │
 │  │ john.doe                      │  │  ← Fields show current values, disabled
@@ -90,10 +91,12 @@
 │  │ ↗  Sign in with OBP Account   │  │  ← Disabled, muted opacity
 │  └───────────────────────────────┘  │
 │                                     │
+│         Powered by Mifos            │  ← body_medium #4C662B, BOLD (700), centered
+│                                     │
 └─────────────────────────────────────┘
 ```
 
-**Layout notes:** Identical layout to idle; CTA button in loading variant. All inputs and OAuth button disabled (muted opacity 0.5).
+**Layout notes:** Identical layout to idle; CTA button in loading variant. All inputs and OAuth button disabled (muted opacity 0.5). Footer remains pinned at the bottom.
 
 ---
 
@@ -103,7 +106,6 @@
 ┌─────────────────────────────────────┐
 │            [Logo]                   │
 │          Welcome Back               │
-│   Sign in to your Mifos X account   │
 │                                     │
 │  ┌───────────────────────────────┐  │
 │  │ john.doe                      │  │
@@ -125,8 +127,11 @@
 │  │ ↗  Sign in with OBP Account   │  │
 │  └───────────────────────────────┘  │
 │         Forgot Password?            │
+│         Powered by Mifos            │  ← body_medium #4C662B, BOLD (700), centered
 └─────────────────────────────────────┘
 ```
+
+**Layout notes:** Error banner appears above the Sign In CTA; inputs re-enabled for retry. Footer remains pinned at the bottom.
 
 ---
 
@@ -151,7 +156,7 @@
 └─────────────────────────────────────┘
 ```
 
-**Layout notes:** Full-screen overlay; column layout vertically centered. No back button — browser handles the session.
+**Layout notes:** Full-screen takeover; column layout vertically centered. Logo + title + message + spinner only — no form, no footer. Browser handles the session.
 
 ---
 
@@ -174,6 +179,8 @@
 └─────────────────────────────────────┘
 ```
 
+**Layout notes:** Full-screen takeover, vertically centered. Logo + title + message + spinner only — no footer.
+
 ---
 
 ## Screen: empty
@@ -182,7 +189,6 @@
 ┌─────────────────────────────────────┐
 │            [Logo]                   │
 │          Welcome Back               │
-│   Sign in to your Mifos X account   │
 │                                     │
 │          ○ (account_circle_off)     │  ← empty state icon 48dp #75796C
 │                                     │
@@ -190,8 +196,12 @@
 │   Contact your bank to set up       │
 │   online banking.                   │  ← body_medium #44483D centered
 │                                     │
+│         Powered by Mifos            │  ← body_medium #4C662B, BOLD (700), centered
+│                                     │
 └─────────────────────────────────────┘
 ```
+
+**Layout notes:** Logo + title + empty-state message + footer. Footer pinned at the bottom.
 
 ---
 
@@ -200,6 +210,7 @@
 - [ ] No top app bar — full-bleed `#F9FAEF` background
 - [ ] Logo: 80×80dp, tint `#4C662B`, center-aligned
 - [ ] Headline "Welcome Back": headline_small, `#4C662B`, centered
+- [ ] NO subtitle (removed 2026-06-02 design-resync)
 - [ ] Username/password inputs: outlined variant, 4dp radius, `#C5C8BA` default border, `#4C662B` focus border
 - [ ] Password field: trailing visibility_toggle icon
 - [ ] Remember me: M3 checkbox in `#4C662B`
@@ -208,5 +219,7 @@
 - [ ] OAuth button: full-width outlined `#4C662B`, leading open_in_browser icon
 - [ ] Error banner: `#CDEDA3` bg, `#BA1A1A` 1dp border, error_outline icon, body_small error text
 - [ ] Forgot Password: body_medium `#386663`, 44dp touch target, center-aligned
-- [ ] OAuth states: full-screen vertically centered logo + message + circular spinner
+- [ ] **Footer "Powered by Mifos": body_medium, `#4C662B`, font_weight 700, centered, pinned LAST in every form state**
+- [ ] OAuth states: full-screen vertically centered logo + message + circular spinner (no footer)
 - [ ] All text Outfit typeface; 24dp screen padding
+```

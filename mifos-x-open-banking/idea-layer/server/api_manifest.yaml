@@ -1,10 +1,14 @@
 # server/api_manifest.yaml — OBP API manifest for mifos-x-open-banking
 # Generated 2026-05-25 by /idea sync STEP 4g
 # Updated 2026-05-30 by /idea sync STEP 4g — registered 6 screens, added field_officer+pfm groups
+# Updated 2026-06-02 by /idea sync — reconciled against updated source Ktor APIs:
+#   auth direct_login v4→v6 (my/logins/direct), +oauth2/token+revoke; accounts my/accounts v4→v3,
+#   +v7 myAccountDetail; transactions +owner/ view segment; cards +v7/cards hub;
+#   field_officer customers v5.1→v3, account-applications v5.1→v4.
 # API: Open Bank Project Sandbox — https://apisandbox.openbankproject.com
 
 schema_version: "1.0"
-generated_at: "2026-05-30"
+generated_at: "2026-06-02"
 base_url: "https://apisandbox.openbankproject.com/obp"
 default_version: "v4.0.0"
 version_policy: multi  # screens legitimately use v3-v7 OBP endpoints; default_version is the baseline
@@ -18,13 +22,19 @@ api_groups:
     spec_file: "server/apis/auth.yaml"
     endpoints:
       - method: POST
-        path: "/v4.0.0/banks/{bank_id}/direct_login"
-        description: "DirectLogin — exchange credentials for token"
+        path: "/v6.0.0/my/logins/direct"
+        description: "DirectLogin — exchange credentials for token (moved from v4.0.0/banks/{bank_id}/direct_login)"
         request_fields: [username, password, consumer_key]
         response_fields: [token]
       - method: GET
         path: "/v4.0.0/oauth2/authorize"
-        description: "OIDC authorization code flow (alternative)"
+        description: "OIDC authorization code flow (browser redirect — not a Ktor call)"
+      - method: POST
+        path: "/v4.0.0/oauth2/token"
+        description: "OIDC token exchange + silent refresh (grant_type=authorization_code | refresh_token)"
+      - method: POST
+        path: "/v4.0.0/oauth2/revoke"
+        description: "Revoke access/refresh tokens on logout"
 
   - id: accounts
     name: Accounts
@@ -37,17 +47,21 @@ api_groups:
         response_fields: [id, label, bank_id, account_type, balance, currency]
       - method: GET
         path: "/v3.0.0/banks/{bank_id}/accounts/{account_id}/account"
-        description: "Get account detail"
+        description: "Get account detail (bank-scoped)"
         response_fields: [id, label, number, swift_bic, iban, owners, balance, currency, account_routings]
+      - method: GET
+        path: "/v7.0.0/my/banks/{bank_id}/accounts/{account_id}/account"
+        description: "Get account detail (consumer-scoped, offline-first canonical — source myAccountDetail)"
+        response_fields: [id, label, number, iban, account_type, balance, account_routings]
       - method: GET
         path: "/v4.0.0/banks/{bank_id}/balances"
         description: "Get balances for all accounts"
       - method: GET
-        path: "/v4.0.0/my/accounts"
+        path: "/v3.0.0/my/accounts"
         description: "Fetch all consumer accounts for balance summary card (home)"
         response_fields: [accounts, id, bank_id, label, balance.amount, balance.currency]
       - method: GET
-        path: "/v4.0.0/banks/{bank_id}/accounts/{account_id}/transactions"
+        path: "/v3.0.0/banks/{bank_id}/accounts/{account_id}/owner/transactions"
         description: "Fetch recent transactions for home activity section (limit=3)"
         query_params: [limit, sort_direction]
         response_fields: [transactions, id, this_account.id, other_account.holder.name, details.type, details.description, details.posted, details.value.amount, details.value.currency]
@@ -58,22 +72,22 @@ api_groups:
     spec_file: "server/apis/transactions.yaml"
     endpoints:
       - method: GET
-        path: "/v3.0.0/banks/{bank_id}/accounts/{account_id}/transactions"
-        description: "List transactions for account"
+        path: "/v3.0.0/banks/{bank_id}/accounts/{account_id}/owner/transactions"
+        description: "List transactions for account (owner view)"
         query_params: [limit, offset, from_date, to_date, sort_direction]
         response_fields: [id, this_account, other_account, details, metadata]
       - method: GET
-        path: "/v3.0.0/banks/{bank_id}/accounts/{account_id}/transactions/{transaction_id}/transaction"
+        path: "/v3.0.0/banks/{bank_id}/accounts/{account_id}/owner/transactions/{transaction_id}/transaction"
         description: "Get transaction detail"
       - method: POST
-        path: "/v3.0.0/banks/{bank_id}/accounts/{account_id}/transactions/{transaction_id}/metadata/tags"
+        path: "/v3.0.0/banks/{bank_id}/accounts/{account_id}/owner/transactions/{transaction_id}/metadata/tags"
         description: "Add tag to transaction"
         request_fields: [value]
       - method: DELETE
-        path: "/v3.0.0/banks/{bank_id}/accounts/{account_id}/transactions/{transaction_id}/metadata/tags/{tag_id}"
+        path: "/v3.0.0/banks/{bank_id}/accounts/{account_id}/owner/transactions/{transaction_id}/metadata/tags/{tag_id}"
         description: "Remove tag from transaction"
       - method: POST
-        path: "/v3.0.0/banks/{bank_id}/accounts/{account_id}/transactions/{transaction_id}/metadata/comments"
+        path: "/v3.0.0/banks/{bank_id}/accounts/{account_id}/owner/transactions/{transaction_id}/metadata/comments"
         description: "Add comment/note to transaction"
 
   - id: payments
@@ -101,6 +115,10 @@ api_groups:
     screens: [cards, card-detail]
     spec_file: "server/apis/cards.yaml"
     endpoints:
+      - method: GET
+        path: "/v7.0.0/cards"
+        description: "List all cards for current user (My Cards hub — source getCardsForCurrentUser)"
+        response_fields: [cards, id, bank_id, bank_card_number, name_on_card, expires_date, enabled, card_type, card_network]
       - method: GET
         path: "/v3.0.0/banks/{bank_id}/accounts/{account_id}/cards"
         description: "List cards for account"
@@ -341,12 +359,12 @@ api_groups:
     spec_file: "server/apis/field-officer.yaml"
     endpoints:
       - method: GET
-        path: "/v5.1.0/banks/{bank_id}/customers"
+        path: "/v3.0.0/banks/{bank_id}/customers"
         description: "List customers assigned to field officer — used in fo-dashboard customer roster"
         query_params: [bankId]
         response_fields: [customers, customer_id, legal_name, kyc_status, customer_number, mobile_phone_number, date_of_birth]
       - method: GET
-        path: "/v5.1.0/banks/{bank_id}/account-applications"
+        path: "/v4.0.0/banks/{bank_id}/account-applications"
         description: "List pending account applications for field officer review — fo-dashboard"
         query_params: [bankId]
         response_fields: [account_applications, account_application_id, product_code, proposed_balance, status, date_of_application]

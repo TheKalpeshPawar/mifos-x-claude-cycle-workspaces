@@ -1,34 +1,122 @@
 sibling: api
 schema_version: "4.0"
 feature_id: beneficiaries
+# Contract verified against live OBP sandbox 2026-06-03 (bank ac.bank.uk, account
+# ac.checking.001, view owner). Field names + types reflect the real response, not the
+# earlier draft (which had a non-existent `id` field).
 api:
   - id: obp_get_counterparties
     endpoint: "GET /obp/v4.0.0/banks/{bankId}/accounts/{accountId}/{viewId}/counterparties"
     tag: Counterparties
+    description: "List the explicit counterparties (payees / beneficiaries) for an account. viewId is owner."
     response:
       fields:
         - name: counterparties
           type: List<Counterparty>
-        - name: id
+        - name: counterparty_id
           type: String
         - name: name
           type: String
         - name: description
           type: String
+        - name: currency
+          type: String
+        - name: this_bank_id
+          type: String
+        - name: this_account_id
+          type: String
+        - name: this_view_id
+          type: String
+        - name: other_bank_routing_scheme
+          type: String
         - name: other_bank_routing_address
+          type: String
+        - name: other_branch_routing_scheme
+          type: String
+        - name: other_branch_routing_address
+          type: String
+        - name: other_account_routing_scheme
           type: String
         - name: other_account_routing_address
           type: String
-        - name: other_account_routing_scheme
+        - name: other_account_secondary_routing_scheme
+          type: String
+        - name: other_account_secondary_routing_address
           type: String
         - name: is_beneficiary
           type: Boolean
         - name: created_by_user_id
           type: String
+        - name: bespoke
+          type: List<Bespoke>
+    errors:
+      - code: 401
+        message: "OBP-20001: User not logged in"
+      - code: 404
+        message: "OBP-30018: Bank Account not found"
+      - code: 404
+        message: "OBP-30005: View not found for Account"
+
+  - id: obp_create_counterparty
+    endpoint: "POST /obp/v4.0.0/banks/{bankId}/accounts/{accountId}/{viewId}/counterparties"
+    tag: Counterparties
+    description: "Create an explicit counterparty (Add Beneficiary). viewId is owner."
+    request:
+      fields:
+        - name: name
+          type: String
+        - name: description
+          type: String
+        - name: currency
+          type: String
+        - name: other_account_routing_scheme
+          type: String
+        - name: other_account_routing_address
+          type: String
+        - name: other_bank_routing_scheme
+          type: String
+        - name: other_bank_routing_address
+          type: String
+        - name: other_branch_routing_scheme
+          type: String
+        - name: other_branch_routing_address
+          type: String
+        - name: other_account_secondary_routing_scheme
+          type: String
+        - name: other_account_secondary_routing_address
+          type: String
+        - name: is_beneficiary
+          type: Boolean
+        - name: bespoke
+          type: List<Bespoke>
+    response:
+      fields:
+        - name: counterparty_id
+          type: String
     errors:
       - code: 400
-        message: "INVALID_BANK_ID"
-      - code: 401
-        message: "USER_NOT_LOGGED_IN"
+        message: "OBP-10001: Incorrect json format"
+      - code: 400
+        message: "OBP-30014: Counterparty already exists"
+
+  - id: obp_get_bank
+    endpoint: "GET /obp/v4.0.0/banks/{bankId}"
+    tag: Bank
+    description: "Resolve a bank id to its display name. Used to turn other_bank_routing_address (when scheme is OBP) into a human bank name."
+    response:
+      fields:
+        - name: id
+          type: String
+        - name: short_name
+          type: String
+        - name: full_name
+          type: String
+        - name: logo
+          type: String
+    errors:
       - code: 404
-        message: "BANK_ACCOUNT_NOT_FOUND"
+        message: "OBP-30001: Bank not found"
+
+# Cross-feature dependency: last-payment amount/date + recency are derived from the
+# account's owner transactions (GET /obp/v3.0.0/my/banks/{bankId}/accounts/{accountId}/transactions),
+# owned by the transactions screen, by joining transaction description to counterparty name.

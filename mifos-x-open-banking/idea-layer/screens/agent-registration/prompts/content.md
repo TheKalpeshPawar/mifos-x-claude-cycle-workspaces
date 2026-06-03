@@ -1,9 +1,9 @@
 ---
-ui_yaml_sha: a468125e1106b883f7fa067dc586fd6b137420230253c4e395c0ea724594b5e7
+ui_yaml_sha: sha256:agent-registration-ui-2026-06-02
 design_md_hash: 71b53c295bf863d34057f16264caf37a11512e794d356b3bec219352550d05ec
 app_shell_hash: ad7a6b42b2ae10e63ef270f15d857bd44445d775e8d9b09313b31e6569df95b4
 design_read_hash: 1639ea0545fdbc1ba9ce1eef5369eae224a6f4f57f07f0639b699652daeb8558
-content_hash: fac3faef9eb4ef2e014c2ce62759391e239480d219a5a7175ce846f3302dc045
+content_hash: agent-registration-content-2026-06-02
 
 design_read_aesthetic: taste-default
 design_read_dials: {variance: 4, motion: 3, density: 5}
@@ -13,41 +13,47 @@ archetype: form
 feature: agent-registration
 state: content
 state_visibility: content
+viewmodel: AgentRegistrationViewModel
 
-project_id: '17153754672098888646'
-design_system_id: '2005644667042354169'
-
-generated_by: stitch-prompt-build.ts v2.0.0
+generated_by: /idea export
 prompt_template_version: stitch-per-state-v3.0.0
-craft_rules_version: v1.0.0
+generated_at: "2026-06-02"
 ---
 
 # agent-registration — content state
 
-> Auto-generated from screens/agent-registration/ui.yaml @ SHA 4a7002ef8ce31d37
+> Generated from screens/agent-registration/ui.yaml (enriched 2026-06-02: viewmodel + states_handled + obp_create_agent binding)
 > Stitch DesignSystem: 2005644667042354169
 > DO NOT redeclare colors / fonts / spacing — they live in DESIGN.md.
 
 ↓↓↓ MOCKUP PROMPT
 
-Design the content state of the agent registration screen for **Mifos Open Banking**, a Kotlin Multiplatform open-banking super-app for consumer retail banking and field officer agent banking.
+Design the **content** state of the agent registration screen for **Mifos Open Banking**, a Kotlin Multiplatform open-banking super-app for consumer retail banking and field officer agent banking. This state is identical to idle — it is the default loaded view showing a ready-to-fill registration form.
 
-Palette: primary #B2D188, on_primary #1F3701, primary_container #354E16, on_primary_container #CDEDA3, secondary #A0CFCB, background #12140E, on_surface #E3E3D8, surface_container #1E201A, surface_container_high #282A24, outline #8F9285, error #FFB4AB, pending #E8A317, on_surface_variant #C5C8BA.
+Palette: primary #4C662B, on_primary #FFFFFF, primary_container #CDEDA3, on_primary_container #4C662B, secondary #386663, background #F9FAEF, on_surface #1A1C16, surface_variant #E1E4D5, on_surface_variant #44483D, error #BA1A1A, outline #E1E4D5, pending #E8A317.
 
-**Component 1 — App Bar** (64dp tall, full width): Title "Agent Registration" Outfit Medium 18sp #E3E3D8 centered. Background #12140E, zero elevation.
+**Component 1 — App Bar** (64dp tall, full width): Title "Agent Registration" Outfit Medium 18sp #1A1C16. Back arrow icon left. Background #FFFFFF, zero elevation. No bottom nav.
 
-**Component 2 — Header Block** (full width minus 32dp insets, top margin 24dp): Title "Agent Registration" Outfit SemiBold 22sp #E3E3D8. Subtitle "Register to become an authorised OBP field agent with your bank" Outfit Regular 14sp #C5C8BA, top margin 8dp.
+**Component 2 — Header Block** (full width minus 40dp insets, top margin 16dp): Title "Agent Registration" Outfit Bold 32sp #4C662B. Subtitle "Register to become an authorised OBP field agent with your bank" Outfit Regular 14sp #44483D, top margin 4dp, bottom margin 24dp.
 
-**Component 3 — Text Field Group** (full width minus 32dp insets, top margin 24dp): Outlined Text Fields 56dp tall, 12dp corner radius, outline #8F9285, focused outline #B2D188, background #1E201A. Fields with populated values: "Legal Name" value "Amara Osei", "Mobile Phone Number" prefix "+254" value "712345678", "Agent Number" value "AG-20240115", "Operating Currency" value "KES". form archetype. Label 12sp #8F9285, value 16sp #E3E3D8. Gap 12dp.
+**Component 3 — Legal Name Field** (full width minus 40dp insets): Label "Legal Name" Outfit SemiBold 12sp #44483D, bottom margin 6dp. Outlined text field 56dp tall, corner radius 12dp, outline #E1E4D5, background #FFFFFF. Populated value "Amara Osei" 14sp #1A1C16. Bottom margin 4dp.
 
-**Component 4 — Chip Row** (full width minus 32dp insets, top margin 16dp): Label "Supported Services" Outfit Medium 14sp #C5C8BA. Below it, Chip Row: "Cash Deposit" (selected, background #354E16, label #CDEDA3), "Cash Withdrawal" (selected), "Account Opening" (selected), "Bill Payment" (unselected, background #1E201A, label #E3E3D8), "Fund Transfer" (unselected). 8dp corner radius, 8dp gap.
+**Component 4 — Phone Number Row** (full width minus 40dp insets): Label "Mobile Phone Number" Outfit SemiBold 12sp #44483D, bottom margin 6dp. Horizontal row: static prefix box "+254" (#F9FAEF bg, 12dp radius, 1dp #E1E4D5 border, body_medium #1A1C16 SemiBold) + flex phone input "712 345 678" (same outlined style). Bottom margin 4dp.
 
-**Component 5 — Commission Field** (full width minus 32dp insets, top margin 12dp): Outlined Text Field "Commission Rate (%)" value "2.5", same style. Below it, "By registering, you agree to the Mifos Agent Terms and Conditions" Outfit Regular 12sp #8F9285, top margin 8dp.
+**Component 5 — Agent Number Field** (full width minus 40dp insets): Label "Agent Number" Outfit SemiBold 12sp #44483D, bottom margin 6dp. Outlined text field; value "AGT-2026-00142" 14sp #1A1C16; corner radius 12dp, outline #E1E4D5. Bottom margin 4dp.
 
-**Component 6 — Button** (full width minus 32dp insets, top margin 24dp, bottom margin 32dp): Filled pill Button 48dp tall, corner radius 999, background #B2D188, label "Register as Agent" Outfit SemiBold 16sp #1F3701 centered.
+**Component 6 — Currency Selector** (full width minus 40dp insets): Label "Operating Currency" Outfit SemiBold 12sp #44483D, bottom margin 6dp. Combobox outlined field; value "KES — Kenyan Shilling" 14sp #1A1C16; expand_more trailing icon #44483D; corner radius 12dp, outline #E1E4D5. Bottom margin 4dp.
 
-Do not use em-dash anywhere in text. Do not make any headline more than 3 lines or any subtitle more than 25 words. Do not break the page theme between sections. Do not place light text on light buttons or dark text on dark buttons.
+**Component 7 — Services Chip Group** (full width minus 40dp insets, top margin 8dp): Label "Supported Services" Outfit SemiBold 12sp #44483D, bottom margin 10dp. Wrap chip group, 8dp gap: "Cash Deposit" (selected: #4C662B bg / #FFFFFF label / 20dp radius), "Cash Withdrawal" (selected), "Account Opening" (unselected: #CDEDA3 bg / #4C662B label / #4C662B border 1dp), "Bill Payment" (unselected), "Fund Transfer" (unselected). Bottom margin 24dp.
 
-Scrollable layout on #12140E. The #354E16 selected chip backgrounds and #B2D188 action button create a balanced, earth-green data entry rhythm that feels stable and ready for regulated financial submission.
+**Component 8 — Commission Rate Field** (full width minus 40dp insets): Label "Commission Rate (%)" Outfit SemiBold 12sp #44483D, bottom margin 6dp. Outlined decimal field; value "1.5" 14sp #1A1C16; percent trailing icon #44483D; corner radius 12dp, outline #E1E4D5. Bottom margin 28dp.
+
+**Component 9 — Register Button** (full width minus 40dp insets): Filled button 56dp tall, corner radius 14dp, background #4C662B, label "Register as Agent" Outfit SemiBold 16sp #FFFFFF centered. Elevation 2dp. Bottom margin 12dp. Bound to obp_create_agent (POST /obp/v5.1.0/banks/{bankId}/agents).
+
+**Component 10 — Terms Notice**: "By registering, you agree to the Mifos Agent Terms and Conditions" Outfit Regular 12sp #44483D centred, horizontal padding 20dp, bottom margin 24dp.
+
+Do not use em-dash anywhere in text. Do not make any headline more than 3 lines. Do not break the page theme between sections. Do not place light text on light buttons or dark text on dark buttons.
+
+Scrollable layout on #F9FAEF. The #CDEDA3 unselected chips with #4C662B selected chips and the earth-green filled submit button create a focused, accessible form composition aligned with field-officer finance workflows.
 
 ↑↑↑ MOCKUP PROMPT

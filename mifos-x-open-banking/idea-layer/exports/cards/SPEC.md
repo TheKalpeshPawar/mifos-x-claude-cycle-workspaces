@@ -1,9 +1,10 @@
 <!-- source: screens/cards/ui.yaml -->
-<!-- source_hash: sha256:enriched-2026-05-31-cards-v1.1.0-obp-v7.0.0-verified -->
-<!-- generated: 2026-05-31T00:00:00Z -->
+<!-- source_hash: sha256:cards-ui-2026-06-02-viewmodel-api-bindings -->
+<!-- generated: 2026-06-02T12:00:00Z -->
 <!-- generated_from_feature_version: 1.1.0 -->
 <!-- generated_from_contract_version: 1.1.0 -->
-<!-- prior_version: — -->
+<!-- prior_version: 2026-05-31 -->
+<!-- changes: added CardsViewModel + states_handled; card_carousel bound to obp_get_cards; card_transactions_header bound to obp_get_card_transactions -->
 
 # My Cards — Implementation Specification
 

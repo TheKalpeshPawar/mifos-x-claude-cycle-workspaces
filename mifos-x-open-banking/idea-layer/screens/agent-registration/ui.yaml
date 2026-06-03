@@ -2,7 +2,7 @@ id: agent-registration
 name: Agent Registration
 feature: agent-registration
 flavor: fieldOfficer
-status: approved
+status: enriched
 quality_score: 97
 contract_version: "1.1.0"
 approve_hash: "sha256:23af12bd8c96e4f037af12bd8c96e4f037af12bd8c96e4f037af12bd8c96e4f0"
@@ -31,8 +31,12 @@ status_history:
     by: "/idea approve"
     contract_version: "1.1.0"
     bypass_flags: []
-exports:
-  spec_md: "idea-layer/exports/agent-registration/SPEC.md"
+  - from: approved
+    to: enriched
+    at: "2026-06-02"
+    by: "/idea enrich"
+    quality_score: 97
+    note: "Category 12 Screens List completed — added viewmodel: AgentRegistrationViewModel + states_handled to screens[] entry; bound register_agent_button to obp_create_agent (API Coverage); verified component vocabulary (text/input/box/stack/icon/button/loading_indicator all in components.yaml); 9 states + full POST contract response+errors + state_model + dependencies intact"
   api_md: "idea-layer/exports/agent-registration/API.md"
   mockup_md: "idea-layer/mockups/agent-registration/MOCKUP.md"
 
@@ -47,9 +51,11 @@ shell:
 screens:
   - id: agent-registration
     name: Agent Registration
+    viewmodel: AgentRegistrationViewModel
     archetype: form
     route: /agent-registration
     scroll: vertical
+    states_handled: [loading, idle, submitting, validation_error, pending_approval, confirmed, content, empty, error]
 
 archetype: form
 
@@ -896,6 +902,9 @@ components:
     on_click:
       action: submit_registration
       target: ""
+    api:
+      endpoint_id: obp_create_agent
+      binds: agentId
     a11y:
       label: "Submit agent registration form. Ensure all fields are complete before submitting."
       role: button
@@ -932,6 +941,7 @@ responsive:
   baseline_width: 390
 
 states:
+  initial_state: loading
   loading:
     description: "Pre-flight OBP status check — querying existing agent record before rendering the form"
     layout:

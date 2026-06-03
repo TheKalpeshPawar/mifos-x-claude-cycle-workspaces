@@ -2,8 +2,8 @@ id: accounts
 name: My Accounts
 feature: accounts
 flavor: consumer
-status: approved
-quality_score: 94
+status: designed
+quality_score: 100
 contract_version: "1.1.0"
 approve_hash: "sha256:04af12bd8c96e4f037af12bd8c96e4f037af12bd8c96e4f037af12bd8c96e4f0"
 approved_at: "2026-05-25T13:45:00Z"
@@ -23,6 +23,45 @@ status_history:
     by: "/idea approve"
     contract_version: "1.1.0"
     bypass_flags: []
+  - from: approved
+    to: draft
+    at: "2026-06-02T00:00:00Z"
+    by: "design-resync"
+    note: "Implementation replaced account-type filter tabs with free-text search and grouped accounts by bank; back-propagated to source."
+  - from: draft
+    to: enriched
+    at: "2026-06-02T00:00:00Z"
+    by: "/idea enrich"
+    note: "Re-enriched after search-bar + bank-grouping redesign; set initial_state=loading (api-backed), aligned accounts_search supported_states to text_field registry pattern. quality_score 100."
+  - from: enriched
+    to: designed
+    at: "2026-06-02T09:40:47Z"
+    by: "/idea export"
+    exports: [spec_md, api_md, mockup_md, prompts_stitch_loading, prompts_stitch_content, prompts_stitch_empty, prompts_stitch_error]
+    note: "Regenerated all exports reflecting search-bar + bank-grouping redesign. Filter tabs removed."
+
+exports:
+  spec_md:
+    source_hash: "redesign-search-bank-grouping-2026-06-02"
+    at: "2026-06-02T09:40:47Z"
+  api_md:
+    source_hash: "redesign-search-bank-grouping-2026-06-02"
+    at: "2026-06-02T09:40:47Z"
+  mockup_md:
+    source_hash: "redesign-search-bank-grouping-2026-06-02"
+    at: "2026-06-02T09:40:47Z"
+  prompts_stitch_content:
+    source_hash: "redesign-search-bank-grouping-2026-06-02"
+    at: "2026-06-02T09:40:47Z"
+  prompts_stitch_loading:
+    source_hash: "redesign-search-bank-grouping-2026-06-02"
+    at: "2026-06-02T09:40:47Z"
+  prompts_stitch_empty:
+    source_hash: "redesign-search-bank-grouping-2026-06-02"
+    at: "2026-06-02T09:40:47Z"
+  prompts_stitch_error:
+    source_hash: "redesign-search-bank-grouping-2026-06-02"
+    at: "2026-06-02T09:40:47Z"
 
 shell:
   bottom_nav: true
@@ -103,125 +142,108 @@ components:
         test_context:
           tag: accounts_help_icon
 
+  - type: text_field
+    id: accounts_search
+    supported_states: [idle, hover, focus, focus_visible, disabled, error]
+    style:
+      variant: outlined
+      leading_icon: search
+      trailing_icon: close
+      placeholder: "Search by name, number or label"
+      border_radius: 28
+      background: "#F0F1E6"
+      border_color: "#C5C8BA"
+      focus_border_color: "#4C662B"
+      text_color: "#1A1C16"
+      placeholder_color: "#44483D"
+      margin_horizontal: 20
+      padding_vertical: spacing.md
+    on_click:
+      action: search_accounts
+      params:
+        query: "{search_query}"
+    a11y:
+      role: searchbox
+      label: "Search accounts by name, number or label"
+    keyboard:
+      focusable: true
+    test_context:
+      tag: accounts_search
+      assert_clickable: true
+
   - type: stack
-    id: account_type_tabs
+    id: bank_group_1_header
     style:
       direction: horizontal
-      spacing: spacing.sm
+      align: center
+      justify: space_between
       padding_horizontal: 20
-      padding_vertical: spacing.md
-      overflow: scroll_horizontal
-      scroll_indicator: true
+      padding_top: spacing.lg
+      padding_bottom: spacing.sm
     a11y:
-      role: tablist
-      label: "Account type filter tabs"
-      aria_selected_managed: true
+      role: heading
+      level: 2
+      label: "Mifos Bank UK, 2 accounts, subtotal ten thousand four hundred thirty pounds fifty"
     test_context:
-      tag: account_type_tabs
+      tag: bank_group_1_header
     children:
-      - type: button
-        id: tab_all
-        label: "ALL"
-        supported_states: [idle, hover, focus_visible, pressed, disabled]
+      - type: stack
+        id: bank_group_1_title_row
         style:
-          variant: filled
-          background: "#4C662B"
-          text_color: "#FFFFFF"
-          border_radius: 20
-          padding_horizontal: spacing.md
-          padding_vertical: spacing.sm
-          typography: "Outfit/label_medium"
-        on_click:
-          action: filter_accounts
-          params:
-            filter_type: all
-        a11y:
-          role: tab
-          selected: true
-          label: "Show all accounts"
-        keyboard:
-          focusable: true
-        test_context:
-          tag: tab_all
-          assert_clickable: true
-
-      - type: button
-        id: tab_checking
-        label: "CHECKING"
-        supported_states: [idle, hover, focus_visible, pressed, disabled]
+          direction: horizontal
+          align: center
+          spacing: spacing.sm
+        children:
+          - type: icon
+            id: bank_group_1_icon
+            content: "account_balance"
+            supported_states: [idle, hover, focus_visible, pressed, disabled]
+            style:
+              size: 18
+              color: "#4C662B"
+            a11y:
+              role: img
+              label: "Bank"
+            test_context:
+              tag: bank_group_1_icon
+          - type: stack
+            id: bank_group_1_title_col
+            style:
+              direction: vertical
+            children:
+              - type: text
+                id: bank_group_1_name
+                content: "Mifos Bank UK"
+                style:
+                  typography: "Outfit/title_small"
+                  color: "#1A1C16"
+                a11y:
+                  role: text
+                test_context:
+                  tag: bank_group_1_name
+                  assert_content: "Mifos Bank UK"
+              - type: text
+                id: bank_group_1_count
+                content: "2 accounts"
+                style:
+                  typography: "Outfit/label_small"
+                  color: "#44483D"
+                a11y:
+                  role: text
+                test_context:
+                  tag: bank_group_1_count
+      - type: text
+        id: bank_group_1_subtotal
+        content: "£10,430.50"
         style:
-          variant: outlined
-          border_color: "#E1E4D5"
-          text_color: "#44483D"
-          border_radius: 20
-          padding_horizontal: spacing.md
-          padding_vertical: spacing.sm
-          typography: "Outfit/label_medium"
-        on_click:
-          action: filter_accounts
-          params:
-            filter_type: checking
+          typography: "Outfit/title_medium"
+          color: "#4C662B"
         a11y:
-          role: tab
-          selected: false
-          label: "Show checking accounts"
-        keyboard:
-          focusable: true
+          role: text
+          label: "Subtotal: ten thousand four hundred thirty pounds fifty"
         test_context:
-          tag: tab_checking
-          assert_clickable: true
-
-      - type: button
-        id: tab_savings
-        label: "SAVINGS"
-        supported_states: [idle, hover, focus_visible, pressed, disabled]
-        style:
-          variant: outlined
-          border_color: "#E1E4D5"
-          text_color: "#44483D"
-          border_radius: 20
-          padding_horizontal: spacing.md
-          padding_vertical: spacing.sm
-          typography: "Outfit/label_medium"
-        on_click:
-          action: filter_accounts
-          params:
-            filter_type: savings
-        a11y:
-          role: tab
-          selected: false
-          label: "Show savings accounts"
-        keyboard:
-          focusable: true
-        test_context:
-          tag: tab_savings
-          assert_clickable: true
-
-      - type: button
-        id: tab_business
-        label: "BUSINESS"
-        supported_states: [idle, hover, focus_visible, pressed, disabled]
-        style:
-          variant: outlined
-          border_color: "#E1E4D5"
-          text_color: "#44483D"
-          border_radius: 20
-          padding_horizontal: spacing.md
-          padding_vertical: spacing.sm
-          typography: "Outfit/label_medium"
-        on_click:
-          action: filter_accounts
-          params:
-            filter_type: business
-        a11y:
-          role: tab
-          selected: false
-          label: "Show business accounts"
-        keyboard:
-          focusable: true
-        test_context:
-          tag: tab_business
-          assert_clickable: true
+          tag: bank_group_1_subtotal
+          assert_content: "£10,430.50"
 
   - type: box
     id: account_card_1
@@ -451,6 +473,80 @@ components:
             test_context:
               tag: acct2_iban
 
+  - type: stack
+    id: bank_group_2_header
+    style:
+      direction: horizontal
+      align: center
+      justify: space_between
+      padding_horizontal: 20
+      padding_top: spacing.lg
+      padding_bottom: spacing.sm
+    a11y:
+      role: heading
+      level: 2
+      label: "Mifos Business UK, 1 account, subtotal two thousand fifty pounds"
+    test_context:
+      tag: bank_group_2_header
+    children:
+      - type: stack
+        id: bank_group_2_title_row
+        style:
+          direction: horizontal
+          align: center
+          spacing: spacing.sm
+        children:
+          - type: icon
+            id: bank_group_2_icon
+            content: "account_balance"
+            supported_states: [idle, hover, focus_visible, pressed, disabled]
+            style:
+              size: 18
+              color: "#4C662B"
+            a11y:
+              role: img
+              label: "Bank"
+            test_context:
+              tag: bank_group_2_icon
+          - type: stack
+            id: bank_group_2_title_col
+            style:
+              direction: vertical
+            children:
+              - type: text
+                id: bank_group_2_name
+                content: "Mifos Business UK"
+                style:
+                  typography: "Outfit/title_small"
+                  color: "#1A1C16"
+                a11y:
+                  role: text
+                test_context:
+                  tag: bank_group_2_name
+                  assert_content: "Mifos Business UK"
+              - type: text
+                id: bank_group_2_count
+                content: "1 account"
+                style:
+                  typography: "Outfit/label_small"
+                  color: "#44483D"
+                a11y:
+                  role: text
+                test_context:
+                  tag: bank_group_2_count
+      - type: text
+        id: bank_group_2_subtotal
+        content: "£2,050.00"
+        style:
+          typography: "Outfit/title_medium"
+          color: "#4C662B"
+        a11y:
+          role: text
+          label: "Subtotal: two thousand fifty pounds"
+        test_context:
+          tag: bank_group_2_subtotal
+          assert_content: "£2,050.00"
+
   - type: box
     id: account_card_3
     supported_states: [idle, hover, focus_visible, pressed]
@@ -659,6 +755,7 @@ responsive:
     columns: 2
 
 states:
+  initial_state: loading
   loading:
     motion:
       shimmer_duration: short4
@@ -666,7 +763,7 @@ states:
     layout:
       components_visible:
         - accounts_header
-        - account_type_tabs
+        - accounts_search
       skeleton:
         - id: skeleton_card_1
           type: box
@@ -705,9 +802,11 @@ states:
     layout:
       components_visible:
         - accounts_header
-        - account_type_tabs
+        - accounts_search
+        - bank_group_1_header
         - account_card_1
         - account_card_2
+        - bank_group_2_header
         - account_card_3
         - footer_divider
         - total_balance_footer
@@ -721,7 +820,7 @@ states:
         id: empty_state_card
         illustration: no_accounts
         title: "No accounts found"
-        message: "You don't have any accounts matching this filter. Try a different category or request a new account."
+        message: "You don't have any accounts yet. Request a new account to get started."
         action_label: "Request Account"
         action: request_new_account
 
@@ -750,9 +849,12 @@ state_model:
     - name: filteredAccounts
       type: "List<BankAccount>"
       default: "emptyList()"
-    - name: activeFilter
-      type: AccountTypeFilter
-      default: AccountTypeFilter.ALL
+    - name: groupedByBank
+      type: "Map<String, List<BankAccount>>"
+      default: "emptyMap()"
+    - name: searchQuery
+      type: String
+      default: '""'
     - name: totalBalance
       type: "BigDecimal"
       default: "BigDecimal.ZERO"
@@ -766,14 +868,14 @@ state_model:
       message: "Session expired. Please log in again."
   events:
     - RetryLoad
-    - "FilterChanged(filter: AccountTypeFilter)"
+    - "SearchQueryChanged(query: String)"
     - "AccountSelected(accountId: String)"
     - RequestNewAccount
   actions:
     - name: loadAccounts
       triggers: [ScreenOpened, RetryLoad]
-    - name: filterAccounts
-      param: AccountTypeFilter
+    - name: searchAccounts
+      param: query
     - name: navigateToDetail
       param: accountId
   di:
@@ -781,7 +883,7 @@ state_model:
     - SessionManager
 
 api:
-  - endpoint: "GET /obp/v5.1.0/banks/{bankId}/accounts"
+  - endpoint: "GET /obp/v3.0.0/banks/{bankId}/accounts"
     tag: Accounts
     auth: DirectLogin
     params:

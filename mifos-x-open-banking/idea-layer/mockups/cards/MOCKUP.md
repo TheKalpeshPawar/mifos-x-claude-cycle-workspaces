@@ -1,10 +1,13 @@
 # My Cards — Visual Specification
 
-| Field | Value |
-|---|---|
-| Feature | cards |
-| Flavor | consumer |
-| Archetype | index_list |
+| Field     | Value          |
+|-----------|----------------|
+| Feature   | cards          |
+| Flavor    | consumer       |
+| Archetype | index_list     |
+| ViewModel | CardsViewModel |
+| States    | loading, content, empty, error |
+| Updated   | 2026-06-02 — CardsViewModel + API bindings (obp_get_cards / obp_get_card_transactions) |
 
 ---
 

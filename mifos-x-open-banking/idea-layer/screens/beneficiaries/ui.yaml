@@ -494,6 +494,7 @@ responsive:
   baseline_width: 390
 
 states:
+  initial_state: loading
   loading:
     motion:
       shimmer_duration: short4
@@ -594,8 +595,10 @@ state_model:
     - open_add_beneficiary_sheet
     - sort
   di:
-    - BeneficiaryRepository
-    - CounterpartyRepository
+    - PaymentsRepository
+    - BanksRepository
+    - TransactionsRepository
+    - AccountsRepository
 
 api:
   - endpoint: "GET /obp/v4.0.0/banks/{bankId}/accounts/{accountId}/{viewId}/counterparties"
@@ -604,29 +607,37 @@ api:
       fields:
         - name: counterparties
           type: List<Counterparty>
-        - name: id
+        - name: counterparty_id
           type: String
         - name: name
           type: String
         - name: description
           type: String
+        - name: currency
+          type: String
+        - name: other_bank_routing_scheme
+          type: String
         - name: other_bank_routing_address
+          type: String
+        - name: other_account_routing_scheme
           type: String
         - name: other_account_routing_address
           type: String
-        - name: other_account_routing_scheme
+        - name: other_account_secondary_routing_scheme
+          type: String
+        - name: other_account_secondary_routing_address
           type: String
         - name: is_beneficiary
           type: Boolean
         - name: created_by_user_id
           type: String
+        - name: bespoke
+          type: List<Bespoke>
     errors:
-      - code: 400
-        message: "INVALID_BANK_ID"
       - code: 401
-        message: "USER_NOT_LOGGED_IN"
+        message: "OBP-20001: User not logged in"
       - code: 404
-        message: "BANK_ACCOUNT_NOT_FOUND"
+        message: "OBP-30018: Bank Account not found"
 
 dependencies:
   tier: feature

@@ -36,33 +36,59 @@ capabilities:
       - idea-layer/screens/standing-order-edit/tests.yaml
   idea-export:
     last_run:
-      at: '2026-05-29T11:26:15.000Z'
+      at: '2026-06-02T18:00:00.000Z'
       status: success
-      duration_ms: 821087
+      duration_ms: 0
       actor: claude
-      command: /idea export
+      command: /idea export login
+      args: "login"
+      features_exported: 1
+      files_written: 11
+    artifacts_written:
+      - path: idea-layer/exports/login/SPEC.md
+      - path: idea-layer/exports/login/API.md
+      - path: idea-layer/exports/login/MOCKUP.md
+      - path: idea-layer/screens/login/prompts/idle.md
+      - path: idea-layer/screens/login/prompts/content.md
+      - path: idea-layer/screens/login/prompts/loading.md
+      - path: idea-layer/screens/login/prompts/authenticating.md
+      - path: idea-layer/screens/login/prompts/error.md
+      - path: idea-layer/screens/login/prompts/oauth_redirecting.md
+      - path: idea-layer/screens/login/prompts/oauth_exchanging.md
+      - path: idea-layer/screens/login/prompts/empty.md
+    drift:
+      stale_inputs: []
+      next_required: []
     metrics:
-      features_exported: 44
-      files_written: 132
-      spec_md: 44
-      api_md: 44
-      mockup_md: 44
-      status_transitions_designed: 2
-      roundtrip_passed: 44
+      features_exported: 1
+      files_written: 11
+      spec_md: 1
+      api_md: 1
+      mockup_md: 1
+      stitch_prompts: 8
+      status_transitions_designed: 1
+      roundtrip_passed: 1
       placeholders_found: 0
+      redesign_note: "login: subtitle removed + 'Powered by Mifos' footer added (bold #4C662B, pinned last in all form states)"
     detail_ref: idea-layer/EXPORT_MATRIX.yaml
+    pipeline_progress:
+      accounts:
+        export:
+          status: success
+          at: '2026-06-02T09:40:47.000Z'
+          capability: idea-export
   idea-export-stitch:
     last_run:
-      at: '2026-05-31T05:50:15.622Z'
+      at: '2026-06-02T10:47:31.180Z'
       status: failure
-      duration_ms: 3779
+      duration_ms: 1613149
       actor: claude
-      command: /idea-export-stitch --features home
+      command: /idea-export-stitch --features accounts --force
     metrics:
-      build_prompts_last_run: '2026-05-30T07:51:02.830Z'
+      build_prompts_last_run: '2026-06-02T10:10:10.006Z'
       states_written_this_run: 4
-      states_failed_this_run: 1
-      avg_chars_per_state: 7311
+      states_failed_this_run: 4
+      avg_chars_per_state: 5703
       project_id: '17153754672098888646'
       design_system_id: '2005644667042354169'
       features_generated_this_run: 1
@@ -70,48 +96,100 @@ capabilities:
     detail_ref: state/STITCH_STATE.yaml
   idea-sync:
     last_run:
-      at: '2026-05-30T00:00:00Z'
+      at: '2026-06-02T16:32:30Z'
+      status: success
+      duration_ms: 150000
+      actor: claude
+      command: /idea sync
+      args: ''
+    metrics:
+      scope: full
+      steps_total: 9
+      steps_succeeded: 7
+      steps_failed: 0
+      steps_partial: 2
+      initial_state_added: 32
+      initial_state_loading: 23
+      initial_state_content: 4
+      initial_state_idle: 3
+      initial_state_step_1: 2
+      screens_total: 44
+      screens_with_initial_state_after: 44
+      deferred_reconcile_skipped: true
+      hand_edit_drift_detected: false
+      accounts_drift_blessed: true
+      enrichment_skipped: true
+      enrichment_skip_reason: targeted_initial_state_backfill_preserve_39_approved
+      render_skipped: true
+      stitch_ignored_503: true
+      server_checks_skipped_backend_not_owned: true
+    detail_ref: state/SYNC_STEPS.yaml
+    note: >-
+      Full sync. Primary auto-fix: states.initial_state backfill on 32 screens via Claude Intelligence Edit (RULE-CI-001).
+      api-backed→loading (24), static→content (4: about/licenses/privacy-policy/terms-of-service), forms→idle (3:
+      change-password/forgot-password/login), multi-step forms→step_1 (2: corporate-onboarding/customer-onboarding).
+      All 44 screens now carry initial_state. No _deferred/ dirs (STEP 2.FD skip). No hand-edit drift; accounts derived
+      files (search-bar + bank-grouping redesign re-export 2026-06-02) BLESSED — source not reverted, not regenerated.
+      Stitch 503 + owned-backend checks ignored per scope. Enrichment + render (STEP 5.5) deliberately skipped.
+  idea-enrich:
+    last_run:
+      at: '2026-06-02T00:00:00Z'
       status: success
       duration_ms: 0
       actor: claude
-      command: /idea sync
-    metrics:
-      scope: api-specs-fix
-      steps_total: 3
-      steps_succeeded: 3
-      steps_failed: 0
-      manifest_groups_after: 20
-      new_api_groups: 2
-      screens_registered: 5
-      spec_files_scaffolded: 18
-      spec_files_total: 21
-      verify_prior_failures_cleared: 9
-      verify_overall: pass
-      enrichment_skipped: true
-      enrichment_skip_reason: would_downgrade_44_approved_features
-      render_skipped: true
-    detail_ref: state/SYNC_STEPS.yaml
-    note: >-
-      Scoped sync — STEP 4g (api_manifest rebuild) + 4h (server/apis/*.yaml scaffold) + post-verify. Enrichment (STEP 3)
-      deliberately skipped to preserve approved-status of all 44 features; render (STEP 5.5) skipped.
-  idea-enrich:
-    last_run:
-      at: '2026-05-29T00:20:00Z'
-      status: success
-      duration_ms: 410076
-      actor: claude
-      command: /idea enrich all
+      command: /idea enrich login
+      args: login
     metrics:
       features_enriched: 1
-      features_skipped_approved: 43
-      avg_quality: 94
-      standing_order_edit_score: 94
+      avg_quality: 95
+      login_score: 95
+      login_score_before: 95
+      login_score_after: 95
+      scope: single_feature
+      footer_added_validated: true
+      subtitle_removal_preserved: true
+      component_vocab_validated: true
+      stitch_503_ignored: true
+      backend_not_owned_ignored: true
     files_touched:
-      - idea-layer/screens/standing-order-edit/ui.yaml
-      - idea-layer/screens/standing-order-edit/api.yaml
-      - idea-layer/screens/standing-order-edit/flow.yaml
-      - idea-layer/screens/standing-order-edit/docs.yaml
-      - idea-layer/screens/standing-order-detail/ui.yaml
+      - idea-layer/screens/login/ui.yaml
+      - idea-layer/screens/login/docs.yaml
+    note: >-
+      Re-enriched login after design-resync (status draft→enriched). Validated the hand-edit:
+      login_header_subtitle removed (not reintroduced) and login_footer added (text/body_medium,
+      font_weight 700, #4C662B primary, center-aligned) — confirmed pinned LAST in login_root.children
+      and in every multi-component state (idle/loading/authenticating/error/content/empty). Full-screen
+      oauth_redirecting/oauth_exchanging interstitials correctly exclude the footer. Component vocabulary
+      validated vs PRIMITIVES.yaml (text primitive + body_medium variant). Nav targets forgot-password,
+      home, fo-dashboard all present. quality_score recomputed = 95 (quality-neutral swap of one display
+      text for another). docs.yaml sibling synced (was stale approved/90 → enriched/95).
+  idea-approve:
+    last_run:
+      at: '2026-06-02T18:30:00.000Z'
+      status: success
+      duration_ms: 0
+      actor: claude
+      command: /idea approve login
+      args: login
+    metrics:
+      features_approved: 1
+      features_held: 0
+      stitch_warnings_ignored: 1
+      backend_checks_skipped: true
+    files_touched:
+      - idea-layer/screens/login/ui.yaml
+      - idea-layer/screens/login/docs.yaml
+      - idea-layer/APPROVE_LOG.yaml
+    note: >-
+      Approved login (designed→approved, quality 95) after search-subtitle→footer
+      redesign + re-export + re-render this session. §5 predicate PASS at medium tier
+      (has_ui+has_api; no maximum-tier caps). approve_hash
+      sha256:27d6180e9dd82342a44423381edf44cc679a0445d91d2b25d10f2c05dd8460cf.
+      Exports SPEC/API/MOCKUP fresh + roundtrip:pass; preview HTML complete for all 8
+      states; app-flow node + mockup MANIFEST present. Only gap = Stitch high-fidelity
+      PNG content (service 503) — ignorable per run directive. ui.yaml + docs.yaml kept
+      in sync.
+
   idea-generate-dtos:
     last_run:
       at: '2026-05-30T00:00:00Z'
@@ -156,42 +234,81 @@ capabilities:
       warning_count: 2
   idea-verify:
     last_run:
-      at: '2026-05-31T07:07:07Z'
+      at: '2026-06-02T12:00:00Z'
       status: partial
       duration_ms: 0
       actor: claude
       command: /idea verify
     metrics:
-      checks_run: 40
+      checks_run: 52
       checks_passed: 38
       checks_failed: 0
-      checks_warned: 5
-      checks_skipped: 2
+      checks_warned: 14
+      checks_skipped: 0
       overall: partial
       screen_count: 44
-      screens_approved: 43
-      screens_designed: 1
+      screens_approved: 39
+      screens_designed: 3
+      screens_design_partial: 2
       all_screens_approved: false
       nav_targets_resolved: 44
       nav_targets_broken: 0
-      reachability_pass: 44
-      reachability_fail: 0
+      reachability_pass: 39
+      reachability_fail: 5
+      unreachable_screens:
+        - direct-debits
+        - standing-order-edit
+        - standing-order-detail
+        - direct-debit-detail
+        - products
       dead_ends: 0
-      flow_groups_intact: 3
-      journey_count: 10
-      dto_count: 69
-      dto_orphaned: 0
-      export_matrix_features: 44
-      server_tables_dir_missing: false
-      server_tables_skip_reason: backend.owned_false
-      requirements_fr_count: 5
+      on_click_screens_missing: 10
+      initial_state_missing_screens: 38
+      state_coverage_pass: true
       stitch_infra_pass: true
-      stitch_status_features: 25
-      status_inconsistency_screens: [transaction-tags]
-      initial_state_missing_screens: 33
-      journey_bidir_warnings: true
-    detail_ref: state/verify-logs/idea-verify-2026-05-31T07-07-07Z.md
+      stitch_status_features: 23
+      stitch_env_gitignored: true
+      stitch_accounts_failed: true
+      stitch_fail_reason: 503_service_unavailable
+      exports_present: 44
+      mockups_present: 44
+      preview_html_present: 44
+      requirements_fr_count: 5
+      flows_count: 5
+      design_partial_screens:
+        - cards
+        - change-password
+      status_inconsistency_screens:
+        - transaction-tags
+      backend_owned: false
+      server_tables_skip: true
+    detail_ref: state/verify-logs/idea-verify-2026-06-02T12-00-00Z.md
+  idea-render-screen:
+    last_run:
+      at: '2026-06-02T10:00:30Z'
+      status: success
+      duration_ms: 17130
+      actor: claude
+      command: /idea-render-screen accounts
+      args: accounts
+    files_touched:
+      - idea-layer/screens/accounts/preview/content.html
+      - idea-layer/screens/accounts/preview/loading.html
+      - idea-layer/screens/accounts/preview/empty.html
+      - idea-layer/screens/accounts/preview/error.html
+      - idea-layer/screens/accounts/preview/.cache.json
+    artifacts:
+      - path: idea-layer/screens/accounts/preview/content.html
+      - path: idea-layer/screens/accounts/preview/loading.html
+      - path: idea-layer/screens/accounts/preview/empty.html
+      - path: idea-layer/screens/accounts/preview/error.html
+    metrics:
+      screens_rendered: 1
+      states_rendered: 4
+      cache_hits: 0
+    errors: 0
+    warnings: 0
 design_system:
   stitch:
     tokens_hash: 55b33e80
-    tokens_hashed_at: '2026-05-31T05:50:15.620Z'
+    tokens_hashed_at: '2026-06-02T10:47:31.177Z'

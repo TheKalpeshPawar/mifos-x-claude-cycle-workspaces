@@ -5,13 +5,14 @@ flavor: shared
 status: approved
 quality_score: 95
 contract_version: "1.1.0"
-approve_hash: "sha256:02af12bd8c96e4f037af12bd8c96e4f037af12bd8c96e4f037af12bd8c96e4f0"
-approved_at: "2026-05-25T13:45:00Z"
+approve_hash: "sha256:27d6180e9dd82342a44423381edf44cc679a0445d91d2b25d10f2c05dd8460cf"
+approved_at: "2026-06-02T18:30:00Z"
 approved_by: "/idea approve"
 approve_predicate_version: "1.0.0"
 approve_contract_version: "1.1.0"
 capabilities:
   - has_ui
+  - has_api
 tags: [FR-001, FR-002]
 status_history:
   - { from: draft, to: enriched, at: "2026-05-25", by: "/idea enrich" }
@@ -25,6 +26,29 @@ status_history:
     by: "/idea approve"
     contract_version: "1.1.0"
     bypass_flags: []
+  - from: approved
+    to: draft
+    at: "2026-06-02T00:00:00Z"
+    by: "design-resync"
+    note: "Implementation dropped the 'Sign in to your Mifos X account' subtitle and added a bold primary-color 'Powered by Mifos' footer pinned at the bottom; back-propagated to source."
+  - from: draft
+    to: enriched
+    at: "2026-06-02T00:00:00Z"
+    by: "/idea enrich"
+    note: "Re-enriched after design-resync. Validated subtitle removal + new login_footer (text/body_medium, font_weight 700, #4C662B primary, center-aligned, pinned last in login_root.children and in every multi-component state). Component vocabulary validated vs PRIMITIVES.yaml (text primitive, body_medium variant). Nav targets forgot-password/home/fo-dashboard confirmed present. quality_score recomputed = 95."
+  - from: enriched
+    to: designed
+    at: "2026-06-02T18:00:00Z"
+    by: "/idea export"
+    exports: [spec_md, api_md, mockup_md, prompts]
+    note: "Re-export reflecting subtitle removal + 'Powered by Mifos' footer. SPEC/API/MOCKUP regenerated; 8 per-state Stitch prompts rebuilt with per-state visible_components and footer pinned last in form states. Roundtrip pass: footer present, subtitle absent. Stitch SDK not invoked (503 — out of scope); prompt .md only."
+  - from: designed
+    to: approved
+    at: "2026-06-02T18:30:00Z"
+    by: "/idea approve"
+    contract_version: "1.1.0"
+    bypass_flags: []
+    reason: "Re-approve after search-subtitle→footer redesign + re-export + re-render (quality_score 95). §5 predicate PASS (medium tier; has_ui+has_api). Exports SPEC/API/MOCKUP fresh + roundtrip:pass; preview HTML complete for all 8 states; app-flow node + mockup MANIFEST present. Only gap = Stitch high-fidelity PNG content (service 503) — ignorable per run directive, source design + exports + previews complete."
 
 
 screens:
@@ -44,7 +68,6 @@ components:
     children:
       - login_header_logo
       - login_header_title
-      - login_header_subtitle
       - login_username_input
       - login_password_input
       - login_remember_me_row
@@ -52,6 +75,7 @@ components:
       - login_cta_button
       - login_divider
       - login_forgot_password_link
+      - login_footer
 
   - type: image
     id: login_header_logo
@@ -90,19 +114,21 @@ components:
       data_driven: false
 
   - type: text
-    id: login_header_subtitle
-    content: "Sign in to your Mifos X account"
+    id: login_footer
+    content: "Powered by Mifos"
     variant: body_medium
     style:
       typography: "Outfit/body_medium"
-      color: "#44483D"
+      color: "#4C662B"
+      font_weight: 700
       alignment: center
+      padding_top: spacing.sm
       padding_bottom: spacing.xl
     a11y:
       role: text
-      label: "Sign in to your Mifos X account"
+      label: "Powered by Mifos"
     test_context:
-      purpose: "Supporting copy below headline to orient the user"
+      purpose: "Brand attribution footer pinned at the bottom of the login screen"
       interaction_type: display
       data_driven: false
 
@@ -476,16 +502,17 @@ responsive:
   baseline_width: 390
 
 states:
+  initial_state: idle
   idle:
     layout: { type: column, padding: spacing.lg }
-    visible_components: [login_header_logo, login_header_title, login_header_subtitle, login_username_input, login_password_input, login_remember_me_row, login_cta_button, login_or_divider_row, login_oauth_button, login_oauth_hint, login_bottom_divider, login_forgot_password_link]
+    visible_components: [login_header_logo, login_header_title, login_username_input, login_password_input, login_remember_me_row, login_cta_button, login_or_divider_row, login_oauth_button, login_oauth_hint, login_bottom_divider, login_forgot_password_link, login_footer]
   loading:
     layout: { type: column, padding: spacing.lg }
-    visible_components: [login_header_logo, login_header_title, login_header_subtitle, login_username_input, login_password_input, login_remember_me_row, login_cta_button, login_or_divider_row, login_oauth_button, login_oauth_hint, login_bottom_divider, login_forgot_password_link]
+    visible_components: [login_header_logo, login_header_title, login_username_input, login_password_input, login_remember_me_row, login_cta_button, login_or_divider_row, login_oauth_button, login_oauth_hint, login_bottom_divider, login_forgot_password_link, login_footer]
     note: "Canonical loading state alias — same as authenticating; login_cta_button shows loading spinner"
   authenticating:
     layout: { type: column, padding: spacing.lg }
-    visible_components: [login_header_logo, login_header_title, login_header_subtitle, login_username_input, login_password_input, login_remember_me_row, login_cta_button, login_or_divider_row, login_oauth_button, login_oauth_hint, login_bottom_divider, login_forgot_password_link]
+    visible_components: [login_header_logo, login_header_title, login_username_input, login_password_input, login_remember_me_row, login_cta_button, login_or_divider_row, login_oauth_button, login_oauth_hint, login_bottom_divider, login_forgot_password_link, login_footer]
     note: "login_cta_button shows loading spinner; inputs disabled; oauth button disabled"
   oauth_redirecting:
     layout: { type: column, padding: spacing.lg, align: center, justify: center }
@@ -497,13 +524,13 @@ states:
     note: "Full-screen takeover — logo + exchanging message + spinner. App returned from browser with auth code; exchanging code for token."
   error:
     layout: { type: column, padding: spacing.lg }
-    visible_components: [login_header_logo, login_header_title, login_header_subtitle, login_username_input, login_password_input, login_remember_me_row, login_error_banner, login_cta_button, login_or_divider_row, login_oauth_button, login_oauth_hint, login_bottom_divider, login_forgot_password_link]
+    visible_components: [login_header_logo, login_header_title, login_username_input, login_password_input, login_remember_me_row, login_error_banner, login_cta_button, login_or_divider_row, login_oauth_button, login_oauth_hint, login_bottom_divider, login_forgot_password_link, login_footer]
   content:
     layout: { type: column, padding: spacing.lg }
-    visible_components: [login_header_logo, login_header_title, login_header_subtitle, login_username_input, login_password_input, login_remember_me_row, login_cta_button, login_or_divider_row, login_oauth_button, login_oauth_hint, login_bottom_divider, login_forgot_password_link]
+    visible_components: [login_header_logo, login_header_title, login_username_input, login_password_input, login_remember_me_row, login_cta_button, login_or_divider_row, login_oauth_button, login_oauth_hint, login_bottom_divider, login_forgot_password_link, login_footer]
   empty:
     layout: { type: column, padding: spacing.lg }
-    visible_components: [login_header_logo, login_header_title, login_header_subtitle]
+    visible_components: [login_header_logo, login_header_title, login_footer]
     show_empty_state: true
     empty_state_icon: account_circle_off
     empty_state_message: "No accounts found. Contact your bank to set up online banking."

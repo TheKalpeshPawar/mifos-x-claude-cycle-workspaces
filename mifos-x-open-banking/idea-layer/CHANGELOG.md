@@ -8,6 +8,8 @@ Removed orphan duplicate screen consumer-home (zero inbound navigation, not in I
 
 ## [Unreleased]
 
+- 2026-06-02 idea-export accounts — claude — regenerated SPEC.md, API.md, MOCKUP.md, and 4 per-state Stitch prompts reflecting accounts redesign (filter-tabs removed; free-text search bar + bank-grouped layout with subtotals)
+
 ### Exported (design)
 - [idea-export] 2026-05-29 — Generated design exports for all 45 features (135 artifacts: 45× SPEC.md + API.md + MOCKUP.md). 6 features exported for the first time (consumer-home, licenses, privacy-policy, standing-order-detail, standing-order-edit, terms-of-service); 39 re-exported from current source YAML (stale brand tokens corrected to v3.0.0 `#4C662B`/Outfit). 2 features transitioned `enriched → designed` (consumer-home, standing-order-edit); 43 already-approved left unchanged. EXPORT_MATRIX.yaml rebuilt: 45 rows, spec/api/mockup all current. Zero placeholders. Roundtrip: 45/45 pass.
 

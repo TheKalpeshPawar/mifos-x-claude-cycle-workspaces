@@ -5,8 +5,13 @@ name: Login
 feature: login
 flavor: shared
 status: approved
-quality_score: 90
+quality_score: 95
 contract_version: 1.1.0
+approve_hash: "sha256:27d6180e9dd82342a44423381edf44cc679a0445d91d2b25d10f2c05dd8460cf"
+approved_at: "2026-06-02T18:30:00Z"
+approved_by: "/idea approve"
+approve_predicate_version: "1.0.0"
+approve_contract_version: "1.1.0"
 capabilities:
   - has_ui
   - has_api
@@ -28,16 +33,74 @@ status_history:
     by: /idea approve
     contract_version: 1.1.0
     bypass_flags: []
+  - from: approved
+    to: draft
+    at: '2026-06-02T00:00:00Z'
+    by: design-resync
+    note: Implementation dropped the subtitle and added a 'Powered by Mifos' footer; back-propagated to source.
+  - from: draft
+    to: enriched
+    at: '2026-06-02T00:00:00Z'
+    by: /idea enrich
+    note: Re-enriched after design-resync; quality_score recomputed = 95.
+  - from: enriched
+    to: designed
+    at: '2026-06-02T18:00:00Z'
+    by: /idea export
+    exports:
+      - spec_md
+      - api_md
+      - mockup_md
+      - prompts
+    note: >-
+      Re-export reflecting subtitle removal + new 'Powered by Mifos' footer.
+      SPEC/API/MOCKUP regenerated; 8 per-state Stitch prompts rebuilt
+      (idle/content/loading/authenticating/error/oauth_redirecting/oauth_exchanging/empty)
+      with per-state visible_components and footer pinned last in all form states.
+      Roundtrip pass (footer present, subtitle absent).
+  - from: designed
+    to: approved
+    at: '2026-06-02T18:30:00Z'
+    by: /idea approve
+    contract_version: 1.1.0
+    bypass_flags: []
+    reason: >-
+      Re-approve after search-subtitle→footer redesign + re-export + re-render
+      (quality_score 95). §5 predicate PASS (medium tier; has_ui+has_api).
+      Exports SPEC/API/MOCKUP fresh + roundtrip:pass; preview HTML complete for
+      all 8 states; app-flow node + mockup MANIFEST present. Only gap = Stitch
+      high-fidelity PNG content (service 503) — ignorable per run directive.
 exports:
   spec_md:
     path: exports/login/SPEC.md
-    at: '2026-05-29T00:00:00Z'
+    hash: 42dc534c93b0cee7
+    at: '2026-06-02T18:00:00Z'
+    roundtrip: pass
   api_md:
     path: exports/login/API.md
-    at: '2026-05-29T00:00:00Z'
+    hash: 66017f81c45485e6
+    at: '2026-06-02T18:00:00Z'
+    roundtrip: pass
   mockup_md:
     path: exports/login/MOCKUP.md
-    at: '2026-05-29T00:00:00Z'
+    hash: ab09ed57397ceb1b
+    at: '2026-06-02T18:00:00Z'
+    roundtrip: pass
+  prompts:
+    dir: screens/login/prompts/
+    states:
+      - idle
+      - content
+      - loading
+      - authenticating
+      - error
+      - oauth_redirecting
+      - oauth_exchanging
+      - empty
+    at: '2026-06-02T18:00:00Z'
+    template_version: stitch-per-state-v3.0.0
+    stitch_generated: false
+    note: 'prompt .md files built only; Stitch SDK not invoked (service 503 — out of scope)'
 screens:
   - id: login
     name: Login

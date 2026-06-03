@@ -3,9 +3,61 @@ api_group: cards
 name: "Cards API"
 base_url: "https://apisandbox.openbankproject.com/obp"
 auth_scheme: DirectLogin
-generated_at: "2026-05-30"
+generated_at: "2026-06-02"
 
 endpoints:
+
+  - id: list_my_cards
+    method: GET
+    path: "/v7.0.0/cards"
+    description: "List every payment card belonging to the authenticated user across all accounts. Source-added (getCardsForCurrentUser) as the primary feed for the My Cards hub — the account-scoped v3 list_cards remains for per-account drill-down."
+    auth_required: true
+    request_schema: []
+    response_schema:
+      - field: cards
+        type: "List<Card>"
+        nullable: false
+        description: "All cards for the current user."
+      - field: cards[].id
+        type: String
+        nullable: false
+        description: "Unique card identifier within OBP."
+      - field: cards[].bank_id
+        type: String
+        nullable: false
+        description: "Issuing bank identifier."
+      - field: cards[].bank_card_number
+        type: String
+        nullable: false
+        description: "Masked card PAN — full PAN never returned."
+      - field: cards[].name_on_card
+        type: String
+        nullable: false
+        description: "Cardholder name embossed on the card."
+      - field: cards[].expires_date
+        type: String
+        format: ISO-8601 Date
+        nullable: false
+        description: "Card expiry date (YYYY-MM-DD)."
+      - field: cards[].enabled
+        type: Boolean
+        nullable: false
+        description: "True if the card is currently active."
+      - field: cards[].card_type
+        type: String
+        nullable: true
+        description: "Card product type — 'DEBIT', 'CREDIT', 'PREPAID'."
+      - field: cards[].card_network
+        type: String
+        nullable: true
+        description: "Primary payment network — e.g. 'VISA', 'MASTERCARD'."
+    error_codes:
+      - code: 401
+        message: "USER_NOT_LOGGED_IN"
+        retry: false
+      - code: 500
+        message: "OBP_SERVER_ERROR"
+        retry: true
 
   - id: list_cards
     method: GET

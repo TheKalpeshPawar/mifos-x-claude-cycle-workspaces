@@ -1,6 +1,6 @@
 # FIGMA_LINKS.md — accounts
 
-<!-- schema: v3.2 | generated: 2026-05-31T04:19:39.721Z -->
+<!-- schema: v3.2 | generated: 2026-06-02T10:47:31.086Z -->
 
 ## Stitch Project
 
@@ -8,8 +8,8 @@
 |-------|-------|
 | Project URL | [17153754672098888646](https://stitch.google.com/projects/17153754672098888646) |
 | Design System ID | 2005644667042354169 |
-| Generated | 2026-05-31T04:19:39.719Z |
-| Success | 1/4 states |
+| Generated | 2026-06-02T10:47:31.060Z |
+| Success | 0/4 states |
 
 ## Screen Status
 
@@ -18,7 +18,7 @@
 | loading | — | 01-accounts-loading | PNG ❌ | HTML ❌ | ❌ StitchError: Tool Call Failed [generate_screen_from_text]: The service is currently unavailable. |
 | content | — | 02-accounts-content | PNG ❌ | HTML ❌ | ❌ StitchError: Tool Call Failed [generate_screen_from_text]: The service is currently unavailable. |
 | empty | — | 03-accounts-empty | PNG ❌ | HTML ❌ | ❌ StitchError: Tool Call Failed [generate_screen_from_text]: The service is currently unavailable. |
-| error | a7eed7400c08468f9d760a4572c87263 | 04-accounts-error | PNG ✅ | HTML ✅ | ✅ generated |
+| error | — | 04-accounts-error | PNG ❌ | HTML ❌ | ❌ StitchError: Tool Call Failed [generate_screen_from_text]: The service is currently unavailable. |
 
 ## Open in Figma / Stitch
 
@@ -27,7 +27,7 @@
 | loading | — | — |
 | content | — | — |
 | empty | — | — |
-| error | [Open](https://stitch.google.com/projects/17153754672098888646/screens/a7eed7400c08468f9d760a4572c87263) | — |
+| error | — | — |
 
 > **Figma Export**: direct download URL captured from Stitch SDK `screen.data.figmaExport.downloadUrl`. May be `—` if Stitch did not generate a Figma export for this screen.
 >

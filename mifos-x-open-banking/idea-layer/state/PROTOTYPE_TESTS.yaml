@@ -1,70 +1,121 @@
 # PROTOTYPE_TESTS.yaml — Navigation & Interaction Audit Results
-# Written by /idea verify on 2026-05-30T13:00:00Z
+# Written by /idea verify on 2026-06-02T12:00:00Z
 # Project: mifos-x/mifos-x-open-banking
-# Screens tested: 44 — all approved
+# Screens tested: 44
 
 version: 1
-ran_at: "2026-05-30T13:00:00Z"
+ran_at: "2026-06-02T12:00:00Z"
 
 passes:
   navigation:
     total: 44
-    passed: 43
+    passed: 44
     failed: []
-    warned:
-      - feature: transaction-tags
-        issue: "transaction-detail/flow.yaml declares navigates_to: [transaction-tags] but transaction-detail/ui.yaml has no on_click navigate action to transaction-tags — flow and UI out of sync (non-blocking; programmatic nav may be used)"
-        severity: warn
-    note: "All cross-screen targets resolve to valid screen IDs. transaction-tags reachable via flow declaration from transaction-detail."
+    warned: []
+    note: "All cross-screen targets resolve to valid screen IDs. 0 broken nav targets."
 
   interaction:
     total: 44
-    passed: 44
+    passed: 34
+    warned: 10
     failed: []
-    note: "All on_click targets resolve. consent-manager empty target '' paired with action: view_consent_detail (non-navigate state action — correct). No broken navigation targets found."
+    warning_detail: "10 screens have card components without on_click — all are display-only info/detail/banner cards (not tappable targets). Warn-severity only."
+    missing_onclick_screens:
+      - about
+      - change-password
+      - direct-debit-detail
+      - login
+      - privacy-policy
+      - profile
+      - settings
+      - standing-order-detail
+      - terms-of-service
+      - licenses
 
   states:
     total: 44
-    passed: 44
+    passed: 6
+    warned: 38
     failed: []
-    note: "All api-backed screens have loading/content/error states. splash has loading/content archetype (no api — expected). All initial_state fields present and resolve to declared states."
+    warning_detail: "38/44 screens missing initial_state field in ui.yaml. All api-backed screens have loading/content/error states declared. Not blocking."
+    missing_initial_state:
+      - about
+      - account-applications
+      - account-detail
+      - accounts
+      - agent-registration
+      - application-detail
+      - atm-locator
+      - beneficiaries
+      - card-detail
+      - change-password
+      - consent-manager
+      - corporate-onboarding
+      - customer-detail
+      - customer-onboarding
+      - customer-profile
+      - direct-debit-detail
+      - forgot-password
+      - fx-rates
+      - home
+      - kyc-review
+      - licenses
+      - login
+      - meetings
+      - notifications
+      - pfm-dashboard
+      - privacy-policy
+      - products
+      - profile
+      - send-money
+      - send-money-confirm
+      - settings
+      - splash
+      - standing-order-detail
+      - standing-order-edit
+      - standing-orders
+      - terms-of-service
+      - transaction-detail
+      - transactions
 
   api:
     total: 44
     passed: 44
     failed: []
-    note: "api_manifest.yaml valid. 21 server/apis/*.yaml spec files present. All component api.endpoints backed by api_manifest entries. server/tables/ directory MISSING — V1-TABLES-DIR fails (see foundation check)."
+    note: "backend.owned=false — RULE-IDEA-SERVER-DATA-001 owned-DB checks skipped (correct). OBP REST client contracts present."
 
   reachability:
     total: 44
-    passed: 44
-    failed: []
-    note: "All 44 screens reachable. Entry: splash -> (login | home | fo-dashboard). transaction-tags reachable via transaction-detail. All 9 journeys cover consumer + field-officer personas."
+    passed: 39
+    warned: 0
+    failed:
+      - screen: direct-debits
+        issue: "No incoming navigation edges in any flow.yaml. Needs nav edge from home or accounts flow."
+      - screen: standing-order-edit
+        issue: "Not reachable from splash BFS. Needs nav edge from standing-order-detail or standing-orders."
+      - screen: standing-order-detail
+        issue: "Not reachable from splash BFS. Needs nav edge from standing-orders."
+      - screen: direct-debit-detail
+        issue: "No incoming navigation edges. Needs nav edge from direct-debits."
+      - screen: products
+        issue: "No incoming navigation edges. Needs nav edge from home or accounts."
 
 summary:
   total_passes: 5
-  total_failures: 0
-  total_warnings: 1
-  blocking: false
-  blocking_reason: null
+  total_failures: 5
+  total_warnings: 48
+  blocking: true
+  blocking_reason: "Pass 5 (Reachability) — 5 screens unreachable from splash entry point. Flow nav edges missing."
   screen_count: 44
   nav_targets_resolved: 44
   nav_targets_broken: 0
-  nav_flow_ui_sync_warnings: 1
+  dead_ends: 0
   flow_groups_intact:
-    - consumer-banking  # 26 screens, entry: home
-    - field-officer     # 17 screens, entry: fo-dashboard
-    - app-main          # top-level, entry: splash
-  journey_integrity:
-    total_journeys: 9
-    consumer: 6
-    field_officer: 3
-    all_feature_ids_resolve: true
-  dto_registry:
-    total_dtos: 68
-    orphaned: 0
-    unresolved_refs: 0
-  foundation_warnings:
-    - "server/tables/ directory missing — RULE-IDEA-SERVER-DATA-001 V1-TABLES-DIR FAIL"
-    - "REQUIREMENTS.md contains only 5 scaffolding FRs — real product requirements pending (WARN)"
-  next: "Fix server/tables/ directory (add per-domain table files). Run /idea verify --render for HTML preview validation."
+    - consumer-banking
+    - field-officer
+    - app-main
+  warnings_summary:
+    initial_state_missing: 38
+    on_click_display_cards: 10
+    unreachable_screens: 5
+  next: "Fix: add navigates_to edges in flow.yaml for 5 unreachable screens. Run /idea sync to fix initial_state fields."

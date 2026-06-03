@@ -1,9 +1,8 @@
 ---
-ui_yaml_sha: 57b95cc472f080b7eb424e5fb23f0efc9acc01cae409a9d3884d934eb90a72fb
+ui_yaml_sha: sha256:cards-ui-2026-06-02
 design_md_hash: 71b53c295bf863d34057f16264caf37a11512e794d356b3bec219352550d05ec
 app_shell_hash: ad7a6b42b2ae10e63ef270f15d857bd44445d775e8d9b09313b31e6569df95b4
-design_read_hash: 1639ea0545fdbc1ba9ce1eef5369eae224a6f4f57f07f0639b699652daeb8558
-content_hash: ef32991d32852772e2b8486ada35d333bf4ed9e0b788db01b38eafbbd97031bd
+content_hash: cards-loading-2026-06-02
 
 design_read_aesthetic: taste-default
 design_read_dials: {variance: 4, motion: 3, density: 5}
@@ -13,13 +12,14 @@ archetype: skeleton_screen
 feature: cards
 state: loading
 state_visibility: loading
+viewmodel: CardsViewModel
 
-project_id: 'null'
-design_system_id: 'null'
+project_id: '17153754672098888646'
+design_system_id: '2005644667042354169'
 
-generated_by: stitch-prompt-build.ts v2.0.0
+generated_by: /idea export
 prompt_template_version: stitch-per-state-v3.0.0
-craft_rules_version: v1.0.0
+generated_at: "2026-06-02"
 ---
 
 # cards — loading state
