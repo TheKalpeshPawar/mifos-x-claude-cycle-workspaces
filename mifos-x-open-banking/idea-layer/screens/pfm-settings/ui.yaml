@@ -1,0 +1,134 @@
+id: pfm-settings
+name: PFM Settings
+feature: pfm-settings
+flavor: consumer
+status: approved
+quality_score: 95
+approved_at: "2026-06-07T13:10:00Z"
+approved_by: "user via /goal-implement-project pfm-multi-account-budget-strategy"
+contract_version: "1.1.0"
+capabilities:
+  - has_ui
+status_history:
+  - status: draft
+    timestamp: "2026-06-07T11:00:00Z"
+  - status: enriched
+    at: "2026-06-07T11:30:00Z"
+    by: "/goal-implement-project pfm-multi-account-budget-strategy"
+    notes: "Authored as write-back for the implemented PFM settings screen (PFM v2 epic). Ships the pfm-dashboard spec's long-deferred open_pfm_settings action: a base-currency radio list whose options are the distinct currencies across the user's personal accounts. Selection persists server-side as the pfm_base_currency personal-data-field (append-only; newest row wins on read), seeded from the default account's currency when never set. The unified personal dashboard converts every transaction into this currency via OBP /fx rates."
+  - from: enriched
+    to: approved
+    at: "2026-06-07T13:10:00Z"
+    by: "user approval during /goal-implement-project pfm-multi-account-budget-strategy"
+    contract_version: "1.1.0"
+    note: "Approved as implemented write-back; PfmSettingsScreen shipped with 5 VM tests green, wired from the dashboard's tune top-bar action (PfmSettingsRoute)."
+
+shell:
+  top_app_bar:
+    show: true
+    title: "PFM Settings"
+    navigation_icon: arrow_back
+    navigation_action: navigate_back
+  bottom_nav: false
+
+screens:
+  - id: pfm-settings
+    name: PFM Settings
+    archetype: settings
+    route: /pfm-settings
+    scroll: vertical
+
+archetype: settings
+
+components:
+  - type: text
+    id: settings_section_label
+    label: "Base currency section label"
+    content: "BASE CURRENCY"
+    style:
+      typography: "Outfit/label_medium"
+      color: "#5C6057"
+      padding_horizontal: 20
+      padding_top: 8
+    a11y:
+      label: "Base currency section"
+      role: heading
+      level: 2
+    test_context:
+      tag: settings_section_label
+      assert_text: "BASE CURRENCY"
+
+  - type: text
+    id: settings_section_help
+    label: "Base currency explanation"
+    content: "Spending across all personal accounts is converted into this currency."
+    style:
+      typography: "Outfit/body_small"
+      color: "#5C6057"
+      padding_horizontal: 20
+      padding_bottom: 8
+    a11y:
+      label: "Base currency explanation"
+    test_context:
+      tag: settings_section_help
+
+  - type: list_item
+    id: currency_option_eur
+    label: "EUR option"
+    content: "EUR"
+    style:
+      leading: radio_button
+      selected: true
+      padding_horizontal: 20
+    on_click:
+      action: select_base_currency
+    a11y:
+      label: "Set EUR as base currency"
+      role: radio
+    test_context:
+      tag: pfm_settings_currency_EUR
+      assert_text: "EUR"
+
+  - type: list_item
+    id: currency_option_gbp
+    label: "GBP option"
+    content: "GBP"
+    style:
+      leading: radio_button
+      selected: false
+      padding_horizontal: 20
+    on_click:
+      action: select_base_currency
+    a11y:
+      label: "Set GBP as base currency"
+      role: radio
+    test_context:
+      tag: pfm_settings_currency_GBP
+      assert_text: "GBP"
+
+states:
+  initial_state: loading
+  loading:
+    motion:
+      shimmer_duration: short4
+      reduced_motion_fallback: static_placeholder
+    layout:
+      visible_components: []
+      show_skeleton_list: true
+      skeleton_count: 3
+      skeleton_height: 48
+
+  populated:
+    layout:
+      visible_components:
+        - settings_section_label
+        - settings_section_help
+        - currency_option_eur
+        - currency_option_gbp
+      snackbar_on_save: "Base currency set to GBP."
+
+  error:
+    layout:
+      visible_components: []
+      error_message: "Could not load settings"
+      retry_action: retry_load

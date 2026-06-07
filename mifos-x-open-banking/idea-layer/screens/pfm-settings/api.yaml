@@ -1,0 +1,57 @@
+sibling: api
+schema_version: "4.0"
+feature_id: pfm-settings
+api:
+  - id: obp_personal_data_fields
+    endpoint: "GET /obp/v6.0.0/my/personal-data-fields"
+    tag: User
+    description: "Read the persisted base currency (pfm_base_currency field; append-only store — newest row per name wins)"
+    response:
+      fields:
+        - name: personal_data_fields
+          type: "List<PersonalDataField>"
+        - name: name
+          type: String
+        - name: value
+          type: String
+    errors:
+      - code: 401
+        message: "USER_NOT_LOGGED_IN"
+  - id: obp_personal_data_field_create
+    endpoint: "POST /obp/v6.0.0/my/personal-data-fields"
+    tag: User
+    description: "Persist the chosen base currency (appends a new row; reads keep the newest)"
+    request:
+      fields:
+        - name: name
+          type: String
+          example: "pfm_base_currency"
+        - name: value
+          type: String
+          example: "EUR"
+    response:
+      fields:
+        - name: name
+          type: String
+        - name: value
+          type: String
+    errors:
+      - code: 400
+        message: "INVALID_FIELD_NAME"
+      - code: 401
+        message: "USER_NOT_LOGGED_IN"
+  - id: obp_fx_rate
+    endpoint: "GET /obp/v5.1.0/banks/{bank_id}/fx/{from}/{to}"
+    tag: FX
+    description: "Live FX conversion rate used to re-denominate personal spending into the base currency (verified live: GBP→EUR 1.16278)"
+    response:
+      fields:
+        - name: conversion_value
+          type: Double
+        - name: inverse_conversion_value
+          type: Double
+        - name: effective_date
+          type: String
+    errors:
+      - code: 404
+        message: "FX_RATE_NOT_FOUND"

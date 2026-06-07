@@ -1,0 +1,38 @@
+sibling: api
+schema_version: "4.0"
+feature_id: business-insights
+api:
+  - id: obp_account_detail
+    endpoint: "GET /obp/v5.1.0/my/banks/{bank_id}/accounts/{account_id}/account"
+    tag: Accounts
+    description: "Per-account detail fetch — carries product_code (CURRENT/SAVINGS/BUSINESS/WALLET) used for PFM scope classification; the list endpoint returns product_code null"
+    response:
+      fields:
+        - name: label
+          type: String
+        - name: product_code
+          type: String
+        - name: balance
+          type: AmountOfMoney
+    errors:
+      - code: 401
+        message: "USER_NOT_LOGGED_IN"
+      - code: 404
+        message: "ACCOUNT_NOT_FOUND"
+  - id: obp_transactions_list
+    endpoint: "GET /obp/v6.0.0/my/accounts/{account_id}/transactions"
+    tag: Transactions
+    description: "Fetch the selected business account's transactions for cash-flow analysis — sandbox caps at 50 newest and ignores date params; all period filtering and categorisation run client-side"
+    response:
+      fields:
+        - name: transactions
+          type: "List<Transaction>"
+        - name: details
+          type: TransactionDetails
+        - name: value
+          type: AmountOfMoney
+    errors:
+      - code: 401
+        message: "USER_NOT_LOGGED_IN"
+      - code: 404
+        message: "ACCOUNT_NOT_FOUND"
