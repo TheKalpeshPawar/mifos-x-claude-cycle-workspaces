@@ -4,28 +4,42 @@ feature_id: consent-request
 api:
   - id: create_account_access_consent
     endpoint: "POST /obie/open-banking/v4.0/aisp/account-access-consents"
+    method: POST
+    path: "/obie/open-banking/v4.0/aisp/account-access-consents"
     tag: AccountInformation
     trigger: on_grant_clicked
-    description: "Register an account-access-consent with the PSU-selected Permissions[]. Uses a client-credentials token. Returns ConsentId + Status AWAU (awaiting authorisation). The ConsentId becomes the openbanking_intent_id for the authorise redirect. OBIE objects OBReadConsent1 (request) / OBReadConsentResponse1 (HTTP 201). CE HSBCnet + Malta use the v3.1 (+ /ce) path."
+    request_dto: OBReadConsent1
+    returns: OBReadConsentResponse1
+    inputs: [permissions, expirationDateTime]
+    description: "Register an account-access-consent with the PSU-selected Permissions[]. Uses a client-credentials token. Returns ConsentId + Status AWAU (awaiting authorisation). The ConsentId becomes the openbanking_intent_id for the authorise redirect. OBIE objects OBReadConsent1 (request) / OBReadConsentResponse1 (HTTP 201). CE HSBCnet + Malta use the v3.1 (+ /ce) path. FAPI 1.0 Advanced: mTLS (QWAC) transport, detached x-jws-signature on this write, and x-idempotency-key for safe retry."
     request:
       content_type: "application/json"
+      dto: OBReadConsent1
       headers:
         Authorization: "Bearer {cc_access_token}"
         x-fapi-financial-id: "{fapi_financial_id}"
+        x-fapi-interaction-id: "{uuid}"
+        x-jws-signature: "{detached_jws}"
+        x-idempotency-key: "{idempotency_key}"
+        Content-Type: "application/json"
       body:
         Data:
           Permissions:
             - ReadAccountsDetail
             - ReadBalances
             - ReadTransactionsDetail
+            - ReadBeneficiariesDetail
             - ReadStandingOrdersDetail
             - ReadDirectDebits
-            - ReadBeneficiariesDetail
+            - ReadScheduledPaymentsDetail
             - ReadParty
             - ReadProducts
+            - ReadStatementsDetail
           ExpirationDateTime: "{optional_expiry_iso}"
         Risk: {}
     response:
+      status: 201
+      dto: OBReadConsentResponse1
       fields:
         - name: Data.ConsentId
           type: String

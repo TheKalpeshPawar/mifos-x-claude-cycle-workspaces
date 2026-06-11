@@ -2,19 +2,24 @@ id: consent-intro
 name: "Connect Your HSBC Account"
 feature: consent-intro
 flavor: consumer
-status: draft
-quality_score: 0
+status: enriched
+quality_score: 95
 contract_version: "1.1.0"
 capabilities:
   - has_ui
-tags: [FR-OB-001]
+tags: [FR-002]
 status_history:
   - { from: null, to: draft, at: "2026-06-11", by: "/idea add" }
+  - { from: draft, to: enriched, at: "2026-06-12", by: "/idea-enrich", note: "Enriched the HSBC Open Banking connect-intro: added the four explicit trust pillars (approve at HSBC, choose what to share, read-only until you authorise a payment, revoke anytime), split the legal handoffs into distinct Terms of Service + Privacy Policy links, declared the no-bottom-nav onboarding shell, and added MVI state_model + testing + documentation blocks. No API — static onboarding entry of the account-access-consent journey; authentication and SCA happen at HSBC during the later redirect." }
 
 screens:
   - id: consent-intro
     name: "Connect Your HSBC Account"
     viewmodel: "ConsentIntroViewModel"
+    archetype: onboarding
+    shell:
+      top_bar: false
+      bottom_nav: false
 
 archetype: onboarding
 
@@ -29,11 +34,12 @@ components:
       - intro_hero_icon
       - intro_title
       - intro_subtitle
+      - intro_trust_card
       - intro_access_card
       - intro_redirect_card
       - intro_security_note
       - intro_connect_button
-      - intro_terms_link
+      - intro_legal_links
       - intro_footer
 
   - type: icon
@@ -47,6 +53,7 @@ components:
       padding_bottom: spacing.md
     a11y:
       role: image
+      contentDescription: "Secure HSBC Open Banking connection"
       label: "Open Banking connection"
     test_context:
       purpose: "Large bank icon at the top of the consent intro, signalling a secure HSBC Open Banking connection"
@@ -56,10 +63,11 @@ components:
   - type: text
     id: intro_title
     content: "Connect your HSBC account"
-    variant: headline_large
+    variant: headline_medium
     style:
       typography: "Outfit/headline_medium"
       color: "#1A1C16"
+      font_weight: 700
       alignment: center
       padding_bottom: spacing.xs
     a11y:
@@ -73,7 +81,7 @@ components:
 
   - type: text
     id: intro_subtitle
-    content: "Link your HSBC account securely through Open Banking to see your balances, transactions and payees — all in one place. No HSBC password is ever entered here."
+    content: "Link your HSBC account securely through Open Banking to see your balances, transactions and payees — and to make payments when you choose to. Your HSBC password is never entered in this app."
     variant: body_medium
     style:
       typography: "Outfit/body_medium"
@@ -82,9 +90,114 @@ components:
       padding_bottom: spacing.lg
     a11y:
       role: text
-      label: "Link your HSBC account securely through Open Banking. No HSBC password is ever entered in this app."
+      label: "Link your HSBC account securely through Open Banking to see your balances, transactions and payees, and to make payments when you choose to. Your HSBC password is never entered in this app."
     test_context:
       purpose: "Supporting subtitle explaining the value of connecting and the no-in-app-password reassurance"
+      interaction_type: display
+      data_driven: false
+
+  - type: card
+    id: intro_trust_card
+    variant: outlined
+    style:
+      background: "#FFFFFF"
+      border_color: "#C5C8BA"
+      border_radius: "12dp"
+      padding: spacing.md
+      margin_bottom: spacing.md
+      width: "match_parent"
+    children:
+      - intro_trust_heading
+      - intro_trust_point_one
+      - intro_trust_point_two
+      - intro_trust_point_three
+      - intro_trust_point_four
+    a11y:
+      role: group
+      label: "How Open Banking protects you"
+    test_context:
+      purpose: "Trust card holding the four core reassurance pillars before any data is requested"
+      interaction_type: display
+      data_driven: false
+
+  - type: text
+    id: intro_trust_heading
+    content: "You stay in control"
+    variant: title_medium
+    style:
+      typography: "Outfit/title_medium"
+      color: "#1A1C16"
+      font_weight: 700
+      padding_bottom: spacing.sm
+    a11y:
+      role: heading
+      level: 2
+      label: "You stay in control"
+    test_context:
+      purpose: "Heading of the trust-pillars card"
+      interaction_type: display
+      data_driven: false
+
+  - type: text
+    id: intro_trust_point_one
+    content: "You approve access at HSBC — not here. Sign-in and approval happen on HSBC's own secure pages."
+    variant: body_medium
+    style:
+      typography: "Outfit/body_medium"
+      color: "#386663"
+      padding_bottom: spacing.sm
+    a11y:
+      role: text
+      label: "You approve access at HSBC, not here. Sign-in and approval happen on HSBC's own secure pages."
+    test_context:
+      purpose: "Trust pillar one — authentication and approval happen at the bank"
+      interaction_type: display
+      data_driven: false
+
+  - type: text
+    id: intro_trust_point_two
+    content: "You choose exactly what to share. Pick which accounts and details to connect on the next screen."
+    variant: body_medium
+    style:
+      typography: "Outfit/body_medium"
+      color: "#386663"
+      padding_bottom: spacing.sm
+    a11y:
+      role: text
+      label: "You choose exactly what to share. Pick which accounts and details to connect on the next screen."
+    test_context:
+      purpose: "Trust pillar two — the PSU selects the data clusters to share"
+      interaction_type: display
+      data_driven: false
+
+  - type: text
+    id: intro_trust_point_three
+    content: "Read-only unless you authorise a payment. We can view your data; money only moves when you approve a payment at HSBC."
+    variant: body_medium
+    style:
+      typography: "Outfit/body_medium"
+      color: "#386663"
+      padding_bottom: spacing.sm
+    a11y:
+      role: text
+      label: "Read-only unless you authorise a payment. We can view your data; money only moves when you approve a payment at HSBC."
+    test_context:
+      purpose: "Trust pillar three — read-only by default, payments require separate authorisation"
+      interaction_type: display
+      data_driven: false
+
+  - type: text
+    id: intro_trust_point_four
+    content: "Revoke access any time in Settings — disconnecting takes effect immediately."
+    variant: body_medium
+    style:
+      typography: "Outfit/body_medium"
+      color: "#386663"
+    a11y:
+      role: text
+      label: "Revoke access any time in Settings. Disconnecting takes effect immediately."
+    test_context:
+      purpose: "Trust pillar four — access is revocable at any time from Settings"
       interaction_type: display
       data_driven: false
 
@@ -97,9 +210,17 @@ components:
       border_radius: "12dp"
       padding: spacing.md
       margin_bottom: spacing.md
+      width: "match_parent"
     children:
       - intro_access_heading
       - intro_access_list
+    a11y:
+      role: group
+      label: "What this app will read"
+    test_context:
+      purpose: "Read-only data summary card listing the account data the app will access"
+      interaction_type: display
+      data_driven: false
 
   - type: text
     id: intro_access_heading
@@ -145,9 +266,17 @@ components:
       border_radius: "12dp"
       padding: spacing.md
       margin_bottom: spacing.md
+      width: "match_parent"
     children:
       - intro_redirect_icon
       - intro_redirect_text
+    a11y:
+      role: group
+      label: "You'll be taken to HSBC to sign in"
+    test_context:
+      purpose: "Highlighted card explaining the redirect-to-bank authentication step"
+      interaction_type: display
+      data_driven: false
 
   - type: icon
     id: intro_redirect_icon
@@ -158,6 +287,7 @@ components:
       size: "24dp"
     a11y:
       role: image
+      contentDescription: "Secure redirect to HSBC sign-in"
       label: "Secure redirect"
     test_context:
       purpose: "Icon in the redirect-explainer card indicating the PSU will be taken to HSBC to sign in"
@@ -166,7 +296,7 @@ components:
 
   - type: text
     id: intro_redirect_text
-    content: "You'll be taken to HSBC's own secure sign-in to approve this connection. We never see your HSBC username or password."
+    content: "Next, you'll be taken to HSBC's own secure sign-in to approve this connection. We never see your HSBC username or password."
     variant: body_small
     style:
       typography: "Outfit/body_small"
@@ -174,7 +304,7 @@ components:
       padding_start: spacing.sm
     a11y:
       role: text
-      label: "You'll be taken to HSBC's own secure sign-in to approve this connection. We never see your HSBC username or password."
+      label: "Next, you'll be taken to HSBC's own secure sign-in to approve this connection. We never see your HSBC username or password."
     test_context:
       purpose: "Explains the redirect-to-bank authentication model so the PSU knows authentication happens at HSBC"
       interaction_type: display
@@ -182,7 +312,7 @@ components:
 
   - type: text
     id: intro_security_note
-    content: "Read-only access. You can review exactly what you're sharing on the next screen and revoke it any time."
+    content: "You can review exactly what you're sharing on the next screen before anything is connected."
     variant: body_small
     style:
       typography: "Outfit/body_small"
@@ -191,9 +321,9 @@ components:
       padding_bottom: spacing.md
     a11y:
       role: text
-      label: "Read-only access. You can review what you share on the next screen and revoke it at any time."
+      label: "You can review exactly what you're sharing on the next screen before anything is connected."
     test_context:
-      purpose: "Trust framing reinforcing read-only scope and revocability before the PSU continues"
+      purpose: "Final reassurance before the CTA — nothing is shared until the PSU reviews and grants on the next screen"
       interaction_type: display
       data_driven: false
 
@@ -215,6 +345,7 @@ components:
       target: consent-request
     a11y:
       role: button
+      contentDescription: "Connect your HSBC account — continue to choose what you'll share"
       label: "Connect your HSBC account — continue to review what you'll share"
     keyboard:
       focusable: true
@@ -223,9 +354,51 @@ components:
       interaction_type: navigate
       data_driven: false
 
+  - type: stack
+    id: intro_legal_links
+    variant: horizontal
+    style:
+      justify: center
+      gap: spacing.md
+      padding_top: spacing.md
+    children:
+      - intro_terms_link
+      - intro_privacy_link
+    a11y:
+      role: group
+      label: "Legal links"
+    test_context:
+      purpose: "Row holding the Terms of Service and Privacy Policy links beneath the primary CTA"
+      interaction_type: display
+      data_driven: false
+
   - type: link
     id: intro_terms_link
-    label: "How Open Banking keeps you safe"
+    label: "Terms of Service"
+    variant: inline
+    style:
+      typography: "Outfit/body_medium"
+      color: "#386663"
+      alignment: center
+      min_height: 44
+      padding_vertical: spacing.sm
+    on_click:
+      action: navigate
+      target: terms-of-service
+    a11y:
+      role: link
+      contentDescription: "Read the Terms of Service"
+      label: "Terms of Service — opens the terms of service"
+    keyboard:
+      focusable: true
+    test_context:
+      purpose: "Legal link opening the Terms of Service screen"
+      interaction_type: navigate
+      data_driven: false
+
+  - type: link
+    id: intro_privacy_link
+    label: "Privacy Policy"
     variant: inline
     style:
       typography: "Outfit/body_medium"
@@ -238,11 +411,12 @@ components:
       target: privacy-policy
     a11y:
       role: link
-      label: "Learn how Open Banking keeps you safe — opens the privacy policy"
+      contentDescription: "Read the Privacy Policy"
+      label: "Privacy Policy — opens the privacy policy and Open Banking safeguards"
     keyboard:
       focusable: true
     test_context:
-      purpose: "Secondary link to the privacy policy explaining Open Banking safeguards"
+      purpose: "Legal link opening the Privacy Policy screen, which explains the Open Banking safeguards"
       interaction_type: navigate
       data_driven: false
 
@@ -269,33 +443,38 @@ responsive:
   baseline_width: 390
 
 states:
-  initial_state: idle
-  idle:
-    layout: { type: column, padding: spacing.lg }
-    visible_components: [intro_hero_icon, intro_title, intro_subtitle, intro_access_card, intro_redirect_card, intro_security_note, intro_connect_button, intro_terms_link, intro_footer]
+  initial_state: content
   content:
     layout: { type: column, padding: spacing.lg }
-    visible_components: [intro_hero_icon, intro_title, intro_subtitle, intro_access_card, intro_redirect_card, intro_security_note, intro_connect_button, intro_terms_link, intro_footer]
+    visible_components: [intro_hero_icon, intro_title, intro_subtitle, intro_trust_card, intro_access_card, intro_redirect_card, intro_security_note, intro_connect_button, intro_legal_links, intro_footer]
+    note: "The only render of this static onboarding screen — no async load. All copy is shown immediately as the entry screen of the account-access-consent journey."
+  idle:
+    layout: { type: column, padding: spacing.lg }
+    visible_components: [intro_hero_icon, intro_title, intro_subtitle, intro_trust_card, intro_access_card, intro_redirect_card, intro_security_note, intro_connect_button, intro_legal_links, intro_footer]
+    note: "Alias of content — the screen has no data fetch, so its initial and resting render are identical."
 
 state_model:
   ConsentIntroViewModel:
     screen_state: ConsentIntroUiState
+    pattern: MVI
     state:
       - field: hasExistingConsent
         type: Boolean
         default: "false"
-        note: "True when a prior AUTH-status consent already exists; UI may relabel the CTA to 'Manage your connection'."
+        note: "True when a prior AUTH-status consent already exists; the CTA may relabel to 'Manage your connection' so a returning PSU can skip re-granting."
     derived: []
     errors: []
     events:
       - ConsentIntroEvent.NavigateToConsentRequest
+      - ConsentIntroEvent.NavigateToTermsOfService
       - ConsentIntroEvent.NavigateToPrivacyPolicy
     actions:
       - ConsentIntroAction.ConnectClicked
-      - ConsentIntroAction.LearnMoreClicked
-    di: [ObpAuthRepository]
+      - ConsentIntroAction.TermsClicked
+      - ConsentIntroAction.PrivacyClicked
+    di: [ConsentRepository]
     base: "template.core.base.ui.viewmodel.BaseViewModel<ConsentIntroUiState, ConsentIntroEvent, ConsentIntroAction>"
-    note: "Informational onboarding screen — no network calls. ConnectClicked emits NavigateToConsentRequest; ObpAuthRepository is read only to detect an existing consent so a returning PSU can skip re-granting."
+    note: "Informational onboarding screen — no network calls. ConnectClicked emits NavigateToConsentRequest; TermsClicked and PrivacyClicked open the legal screens. ConsentRepository is read only to detect an existing AUTH consent so a returning PSU can skip re-granting."
 
 navigation:
   - id: nav_to_consent_request
@@ -305,16 +484,45 @@ navigation:
       action: navigate
       target: consent-request
     note: "Primary forward nav — 'Connect your HSBC account' advances to the consent-request grant screen."
+  - id: nav_to_terms_of_service
+    target: terms-of-service
+    trigger: terms_click
+    on_click:
+      action: navigate
+      target: terms-of-service
+    note: "Legal nav to the Terms of Service screen."
   - id: nav_to_privacy_policy
     target: privacy-policy
-    trigger: learn_more_click
+    trigger: privacy_click
     on_click:
       action: navigate
       target: privacy-policy
-    note: "Secondary nav to the Open Banking safety / privacy explainer."
+    note: "Legal nav to the Privacy Policy / Open Banking safety explainer."
 
-api: []
+api:
+  endpoints: []
+  note: "No live OBIE call from this onboarding screen — it is purely informational. The account-access-consent (POST /aisp/account-access-consents → AWAU) is created on the next screen (consent-request); authentication and SCA happen at HSBC during the later bank-authorize-handoff redirect."
+
+testing:
+  scenarios:
+    - { id: TC-CONSENTINTRO-001, scenario: "Screen renders headline, subtitle, trust card, read-only access card, and redirect card", priority: P0 }
+    - { id: TC-CONSENTINTRO-002, scenario: "All four trust pillars are visible (approve at HSBC, choose what to share, read-only until payment, revoke in Settings)", priority: P0 }
+    - { id: TC-CONSENTINTRO-003, scenario: "Tap 'Connect your HSBC account' navigates to consent-request", priority: P0 }
+    - { id: TC-CONSENTINTRO-004, scenario: "Tap 'Terms of Service' navigates to terms-of-service", priority: P1 }
+    - { id: TC-CONSENTINTRO-005, scenario: "Tap 'Privacy Policy' navigates to privacy-policy", priority: P1 }
+    - { id: TC-CONSENTINTRO-006, scenario: "No password field is present anywhere on the screen (authentication happens at HSBC)", priority: P0 }
+  coverage_target: 80
+
+documentation:
+  user_stories:
+    - { actor: PSU, action: "understand what connecting my HSBC account via Open Banking means", benefit: "I can decide to share data with confidence and without entering my bank password" }
+    - { actor: PSU, action: "see that access is read-only and revocable before I start", benefit: "I trust that money only moves when I explicitly authorise a payment at HSBC" }
+    - { actor: PSU, action: "start the connection journey", benefit: "I can link my account and see my finances in one place" }
+  success_metrics:
+    - { metric: connect_cta_tap_rate, target: "70%" }
+    - { metric: intro_to_consent_request_completion, target: "85%" }
+  feature_flags: []
 
 dependencies:
   tier: feature
-  features: [shared-core, obp-auth]
+  features: [shared-core, obie-consent]

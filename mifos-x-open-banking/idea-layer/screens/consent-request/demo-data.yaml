@@ -1,0 +1,73 @@
+sibling: demo-data
+schema_version: "4.0"
+feature_id: consent-request
+
+# Realistic OBReadConsentResponse1 returned by POST /aisp/account-access-consents
+# on the HSBC UK sandbox. Status AWAU (awaiting authorisation) — this ConsentId
+# becomes the openbanking_intent_id for the bank-authorize-handoff redirect.
+collections:
+  create_account_access_consent_response:
+    dto: OBReadConsentResponse1
+    description: "201 Created response — account-access-consent registered, awaiting PSU authorisation at HSBC."
+    item:
+      Data:
+        ConsentId: "aac-9f2c1b7e-3d44-4a02"
+        Status: "AWAU"
+        CreationDateTime: "2026-06-12T09:41:18.204Z"
+        StatusUpdateDateTime: "2026-06-12T09:41:18.204Z"
+        Permissions:
+          - ReadAccountsDetail
+          - ReadBalances
+          - ReadTransactionsDetail
+          - ReadBeneficiariesDetail
+          - ReadStandingOrdersDetail
+          - ReadDirectDebits
+          - ReadScheduledPaymentsDetail
+          - ReadParty
+          - ReadProducts
+          - ReadStatementsDetail
+        ExpirationDateTime: "2026-09-11T09:41:18.204Z"
+      Risk: {}
+      Links:
+        Self: "https://secure.sandbox.ob.hsbc.co.uk/obie/open-banking/v4.0/aisp/account-access-consents/aac-9f2c1b7e-3d44-4a02"
+      Meta:
+        TotalPages: 1
+
+  # Request body the app POSTs (OBReadConsent1) — shown for parity / contract tests.
+  create_account_access_consent_request:
+    dto: OBReadConsent1
+    description: "Request body the app sends — selected permission clusters + 90-day expiry, empty Risk object for AIS."
+    item:
+      Data:
+        Permissions:
+          - ReadAccountsDetail
+          - ReadBalances
+          - ReadTransactionsDetail
+          - ReadBeneficiariesDetail
+          - ReadStandingOrdersDetail
+          - ReadDirectDebits
+          - ReadScheduledPaymentsDetail
+          - ReadParty
+          - ReadProducts
+          - ReadStatementsDetail
+        ExpirationDateTime: "2026-09-11T09:41:18.204Z"
+      Risk: {}
+
+  # Field-level demo values consumed by the UI scope card + expiry note.
+  scope_summary:
+    description: "Resolved, human-readable scope shown on consent_scope_card and consent_expiry_note."
+    item:
+      accounts_label: "all your HSBC accounts"
+      access_until_label: "11 September 2026"
+      access_duration_label: "90 days"
+
+  # Error envelope (OBErrorResponse1) for the error state.
+  create_consent_error:
+    description: "Representative 400 OBErrorResponse1 driving the error banner."
+    item:
+      Code: "400 Bad Request"
+      Id: "9b1e-err-3c77"
+      Message: "Invalid request"
+      Errors:
+        - ErrorCode: "UK.OBIE.Field.Invalid"
+          Message: "Permissions array must contain at least one valid permission."

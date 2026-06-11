@@ -1,11 +1,11 @@
 sibling: docs
 schema_version: '4.0'
 feature_id: payment-declined
-name: Payment Declined
+name: Payment Not Completed
 feature: payment-declined
 flavor: consumer
-status: draft
-quality_score: 0
+status: enriched
+quality_score: 92
 contract_version: 1.1.0
 capabilities:
   - has_ui
@@ -23,10 +23,23 @@ status_history:
       SCA is performed AT HSBC during the authorise redirect, so this terminal
       screen replaces the OBP in-app sca-challenge error path.
       archetype empty_state/error.
+  - to: enriched
+    at: "2026-06-12"
+    by: "/idea enrich --feature payment-declined"
+    note: >-
+      Reframed to the calmer 'Payment not completed' with the 'no money has
+      left your account' reassurance promoted above the explanation. Modelled a
+      primary content state (PSU declined / access_denied) plus a generic error
+      variant exposing a muted reference line. Sample values aligned to the PISP
+      flow (£250.00, Jordan Avery — Barclays Bank UK, access_denied / consent
+      RJCT). Try again → send-money-confirm; Back to home → home. Added a
+      stateless-args MVI state_model and reasons card for parity with the
+      consent-declined AIS sibling.
 screens:
   - id: payment-declined
-    name: Payment Declined
-    archetype: empty_state
+    name: Payment Not Completed
+    viewmodel: PaymentDeclinedViewModel
+    archetype: error
     shell:
       top_bar: false
       bottom_nav: false

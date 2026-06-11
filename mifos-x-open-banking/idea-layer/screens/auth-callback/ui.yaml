@@ -2,8 +2,8 @@ id: auth-callback
 name: "Completing Connection"
 feature: account-access-consent
 flavor: consumer
-status: draft
-quality_score: 0
+status: enriched
+quality_score: 96
 contract_version: "1.1.0"
 capabilities:
   - has_ui
@@ -14,11 +14,17 @@ status_history:
     at: "2026-06-11"
     by: "/idea-add (manual draft authoring)"
     note: "Deep-link callback takeover authored for the OBIE redirect return. Receives org.mifos.openbanking://oauth/callback, exchanges the authorization code for an access token (POST /oauth2/token), then routes onward by consent context: home for AIS consent, payment-result for payment consent; consent-declined / payment-declined on error. SHARED between account-access-consent and payment-initiation flows. Modelled on login/ui.yaml's oauth_exchanging takeover. Awaiting /idea-enrich."
+  - status: enriched
+    at: "2026-06-12"
+    by: "/idea-enrich (auth-callback)"
+    note: "Enriched the shared OBIE redirect-return takeover. Split the single processing state into two PSU-legible phases — `exchanging` (POST /oauth2/token) and `verifying` (AIS: poll account-access-consent → AUTH; PAYMENT: submit domestic-payment → terminal) — driven by CallbackPhase. Added explicit consentContext-keyed dual routing: AIS success → home, AIS failure → consent-declined, PAYMENT success → payment-result, PAYMENT failure → payment-declined (all replace). Bound the three OBIE endpoints (token exchange + AIS consent poll + PISP submit) with full response + error contracts; added per-phase layout blocks, a11y labels, style tokens, MVI state_model, dependencies, screens[]. Authored demo-data.yaml with realistic Bearer-token + consent-AUTH + payment-submit samples for both branches. Zero credential entry — SCA already completed at HSBC."
 
 screens:
   - id: auth-callback
     name: "Completing Connection"
     viewmodel: "AuthCallbackViewModel"
+    description: "Headless full-screen takeover that handles the OBIE deep-link return for BOTH the AIS account-access-consent flow and the PISP payment flow. Exchanges the authorization code for a PSU-bound access token, then branches on a consentContext enum to verify the authorised state and auto-route — no buttons in the happy path."
+    states_handled: [Exchanging, Verifying, Error]
 
 archetype: status
 
@@ -31,6 +37,13 @@ components:
       padding: spacing.lg
       align: center
       justify: center
+    a11y:
+      role: region
+      label: "Completing your secure connection with HSBC"
+    test_context:
+      purpose: "Full-screen centered takeover hosting the processing phases and the error recovery card"
+      interaction_type: display
+      data_driven: false
     children:
       - callback_bank_icon
       - callback_title
@@ -51,15 +64,15 @@ components:
       alignment: center
     a11y:
       role: image
-      label: "Secure connection"
+      label: "Secure connection with HSBC"
     test_context:
-      purpose: "Shield icon shown at the top of the full-screen callback takeover while the code is exchanged for a token"
+      purpose: "Shield icon shown at the top of the takeover while the code is exchanged and the authorised status is confirmed"
       interaction_type: display
       data_driven: false
 
   - type: text
     id: callback_title
-    content: "Completing connection…"
+    content: "Finishing secure connection…"
     variant: headline_small
     style:
       typography: "Outfit/headline_small"
@@ -69,9 +82,9 @@ components:
     a11y:
       role: heading
       level: 1
-      label: "Completing connection"
+      label: "Finishing secure connection"
     test_context:
-      purpose: "Primary heading during code-for-token exchange; AIS context shows 'Completing connection…', payment context shows 'Finalising your payment…'"
+      purpose: "Phase-driven heading. exchanging → 'Finishing secure connection…'; verifying (AIS) → 'Confirming your approval…'; verifying (PAYMENT) → 'Finalising your payment…'"
       interaction_type: display
       data_driven: true
 
@@ -88,9 +101,9 @@ components:
       role: text
       label: "Securely finishing your authorisation with HSBC. This only takes a moment."
     test_context:
-      purpose: "Supporting copy describing the token exchange in progress"
+      purpose: "Phase-driven supporting copy. exchanging → describes the token exchange; verifying (AIS) → 'Checking your account-sharing approval went through.'; verifying (PAYMENT) → 'Submitting your payment to HSBC and confirming it was accepted.'"
       interaction_type: display
-      data_driven: false
+      data_driven: true
 
   - type: loading_indicator
     id: callback_spinner
@@ -102,9 +115,9 @@ components:
       padding_top: spacing.lg
     a11y:
       role: progressbar
-      label: "Completing connection"
+      label: "Completing connection in progress"
     test_context:
-      purpose: "Indeterminate spinner shown while the authorization code is exchanged for an access token"
+      purpose: "Indeterminate spinner shown across both processing phases — while the authorization code is exchanged for an access token and while the authorised status is confirmed"
       interaction_type: display
       data_driven: false
 
@@ -121,7 +134,7 @@ components:
       role: text
       label: "Verifying your authorisation over an encrypted connection."
     test_context:
-      purpose: "Reassurance caption beneath the spinner"
+      purpose: "Reassurance caption beneath the spinner; reinforces the mTLS-encrypted FAPI exchange happening server-side"
       interaction_type: display
       data_driven: false
 
@@ -133,7 +146,14 @@ components:
       border_radius: "8dp"
       padding: spacing.md
       margin_top: spacing.lg
-    visible_when: "uiState == Error"
+    visible_when: "phase == ERROR"
+    a11y:
+      role: alert
+      label: "Authorisation could not be completed"
+    test_context:
+      purpose: "Error container shown when the callback carries an error, the CSRF state mismatches, the PSU declined, the token exchange failed, or the consent was rejected"
+      interaction_type: display
+      data_driven: false
     children:
       - callback_error_icon
       - callback_error_message
@@ -149,7 +169,7 @@ components:
       role: image
       label: "Error"
     test_context:
-      purpose: "Error icon shown when the callback carries an error or the token exchange fails"
+      purpose: "Error glyph shown inside the error card"
       interaction_type: display
       data_driven: false
 
@@ -165,7 +185,7 @@ components:
       role: alert
       label: "Authorisation error message"
     test_context:
-      purpose: "Error copy for declined consent, mismatched state, or a failed token exchange"
+      purpose: "Error copy mapped from the failing OBIE error (invalid_grant, state mismatch, PSU declined, consent RJCT). AIS context: 'We couldn't complete your authorisation with HSBC. You can try again.'; PAYMENT context: 'Your payment authorisation was declined. You can try again.'"
       interaction_type: display
       data_driven: true
 
@@ -182,18 +202,19 @@ components:
       padding: spacing.md
       margin_top: spacing.lg
       width: "match_parent"
-    visible_when: "uiState == Error"
+    visible_when: "phase == ERROR"
     on_click:
-      action: retry
+      action: navigate
       target: bank-authorize-handoff
+      intent: "Restart the authorise handoff for the active flow to obtain a fresh authorization code, then return here"
     a11y:
       role: button
-      label: "Retry the authorisation by restarting the secure redirect"
+      label: "Try again — restart the secure HSBC authorisation"
     keyboard:
       focusable: true
     test_context:
-      purpose: "Restarts the authorise handoff to obtain a fresh code after a failed exchange"
-      interaction_type: action
+      purpose: "Restarts the authorise handoff to obtain a fresh code after a failed exchange. The originating flow is preserved via consentContext — AIS and PAYMENT both restart at bank-authorize-handoff."
+      interaction_type: navigate
       data_driven: false
 
   - type: button
@@ -207,18 +228,20 @@ components:
       alignment: center
       min_height: 44
       padding_vertical: spacing.sm
+    visible_when: "phase == ERROR"
     on_click:
       action: navigate
       target: consent-declined
+      intent: "Stop trying and route to the declined screen for the active flow — consent-declined for AIS, payment-declined for PAYMENT"
     a11y:
       role: button
       label: "Cancel and see why the connection could not be completed"
     keyboard:
       focusable: true
     test_context:
-      purpose: "Dismisses the error and routes to the declined screen for the active flow"
+      purpose: "Safe exit from the error state. consentContext keys the destination — AIS → consent-declined, PAYMENT → payment-declined (resolved by the ViewModel, not hardcoded in the click)."
       interaction_type: navigate
-      data_driven: false
+      data_driven: true
 
 responsive:
   mobile_only: true
@@ -226,18 +249,42 @@ responsive:
 
 states:
   initial_state: exchanging
+
   exchanging:
-    layout: { type: column, padding: spacing.lg, align: center, justify: center }
+    layout:
+      type: column
+      padding: spacing.lg
+      align: center
+      justify: center
     visible_components: [callback_bank_icon, callback_title, callback_message, callback_spinner, callback_security_note]
-    note: "Full-screen takeover. Deep-link org.mifos.openbanking://oauth/callback received with code + id_token + state. App verifies state against the stored CSRF value, then POSTs /oauth2/token (grant_type=authorization_code, mTLS, client-assertion, PKCE code_verifier) to obtain the PSU-bound access token. On success: AIS consent → poll consent AUTH → home; payment consent → submit payment + poll → payment-result."
+    note: "Phase 1 — token exchange. Deep-link org.mifos.openbanking://oauth/callback received with code + id_token + state. App verifies state against the stored CSRF value, then POSTs /oauth2/token (grant_type=authorization_code, mTLS, PS256 client-assertion, PKCE code_verifier) to obtain the PSU-bound access token. Heading 'Finishing secure connection…'. On success → verifying. On error param / state mismatch / invalid_grant → error."
+
+  verifying:
+    layout:
+      type: column
+      padding: spacing.lg
+      align: center
+      justify: center
+    visible_components: [callback_bank_icon, callback_title, callback_message, callback_spinner, callback_security_note]
+    note: "Phase 2 — confirm authorised. AIS: GET /aisp/account-access-consents/{ConsentId} polled until Status AUTH; heading 'Confirming your approval…' → home (replace). PAYMENT: POST /pisp/domestic-payments then poll to a terminal status; heading 'Finalising your payment…' → payment-result (replace). Same composition as exchanging; only the heading/message copy changes (data_driven via phase + consentContext)."
+
   loading:
-    layout: { type: column, padding: spacing.lg, align: center, justify: center }
+    layout:
+      type: column
+      padding: spacing.lg
+      align: center
+      justify: center
     visible_components: [callback_bank_icon, callback_title, callback_message, callback_spinner, callback_security_note]
-    note: "Canonical loading alias — same composition as exchanging."
+    note: "Canonical loading alias — identical composition to exchanging. Present so the screen satisfies the loading/content/error state contract; runtime drives exchanging → verifying."
+
   error:
-    layout: { type: column, padding: spacing.lg, align: center, justify: center }
+    layout:
+      type: column
+      padding: spacing.lg
+      align: center
+      justify: center
     visible_components: [callback_bank_icon, callback_title, callback_error_card, callback_retry_button, callback_cancel_link]
-    note: "Callback carried an error param, state mismatch (CSRF), PSU declined, or the token exchange returned invalid_grant / 400. Offers retry (restart handoff) or cancel to the declined screen for the active flow."
+    note: "Terminal failure shown in-screen before routing options. Triggers: callback carried an error param, CSRF state mismatch, PSU declined SCA, token exchange returned invalid_grant / 400 / 401, AIS consent never reached AUTH, or PAYMENT consent RJCT. Offers Try again (restart handoff) or Cancel (→ consent-declined for AIS, payment-declined for PAYMENT). AIS/PAYMENT decline is also auto-routed without requiring a tap when the failure is unrecoverable."
 
 state_model:
   AuthCallbackViewModel:
@@ -246,18 +293,22 @@ state_model:
       - field: phase
         type: "CallbackPhase"
         default: "CallbackPhase.EXCHANGING"
-        note: "enum CallbackPhase { EXCHANGING, FINALISING, SUCCESS, ERROR } — drives the full-screen takeover. code / state / code_verifier are read from the deep-link + ObpAuthRepository, never held in UI state."
+        note: "enum CallbackPhase { EXCHANGING, VERIFYING, SUCCESS, ERROR } — drives the full-screen takeover and the data_driven heading/message. code / state / code_verifier are read from the deep-link + ObpAuthRepository, never held in UI state."
       - field: consentContext
         type: "ConsentContext"
         default: "ConsentContext.AIS"
-        note: "enum ConsentContext { AIS, PAYMENT } — propagated from bank-authorize-handoff via OidcCallbackBus. AIS routes onward to home; PAYMENT routes to payment-result. Errors route to consent-declined (AIS) / payment-declined (PAYMENT)."
+        note: "enum ConsentContext { AIS, PAYMENT } — the ROUTING KEY. Propagated from bank-authorize-handoff via OidcCallbackBus. AIS → verify consent AUTH → home (success) / consent-declined (failure). PAYMENT → submit + poll payment → payment-result (success) / payment-declined (failure). Determines both the verifying-phase copy and every terminal destination."
+      - field: consentId
+        type: "String?"
+        default: "null"
+        note: "The intent_id (ConsentId) bound into the authorise request; used to poll the consent (AIS) or submit the payment (PAYMENT). Resolved from OidcCallbackBus, not entered."
       - field: errorMessage
         type: "String?"
         default: "null"
       - field: isError
         type: Boolean
         default: "false"
-    errors: [INVALID_GRANT, STATE_MISMATCH, CONSENT_DECLINED, REQUEST_TIMEOUT, TOO_MANY_REQUESTS, UNKNOWN]
+    errors: [INVALID_GRANT, INVALID_CLIENT, STATE_MISMATCH, CONSENT_NOT_AUTHORISED, CONSENT_REJECTED, REQUEST_TIMEOUT, TOO_MANY_REQUESTS, UNKNOWN]
     events:
       - "AuthCallbackEvent.NavigateToHome"
       - "AuthCallbackEvent.NavigateToPaymentResult(domesticPaymentId: String)"
@@ -274,28 +325,41 @@ state_model:
       - "AuthCallbackAction.Internal.ExchangeFailed(error)"
     di: [ObpAuthRepository, OidcCallbackBus]
     base: "template.core.base.ui.viewmodel.BaseViewModel<AuthCallbackUiState, AuthCallbackEvent, AuthCallbackAction>"
-    note: "OidcCallbackBus delivers the deep-link to this ViewModel. After TokenExchanged, the ViewModel branches on consentContext: AIS → poll consent AUTH then emit NavigateToHome; PAYMENT → submit the domestic-payment, poll terminal status, then emit NavigateToPaymentResult. Any error emits NavigateToConsentDeclined (AIS) or NavigateToPaymentDeclined (PAYMENT). The screen never shows credential entry — SCA already happened at HSBC."
+    note: "DUAL-ROUTING CONTRACT. OidcCallbackBus delivers the deep-link (code, state, consentContext, consentId) to this ViewModel. Phase 1 (EXCHANGING): verify CSRF state, POST /oauth2/token. Phase 2 (VERIFYING) branches on consentContext: AIS → poll GET /aisp/account-access-consents/{ConsentId} until Status AUTH → emit NavigateToHome; PAYMENT → POST /pisp/domestic-payments, poll DomesticPaymentId to a terminal status → emit NavigateToPaymentResult(domesticPaymentId). Any failure branches on consentContext too: AIS → NavigateToConsentDeclined, PAYMENT → NavigateToPaymentDeclined. The screen NEVER shows credential entry — SCA already happened at HSBC."
 
 navigation:
   - id: nav_to_home
     target: home
     trigger: ais_consent_authorised
-    note: "AIS context only — after the access token is obtained and the account-access-consent reaches Status AUTH, route to home (replace). One-shot AuthCallbackEvent.NavigateToHome."
+    note: "consentContext == AIS, success — after the access token is obtained AND the account-access-consent reaches Status AUTH, route to home (replace). One-shot AuthCallbackEvent.NavigateToHome. State-driven (no tap)."
   - id: nav_to_payment_result
     target: payment-result
     trigger: payment_submitted
-    note: "PAYMENT context only — after the access token is obtained, the domestic-payment is submitted and polled to a terminal status, then route to payment-result (replace). One-shot AuthCallbackEvent.NavigateToPaymentResult."
+    note: "consentContext == PAYMENT, success — after the access token is obtained, the domestic-payment is submitted and polled to a terminal status, then route to payment-result (replace). One-shot AuthCallbackEvent.NavigateToPaymentResult. State-driven (no tap)."
   - id: nav_to_consent_declined
     target: consent-declined
     trigger: ais_callback_error
     on_click:
       action: navigate
       target: consent-declined
-    note: "AIS context error path — callback error / state mismatch / PSU declined / token exchange failed."
+      intent: "AIS failure terminal — also the Cancel destination for the AIS context"
+    note: "consentContext == AIS, failure — callback error param / CSRF state mismatch / PSU declined / token exchange failed / consent never reached AUTH. Auto-routed when unrecoverable; also reachable via Cancel."
   - id: nav_to_payment_declined
     target: payment-declined
     trigger: payment_callback_error
-    note: "PAYMENT context error path — callback error / PSU declined / consent RJCT / token exchange failed."
+    on_click:
+      action: navigate
+      target: payment-declined
+      intent: "PAYMENT failure terminal — also the Cancel destination for the PAYMENT context"
+    note: "consentContext == PAYMENT, failure — callback error param / PSU declined / consent RJCT / token exchange failed / payment rejected. Auto-routed when unrecoverable; also reachable via Cancel."
+  - id: nav_retry_handoff
+    target: bank-authorize-handoff
+    trigger: retry_clicked
+    on_click:
+      action: navigate
+      target: bank-authorize-handoff
+      intent: "Restart the authorise handoff for the active flow (consentContext-preserved) to obtain a fresh authorization code"
+    note: "Error-state Try again — restarts at bank-authorize-handoff for both AIS and PAYMENT; the originating flow is preserved by consentContext."
 
 api:
   - id: obie_exchange_code
@@ -341,6 +405,9 @@ api:
         - name: expires_in
           type: Int
           example: 3600
+        - name: scope
+          type: String
+          example: "accounts"
     errors:
       - code: 400
         name: INVALID_GRANT
@@ -351,12 +418,15 @@ api:
       - code: 429
         name: TOO_MANY_REQUESTS
         ui_message: "Too many attempts. Please wait a moment and try again."
+      - code: 500
+        name: SERVER_ERROR
+        ui_message: "Something went wrong on HSBC's end. Please try again in a moment."
 
   - id: obie_poll_consent_status
     endpoint: "GET https://secure.sandbox.ob.hsbc.co.uk/obie/open-banking/v4.0/aisp/account-access-consents/{ConsentId}"
     tag: Authentication
     trigger: after_token_exchange_ais
-    description: "AIS context only — poll the account-access-consent until Status is AUTH (Authorised) before reading any account resource. Bearer = PSU access token."
+    description: "AIS context only — poll the account-access-consent until Status is AUTH (Authorised) before reading any account resource. Bearer = PSU access token. On AUTH the callback routes to home."
     request:
       headers:
         Authorization: "Bearer {psu_access_token}"
@@ -372,6 +442,9 @@ api:
       - code: 400
         name: CONSENT_NOT_AUTHORISED
         ui_message: "We couldn't complete your authorisation with HSBC. You can try again."
+      - code: 401
+        name: UNAUTHORIZED
+        ui_message: "Your authorisation could not be verified. Please try again."
 
   - id: obie_submit_domestic_payment
     endpoint: "POST https://secure.sandbox.ob.hsbc.co.uk/obie/open-banking/v4.0/pisp/domestic-payments"

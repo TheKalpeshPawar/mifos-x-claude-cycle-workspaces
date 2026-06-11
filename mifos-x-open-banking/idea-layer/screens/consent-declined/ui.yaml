@@ -2,8 +2,8 @@ id: consent-declined
 name: "Access Not Granted"
 feature: consent-declined
 flavor: consumer
-status: draft
-quality_score: 0
+status: enriched
+quality_score: 96
 contract_version: "1.1.0"
 capabilities:
   - has_ui
@@ -13,6 +13,10 @@ status_history:
     at: "2026-06-11"
     by: "/idea add (OBIE migration)"
     note: "Terminal error for the OBIE account-access-consent journey. Reached from auth-callback when the deep-link callback carries an error param, or when the PSU declines/cancels authorisation at HSBC (consent Status RJCT or CANC). Friendly explanation, a short list of why it can happen, and a 'Try again' CTA back to consent-request. Mostly UI — no live API call; the error reason arrives as a nav arg from the callback handler."
+  - to: enriched
+    at: "2026-06-12"
+    by: "/idea enrich"
+    note: "Enriched terminal feedback screen. Reassurance-first, non-blaming copy ('Access wasn't granted', no data shared, nothing changed). content state = clean decline (no callback code); error state = surfaces a resolved consent Status (RJCT/CANC) and OAuth error param (e.g. access_denied) via the technical reference line. Primary 'Try again' → consent-request, secondary 'Maybe later' → consent-intro. demo-data.yaml carries realistic sample values (ConsentId, access_denied). No live API — terminal screen."
 
 screens:
   - id: consent-declined
@@ -184,7 +188,7 @@ components:
 
   - type: text
     id: declined_status_note
-    content: "Reference: consent declined (RJCT)"
+    content: "Reference: access_denied · consent RJCT"
     variant: body_small
     style:
       typography: "Outfit/body_small"
@@ -194,9 +198,9 @@ components:
     visible_when: "uiState == Error"
     a11y:
       role: text
-      label: "Technical reference: consent declined"
+      label: "Technical reference: access denied, consent rejected"
     test_context:
-      purpose: "Muted technical reference line showing the resolved consent status (RJCT or CANC) and any callback error code"
+      purpose: "Muted technical reference line showing the resolved consent status (RJCT or CANC) and any callback OAuth error code (e.g. access_denied), formatted from the inbound nav args"
       interaction_type: display
       data_driven: true
 
@@ -311,8 +315,29 @@ navigation:
 
 api:
   endpoints: []
-  note: "No live OBIE call from this terminal screen — the declined outcome is delivered via nav args from the auth-callback handler (the callback error param or the consent Status RJCT/CANC resolved during the token exchange / GET /aisp/account-access-consents/{ConsentId} step). Retry re-enters consent-request which re-issues POST /aisp/account-access-consents."
+  demo_source: "screens/consent-declined/demo-data.yaml"
+  note: "No live OBIE call from this terminal screen — the declined outcome is delivered via nav args from the auth-callback handler (the callback error param or the consent Status RJCT/CANC resolved during the token exchange / GET /aisp/account-access-consents/{ConsentId} step). Retry re-enters consent-request which re-issues POST /aisp/account-access-consents. demo-data.yaml supplies realistic nav-arg samples (ConsentId, callbackError, consentStatus) for rendering the error state."
 
 dependencies:
   tier: feature
   features: [shared-core, obie-consent]
+
+testing:
+  scenarios:
+    - { id: TC-CONSENT-DECLINED-001, scenario: "Default content state renders headline, reassurance, reasons card, and both CTAs with no technical reference line", priority: P0 }
+    - { id: TC-CONSENT-DECLINED-002, scenario: "Error state (callback carried access_denied / consent Status RJCT) shows the technical reference line below the reasons card", priority: P0 }
+    - { id: TC-CONSENT-DECLINED-003, scenario: "Tap 'Try again' clears the stale RJCT/CANC consent record and navigates to consent-request", priority: P0 }
+    - { id: TC-CONSENT-DECLINED-004, scenario: "Tap 'Maybe later' navigates to consent-intro without re-issuing a consent", priority: P1 }
+    - { id: TC-CONSENT-DECLINED-005, scenario: "CANC status (PSU cancelled) resolves to the same content/error rendering as RJCT", priority: P1 }
+    - { id: TC-CONSENT-DECLINED-006, scenario: "Screen renders with no top bar and no bottom nav (terminal full-screen feedback shell)", priority: P1 }
+  coverage_target: 80
+
+documentation:
+  user_stories:
+    - { actor: consumer, action: "understand why my HSBC account didn't connect", benefit: "I'm reassured that no data was shared and nothing was changed" }
+    - { actor: consumer, action: "retry connecting my account after a decline", benefit: "I can pick up the journey again without hunting for where to restart" }
+    - { actor: consumer, action: "step away from the connection attempt", benefit: "I can return to the intro and decide later, with no pressure" }
+  success_metrics:
+    - { metric: declined_retry_rate, target: "55%" }
+    - { metric: declined_safe_exit_rate, target: "<30%" }
+  feature_flags: []

@@ -1,27 +1,33 @@
 id: payment-declined
-name: "Payment Declined"
+name: "Payment Not Completed"
 feature: payment-declined
 flavor: consumer
-status: draft
-quality_score: 0
+status: enriched
+quality_score: 92
 contract_version: "1.1.0"
 capabilities:
   - has_ui
+tags: [FR-014, FR-043, FR-046, FR-OBIE-PISP]
 status_history:
   - to: draft
     at: "2026-06-11"
     by: "/idea add (OBIE PISP migration)"
     note: "Terminal error screen for the HSBC Open Banking PISP payment journey. Reached from auth-callback when authorisation fails — the PSU declines at HSBC, the consent comes back Status RJCT, the callback returns an error param, or the /domestic-payments submit is rejected. Stateless, args-driven: shows what happened, the payment details (amount, payee, optional reason), and 'Try again' which pops back to send-money-confirm. SCA is performed AT HSBC during the authorise redirect, so this terminal screen replaces the OBP sca-challenge error path. archetype empty_state/error."
+  - to: enriched
+    at: "2026-06-12"
+    by: "/idea enrich --feature payment-declined"
+    note: "Enriched the PISP decline terminal screen. Headline reframed to the calmer, non-blaming 'Payment not completed'; reassurance promoted so the 'no money has left your account' message reads before the details. Modelled a primary content terminal state (PSU declined / callback access_denied) plus a generic error variant for an unexpected/technical decline that exposes a muted reference line. Sample values aligned to the PISP flow (amount £250.00, payee Jordan Avery — Barclays Bank UK, reason 'Authorisation cancelled at HSBC' from access_denied / consent RJCT). Try again pops to send-money-confirm; Back to home returns to the dashboard. Added a stateless-args MVI state_model, screens[] and reasons card for parity with the consent-declined AIS sibling."
 
 screens:
   - id: payment-declined
-    name: "Payment Declined"
-    archetype: empty_state
+    name: "Payment Not Completed"
+    viewmodel: "PaymentDeclinedViewModel"
+    archetype: error
     shell:
       top_bar: false
       bottom_nav: false
 
-archetype: empty_state
+archetype: error
 
 components:
   - type: stack
@@ -35,14 +41,11 @@ components:
     children:
       - declined_icon
       - declined_title
+      - declined_assurance
       - declined_message
       - declined_details_card
-      - declined_amount_value
-      - declined_payee_value
-      - declined_reason_row
-      - declined_reason_label
-      - declined_reason_value
-      - declined_assurance
+      - declined_reasons_card
+      - declined_status_note
       - declined_try_again_button
       - declined_done_button
 
@@ -52,52 +55,70 @@ components:
     variant: default
     style:
       color: "#BA1A1A"
-      size: "92dp"
+      size: "88dp"
       alignment: center
+      padding_bottom: spacing.md
     a11y:
       role: image
-      label: "Payment declined"
+      label: "Payment not completed"
     test_context:
-      purpose: "Large declined glyph at the top of the terminal error screen"
+      purpose: "Large declined glyph at the top of the terminal screen — error-coloured but calm, no alarm motion"
       interaction_type: display
       data_driven: false
 
   - type: text
     id: declined_title
-    content: "Payment declined"
-    variant: headline_large
+    content: "Payment not completed"
+    variant: headline_medium
     style:
       typography: "Outfit/headline_medium"
       color: "#1A1C16"
       font_weight: 700
       alignment: center
-      padding_top: spacing.md
+      padding_bottom: spacing.xs
     a11y:
       role: heading
       level: 1
-      label: "Payment declined"
+      label: "Payment not completed"
     test_context:
-      purpose: "Primary terminal heading telling the user the payment was not authorised"
+      purpose: "Primary terminal heading — non-blaming framing that the payment did not go through"
+      interaction_type: display
+      data_driven: false
+
+  - type: text
+    id: declined_assurance
+    content: "Good news: no money has left your account."
+    variant: title_small
+    style:
+      typography: "Outfit/title_small"
+      color: "#386663"
+      font_weight: 600
+      alignment: center
+      padding_bottom: spacing.sm
+    a11y:
+      role: text
+      label: "Good news: no money has left your account."
+    test_context:
+      purpose: "Reassurance line promoted above the explanation — the payment is only submitted after authorisation, so a decline never debits the account"
       interaction_type: display
       data_driven: false
 
   - type: text
     id: declined_message
-    content: "HSBC didn't authorise this payment, so no money has left your account. You can review the details and try again."
+    content: "You didn't finish authorising this payment at HSBC, so it wasn't sent. You can review the details below and try again."
     variant: body_medium
     style:
       typography: "Outfit/body_medium"
       color: "#44483D"
       alignment: center
-      padding_top: spacing.xs
-      padding_bottom: spacing.md
+      padding_bottom: spacing.lg
     a11y:
       role: text
-      label: "HSBC didn't authorise this payment, so no money has left your account. You can review the details and try again."
+      label: "You didn't finish authorising this payment at HSBC, so it wasn't sent. You can review the details below and try again."
     test_context:
-      purpose: "Supporting copy explaining the decline happened at the bank and no charge was made"
+      purpose: "Supporting copy explaining authorisation didn't complete at the bank and what to do next"
       interaction_type: display
-      data_driven: true
+      data_driven: false
 
   - type: card
     id: declined_details_card
@@ -108,8 +129,7 @@ components:
       border_color: "#FFDAD6"
       border_width: 1
       padding: spacing.md
-      margin_top: spacing.sm
-      margin_bottom: spacing.lg
+      margin_bottom: spacing.md
       width: "match_parent"
     children:
       - declined_amount_value
@@ -117,44 +137,44 @@ components:
       - declined_reason_row
     a11y:
       role: group
-      label: "Declined payment details"
+      label: "Details of the payment that wasn't completed"
     test_context:
-      purpose: "Details card echoing the amount, payee and decline reason of the rejected payment"
+      purpose: "Details card echoing the attempted amount, payee, and decline reason carried in from the PaymentDraft"
       interaction_type: display
       data_driven: true
 
   - type: text
     id: declined_amount_value
-    content: "£500.00"
+    content: "£250.00"
     variant: display_small
     style:
       typography: "Outfit/display_small"
-      color: "#BA1A1A"
+      color: "#1A1C16"
       font_weight: 700
       alignment: center
       padding_bottom: spacing.xs
     a11y:
       role: text
-      label: "Amount: five hundred pounds"
+      label: "Attempted amount: two hundred and fifty pounds"
     test_context:
-      purpose: "Amount of the payment that was declined, carried in from the PaymentDraft"
+      purpose: "Amount of the payment that was attempted, rendered in neutral on-surface ink (not error red) so it reads as 'not taken' rather than 'charged'"
       interaction_type: display
       data_driven: true
 
   - type: text
     id: declined_payee_value
-    content: "To John Smith — Barclays Bank UK"
+    content: "To Jordan Avery — Barclays Bank UK"
     variant: body_large
     style:
       typography: "Outfit/body_large"
-      color: "#1A1C16"
+      color: "#44483D"
       alignment: center
       padding_bottom: spacing.sm
     a11y:
       role: text
-      label: "To John Smith at Barclays Bank UK"
+      label: "To Jordan Avery at Barclays Bank UK"
     test_context:
-      purpose: "Payee line of the declined payment"
+      purpose: "Payee line of the attempted payment"
       interaction_type: display
       data_driven: true
 
@@ -164,14 +184,16 @@ components:
     style:
       padding_top: spacing.sm
       justify: space_between
+      align: center
     children:
       - declined_reason_label
       - declined_reason_value
+    visible_when: "reason != null"
     a11y:
-      role: row
+      role: group
       label: "Decline reason"
     test_context:
-      purpose: "Row carrying the structured decline reason from the consent StatusReason or callback error"
+      purpose: "Row carrying the structured decline reason — shown only when a reason is resolved from the consent StatusReason or callback error"
       interaction_type: display
       data_driven: true
 
@@ -198,30 +220,119 @@ components:
       typography: "Outfit/body_medium"
       color: "#1A1C16"
       font_weight: 500
+      alignment: end
     a11y:
       role: text
       label: "Reason: Authorisation cancelled at HSBC"
     test_context:
-      purpose: "Human-readable decline reason mapped from consent Status RJCT StatusReason, the callback error param, or a rejected /domestic-payments submit"
+      purpose: "Human-readable decline reason mapped from the OAuth error param (access_denied), consent Status RJCT StatusReason, or a rejected /domestic-payments submit"
       interaction_type: display
       data_driven: true
 
+  - type: card
+    id: declined_reasons_card
+    variant: filled
+    style:
+      background: "#FFFFFF"
+      border_radius: "16dp"
+      padding: spacing.md
+      margin_bottom: spacing.md
+      width: "match_parent"
+    children:
+      - declined_reasons_heading
+      - declined_reason_one
+      - declined_reason_two
+      - declined_reason_three
+    a11y:
+      role: group
+      label: "Why a payment might not complete"
+    test_context:
+      purpose: "White card listing the common, non-blaming reasons a payment authorisation doesn't complete"
+      interaction_type: display
+      data_driven: false
+
   - type: text
-    id: declined_assurance
-    content: "No charge was made. Your money is safe."
+    id: declined_reasons_heading
+    content: "This can happen if:"
+    variant: title_small
+    style:
+      typography: "Outfit/title_small"
+      color: "#1A1C16"
+      font_weight: 700
+      padding_bottom: spacing.sm
+    a11y:
+      role: heading
+      level: 2
+      label: "This can happen if"
+    test_context:
+      purpose: "Heading for the reasons list inside the white card"
+      interaction_type: display
+      data_driven: false
+
+  - type: text
+    id: declined_reason_one
+    content: "You chose to cancel on the HSBC approval screen"
+    variant: body_medium
+    style:
+      typography: "Outfit/body_medium"
+      color: "#44483D"
+      padding_bottom: spacing.xs
+    a11y:
+      role: text
+      label: "You chose to cancel on the HSBC approval screen"
+    test_context:
+      purpose: "First reason — PSU declined or cancelled at the bank (access_denied)"
+      interaction_type: display
+      data_driven: false
+
+  - type: text
+    id: declined_reason_two
+    content: "The approval timed out before it was confirmed"
+    variant: body_medium
+    style:
+      typography: "Outfit/body_medium"
+      color: "#44483D"
+      padding_bottom: spacing.xs
+    a11y:
+      role: text
+      label: "The approval timed out before it was confirmed"
+    test_context:
+      purpose: "Second reason — authorisation timeout at the bank"
+      interaction_type: display
+      data_driven: false
+
+  - type: text
+    id: declined_reason_three
+    content: "HSBC couldn't confirm the payment from your account"
+    variant: body_medium
+    style:
+      typography: "Outfit/body_medium"
+      color: "#44483D"
+    a11y:
+      role: text
+      label: "HSBC couldn't confirm the payment from your account"
+    test_context:
+      purpose: "Third reason — the bank rejected the submitted /domestic-payments (consent RJCT)"
+      interaction_type: display
+      data_driven: false
+
+  - type: text
+    id: declined_status_note
+    content: "Reference: access_denied (consent RJCT)"
     variant: body_small
     style:
       typography: "Outfit/body_small"
       color: "#44483D"
       alignment: center
-      padding_bottom: spacing.md
+      padding_bottom: spacing.lg
+    visible_when: "uiState == Error"
     a11y:
       role: text
-      label: "No charge was made. Your money is safe."
+      label: "Technical reference: payment declined, access denied, consent rejected"
     test_context:
-      purpose: "Reassurance line confirming the account was not debited"
+      purpose: "Muted technical reference line — surfaces the resolved OAuth error code and consent Status only in the generic error variant"
       interaction_type: display
-      data_driven: false
+      data_driven: true
 
   - type: button
     id: declined_try_again_button
@@ -244,29 +355,30 @@ components:
     keyboard:
       focusable: true
     test_context:
-      purpose: "Primary CTA — pops back to send-money-confirm to re-attempt the payment authorisation"
+      purpose: "Primary CTA — pops back to send-money-confirm to re-stage the consent and re-authorise at HSBC"
       interaction_type: navigate
       data_driven: false
 
   - type: button
     id: declined_done_button
-    label: "Back to Send Money"
+    label: "Back to home"
     variant: text
     supported_states: [idle, hover, focus_visible, pressed]
     style:
       typography: "Outfit/label_large"
-      color: "#4C662B"
+      color: "#386663"
+      padding: spacing.md
       width: "match_parent"
     on_click:
       action: navigate
-      target: send-money
+      target: home
     a11y:
       role: button
-      label: "Cancel and return to Send Money"
+      label: "Back to home — leave this payment and return to your dashboard"
     keyboard:
       focusable: true
     test_context:
-      purpose: "Secondary CTA — abandons this payment and returns to the send-money entry screen"
+      purpose: "Secondary CTA — abandons this payment and returns to the home dashboard"
       interaction_type: navigate
       data_driven: false
 
@@ -275,30 +387,61 @@ responsive:
   baseline_width: 390
 
 states:
-  initial_state: error
+  initial_state: content
+  content:
+    layout: { type: column, padding: spacing.lg, align: center, justify: center }
+    visible_components: [declined_icon, declined_title, declined_assurance, declined_message, declined_details_card, declined_amount_value, declined_payee_value, declined_reason_row, declined_reason_label, declined_reason_value, declined_reasons_card, declined_reasons_heading, declined_reason_one, declined_reason_two, declined_reason_three, declined_try_again_button, declined_done_button]
+    note: "Primary terminal view — the PSU declined at HSBC or the callback returned access_denied. Renders directly from nav args (amount, currency, payeeName, payeeBank, reason). declined_reason_row shows the resolved reason; the muted declined_status_note is hidden because there is no unexpected error code."
   error:
     layout: { type: column, padding: spacing.lg, align: center, justify: center }
-    visible_components: [declined_icon, declined_title, declined_message, declined_details_card, declined_amount_value, declined_payee_value, declined_reason_row, declined_reason_label, declined_reason_value, declined_assurance, declined_try_again_button, declined_done_button]
-    note: "Terminal declined state — rendered directly from nav args (amount, currency, payeeName, payeeBank, reason). declined_reason_row is shown only when reason is non-blank. Reached from auth-callback when the PSU declines at HSBC, the consent is Status RJCT, the callback returns an error param, or the /domestic-payments submit is rejected."
+    visible_components: [declined_icon, declined_title, declined_assurance, declined_message, declined_details_card, declined_amount_value, declined_payee_value, declined_reason_row, declined_reason_label, declined_reason_value, declined_reasons_card, declined_reasons_heading, declined_reason_one, declined_reason_two, declined_reason_three, declined_status_note, declined_try_again_button, declined_done_button]
+    note: "Generic error variant — an unexpected or technical decline (callback carried an explicit error param, or the /domestic-payments submit was rejected with a consent Status RJCT). Same reassurance and retry path, plus declined_status_note exposing the reference code for support."
 
 state_model:
-  view_model: null
-  note: "No ViewModel — PaymentDeclinedScreen is a stateless composable driven entirely by navigation arguments. SCA is performed AT HSBC during the authorise redirect, so this terminal screen replaces the OBP sca-challenge error path. The decline reason is resolved by auth-callback (consent StatusReason / OAuth error param / rejected submit) and passed in as a nav arg. No StateFlow, no async load, no DI."
+  PaymentDeclinedViewModel:
+    screen_state: PaymentDeclinedUiState
+    pattern: MVI
+    state:
+      - field: amount
+        type: String
+        default: "\"£250.00\""
+        note: "Attempted payment amount, formatted, carried from the PaymentDraft via nav arg"
+      - field: currency
+        type: String
+        default: "\"GBP\""
+        note: "ISO 4217 currency of the attempted payment"
+      - field: payeeName
+        type: String
+        default: "\"Jordan Avery\""
+        note: "Display name of the intended payee"
+      - field: payeeBank
+        type: String
+        default: "\"Barclays Bank UK\""
+        note: "Payee institution name"
+      - field: reason
+        type: "String?"
+        default: "null"
+        note: "Human-readable decline reason resolved by auth-callback (OAuth error param / consent StatusReason / rejected submit); null hides the reason row"
+      - field: isUnexpectedError
+        type: Boolean
+        default: "false"
+        note: "true → render the error state variant with the muted reference note; false → the calm content variant"
+    events:
+      - "PaymentDeclinedEvent.NavigateToSendMoneyConfirm"
+      - "PaymentDeclinedEvent.NavigateToHome"
+    actions:
+      - PaymentDeclinedAction.TryAgainClicked
+      - PaymentDeclinedAction.BackToHomeClicked
+    di: []
+    base: "template.core.base.ui.viewmodel.BaseViewModel<PaymentDeclinedUiState, PaymentDeclinedEvent, PaymentDeclinedAction>"
+    note: "Stateless apart from inbound nav args — no network call, no DI. SCA is performed at HSBC during the authorise redirect, so this terminal screen replaces the OBP in-app sca-challenge error path. TryAgainClicked emits NavigateToSendMoneyConfirm (re-stage the consent + re-authorise); BackToHomeClicked emits NavigateToHome. The decline reason and amount/payee are resolved upstream by auth-callback and passed in as nav args."
   nav_params:
     - { name: amount, type: String }
     - { name: currency, type: String }
     - { name: payeeName, type: String }
     - { name: payeeBank, type: String }
     - { name: reason, type: "String?", default: "null" }
-  actions:
-    - navigate
-  callbacks:
-    - name: onTryAgain
-      signature: "() -> Unit"
-      consumer: send-money-confirm
-    - name: onDone
-      signature: "() -> Unit"
-      consumer: send-money
+    - { name: isUnexpectedError, type: Boolean, default: "false" }
 
 navigation:
   - id: nav_try_again
@@ -309,16 +452,16 @@ navigation:
       target: send-money-confirm
     note: "'Try again' pops back to send-money-confirm to re-stage the consent and re-authorise (matches payment-initiation.yaml connection payment-declined → send-money-confirm)."
   - id: nav_done
-    target: send-money
+    target: home
     trigger: done_click
     on_click:
       action: navigate
-      target: send-money
-    note: "Secondary exit back to the send-money entry screen, abandoning the payment."
+      target: home
+    note: "Secondary exit back to the home dashboard, abandoning the payment."
 
 api:
   endpoints: []
-  note: "Stateless terminal screen — all data (amount, payee, decline reason) arrives via nav args resolved by auth-callback. No OBIE API is invoked here; the underlying decline comes from create_domestic_payment_consent (Status RJCT), the oauth2_authorize error param, or a rejected create_domestic_payment submit upstream."
+  note: "Stateless terminal screen — all data (amount, payee, decline reason) arrives via nav args resolved by auth-callback. No OBIE API is invoked here; the underlying decline comes from create_domestic_payment_consent (Status RJCT), the oauth2_authorize error param (access_denied), or a rejected create_domestic_payment submit upstream."
 
 dependencies:
   tier: feature

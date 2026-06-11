@@ -37,6 +37,9 @@ status_history:
     contract_version: "1.1.0"
     bypass_flags: []
     note: "Approved after source→spec reconciliation (spec matches shipped Kotlin) + /idea verify PASS. Write-back shape (no approve_hash), consistent with project pattern. Previews for reconciled screens may lag the YAML pending a separate re-render."
+  - at: "2026-06-12"
+    by: "idea-layer additive edit"
+    note: "RESTORED the Data & Consent row (settings_data_consent_card → navigate consent-manager, FR-022) that source reconciliation had removed (settings_consent_manager_row). Under the HSBC Open Banking model, reviewing/revoking active data-sharing consents is a core capability that MUST be reachable; consent-manager was UI-orphaned (no incoming nav edge). Additive nav row only — no re-enrichment, status stays approved. Mirrors the About tappable-card pattern (card + leading icon + label) with an added supporting line. The shipped SettingsScreen.kt will need the matching row wired at /kmp-implement (step H)."
 
 screens:
   - id: settings
@@ -61,6 +64,7 @@ components:
       - settings_appearance_group
       - settings_security_header
       - settings_security_group
+      - settings_data_consent_card
       - settings_about_header
       - settings_about_about_card
       - settings_about_terms_card
@@ -669,6 +673,77 @@ components:
       interaction_type: action
       data_driven: false
 
+  # ── Data & Consent (restored for HSBC consent management — FR-022) ────────────
+
+  - type: card
+    id: settings_data_consent_card
+    variant: outlined
+    supported_states: [idle, hover, focus_visible, pressed]
+    style:
+      background: "#FFFFFF"
+      border_radius: "12dp"
+      padding: spacing.md
+      margin_bottom: spacing.md
+    on_click:
+      action: navigate
+      target: consent-manager
+    children:
+      - settings_data_consent_icon
+      - settings_data_consent_label
+      - settings_data_consent_subtitle
+    a11y:
+      role: button
+      label: "Data & Consent — review and revoke account access you've granted"
+    test_context:
+      purpose: "Tappable card (shield icon + label + supporting line) navigating to the Consent Manager (FR-022). Lets the user review and revoke active data-sharing consents granted to third parties under the Open Banking model."
+      interaction_type: navigate
+      data_driven: false
+
+  - type: icon
+    id: settings_data_consent_icon
+    content: "shield"
+    variant: default
+    style:
+      color: "#4C662B"
+      size: "20dp"
+    a11y:
+      role: image
+      label: ""
+    test_context:
+      purpose: "Leading icon for the Data & Consent card"
+      interaction_type: display
+      data_driven: false
+
+  - type: text
+    id: settings_data_consent_label
+    content: "Data & Consent"
+    variant: body_large
+    style:
+      typography: "Outfit/body_large"
+      color: "#1A1C16"
+    a11y:
+      role: text
+      label: "Data & Consent"
+    test_context:
+      purpose: "Title for the Data & Consent card"
+      interaction_type: display
+      data_driven: false
+
+  - type: text
+    id: settings_data_consent_subtitle
+    content: "Review and revoke account access you've granted"
+    variant: body_small
+    style:
+      typography: "Outfit/body_small"
+      color: "#44483D"
+    a11y:
+      role: text
+      label: "Review and revoke account access you've granted"
+    test_context:
+      purpose: "Supporting line under the Data & Consent title explaining the Consent Manager destination"
+      interaction_type: display
+      data_driven: false
+
   # ── About Section (one tappable card per entry) ──────────────────────────────
 
   - type: text
@@ -960,7 +1035,7 @@ states:
     note: "ScreenState.Loading — four skeleton cards while UserData + profile load."
   content:
     layout: { type: column, padding: spacing.lg }
-    visible_components: [settings_profile_header_card, settings_appearance_header, settings_appearance_group, settings_security_header, settings_security_group, settings_about_header, settings_about_about_card, settings_about_terms_card, settings_about_privacy_card, settings_about_licenses_card, settings_sign_out_button, settings_footer]
+    visible_components: [settings_profile_header_card, settings_appearance_header, settings_appearance_group, settings_security_header, settings_security_group, settings_data_consent_card, settings_about_header, settings_about_about_card, settings_about_terms_card, settings_about_privacy_card, settings_about_licenses_card, settings_sign_out_button, settings_footer]
     note: "ScreenState.Content — profile header + Appearance/Security/About + Sign out + footer. The two Reset Password dialogs overlay this state when triggered."
 
 state_model:
@@ -1023,6 +1098,11 @@ navigation:
     on_click:
       action: navigate
       target: profile
+  - id: nav_to_consent_manager
+    target: consent-manager
+    on_click:
+      action: navigate
+      target: consent-manager
   - id: nav_to_about
     target: about
     on_click:

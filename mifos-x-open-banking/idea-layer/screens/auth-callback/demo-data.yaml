@@ -1,0 +1,75 @@
+sibling: demo-data
+schema_version: "4.0"
+feature_id: auth-callback
+description: >-
+  Realistic OBIE/OAuth fixtures for the shared redirect-return takeover. Two branches keyed by
+  consentContext — AIS (account-access-consent → home) and PAYMENT (domestic-payment → payment-result).
+  All token/code values are opaque, redacted-looking placeholders; no real credentials. Tokens are
+  PSU-bound and consent-scoped; the app holds them only in an encrypted local cache (never UI state).
+
+samples:
+  # ─── consentContext == AIS ────────────────────────────────────────────────
+  ais:
+    consent_context: ACCOUNT_ACCESS
+    deep_link: "org.mifos.openbanking://oauth/callback?code=spt-7Qa3k9XfRb2mLp&id_token=eyJraWQiOiI5c2Rm…redacted…&state=aZ4kP1nQ7wsR3eT9&scope=openid%20accounts"
+    # obie_exchange_code (POST /oauth2/token, grant_type=authorization_code)
+    token_response:
+      access_token: "obie_at_3Nf9Kx2pLqVz7Rb1m4cWaUe8sYhTd6gJ0oP…redacted…"
+      refresh_token: "obie_rt_8Qz1Wm5kRv3Lp9Nx2cBfTe6sHa4dYg0Jo…redacted…"
+      id_token: "eyJhbGciOiJQUzI1NiIsImtpZCI6IjlzZGY…redacted…"
+      token_type: "Bearer"
+      expires_in: 3600
+      scope: "accounts"
+    # obie_poll_consent_status (GET /aisp/account-access-consents/{ConsentId})
+    consent_status:
+      ConsentId: "aac-9f2c1b7e-3d04-4a6e-8c11-2b5e7a9d0c44"
+      Status: "Authorised"
+    routes_to: home
+    phase_copy:
+      exchanging:
+        title: "Finishing secure connection…"
+        message: "Securely finishing your authorisation with HSBC. This only takes a moment."
+      verifying:
+        title: "Confirming your approval…"
+        message: "Checking your account-sharing approval went through."
+
+  # ─── consentContext == PAYMENT ────────────────────────────────────────────
+  payment:
+    consent_context: PAYMENT
+    deep_link: "org.mifos.openbanking://oauth/callback?code=spt-Lm4Rt8YpKa1qZx&id_token=eyJraWQiOiJwYXkt…redacted…&state=Vb6nQ2wsR9eT1aZ4&scope=openid%20payments"
+    # obie_exchange_code (POST /oauth2/token, grant_type=authorization_code)
+    token_response:
+      access_token: "obie_at_7Yb2Kx9pLqVz3Rb5m1cWaUe4sHtTd8gJ0oQ…redacted…"
+      refresh_token: "obie_rt_2Qz9Wm1kRv5Lp3Nx8cBfTe2sHa6dYg4Jo…redacted…"
+      id_token: "eyJhbGciOiJQUzI1NiIsImtpZCI6InBheS1rZXk…redacted…"
+      token_type: "Bearer"
+      expires_in: 3600
+      scope: "payments"
+    # obie_submit_domestic_payment (POST /pisp/domestic-payments)
+    payment_submit:
+      DomesticPaymentId: "dpi-1a8e4c92-6f73-4b21-9d50-7c3a8f1e2b66"
+      ConsentId: "dpc-5b3e9a14-2c87-4f60-bd19-8e44a7c0d233"
+      Status: "AcceptedSettlementInProcess"
+    routes_to: payment-result
+    phase_copy:
+      exchanging:
+        title: "Finishing secure connection…"
+        message: "Securely finishing your authorisation with HSBC. This only takes a moment."
+      verifying:
+        title: "Finalising your payment…"
+        message: "Submitting your payment to HSBC and confirming it was accepted."
+
+  # ─── error branch (shared shape; consentContext keys the destination) ──────
+  error:
+    ais:
+      trigger: "deep-link error param / state mismatch / invalid_grant / consent never AUTH / PSU declined"
+      deep_link: "org.mifos.openbanking://oauth/callback?error=access_denied&error_description=PSU%20declined%20the%20consent&state=aZ4kP1nQ7wsR3eT9"
+      title: "We couldn't connect your account"
+      message: "We couldn't complete your authorisation with HSBC. You can try again."
+      routes_to: consent-declined
+    payment:
+      trigger: "deep-link error param / invalid_grant / consent RJCT / payment rejected / PSU declined"
+      deep_link: "org.mifos.openbanking://oauth/callback?error=access_denied&error_description=Payment%20authorisation%20declined&state=Vb6nQ2wsR9eT1aZ4"
+      title: "We couldn't complete your payment"
+      message: "Your payment authorisation was declined. You can try again."
+      routes_to: payment-declined

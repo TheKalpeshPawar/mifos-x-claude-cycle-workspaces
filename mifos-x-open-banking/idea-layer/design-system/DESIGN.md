@@ -37,7 +37,7 @@ platforms: [android, ios, desktop, web]
 
 ## Overview
 
-Professional open banking super-app for Mifos X — earth-green M3 palette, card-based layouts, trust-first density with measured motion. Serves two user personas: Consumer (account management, payments, cards) and Field Officer (customer onboarding, KYC, loan applications). The palette conveys financial stability and responsible growth. A single typeface (Outfit) and a warm off-white background create a clean, modern, trustworthy surface across all screens.
+Professional consumer open banking app for Mifos X — earth-green M3 palette, card-based layouts, trust-first density with measured motion. It is a regulated Open Banking TPP (AISP + PISP) against the HSBC UK/CE sandbox: retail consumers connect their HSBC account via consent + redirect authorisation to view balances and transactions and initiate payments — there is no in-app password and SCA happens at the bank. The palette conveys financial stability and responsible growth. A single typeface (Outfit) and a warm off-white background create a clean, modern, trustworthy surface across all screens.
 
 Aesthetic family: `taste-default` — variance dial 4 (measured expressiveness, not loud). Motion is intentional and brief; elevation is flat-card style (border-based depth) except for FAB and dialogs.
 
@@ -49,7 +49,7 @@ Aesthetic family: `taste-default` — variance dial 4 (measured expressiveness, 
 - `on_primary` `#FFFFFF` — text/icons on primary surfaces
 - `on_primary_container` `#102000` — text on primary_container
 
-**Secondary palette** — teal accent for field-officer surfaces and supporting emphasis:
+**Secondary palette** — teal accent for supporting emphasis and secondary actions:
 - `secondary` `#386663`
 - `secondary_container` `#BCEBE7`
 

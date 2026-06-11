@@ -4,81 +4,50 @@ Functional requirements mirror `idea-layer/idea-plan.yaml` §9 (the approved req
 
 ## Functional Requirements
 
-### Authentication
+### Authentication & Consent (HSBC FAPI — replaces OBP DirectLogin)
 
 | ID | Description |
 |---|---|
-| FR-001 | User authenticates via HSBC Open Banking OAuth2 (FAPI 1.0 Advanced): client onboards via Dynamic Client Registration, then consent → PSU authorisation (authorization_code + PKCE, mTLS, detached JWS) → access token. Replaces OBP DirectLogin (migration 2026-06-11). |
-| FR-002 | User can request a password reset link sent to their registered email. |
-| FR-003 | Authenticated user can change password with current-password verification. |
+| FR-001 | User authenticates via HSBC Open Banking OAuth2 (FAPI 1.0 Advanced): client onboards via Dynamic Client Registration, then consent → PSU authorisation (authorization_code + PKCE, mTLS, detached JWS) → access token. Replaces OBP DirectLogin. There is no in-app password — SCA happens at the bank. |
+| FR-002 | User starts the "Connect your HSBC account" journey from an intro screen explaining what Open Banking data sharing means. |
+| FR-003 | User selects the data-sharing permissions and the app creates an account-access consent (status AWAU) before redirecting to the bank to authorise. |
+| FR-004 | On deep-link return the app exchanges the authorisation code for a consent-scoped access token and confirms the consent reached AUTH before reading any account data. |
+| FR-005 | When a prior consent is EXPD/RJCT or revoked, the user is routed to re-consent rather than into the app. |
 
-### Consumer Banking — Home & Accounts
+### Consumer Banking — Account Information (AISP, read-only, consent-gated)
 
 | ID | Description |
 |---|---|
 | FR-010 | Consumer sees account summary cards, recent transactions, and quick-action shortcuts on the home dashboard. |
-| FR-011 | Consumer can view all accounts (savings, current, loan) with balance and status. |
-| FR-012 | Consumer can view individual account details including balance history and recent transactions. |
+| FR-011 | Consumer can view all authorised accounts (current, savings) with balance and status. |
+| FR-012 | Consumer can view individual account details including balances and recent transactions. |
 | FR-013 | Consumer can browse transaction history with date range filtering and text search. |
+| FR-015 | Consumer can view their read-only beneficiaries from the AISP feed (add/edit/delete is not supported under Open Banking). |
+| FR-018 | Consumer can view their read-only standing orders and open standing-order detail. |
+| FR-019 | Consumer can view active direct debit mandates and their detail (read-only under AISP). |
+| FR-024 | Consumer can view spending insights, budget progress, and category breakdowns over connected accounts. |
+| FR-025 | Consumer can browse product reference data and compare available banking products. |
+| FR-026 | Consumer can tag and categorize transactions for personal tracking (local PFM annotation). |
+| FR-027 | Consumer can view business cashflow insights across their connected accounts. |
 
-### Consumer Banking — Payments & Beneficiaries
-
-| ID | Description |
-|---|---|
-| FR-014 | Consumer can initiate a money transfer by selecting a beneficiary, entering amount, and confirming. |
-| FR-015 | Consumer can add, edit, and delete saved transfer recipients. |
-| FR-041 | Consumer enters the transfer amount, selects the beneficiary and payment rail, and sees a live funds check against the source account balance before continuing. |
-| FR-042 | Consumer enters the one-time SCA code to authorise an above-threshold payment (Strong Customer Authentication step) before submission. |
-| FR-043 | Consumer sees a terminal payment confirmation showing the amount, payee, and transaction id, with links to the transaction detail and back to home. |
-
-### Consumer Banking — Cards
+### Consumer Banking — Payments (PISP — consent → authorise → submit → status)
 
 | ID | Description |
 |---|---|
-| FR-016 | Consumer can view all payment cards, see balances, and navigate to card details. |
-| FR-017 | Consumer can freeze/unfreeze a card and view card-specific transaction history. |
+| FR-014 | Consumer can initiate a payment by selecting a payee/account and payment kind (domestic, scheduled, standing-order, international), then confirming. |
+| FR-041 | Consumer enters the transfer amount and the app runs a Confirmation-of-Funds check against the source account balance before continuing. |
+| FR-043 | Consumer sees a terminal payment result (amount, payee, payment id) after the bank authorisation and submission, with links to transaction detail and back to home. |
+| FR-044 | Consumer authors and edits a domestic standing order (amount, frequency, start/end date, beneficiary) via the PISP standing-order consent flow. |
+| FR-045 | Consumer can initiate an international (cross-currency) payment with exchange-rate information surfaced before authorising. |
+| FR-046 | Payment authorisation is performed at HSBC via a redirect handoff (SCA at the bank); the app submits the payment only after the consent is authorised and never collects an SCA code in-app. |
 
-### Consumer Banking — Recurring & Mandates
-
-| ID | Description |
-|---|---|
-| FR-018 | Consumer can view and manage recurring automated payments. |
-| FR-019 | Consumer can view active direct debit mandates and cancel unwanted ones. |
-| FR-044 | Consumer authors a new recurring standing order (amount, frequency, start/end date, beneficiary) and submits it via POST. |
-
-### Consumer Banking — Discovery & Insights
+### Consumer Banking — Consent, Notifications & Discovery
 
 | ID | Description |
 |---|---|
-| FR-020 | Consumer can find nearby ATMs and branches using geolocation. |
-| FR-021 | Consumer can view live foreign exchange rates and convert between currencies. |
-| FR-022 | Consumer can review and revoke OAuth consents granted to third-party apps. |
-| FR-023 | Consumer receives in-app notifications for payment status, KYC updates, and alerts. |
-| FR-024 | Consumer can view spending insights, budget progress, and category breakdowns. |
-| FR-025 | Consumer can browse available banking products and view terms. |
-| FR-026 | Consumer can tag and categorize transactions for personal tracking. |
-
-### Field Officer
-
-> ⚠️ **OBSOLETE — pending removal (HSBC migration 2026-06-11).** HSBC Open Banking is consumer PSD2;
-> it exposes no field-officer / agent-onboarding / KYC / customer-management surface. FR-030–FR-040
-> have **no HSBC API backing** and are slated for deletion via `/idea feature-deprecate` (the FO screen
-> cluster) + the vision pivot (B2B agent banking → consumer Open Banking). Retained here only until
-> that step runs.
-
-| ID | Description |
-|---|---|
-| FR-030 | Field officer sees daily metrics (customers onboarded, applications pending, meetings today). |
-| FR-031 | Field officer can search customers by name, ID number, or phone. |
-| FR-032 | Field officer views customer 360: accounts, KYC status, application history. |
-| FR-033 | Field officer completes multi-step individual customer onboarding (personal info, KYC docs, account selection). |
-| FR-034 | Field officer completes multi-step corporate onboarding (business info, directors, documentation). |
-| FR-035 | Field officer reviews uploaded KYC documents and approves/rejects with notes. |
-| FR-036 | Field officer reviews pending account applications with filtering by status. |
-| FR-037 | Field officer approves or rejects an individual account application with comments. |
-| FR-038 | Field officer can send and receive secure messages with assigned customers. |
-| FR-039 | Field officer can schedule, view, and manage customer meetings. |
-| FR-040 | New agent/field officer can register with required credentials for admin approval. |
+| FR-020 | Consumer can find nearby ATMs and branches using geolocation via unauthenticated Open Data. |
+| FR-022 | Consumer can review and revoke active data-sharing consents granted to the app. |
+| FR-023 | Consumer receives in-app event notifications (consent-revoked, payment status) via the Event Notification feed. |
 
 ---
 

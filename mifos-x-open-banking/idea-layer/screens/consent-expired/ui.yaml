@@ -2,29 +2,40 @@ id: consent-expired
 name: "Reconnect Your Account"
 feature: consent-expired
 flavor: consumer
-status: draft
-quality_score: 0
+status: enriched
+quality_score: 100
 contract_version: "1.1.0"
 capabilities:
   - has_ui
   - has_api
-tags: [FR-OBIE-CONSENT]
+tags: [FR-OBIE-CONSENT, FR-005]
 status_history:
   - to: draft
     at: "2026-06-11"
     by: "/idea add (OBIE migration)"
     note: "Terminal renewal screen for the OBIE account-access-consent journey. Shown when a previously-authorised consent has expired or been revoked (consent Status EXPD, or RJCT/CANC after revocation). Reachable from splash on cold start when the stored ConsentId resolves to a non-AUTH status, and from consent-manager on revoke. Explains that access needs renewing with a 'Reconnect' CTA back to consent-request. Carries has_api because it may call GET /aisp/account-access-consents/{ConsentId} to confirm the current status before deciding which copy to show."
+  - to: enriched
+    at: "2026-06-12"
+    by: "/idea enrich"
+    note: "Enriched to 100/100. Linked the data-driven reference line to obie_get_consent_status (API coverage + per-component states); added a ConsentExpiredError hierarchy to the state model (StatusCheckFailed 400 / ConsentNotFound 404 / SessionEnded 401); added route params (consentId, reason) so callers can pass EXPD vs revoked hints; added contentDescription a11y on both CTAs; added testing + documentation blocks (FR-005). Real sample values used — Status EXPD with a past ExpirationDateTime (12 Mar 2026)."
 
 screens:
   - id: consent-expired
     name: "Reconnect Your Account"
     viewmodel: "ConsentExpiredViewModel"
     archetype: error
+    states_handled: [loading, content, error]
     shell:
       top_bar: false
       bottom_nav: false
 
 archetype: error
+
+route:
+  name: ConsentExpiredRoute
+  params:
+    consentId: { type: "String?", required: false, source: "stored ConsentId passed by splash / consent-manager; null falls back to generic renewal copy" }
+    reason: { type: "String?", required: false, source: "optional EXPD | REVOKED hint so copy can distinguish expired from revoked without waiting on the status check" }
 
 components:
   - type: stack
@@ -168,7 +179,7 @@ components:
 
   - type: text
     id: expired_status_note
-    content: "Reference: consent expired (EXPD)"
+    content: "Reference: consent expired (EXPD) · 12 Mar 2026"
     variant: body_small
     style:
       typography: "Outfit/body_small"
@@ -176,11 +187,26 @@ components:
       alignment: center
       padding_bottom: spacing.lg
     visible_when: "uiState == Content"
+    api:
+      endpoint: obie_get_consent_status
+      binds: "Status + ExpirationDateTime → '{statusLabel} ({Status}) · {ExpirationDateTime|date}'"
     a11y:
       role: text
       label: "Technical reference: consent expired"
+      contentDescription: "Connection reference: consent expired, code EXPD, on 12 March 2026"
+    component_states:
+      loading:
+        type: shimmer
+        count: 1
+        description: "single 200x16dp text shimmer where the reference line resolves"
+      error:
+        type: inline-empty
+        message: "Status reference unavailable"
+      success:
+        type: text
+        description: "Resolved status label, OBIE Status code, and expiry date"
     test_context:
-      purpose: "Muted technical reference line showing the resolved consent status (EXPD, or revoked → RJCT/CANC) confirmed by the status check"
+      purpose: "Muted technical reference line showing the resolved consent status (EXPD, or revoked → RJCT/CANC) and the past ExpirationDateTime confirmed by the status check"
       interaction_type: display
       data_driven: true
 
@@ -254,6 +280,7 @@ components:
     a11y:
       role: button
       label: "Reconnect — renew access to your HSBC account"
+      contentDescription: "Reconnect button — renew access to your HSBC account, opens the connect-your-account screen"
     keyboard:
       focusable: true
     test_context:
@@ -277,6 +304,7 @@ components:
     a11y:
       role: button
       label: "Not now — return to the connect-your-account intro"
+      contentDescription: "Not now button — dismiss the renewal prompt and return to the connect-your-account intro"
     keyboard:
       focusable: true
     test_context:
@@ -323,6 +351,12 @@ state_model:
         type: "String?"
         default: "null"
         note: "stored ConsentId of the lapsed consent, supplied as a nav arg from splash / consent-manager"
+    errors:
+      name: ConsentExpiredError
+      types:
+        - { type: StatusCheckFailed, retry: true, message_key: error_consent_status_check, http: 400, note: "GET status check failed — fall back to generic renewal copy (error state)" }
+        - { type: ConsentNotFound, retry: false, message_key: error_consent_not_found, http: 404, note: "Stored ConsentId no longer resolves at HSBC — still offer Reconnect" }
+        - { type: SessionEnded, retry: false, message_key: error_session_ended, http: 401, note: "Access token expired — Reconnect restarts the consent journey" }
     events:
       - "ConsentExpiredEvent.NavigateToConsentRequest"
       - "ConsentExpiredEvent.NavigateToConsentIntro"
@@ -386,3 +420,26 @@ api:
 dependencies:
   tier: feature
   features: [shared-core, obie-consent]
+
+testing:
+  scenarios:
+    - { id: TC-CONSENTEXPIRED-001, scenario: "On mount with a stored ConsentId, the status-check banner shows while GET account-access-consents/{ConsentId} is in flight (loading state)", priority: P0 }
+    - { id: TC-CONSENTEXPIRED-002, scenario: "Status resolves EXPD → content state shows the reference line 'consent expired (EXPD) · 12 Mar 2026' and an active Reconnect CTA", priority: P0 }
+    - { id: TC-CONSENTEXPIRED-003, scenario: "Status resolves RJCT/CANC (revoked at HSBC) → content state with revoked-flavoured reference line", priority: P1 }
+    - { id: TC-CONSENTEXPIRED-004, scenario: "Status check fails (400/network) → error state hides the reference line and falls back to generic renewal copy; Reconnect still works", priority: P0 }
+    - { id: TC-CONSENTEXPIRED-005, scenario: "Tap Reconnect → clears the stale local consent record and navigates to consent-request to start a fresh consent", priority: P0 }
+    - { id: TC-CONSENTEXPIRED-006, scenario: "Tap Not now → navigates back to consent-intro without renewing", priority: P1 }
+    - { id: TC-CONSENTEXPIRED-007, scenario: "Status unexpectedly returns AUTH → caller routes to home instead of rendering this screen", priority: P1 }
+  coverage_target: 80
+
+documentation:
+  user_stories:
+    - { actor: "returning user", action: "understand why my HSBC connection stopped working", benefit: "I'm reassured it's a routine security expiry, not an error or a lost account" }
+    - { actor: "returning user", action: "reconnect my HSBC account in one tap", benefit: "I get my balances and transactions back without re-entering anything in the app" }
+    - { actor: "privacy-conscious user", action: "see that re-approval happens at HSBC, not in the app", benefit: "I trust that my banking credentials never touch this app" }
+  success_metrics:
+    - { metric: reconnect_cta_tap_rate, target: "70%" }
+    - { metric: reconsent_completion_rate, target: "85%" }
+    - { metric: status_check_success_rate, target: "98%" }
+  related_requirements:
+    - { id: FR-005, summary: "When a prior consent is EXPD/RJCT or revoked, route the user to re-consent rather than into the app" }

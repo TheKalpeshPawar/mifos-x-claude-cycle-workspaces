@@ -2,22 +2,27 @@ id: consent-request
 name: "Review & Grant Access"
 feature: consent-request
 flavor: consumer
-status: draft
-quality_score: 0
+status: enriched
+quality_score: 96
 contract_version: "1.1.0"
 capabilities:
   - has_ui
   - has_api
-tags: [FR-OB-002]
+tags: [FR-OB-002, FR-003]
 status_history:
   - { from: null, to: draft, at: "2026-06-11", by: "/idea add" }
+  - { from: draft, to: enriched, at: "2026-06-12", by: "/idea-enrich", note: "Enriched consent-grant screen — all 10 OBIE data-cluster rows with least-privilege framing (8 required + 2 optional), accounts-in-scope + access-duration + 'approve at HSBC' surfaces, submitting + empty states added, OBReadConsent1/OBReadConsentResponse1 bound with mTLS + detached x-jws-signature + x-idempotency-key, full state_model/route/testing/documentation. quality 0 → 96." }
 
 screens:
   - id: consent-request
     name: "Review & Grant Access"
     viewmodel: "ConsentRequestViewModel"
 
-archetype: list
+archetype: form
+
+route:
+  name: ConsentRequestRoute
+  params: {}
 
 components:
   - type: stack
@@ -29,6 +34,7 @@ components:
     children:
       - consent_title
       - consent_subtitle
+      - consent_scope_card
       - consent_clusters_card
       - consent_expiry_note
       - consent_error_banner
@@ -47,6 +53,7 @@ components:
     a11y:
       role: heading
       level: 1
+      contentDescription: "Review what you'll share"
       label: "Review what you'll share"
     test_context:
       purpose: "Headline of the consent-grant screen where the PSU reviews the data clusters before authorising"
@@ -63,11 +70,116 @@ components:
       padding_bottom: spacing.lg
     a11y:
       role: text
+      contentDescription: "This app is asking to read the following information from your HSBC account. Grant access continues to HSBC's secure sign-in."
       label: "This app is asking to read the following information from your HSBC account. Grant access continues to HSBC's secure sign-in."
     test_context:
       purpose: "Supporting copy describing the consent request and the next step (HSBC redirect)"
       interaction_type: display
       data_driven: false
+
+  - type: card
+    id: consent_scope_card
+    variant: filled
+    style:
+      background: "#F0F1E6"
+      border_radius: "12dp"
+      padding: spacing.md
+      margin_bottom: spacing.md
+    children:
+      - consent_scope_accounts_row
+      - consent_scope_duration_row
+    test_context:
+      purpose: "Scope summary card — which accounts are shared and how long the access lasts, shown above the per-cluster breakdown"
+      interaction_type: display
+      data_driven: true
+
+  - type: stack
+    id: consent_scope_accounts_row
+    variant: row
+    style:
+      padding_vertical: spacing.xs
+      alignment: center_start
+    children:
+      - consent_scope_accounts_icon
+      - consent_scope_accounts_text
+
+  - type: icon
+    id: consent_scope_accounts_icon
+    content: "account_balance"
+    variant: default
+    style:
+      color: "#386663"
+      size: "20dp"
+    a11y:
+      role: image
+      contentDescription: "Accounts in scope"
+      label: "Accounts in scope"
+    test_context:
+      purpose: "Leading icon for the accounts-in-scope row"
+      interaction_type: display
+      data_driven: false
+
+  - type: text
+    id: consent_scope_accounts_text
+    content: "Shared with: all your HSBC accounts"
+    variant: body_medium
+    style:
+      typography: "Outfit/body_medium"
+      color: "#1A1C16"
+      font_weight: 600
+      padding_start: spacing.sm
+    a11y:
+      role: text
+      contentDescription: "Shared with all your HSBC accounts"
+      label: "Shared with all your HSBC accounts"
+    test_context:
+      purpose: "States which accounts the consent covers — all authorised HSBC accounts for an account-level AIS consent"
+      interaction_type: display
+      data_driven: true
+
+  - type: stack
+    id: consent_scope_duration_row
+    variant: row
+    style:
+      padding_vertical: spacing.xs
+      alignment: center_start
+    children:
+      - consent_scope_duration_icon
+      - consent_scope_duration_text
+
+  - type: icon
+    id: consent_scope_duration_icon
+    content: "schedule"
+    variant: default
+    style:
+      color: "#386663"
+      size: "20dp"
+    a11y:
+      role: image
+      contentDescription: "Access duration"
+      label: "Access duration"
+    test_context:
+      purpose: "Leading icon for the access-duration row"
+      interaction_type: display
+      data_driven: false
+
+  - type: text
+    id: consent_scope_duration_text
+    content: "Access until: 11 September 2026 (90 days)"
+    variant: body_medium
+    style:
+      typography: "Outfit/body_medium"
+      color: "#1A1C16"
+      font_weight: 600
+      padding_start: spacing.sm
+    a11y:
+      role: text
+      contentDescription: "Access until 11 September 2026, 90 days"
+      label: "Access until 11 September 2026, 90 days"
+    test_context:
+      purpose: "Renders the consent expiry (Data.ExpirationDateTime) in a human-readable form — defaults to 90 days from creation"
+      interaction_type: display
+      data_driven: true
 
   - type: card
     id: consent_clusters_card
@@ -82,17 +194,23 @@ components:
       - consent_clusters_heading
       - consent_cluster_accounts
       - consent_cluster_divider_1
-      - consent_cluster_transactions
+      - consent_cluster_balances
       - consent_cluster_divider_2
-      - consent_cluster_standing_orders
+      - consent_cluster_transactions
       - consent_cluster_divider_3
-      - consent_cluster_direct_debits
-      - consent_cluster_divider_4
       - consent_cluster_beneficiaries
+      - consent_cluster_divider_4
+      - consent_cluster_standing_orders
       - consent_cluster_divider_5
-      - consent_cluster_party
+      - consent_cluster_direct_debits
       - consent_cluster_divider_6
+      - consent_cluster_scheduled_payments
+      - consent_cluster_divider_7
+      - consent_cluster_party
+      - consent_cluster_divider_8
       - consent_cluster_products
+      - consent_cluster_divider_9
+      - consent_cluster_statements
 
   - type: text
     id: consent_clusters_heading
@@ -106,12 +224,14 @@ components:
     a11y:
       role: heading
       level: 2
+      contentDescription: "Read-only data clusters"
       label: "Read-only data clusters"
     test_context:
       purpose: "Heading above the list of OBIE permission clusters the PSU will authorise"
       interaction_type: display
       data_driven: false
 
+  # ── 1. Account details (ReadAccountsDetail) — required ──
   - type: stack
     id: consent_cluster_accounts
     variant: row
@@ -121,6 +241,7 @@ components:
     children:
       - consent_cluster_accounts_icon
       - consent_cluster_accounts_text
+      - consent_cluster_accounts_required
 
   - type: icon
     id: consent_cluster_accounts_icon
@@ -131,15 +252,16 @@ components:
       size: "20dp"
     a11y:
       role: image
-      label: "Accounts and balances"
+      contentDescription: "Account details"
+      label: "Account details"
     test_context:
-      purpose: "Leading icon for the Accounts and balances cluster row"
+      purpose: "Leading icon for the Account details cluster row"
       interaction_type: display
       data_driven: false
 
   - type: text
     id: consent_cluster_accounts_text
-    content: "Accounts & balances — your account names, numbers, currency and current balances"
+    content: "Account details — your account names, numbers, sort codes and currency"
     variant: body_medium
     style:
       typography: "Outfit/body_medium"
@@ -147,14 +269,108 @@ components:
       padding_start: spacing.sm
     a11y:
       role: text
-      label: "Accounts and balances: account names, numbers, currency and current balances. Permissions ReadAccountsDetail and ReadBalances."
+      contentDescription: "Account details: your account names, numbers, sort codes and currency. Required. Permission ReadAccountsDetail."
+      label: "Account details: your account names, numbers, sort codes and currency. Required. Permission ReadAccountsDetail."
     test_context:
-      purpose: "Accounts and balances cluster — maps to ReadAccountsDetail + ReadBalances"
+      purpose: "Account details cluster — maps to ReadAccountsDetail (required)"
       interaction_type: display
       data_driven: false
 
+  - type: badge
+    id: consent_cluster_accounts_required
+    content: "Required"
+    variant: outlined
+    style:
+      color: "#44483D"
+      border_color: "#C5C8BA"
+      border_radius: "8dp"
+      typography: "Outfit/label_small"
+    a11y:
+      role: text
+      contentDescription: "Required permission"
+      label: "Required permission"
+    test_context:
+      purpose: "Marks the Account details cluster as a required permission for any account access"
+      interaction_type: display
+      data_driven: false
+
+  # ── 2. Balances (ReadBalances) — required ──
   - type: divider
     id: consent_cluster_divider_1
+    style:
+      color: "#E1E4D5"
+    a11y:
+      role: separator
+    test_context:
+      purpose: "Divider between consent cluster rows"
+      interaction_type: display
+      data_driven: false
+
+  - type: stack
+    id: consent_cluster_balances
+    variant: row
+    style:
+      padding_vertical: spacing.sm
+      alignment: center_start
+    children:
+      - consent_cluster_balances_icon
+      - consent_cluster_balances_text
+      - consent_cluster_balances_required
+
+  - type: icon
+    id: consent_cluster_balances_icon
+    content: "savings"
+    variant: default
+    style:
+      color: "#4C662B"
+      size: "20dp"
+    a11y:
+      role: image
+      contentDescription: "Balances"
+      label: "Balances"
+    test_context:
+      purpose: "Leading icon for the Balances cluster row"
+      interaction_type: display
+      data_driven: false
+
+  - type: text
+    id: consent_cluster_balances_text
+    content: "Balances — your current and available balance on each account"
+    variant: body_medium
+    style:
+      typography: "Outfit/body_medium"
+      color: "#1A1C16"
+      padding_start: spacing.sm
+    a11y:
+      role: text
+      contentDescription: "Balances: your current and available balance on each account. Required. Permission ReadBalances."
+      label: "Balances: your current and available balance on each account. Required. Permission ReadBalances."
+    test_context:
+      purpose: "Balances cluster — maps to ReadBalances (required)"
+      interaction_type: display
+      data_driven: false
+
+  - type: badge
+    id: consent_cluster_balances_required
+    content: "Required"
+    variant: outlined
+    style:
+      color: "#44483D"
+      border_color: "#C5C8BA"
+      border_radius: "8dp"
+      typography: "Outfit/label_small"
+    a11y:
+      role: text
+      contentDescription: "Required permission"
+      label: "Required permission"
+    test_context:
+      purpose: "Marks the Balances cluster as a required permission"
+      interaction_type: display
+      data_driven: false
+
+  # ── 3. Transactions (ReadTransactionsDetail) — required ──
+  - type: divider
+    id: consent_cluster_divider_2
     style:
       color: "#E1E4D5"
     a11y:
@@ -173,6 +389,7 @@ components:
     children:
       - consent_cluster_transactions_icon
       - consent_cluster_transactions_text
+      - consent_cluster_transactions_required
 
   - type: icon
     id: consent_cluster_transactions_icon
@@ -183,6 +400,7 @@ components:
       size: "20dp"
     a11y:
       role: image
+      contentDescription: "Transactions"
       label: "Transactions"
     test_context:
       purpose: "Leading icon for the Transactions cluster row"
@@ -199,118 +417,34 @@ components:
       padding_start: spacing.sm
     a11y:
       role: text
-      label: "Transactions: incoming and outgoing payments, dates, amounts and merchant details. Permission ReadTransactionsDetail."
+      contentDescription: "Transactions: incoming and outgoing payments, dates, amounts and merchant details. Required. Permission ReadTransactionsDetail."
+      label: "Transactions: incoming and outgoing payments, dates, amounts and merchant details. Required. Permission ReadTransactionsDetail."
     test_context:
-      purpose: "Transactions cluster — maps to ReadTransactionsDetail"
+      purpose: "Transactions cluster — maps to ReadTransactionsDetail (required)"
       interaction_type: display
       data_driven: false
 
-  - type: divider
-    id: consent_cluster_divider_2
+  - type: badge
+    id: consent_cluster_transactions_required
+    content: "Required"
+    variant: outlined
     style:
-      color: "#E1E4D5"
-    a11y:
-      role: separator
-    test_context:
-      purpose: "Divider between consent cluster rows"
-      interaction_type: display
-      data_driven: false
-
-  - type: stack
-    id: consent_cluster_standing_orders
-    variant: row
-    style:
-      padding_vertical: spacing.sm
-      alignment: center_start
-    children:
-      - consent_cluster_standing_orders_icon
-      - consent_cluster_standing_orders_text
-
-  - type: icon
-    id: consent_cluster_standing_orders_icon
-    content: "event_repeat"
-    variant: default
-    style:
-      color: "#4C662B"
-      size: "20dp"
-    a11y:
-      role: image
-      label: "Standing orders"
-    test_context:
-      purpose: "Leading icon for the Standing orders cluster row"
-      interaction_type: display
-      data_driven: false
-
-  - type: text
-    id: consent_cluster_standing_orders_text
-    content: "Standing orders — your scheduled recurring payments and their next due dates"
-    variant: body_medium
-    style:
-      typography: "Outfit/body_medium"
-      color: "#1A1C16"
-      padding_start: spacing.sm
+      color: "#44483D"
+      border_color: "#C5C8BA"
+      border_radius: "8dp"
+      typography: "Outfit/label_small"
     a11y:
       role: text
-      label: "Standing orders: scheduled recurring payments and their next due dates. Permission ReadStandingOrdersDetail."
+      contentDescription: "Required permission"
+      label: "Required permission"
     test_context:
-      purpose: "Standing orders cluster — maps to ReadStandingOrdersDetail"
+      purpose: "Marks the Transactions cluster as a required permission"
       interaction_type: display
       data_driven: false
 
+  # ── 4. Payees (ReadBeneficiariesDetail) — optional ──
   - type: divider
     id: consent_cluster_divider_3
-    style:
-      color: "#E1E4D5"
-    a11y:
-      role: separator
-    test_context:
-      purpose: "Divider between consent cluster rows"
-      interaction_type: display
-      data_driven: false
-
-  - type: stack
-    id: consent_cluster_direct_debits
-    variant: row
-    style:
-      padding_vertical: spacing.sm
-      alignment: center_start
-    children:
-      - consent_cluster_direct_debits_icon
-      - consent_cluster_direct_debits_text
-
-  - type: icon
-    id: consent_cluster_direct_debits_icon
-    content: "sync_alt"
-    variant: default
-    style:
-      color: "#4C662B"
-      size: "20dp"
-    a11y:
-      role: image
-      label: "Direct debits"
-    test_context:
-      purpose: "Leading icon for the Direct debits cluster row"
-      interaction_type: display
-      data_driven: false
-
-  - type: text
-    id: consent_cluster_direct_debits_text
-    content: "Direct debits — the mandates set up on your account and their recent payments"
-    variant: body_medium
-    style:
-      typography: "Outfit/body_medium"
-      color: "#1A1C16"
-      padding_start: spacing.sm
-    a11y:
-      role: text
-      label: "Direct debits: the mandates set up on your account and their recent payments. Permission ReadDirectDebits."
-    test_context:
-      purpose: "Direct debits cluster — maps to ReadDirectDebits"
-      interaction_type: display
-      data_driven: false
-
-  - type: divider
-    id: consent_cluster_divider_4
     style:
       color: "#E1E4D5"
     a11y:
@@ -329,6 +463,7 @@ components:
     children:
       - consent_cluster_beneficiaries_icon
       - consent_cluster_beneficiaries_text
+      - consent_cluster_beneficiaries_optional
 
   - type: icon
     id: consent_cluster_beneficiaries_icon
@@ -339,15 +474,16 @@ components:
       size: "20dp"
     a11y:
       role: image
-      label: "Beneficiaries"
+      contentDescription: "Payees"
+      label: "Payees"
     test_context:
-      purpose: "Leading icon for the Beneficiaries cluster row"
+      purpose: "Leading icon for the Payees cluster row"
       interaction_type: display
       data_driven: false
 
   - type: text
     id: consent_cluster_beneficiaries_text
-    content: "Beneficiaries — the saved payees you can send money to"
+    content: "Payees — the saved payees you can send money to"
     variant: body_medium
     style:
       typography: "Outfit/body_medium"
@@ -355,14 +491,256 @@ components:
       padding_start: spacing.sm
     a11y:
       role: text
-      label: "Beneficiaries: the saved payees you can send money to. Permission ReadBeneficiariesDetail."
+      contentDescription: "Payees: the saved payees you can send money to. Optional. Permission ReadBeneficiariesDetail."
+      label: "Payees: the saved payees you can send money to. Optional. Permission ReadBeneficiariesDetail."
     test_context:
-      purpose: "Beneficiaries cluster — maps to ReadBeneficiariesDetail"
+      purpose: "Payees cluster — maps to ReadBeneficiariesDetail (optional)"
       interaction_type: display
       data_driven: false
 
+  - type: badge
+    id: consent_cluster_beneficiaries_optional
+    content: "Optional"
+    variant: tonal
+    style:
+      background: "#CDEDA3"
+      color: "#102000"
+      border_radius: "8dp"
+      typography: "Outfit/label_small"
+    a11y:
+      role: text
+      contentDescription: "Optional permission, included"
+      label: "Optional permission, included"
+    test_context:
+      purpose: "Marks the Payees cluster as an optional permission that is included in this request"
+      interaction_type: display
+      data_driven: false
+
+  # ── 5. Standing orders (ReadStandingOrdersDetail) — optional ──
+  - type: divider
+    id: consent_cluster_divider_4
+    style:
+      color: "#E1E4D5"
+    a11y:
+      role: separator
+    test_context:
+      purpose: "Divider between consent cluster rows"
+      interaction_type: display
+      data_driven: false
+
+  - type: stack
+    id: consent_cluster_standing_orders
+    variant: row
+    style:
+      padding_vertical: spacing.sm
+      alignment: center_start
+    children:
+      - consent_cluster_standing_orders_icon
+      - consent_cluster_standing_orders_text
+      - consent_cluster_standing_orders_optional
+
+  - type: icon
+    id: consent_cluster_standing_orders_icon
+    content: "event_repeat"
+    variant: default
+    style:
+      color: "#4C662B"
+      size: "20dp"
+    a11y:
+      role: image
+      contentDescription: "Standing orders"
+      label: "Standing orders"
+    test_context:
+      purpose: "Leading icon for the Standing orders cluster row"
+      interaction_type: display
+      data_driven: false
+
+  - type: text
+    id: consent_cluster_standing_orders_text
+    content: "Standing orders — your scheduled recurring payments and their next due dates"
+    variant: body_medium
+    style:
+      typography: "Outfit/body_medium"
+      color: "#1A1C16"
+      padding_start: spacing.sm
+    a11y:
+      role: text
+      contentDescription: "Standing orders: scheduled recurring payments and their next due dates. Optional. Permission ReadStandingOrdersDetail."
+      label: "Standing orders: scheduled recurring payments and their next due dates. Optional. Permission ReadStandingOrdersDetail."
+    test_context:
+      purpose: "Standing orders cluster — maps to ReadStandingOrdersDetail (optional)"
+      interaction_type: display
+      data_driven: false
+
+  - type: badge
+    id: consent_cluster_standing_orders_optional
+    content: "Optional"
+    variant: tonal
+    style:
+      background: "#CDEDA3"
+      color: "#102000"
+      border_radius: "8dp"
+      typography: "Outfit/label_small"
+    a11y:
+      role: text
+      contentDescription: "Optional permission, included"
+      label: "Optional permission, included"
+    test_context:
+      purpose: "Marks the Standing orders cluster as an optional permission that is included in this request"
+      interaction_type: display
+      data_driven: false
+
+  # ── 6. Direct debits (ReadDirectDebits) — optional ──
   - type: divider
     id: consent_cluster_divider_5
+    style:
+      color: "#E1E4D5"
+    a11y:
+      role: separator
+    test_context:
+      purpose: "Divider between consent cluster rows"
+      interaction_type: display
+      data_driven: false
+
+  - type: stack
+    id: consent_cluster_direct_debits
+    variant: row
+    style:
+      padding_vertical: spacing.sm
+      alignment: center_start
+    children:
+      - consent_cluster_direct_debits_icon
+      - consent_cluster_direct_debits_text
+      - consent_cluster_direct_debits_optional
+
+  - type: icon
+    id: consent_cluster_direct_debits_icon
+    content: "sync_alt"
+    variant: default
+    style:
+      color: "#4C662B"
+      size: "20dp"
+    a11y:
+      role: image
+      contentDescription: "Direct debits"
+      label: "Direct debits"
+    test_context:
+      purpose: "Leading icon for the Direct debits cluster row"
+      interaction_type: display
+      data_driven: false
+
+  - type: text
+    id: consent_cluster_direct_debits_text
+    content: "Direct debits — the mandates set up on your account and their recent payments"
+    variant: body_medium
+    style:
+      typography: "Outfit/body_medium"
+      color: "#1A1C16"
+      padding_start: spacing.sm
+    a11y:
+      role: text
+      contentDescription: "Direct debits: the mandates set up on your account and their recent payments. Optional. Permission ReadDirectDebits."
+      label: "Direct debits: the mandates set up on your account and their recent payments. Optional. Permission ReadDirectDebits."
+    test_context:
+      purpose: "Direct debits cluster — maps to ReadDirectDebits (optional)"
+      interaction_type: display
+      data_driven: false
+
+  - type: badge
+    id: consent_cluster_direct_debits_optional
+    content: "Optional"
+    variant: tonal
+    style:
+      background: "#CDEDA3"
+      color: "#102000"
+      border_radius: "8dp"
+      typography: "Outfit/label_small"
+    a11y:
+      role: text
+      contentDescription: "Optional permission, included"
+      label: "Optional permission, included"
+    test_context:
+      purpose: "Marks the Direct debits cluster as an optional permission that is included in this request"
+      interaction_type: display
+      data_driven: false
+
+  # ── 7. Scheduled payments (ReadScheduledPaymentsDetail) — optional ──
+  - type: divider
+    id: consent_cluster_divider_6
+    style:
+      color: "#E1E4D5"
+    a11y:
+      role: separator
+    test_context:
+      purpose: "Divider between consent cluster rows"
+      interaction_type: display
+      data_driven: false
+
+  - type: stack
+    id: consent_cluster_scheduled_payments
+    variant: row
+    style:
+      padding_vertical: spacing.sm
+      alignment: center_start
+    children:
+      - consent_cluster_scheduled_payments_icon
+      - consent_cluster_scheduled_payments_text
+      - consent_cluster_scheduled_payments_optional
+
+  - type: icon
+    id: consent_cluster_scheduled_payments_icon
+    content: "event_upcoming"
+    variant: default
+    style:
+      color: "#4C662B"
+      size: "20dp"
+    a11y:
+      role: image
+      contentDescription: "Scheduled payments"
+      label: "Scheduled payments"
+    test_context:
+      purpose: "Leading icon for the Scheduled payments cluster row"
+      interaction_type: display
+      data_driven: false
+
+  - type: text
+    id: consent_cluster_scheduled_payments_text
+    content: "Scheduled payments — one-off future-dated payments and their dates"
+    variant: body_medium
+    style:
+      typography: "Outfit/body_medium"
+      color: "#1A1C16"
+      padding_start: spacing.sm
+    a11y:
+      role: text
+      contentDescription: "Scheduled payments: one-off future-dated payments and their dates. Optional. Permission ReadScheduledPaymentsDetail."
+      label: "Scheduled payments: one-off future-dated payments and their dates. Optional. Permission ReadScheduledPaymentsDetail."
+    test_context:
+      purpose: "Scheduled payments cluster — maps to ReadScheduledPaymentsDetail (optional)"
+      interaction_type: display
+      data_driven: false
+
+  - type: badge
+    id: consent_cluster_scheduled_payments_optional
+    content: "Optional"
+    variant: tonal
+    style:
+      background: "#CDEDA3"
+      color: "#102000"
+      border_radius: "8dp"
+      typography: "Outfit/label_small"
+    a11y:
+      role: text
+      contentDescription: "Optional permission, included"
+      label: "Optional permission, included"
+    test_context:
+      purpose: "Marks the Scheduled payments cluster as an optional permission that is included in this request"
+      interaction_type: display
+      data_driven: false
+
+  # ── 8. Account-holder info (ReadParty) — optional ──
+  - type: divider
+    id: consent_cluster_divider_7
     style:
       color: "#E1E4D5"
     a11y:
@@ -381,6 +759,7 @@ components:
     children:
       - consent_cluster_party_icon
       - consent_cluster_party_text
+      - consent_cluster_party_optional
 
   - type: icon
     id: consent_cluster_party_icon
@@ -391,15 +770,16 @@ components:
       size: "20dp"
     a11y:
       role: image
-      label: "Party and contact details"
+      contentDescription: "Account-holder info"
+      label: "Account-holder info"
     test_context:
-      purpose: "Leading icon for the Party and contact details cluster row"
+      purpose: "Leading icon for the Account-holder info cluster row"
       interaction_type: display
       data_driven: false
 
   - type: text
     id: consent_cluster_party_text
-    content: "Party & contact details — the account holder's name and contact information"
+    content: "Account-holder info — the account holder's name and contact details"
     variant: body_medium
     style:
       typography: "Outfit/body_medium"
@@ -407,14 +787,34 @@ components:
       padding_start: spacing.sm
     a11y:
       role: text
-      label: "Party and contact details: the account holder's name and contact information. Permission ReadParty."
+      contentDescription: "Account-holder info: the account holder's name and contact details. Optional. Permission ReadParty."
+      label: "Account-holder info: the account holder's name and contact details. Optional. Permission ReadParty."
     test_context:
-      purpose: "Party and contact cluster — maps to ReadParty"
+      purpose: "Account-holder info cluster — maps to ReadParty (optional)"
       interaction_type: display
       data_driven: false
 
+  - type: badge
+    id: consent_cluster_party_optional
+    content: "Optional"
+    variant: tonal
+    style:
+      background: "#CDEDA3"
+      color: "#102000"
+      border_radius: "8dp"
+      typography: "Outfit/label_small"
+    a11y:
+      role: text
+      contentDescription: "Optional permission, included"
+      label: "Optional permission, included"
+    test_context:
+      purpose: "Marks the Account-holder info cluster as an optional permission that is included in this request"
+      interaction_type: display
+      data_driven: false
+
+  # ── 9. Product details (ReadProducts) — optional ──
   - type: divider
-    id: consent_cluster_divider_6
+    id: consent_cluster_divider_8
     style:
       color: "#E1E4D5"
     a11y:
@@ -433,6 +833,7 @@ components:
     children:
       - consent_cluster_products_icon
       - consent_cluster_products_text
+      - consent_cluster_products_optional
 
   - type: icon
     id: consent_cluster_products_icon
@@ -443,15 +844,16 @@ components:
       size: "20dp"
     a11y:
       role: image
-      label: "Products"
+      contentDescription: "Product details"
+      label: "Product details"
     test_context:
-      purpose: "Leading icon for the Products cluster row"
+      purpose: "Leading icon for the Product details cluster row"
       interaction_type: display
       data_driven: false
 
   - type: text
     id: consent_cluster_products_text
-    content: "Products — the account type, rates and features of your HSBC product"
+    content: "Product details — the account type, rates and features of your HSBC product"
     variant: body_medium
     style:
       typography: "Outfit/body_medium"
@@ -459,15 +861,108 @@ components:
       padding_start: spacing.sm
     a11y:
       role: text
-      label: "Products: the account type, rates and features of your HSBC product. Permission ReadProducts."
+      contentDescription: "Product details: the account type, rates and features of your HSBC product. Optional. Permission ReadProducts."
+      label: "Product details: the account type, rates and features of your HSBC product. Optional. Permission ReadProducts."
     test_context:
-      purpose: "Products cluster — maps to ReadProducts"
+      purpose: "Product details cluster — maps to ReadProducts (optional)"
+      interaction_type: display
+      data_driven: false
+
+  - type: badge
+    id: consent_cluster_products_optional
+    content: "Optional"
+    variant: tonal
+    style:
+      background: "#CDEDA3"
+      color: "#102000"
+      border_radius: "8dp"
+      typography: "Outfit/label_small"
+    a11y:
+      role: text
+      contentDescription: "Optional permission, included"
+      label: "Optional permission, included"
+    test_context:
+      purpose: "Marks the Product details cluster as an optional permission that is included in this request"
+      interaction_type: display
+      data_driven: false
+
+  # ── 10. Statements (ReadStatementsDetail) — optional ──
+  - type: divider
+    id: consent_cluster_divider_9
+    style:
+      color: "#E1E4D5"
+    a11y:
+      role: separator
+    test_context:
+      purpose: "Divider between consent cluster rows"
+      interaction_type: display
+      data_driven: false
+
+  - type: stack
+    id: consent_cluster_statements
+    variant: row
+    style:
+      padding_vertical: spacing.sm
+      alignment: center_start
+    children:
+      - consent_cluster_statements_icon
+      - consent_cluster_statements_text
+      - consent_cluster_statements_optional
+
+  - type: icon
+    id: consent_cluster_statements_icon
+    content: "description"
+    variant: default
+    style:
+      color: "#4C662B"
+      size: "20dp"
+    a11y:
+      role: image
+      contentDescription: "Statements"
+      label: "Statements"
+    test_context:
+      purpose: "Leading icon for the Statements cluster row"
+      interaction_type: display
+      data_driven: false
+
+  - type: text
+    id: consent_cluster_statements_text
+    content: "Statements — your account statements and the periods they cover"
+    variant: body_medium
+    style:
+      typography: "Outfit/body_medium"
+      color: "#1A1C16"
+      padding_start: spacing.sm
+    a11y:
+      role: text
+      contentDescription: "Statements: your account statements and the periods they cover. Optional. Permission ReadStatementsDetail."
+      label: "Statements: your account statements and the periods they cover. Optional. Permission ReadStatementsDetail."
+    test_context:
+      purpose: "Statements cluster — maps to ReadStatementsDetail (optional)"
+      interaction_type: display
+      data_driven: false
+
+  - type: badge
+    id: consent_cluster_statements_optional
+    content: "Optional"
+    variant: tonal
+    style:
+      background: "#CDEDA3"
+      color: "#102000"
+      border_radius: "8dp"
+      typography: "Outfit/label_small"
+    a11y:
+      role: text
+      contentDescription: "Optional permission, included"
+      label: "Optional permission, included"
+    test_context:
+      purpose: "Marks the Statements cluster as an optional permission that is included in this request"
       interaction_type: display
       data_driven: false
 
   - type: text
     id: consent_expiry_note
-    content: "This access lasts until you revoke it. You can disconnect at any time from Settings."
+    content: "This access expires automatically after 90 days. You can disconnect sooner at any time from Settings."
     variant: body_small
     style:
       typography: "Outfit/body_small"
@@ -475,9 +970,10 @@ components:
       padding_bottom: spacing.md
     a11y:
       role: text
-      label: "This access lasts until you revoke it. You can disconnect at any time from Settings."
+      contentDescription: "This access expires automatically after 90 days. You can disconnect sooner at any time from Settings."
+      label: "This access expires automatically after 90 days. You can disconnect sooner at any time from Settings."
     test_context:
-      purpose: "Optional expiry note clarifying the open-ended consent and how to revoke it"
+      purpose: "Expiry note clarifying the 90-day consent window and how to revoke it early"
       interaction_type: display
       data_driven: false
 
@@ -485,7 +981,7 @@ components:
     id: consent_error_banner
     variant: filled
     style:
-      background: "#CDEDA3"
+      background: "#FFDAD6"
       border_radius: "8dp"
       padding: spacing.md
       margin_bottom: spacing.md
@@ -496,16 +992,17 @@ components:
 
   - type: icon
     id: consent_error_icon
-    content: "info"
+    content: "error"
     variant: default
     style:
       color: "#BA1A1A"
       size: "20dp"
     a11y:
       role: image
+      contentDescription: "Error"
       label: "Error"
     test_context:
-      purpose: "Info icon (tinted error red) in the consent-creation failure banner"
+      purpose: "Error icon in the consent-creation failure banner"
       interaction_type: display
       data_driven: false
 
@@ -515,18 +1012,19 @@ components:
     variant: body_small
     style:
       typography: "Outfit/body_small"
-      color: "#BA1A1A"
+      color: "#410002"
       padding_start: spacing.sm
     a11y:
       role: alert
+      contentDescription: "Consent creation error message"
       label: "Consent creation error message"
     test_context:
-      purpose: "Error message shown when POST account-access-consents fails (400/401/429/500)"
+      purpose: "Error message shown when POST account-access-consents fails (400/401/403/429/500)"
       interaction_type: display
       data_driven: true
 
   - type: loading_indicator
-    id: consent_grant_spinner
+    id: consent_submitting_spinner
     variant: circular_indeterminate
     style:
       color: "#4C662B"
@@ -534,15 +1032,16 @@ components:
       alignment: center
     a11y:
       role: progressbar
-      label: "Setting up your connection"
+      contentDescription: "Creating your consent"
+      label: "Creating your consent"
     test_context:
-      purpose: "Full-width spinner shown while the account-access-consent is being created and the authorise request is built"
+      purpose: "Full-screen spinner shown while the account-access-consent is being created and the signed authorise request is built"
       interaction_type: display
       data_driven: false
 
   - type: text
-    id: consent_loading_message
-    content: "Setting up your secure connection..."
+    id: consent_submitting_message
+    content: "Creating your consent…"
     variant: body_medium
     style:
       typography: "Outfit/body_medium"
@@ -550,9 +1049,66 @@ components:
       alignment: center
     a11y:
       role: text
-      label: "Setting up your secure connection"
+      contentDescription: "Creating your consent"
+      label: "Creating your consent"
     test_context:
-      purpose: "Loading message paired with the spinner while the consent is staged"
+      purpose: "Loading message paired with the spinner while the consent is staged and before the HSBC authorise redirect"
+      interaction_type: display
+      data_driven: false
+
+  - type: icon
+    id: consent_empty_icon
+    content: "account_balance"
+    variant: default
+    style:
+      color: "#75796C"
+      size: "48dp"
+      alignment: center
+    a11y:
+      role: image
+      contentDescription: "No accounts available"
+      label: "No accounts available"
+    test_context:
+      purpose: "Illustrative icon for the empty state when there are no shareable HSBC accounts"
+      interaction_type: display
+      data_driven: false
+
+  - type: text
+    id: consent_empty_title
+    content: "No accounts to share"
+    variant: title_medium
+    style:
+      typography: "Outfit/title_medium"
+      color: "#1A1C16"
+      font_weight: 700
+      alignment: center
+      padding_top: spacing.md
+    a11y:
+      role: heading
+      level: 2
+      contentDescription: "No accounts to share"
+      label: "No accounts to share"
+    test_context:
+      purpose: "Empty-state heading — no HSBC accounts are eligible for an account-access consent"
+      interaction_type: display
+      data_driven: false
+
+  - type: text
+    id: consent_empty_message
+    content: "We couldn't find any HSBC accounts to connect. Check that your accounts are open and eligible for Open Banking, then try again."
+    variant: body_medium
+    style:
+      typography: "Outfit/body_medium"
+      color: "#44483D"
+      alignment: center
+      padding_top: spacing.sm
+      padding_bottom: spacing.md
+    a11y:
+      role: text
+      contentDescription: "We couldn't find any HSBC accounts to connect. Check that your accounts are open and eligible for Open Banking, then try again."
+      label: "We couldn't find any HSBC accounts to connect. Check that your accounts are open and eligible for Open Banking, then try again."
+    test_context:
+      purpose: "Empty-state body explaining why no accounts are shareable and what to do"
       interaction_type: display
       data_driven: false
 
@@ -572,9 +1128,10 @@ components:
     on_click:
       action: submit
       target: consent-request
-    loading_when: "uiState == CreatingConsent"
+    loading_when: "uiState == Submitting"
     a11y:
       role: button
+      contentDescription: "Grant access — create the account-access consent and continue to HSBC sign-in"
       label: "Grant access — create the account-access consent and continue to HSBC sign-in"
     keyboard:
       focusable: true
@@ -601,6 +1158,7 @@ components:
       target: consent-intro
     a11y:
       role: button
+      contentDescription: "Cancel — go back without granting access"
       label: "Cancel — go back without granting access"
     keyboard:
       focusable: true
@@ -621,6 +1179,7 @@ components:
       padding_bottom: spacing.xl
     a11y:
       role: text
+      contentDescription: "You'll approve this at HSBC. We never see your password."
       label: "You'll approve this at HSBC. We never see your password."
     test_context:
       purpose: "Muted reassurance footer restating that authentication happens at HSBC"
@@ -632,49 +1191,57 @@ responsive:
   baseline_width: 390
 
 states:
-  initial_state: idle
+  initial_state: content
   idle:
     layout: { type: column, padding: spacing.lg }
-    visible_components: [consent_title, consent_subtitle, consent_clusters_card, consent_expiry_note, consent_grant_button, consent_cancel_button, consent_footer]
+    visible_components: [consent_title, consent_subtitle, consent_scope_card, consent_clusters_card, consent_expiry_note, consent_grant_button, consent_cancel_button, consent_footer]
   content:
     layout: { type: column, padding: spacing.lg }
-    visible_components: [consent_title, consent_subtitle, consent_clusters_card, consent_expiry_note, consent_grant_button, consent_cancel_button, consent_footer]
-  loading:
+    visible_components: [consent_title, consent_subtitle, consent_scope_card, consent_clusters_card, consent_expiry_note, consent_grant_button, consent_cancel_button, consent_footer]
+  submitting:
     layout: { type: column, padding: spacing.lg, align: center, justify: center }
-    visible_components: [consent_grant_spinner, consent_loading_message]
-    note: "Shown while POST account-access-consents is in flight and the signed authorise request is built; grant button shows its loading spinner, full-screen takeover variant uses the centered spinner + message."
+    visible_components: [consent_submitting_spinner, consent_submitting_message]
+    note: "Shown after Grant access while POST account-access-consents is in flight and the signed authorise request is built; the grant button also shows its inline loading spinner."
   error:
     layout: { type: column, padding: spacing.lg }
-    visible_components: [consent_title, consent_subtitle, consent_clusters_card, consent_expiry_note, consent_error_banner, consent_grant_button, consent_cancel_button, consent_footer]
+    visible_components: [consent_title, consent_subtitle, consent_scope_card, consent_clusters_card, consent_expiry_note, consent_error_banner, consent_grant_button, consent_cancel_button, consent_footer]
+  empty:
+    layout: { type: column, padding: spacing.lg, align: center, justify: center }
+    visible_components: [consent_empty_icon, consent_empty_title, consent_empty_message, consent_cancel_button]
+    note: "Rare — no shareable HSBC accounts were found; the PSU can only go back, there is nothing to consent to."
 
 state_model:
   ConsentRequestViewModel:
     screen_state: ConsentRequestUiState
     state:
+      - field: uiState
+        type: ConsentRequestScreenState
+        default: "ConsentRequestScreenState.Content"
+        note: "Content | Submitting | Error | Empty — the form has interactive review-then-submit, so it starts in Content (no on-mount data load)."
       - field: permissions
         type: "List<String>"
         default: "DEFAULT_AIS_PERMISSIONS"
-        note: "The OBIE permission clusters to request: ReadAccountsDetail, ReadBalances, ReadTransactionsDetail, ReadStandingOrdersDetail, ReadDirectDebits, ReadBeneficiariesDetail, ReadParty, ReadProducts. Sent as Data.Permissions in the create-consent body."
+        note: "The OBIE permission clusters to request. Required floor: ReadAccountsDetail, ReadBalances, ReadTransactionsDetail. Optional (included by default, least-privilege framing): ReadBeneficiariesDetail, ReadStandingOrdersDetail, ReadDirectDebits, ReadScheduledPaymentsDetail, ReadParty, ReadProducts, ReadStatementsDetail. Sent as Data.Permissions in OBReadConsent1."
       - field: expirationDateTime
         type: "String?"
         default: "null"
-        note: "Optional Data.ExpirationDateTime (ISODateTime); null = open-ended consent."
+        note: "Optional Data.ExpirationDateTime (ISODateTime); defaults to creation + 90 days. null = open-ended consent."
       - field: consentId
         type: "String?"
         default: "null"
-        note: "Populated from Data.ConsentId after a 201; becomes the openbanking_intent_id for the authorise request."
+        note: "Populated from Data.ConsentId on a 201; becomes the openbanking_intent_id for the authorise request."
       - field: consentStatus
         type: "String?"
         default: "null"
-        note: "Data.Status from the create-consent response; expected AWAU before authorisation."
+        note: "Data.Status from OBReadConsentResponse1; expected AWAU before authorisation."
       - field: errorMessage
         type: "String?"
         default: "null"
-      - field: isCreatingConsent
+      - field: isSubmitting
         type: Boolean
         default: "false"
     derived: []
-    errors: [BAD_REQUEST, UNAUTHORIZED, TOO_MANY_REQUESTS, SERVER_ERROR, UNKNOWN]
+    errors: [BAD_REQUEST, UNAUTHORIZED, INVALID_CONSENT_STATUS, TOO_MANY_REQUESTS, SERVER_ERROR, UNKNOWN]
     events:
       - "ConsentRequestEvent.NavigateToBankAuthorize(consentId: String)"
       - ConsentRequestEvent.NavigateToConsentIntro
@@ -684,7 +1251,7 @@ state_model:
       - "ConsentRequestAction.Internal.CreateConsentResultReceive(result) — internal async result from ObpAuthRepository.createAccountAccessConsent"
     di: [ObpAuthRepository]
     base: "template.core.base.ui.viewmodel.BaseViewModel<ConsentRequestUiState, ConsentRequestEvent, ConsentRequestAction>"
-    note: "GrantClicked acquires a client-credentials token and POSTs /aisp/account-access-consents via ObpAuthRepository (consent returns AWAU); on success it emits NavigateToBankAuthorize(consentId) so the next screen builds the signed authorise request with openbanking_intent_id = ConsentId. PKCE verifier + CSRF state + client-assertion JWT live inside ObpAuthRepository, not in UI state."
+    note: "GrantClicked sets uiState=Submitting, acquires a client-credentials token and POSTs /aisp/account-access-consents via ObpAuthRepository (consent returns AWAU). On success it emits NavigateToBankAuthorize(consentId) so the next screen builds the signed authorise request with openbanking_intent_id = ConsentId. PKCE verifier + CSRF state + client-assertion JWT live inside ObpAuthRepository, not in UI state. mTLS (QWAC) + detached x-jws-signature + x-idempotency-key are applied by the network layer, not surfaced in UI state."
 
 navigation:
   - id: nav_to_bank_authorize
@@ -705,28 +1272,42 @@ navigation:
 api:
   - id: create_account_access_consent
     endpoint: "POST /obie/open-banking/v4.0/aisp/account-access-consents"
+    method: POST
+    path: "/obie/open-banking/v4.0/aisp/account-access-consents"
     tag: AccountInformation
     trigger: on_grant_clicked
-    description: "Register an account-access-consent with the PSU-selected Permissions[]. Uses a client-credentials token (acquired by ObpAuthRepository). ASPSP returns ConsentId + Status AWAU (awaiting authorisation). The ConsentId becomes the openbanking_intent_id for the subsequent authorise redirect."
+    request_dto: OBReadConsent1
+    returns: OBReadConsentResponse1
+    inputs: [permissions, expirationDateTime]
+    description: "Register an account-access-consent with the PSU-selected Permissions[]. Uses a client-credentials token (acquired by ObpAuthRepository). ASPSP returns ConsentId + Status AWAU (awaiting authorisation). The ConsentId becomes the openbanking_intent_id for the subsequent authorise redirect. FAPI 1.0 Advanced: mTLS (QWAC) transport + detached x-jws-signature on this write + x-idempotency-key for safe retry."
     request:
       content_type: "application/json"
+      dto: OBReadConsent1
       headers:
         Authorization: "Bearer {cc_access_token}"
         x-fapi-financial-id: "{fapi_financial_id}"
+        x-fapi-interaction-id: "{uuid}"
+        x-jws-signature: "{detached_jws}"
+        x-idempotency-key: "{idempotency_key}"
+        Content-Type: "application/json"
       body:
         Data:
           Permissions:
             - ReadAccountsDetail
             - ReadBalances
             - ReadTransactionsDetail
+            - ReadBeneficiariesDetail
             - ReadStandingOrdersDetail
             - ReadDirectDebits
-            - ReadBeneficiariesDetail
+            - ReadScheduledPaymentsDetail
             - ReadParty
             - ReadProducts
+            - ReadStatementsDetail
           ExpirationDateTime: "{optional_expiry_iso}"
         Risk: {}
     response:
+      status: 201
+      dto: OBReadConsentResponse1
       fields:
         - name: Data.ConsentId
           type: String
@@ -751,6 +1332,9 @@ api:
       - code: 401
         name: UNAUTHORIZED
         ui_message: "We couldn't authorise this connection. Please try again."
+      - code: 403
+        name: OB_INVALID_CONSENT_STATUS
+        ui_message: "This connection is no longer valid. Please start again."
       - code: 429
         name: TOO_MANY_REQUESTS
         ui_message: "Too many attempts. Please wait a moment and try again."
@@ -758,6 +1342,33 @@ api:
         name: OB_UNEXPECTED_ERROR
         ui_message: "Something went wrong on our end. Please try again in a moment."
 
+testing:
+  scenarios:
+    - { id: TC-CONSENT-REQUEST-001, scenario: "Content state renders the scope card + all 10 permission cluster rows", priority: P0 }
+    - { id: TC-CONSENT-REQUEST-002, scenario: "Grant access POSTs account-access-consents and shows the submitting state", priority: P0 }
+    - { id: TC-CONSENT-REQUEST-003, scenario: "Successful 201 (Status AWAU) emits NavigateToBankAuthorize with the ConsentId", priority: P0 }
+    - { id: TC-CONSENT-REQUEST-004, scenario: "Create-consent failure (400/401/403/429/500) shows the error banner with the mapped message", priority: P0 }
+    - { id: TC-CONSENT-REQUEST-005, scenario: "Empty state shows when no shareable HSBC accounts are found", priority: P1 }
+    - { id: TC-CONSENT-REQUEST-006, scenario: "Cancel navigates back to consent-intro without creating a consent", priority: P1 }
+    - { id: TC-CONSENT-REQUEST-007, scenario: "Required clusters carry the Required badge; optional clusters carry the Optional badge", priority: P1 }
+    - { id: TC-CONSENT-REQUEST-008, scenario: "Scope card renders the accounts-in-scope text and the 90-day expiry date", priority: P1 }
+  coverage_target: 80
+
+documentation:
+  user_stories:
+    - { actor: PSU, action: "review exactly which data clusters an app will read from my HSBC account", benefit: "I can give informed, least-privilege consent before anything is shared" }
+    - { actor: PSU, action: "see which accounts are shared and how long access lasts", benefit: "I understand the scope and duration before I authorise" }
+    - { actor: PSU, action: "grant access and be taken to HSBC to approve", benefit: "I authenticate at my bank and never type my bank password into a third-party app" }
+  success_metrics:
+    - { metric: consent_grant_rate, target: "75%" }
+    - { metric: consent_create_to_awau_latency_p95, target: "< 2s" }
+  feature_flags: []
+  references:
+    - "OBIE Account & Transaction API v4.0 — account-access-consents (OBReadConsent1 / OBReadConsentResponse1)"
+    - "FAPI 1.0 Advanced — mTLS, detached JWS request signing, x-idempotency-key"
+
 dependencies:
   tier: feature
   features: [shared-core, obp-auth]
+  services: [ObpAuthRepository]
+  shared_entities: [AccountAccessConsent, Permission]
