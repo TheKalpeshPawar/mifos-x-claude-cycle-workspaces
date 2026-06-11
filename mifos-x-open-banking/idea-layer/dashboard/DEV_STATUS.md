@@ -11,7 +11,7 @@
 | Enriched | 0 |
 | Draft | 0 |
 | Exports Complete | 42/46 (4 pending export) |
-| Preview HTML | 157 files (7 screens pending render) |
+| Preview HTML | 167 files (4 screens pending render) |
 | Flows | 3 (app-main, consumer-banking, field-officer) |
 | Component Types | 20 used, 20 registered |
 | API Endpoints | 40 features with api.yaml (3 exempt: about, settings, splash) |
@@ -29,7 +29,7 @@
 | 6 | application-detail | field-officer | approved | 95 | yes | yes | yes |
 | 7 | atm-locator | consumer | approved | 95 | yes | yes | yes |
 | 8 | beneficiaries | consumer | approved | 95 | yes | yes | yes |
-| 9 | business-insights | consumer | approved | 95 | yes | no | yes |
+| 9 | business-insights | consumer | approved | 95 | yes | yes | yes |
 | 10 | card-detail | consumer | approved | 95 | yes | yes | yes |
 | 11 | cards | consumer | approved | 95 | yes | yes | yes |
 | 12 | change-password | shared | approved | 93 | yes | yes | yes |
@@ -52,7 +52,7 @@
 | 29 | meetings | field-officer | approved | 95 | yes | yes | yes |
 | 30 | notifications | shared | approved | 95 | yes | yes | yes |
 | 31 | pfm-dashboard | consumer | approved | 95 | yes | yes | yes |
-| 32 | pfm-settings | consumer | approved | 95 | yes | no | yes |
+| 32 | pfm-settings | consumer | approved | 95 | yes | yes | yes |
 | 33 | privacy-policy | shared | approved | 92 | no | no | n/a |
 | 34 | products | consumer | approved | 95 | yes | yes | yes |
 | 35 | profile | consumer | approved | 95 | yes | yes | yes |
