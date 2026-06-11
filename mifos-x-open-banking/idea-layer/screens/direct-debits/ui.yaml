@@ -36,6 +36,18 @@ status_history:
     by: "/idea approve"
     contract_version: "1.1.0"
     bypass_flags: []
+  - from: approved
+    to: approved
+    at: "2026-06-07T21:00:00Z"
+    by: "/kmp-implement direct-debits"
+    contract_version: "1.1.0"
+    note: "Implemented as feature/direct-debits (new module). MAJOR ARCHITECTURE DEVIATION, verified live: the spec's GET/DELETE direct-debit endpoints do not exist — OBP exposes only POST create at any version (catalog + sandbox probes both 404 on reads). Mandates are therefore DERIVED from transaction history exactly like standing orders: outgoing TXN_TYPE=DD transactions grouped by description into collection series (latest amount wins, frequency from median gap, monthly default for single collections, silent >1.5x period renders Cancelled). Merchant names come from descriptions (counterparty hard rule — the holder field carries the login-username placeholder) with the em-dash suffix stripped (British Gas — energy → British Gas); mandate references derived as DD-{initials}-{first-collection-date}. Cancel uses the spec's confirm dialog but records the cancellation LOCALLY (Room cache, survives restarts; active count drops, badge flips) because no server cancel endpoint exists. The pre-existing speculative DirectDebitsApi/Store and the OBP-shaped DirectDebit model were deleted in favour of the derived DirectDebitMandate. Sandbox seed data: Netflix Subscription €15.99, EE Mobile €25.00, British Gas €68.90 on ac.checking.001. Card tap → direct-debit-detail remains a Phase-2 placeholder. Entry points: home Banking Services grid Direct Debits tile (took the dead Statements slot; resolves persisted-default/checking-first account) and Account Detail ACTIVITY section row (passes bankId/accountId). 9 VM tests + 7 repository/derivation tests."
+  - from: approved
+    to: approved
+    at: "2026-06-07T22:00:00Z"
+    by: "domain correction (user directive)"
+    contract_version: "1.1.0"
+    note: "Set-Up Direct Debit FAB REMOVED (spec deviation, domain-correct): direct debits are merchant-initiated under the scheme rules — the customer authorises the originator, who lodges the mandate; a consumer banking app can only view and cancel. OBP agrees: its sole create endpoint requires bank-level roles (management/seeding, not consumer). Empty-state copy reworded to match (mandates appear once an authorised merchant starts collecting). The consumer surface is intentionally view + cancel only."
 
 shell:
   top_app_bar:

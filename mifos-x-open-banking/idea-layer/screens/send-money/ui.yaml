@@ -4,12 +4,12 @@ feature: send-money
 flavor: consumer
 status: approved
 quality_score: 95
-contract_version: "1.1.0"
+contract_version: "1.2.0"
 approve_hash: "sha256:08af12bd8c96e4f037af12bd8c96e4f037af12bd8c96e4f037af12bd8c96e4f0"
 approved_at: "2026-05-25T13:45:00Z"
 approved_by: "/idea approve"
 approve_predicate_version: "1.0.0"
-approve_contract_version: "1.1.0"
+approve_contract_version: "1.2.0"
 capabilities:
   - has_ui
 status_history:
@@ -23,363 +23,181 @@ status_history:
     by: "/idea approve"
     contract_version: "1.1.0"
     bypass_flags: []
+  - from: approved
+    to: approved
+    at: "2026-06-04T00:00:00Z"
+    by: "/kmp-implement send-money"
+    contract_version: "1.2.0"
+    note: "Reconciled ui.yaml to the hub design (recent recipients + ways to send + all beneficiaries). The amount-entry + review live on send-money-confirm flow. Send executes via OBP COUNTERPARTY transaction-request (by counterparty_id) — works for any beneficiary."
+  - from: approved
+    to: approved
+    at: "2026-06-06T00:00:00Z"
+    by: "/kmp-implement send-money (payment-rail classification)"
+    contract_version: "1.2.0"
+    note: "Payment type chips (SEPA/Domestic/International) are now derived per (account, beneficiary) pair by PaymentRailClassifier instead of free user choice: recipient country from IBAN prefix / BIC chars 5-6 / OBP bank lookup (Bank.countryCode via SWIFT_BIC attribute); DOMESTIC = same bank country, SEPA = recipient IBAN in SEPA zone (source may be non-EUR — conversion note shown, FX fee label), INTERNATIONAL = BIC/OBP-routed fallback. Recommended rail auto-selected; ineligible chips disabled with reason. Confirm screen routes SEPA-classified payments to the OBP SEPA transaction-request (by IBAN); sandbox deviation: SEPA-by-IBAN resolves only when the counterparty carries the IBAN in other_account_secondary_routing_address AND its primary routing maps to a hosted account (OBP-30012/30074 otherwise) — confirm VM falls back to COUNTERPARTY on those two codes. Cross-currency SEPA (GBP account → EUR value) verified working on apisandbox 2026-06-06."
 
 screens:
   - id: send-money
     name: Send Money
-    archetype: form
+    archetype: index_list
     shell:
       top_bar:
-        title: "Send Money"
+        title: "Send money"
         navigation_icon: arrow_back
-        actions: []
+        actions:
+          - icon: person_search
+            action: new_recipient
       bottom_nav: false
 
-archetype: form
+archetype: index_list
 
 components:
   - type: text
-    id: send_money_title
-    label: "Send Money"
+    id: recent_recipients_header
+    label: "Recent Recipients"
+    content: "RECENT RECIPIENTS"
     style:
-      typography: "Outfit/headline_large"
-      color: "#4C662B"
-      padding_bottom: spacing.sm
+      typography: "Outfit/label_medium"
+      color: "#44483D"
+      font_weight: semibold
     a11y:
-      label: "Send Money screen title"
+      label: "Recent recipients section"
       role: heading
     test_context:
-      tag: send_money_title
-      assert_text: "Send Money"
-
-  - type: input
-    id: from_account_selector
-    label: "From Account"
-    content: "Primary Checking — £4,250.00 available"
-    supported_states: [idle, hover, focus_visible, pressed, disabled]
-    style:
-      variant: outlined
-      leading_icon: account_balance
-      trailing_icon: expand_more
-      border_radius: 12
-      background: "#F9FAEF"
-    on_click:
-      action: select_account
-      target: ""
-    a11y:
-      label: "Select source account. Currently: Primary Checking with £4,250.00 available"
-      role: button
-    keyboard:
-      focusable: true
-    test_context:
-      tag: from_account_selector
-      assert_text: "Primary Checking — £4,250.00 available"
-
-  - type: input
-    id: amount_input
-    label: "Amount"
-    content: ""
-    supported_states: [idle, hover, focus_visible, pressed, disabled]
-    style:
-      variant: outlined
-      input_type: number
-      placeholder: "0.00"
-      border_radius: 12
-      prefix_text: "£"
-      keyboard_type: decimal
-    on_click:
-      action: focus_amount
-      target: ""
-    a11y:
-      label: "Enter payment amount in pounds"
-      role: text_field
-      label_source: visible_label
-    keyboard:
-      focusable: true
-    test_context:
-      tag: amount_input
-      assert_hint: "0.00"
-
-  - type: input
-    id: currency_selector
-    label: "Currency"
-    content: "GBP ▾"
-    supported_states: [idle, hover, focus_visible, pressed, disabled]
-    style:
-      variant: chip
-      chip_style: filter
-      border_radius: 8
-      padding_horizontal: 12
-      padding_vertical: 6
-      min_height: 44
-    on_click:
-      action: select_currency
-      target: ""
-    a11y:
-      label: "Select currency. Currently: British Pound Sterling"
-      role: button
-    keyboard:
-      focusable: true
-    test_context:
-      tag: currency_selector
-      assert_text: "GBP ▾"
-
-  - type: input
-    id: beneficiary_search
-    label: "To"
-    content: ""
-    supported_states: [idle, hover, focus_visible, pressed, disabled]
-    style:
-      variant: outlined
-      input_type: search
-      placeholder: "Search beneficiary or enter account..."
-      leading_icon: search
-      border_radius: 12
-    on_click:
-      action: search_beneficiary
-      target: ""
-    a11y:
-      label: "Search for a beneficiary by name or enter an account number"
-      role: searchbox
-    keyboard:
-      focusable: true
-    test_context:
-      tag: beneficiary_search
-      assert_hint: "Search beneficiary or enter account..."
-
-  - type: stack
-    id: recent_beneficiaries_row
-    label: "Recent Beneficiaries"
-    style:
-      orientation: horizontal
-      spacing: 12
-      padding_top: 8
-      padding_bottom: 8
-      overflow: scroll_horizontal
-      min_item_width: 80
-    on_click:
-      action: dismiss
-      target: ""
-    a11y:
-      label: "Recently used beneficiaries"
-      role: list
-    test_context:
-      tag: recent_beneficiaries_row
+      tag: recent_recipients_header
+      assert_text: "RECENT RECIPIENTS"
 
   - type: box
-    id: recent_beneficiary_john
-    label: "John Smith"
-    content: "John Smith · Barclays UK"
+    id: recipient_new
+    label: "New"
+    content: "New"
     style:
-      border_radius: 12
+      shape: circle
+      diameter: 60
       background: "#CDEDA3"
-      padding_horizontal: 12
-      padding_vertical: 8
-      border_color: "#CDEDA3"
-      border_width: 1
+      text_color: "#102000"
     on_click:
-      action: select_beneficiary
+      action: new_recipient
       target: ""
     a11y:
-      label: "Select John Smith at Barclays UK as beneficiary"
+      label: "Start a new transfer"
       role: button
     keyboard:
       focusable: true
     test_context:
-      tag: recent_beneficiary_john
-      assert_text: "John Smith"
+      tag: recipient_new
+      assert_text: "New"
 
   - type: box
-    id: recent_beneficiary_sarah
-    label: "Sarah Williams"
-    content: "Sarah Williams · HSBC UK"
-    style:
-      border_radius: 12
-      background: "#CDEDA3"
-      padding_horizontal: 12
-      padding_vertical: 8
-      border_color: "#CDEDA3"
-      border_width: 1
-    on_click:
-      action: select_beneficiary
-      target: ""
-    a11y:
-      label: "Select Sarah Williams at HSBC UK as beneficiary"
-      role: button
-    keyboard:
-      focusable: true
-    test_context:
-      tag: recent_beneficiary_sarah
-      assert_text: "Sarah Williams"
-
-  - type: input
-    id: reference_input
-    label: "Reference"
+    id: recent_recipient_item
+    label: "Recent recipient"
     content: ""
-    supported_states: [idle, hover, focus_visible, pressed, disabled]
     style:
-      variant: outlined
-      input_type: text
-      placeholder: "Payment for invoice #1234"
-      border_radius: 12
-      max_length: 35
-      helper_text: "Max 35 characters"
-    on_click:
-      action: focus_reference
-      target: ""
-    a11y:
-      label: "Enter payment reference, maximum 35 characters"
-      role: text_field
-      label_source: visible_label
-    keyboard:
-      focusable: true
-    test_context:
-      tag: reference_input
-      assert_hint: "Payment for invoice #1234"
-
-  - type: stack
-    id: payment_type_selector
-    label: "Payment Type"
-    style:
-      orientation: horizontal
-      spacing: 8
-      padding_top: 4
-      padding_bottom: 4
-    on_click:
-      action: dismiss
-      target: ""
-    a11y:
-      label: "Select payment type"
-      role: radio_group
-    test_context:
-      tag: payment_type_selector
-
-  - type: input
-    id: payment_type_sepa
-    label: "SEPA"
-    content: "SEPA"
-    supported_states: [idle, hover, focus_visible, pressed, disabled]
-    style:
-      variant: chip
-      chip_style: filter
-      selected: true
-      selected_color: "#4C662B"
-      selected_text_color: "#FFFFFF"
-      border_radius: 20
-      padding_horizontal: 16
-      padding_vertical: 8
-    on_click:
-      action: select_payment_type_sepa
-      target: ""
-    a11y:
-      label: "SEPA payment type, currently selected"
-      role: radio_button
-      label_source: visible_label
-    keyboard:
-      focusable: true
-    test_context:
-      tag: payment_type_sepa
-      assert_selected: true
-
-  - type: input
-    id: payment_type_domestic
-    label: "Domestic"
-    content: "Domestic"
-    supported_states: [idle, hover, focus_visible, pressed, disabled]
-    style:
-      variant: chip
-      chip_style: filter
-      selected: false
-      border_radius: 20
-      padding_horizontal: 16
-      padding_vertical: 8
-    on_click:
-      action: select_payment_type_domestic
-      target: ""
-    a11y:
-      label: "Domestic payment type"
-      role: radio_button
-      label_source: visible_label
-    keyboard:
-      focusable: true
-    test_context:
-      tag: payment_type_domestic
-      assert_selected: false
-
-  - type: input
-    id: payment_type_international
-    label: "International"
-    content: "International"
-    supported_states: [idle, hover, focus_visible, pressed, disabled]
-    style:
-      variant: chip
-      chip_style: filter
-      selected: false
-      border_radius: 20
-      padding_horizontal: 16
-      padding_vertical: 8
-    on_click:
-      action: select_payment_type_international
-      target: ""
-    a11y:
-      label: "International payment type"
-      role: radio_button
-      label_source: visible_label
-    keyboard:
-      focusable: true
-    test_context:
-      tag: payment_type_international
-      assert_selected: false
-
-  - type: box
-    id: fee_estimate_banner
-    label: "Fee Estimate"
-    content: "Estimated fee: Free (SEPA)"
-    style:
-      background: "#CDEDA3"
-      border_radius: 8
-      padding_horizontal: 16
-      padding_vertical: 12
-      border_color: "#4C662B"
-      border_width: 1
-      leading_icon: info_outline
-      leading_icon_color: "#4C662B"
-    on_click:
-      action: view_fee_details
-      target: ""
-    a11y:
-      label: "Fee information: Estimated fee is Free for SEPA payments"
-      role: status
-    keyboard:
-      focusable: true
-    test_context:
-      tag: fee_estimate_banner
-      assert_text: "Estimated fee: Free (SEPA)"
-
-  - type: button
-    id: continue_button
-    label: "Continue"
-    supported_states: [idle, hover, focus_visible, pressed, disabled]
-    style:
-      variant: filled
-      background: "#4C662B"
+      shape: circle
+      diameter: 60
+      background: "#386663"
       text_color: "#FFFFFF"
-      border_radius: 12
-      padding_vertical: 16
-      full_width: true
-      typography: "Outfit/label_large"
     on_click:
-      action: validate
+      action: select_recipient
       target: send-money-confirm
     a11y:
-      label: "Continue to payment confirmation"
+      label: "Send money to a recent recipient"
       role: button
     keyboard:
       focusable: true
     test_context:
-      tag: continue_button
-      assert_text: "Continue"
-      assert_enabled: true
+      tag: recent_recipient_item
+
+  - type: text
+    id: ways_to_send_header
+    label: "Choose a way to send"
+    content: "CHOOSE A WAY TO SEND"
+    style:
+      typography: "Outfit/label_medium"
+      color: "#44483D"
+      font_weight: semibold
+    a11y:
+      label: "Choose a way to send section"
+      role: heading
+    test_context:
+      tag: ways_to_send_header
+      assert_text: "CHOOSE A WAY TO SEND"
+
+  - type: box
+    id: way_local_transfer
+    label: "Local transfer"
+    content: "Local transfer"
+    style:
+      background: "#FFFFFF"
+      border_radius: 12
+      elevation: 1
+      padding_horizontal: spacing.md
+      padding_vertical: spacing.md
+      border_color: "#E1E4D5"
+      border_width: 1
+      leading_icon: send
+    on_click:
+      action: new_recipient
+      target: ""
+    a11y:
+      label: "Local transfer. Free, arrives instantly."
+      role: button
+    keyboard:
+      focusable: true
+    test_context:
+      tag: way_local_transfer
+      assert_text: "Local transfer"
+
+  - type: text
+    id: way_local_transfer_subtitle
+    label: "Free · Arrives instantly"
+    content: "Free · Arrives instantly"
+    style:
+      typography: "Outfit/body_small"
+      color: "#44483D"
+    a11y:
+      label: "Free, arrives instantly"
+      role: text
+    test_context:
+      tag: way_local_transfer_subtitle
+
+  - type: text
+    id: all_beneficiaries_header
+    label: "All Beneficiaries"
+    content: "ALL BENEFICIARIES"
+    style:
+      typography: "Outfit/label_medium"
+      color: "#44483D"
+      font_weight: semibold
+    a11y:
+      label: "All beneficiaries section"
+      role: heading
+    test_context:
+      tag: all_beneficiaries_header
+      assert_text: "ALL BENEFICIARIES"
+
+  - type: box
+    id: beneficiary_item
+    label: "Beneficiary"
+    content: ""
+    style:
+      background: "#FFFFFF"
+      border_radius: 12
+      elevation: 1
+      padding_horizontal: spacing.md
+      padding_vertical: 14
+      border_color: "#E1E4D5"
+      border_width: 1
+    on_click:
+      action: select_recipient
+      target: send-money-confirm
+    a11y:
+      label: "Send money to this beneficiary"
+      role: button
+    keyboard:
+      focusable: true
+    test_context:
+      tag: beneficiary_item
 
 responsive:
   mobile_only: true
@@ -388,291 +206,159 @@ responsive:
 states:
   initial_state: loading
   loading:
+    motion:
+      shimmer_duration: short4
+      reduced_motion_fallback: static_placeholder
     layout:
       visible_components:
-        - send_money_title
-        - from_account_selector
-        - amount_input
-        - beneficiary_search
-        - continue_button
-      skeleton_shimmer: true
-      shimmer_components:
-        - from_account_selector
-        - amount_input
-        - beneficiary_search
-        - recent_beneficiaries_row
-        - recent_beneficiary_john
-        - recent_beneficiary_sarah
-        - reference_input
-        - fee_estimate_banner
-      continue_button_enabled: false
-      progress_indicator: linear
-  draft:
-    layout:
-      visible_components:
-        - send_money_title
-        - from_account_selector
-        - amount_input
-        - currency_selector
-        - beneficiary_search
-        - recent_beneficiaries_row
-        - recent_beneficiary_john
-        - recent_beneficiary_sarah
-        - reference_input
-        - payment_type_selector
-        - payment_type_sepa
-        - payment_type_domestic
-        - payment_type_international
-        - fee_estimate_banner
-        - continue_button
-      continue_button_enabled: false
-      fee_banner_text: "Estimated fee: Free (SEPA)"
-  validating:
-    layout:
-      visible_components:
-        - send_money_title
-        - from_account_selector
-        - amount_input
-        - currency_selector
-        - beneficiary_search
-        - reference_input
-        - payment_type_selector
-        - payment_type_sepa
-        - payment_type_domestic
-        - payment_type_international
-        - fee_estimate_banner
-        - continue_button
-      continue_button_loading: true
-      progress_indicator: linear
+        - recent_recipients_header
+      show_skeleton_list: true
+      skeleton_count: 4
   content:
     layout:
       visible_components:
-        - send_money_title
-        - from_account_selector
-        - amount_input
-        - currency_selector
-        - beneficiary_search
-        - recent_beneficiaries_row
-        - recent_beneficiary_john
-        - recent_beneficiary_sarah
-        - reference_input
-        - payment_type_selector
-        - payment_type_sepa
-        - payment_type_domestic
-        - payment_type_international
-        - fee_estimate_banner
-        - continue_button
-      continue_button_enabled: false
-      fee_banner_text: "Estimated fee: Free (SEPA)"
-    note: "Form ready with accounts and beneficiaries loaded — same layout as draft state; default loaded state alias"
+        - recent_recipients_header
+        - recipient_new
+        - recent_recipient_item
+        - ways_to_send_header
+        - way_local_transfer
+        - way_local_transfer_subtitle
+        - all_beneficiaries_header
+        - beneficiary_item
   empty:
     layout:
       visible_components:
-        - send_money_title
-        - from_account_selector
-        - amount_input
-        - currency_selector
-        - beneficiary_search
-        - continue_button
-      showEmptyState: true
-      emptyMessage: "No beneficiaries available to send money to. Add a beneficiary first."
-      continue_button_enabled: false
+        - recent_recipients_header
+        - recipient_new
+        - ways_to_send_header
+        - way_local_transfer
+        - way_local_transfer_subtitle
+      show_empty_state: true
+      empty_state_icon: person_off
+      empty_state_title: "No recipients yet"
+      empty_state_message: "Add a beneficiary, then send money to them in a tap."
   error:
     layout:
       visible_components:
-        - send_money_title
-        - from_account_selector
-        - amount_input
-        - currency_selector
-        - beneficiary_search
-        - reference_input
-        - payment_type_selector
-        - payment_type_sepa
-        - payment_type_domestic
-        - payment_type_international
-        - fee_estimate_banner
-        - continue_button
-      amount_input_error: "Please enter a valid amount greater than £0.01"
-      beneficiary_search_error: "Please select a valid beneficiary"
-      continue_button_enabled: false
-      error_banner:
-        id: network_error_banner
-        title: "Could not process payment"
-        message: "Please check your connection and try again."
-        action_label: "Retry"
-        action: retry_send
-        icon: error_outline
-        retry: true
+        - recent_recipients_header
+      show_error_state: true
+      error_icon: cloud_off
+      error_title: "Could not load recipients"
+      error_message: "Check your connection and try again"
+      show_retry_button: true
 
 state_model:
-  view_model: SendMoneyViewModel
+  view_model: SendMoneyHubViewModel
   state_fields:
-    - name: selectedAccountId
-      type: String
-      default: ""
-    - name: selectedAccountLabel
-      type: String
-      default: "Primary Checking — £4,250.00 available"
-    - name: amount
-      type: String
-      default: ""
-    - name: currency
-      type: String
-      default: "GBP"
-    - name: beneficiaryId
-      type: String
-      default: ""
-    - name: beneficiaryName
-      type: String
-      default: ""
-    - name: reference
-      type: String
-      default: ""
-    - name: paymentType
-      type: PaymentType
-      default: SEPA
-    - name: estimatedFee
-      type: String
-      default: "Free"
+    - name: recentRecipients
+      type: List<HubRecipient>
+      default: "emptyList()"
+    - name: allBeneficiaries
+      type: List<HubRecipient>
+      default: "emptyList()"
     - name: uiState
-      type: SendMoneyUiState
-      default: Draft
+      type: ScreenState<SendMoneyHubContent>
+      default: Loading
   errors:
-    - field: amount
-      code: AMOUNT_REQUIRED
-      message: "Please enter a valid amount greater than £0.01"
-    - field: beneficiary
-      code: BENEFICIARY_REQUIRED
-      message: "Please select a valid beneficiary"
-    - field: account
-      code: ACCOUNT_REQUIRED
-      message: "Please select a source account"
-    - field: reference
-      code: REFERENCE_TOO_LONG
-      message: "Reference must be 35 characters or fewer"
+    - field: global
+      code: LOAD_FAILED
+      message: "Could not load recipients."
   events:
-    - AccountSelected
-    - AmountChanged
-    - CurrencyChanged
-    - BeneficiarySelected
-    - ReferenceChanged
-    - PaymentTypeChanged
-    - ContinueClicked
-    - ValidationFailed
-    - ValidationSucceeded
+    - RecipientSelected
+    - NewTransferClicked
+    - RefreshTriggered
   actions:
-    - select_account
-    - search_beneficiary
-    - select_beneficiary
-    - select_currency
-    - select_payment_type_sepa
-    - select_payment_type_domestic
-    - select_payment_type_international
-    - validate
-    - focus_amount
-    - focus_reference
+    - select_recipient
+    - new_recipient
   di:
-    - AccountRepository
-    - BeneficiaryRepository
-    - PaymentRepository
-    - FeeCalculatorUseCase
+    - AccountsRepository
+    - PaymentsRepository
+    - BanksRepository
+    - TransactionsRepository
 
 api:
-  - endpoint: "GET /obp/v3.0.0/banks/{bankId}/accounts"
-    tag: Accounts
-    response:
-      fields:
-        - name: accounts
-          type: List<Account>
-        - name: id
-          type: String
-        - name: label
-          type: String
-        - name: balance
-          type: Amount
-        - name: currency
-          type: String
-    errors:
-      - code: 400
-        message: "INVALID_BANK_ID"
-      - code: 401
-        message: "USER_NOT_LOGGED_IN"
-      - code: 404
-        message: "BANK_NOT_FOUND"
   - endpoint: "GET /obp/v4.0.0/banks/{bankId}/accounts/{accountId}/{viewId}/counterparties"
     tag: Counterparties
     response:
       fields:
         - name: counterparties
           type: List<Counterparty>
-        - name: id
+        - name: counterparty_id
           type: String
         - name: name
           type: String
-        - name: other_bank_routing_address
+        - name: other_account_routing_scheme
           type: String
         - name: other_account_routing_address
           type: String
+        - name: other_bank_routing_address
+          type: String
     errors:
-      - code: 400
-        message: "INVALID_BANK_ID"
       - code: 401
-        message: "USER_NOT_LOGGED_IN"
-  - endpoint: "POST /obp/v4.0.0/banks/{bankId}/accounts/{accountId}/owner/transaction-request-types/SEPA/transaction-requests"
+        message: "OBP-20001: User not logged in"
+      - code: 404
+        message: "OBP-30018: Bank Account not found"
+  - endpoint: "GET /obp/v4.0.0/banks/{bankId}"
+    tag: Banks
+    description: "Bank directory entry (cached). bank_routings + the SWIFT_BIC attribute drive Bank.countryCode (BIC chars 5-6), which feeds PaymentRailClassifier (domestic = same bank country; OBP-routed payees resolve destination country here)."
+    response:
+      fields:
+        - name: full_name
+          type: String
+        - name: bank_routings
+          type: List<AccountRouting>
+        - name: attributes
+          type: List<BankAttribute>
+  - endpoint: "POST /obp/v4.0.0/banks/{bankId}/accounts/{accountId}/{viewId}/transaction-request-types/SEPA/transaction-requests"
     tag: TransactionRequests
+    description: "Execute SEPA-classified payments (on send-money-confirm) by recipient IBAN. Sandbox: resolves only when the counterparty carries the IBAN in other_account_secondary_routing_address and its primary routing maps to a hosted account; OBP-30012/OBP-30074 trigger automatic COUNTERPARTY fallback. Cross-currency from non-EUR accounts accepted (verified 2026-06-06)."
+    request:
+      fields:
+        - name: to.iban
+          type: String
+        - name: value.currency
+          type: String
+        - name: value.amount
+          type: String
+        - name: description
+          type: String
+        - name: charge_policy
+          type: String
+    errors:
+      - code: 404
+        message: "OBP-30012: Counterparty not found (IBAN not in secondary routing) — app falls back to COUNTERPARTY"
+      - code: 404
+        message: "OBP-30074: Bank Account not found for IBAN — app falls back to COUNTERPARTY"
+  - endpoint: "POST /obp/v4.0.0/banks/{bankId}/accounts/{accountId}/{viewId}/transaction-request-types/COUNTERPARTY/transaction-requests"
+    tag: TransactionRequests
+    description: "Execute Domestic/International payments (and SEPA fallback) on send-money-confirm. Pays a counterparty by id — works for any beneficiary regardless of routing scheme. viewId is owner."
+    request:
+      fields:
+        - name: to.counterparty_id
+          type: String
+        - name: value.currency
+          type: String
+        - name: value.amount
+          type: String
+        - name: description
+          type: String
+        - name: charge_policy
+          type: String
     response:
       fields:
         - name: id
           type: String
-        - name: type
-          type: String
         - name: status
           type: String
-        - name: start_date
-          type: DateTime
-        - name: end_date
-          type: DateTime
-        - name: challenge
-          type: Challenge
+        - name: transaction_ids
+          type: List<String>
         - name: charge
           type: Charge
     errors:
       - code: 400
-        message: "INVALID_JSON_FORMAT"
-      - code: 403
-        message: "INSUFFICIENT_AUTHORISATION"
-      - code: 404
-        message: "BANK_ACCOUNT_NOT_FOUND"
+        message: "OBP-10001: Incorrect json format"
       - code: 422
-        message: "INSUFFICIENT_FUNDS"
-  - id: obp_iban_check
-    endpoint: "POST /obp/v4.0.0/account/check/scheme/iban"
-    tag: Account
-    description: "Validate IBAN before payment"
-    request:
-      fields:
-        - name: address
-          type: String
-          note: "The IBAN to validate — field name is 'address' not 'iban'"
-    response:
-      fields:
-        - name: is_valid
-          type: Boolean
-  - id: obp_funds_available
-    endpoint: "GET /obp/v3.1.0/banks/{bankId}/accounts/{accountId}/owner/funds-available"
-    tag: Account
-    description: "Check if sufficient funds before payment"
-    request:
-      params:
-        - name: amount
-          type: String
-        - name: currency
-          type: String
-    response:
-      fields:
-        - name: answer
-          type: String
-          note: "'yes' or 'no'"
+        message: "OBP-40008: Can't send a payment with a value of 0 or less"
 
 dependencies:
   tier: feature

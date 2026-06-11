@@ -5,10 +5,11 @@
 #   auth direct_login v4→v6 (my/logins/direct), +oauth2/token+revoke; accounts my/accounts v4→v3,
 #   +v7 myAccountDetail; transactions +owner/ view segment; cards +v7/cards hub;
 #   field_officer customers v5.1→v3, account-applications v5.1→v4.
+# Updated 2026-06-11 by /idea sync — pfm group now covers pfm-settings (base currency) + business-insights (cash flow); +fx +account-detail endpoints.
 # API: Open Bank Project Sandbox — https://apisandbox.openbankproject.com
 
 schema_version: "1.0"
-generated_at: "2026-06-02"
+generated_at: "2026-06-11"
 base_url: "https://apisandbox.openbankproject.com/obp"
 default_version: "v4.0.0"
 version_policy: multi  # screens legitimately use v3-v7 OBP endpoints; default_version is the baseline
@@ -375,21 +376,29 @@ api_groups:
         response_fields: [agent_id, is_pending_agent, is_confirmed_agent, legal_name, mobile_phone_number]
 
   - id: pfm
-    name: "Personal Finance Management"
-    screens: [pfm-dashboard]
+    name: "Personal Finance Management & Insights"
+    screens: [pfm-dashboard, pfm-settings, business-insights]
     spec_file: "server/apis/pfm.yaml"
     endpoints:
       - method: GET
         path: "/v6.0.0/my/personal-data-fields"
-        description: "Read PFM budgets stored as personal data fields (convention: pfm_budget_<categoryId>)"
+        description: "Read PFM personal data fields — budgets (pfm_budget_<categoryId>) and the pfm-settings base currency (pfm_base_currency; append-only, newest row wins)"
         response_fields: [personal_data_fields, name, value]
       - method: POST
         path: "/v6.0.0/my/personal-data-fields"
-        description: "Create or update a PFM budget entry by category"
+        description: "Create or update a PFM personal data field — a budget entry by category, or the pfm_base_currency selection (pfm-settings)"
         request_fields: [name, value]
         response_fields: [name, value]
       - method: GET
         path: "/v6.0.0/my/accounts/{account_id}/transactions"
-        description: "Fetch transactions for PFM analysis — filtered by date range for selected period"
+        description: "Fetch transactions for PFM spending analysis (pfm-dashboard) and business cash-flow analysis (business-insights) — sandbox caps at 50 newest; period filtering + categorisation run client-side"
         query_params: [from_date, to_date, limit]
         response_fields: [transactions, transaction_id, this_account, details, value]
+      - method: GET
+        path: "/v5.1.0/my/banks/{bank_id}/accounts/{account_id}/account"
+        description: "Per-account detail — product_code (CURRENT/SAVINGS/BUSINESS/WALLET) for business-insights account-scope classification (the list endpoint returns product_code null)"
+        response_fields: [label, product_code, balance]
+      - method: GET
+        path: "/v5.1.0/banks/{bank_id}/fx/{from_currency_code}/{to_currency_code}"
+        description: "Live FX conversion rate — re-denominates personal spending into the pfm-settings base currency"
+        response_fields: [conversion_value, inverse_conversion_value, effective_date]

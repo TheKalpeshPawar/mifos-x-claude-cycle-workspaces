@@ -3,72 +3,61 @@
 
 schema_version: "1.0"
 run:
-  at: "2026-06-02T16:30:00Z"
+  at: "2026-06-11T01:57:27Z"
   args: ""
   scope: full
-  note: "Full project sync. Primary auto-fix: states.initial_state backfill on 32 screens (api-backed→loading, forms→idle/step_1, static→content). Stitch generation (503) and owned-backend checks (backend.owned=false) ignored per scope."
+  note: "PFM v2 screen reconciliation — created missing flow.yaml siblings + propagated 3 screens into roster artifacts. Workspace-only; no framework files touched."
 steps:
   - n: 0
     name: "init"
     status: complete
-    at: "2026-06-02T16:30:00Z"
+    at: "2026-06-11T01:57:27Z"
   - n: "0A"
     name: "design_read drift check"
     status: complete
-    at: "2026-06-02T16:30:00Z"
+    at: "2026-06-11T01:57:27Z"
     result: "design_read block present in idea-plan.yaml (DR1-DR5 pass) — continue"
   - n: 1
-    name: "verify (pre)"
+    name: "verify (structural)"
     status: complete
-    at: "2026-06-02T16:30:00Z"
-    result: "partial — 38 checks passed, 0 failed, 14 warn. initial_state_missing_screens: 38; 5 unreachable; stitch 503 (ignorable); server checks skipped (backend.owned=false)"
+    at: "2026-06-11T01:57:27Z"
+    result: "sibling + component audits; only structural gap was 2 missing flow.yaml"
+  - n: "1.S"
+    name: "sibling-completeness"
+    status: complete
+    at: "2026-06-11T01:57:27Z"
+    result: "HALT cleared — created flow.yaml for business-insights + pfm-settings; 46/46 complete"
   - n: "2.FD"
     name: "deferred-reconcile"
     status: skipped
-    at: "2026-06-02T16:30:00Z"
-    result: "no _deferred/ dirs and no FD1-FD5 failures from verify — nothing to reconcile"
-  - n: "AF.initial-state"
-    name: "auto-fix states.initial_state"
-    status: complete
-    at: "2026-06-02T16:31:00Z"
-    result: >-
-      Added states.initial_state to 32 screens (Claude Intelligence Edit only, RULE-CI-001).
-      loading (23): account-applications, account-detail, agent-registration, application-detail,
-      atm-locator, beneficiaries, card-detail, consent-manager, customer-detail, direct-debit-detail,
-      home, kyc-review, notifications, products, send-money, send-money-confirm, settings, splash,
-      standing-order-detail, standing-orders, transaction-detail, transactions, fx-rates.
-      content (4): about, licenses, privacy-policy, terms-of-service.
-      idle (forms, 3): change-password, forgot-password, login.
-      step_1 (multi-step forms, 2): corporate-onboarding, customer-onboarding.
-      All 44/44 screens now carry a properly-placed initial_state (6 pre-existing used top-level screen-meta placement).
+    at: "2026-06-11T01:57:27Z"
+    result: "no _deferred/ dirs and no FD failures — nothing to reconcile"
+  - n: "3.0"
+    name: "enrichment-matrix"
+    status: skipped
+    at: "2026-06-11T01:57:27Z"
+    result: "auditor test-renderer.js --full-audit broken (retired screens/renderers dep, RULE-PROTO-RENDER-LLM-001); all 46 screens already approved — no enrichment due"
   - n: 4
-    name: "artifacts (existence gate)"
-    status: partial
-    at: "2026-06-02T16:32:00Z"
-    result: >-
-      Core artifacts present (APP_FLOW.mmd, TAG_REGISTRY.yaml, dashboard/DEV_STATUS.md, server/api_manifest.yaml,
-      flows/*.yaml, server/apis/*.yaml=21). prototype/index.html intentionally absent (legacy viewer removed per
-      RULE-PROTO-RENDER-LLM-001 — must NOT recreate; 253 per-screen preview HTML used instead).
-      dashboard/dev-status.html absent (legacy, superseded by /project-dashboard) — non-blocking.
-  - n: "DRIFT"
-    name: "hand-edit drift (RULE-HAND-EDIT-DRIFT-001)"
+    name: "artifacts"
     status: complete
-    at: "2026-06-02T16:32:00Z"
+    at: "2026-06-11T01:57:27Z"
     result: >-
-      No hand-edit drift (output_hash) detected. accounts derived files (exports/mockups/preview/prompts)
-      were regenerated via /idea export + /idea-render-screen (2026-06-02, search-bar + bank-grouping redesign) —
-      coherent, not hand-edited; treated as BLESSED per user directive, source NOT reverted, accounts NOT regenerated.
-      Stitch for accounts shows stitch_generated:false (503) — ignored.
+      Gap-filled business-insights, pfm-settings, standing-order-edit into flows/consumer-banking.yaml,
+      APP_FLOW.mmd, server/api_manifest.yaml (pfm group), dashboard/DEV_STATUS.md (now 46 screens).
+  - n: "4.VERIFY"
+    name: "artifacts (existence gate)"
+    status: complete
+    at: "2026-06-11T01:57:27Z"
+    result: "core artifacts present; prototype/index.html intentionally absent (RULE-PROTO-RENDER-LLM-001 — preview HTML used instead)"
   - n: 5
     name: "complete"
     status: complete
-    at: "2026-06-02T16:32:30Z"
+    at: "2026-06-11T01:57:27Z"
 skipped:
   - step: "STEP 3 (enrich)"
-    reason: "would downgrade 39 approved features to enriched; this run is a targeted initial_state backfill, not re-enrichment"
+    reason: "all 46 screens already approved; enrichment-matrix auditor broken (framework bug, not fixable from workspace per user directive)"
   - step: "STEP 5.5 (render)"
-    reason: "render of the 32 edited screens deferred — preview staleness handled by implement-preflight gate, not blocking sync; cost"
+    reason: "design.icon_library not declared in PROJECT_CONFIG — render would fail (documented skip); 7 screens pending preview"
 ignored_warnings:
-  - "Stitch generation failures (503 service unavailable) — transient, Stitch service down"
-  - "Owned-backend checks (server/tables, apis↔flows 1:1) — skipped, backend.owned=false, external OBP consumer"
-  - "5 unreachable screens + on_click missing — out of scope for this initial_state-focused sync"
+  - "STEP 3.0 test-renderer.js --full-audit framework drift (legacy renderers dep) — framework file, not touched per user directive"
+  - "Owned-backend checks (server/tables, apis↔flows 1:1) — backend.owned=false, external OBP consumer"

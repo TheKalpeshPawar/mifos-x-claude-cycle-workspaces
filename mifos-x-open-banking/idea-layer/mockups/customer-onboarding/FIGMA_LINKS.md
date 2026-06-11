@@ -1,6 +1,6 @@
 # FIGMA_LINKS.md — customer-onboarding
 
-<!-- schema: v3.2 | generated: 2026-06-02T05:25:52.504Z -->
+<!-- schema: v3.2 | generated: 2026-06-05T10:56:42.308Z -->
 
 ## Stitch Project
 
@@ -8,22 +8,22 @@
 |-------|-------|
 | Project URL | [17153754672098888646](https://stitch.google.com/projects/17153754672098888646) |
 | Design System ID | 2005644667042354169 |
-| Generated | 2026-06-02T05:25:52.503Z |
+| Generated | 2026-06-05T10:56:28.875Z |
 | Success | 0/9 states |
 
 ## Screen Status
 
 | State | Screen ID | Folder | PNG | HTML | Status |
 |-------|-----------|--------|-----|------|--------|
-| step_1 | — | 01-customer-onboarding-step_1 | PNG ❌ | HTML ❌ | ❌ StitchError: Tool Call Failed [generate_screen_from_text]: The service is currently unavailable. |
-| step_2 | — | 02-customer-onboarding-step_2 | PNG ❌ | HTML ❌ | ❌ StitchError: Tool Call Failed [generate_screen_from_text]: The service is currently unavailable. |
+| step_1 | — | 01-customer-onboarding-step_1 | PNG ❌ | HTML ❌ | ❌ StitchError: MCP error -32001: Request timed out |
+| step_2 | — | 02-customer-onboarding-step_2 | PNG ❌ | HTML ❌ | ❌ StitchError: MCP error -32001: Request timed out |
 | step_3 | — | 03-customer-onboarding-step_3 | PNG ❌ | HTML ❌ | ❌ StitchError: Tool Call Failed [generate_screen_from_text]: The service is currently unavailable. |
-| step_4 | — | 04-customer-onboarding-step_4 | PNG ❌ | HTML ❌ | ❌ StitchError: Tool Call Failed [generate_screen_from_text]: The service is currently unavailable. |
-| loading | — | 05-customer-onboarding-loading | PNG ❌ | HTML ❌ | ❌ StitchError: Tool Call Failed [generate_screen_from_text]: The service is currently unavailable. |
-| submitted | — | 06-customer-onboarding-submitted | PNG ❌ | HTML ❌ | ❌ StitchError: Tool Call Failed [generate_screen_from_text]: The service is currently unavailable. |
-| error | — | 07-customer-onboarding-error | PNG ❌ | HTML ❌ | ❌ StitchError: Incomplete API response from generate_screen_from_text: expected object at projection path |
-| content | — | 08-customer-onboarding-content | PNG ❌ | HTML ❌ | ❌ StitchError: Tool Call Failed [generate_screen_from_text]: The service is currently unavailable. |
-| empty | — | 09-customer-onboarding-empty | PNG ❌ | HTML ❌ | ❌ StitchError: Incomplete API response from generate_screen_from_text: expected object at projection path |
+| step_4 | — | 04-customer-onboarding-step_4 | PNG ❌ | HTML ❌ | ❌ StitchError: MCP error -32001: Request timed out |
+| loading | — | 05-customer-onboarding-loading | PNG ❌ | HTML ❌ | ❌ StitchError: MCP error -32001: Request timed out |
+| submitted | — | 06-customer-onboarding-submitted | PNG ❌ | HTML ❌ | ❌ StitchError: MCP error -32001: Request timed out |
+| error | — | 07-customer-onboarding-error | PNG ❌ | HTML ❌ | ❌ StitchError: Tool Call Failed [generate_screen_from_text]: The service is currently unavailable. |
+| content | — | 08-customer-onboarding-content | PNG ❌ | HTML ❌ | ❌ StitchError: MCP error -32001: Request timed out |
+| empty | — | 09-customer-onboarding-empty | PNG ❌ | HTML ❌ | ❌ StitchError: MCP error -32001: Request timed out |
 
 ## Open in Figma / Stitch
 

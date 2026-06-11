@@ -1,6 +1,6 @@
 # FIGMA_LINKS.md — fo-dashboard
 
-<!-- schema: v3.2 | generated: 2026-05-31T05:49:34.433Z -->
+<!-- schema: v3.2 | generated: 2026-06-05T11:23:44.549Z -->
 
 ## Stitch Project
 
@@ -8,20 +8,24 @@
 |-------|-------|
 | Project URL | [17153754672098888646](https://stitch.google.com/projects/17153754672098888646) |
 | Design System ID | 2005644667042354169 |
-| Generated | 2026-05-31T05:49:34.433Z |
-| Success | 0/2 states |
+| Generated | 2026-06-05T11:23:38.379Z |
+| Success | 0/4 states |
 
 ## Screen Status
 
 | State | Screen ID | Folder | PNG | HTML | Status |
 |-------|-----------|--------|-----|------|--------|
-| error | — | 01-fo-dashboard-error | PNG ❌ | HTML ❌ | ❌ StitchError: Tool Call Failed [generate_screen_from_text]: Resource has been exhausted (e.g. check quota). |
-| empty | — | 02-fo-dashboard-empty | PNG ❌ | HTML ❌ | ❌ StitchError: Tool Call Failed [generate_screen_from_text]: Resource has been exhausted (e.g. check quota). |
+| loading | — | 01-fo-dashboard-loading | PNG ❌ | HTML ❌ | ❌ StitchError: Tool Call Failed [generate_screen_from_text]: The service is currently unavailable. |
+| content | — | 02-fo-dashboard-content | PNG ❌ | HTML ❌ | ❌ StitchError: Tool Call Failed [generate_screen_from_text]: The service is currently unavailable. |
+| error | — | 03-fo-dashboard-error | PNG ❌ | HTML ❌ | ❌ StitchError: Tool Call Failed [generate_screen_from_text]: The service is currently unavailable. |
+| empty | — | 04-fo-dashboard-empty | PNG ❌ | HTML ❌ | ❌ StitchError: Tool Call Failed [generate_screen_from_text]: The service is currently unavailable. |
 
 ## Open in Figma / Stitch
 
 | State | Stitch Screen | Figma Export |
 |-------|--------------|--------------|
+| loading | — | — |
+| content | — | — |
 | error | — | — |
 | empty | — | — |
 

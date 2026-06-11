@@ -23,6 +23,12 @@ status_history:
     by: "/idea completeness"
     contract_version: "1.1.0"
     bypass_flags: []
+  - from: approved
+    to: approved
+    at: "2026-06-06T17:10:00Z"
+    by: "/kmp-implement standing-order-detail"
+    contract_version: "1.1.0"
+    note: "Implemented inside feature/standing-orders (same module as the list). The ui.yaml API block (GET/pause/resume/DELETE standing-orders) does not exist on OBP — data comes from the derived/created order set: new StandingOrdersRepository.detail() finds the order by series id and recovers Recent Executions from the booked TXN_TYPE=SO transactions of its series (StandingOrderExecution model + deriveExecutions in core/data; shared seriesId() extracted from derivation). Screen: primaryContainer header with name + status badge, Recipient card (name + masked account — IBAN/bank are not observable in derived data, rows omitted), Schedule card (Frequency / First / Last / Next Payment / Final Date 'Ongoing'), Amount card with currency chip, Recent Executions (max 5, each row navigates to transaction-detail via the underlying transactionId — bonus integration), Pause-or-Resume + Cancel buttons surface 'coming soon' snackbars (no OBP endpoint; sod_delete_dialog not implemented since there is nothing to delete), top-bar Edit action omitted (OBP cannot edit standing orders). Created-on-device orders show 'hasn't made a payment yet' history. StandingOrderDetailRoute(bankId, accountId, standingOrderId) replaced the arg-less placeholder; StandingOrderCard rows are now clickable (bankId/accountId resolved from the list's selected account). Tests: 3 new repository tests (detail by id, executions newest-first, created-order empty history, unknown-id failure) + 7 VM tests (mapping incl. masked account + formatted dates, executions cap 5, paused label, created order, recipient fallback, error, retry)."
 
 screens:
   - id: standing-order-detail

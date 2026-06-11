@@ -8,6 +8,7 @@ Removed orphan duplicate screen consumer-home (zero inbound navigation, not in I
 
 ## [Unreleased]
 
+- 2026-06-11 idea sync — claude — reconciled 3 PFM v2 screens into the idea-layer artifacts: created the missing flow.yaml siblings for business-insights + pfm-settings (consumer-banking flow); propagated business-insights, pfm-settings, standing-order-edit into flows/consumer-banking.yaml, APP_FLOW.mmd, server/api_manifest.yaml (pfm group), and dashboard/DEV_STATUS.md (43→46 screens). Enrichment + preview render skipped (all 46 screens approved; icon_library undeclared). Workspace-only.
 - 2026-06-02 idea-export accounts — claude — regenerated SPEC.md, API.md, MOCKUP.md, and 4 per-state Stitch prompts reflecting accounts redesign (filter-tabs removed; free-text search bar + bank-grouped layout with subtotals)
 
 ### Exported (design)

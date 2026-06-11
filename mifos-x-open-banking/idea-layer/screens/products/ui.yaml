@@ -31,8 +31,18 @@ status_history:
     by: "/idea approve"
     contract_version: "1.1.0"
     bypass_flags: []
-
-shell:
+  - from: approved
+    to: approved
+    at: "2026-06-07T23:00:00Z"
+    by: "/kmp-implement products"
+    contract_version: "1.1.0"
+    note: "Implemented as feature/products (new module) over the pre-existing ProductsApi/Repository/Store. Endpoint verified LIVE: GET v3.0.0/banks/{bank}/products returns 12 real sandbox products (Acme Current/Savings/Student, App2 Premium Saver, plus generic CURRENT/SAVINGS/CREDIT_CARD/DEBIT/LOAN/FIXED_DEPOSIT/WALLET/BUSINESS). Model fix: the Product model mapped a non-existent label field — the API returns name (display name was silently blank); corrected. Deviations from spec: (1) the API's category/family fields are null on the sandbox, so category tabs are derived client-side from code/name keywords — tabs are All/Everyday/Savings/Cards/Loans (no Mortgages tab: no mortgage product exists, LOAN bucket covers it); (2) the spec's enriched showcase products (Fixed Rate Bond, Platinum Credit Card, rates/fees rows) don't exist server-side — real catalogue data wins; (3) NO apply journey — account-application endpoints are unverified and the application flow is FO-side/unbuilt, so cards link out to the product's more_info_url in the platform browser instead (real URLs exist for the Acme products). Entry: home Banking Services grid Products tile (Category icon) — took the Pay Bill slot, which was removed entirely per user directive (Pay Bill had no planned feature). 6 VM tests incl. live-shape categorisation."
+  - from: approved
+    to: approved
+    at: "2026-06-07T23:45:00Z"
+    by: "per-bank rework (user directive)"
+    contract_version: "1.1.0"
+    note: "Catalogue is now PER BANK with a Personal / Business audience split (user directive). Bank selector chips list every bank the user holds an account at (3 on the sandbox: Acme/ac.bank.uk, Mifos Open Bank/mifos-x-openbank, Neon/neon.bank.eu — names resolved via the bank directory); all catalogues fetch in parallel once per session. Below the chips a two-tab row splits each bank's products into Personal and Business — audience derived from code/name keywords (BUSINESS, CORPORATE, WORKING-CAPITAL, FREELANCER, FX-SPOT → Business) since the API's category field is null. Bank-specific business products verified live: Mifos Business Current GBP, Working Capital Facility, FX Spot GBP/EUR; Neon Freelancer Account. Category filter chips dropped in favour of the audience tabs; the category remains as a badge on each card. Per-bank failure degrades to an inline retry for that bank only. ProductsRepository gained listProducts(bankId). 8 VM tests."
   top_app_bar:
     show: true
     title: "Products"

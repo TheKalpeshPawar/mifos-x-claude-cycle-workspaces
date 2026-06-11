@@ -1,6 +1,6 @@
 # FIGMA_LINKS.md — customer-search
 
-<!-- schema: v3.2 | generated: 2026-05-31T05:21:48.074Z -->
+<!-- schema: v3.2 | generated: 2026-06-05T10:56:42.310Z -->
 
 ## Stitch Project
 
@@ -8,24 +8,32 @@
 |-------|-------|
 | Project URL | [17153754672098888646](https://stitch.google.com/projects/17153754672098888646) |
 | Design System ID | 2005644667042354169 |
-| Generated | 2026-05-31T05:21:48.074Z |
-| Success | 3/4 states |
+| Generated | 2026-06-05T10:56:42.290Z |
+| Success | 2/8 states |
 
 ## Screen Status
 
 | State | Screen ID | Folder | PNG | HTML | Status |
 |-------|-----------|--------|-----|------|--------|
-| idle | 2b002d2519b44d3da96ed18dc617b047 | 01-customer-search-idle | PNG ✅ | HTML ✅ | ♻ resumed |
-| error | 4e18c557f10e494c822519078d00b9b0 | 02-customer-search-error | PNG ✅ | HTML ✅ | ✅ generated |
-| content | 6840ae6da32f42aebb840fafa06c2ff6 | 03-customer-search-content | PNG ✅ | HTML ✅ | ✅ generated |
-| empty | — | 04-customer-search-empty | PNG ❌ | HTML ❌ | ❌ StitchError: Tool Call Failed [generate_screen_from_text]: The service is currently unavailable. |
+| loading | — | 01-customer-search-loading | PNG ❌ | HTML ❌ | ❌ StitchError: Tool Call Failed [generate_screen_from_text]: The service is currently unavailable. |
+| idle | 2b002d2519b44d3da96ed18dc617b047 | 02-customer-search-idle | PNG ✅ | HTML ✅ | ♻ resumed |
+| searching | — | 03-customer-search-searching | PNG ❌ | HTML ❌ | ❌ StitchError: MCP error -32001: Request timed out |
+| results | — | 04-customer-search-results | PNG ❌ | HTML ❌ | ❌ StitchError: MCP error -32001: Request timed out |
+| no_results | — | 05-customer-search-no_results | PNG ❌ | HTML ❌ | ❌ StitchError: MCP error -32001: Request timed out |
+| error | — | 06-customer-search-error | PNG ❌ | HTML ❌ | ❌ StitchError: Tool Call Failed [generate_screen_from_text]: The service is currently unavailable. |
+| content | 6840ae6da32f42aebb840fafa06c2ff6 | 07-customer-search-content | PNG ✅ | HTML ✅ | ♻ resumed |
+| empty | — | 08-customer-search-empty | PNG ❌ | HTML ❌ | ❌ StitchError: Tool Call Failed [generate_screen_from_text]: The service is currently unavailable. |
 
 ## Open in Figma / Stitch
 
 | State | Stitch Screen | Figma Export |
 |-------|--------------|--------------|
+| loading | — | — |
 | idle | [Open](https://stitch.google.com/projects/17153754672098888646/screens/2b002d2519b44d3da96ed18dc617b047) | — |
-| error | [Open](https://stitch.google.com/projects/17153754672098888646/screens/4e18c557f10e494c822519078d00b9b0) | — |
+| searching | — | — |
+| results | — | — |
+| no_results | — | — |
+| error | — | — |
 | content | [Open](https://stitch.google.com/projects/17153754672098888646/screens/6840ae6da32f42aebb840fafa06c2ff6) | — |
 | empty | — | — |
 
