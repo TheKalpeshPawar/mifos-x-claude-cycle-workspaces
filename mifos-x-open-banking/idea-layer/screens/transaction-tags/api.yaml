@@ -58,6 +58,27 @@ api:
         message: "USER_NOT_LOGGED_IN"
       - code: 404
         message: "TAG_NOT_FOUND"
+  # The note is modelled as the newest comment. listComments backs both the metadata snapshot
+  # (note = newest comment by date) and replaceNote's delete-existing-then-post sequence.
+  - id: obp_transaction_comment_get
+    endpoint: "GET /obp/v1.2.1/banks/{bankId}/accounts/{accountId}/owner/transactions/{transactionId}/metadata/comments"
+    tag: Transaction-Metadata
+    response:
+      fields:
+        - name: comments
+          type: "List<TransactionComment>"
+          children:
+            - name: id
+              type: String
+            - name: value
+              type: String
+            - name: date
+              type: String
+    errors:
+      - code: 401
+        message: "USER_NOT_LOGGED_IN"
+      - code: 404
+        message: "TRANSACTION_NOT_FOUND"
   - id: obp_transaction_comment_add
     endpoint: "POST /obp/v1.2.1/banks/{bankId}/accounts/{accountId}/owner/transactions/{transactionId}/metadata/comments"
     tag: Transaction-Metadata
@@ -79,7 +100,26 @@ api:
         message: "INVALID_COMMENT_VALUE"
       - code: 401
         message: "USER_NOT_LOGGED_IN"
+  # replaceNote deletes every existing comment before posting the new note, so the note stays
+  # canonical (newest single comment) rather than an append-only pile. DELETE returns an empty body.
+  - id: obp_transaction_comment_delete
+    endpoint: "DELETE /obp/v1.2.1/banks/{bankId}/accounts/{accountId}/owner/transactions/{transactionId}/metadata/comments/{commentId}"
+    tag: Transaction-Metadata
+    response:
+      fields:
+        - name: result
+          type: String
+          example: "Success"
+    errors:
+      - code: 401
+        message: "USER_NOT_LOGGED_IN"
+      - code: 404
+        message: "COMMENT_NOT_FOUND"
+  # DEFERRED — not consumed by shipped code. The receipt/image upload UI is a 'coming soon'
+  # placeholder: OBP image-add stores a URL, but the device has nowhere to host an upload.
+  # Keep the spec entry for when receipt hosting lands; no client/repository method exists today.
   - id: obp_transaction_image_add
+    deferred: true
     endpoint: "POST /obp/v1.2.1/banks/{bankId}/accounts/{accountId}/owner/transactions/{transactionId}/metadata/images"
     tag: Transaction-Metadata
     request:

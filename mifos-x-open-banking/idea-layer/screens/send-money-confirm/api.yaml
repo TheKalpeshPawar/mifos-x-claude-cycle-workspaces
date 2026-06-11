@@ -2,9 +2,20 @@ sibling: api
 schema_version: "4.0"
 feature_id: send-money-confirm
 api:
-  - id: obp_confirm_sepa_transfer
+  - id: obp_create_sepa_transfer
     endpoint: "POST /obp/v4.0.0/banks/{bankId}/accounts/{accountId}/owner/transaction-request-types/SEPA/transaction-requests"
     tag: TransactionRequests
+    description: "Rail 1 — SEPA by recipient IBAN. PaymentsRepository.sendSepaPayment. Falls back to COUNTERPARTY on OBP-30012/30074."
+    request:
+      fields:
+        - name: to.iban
+          type: String
+        - name: value.currency
+          type: String
+        - name: value.amount
+          type: String
+        - name: description
+          type: String
     response:
       fields:
         - name: id
@@ -13,28 +24,79 @@ api:
           type: String
         - name: status
           type: String
-        - name: start_date
-          type: DateTime
-        - name: charge
-          type: Charge
-        - name: charge.summary
-          type: String
-        - name: charge.value.amount
-          type: String
-        - name: charge.value.currency
-          type: String
         - name: challenge
           type: Challenge
+        - name: charge
+          type: Charge
         - name: transaction_ids
           type: List<String>
     errors:
-      - code: 400
-        message: "INVALID_JSON_FORMAT"
-      - code: 403
-        message: "INSUFFICIENT_AUTHORISATION"
       - code: 404
-        message: "BANK_ACCOUNT_NOT_FOUND"
+        message: "OBP-30012 / OBP-30074 — falls back to COUNTERPARTY"
       - code: 422
         message: "INSUFFICIENT_FUNDS"
-      - code: 423
-        message: "DAILY_LIMIT_EXCEEDED"
+  - id: obp_create_counterparty_transfer
+    endpoint: "POST /obp/v4.0.0/banks/{bankId}/accounts/{accountId}/owner/transaction-request-types/COUNTERPARTY/transaction-requests"
+    tag: TransactionRequests
+    description: "Rail 2 — pay a counterparty by id. PaymentsRepository.sendToCounterparty. Domestic / International + SEPA fallback."
+    request:
+      fields:
+        - name: to.counterparty_id
+          type: String
+        - name: value.currency
+          type: String
+        - name: value.amount
+          type: String
+        - name: description
+          type: String
+    response:
+      fields:
+        - name: id
+          type: String
+        - name: status
+          type: String
+        - name: challenge
+          type: Challenge
+        - name: charge
+          type: Charge
+        - name: transaction_ids
+          type: List<String>
+    errors:
+      - code: 422
+        message: "OBP-40003 currency mismatch / LIMIT / INSUFFICIENT_FUNDS"
+  - id: obp_create_sandbox_tan_transfer
+    endpoint: "POST /obp/v2.1.0/banks/{bankId}/accounts/{accountId}/owner/transaction-request-types/SANDBOX_TAN/transaction-requests"
+    tag: TransactionRequests
+    description: "Rail 3 — sandbox-only internal transfer to an OBP-hosted account. PaymentsRepository.sendToSandboxTan. Self-answerable SCA."
+    request:
+      fields:
+        - name: to.bank_id
+          type: String
+        - name: to.account_id
+          type: String
+        - name: value.currency
+          type: String
+        - name: value.amount
+          type: String
+        - name: description
+          type: String
+    response:
+      fields:
+        - name: id
+          type: String
+        - name: status
+          type: String
+        - name: challenge
+          type: Challenge
+  - id: obp_get_transaction_request
+    endpoint: "GET /obp/v4.0.0/banks/{bankId}/accounts/{accountId}/owner/transaction-requests/{requestId}"
+    tag: TransactionRequests
+    description: "Re-fetch an INITIATED request to populate challenge.id (the create response does not inline the SCA challenge). Internal to PaymentsRepository.enrichChallenge."
+    response:
+      fields:
+        - name: id
+          type: String
+        - name: status
+          type: String
+        - name: challenge
+          type: Challenge

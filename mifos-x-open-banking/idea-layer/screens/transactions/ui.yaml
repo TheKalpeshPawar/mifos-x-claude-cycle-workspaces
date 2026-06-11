@@ -2,7 +2,7 @@ id: transactions
 name: Transaction History
 feature: transactions
 flavor: consumer
-status: approved
+status: enriched
 quality_score: 95
 contract_version: "1.1.0"
 approve_hash: "sha256:06af12bd8c96e4f037af12bd8c96e4f037af12bd8c96e4f037af12bd8c96e4f0"
@@ -41,6 +41,11 @@ status_history:
     by: "counterparty-name hard rule (user directive)"
     contract_version: "1.1.0"
     note: "Counterparty names never show the OBP login-username placeholder (e.g. afternooncoffee, stamped into other_account.holder.name for self-transfers and unresolved merchants). New core CounterpartyNameResolver mirror-joins self-transfers across the user's own accounts (same description + completed timestamp, negated amount) to identify the destination account, then shows its Owner customer legal name (account label fallback); learned obfuscated-id→name mappings persist in the Room cache. Display precedence everywhere (list title fallback, detail counterparty hero/row, tags merchant, search text): resolved holder name → real non-placeholder holder → description. HARD RULE recorded in workspaces/mifos-x/CLAUDE.md."
+  - from: approved
+    to: enriched
+    at: "2026-06-11"
+    by: "/idea verify --source-drift (write-back)"
+    note: "Reconciled spec to shipped Kotlin — uiState is ScreenState<TransactionsContent> (no_network + unauthenticated states added; searching demoted from a state to a FilterState field). state_model rewritten to the shipped contract: TransactionsContent + TransactionTypeFilter{ALL,DEBIT,CREDIT,PENDING}, DateRangePreset{7/30/60/90/CUSTOM} + DateRangeFilter, PendingPayment + TransactionDayGroup + MonthlySummary, page*PAGE_SIZE(10) client-side paging, on* methods, DI = TransactionsRepository/PaymentsRepository/AccountsRepository/CounterpartyNameResolver. date_range_picker box replaced by a DateRangePreset chip row + Custom chip → DateRangePickerDialog. Added pending section (PendingRow, SectionHeader 'PENDING', onPendingClick → transaction-detail requestId path; excluded from monthly totals). monthly_summary computed client-side in account currency. api.yaml reconciled: GET v6.0.0 .../owner/transactions (listTransactionsWithAttributes) is the shipped list call (v3.0.0 is a sibling, used only by the resolver mirror-join) + added GET v4.0.0 .../owner/transaction-requests (pending). Server-side date/type filtering ignored by sandbox → runs client-side (documented). Counterparty-resolution mechanism documented. Pending re-render + re-approve."
 
 
 shell:
@@ -50,10 +55,10 @@ shell:
     title: "Transactions"
     navigation_icon: arrow_back
     navigation_action: navigate_back
-    actions:
-      - icon: filter_list
-        action: open_advanced_filter
-        label: "Advanced filter"
+    # Shipped TopAppBar has no actions — the advanced-filter action was omitted (the type
+    # chips + date-range chips cover filtering). Also note the search bar's trailing mic icon
+    # in the spec is not wired in the shipped Header.
+    actions: []
   nav_items:
     - id: nav_home
       label: Home
@@ -119,79 +124,167 @@ components:
       interaction_type: text_input
       data_driven: true
 
-  - type: box
-    id: date_range_picker
+  # Shipped: a horizontally-scrolling row of M3 FilterChips — one per DateRangePreset
+  # (7/30/60/90 days) plus a Custom chip that opens the shared DateRangePickerDialog
+  # (future days disabled, max = today). Default selection is Last 30 Days. Replaced
+  # the single date_range_picker box+menu chip that the spec previously modelled.
+  - type: stack
+    id: date_chips_row
     style:
-      background: "#F9FAEF"
-      border_radius: 12
-      padding_horizontal: spacing.md
-      padding_vertical: spacing.md
-      margin_horizontal: 20
-      margin_bottom: spacing.md
-    on_click:
-      action: filter_date
+      direction: horizontal
+      spacing: spacing.sm
+      padding_horizontal: 20
+      padding_bottom: spacing.md
+      overflow: scroll_horizontal
     a11y:
-      role: button
-      label: "Select date range: currently showing Last 30 Days"
-      hint: "Opens date range picker"
-    keyboard:
-      focusable: true
+      role: group
+      label: "Date range filters"
     test_context:
-      tag: date_range_picker
-      assert_clickable: true
-      purpose: "Open date range filter for transactions"
-      interaction_type: tap
-      data_driven: true
+      tag: date_chips_row
     children:
-      - type: stack
-        id: date_range_row
+      - type: chip
+        id: range_chip_last_7_days
+        label: "7 days"
+        supported_states: [idle, hover, focus_visible, pressed, disabled]
         style:
-          direction: horizontal
-          align: center
-          justify: space_between
-        children:
-          - type: stack
-            id: date_range_label_col
-            style:
-              direction: horizontal
-              align: center
-              spacing: spacing.sm
-            children:
-              - type: icon
-                id: date_range_icon
-                content: "date_range"
-                style:
-                  size: 18
-                  color: "#4C662B"
-                a11y:
-                  role: img
-                  label: "Calendar icon"
-                test_context:
-                  tag: date_range_icon
+          variant: filter
+          border_radius: 20
+          padding_horizontal: spacing.md
+          padding_vertical: spacing.sm
+          typography: "Outfit/label_medium"
+        on_click:
+          action: select_date_preset
+          params:
+            preset: LAST_7_DAYS
+        a11y:
+          role: radio
+          selected: false
+          label: "Show transactions from the last 7 days"
+        keyboard:
+          focusable: true
+        test_context:
+          tag: range_chip_LAST_7_DAYS
+          assert_clickable: true
+          interaction_type: toggle
 
-              - type: text
-                id: date_range_label
-                content: "Last 30 Days"
-                style:
-                  typography: "Outfit/body_medium"
-                  color: "#1A1C16"
-                a11y:
-                  role: text
-                test_context:
-                  tag: date_range_label
-                  assert_content: "Last 30 Days"
+      - type: chip
+        id: range_chip_last_30_days
+        label: "30 days"
+        supported_states: [idle, hover, focus_visible, pressed, disabled]
+        style:
+          variant: filter
+          border_radius: 20
+          padding_horizontal: spacing.md
+          padding_vertical: spacing.sm
+          typography: "Outfit/label_medium"
+        on_click:
+          action: select_date_preset
+          params:
+            preset: LAST_30_DAYS
+        a11y:
+          role: radio
+          selected: true
+          label: "Show transactions from the last 30 days"
+        keyboard:
+          focusable: true
+        test_context:
+          tag: range_chip_LAST_30_DAYS
+          assert_clickable: true
+          interaction_type: toggle
 
-          - type: icon
-            id: date_range_chevron
-            content: "expand_more"
-            style:
-              size: 20
-              color: "#44483D"
-            a11y:
-              role: img
-              label: "Expand"
-            test_context:
-              tag: date_range_chevron
+      - type: chip
+        id: range_chip_last_60_days
+        label: "60 days"
+        supported_states: [idle, hover, focus_visible, pressed, disabled]
+        style:
+          variant: filter
+          border_radius: 20
+          padding_horizontal: spacing.md
+          padding_vertical: spacing.sm
+          typography: "Outfit/label_medium"
+        on_click:
+          action: select_date_preset
+          params:
+            preset: LAST_60_DAYS
+        a11y:
+          role: radio
+          selected: false
+          label: "Show transactions from the last 60 days"
+        keyboard:
+          focusable: true
+        test_context:
+          tag: range_chip_LAST_60_DAYS
+          assert_clickable: true
+          interaction_type: toggle
+
+      - type: chip
+        id: range_chip_last_90_days
+        label: "90 days"
+        supported_states: [idle, hover, focus_visible, pressed, disabled]
+        style:
+          variant: filter
+          border_radius: 20
+          padding_horizontal: spacing.md
+          padding_vertical: spacing.sm
+          typography: "Outfit/label_medium"
+        on_click:
+          action: select_date_preset
+          params:
+            preset: LAST_90_DAYS
+        a11y:
+          role: radio
+          selected: false
+          label: "Show transactions from the last 90 days"
+        keyboard:
+          focusable: true
+        test_context:
+          tag: range_chip_LAST_90_DAYS
+          assert_clickable: true
+          interaction_type: toggle
+
+      - type: chip
+        id: range_chip_custom
+        label: "Custom"
+        supported_states: [idle, hover, focus_visible, pressed, disabled]
+        style:
+          variant: filter
+          border_radius: 20
+          padding_horizontal: spacing.md
+          padding_vertical: spacing.sm
+          typography: "Outfit/label_medium"
+          leading_icon: date_range
+        on_click:
+          action: open_custom_range_dialog
+        a11y:
+          role: button
+          selected: false
+          label: "Pick a custom date range"
+          hint: "Opens a date range picker; shows the selected range once applied"
+        keyboard:
+          focusable: true
+        test_context:
+          tag: range_chip_CUSTOM
+          assert_clickable: true
+          interaction_type: tap
+
+  - type: dialog
+    id: date_range_picker_dialog
+    label: "Custom date range picker"
+    style:
+      visible_in_state: custom_range_dialog
+    content:
+      title: "Select date range"
+      apply_label: "Apply"
+      dismiss_label: "Cancel"
+      max_date: today
+    on_click:
+      action: apply_custom_range
+    a11y:
+      role: dialog
+      label: "Custom date range picker. Choose a start and end date; future days are disabled."
+    test_context:
+      tag: date_range_picker_dialog
+      assert_visible_in_state: custom_range_dialog
 
   - type: stack
     id: filter_chips_row
@@ -421,6 +514,119 @@ components:
                 test_context:
                   tag: received_amount
                   assert_content: "£3,200.00"
+
+  # Pending payments — transaction-requests still INITIATED (SCA challenge unanswered, money
+  # not yet debited). Rendered muted above the booked date groups, excluded from monthly
+  # totals, and tapping a pending row opens transaction-detail via the requestId load path.
+  # The section (header + rows) only appears when content.pending is non-empty and the active
+  # type filter is not DEBIT/CREDIT.
+  - type: text
+    id: pending_section_header
+    content: "PENDING"
+    style:
+      typography: "Outfit/label_medium"
+      color: "#44483D"
+      letter_spacing: 0.5
+      padding_horizontal: 20
+      padding_top: spacing.xs
+      padding_bottom: spacing.sm
+    a11y:
+      role: heading
+      level: 3
+      label: "Pending payments awaiting confirmation"
+    test_context:
+      tag: pending_section_header
+
+  - type: box
+    id: pending_row_1
+    style:
+      background: "#F4F8EC"
+      border_radius: 12
+      padding: 14
+      margin_horizontal: 20
+      margin_bottom: spacing.sm
+      border_width: 1
+      border_color: "#E1E4D5"
+    on_click:
+      action: navigate
+      target: transaction-detail
+      params:
+        request_id: "txn-req-3f9a1c2e"
+    a11y:
+      role: button
+      label: "Pending payment to Octopus Energy, sixty-four pounds twelve, awaiting confirmation. Tap for details."
+    keyboard:
+      focusable: true
+    test_context:
+      tag: pending_row_1
+      assert_clickable: true
+      purpose: "Open detail for a pending (awaiting-confirmation) payment via requestId"
+      interaction_type: tap
+      data_driven: true
+    children:
+      - type: stack
+        id: pending1_main_row
+        style:
+          direction: horizontal
+          align: center
+          spacing: spacing.md
+        children:
+          - type: icon
+            id: pending1_icon
+            content: "schedule"
+            style:
+              size: 24
+              color: "#44483D"
+            a11y:
+              role: img
+              label: "Pending icon"
+            test_context:
+              tag: pending1_icon
+
+          - type: stack
+            id: pending1_info
+            style:
+              direction: vertical
+              flex: 1
+            children:
+              - type: text
+                id: pending1_name
+                content: "Octopus Energy"
+                style:
+                  typography: "Outfit/body_medium"
+                  color: "#44483D"
+                  font_weight: 500
+                a11y:
+                  role: text
+                test_context:
+                  tag: pending1_name
+                  assert_content: "Octopus Energy"
+
+              - type: text
+                id: pending1_status
+                content: "Awaiting confirmation"
+                style:
+                  typography: "Outfit/body_small"
+                  color: "#44483D"
+                a11y:
+                  role: text
+                test_context:
+                  tag: pending1_status
+                  assert_content: "Awaiting confirmation"
+
+          - type: text
+            id: pending1_amount
+            content: "£64.12"
+            style:
+              typography: "Outfit/body_large"
+              color: "#44483D"
+              font_weight: 600
+            a11y:
+              role: text
+              label: "Pending amount: sixty-four pounds twelve"
+            test_context:
+              tag: pending1_amount
+              assert_content: "£64.12"
 
   - type: text
     id: transactions_date_group_header
@@ -903,21 +1109,36 @@ states:
     layout:
       components_visible:
         - search_bar
-        - date_range_picker
         - filter_chips_row
+        - date_chips_row
         - monthly_summary_card
+        - pending_section_header
+        - pending_row_1
         - transactions_date_group_header
         - txn_list_row_1
         - txn_list_row_2
         - txn_list_row_3
         - load_more_button
 
+  # Optional overlay over the content state — the shared DateRangePickerDialog opens when
+  # the Custom chip is tapped; the underlying transaction list stays mounted behind it.
+  custom_range_dialog:
+    layout:
+      components_visible:
+        - search_bar
+        - filter_chips_row
+        - date_chips_row
+        - monthly_summary_card
+        - transactions_date_group_header
+        - txn_list_row_1
+        - date_range_picker_dialog
+
   empty:
     layout:
       components_visible:
         - search_bar
-        - date_range_picker
         - filter_chips_row
+        - date_chips_row
       empty_card:
         id: empty_state_card
         illustration: no_transactions
@@ -930,178 +1151,249 @@ states:
     layout:
       components_visible:
         - search_bar
+        - filter_chips_row
+        - date_chips_row
       error_card:
         id: error_state_card
         title: "Could not load transactions"
         message: "We were unable to load your transactions. Check your connection and try again."
         action_label: "Retry"
         action: retry_load
-        icon: error_outline
+        icon: cloud_off
 
-  searching:
+  # ScreenState.NoNetwork and ScreenState.Unauthenticated render the same error card as
+  # ScreenState.Error in the shipped composable (when(...) folds all three into ErrorState).
+  no_network:
     layout:
       components_visible:
         - search_bar
         - filter_chips_row
-      skeleton:
-        - id: skel_search_1
-          type: box
-          style:
-            background: "#E1E4D5"
-            border_radius: 12
-            height: 68
-            margin_horizontal: 20
-            margin_bottom: spacing.sm
-        - id: skel_search_2
-          type: box
-          style:
-            background: "#E1E4D5"
-            border_radius: 12
-            height: 68
-            margin_horizontal: 20
-            margin_bottom: spacing.sm
+        - date_chips_row
+      error_card:
+        id: error_state_card
+        title: "Could not load transactions"
+        message: "We were unable to load your transactions. Check your connection and try again."
+        action_label: "Retry"
+        action: retry_load
+        icon: cloud_off
+
+  unauthenticated:
+    layout:
+      components_visible:
+        - search_bar
+        - filter_chips_row
+        - date_chips_row
+      error_card:
+        id: error_state_card
+        title: "Could not load transactions"
+        message: "We were unable to load your transactions. Check your connection and try again."
+        action_label: "Retry"
+        action: retry_load
+        icon: cloud_off
 
 state_model:
   view_model: TransactionsViewModel
-  screen_state: TransactionsScreenState
-  state_fields:
-    - name: isLoading
-      type: Boolean
-      default: "true"
-    - name: transactions
-      type: "List<TransactionSummary>"
-      default: "emptyList()"
-    - name: activeFilter
+  # Shipped: a single StateFlow<ScreenState<TransactionsContent>> derived by combining a raw
+  # data flow (Loading/Failed/Loaded) with a FilterState flow and projecting per state. The
+  # legacy flat TransactionsScreenState was never built.
+  screen_state: "ScreenState<TransactionsContent>"
+  state_wrapper: ScreenState
+  screen_states: [Loading, Content, Empty, Error, NoNetwork, Unauthenticated]
+  content_class: TransactionsContent
+  content_fields:
+    - name: pending
+      type: "List<PendingPayment>"
+    - name: groups
+      type: "List<TransactionDayGroup>"
+    - name: summary
+      type: MonthlySummary
+    - name: filter
       type: TransactionTypeFilter
-      default: TransactionTypeFilter.ALL
-    - name: dateRange
-      type: DateRange
-      default: "DateRange.LAST_30_DAYS"
-    - name: searchQuery
+    - name: range
+      type: DateRangeFilter
+    - name: query
       type: String
-      default: '""'
-    - name: totalSpent
-      type: "BigDecimal"
-      default: "BigDecimal.ZERO"
-    - name: totalReceived
-      type: "BigDecimal"
-      default: "BigDecimal.ZERO"
-    - name: currentPage
-      type: Int
-      default: "0"
     - name: hasMore
       type: Boolean
-      default: "true"
-    - name: error
-      type: "UiError?"
-      default: "null"
-    - name: isSearching
-      type: Boolean
-      default: "false"
-  errors:
-    - id: network_error
-      message: "Network unavailable. Please check your connection."
-    - id: auth_error
-      message: "Session expired. Please log in again."
+    - name: counterpartyNames
+      type: "Map<String, String>"
+      default: "emptyMap()"
+    - name: counterpartyPlaceholder
+      type: String
+      default: '""'
+  supporting_types:
+    - name: TransactionTypeFilter
+      kind: enum
+      values: [ALL, DEBIT, CREDIT, PENDING]
+    - name: DateRangePreset
+      kind: enum
+      values: [LAST_7_DAYS, LAST_30_DAYS, LAST_60_DAYS, LAST_90_DAYS, CUSTOM]
+    - name: DateRangeFilter
+      kind: data_class
+      fields: [preset, start, end]
+      note: "start/end are resolved LocalDate bounds (null = unbounded); default preset LAST_30_DAYS"
+    - name: PendingPayment
+      kind: data_class
+      fields: [id, description, amount, currency, date]
+      note: "An initiated-but-unbooked transaction-request (above the SCA threshold, awaiting confirmation)"
+    - name: TransactionDayGroup
+      kind: data_class
+      fields: [date, transactions]
+    - name: MonthlySummary
+      kind: data_class
+      fields: [spent, received, currency]
+      note: "Month-to-date totals over booked transactions only; pending excluded; computed client-side in account currency"
+  filter_state:
+    note: "Private FilterState holds filter/range/query/page (search is a filter field, NOT a ScreenState). page starts at 1; visible rows = booked.take(page * PAGE_SIZE)."
+    fields: [filter, range, query, page]
+  constants:
+    - name: PAGE_SIZE
+      value: 10
   events:
     - RetryLoad
     - "SearchQueryChanged(query: String)"
     - "FilterTypeChanged(filter: TransactionTypeFilter)"
-    - "DateRangeChanged(range: DateRange)"
+    - "DateRangePresetSelected(preset: DateRangePreset)"
+    - "CustomRangeSelected(start: LocalDate, end: LocalDate)"
     - LoadMore
     - "TransactionSelected(transactionId: String)"
-    - ClearFilters
-  actions:
-    - name: loadTransactions
-      triggers: [ScreenOpened, RetryLoad, ClearFilters]
-    - name: searchTransactions
+    - "PendingSelected(requestId: String)"
+  methods:
+    - name: onRetry
+    - name: onQueryChanged
       param: query
-    - name: filterByType
+    - name: onFilterChanged
       param: TransactionTypeFilter
-    - name: filterByDateRange
-      param: DateRange
-    - name: loadNextPage
-    - name: navigateToDetail
-      param: transactionId
+    - name: onRangePresetSelected
+      param: DateRangePreset
+    - name: onCustomRangeSelected
+      params: [start, end]
+    - name: onLoadMore
+  data_flow:
+    note: "load() fetches listTransactionsWithAttributes (booked, v6 attributes) + listTransactionRequests (pending, filtered isPending) + accountDetail (currency); resolves counterparty names via CounterpartyNameResolver.resolve + placeholderHolder. Filtering, search, date-range and paging are all client-side because the sandbox caps the window at the 50 newest transactions and ignores limit/offset/date params."
   di:
     - TransactionsRepository
+    - PaymentsRepository
     - AccountsRepository
+    - CounterpartyNameResolver
+
+# Counterparty display — HARD RULE (workspaces/mifos-x/CLAUDE.md):
+# other_account.holder.name is the OBP login-username placeholder for self-transfers and
+# unresolved merchants and must NEVER be rendered directly. The row title and search-match
+# text both go through counterpartyDisplayName(txn, counterpartyNames, counterpartyPlaceholder)
+# whose precedence is: resolved destination account holder name → real non-placeholder holder
+# → transaction description. counterpartyNames is built by CounterpartyNameResolver.resolve()
+# (mirror-join of self-transfers across the user's own accounts), placeholder = the login
+# username from the profile. The static merchant names in the rows above are demo content only.
 
 api:
-  - endpoint: "GET /obp/v3.0.0/banks/{bankId}/accounts/{accountId}/owner/transactions"
+  # Booked rows — the shipped list call. v6.0.0 returns transaction_attributes inline (TXN_TYPE
+  # → category badge) so no N+1 attribute fetch. The v3.0.0 sibling endpoint still exists in the
+  # client but is used only by CounterpartyNameResolver's mirror-join, not by this screen's load.
+  # Sandbox ignores limit/offset/from_date/to_date/type/sort_direction — kept here for contract
+  # completeness but filtering/paging run client-side.
+  - id: obp_list_transactions_with_attributes
+    endpoint: "GET /obp/v6.0.0/banks/{bankId}/accounts/{accountId}/owner/transactions"
     tag: Transactions
     auth: DirectLogin
     params:
+      - name: bankId
+        type: path
       - name: accountId
         type: path
       - name: limit
         type: query
-        value: "20"
+        optional: true
+        note: "ignored by sandbox"
       - name: offset
         type: query
-        value: "0"
-      - name: from_date
-        type: query
-        example: "2026-04-25T00:00:00.000Z"
-      - name: to_date
-        type: query
-        example: "2026-05-25T23:59:59.999Z"
-      - name: type
-        type: query
         optional: true
-        values: [DEBIT, CREDIT, SEPA_CREDIT_TRANSFERS, UK_FASTER_PAYMENTS_SEND]
-      - name: sort_direction
-        type: query
-        value: "DESC"
+        note: "ignored by sandbox"
     response:
       fields:
-        - name: id
-          type: String
-        - name: this_account
-          type: object
-        - name: other_account
-          type: object
+        - name: transactions
+          type: "List<Transaction>"
           children:
-            - name: holder
+            - name: id
+              type: String
+            - name: this_account
               type: object
-            - name: metadata
-              type: object
-        - name: details
-          type: object
-          children:
-            - name: type
-              type: String
-            - name: description
-              type: String
-            - name: posted
-              type: String
-            - name: completed
-              type: String
-            - name: new_balance
+            - name: other_account
               type: object
               children:
-                - name: currency
+                - name: id
                   type: String
-                - name: amount
-                  type: String
-            - name: value
+                - name: holder
+                  type: object
+            - name: details
               type: object
               children:
-                - name: currency
+                - name: type
                   type: String
-                - name: amount
+                - name: description
                   type: String
-        - name: metadata
-          type: object
+                - name: posted
+                  type: String
+                - name: completed
+                  type: String
+                - name: value
+                  type: object
+                  children:
+                    - name: currency
+                      type: String
+                    - name: amount
+                      type: String
+            - name: transaction_attributes
+              type: "List<TransactionAttribute>"
+              note: "TXN_TYPE drives the category badge"
     errors:
-      - code: 400
-        message: "Invalid date range or filter parameters"
       - code: 401
         message: "Unauthorized"
       - code: 404
         message: "Account not found"
       - code: 500
         message: "OBP server error"
+
+  # Pending payments — transaction-requests still INITIATED (no booked transaction). Filtered
+  # client-side to isPending. Same endpoint backs the pending detail load path.
+  - id: obp_list_transaction_requests
+    endpoint: "GET /obp/v4.0.0/banks/{bankId}/accounts/{accountId}/owner/transaction-requests"
+    tag: Transaction-Requests
+    auth: DirectLogin
+    params:
+      - name: bankId
+        type: path
+      - name: accountId
+        type: path
+    response:
+      fields:
+        - name: transaction_requests
+          type: "List<TransactionRequestSummary>"
+          children:
+            - name: id
+              type: String
+            - name: status
+              type: String
+              note: "INITIATED → isPending"
+            - name: start_date
+              type: String
+            - name: details
+              type: object
+              children:
+                - name: description
+                  type: String
+                - name: value
+                  type: object
+                  children:
+                    - name: currency
+                      type: String
+                    - name: amount
+                      type: String
+    errors:
+      - code: 401
+        message: "Unauthorized"
+      - code: 404
+        message: "Account not found"
 
 dependencies:
   tier: feature

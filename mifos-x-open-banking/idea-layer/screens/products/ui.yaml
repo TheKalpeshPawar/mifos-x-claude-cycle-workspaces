@@ -2,7 +2,7 @@ id: products
 name: Products
 feature: products
 flavor: consumer
-status: approved
+status: enriched
 quality_score: 95
 contract_version: "1.1.0"
 approve_hash: "sha256:13af12bd8c96e4f037af12bd8c96e4f037af12bd8c96e4f037af12bd8c96e4f0"
@@ -43,1297 +43,249 @@ status_history:
     by: "per-bank rework (user directive)"
     contract_version: "1.1.0"
     note: "Catalogue is now PER BANK with a Personal / Business audience split (user directive). Bank selector chips list every bank the user holds an account at (3 on the sandbox: Acme/ac.bank.uk, Mifos Open Bank/mifos-x-openbank, Neon/neon.bank.eu — names resolved via the bank directory); all catalogues fetch in parallel once per session. Below the chips a two-tab row splits each bank's products into Personal and Business — audience derived from code/name keywords (BUSINESS, CORPORATE, WORKING-CAPITAL, FREELANCER, FX-SPOT → Business) since the API's category field is null. Bank-specific business products verified live: Mifos Business Current GBP, Working Capital Facility, FX Spot GBP/EUR; Neon Freelancer Account. Category filter chips dropped in favour of the audience tabs; the category remains as a badge on each card. Per-bank failure degrades to an inline retry for that bank only. ProductsRepository gained listProducts(bankId). 8 VM tests."
-  top_app_bar:
-    show: true
-    title: "Products"
-    navigation_icon: arrow_back
-    navigation_action: navigate_back
-    actions:
-      - icon: search
-        action: search_products
-        label: "Search products"
-  bottom_nav: true
-  nav_items:
-    - id: nav_home
-      label: Home
-      icon: home
-      target: home
-    - id: nav_accounts
-      label: Accounts
-      icon: account_balance
-      target: accounts
-    - id: nav_products
-      label: Products
-      icon: store
-      target: products
-      active: true
-    - id: nav_send
-      label: Send
-      icon: send
-      target: send-money
-    - id: nav_more
-      label: More
-      icon: more_horiz
-      target: settings
+  - from: approved
+    to: enriched
+    at: "2026-06-11"
+    by: "/idea verify --source-drift (write-back)"
+    quality_score: 95
+    note: "MAJOR source-drift reconciliation against shipped feature/products (ProductsScreen.kt + ProductsViewModel.kt + ProductsModule.kt + ProductsTestTags.kt + core ProductsRepository.kt + ProductsApi.kt). Shipped = a PER-BANK catalogue: BankSelector pill (Surface) → shared PickerBottomSheet bank picker; Personal/Business audience TabRow (ProductScope enum, BUSINESS_MARKERS keyword split); parallel per-bank fetch (awaitAll) with per-bank failure degradation (bankLoadFailed → inline 'Could not load this bank's products' + Retry); ProductCard built from LIVE OBP Product (code/name/description/category-derived-badge/moreInfoUrl); 'More info' → LocalUriHandler.openUri opens the product's more_info_url in the platform browser. REMOVED never-built components: the 5 category filter chips (tab_all/savings/loans/cards/mortgages) — replaced by the Personal/Business audience tabs, category survives only as a per-card badge; ALL 4 hardcoded showcase products (Instant Access Savings / Fixed Rate Bond / Personal Loan / Platinum Credit Card) + their rate text + feature chips + Details/Apply Now buttons — there is NO apply journey, cards link out to more_info_url; promotions_banner + promo text; products_subtitle; bottom nav (Products is a pushed non-tab destination owning its own top bar). state_model rewritten to shipped contract: ProductsContent{banks, selectedBankId, scope:ProductScope, products:List<ProductRow>, bankLoadFailed}; ProductRow{code,name,description,scope,category:ProductCategory,moreInfoUrl}; ProductCategory={EVERYDAY,SAVINGS,CARDS,LOANS} (NOT MORTGAGES — no mortgage product exists) + separate ProductScope{PERSONAL,BUSINESS}; events = onRetry/onBankSelected/onScopeSelected; DI = ProductsRepository, AccountsRepository, BanksRepository. ScreenState adds NoNetwork/Unauthenticated. api: corrected to the SHIPPED endpoint GET /obp/v3.0.0/banks/{bankId}/products (was wrongly v5.0.0 in spec); category/family are null on sandbox → both audience split and badge derived client-side from code/name (scopeOf/categoryOf); search_products NOT wired → top-bar search action removed."
+# Pushed (non-tab) destination — owns its own transparent top bar with a back arrow only.
+# No search action: search_products was never wired (verified shipped 2026-06-11). No bottom nav.
+top_app_bar:
+  show: true
+  title: "Products"
+  navigation_icon: arrow_back
+  navigation_action: navigate_back
+  actions: []
+bottom_nav: false
 
 screens:
   - id: products
     name: Products
+    viewmodel: ProductsViewModel
     archetype: index_list
     route: /products
     scroll: vertical
+    states_handled: [loading, content, empty, error, no_network, unauthenticated]
 
 archetype: index_list
 
 components:
-  # --- Page title ---
+  # Page title — lives in the top app bar (TopAppBar title); tagged products_title.
   - type: text
     id: products_title
     label: "Products"
     content: "Products"
     style:
-      typography: "Outfit/headline_large"
-      color: "#4C662B"
-      font_weight: bold
-      padding_horizontal: spacing.md
-      padding_top: spacing.md
-      padding_bottom: spacing.xs
+      typography: "Outfit/title_large"
+      color: "#1A1C16"
+      font_weight: semibold
     a11y:
-      label: "Products catalog title"
+      label: "Products"
       role: heading
     test_context:
       tag: products_title
       assert_text: "Products"
 
-  - type: text
-    id: products_subtitle
-    label: "Explore accounts, savings, loans and cards tailored for you."
-    content: "Explore accounts, savings, loans and cards tailored for you."
+  # Bank selector pill (BankSelector — a Surface, always shown even for a single bank).
+  # Tapping opens the shared PickerBottomSheet bank picker (onBankSelected). Shows the
+  # selected bank's resolved name + a dropdown chevron.
+  - type: card
+    id: products_bank_selector
+    label: "Bank selector"
+    content: "Bank selector"
+    supported_states: [idle, hover, focus_visible, pressed]
     style:
-      typography: "Outfit/body_medium"
-      color: "#44483D"
-      padding_horizontal: spacing.md
-      padding_bottom: spacing.md
+      background: "#F0F1E5"
+      border_radius: 12
+      border_color: "#C5C8BA"
+      border_width: 1
+      leading_icon: account_balance
+      trailing_icon: keyboard_arrow_down
+      padding_horizontal: 12
+      padding_vertical: 10
+      margin_horizontal: 16
+      margin_bottom: 10
+    on_click:
+      action: onBankSelected
+      target: ""
     a11y:
-      label: "Products page subtitle"
-      role: text
+      label: "Selected bank. Tap to choose a different bank's product catalogue."
+      role: button
+    keyboard:
+      focusable: true
     test_context:
-      tag: products_subtitle
+      tag: products_bank_selector
+      purpose: "Bank selector pill — opens the shared picker bottom sheet to switch which bank's catalogue is shown"
+      interaction_type: action
+      data_driven: true
+      required_fields: [banks, selectedBankId]
 
-  # --- Category filter chips ---
-  - type: stack
-    id: category_tabs_row
-    label: "Product category tabs"
+  # Audience tab row (TabRow over ProductScope) — Personal | Business. Replaces the old
+  # category filter chips; audience is derived client-side (scopeOf / BUSINESS_MARKERS).
+  - type: tab_bar
+    id: products_scope_tabs
+    label: "Product audience tabs"
     style:
       orientation: horizontal
-      spacing: 8
-      padding_horizontal: spacing.md
-      padding_bottom: spacing.md
-      overflow: scroll_horizontal
+      background: "#FEFCF4"
     on_click:
-      action: state_change
-      target: product_category
+      action: onScopeSelected
+      target: ""
     a11y:
-      label: "Filter products by category"
+      label: "Filter products by audience: Personal or Business"
       role: tablist
     test_context:
-      tag: category_tabs_row
+      tag: products_scope_tabs
 
-  - type: button
-    id: tab_all
-    label: "All"
-    supported_states: [idle, hover, focus_visible, pressed, disabled]
+  - type: text
+    id: products_tab_personal
+    label: "Personal"
+    content: "Personal"
     style:
-      variant: filled
-      background: "#4C662B"
-      text_color: "#FFFFFF"
-      border_radius: 20
-      padding_horizontal: 16
-      padding_vertical: 8
-      typography: "Outfit/label_medium"
+      typography: "Outfit/label_large"
+      color: "#4C662B"
     on_click:
-      action: filter_products
-      target: all
+      action: onScopeSelected
+      target: PERSONAL
     a11y:
-      label: "Show all products"
+      label: "Show personal products"
       role: tab
       selected: true
     keyboard:
       focusable: true
     test_context:
-      tag: tab_all
-      assert_text: "All"
+      tag: products_tab_personal
+      assert_text: "Personal"
 
-  - type: button
-    id: tab_savings
-    label: "Savings"
-    supported_states: [idle, hover, focus_visible, pressed, disabled]
+  - type: text
+    id: products_tab_business
+    label: "Business"
+    content: "Business"
     style:
-      variant: outlined
-      border_color: "#E1E4D5"
-      text_color: "#44483D"
-      border_radius: 20
-      padding_horizontal: 16
-      padding_vertical: 8
-      typography: "Outfit/label_medium"
+      typography: "Outfit/label_large"
+      color: "#44483D"
     on_click:
-      action: filter_products
-      target: savings
+      action: onScopeSelected
+      target: BUSINESS
     a11y:
-      label: "Show savings products"
+      label: "Show business products"
       role: tab
       selected: false
     keyboard:
       focusable: true
     test_context:
-      tag: tab_savings
-      assert_text: "Savings"
+      tag: products_tab_business
+      assert_text: "Business"
 
-  - type: button
-    id: tab_loans
-    label: "Loans"
+  # Product card (ProductCard) — repeated per row in content.products (live OBP Product).
+  # Name + category badge, optional description, and a "More info" affordance that opens
+  # the product's more_info_url in the platform browser (LocalUriHandler.openUri). The card
+  # is disabled (non-clickable) when moreInfoUrl is blank. There is NO Apply / Details path.
+  - type: card
+    id: product_card
+    label: "Product"
+    content: "Product"
     supported_states: [idle, hover, focus_visible, pressed, disabled]
     style:
-      variant: outlined
-      border_color: "#E1E4D5"
-      text_color: "#44483D"
-      border_radius: 20
-      padding_horizontal: 16
-      padding_vertical: 8
-      typography: "Outfit/label_medium"
-    on_click:
-      action: filter_products
-      target: loans
-    a11y:
-      label: "Show loan products"
-      role: tab
-      selected: false
-    keyboard:
-      focusable: true
-    test_context:
-      tag: tab_loans
-      assert_text: "Loans"
-
-  - type: button
-    id: tab_cards
-    label: "Cards"
-    supported_states: [idle, hover, focus_visible, pressed, disabled]
-    style:
-      variant: outlined
-      border_color: "#E1E4D5"
-      text_color: "#44483D"
-      border_radius: 20
-      padding_horizontal: 16
-      padding_vertical: 8
-      typography: "Outfit/label_medium"
-    on_click:
-      action: filter_products
-      target: cards
-    a11y:
-      label: "Show card products"
-      role: tab
-      selected: false
-    keyboard:
-      focusable: true
-    test_context:
-      tag: tab_cards
-      assert_text: "Cards"
-
-  - type: button
-    id: tab_mortgages
-    label: "Mortgages"
-    supported_states: [idle, hover, focus_visible, pressed, disabled]
-    style:
-      variant: outlined
-      border_color: "#E1E4D5"
-      text_color: "#44483D"
-      border_radius: 20
-      padding_horizontal: 16
-      padding_vertical: 8
-      typography: "Outfit/label_medium"
-    on_click:
-      action: filter_products
-      target: mortgages
-    a11y:
-      label: "Show mortgage products"
-      role: tab
-      selected: false
-    keyboard:
-      focusable: true
-    test_context:
-      tag: tab_mortgages
-      assert_text: "Mortgages"
-
-  # --- Product 1: Instant Access Savings ---
-  - type: box
-    id: product_instant_access_savings
-    label: "Instant Access Savings"
-    content: "Instant Access Savings"
-    style:
-      background: "#FFFFFF"
+      background: "#F0F1E5"
       border_radius: 16
-      elevation: 2
-      padding_horizontal: 16
-      padding_vertical: 16
-      border_color: "#F9FAEF"
+      border_color: "#C5C8BA"
       border_width: 1
-      margin_horizontal: 20
+      elevation: 0
+      padding: 16
+      margin_horizontal: 16
       margin_bottom: 12
     on_click:
-      action: navigate
-      target: application-detail
+      action: open_url
+      target: more_info_url
     a11y:
-      label: "Instant Access Savings. 4.5% AER. Withdraw anytime, no notice period. Tap to view details."
+      label: "Product. Tap to open more info in your browser when available."
       role: button
     keyboard:
       focusable: true
     test_context:
-      tag: product_instant_access_savings
+      tag: product_card
+      purpose: "One catalogue product (ProductCard) — name, category badge, description; opens more_info_url in the browser when present"
+      interaction_type: action
+      data_driven: true
+      required_fields: [code, name, description, category, moreInfoUrl]
 
-  - type: stack
-    id: product_ias_header_row
-    label: "Instant Access Savings header row"
-    style:
-      orientation: horizontal
-      spacing: 8
-      justify: space_between
-      padding_bottom: 4
-    on_click:
-      action: navigate
-      target: application-detail
-    a11y:
-      label: "Product name and category"
-      role: row
-    test_context:
-      tag: product_ias_header_row
-
-  - type: text
-    id: ias_name
-    label: "Instant Access Savings"
-    content: "Instant Access Savings"
-    style:
-      typography: "Outfit/title_medium"
-      color: "#1A1C16"
-      font_weight: semibold
-    a11y:
-      label: "Product: Instant Access Savings"
-      role: text
-    test_context:
-      tag: ias_name
-      assert_text: "Instant Access Savings"
-
-  - type: box
-    id: ias_category_badge
-    label: "Savings"
-    content: "Savings"
+  - type: badge
+    id: product_category_badge
+    label: "Category"
+    content: "Category"
     style:
       background: "#CDEDA3"
-      border_radius: 6
+      border_radius: 10
       padding_horizontal: 8
       padding_vertical: 3
       text_color: "#4C662B"
       typography: "Outfit/label_small"
-    on_click:
-      action: filter_products
-      target: savings
     a11y:
-      label: "Category: Savings"
+      label: "Product category"
       role: text
     test_context:
-      tag: ias_category_badge
-      assert_text: "Savings"
+      tag: product_category_badge
+      purpose: "Per-card category badge — Everyday / Savings / Cards / Loans (derived client-side via categoryOf)"
+      interaction_type: display
+      data_driven: true
+      required_fields: [category]
 
   - type: text
-    id: ias_rate
-    label: "4.5% AER"
-    content: "4.5% AER"
+    id: product_more_info
+    label: "More info"
+    content: "More info"
     style:
-      typography: "Outfit/display_small"
+      typography: "Outfit/label_medium"
       color: "#4C662B"
-      font_weight: bold
-      padding_bottom: 2
+      font_weight: semibold
+      trailing_icon: open_in_new
+    on_click:
+      action: open_url
+      target: more_info_url
     a11y:
-      label: "Interest rate: 4.5% AER"
-      role: text
+      label: "Open product details in the browser"
+      role: button
+    keyboard:
+      focusable: true
     test_context:
-      tag: ias_rate
-      assert_text: "4.5% AER"
+      tag: product_more_info
+      assert_text: "More info"
 
+  # Per-bank failure row — shown inline when the selected bank's catalogue failed to load
+  # (bankLoadFailed); offers a Retry that re-fetches all banks (onRetry).
   - type: text
-    id: ias_description
-    label: "Earn 4.5% AER on every pound you save. Withdraw at any time with no notice period or penalties."
-    content: "Earn 4.5% AER on every pound you save. Withdraw at any time with no notice period or penalties."
+    id: products_bank_load_failed
+    label: "Could not load this bank's products"
+    content: "Could not load this bank's products"
     style:
       typography: "Outfit/body_medium"
       color: "#44483D"
-      padding_bottom: spacing.sm
+      text_align: center
+      padding: 24
     a11y:
-      label: "Instant Access Savings description"
+      label: "This bank's product catalogue could not be loaded"
       role: text
     test_context:
-      tag: ias_description
+      tag: products_bank_load_failed
+      assert_text: "Could not load this bank's products"
 
-  - type: stack
-    id: ias_features
-    label: "Instant Access Savings features"
-    style:
-      orientation: horizontal
-      spacing: 8
-      padding_bottom: 12
-      overflow: scroll_horizontal
-    on_click:
-      action: dismiss
-      target: ""
-    a11y:
-      label: "Key features of Instant Access Savings"
-      role: list
-    test_context:
-      tag: ias_features
-
-  - type: box
-    id: ias_feat_aer
-    label: "4.5% AER"
-    content: "4.5% AER"
-    style:
-      background: "#CDEDA3"
-      border_radius: 8
-      padding_horizontal: 8
-      padding_vertical: 4
-      text_color: "#4C662B"
-      typography: "Outfit/label_small"
-    on_click:
-      action: dismiss
-      target: ""
-    a11y:
-      label: "Feature: 4.5% AER interest rate"
-      role: listitem
-    test_context:
-      tag: ias_feat_aer
-      assert_text: "4.5% AER"
-
-  - type: box
-    id: ias_feat_access
-    label: "Instant access"
-    content: "Instant access"
-    style:
-      background: "#DCE7C8"
-      border_radius: 8
-      padding_horizontal: 8
-      padding_vertical: 4
-      text_color: "#386663"
-      typography: "Outfit/label_small"
-    on_click:
-      action: dismiss
-      target: ""
-    a11y:
-      label: "Feature: Instant access withdrawals"
-      role: listitem
-    test_context:
-      tag: ias_feat_access
-      assert_text: "Instant access"
-
-  - type: box
-    id: ias_feat_no_min
-    label: "No minimum deposit"
-    content: "No minimum deposit"
-    style:
-      background: "#CDEDA3"
-      border_radius: 8
-      padding_horizontal: 8
-      padding_vertical: 4
-      text_color: "#4C662B"
-      typography: "Outfit/label_small"
-    on_click:
-      action: dismiss
-      target: ""
-    a11y:
-      label: "Feature: No minimum deposit required"
-      role: listitem
-    test_context:
-      tag: ias_feat_no_min
-      assert_text: "No minimum deposit"
-
-  - type: stack
-    id: ias_actions
-    label: "Instant Access Savings actions"
-    style:
-      orientation: horizontal
-      spacing: 8
-      justify: flex_end
-    on_click:
-      action: navigate
-      target: application-detail
-    a11y:
-      label: "Actions for Instant Access Savings"
-      role: row
-    test_context:
-      tag: ias_actions
-
-  - type: button
-    id: ias_learn_more
-    label: "Details"
-    supported_states: [idle, hover, focus_visible, pressed, disabled]
-    style:
-      variant: outlined
-      border_color: "#4C662B"
-      text_color: "#4C662B"
-      border_radius: 8
-      padding_horizontal: 16
-      padding_vertical: 8
-      typography: "Outfit/label_medium"
-    on_click:
-      action: navigate
-      target: application-detail
-    a11y:
-      label: "View details for Instant Access Savings"
-      role: button
-    keyboard:
-      focusable: true
-    test_context:
-      tag: ias_learn_more
-      assert_text: "Details"
-
-  - type: button
-    id: ias_apply
-    label: "Apply Now"
-    supported_states: [idle, hover, focus_visible, pressed, disabled]
-    style:
-      variant: filled
-      background: "#4C662B"
-      text_color: "#FFFFFF"
-      border_radius: 8
-      padding_horizontal: 16
-      padding_vertical: 8
-      typography: "Outfit/label_medium"
-    on_click:
-      action: navigate
-      target: application-detail
-    a11y:
-      label: "Apply now for Instant Access Savings"
-      role: button
-    keyboard:
-      focusable: true
-    test_context:
-      tag: ias_apply
-      assert_text: "Apply Now"
-
-  # --- Product 2: Fixed Rate Bond 1yr ---
-  - type: box
-    id: product_fixed_rate_bond
-    label: "Fixed Rate Bond 1yr"
-    content: "Fixed Rate Bond 1yr"
-    style:
-      background: "#FFFFFF"
-      border_radius: 16
-      elevation: 2
-      padding_horizontal: 16
-      padding_vertical: 16
-      border_color: "#F9FAEF"
-      border_width: 1
-      margin_horizontal: 20
-      margin_bottom: 12
-    on_click:
-      action: navigate
-      target: application-detail
-    a11y:
-      label: "Fixed Rate Bond 1 year. 5.1% AER. Lock in your rate for 12 months. Tap to view details."
-      role: button
-    keyboard:
-      focusable: true
-    test_context:
-      tag: product_fixed_rate_bond
-
-  - type: stack
-    id: product_frb_header_row
-    label: "Fixed Rate Bond header row"
-    style:
-      orientation: horizontal
-      spacing: 8
-      justify: space_between
-      padding_bottom: 4
-    on_click:
-      action: navigate
-      target: application-detail
-    a11y:
-      label: "Product name and category"
-      role: row
-    test_context:
-      tag: product_frb_header_row
-
+  # In-scope empty row — selected bank has no products for the chosen audience tab.
   - type: text
-    id: frb_name
-    label: "Fixed Rate Bond 1yr"
-    content: "Fixed Rate Bond 1yr"
-    style:
-      typography: "Outfit/title_medium"
-      color: "#1A1C16"
-      font_weight: semibold
-    a11y:
-      label: "Product: Fixed Rate Bond 1 year"
-      role: text
-    test_context:
-      tag: frb_name
-      assert_text: "Fixed Rate Bond 1yr"
-
-  - type: box
-    id: frb_category_badge
-    label: "Savings"
-    content: "Savings"
-    style:
-      background: "#CDEDA3"
-      border_radius: 6
-      padding_horizontal: 8
-      padding_vertical: 3
-      text_color: "#4C662B"
-      typography: "Outfit/label_small"
-    on_click:
-      action: filter_products
-      target: savings
-    a11y:
-      label: "Category: Savings"
-      role: text
-    test_context:
-      tag: frb_category_badge
-      assert_text: "Savings"
-
-  - type: text
-    id: frb_rate
-    label: "5.1% AER"
-    content: "5.1% AER"
-    style:
-      typography: "Outfit/display_small"
-      color: "#4C662B"
-      font_weight: bold
-      padding_bottom: 2
-    a11y:
-      label: "Interest rate: 5.1% AER"
-      role: text
-    test_context:
-      tag: frb_rate
-      assert_text: "5.1% AER"
-
-  - type: text
-    id: frb_description
-    label: "Lock in a market-leading 5.1% AER for 12 months. Minimum deposit £1,000. Interest paid at maturity."
-    content: "Lock in a market-leading 5.1% AER for 12 months. Minimum deposit £1,000. Interest paid at maturity."
+    id: products_scope_empty
+    label: "No products at this bank yet"
+    content: "No products at this bank yet"
     style:
       typography: "Outfit/body_medium"
       color: "#44483D"
-      padding_bottom: spacing.sm
+      text_align: center
+      padding: 24
     a11y:
-      label: "Fixed Rate Bond description"
+      label: "No products for the selected audience at this bank"
       role: text
     test_context:
-      tag: frb_description
-
-  - type: stack
-    id: frb_features
-    label: "Fixed Rate Bond features"
-    style:
-      orientation: horizontal
-      spacing: 8
-      padding_bottom: 12
-      overflow: scroll_horizontal
-    on_click:
-      action: dismiss
-      target: ""
-    a11y:
-      label: "Key features of Fixed Rate Bond"
-      role: list
-    test_context:
-      tag: frb_features
-
-  - type: box
-    id: frb_feat_aer
-    label: "5.1% AER"
-    content: "5.1% AER"
-    style:
-      background: "#CDEDA3"
-      border_radius: 8
-      padding_horizontal: 8
-      padding_vertical: 4
-      text_color: "#4C662B"
-      typography: "Outfit/label_small"
-    on_click:
-      action: dismiss
-      target: ""
-    a11y:
-      label: "Feature: 5.1% AER fixed interest"
-      role: listitem
-    test_context:
-      tag: frb_feat_aer
-      assert_text: "5.1% AER"
-
-  - type: box
-    id: frb_feat_term
-    label: "12-month term"
-    content: "12-month term"
-    style:
-      background: "#CDEDA3"
-      border_radius: 8
-      padding_horizontal: 8
-      padding_vertical: 4
-      text_color: "#44483D"  # fix A11Y-002: was #E8A317 (≤2.17:1, FAIL); #44483D ≥7.25:1 PASS
-      typography: "Outfit/label_small"
-    on_click:
-      action: dismiss
-      target: ""
-    a11y:
-      label: "Feature: 12-month fixed term"
-      role: listitem
-    test_context:
-      tag: frb_feat_term
-      assert_text: "12-month term"
-
-  - type: box
-    id: frb_feat_fscs
-    label: "FSCS protected"
-    content: "FSCS protected"
-    style:
-      background: "#CDEDA3"
-      border_radius: 8
-      padding_horizontal: 8
-      padding_vertical: 4
-      text_color: "#4C662B"
-      typography: "Outfit/label_small"
-    on_click:
-      action: dismiss
-      target: ""
-    a11y:
-      label: "Feature: FSCS protected up to £85,000"
-      role: listitem
-    test_context:
-      tag: frb_feat_fscs
-      assert_text: "FSCS protected"
-
-  - type: stack
-    id: frb_actions
-    label: "Fixed Rate Bond actions"
-    style:
-      orientation: horizontal
-      spacing: 8
-      justify: flex_end
-    on_click:
-      action: navigate
-      target: application-detail
-    a11y:
-      label: "Actions for Fixed Rate Bond"
-      role: row
-    test_context:
-      tag: frb_actions
-
-  - type: button
-    id: frb_learn_more
-    label: "Details"
-    supported_states: [idle, hover, focus_visible, pressed, disabled]
-    style:
-      variant: outlined
-      border_color: "#4C662B"
-      text_color: "#4C662B"
-      border_radius: 8
-      padding_horizontal: 16
-      padding_vertical: 8
-      typography: "Outfit/label_medium"
-    on_click:
-      action: navigate
-      target: application-detail
-    a11y:
-      label: "View details for Fixed Rate Bond"
-      role: button
-    keyboard:
-      focusable: true
-    test_context:
-      tag: frb_learn_more
-      assert_text: "Details"
-
-  - type: button
-    id: frb_apply
-    label: "Apply Now"
-    supported_states: [idle, hover, focus_visible, pressed, disabled]
-    style:
-      variant: filled
-      background: "#4C662B"
-      text_color: "#FFFFFF"
-      border_radius: 8
-      padding_horizontal: 16
-      padding_vertical: 8
-      typography: "Outfit/label_medium"
-    on_click:
-      action: navigate
-      target: application-detail
-    a11y:
-      label: "Apply now for Fixed Rate Bond 1yr"
-      role: button
-    keyboard:
-      focusable: true
-    test_context:
-      tag: frb_apply
-      assert_text: "Apply Now"
-
-  # --- Product 3: Personal Loan ---
-  - type: box
-    id: product_personal_loan
-    label: "Personal Loan"
-    content: "Personal Loan"
-    style:
-      background: "#FFFFFF"
-      border_radius: 16
-      elevation: 2
-      padding_horizontal: 16
-      padding_vertical: 16
-      border_color: "#F9FAEF"
-      border_width: 1
-      margin_horizontal: 20
-      margin_bottom: 12
-    on_click:
-      action: navigate
-      target: application-detail
-    a11y:
-      label: "Personal Loan. From 6.9% APR. Borrow up to £25,000. Tap to view details."
-      role: button
-    keyboard:
-      focusable: true
-    test_context:
-      tag: product_personal_loan
-
-  - type: stack
-    id: product_pl_header_row
-    label: "Personal Loan header row"
-    style:
-      orientation: horizontal
-      spacing: 8
-      justify: space_between
-      padding_bottom: 4
-    on_click:
-      action: navigate
-      target: application-detail
-    a11y:
-      label: "Product name and category"
-      role: row
-    test_context:
-      tag: product_pl_header_row
-
-  - type: text
-    id: personal_loan_name
-    label: "Personal Loan"
-    content: "Personal Loan"
-    style:
-      typography: "Outfit/title_medium"
-      color: "#1A1C16"
-      font_weight: semibold
-    a11y:
-      label: "Product: Personal Loan"
-      role: text
-    test_context:
-      tag: personal_loan_name
-      assert_text: "Personal Loan"
-
-  - type: box
-    id: pl_category_badge
-    label: "Loans"
-    content: "Loans"
-    style:
-      background: "#CDEDA3"
-      border_radius: 6
-      padding_horizontal: 8
-      padding_vertical: 3
-      text_color: "#44483D"  # fix A11Y-002: was #E8A317 (≤2.17:1, FAIL); #44483D ≥7.25:1 PASS
-      typography: "Outfit/label_small"
-    on_click:
-      action: filter_products
-      target: loans
-    a11y:
-      label: "Category: Loans"
-      role: text
-    test_context:
-      tag: pl_category_badge
-      assert_text: "Loans"
-
-  - type: text
-    id: pl_rate
-    label: "From 6.9% APR"
-    content: "From 6.9% APR"
-    style:
-      typography: "Outfit/display_small"
-      color: "#4C662B"
-      font_weight: bold
-      padding_bottom: 2
-    a11y:
-      label: "Representative rate: from 6.9% APR"
-      role: text
-    test_context:
-      tag: pl_rate
-      assert_text: "From 6.9% APR"
-
-  - type: text
-    id: personal_loan_description
-    label: "Borrow from £1,000 to £25,000 at a representative 6.9% APR. Flexible repayment terms from 1 to 7 years."
-    content: "Borrow from £1,000 to £25,000 at a representative 6.9% APR. Flexible repayment terms from 1 to 7 years."
-    style:
-      typography: "Outfit/body_medium"
-      color: "#44483D"
-      padding_bottom: spacing.sm
-    a11y:
-      label: "Personal Loan description"
-      role: text
-    test_context:
-      tag: personal_loan_description
-
-  - type: stack
-    id: personal_loan_features
-    label: "Personal Loan features"
-    style:
-      orientation: horizontal
-      spacing: 8
-      padding_bottom: 12
-      overflow: scroll_horizontal
-    on_click:
-      action: dismiss
-      target: ""
-    a11y:
-      label: "Key features of Personal Loan"
-      role: list
-    test_context:
-      tag: personal_loan_features
-
-  - type: box
-    id: personal_loan_feat_apr
-    label: "From 6.9% APR"
-    content: "From 6.9% APR"
-    style:
-      background: "#CDEDA3"
-      border_radius: 8
-      padding_horizontal: 8
-      padding_vertical: 4
-      text_color: "#44483D"  # fix A11Y-002: was #E8A317 (≤2.17:1, FAIL); #44483D ≥7.25:1 PASS
-      typography: "Outfit/label_small"
-    on_click:
-      action: dismiss
-      target: ""
-    a11y:
-      label: "Feature: Representative 6.9% APR"
-      role: listitem
-    test_context:
-      tag: personal_loan_feat_apr
-      assert_text: "From 6.9% APR"
-
-  - type: box
-    id: personal_loan_feat_amount
-    label: "Up to £25,000"
-    content: "Up to £25,000"
-    style:
-      background: "#CDEDA3"
-      border_radius: 8
-      padding_horizontal: 8
-      padding_vertical: 4
-      text_color: "#4C662B"
-      typography: "Outfit/label_small"
-    on_click:
-      action: dismiss
-      target: ""
-    a11y:
-      label: "Feature: Borrow up to £25,000"
-      role: listitem
-    test_context:
-      tag: personal_loan_feat_amount
-      assert_text: "Up to £25,000"
-
-  - type: box
-    id: personal_loan_feat_terms
-    label: "1–7 year terms"
-    content: "1–7 year terms"
-    style:
-      background: "#DCE7C8"
-      border_radius: 8
-      padding_horizontal: 8
-      padding_vertical: 4
-      text_color: "#386663"
-      typography: "Outfit/label_small"
-    on_click:
-      action: dismiss
-      target: ""
-    a11y:
-      label: "Feature: Flexible 1 to 7 year repayment terms"
-      role: listitem
-    test_context:
-      tag: personal_loan_feat_terms
-      assert_text: "1–7 year terms"
-
-  - type: stack
-    id: personal_loan_actions
-    label: "Personal Loan actions"
-    style:
-      orientation: horizontal
-      spacing: 8
-      justify: flex_end
-    on_click:
-      action: navigate
-      target: application-detail
-    a11y:
-      label: "Actions for Personal Loan"
-      role: row
-    test_context:
-      tag: personal_loan_actions
-
-  - type: button
-    id: personal_loan_learn_more
-    label: "Details"
-    supported_states: [idle, hover, focus_visible, pressed, disabled]
-    style:
-      variant: outlined
-      border_color: "#4C662B"
-      text_color: "#4C662B"
-      border_radius: 8
-      padding_horizontal: 16
-      padding_vertical: 8
-      typography: "Outfit/label_medium"
-    on_click:
-      action: navigate
-      target: application-detail
-    a11y:
-      label: "View details for Personal Loan"
-      role: button
-    keyboard:
-      focusable: true
-    test_context:
-      tag: personal_loan_learn_more
-      assert_text: "Details"
-
-  - type: button
-    id: personal_loan_apply
-    label: "Apply Now"
-    supported_states: [idle, hover, focus_visible, pressed, disabled]
-    style:
-      variant: filled
-      background: "#4C662B"
-      text_color: "#FFFFFF"
-      border_radius: 8
-      padding_horizontal: 16
-      padding_vertical: 8
-      typography: "Outfit/label_medium"
-    on_click:
-      action: navigate
-      target: application-detail
-    a11y:
-      label: "Apply now for Personal Loan"
-      role: button
-    keyboard:
-      focusable: true
-    test_context:
-      tag: personal_loan_apply
-      assert_text: "Apply Now"
-
-  # --- Product 4: Platinum Credit Card ---
-  - type: box
-    id: product_platinum_credit_card
-    label: "Platinum Credit Card"
-    content: "Platinum Credit Card"
-    style:
-      background: "#FFFFFF"
-      border_radius: 16
-      elevation: 2
-      padding_horizontal: 16
-      padding_vertical: 16
-      border_color: "#F9FAEF"
-      border_width: 1
-      margin_horizontal: 20
-      margin_bottom: 12
-    on_click:
-      action: navigate
-      target: application-detail
-    a11y:
-      label: "Platinum Credit Card. 0% for 20 months on purchases. No annual fee. Tap to view details."
-      role: button
-    keyboard:
-      focusable: true
-    test_context:
-      tag: product_platinum_credit_card
-
-  - type: stack
-    id: product_pcc_header_row
-    label: "Platinum Credit Card header row"
-    style:
-      orientation: horizontal
-      spacing: 8
-      justify: space_between
-      padding_bottom: 4
-    on_click:
-      action: navigate
-      target: application-detail
-    a11y:
-      label: "Product name and category"
-      role: row
-    test_context:
-      tag: product_pcc_header_row
-
-  - type: text
-    id: pcc_name
-    label: "Platinum Credit Card"
-    content: "Platinum Credit Card"
-    style:
-      typography: "Outfit/title_medium"
-      color: "#1A1C16"
-      font_weight: semibold
-    a11y:
-      label: "Product: Platinum Credit Card"
-      role: text
-    test_context:
-      tag: pcc_name
-      assert_text: "Platinum Credit Card"
-
-  - type: box
-    id: pcc_category_badge
-    label: "Cards"
-    content: "Cards"
-    style:
-      background: "#DCE7C8"
-      border_radius: 6
-      padding_horizontal: 8
-      padding_vertical: 3
-      text_color: "#386663"
-      typography: "Outfit/label_small"
-    on_click:
-      action: filter_products
-      target: cards
-    a11y:
-      label: "Category: Cards"
-      role: text
-    test_context:
-      tag: pcc_category_badge
-      assert_text: "Cards"
-
-  - type: text
-    id: pcc_rate
-    label: "0% for 20 months"
-    content: "0% for 20 months"
-    style:
-      typography: "Outfit/display_small"
-      color: "#4C662B"
-      font_weight: bold
-      padding_bottom: 2
-    a11y:
-      label: "Promotional offer: 0% interest for 20 months on purchases"
-      role: text
-    test_context:
-      tag: pcc_rate
-      assert_text: "0% for 20 months"
-
-  - type: text
-    id: pcc_description
-    label: "0% interest on purchases for 20 months. No annual fee. Contactless and Apple Pay / Google Pay enabled."
-    content: "0% interest on purchases for 20 months. No annual fee. Contactless and Apple Pay / Google Pay enabled."
-    style:
-      typography: "Outfit/body_medium"
-      color: "#44483D"
-      padding_bottom: spacing.sm
-    a11y:
-      label: "Platinum Credit Card description"
-      role: text
-    test_context:
-      tag: pcc_description
-
-  - type: stack
-    id: pcc_features
-    label: "Platinum Credit Card features"
-    style:
-      orientation: horizontal
-      spacing: 8
-      padding_bottom: 12
-      overflow: scroll_horizontal
-    on_click:
-      action: dismiss
-      target: ""
-    a11y:
-      label: "Key features of Platinum Credit Card"
-      role: list
-    test_context:
-      tag: pcc_features
-
-  - type: box
-    id: pcc_feat_zero_pct
-    label: "0% for 20 months"
-    content: "0% for 20 months"
-    style:
-      background: "#DCE7C8"
-      border_radius: 8
-      padding_horizontal: 8
-      padding_vertical: 4
-      text_color: "#386663"
-      typography: "Outfit/label_small"
-    on_click:
-      action: dismiss
-      target: ""
-    a11y:
-      label: "Feature: 0% interest for 20 months on purchases"
-      role: listitem
-    test_context:
-      tag: pcc_feat_zero_pct
-      assert_text: "0% for 20 months"
-
-  - type: box
-    id: pcc_feat_no_annual_fee
-    label: "No annual fee"
-    content: "No annual fee"
-    style:
-      background: "#CDEDA3"
-      border_radius: 8
-      padding_horizontal: 8
-      padding_vertical: 4
-      text_color: "#4C662B"
-      typography: "Outfit/label_small"
-    on_click:
-      action: dismiss
-      target: ""
-    a11y:
-      label: "Feature: No annual fee"
-      role: listitem
-    test_context:
-      tag: pcc_feat_no_annual_fee
-      assert_text: "No annual fee"
-
-  - type: box
-    id: pcc_feat_contactless
-    label: "Contactless & Apple/Google Pay"
-    content: "Contactless & Apple/Google Pay"
-    style:
-      background: "#CDEDA3"
-      border_radius: 8
-      padding_horizontal: 8
-      padding_vertical: 4
-      text_color: "#4C662B"
-      typography: "Outfit/label_small"
-    on_click:
-      action: dismiss
-      target: ""
-    a11y:
-      label: "Feature: Contactless, Apple Pay and Google Pay support"
-      role: listitem
-    test_context:
-      tag: pcc_feat_contactless
-      assert_text: "Contactless & Apple/Google Pay"
-
-  - type: stack
-    id: pcc_actions
-    label: "Platinum Credit Card actions"
-    style:
-      orientation: horizontal
-      spacing: 8
-      justify: flex_end
-    on_click:
-      action: navigate
-      target: application-detail
-    a11y:
-      label: "Actions for Platinum Credit Card"
-      role: row
-    test_context:
-      tag: pcc_actions
-
-  - type: button
-    id: pcc_learn_more
-    label: "Details"
-    supported_states: [idle, hover, focus_visible, pressed, disabled]
-    style:
-      variant: outlined
-      border_color: "#4C662B"
-      text_color: "#4C662B"
-      border_radius: 8
-      padding_horizontal: 16
-      padding_vertical: 8
-      typography: "Outfit/label_medium"
-    on_click:
-      action: navigate
-      target: application-detail
-    a11y:
-      label: "View details for Platinum Credit Card"
-      role: button
-    keyboard:
-      focusable: true
-    test_context:
-      tag: pcc_learn_more
-      assert_text: "Details"
-
-  - type: button
-    id: pcc_apply
-    label: "Apply Now"
-    supported_states: [idle, hover, focus_visible, pressed, disabled]
-    style:
-      variant: filled
-      background: "#4C662B"
-      text_color: "#FFFFFF"
-      border_radius: 8
-      padding_horizontal: 16
-      padding_vertical: 8
-      typography: "Outfit/label_medium"
-    on_click:
-      action: navigate
-      target: application-detail
-    a11y:
-      label: "Apply now for Platinum Credit Card"
-      role: button
-    keyboard:
-      focusable: true
-    test_context:
-      tag: pcc_apply
-      assert_text: "Apply Now"
-
-  # --- Promotions banner ---
-  - type: box
-    id: promotions_banner
-    label: "Limited time: Refer a friend and earn £50"
-    content: "Limited time: Refer a friend and earn £50"
-    style:
-      background: "#4C662B"
-      border_radius: 12
-      padding_horizontal: 16
-      padding_vertical: 14
-      margin_horizontal: 20
-      margin_bottom: 16
-    on_click:
-      action: navigate
-      target: home
-    a11y:
-      label: "Promotion: Refer a friend and earn £50 cashback. Tap to learn more."
-      role: button
-    keyboard:
-      focusable: true
-    test_context:
-      tag: promotions_banner
-
-  - type: text
-    id: promo_banner_text
-    label: "Refer a friend — earn £50"
-    content: "Refer a friend — earn £50"
-    style:
-      typography: "Outfit/title_small"
-      color: "#FFFFFF"
-      font_weight: semibold
-    a11y:
-      label: "Promotion title"
-      role: text
-    test_context:
-      tag: promo_banner_text
-      assert_text: "Refer a friend — earn £50"
-
-  - type: text
-    id: promo_banner_detail
-    label: "When your friend opens any account before 30 June 2026"
-    content: "When your friend opens any account before 30 June 2026"
-    style:
-      typography: "Outfit/body_small"
-      color: "#CDEDA3"
-      padding_top: spacing.xs
-    a11y:
-      label: "Promotion eligibility detail"
-      role: text
-    test_context:
-      tag: promo_banner_detail
-
-  - type: spacer
-    id: bottom_spacer
-    style:
-      height: 24
-    test_context:
-      tag: bottom_spacer
+      tag: products_scope_empty
 
 responsive:
   mobile_only: true
@@ -1341,167 +293,138 @@ responsive:
 
 states:
   initial_state: loading
+  # Shipped state set = ScreenState<ProductsContent>: Loading / Content / Empty / Error /
+  # NoNetwork / Unauthenticated. Within Content, per-bank-load failure (bankLoadFailed) and
+  # in-scope emptiness render inline rows rather than separate ScreenStates.
   loading:
     motion:
       shimmer_duration: short4
       reduced_motion_fallback: static_placeholder
     layout:
-      visible_components:
-        - products_title
-        - products_subtitle
-        - category_tabs_row
-        - tab_all
-        - tab_savings
-        - tab_loans
-        - tab_cards
-        - tab_mortgages
-      show_skeleton_list: true
-      skeleton_count: 4
-
-  populated:
+      visible_components: []
+      show_loading_icon: true
+  content:
     layout:
       visible_components:
         - products_title
-        - products_subtitle
-        - category_tabs_row
-        - tab_all
-        - tab_savings
-        - tab_loans
-        - tab_cards
-        - tab_mortgages
-        - product_instant_access_savings
-        - product_ias_header_row
-        - ias_name
-        - ias_category_badge
-        - ias_rate
-        - ias_description
-        - ias_features
-        - ias_feat_aer
-        - ias_feat_access
-        - ias_feat_no_min
-        - ias_actions
-        - ias_learn_more
-        - ias_apply
-        - product_fixed_rate_bond
-        - product_frb_header_row
-        - frb_name
-        - frb_category_badge
-        - frb_rate
-        - frb_description
-        - frb_features
-        - frb_feat_aer
-        - frb_feat_term
-        - frb_feat_fscs
-        - frb_actions
-        - frb_learn_more
-        - frb_apply
-        - product_personal_loan
-        - product_pl_header_row
-        - personal_loan_name
-        - pl_category_badge
-        - pl_rate
-        - personal_loan_description
-        - personal_loan_features
-        - personal_loan_feat_apr
-        - personal_loan_feat_amount
-        - personal_loan_feat_terms
-        - personal_loan_actions
-        - personal_loan_learn_more
-        - personal_loan_apply
-        - product_platinum_credit_card
-        - product_pcc_header_row
-        - pcc_name
-        - pcc_category_badge
-        - pcc_rate
-        - pcc_description
-        - pcc_features
-        - pcc_feat_zero_pct
-        - pcc_feat_no_annual_fee
-        - pcc_feat_contactless
-        - pcc_actions
-        - pcc_learn_more
-        - pcc_apply
-        - promotions_banner
-        - promo_banner_text
-        - promo_banner_detail
-        - bottom_spacer
-
+        - products_bank_selector
+        - products_scope_tabs
+        - products_tab_personal
+        - products_tab_business
+        - product_card
+        - product_category_badge
+        - product_more_info
+        - products_bank_load_failed
+        - products_scope_empty
   empty:
     layout:
       visible_components:
         - products_title
-        - products_subtitle
-        - category_tabs_row
-        - tab_all
-        - tab_savings
-        - tab_loans
-        - tab_cards
-        - tab_mortgages
       show_empty_state: true
-      empty_state_icon: store_outlined
-      empty_state_title: "No products available"
-      empty_state_message: "No products match the selected category. Try a different filter or check back later."
-
+      empty_state_icon: inventory_2
+      empty_state_title: "No products published"
+      empty_state_message: "The bank has not published a product catalogue yet"
   error:
     layout:
       visible_components:
         - products_title
-        - products_subtitle
-        - category_tabs_row
-        - tab_all
-        - tab_savings
-        - tab_loans
-        - tab_cards
-        - tab_mortgages
       show_error_state: true
       error_icon: cloud_off
       error_title: "Unable to load products"
-      error_message: "Check your connection and try again. Your saved favourites are still available offline."
+      error_message: "Check your connection and try again"
+      show_retry_button: true
+  no_network:
+    layout:
+      visible_components:
+        - products_title
+      show_error_state: true
+      error_icon: cloud_off
+      error_title: "Unable to load products"
+      error_message: "Check your connection and try again"
+      show_retry_button: true
+  unauthenticated:
+    layout:
+      visible_components:
+        - products_title
+      show_error_state: true
+      error_icon: cloud_off
+      error_title: "Unable to load products"
+      error_message: "Check your connection and try again"
       show_retry_button: true
 
 state_model:
   view_model: ProductsViewModel
-  state_fields:
-    - name: products
-      type: "List<BankProduct>"
+  screen_state: "ScreenState<ProductsContent>"
+  content_type: ProductsContent
+  content_fields:
+    - name: banks
+      type: List<ProductBank>
       default: "emptyList()"
-    - name: selectedCategory
-      type: ProductCategory
-      default: ProductCategory.ALL
-    - name: uiState
-      type: ProductsUiState
-      default: Loading
-    - name: error
-      type: "UiError?"
-      default: "null"
+    - name: selectedBankId
+      type: String
+      default: ""
+    - name: scope
+      type: ProductScope
+      default: ProductScope.PERSONAL
+    - name: products
+      type: List<ProductRow>
+      default: "emptyList()"
+    - name: bankLoadFailed
+      type: Boolean
+      default: "false"
+  enums:
+    - name: ProductScope
+      values: [PERSONAL, BUSINESS]
+      note: "Audience split; derived client-side from code/name keywords (BUSINESS_MARKERS / scopeOf)."
+    - name: ProductCategory
+      values: [EVERYDAY, SAVINGS, CARDS, LOANS]
+      note: "Per-card badge; derived client-side via categoryOf (API category is null on the sandbox). NO MORTGAGES bucket — no mortgage product exists; LOANS covers it."
+  row_type:
+    name: ProductRow
+    fields:
+      - name: code
+        type: String
+      - name: name
+        type: String
+      - name: description
+        type: String
+      - name: scope
+        type: ProductScope
+      - name: category
+        type: ProductCategory
+      - name: moreInfoUrl
+        type: String
   errors:
     - field: global
       code: LOAD_FAILED
       message: "Unable to load products. Please try again."
-    - field: global
-      code: NETWORK_TIMEOUT
-      message: "Connection timed out. Check your internet connection."
   events:
-    - "ProductsLoaded(products: List<BankProduct>)"
-    - "CategoryFilterChanged(category: ProductCategory)"
-    - "ApplyNowClicked(productCode: String)"
-    - "ProductDetailClicked(productCode: String)"
-    - RetryLoad
-    - SearchOpened
+    - onRetry
+    - onBankSelected
+    - onScopeSelected
   actions:
-    - filter_products
-    - search_products
-    - navigate_to_application_detail
+    - onBankSelected
+    - onScopeSelected
+    - open_url
+  states_handled: [loading, content, empty, error, no_network, unauthenticated]
   di:
-    - ProductRepository
-    - BankRepository
+    - ProductsRepository
+    - AccountsRepository
+    - BanksRepository
 
 api:
+  # SHIPPED endpoint — ProductsApi @GET("v3.0.0/banks/{bankId}/products"); fetched once per
+  # bank in parallel (awaitAll) at load. category/family are null on the sandbox, so the
+  # audience split (scopeOf) and the badge (categoryOf) are both derived client-side from
+  # code + name. The earlier spec's v5.0.0 + category enum did NOT ship (corrected 2026-06-11).
   - id: obp_products
-    endpoint: "GET /obp/v5.0.0/banks/{bankId}/products"
+    endpoint: "GET /obp/v3.0.0/banks/{bankId}/products"
     tag: Product
-    description: "List available banking products from OBP v5.0.0"
+    description: "List a bank's published products. Per-bank, fetched in parallel once per session."
+    trigger: "on load (per bank the user holds an account at) / onRetry — ProductsRepository.listProducts(bankId)"
     response:
+      wrapper: products
+      dto: Product
       fields:
         - name: products
           type: "List<Product>"
@@ -1509,56 +432,54 @@ api:
           type: String
         - name: name
           type: String
+        - name: description
+          type: String
         - name: category
           type: String
-          enum: [SAVINGS, LOANS, CARDS, MORTGAGES, CURRENT]
         - name: family
           type: String
         - name: super_family
           type: String
         - name: more_info_url
           type: String
-        - name: details
-          type: ProductDetails
-        - name: meta
-          type: ProductMeta
     errors:
-      - code: 400
-        message: "INVALID_BANK_ID"
       - code: 401
         message: "USER_NOT_LOGGED_IN"
       - code: 404
         message: "BANK_NOT_FOUND"
-      - code: 503
-        message: "SERVICE_UNAVAILABLE"
+  # Account list source — AccountsRepository.myAccounts(); the set of banks the user holds an
+  # account at IS the set of catalogues offered. Resolved to display names via BanksRepository.
+  - id: obp_get_my_accounts
+    endpoint: "GET /obp/v3.0.0/my/accounts"
+    tag: Account
+    description: "The user's accounts; the distinct bankIds drive which bank catalogues are shown."
+    trigger: "on load — AccountsRepository.myAccounts"
+    response:
+      fields:
+        - name: accounts
+          type: List<Account>
+        - name: bank_id
+          type: String
+  # DEFERRED — product search never shipped. No search_products UI path exists on this screen.
+  - id: search_products
+    deferred: true
+    deferred_reason: "Product search was never wired — the top-bar search action was removed. No search endpoint is called by this screen (verified shipped 2026-06-11)."
 
 dependencies:
   tier: feature
   features:
-    - application-detail
-    - home
     - accounts
-    - send-money
 
 navigation:
-  - action: navigate
-    target: application-detail
-    description: "Navigate to application detail screen for selected product (Apply Now / Details)"
-  - action: navigate
-    target: home
-    description: "Navigate to home screen via bottom nav or promotional banner"
-  - action: navigate
-    target: accounts
-    description: "Navigate to accounts screen via bottom nav"
-  - action: navigate
-    target: send-money
-    description: "Navigate to send money screen via bottom nav"
-  - action: filter_products
+  - action: open_url
+    target: more_info_url
+    description: "Open the product's more_info_url in the platform browser (LocalUriHandler.openUri) — the only outbound affordance; there is NO in-app apply/details journey."
+  - action: onBankSelected
     target: ""
-    description: "Filter products list by category (All / Savings / Loans / Cards / Mortgages)"
-  - action: search_products
+    description: "Switch which bank's catalogue is shown via the picker bottom sheet."
+  - action: onScopeSelected
     target: ""
-    description: "Open product search overlay"
+    description: "Switch the audience tab (Personal / Business)."
   - action: navigate_back
-    target: home
-    description: "Return to home via top bar back arrow"
+    target: ""
+    description: "Return to the previous screen via the top-bar back arrow."

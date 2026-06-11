@@ -4,6 +4,7 @@
 # Updated 2026-05-28 by /idea setup-flows — added direct-debit-detail, change-password, about
 # Updated 2026-05-30 by /idea sync — removed consumer-home (orphan duplicate of home, zero inbound nav); grouped standing-order-edit
 # Updated 2026-06-11 by /idea sync — registered pfm-settings + business-insights into the consumer roster (PFM v2 epic)
+# Updated 2026-06-11 by /idea sync — registered send-money-amount, sca-challenge, payment-result, standing-order-create (source-drift write-back); wired send-money + standing-orders flow edges
 
 schema_version: "1.0"
 id: consumer-banking
@@ -21,11 +22,15 @@ screens:
   - transaction-detail
   - transaction-tags
   - send-money
+  - send-money-amount
   - send-money-confirm
+  - sca-challenge
+  - payment-result
   - beneficiaries
   - cards
   - card-detail
   - standing-orders
+  - standing-order-create
   - standing-order-detail
   - standing-order-edit
   - atm-locator
@@ -61,14 +66,21 @@ connections:
   - { from: account-detail, to: send-money, type: push, label: "Send money from account" }
   - { from: transactions, to: transaction-detail, type: push, label: "Transaction selected" }
   - { from: transaction-detail, to: transaction-tags, type: sheet, label: "Add tag/note" }
-  - { from: send-money, to: send-money-confirm, type: push, label: "Review payment" }
-  - { from: send-money-confirm, to: home, type: replace, label: "Payment success" }
-  - { from: send-money-confirm, to: send-money, type: pop, label: "Edit payment" }
+  - { from: send-money, to: send-money-amount, type: push, label: "Enter amount" }
+  - { from: send-money-amount, to: send-money-confirm, type: push, label: "Review payment" }
+  - { from: send-money-confirm, to: payment-result, type: replace, label: "Payment success" }
+  - { from: send-money-confirm, to: sca-challenge, type: push, label: "SCA required (above threshold)" }
+  - { from: sca-challenge, to: payment-result, type: replace, label: "Code verified — payment success" }
+  - { from: send-money-confirm, to: send-money-amount, type: pop, label: "Edit payment" }
+  - { from: payment-result, to: transaction-detail, type: push, label: "View transaction" }
+  - { from: payment-result, to: home, type: replace, label: "Done" }
   - { from: beneficiaries, to: send-money, type: push, label: "Pay beneficiary" }
   - { from: cards, to: card-detail, type: push, label: "Card selected" }
   - { from: cards, to: transaction-detail, type: push, label: "Recent transaction" }
   - { from: card-detail, to: transactions, type: push, label: "Card transactions" }
   - { from: fx-rates, to: send-money, type: push, label: "Convert currency" }
+  - { from: standing-orders, to: standing-order-create, type: push, label: "Create standing order" }
+  - { from: standing-order-create, to: standing-orders, type: pop, label: "Back / created (on success)" }
   - { from: standing-orders, to: standing-order-detail, type: push, label: "Standing order selected" }
   - { from: standing-order-detail, to: standing-orders, type: pop, label: "Back to list / after cancel" }
   - { from: standing-order-detail, to: standing-order-edit, type: push, label: "Edit standing order" }

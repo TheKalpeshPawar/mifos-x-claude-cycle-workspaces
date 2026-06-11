@@ -1,0 +1,57 @@
+sibling: api
+schema_version: "4.0"
+feature_id: send-money-amount
+api:
+  - id: obp_get_sender_accounts
+    endpoint: "GET /obp/v3.0.0/banks/{bankId}/accounts"
+    tag: Accounts
+    description: "AccountsRepository.myAccounts() — the From Account picker."
+    response:
+      fields:
+        - { name: accounts, type: List<Account> }
+        - { name: id, type: String }
+        - { name: label, type: String }
+        - { name: balance, type: MoneyAmount }
+        - { name: currency, type: String }
+  - id: obp_get_account_detail
+    endpoint: "GET /obp/v4.0.0/banks/{bankId}/accounts/{accountId}/account"
+    tag: Accounts
+    description: "AccountsRepository.accountDetail() — resolves the selected account currency."
+    response:
+      fields:
+        - { name: balance, type: MoneyAmount }
+        - { name: balance.currency, type: String }
+  - id: obp_get_beneficiary_counterparties
+    endpoint: "GET /obp/v4.0.0/banks/{bankId}/accounts/{accountId}/owner/counterparties"
+    tag: Counterparties
+    description: "PaymentsRepository.listBeneficiaries — beneficiaries for the selected account (reloads on account switch; filtered is_beneficiary)."
+    response:
+      fields:
+        - { name: counterparties, type: List<Counterparty> }
+        - { name: counterparty_id, type: String }
+        - { name: name, type: String }
+        - { name: other_account_routing_scheme, type: String }
+        - { name: other_account_routing_address, type: String }
+        - { name: other_account_secondary_routing_scheme, type: String }
+        - { name: other_account_secondary_routing_address, type: String }
+        - { name: other_bank_routing_scheme, type: String }
+        - { name: other_bank_routing_address, type: String }
+  - id: obp_funds_available
+    endpoint: "GET /obp/v3.1.0/banks/{bankId}/accounts/{accountId}/owner/funds-available"
+    tag: Account
+    description: "PaymentsRepository.fundsAvailable — live funds pre-flight on Continue. answer == 'yes' -> true."
+    request:
+      params:
+        - { name: amount, type: String }
+        - { name: currency, type: String }
+    response:
+      fields:
+        - { name: answer, type: String, note: "'yes' or 'no'" }
+  - id: obp_get_bank
+    endpoint: "GET /obp/v4.0.0/banks/{bankId}"
+    tag: Banks
+    description: "BanksRepository.bank(bankId) — source + destination bank country for PaymentRailClassifier."
+    response:
+      fields:
+        - { name: id, type: String }
+        - { name: country_code, type: String }

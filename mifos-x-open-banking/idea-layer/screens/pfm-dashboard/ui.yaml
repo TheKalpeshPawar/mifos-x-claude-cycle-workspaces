@@ -2,7 +2,7 @@ id: pfm-dashboard
 name: Spending Insights
 feature: pfm-dashboard
 flavor: consumer
-status: approved
+status: enriched
 quality_score: 100
 contract_version: "1.1.0"
 approve_hash: "sha256:12af12bd8c96e4f037af12bd8c96e4f037af12bd8c96e4f037af12bd8c96e4f0"
@@ -49,6 +49,12 @@ status_history:
     by: "post-walkthrough polish (plan eager-churning-storm)"
     contract_version: "1.1.0"
     note: "Two refinements after the v2 device walkthrough. (1) Account scope selector RETURNS as a tappable chip: 'All personal accounts' (default, aggregated) or any single personal account — pure client-side reprojection over the per-account transaction map (no refetch); budgets stay visible in the per-account view against the global limits; View All Transactions navigates to the selected account. Supersedes the picker-removed note above. (2) Monthly budget meter now counts only real spending: transfers between own accounts and uncategorised ('Other') debits are excluded from OverallBudget.spent/percent; ATM cash withdrawals still count. The Spent/Received summary and category donut keep showing all debits."
+  - from: approved
+    to: enriched
+    at: "2026-06-11"
+    by: "/idea verify --source-drift (write-back)"
+    contract_version: "1.1.0"
+    note: "SOURCE→SPEC reconciliation to shipped PfmDashboardScreen.kt + PfmDashboardViewModel.kt (code = truth). The status_history already records PFM v2, but components[] still described the single-account demo. ADDED: PfmScopeChip (AssistChip 'All personal accounts · N accounts · CCY', tappable → AccountPickerBottomSheet scope filter) and dynamic category/merchant lists (Canvas donut with % on the donut + analyze()-derived rows over PERSONAL_TAXONOMY); onSaveBudget edit dialog (real server-side BudgetsRepository via OBP personal-data-fields, append-only newest-wins; budget rows + overall card tap → edit). REMOVED (never built as fixed content): hardcoded demo categories/budgets/merchants (Food £320.50/£350, Transport, Shopping, Bills, Entertainment fixed rows; Tesco/Netflix/Spotify/TfL fixed merchant rows; the £1,500 overall demo); manage_budgets_button (budgets are edited per-row + via overall-card tap, no separate button); open_chart_detail and per-row filter_by_category navigation (DEFERRED — rows inform only); per-row legend percentages (shipped puts % on the donut). state_model rewritten to the shipped ScreenState<PfmContent> + internal RawState(Loading/Failed/Loaded) + Selection(period/customStart/customEnd/accountId); PfmContent now carries scopeLabel/accountCount/navBankId/navAccountId/currency/overallBudget/budgetRows; notice StateFlow<String?> for FX-unavailable + save errors. budgetMeterSpent excludes transfers + 'other'. components[] + states + state_model + embedded api block rewritten in this pass to drop the demo rows and match the shipped dynamic PFM v2 surface; api: ADDED OBP /banks/{bank}/fx (FxConverter, session-cached) + per-account detail fetch (PfmAccountsService, product_code classification)."
 
 shell:
   top_app_bar:
@@ -93,6 +99,17 @@ screens:
 
 archetype: dashboard
 
+# Reconciled to shipped PfmDashboardScreen.kt + PfmSections.kt (PFM v2) on 2026-06-11
+# (code = truth). The shipped PfmDashboardContent renders, in order: a tappable scope
+# chip (PfmScopeChip), the period FilterChips, the period label, then — when the scope
+# has activity — Summary card, Monthly-Budget overview (or no-budget banner), Spending-by-
+# Category (donut + DYNAMIC legend), Budget-Progress (DYNAMIC rows), Top-Merchants
+# (DYNAMIC rows), and a View-All-Transactions button; otherwise PfmNoActivity. All
+# category/budget/merchant rows are derived at runtime from analyze() over the selected
+# scope+period — the hardcoded Food/Transport/Shopping/Bills/Entertainment and
+# Tesco/Netflix/Spotify/TfL demo rows that previously lived here were never shipped as
+# fixed content and have been removed. The illustrative `content:` strings below are
+# placeholders for rendering only; real values come from PfmContent at runtime.
 components:
   # ── Page title ──────────────────────────────────────────────────────────────
   - type: text
@@ -113,6 +130,35 @@ components:
     test_context:
       tag: pfm_title
       assert_text: "Spending Insights"
+
+  # ── Scope chip (PfmScopeChip — AssistChip, shipped FIRST in PfmDashboardContent) ──
+  # Tappable scope filter. Label = "{scopeLabel} · {N accounts} · {CCY}" when scope is
+  # "All personal accounts"; "{scopeLabel} · {CCY}" when a single account is selected.
+  # Trailing ExpandMore icon. Tap opens the reusable AccountPickerBottomSheet
+  # (title "Insights for", allOptionLabel "All personal accounts"). Replaces the legacy
+  # per-account account-selector chip — PFM v2 aggregates across ALL personal accounts.
+  - type: chip
+    id: pfm_scope_chip
+    label: "All personal accounts · 3 accounts · GBP"
+    content: "All personal accounts · 3 accounts · GBP"
+    supported_states: [idle, hover, focus_visible, pressed]
+    style:
+      variant: assist
+      trailing_icon: expand_more
+      padding_horizontal: 20
+      padding_vertical: 4
+      typography: "Outfit/label_large"
+    on_click:
+      action: open_scope_picker
+      target: account_picker_sheet
+    a11y:
+      label: "Insights scope: All personal accounts, 3 accounts, GBP. Tap to choose insights scope."
+      role: button
+    keyboard:
+      focusable: true
+    test_context:
+      tag: pfm_account_selector
+      assert_text: "All personal accounts"
 
   # ── Period selector ──────────────────────────────────────────────────────────
   - type: stack
@@ -265,97 +311,58 @@ components:
       tag: pfm_period_label
       assert_text: "May 2026"
 
-  # ── Income vs Expense summary card ─────────────────────────────────────────
+  # ── Summary card (PfmSummaryCard — Total Spent / Received / Net) ────────────
+  # Dynamic: values derive from analyze() over the selected scope + period. The three
+  # columns are Total Spent (error colour, negated), Received (primary), Net (primary if
+  # >= 0 else error, "+" prefix when positive). No fixed amounts — content is illustrative.
   - type: box
-    id: this_month_summary_card
-    label: "This Month summary"
-    content: "This Month summary"
+    id: pfm_summary_card
+    label: "Summary card"
+    content: "Summary"
     style:
-      background: "#FFFFFF"
-      border_radius: 20
-      elevation: 2
-      padding_horizontal: 20
-      padding_vertical: 20
-      margin_horizontal: 20
-      margin_bottom: 20
-      border_color: "#F9FAEF"
+      background: "#F9FAEF"
+      border_radius: 16
+      elevation: 0
+      border_color: "#C5C8BA"
       border_width: 1
-    on_click:
-      action: navigate_to_transactions
-      target: transactions
+      padding_horizontal: 16
+      padding_vertical: 16
+      margin_horizontal: 20
+      margin_bottom: 16
     a11y:
-      label: "This month summary. Spent £1,029.80, received £3,200.00, net positive £2,170.20. Tap to view all transactions."
+      label: "Spending summary for the selected period and scope."
       role: region
-    keyboard:
-      focusable: true
-    api:
-      endpoint_id: obp_transactions_list
-      binding: totalSpent, totalReceived, netBalance
-    component_states:
-      loading:
-        type: skeleton  # fix REG-001: shimmer → skeleton (registered)
-        count: 3
-        description: "shimmer matching three metric columns (Spent, Received, Net)"
-      error:
-        type: banner  # fix REG-001: inline-error → banner (registered)
-        message: "Could not load spending summary. Please try again."
-        retry: true
-      empty:
-        type: box  # fix REG-001: inline-empty → box (registered)
-        message: "No transactions this period. Start spending to see insights!"
-        icon: receipt_long
     test_context:
-      tag: this_month_summary_card
+      tag: pfm_summary_card
 
   - type: text
     id: summary_section_label
-    label: "This Month"
-    content: "This Month"
+    label: "Summary"
+    content: "Summary"
     style:
-      typography: "Outfit/title_medium"
+      typography: "Outfit/title_small"
       color: "#1A1C16"
       font_weight: semibold
-      padding_bottom: 16
+      padding_bottom: 12
     a11y:
-      label: "This month summary section"
+      label: "Summary"
       role: heading
-      level: 2
     test_context:
       tag: summary_section_label
-      assert_text: "This Month"
+      assert_text: "Summary"
 
   - type: stack
     id: summary_metrics_row
-    label: "Summary metrics"
+    label: "Summary metrics row"
     style:
       orientation: horizontal
-      spacing: 0
-      justify: space_between
-      align: flex_start
-    on_click:
-      action: navigate
-      target: transactions
+      spacing: 8
+      distribute: equal
     a11y:
-      label: ""
+      label: "Spent, received and net totals"
       role: row
     test_context:
       tag: summary_metrics_row
-
-  - type: stack
-    id: spent_col
-    label: "Total spent column"
-    style:
-      orientation: vertical
-      align: flex_start
-      flex: 1
-    on_click:
-      action: navigate
-      target: transactions
-    a11y:
-      label: ""
-      role: group
-    test_context:
-      tag: spent_col
 
   - type: text
     id: spent_label
@@ -364,9 +371,8 @@ components:
     style:
       typography: "Outfit/label_small"
       color: "#44483D"
-      letter_spacing: 0.4
     a11y:
-      label: "Total spent label"
+      label: "Total Spent"
       role: text
     test_context:
       tag: spent_label
@@ -374,80 +380,45 @@ components:
 
   - type: text
     id: spent_amount
-    label: "£1,029.80"
-    content: "£1,029.80"
+    label: "Total spent amount (dynamic)"
+    content: "-£820.40"
     style:
-      typography: "Outfit/title_large"
+      typography: "Outfit/title_medium"
       color: "#BA1A1A"
       font_weight: bold
     a11y:
-      label: "Total spent this month: one thousand twenty-nine pounds eighty pence"
+      label: "Total spent this period"
       role: text
     test_context:
       tag: spent_amount
-      assert_text: "£1,029.80"
-
-  - type: stack
-    id: received_col
-    label: "Total received column"
-    style:
-      orientation: vertical
-      align: flex_start
-      flex: 1
-    on_click:
-      action: navigate
-      target: transactions
-    a11y:
-      label: ""
-      role: group
-    test_context:
-      tag: received_col
 
   - type: text
     id: received_label
-    label: "Total Received"
-    content: "Total Received"
+    label: "Received"
+    content: "Received"
     style:
       typography: "Outfit/label_small"
       color: "#44483D"
-      letter_spacing: 0.4
     a11y:
-      label: "Total received label"
+      label: "Received"
       role: text
     test_context:
       tag: received_label
-      assert_text: "Total Received"
+      assert_text: "Received"
 
   - type: text
     id: received_amount
-    label: "£3,200.00"
+    label: "Received amount (dynamic)"
     content: "£3,200.00"
     style:
-      typography: "Outfit/title_large"
+      typography: "Outfit/title_medium"
       color: "#4C662B"
       font_weight: bold
     a11y:
-      label: "Total received this month: three thousand two hundred pounds"
+      label: "Total received this period"
       role: text
     test_context:
       tag: received_amount
-      assert_text: "£3,200.00"
-
-  - type: stack
-    id: net_col
-    label: "Net balance column"
-    style:
-      orientation: vertical
-      align: flex_start
-      flex: 1
-    on_click:
-      action: navigate
-      target: transactions
-    a11y:
-      label: ""
-      role: group
-    test_context:
-      tag: net_col
 
   - type: text
     id: net_label
@@ -456,9 +427,8 @@ components:
     style:
       typography: "Outfit/label_small"
       color: "#44483D"
-      letter_spacing: 0.4
     a11y:
-      label: "Net balance label"
+      label: "Net"
       role: text
     test_context:
       tag: net_label
@@ -466,74 +436,55 @@ components:
 
   - type: text
     id: net_amount
-    label: "+£2,170.20"
-    content: "+£2,170.20"
+    label: "Net amount (dynamic)"
+    content: "+£2,379.60"
     style:
-      typography: "Outfit/title_large"
+      typography: "Outfit/title_medium"
       color: "#4C662B"
       font_weight: bold
     a11y:
-      label: "Net balance this month: positive two thousand one hundred seventy pounds twenty pence"
+      label: "Net position this period"
       role: text
     test_context:
       tag: net_amount
-      assert_text: "+£2,170.20"
 
-  # ── Overall budget progress ─────────────────────────────────────────────────
+  # ── Overall monthly budget card (PfmBudgetOverview — Monthly Budget) ─────────
+  # Tappable card → BudgetEditDialog (overall slug). Shows "{percent}% used", spent + left,
+  # progress bar (70%/90% colour thresholds), "of {limit} monthly budget — tap to change".
+  # When no overall budget is set this is replaced by the no-budget banner (see below).
+  # Spend counted here EXCLUDES own-account transfers + uncategorised 'other' debits.
   - type: box
     id: overall_budget_card
-    label: "Overall budget card"
-    content: "Overall budget card"
+    label: "Monthly budget card"
+    content: "Monthly Budget"
     style:
-      background: "#CDEDA3"
-      border_radius: 20
-      elevation: 1
-      padding_horizontal: 20
-      padding_vertical: 18
-      margin_horizontal: 20
-      margin_bottom: 20
-      border_color: "#CDEDA3"
+      background: "#F9FAEF"
+      border_radius: 16
+      elevation: 0
+      border_color: "#C5C8BA"
       border_width: 1
+      padding_horizontal: 16
+      padding_vertical: 16
+      margin_horizontal: 20
+      margin_bottom: 16
     on_click:
-      action: manage_budgets
-      target: budget_overview
+      action: edit_overall_budget
+      target: budget_edit_dialog
     a11y:
-      label: "Overall monthly budget. Spent £1,029.80 of £1,500.00, 68% used. £470.20 remaining."
-      role: region
+      label: "Monthly budget. Tap to change the limit."
+      role: button
     keyboard:
       focusable: true
-    api:
-      endpoint_id: obp_personal_data_fields
-      binding: overallBudgetLimit, budgets
-    component_states:
-      loading:
-        type: skeleton  # fix REG-001: shimmer → skeleton (registered)
-        count: 2
-        description: "shimmer matching budget progress bar and amounts"
-      error:
-        type: banner  # fix REG-001: inline-error → banner (registered)
-        message: "Budget data unavailable. Please try again."
-        retry: true
-      empty:
-        type: box  # fix REG-001: inline-empty → box (registered)
-        message: "No budget set yet. Tap to create your first monthly budget."
-        icon: savings
     test_context:
-      tag: overall_budget_card
+      tag: pfm_overall_budget_card
 
   - type: stack
     id: overall_budget_header_row
-    label: "Overall budget header"
+    label: "Overall budget header row"
     style:
       orientation: horizontal
-      justify: space_between
-      align: center
-      padding_bottom: 8
-    on_click:
-      action: manage_budgets
-      target: budget_overview
+      distribute: space_between
     a11y:
-      label: ""
       role: row
     test_context:
       tag: overall_budget_header_row
@@ -544,1599 +495,125 @@ components:
     content: "Monthly Budget"
     style:
       typography: "Outfit/title_small"
-      color: "#4C662B"
+      color: "#1A1C16"
       font_weight: semibold
     a11y:
-      label: "Monthly budget overview"
+      label: "Monthly Budget"
       role: heading
-      level: 2
     test_context:
       tag: overall_budget_title
       assert_text: "Monthly Budget"
 
   - type: text
     id: overall_budget_percent
-    label: "68% used"
-    content: "68% used"
+    label: "Percent used (dynamic)"
+    content: "55% used"
     style:
       typography: "Outfit/label_medium"
-      color: "#44483D"  # fix A11Y-002: was #E8A317 (≤2.17:1, FAIL); #44483D ≥7.25:1 PASS
+      color: "#44483D"
       font_weight: semibold
     a11y:
-      label: "68 percent of monthly budget used"
+      label: "Percent of monthly budget used"
       role: text
     test_context:
       tag: overall_budget_percent
-      assert_text: "68% used"
 
   - type: stack
     id: overall_budget_amounts_row
-    label: "Overall budget amounts"
+    label: "Overall budget amounts row"
     style:
       orientation: horizontal
-      justify: space_between
-      align: center
-      padding_bottom: 10
-    on_click:
-      action: manage_budgets
-      target: budget_overview
+      distribute: space_between
+      padding_top: 8
     a11y:
-      label: ""
       role: row
     test_context:
       tag: overall_budget_amounts_row
 
   - type: text
     id: overall_budget_spent
-    label: "£1,029.80 spent"
-    content: "£1,029.80 spent"
+    label: "Spent amount (dynamic)"
+    content: "£820.40 spent"
     style:
       typography: "Outfit/body_medium"
       color: "#1A1C16"
       font_weight: semibold
     a11y:
-      label: "One thousand twenty-nine pounds eighty pence spent"
+      label: "Amount spent against the monthly budget"
       role: text
     test_context:
       tag: overall_budget_spent
-      assert_text: "£1,029.80 spent"
 
   - type: text
     id: overall_budget_remaining
-    label: "£470.20 left"
-    content: "£470.20 left"
+    label: "Remaining amount (dynamic)"
+    content: "£679.60 left"
     style:
       typography: "Outfit/body_medium"
       color: "#4C662B"
       font_weight: semibold
     a11y:
-      label: "Four hundred seventy pounds twenty pence remaining in budget"
+      label: "Amount remaining in the monthly budget"
       role: text
     test_context:
       tag: overall_budget_remaining
-      assert_text: "£470.20 left"
 
-  - type: box
-    id: overall_budget_progress_track
-    label: "Overall budget progress track"
-    content: ""
+  - type: progress_bar
+    id: overall_budget_progress
+    label: "Overall budget progress (dynamic)"
     style:
-      background: "#E1E4D5"
-      border_radius: 6
-      height: 10
-      width: full
-      margin_bottom: 4
-    on_click:
-      action: manage_budgets
-      target: budget_overview
+      variant: linear
+      track_color: "#E1E4D5"
+      fill_color: "#4C662B"
+      height: 8
+      corner_radius: 4
+      padding_top: 8
     a11y:
-      label: "Monthly budget progress: 68%"
+      label: "Monthly budget progress bar"
       role: progressbar
     test_context:
-      tag: overall_budget_progress_track
-
-  - type: box
-    id: overall_budget_progress_fill
-    label: "Overall budget progress fill"
-    content: ""
-    style:
-      background: "#E8A317"
-      border_radius: 6
-      height: 10
-      width: "68%"
-    on_click:
-      action: manage_budgets
-      target: budget_overview
-    a11y:
-      label: ""
-      role: none
-    test_context:
-      tag: overall_budget_progress_fill
+      tag: overall_budget_progress
 
   - type: text
     id: overall_budget_of_total
-    label: "of £1,500.00 monthly budget"
-    content: "of £1,500.00 monthly budget"
+    label: "Of total budget (dynamic)"
+    content: "of £1,500.00 monthly budget — tap to change"
     style:
       typography: "Outfit/label_small"
       color: "#44483D"
-      padding_top: 4
+      padding_top: 6
     a11y:
-      label: "of one thousand five hundred pounds monthly budget"
+      label: "Of the total monthly budget — tap to change"
       role: text
     test_context:
       tag: overall_budget_of_total
-      assert_text: "of £1,500.00 monthly budget"
 
-  # ── Spending by category (pie chart placeholder + legend) ──────────────────
-  - type: text
-    id: category_section_label
-    label: "Spending by Category"
-    content: "Spending by Category"
-    style:
-      typography: "Outfit/title_medium"
-      color: "#1A1C16"
-      font_weight: semibold
-      padding_horizontal: 20
-      padding_top: 8
-      padding_bottom: 12
-    a11y:
-      label: "Spending by category section"
-      role: heading
-      level: 2
-    test_context:
-      tag: category_section_label
-      assert_text: "Spending by Category"
-
-  - type: box
-    id: category_pie_chart
-    label: "Spending category pie chart"
-    content: "Spending category pie chart"
-    style:
-      background: "#FFFFFF"
-      border_radius: 20
-      elevation: 2
-      height: 220
-      margin_horizontal: 20
-      margin_bottom: 4
-      padding_horizontal: 16
-      padding_vertical: 16
-    on_click:
-      action: open_chart_detail
-      target: category_breakdown
-    a11y:
-      label: "Pie chart of spending by category. Bills 43.7%, Food and Dining 31.1%, Transport 12.1%, Shopping 8.7%, Entertainment 4.4%."
-      role: img
-    keyboard:
-      focusable: true
-    api:
-      endpoint_id: obp_transactions_list
-      binding: categoryBreakdown
-    component_states:
-      loading:
-        type: skeleton  # fix REG-001: shimmer → skeleton (registered)
-        count: 1
-        description: "shimmer circle matching pie chart dimensions"
-      error:
-        type: banner  # fix REG-001: inline-error → banner (registered)
-        message: "Could not load spending categories. Please try again."
-        retry: true
-      empty:
-        type: box  # fix REG-001: inline-empty → box (registered)
-        message: "No category breakdown available for the selected period."
-        icon: pie_chart
-    test_context:
-      tag: category_pie_chart
-
-  - type: stack
-    id: category_legend_col
-    label: "Category legend"
-    style:
-      orientation: vertical
-      spacing: 8
-      padding_horizontal: 20
-      padding_vertical: 12
-    on_click:
-      action: state_change
-      target: category_filter
-    a11y:
-      label: "Category spending legend"
-      role: list
-    api:
-      endpoint_id: obp_transactions_list
-      binding: categoryBreakdown
-    component_states:
-      loading:
-        type: skeleton  # fix REG-001: shimmer → skeleton (registered)
-        count: 5
-        description: "shimmer rows matching 5 category legend items"
-      error:
-        type: banner  # fix REG-001: inline-error → banner (registered)
-        message: "Category data unavailable."
-        retry: true
-      empty:
-        type: box  # fix REG-001: inline-empty → box (registered)
-        message: "No category breakdown available for the selected period."
-        icon: bar_chart
-    test_context:
-      tag: category_legend_col
-
-  - type: stack
-    id: category_row_food
-    label: "Food and Dining category row"
-    style:
-      orientation: horizontal
-      justify: space_between
-      align: center
-      padding_vertical: 6
-    on_click:
-      action: filter_by_category
-      target: transactions
-    a11y:
-      label: "Food and Dining: £320.50, 31.1% of spending. Tap to see transactions."
-      role: button
-    keyboard:
-      focusable: true
-    test_context:
-      tag: category_row_food
-
-  - type: box
-    id: category_dot_food
-    label: ""
-    content: ""
-    style:
-      background: "#BA1A1A"
-      border_radius: 6
-      width: 12
-      height: 12
-      margin_right: 10
-    on_click:
-      action: filter_by_category
-      target: food_dining
-    a11y:
-      label: ""
-      role: none
-    test_context:
-      tag: category_dot_food
-
-  - type: text
-    id: category_name_food
-    label: "Food & Dining"
-    content: "Food & Dining"
-    style:
-      typography: "Outfit/body_medium"
-      color: "#1A1C16"
-      flex: 1
-    a11y:
-      label: "Category: Food and Dining"
-      role: text
-    test_context:
-      tag: category_name_food
-      assert_text: "Food & Dining"
-
-  - type: text
-    id: category_amount_food
-    label: "£320.50"
-    content: "£320.50"
-    style:
-      typography: "Outfit/body_medium"
-      color: "#1A1C16"
-      font_weight: semibold
-    a11y:
-      label: "Three hundred twenty pounds fifty pence"
-      role: text
-    test_context:
-      tag: category_amount_food
-      assert_text: "£320.50"
-
-  - type: stack
-    id: category_row_transport
-    label: "Transport category row"
-    style:
-      orientation: horizontal
-      justify: space_between
-      align: center
-      padding_vertical: 6
-    on_click:
-      action: filter_by_category
-      target: transactions
-    a11y:
-      label: "Transport: £125.00, 12.1% of spending. Tap to see transactions."
-      role: button
-    keyboard:
-      focusable: true
-    test_context:
-      tag: category_row_transport
-
-  - type: box
-    id: category_dot_transport
-    label: ""
-    content: ""
-    style:
-      background: "#386663"
-      border_radius: 6
-      width: 12
-      height: 12
-      margin_right: 10
-    on_click:
-      action: filter_by_category
-      target: transport
-    a11y:
-      label: ""
-      role: none
-    test_context:
-      tag: category_dot_transport
-
-  - type: text
-    id: category_name_transport
-    label: "Transport"
-    content: "Transport"
-    style:
-      typography: "Outfit/body_medium"
-      color: "#1A1C16"
-      flex: 1
-    a11y:
-      label: "Category: Transport"
-      role: text
-    test_context:
-      tag: category_name_transport
-      assert_text: "Transport"
-
-  - type: text
-    id: category_amount_transport
-    label: "£125.00"
-    content: "£125.00"
-    style:
-      typography: "Outfit/body_medium"
-      color: "#1A1C16"
-      font_weight: semibold
-    a11y:
-      label: "One hundred twenty-five pounds"
-      role: text
-    test_context:
-      tag: category_amount_transport
-      assert_text: "£125.00"
-
-  - type: stack
-    id: category_row_shopping
-    label: "Shopping category row"
-    style:
-      orientation: horizontal
-      justify: space_between
-      align: center
-      padding_vertical: 6
-    on_click:
-      action: filter_by_category
-      target: transactions
-    a11y:
-      label: "Shopping: £89.30, 8.7% of spending. Tap to see transactions."
-      role: button
-    keyboard:
-      focusable: true
-    test_context:
-      tag: category_row_shopping
-
-  - type: box
-    id: category_dot_shopping
-    label: ""
-    content: ""
-    style:
-      background: "#CDEDA3"
-      border_radius: 6
-      width: 12
-      height: 12
-      margin_right: 10
-    on_click:
-      action: filter_by_category
-      target: shopping
-    a11y:
-      label: ""
-      role: none
-    test_context:
-      tag: category_dot_shopping
-
-  - type: text
-    id: category_name_shopping
-    label: "Shopping"
-    content: "Shopping"
-    style:
-      typography: "Outfit/body_medium"
-      color: "#1A1C16"
-      flex: 1
-    a11y:
-      label: "Category: Shopping"
-      role: text
-    test_context:
-      tag: category_name_shopping
-      assert_text: "Shopping"
-
-  - type: text
-    id: category_amount_shopping
-    label: "£89.30"
-    content: "£89.30"
-    style:
-      typography: "Outfit/body_medium"
-      color: "#1A1C16"
-      font_weight: semibold
-    a11y:
-      label: "Eighty-nine pounds thirty pence"
-      role: text
-    test_context:
-      tag: category_amount_shopping
-      assert_text: "£89.30"
-
-  - type: stack
-    id: category_row_bills
-    label: "Bills category row"
-    style:
-      orientation: horizontal
-      justify: space_between
-      align: center
-      padding_vertical: 6
-    on_click:
-      action: filter_by_category
-      target: transactions
-    a11y:
-      label: "Bills: £450.00, 43.7% of spending. Tap to see transactions."
-      role: button
-    keyboard:
-      focusable: true
-    test_context:
-      tag: category_row_bills
-
-  - type: box
-    id: category_dot_bills
-    label: ""
-    content: ""
-    style:
-      background: "#4C662B"
-      border_radius: 6
-      width: 12
-      height: 12
-      margin_right: 10
-    on_click:
-      action: filter_by_category
-      target: bills
-    a11y:
-      label: ""
-      role: none
-    test_context:
-      tag: category_dot_bills
-
-  - type: text
-    id: category_name_bills
-    label: "Bills"
-    content: "Bills"
-    style:
-      typography: "Outfit/body_medium"
-      color: "#1A1C16"
-      flex: 1
-    a11y:
-      label: "Category: Bills"
-      role: text
-    test_context:
-      tag: category_name_bills
-      assert_text: "Bills"
-
-  - type: text
-    id: category_amount_bills
-    label: "£450.00"
-    content: "£450.00"
-    style:
-      typography: "Outfit/body_medium"
-      color: "#1A1C16"
-      font_weight: semibold
-    a11y:
-      label: "Four hundred fifty pounds"
-      role: text
-    test_context:
-      tag: category_amount_bills
-      assert_text: "£450.00"
-
-  - type: stack
-    id: category_row_entertainment
-    label: "Entertainment category row"
-    style:
-      orientation: horizontal
-      justify: space_between
-      align: center
-      padding_vertical: 6
-    on_click:
-      action: filter_by_category
-      target: transactions
-    a11y:
-      label: "Entertainment: £45.00, 4.4% of spending. Tap to see transactions."
-      role: button
-    keyboard:
-      focusable: true
-    test_context:
-      tag: category_row_entertainment
-
-  - type: box
-    id: category_dot_entertainment
-    label: ""
-    content: ""
-    style:
-      background: "#E8A317"
-      border_radius: 6
-      width: 12
-      height: 12
-      margin_right: 10
-    on_click:
-      action: filter_by_category
-      target: entertainment
-    a11y:
-      label: ""
-      role: none
-    test_context:
-      tag: category_dot_entertainment
-
-  - type: text
-    id: category_name_entertainment
-    label: "Entertainment"
-    content: "Entertainment"
-    style:
-      typography: "Outfit/body_medium"
-      color: "#1A1C16"
-      flex: 1
-    a11y:
-      label: "Category: Entertainment"
-      role: text
-    test_context:
-      tag: category_name_entertainment
-      assert_text: "Entertainment"
-
-  - type: text
-    id: category_amount_entertainment
-    label: "£45.00"
-    content: "£45.00"
-    style:
-      typography: "Outfit/body_medium"
-      color: "#1A1C16"
-      font_weight: semibold
-    a11y:
-      label: "Forty-five pounds"
-      role: text
-    test_context:
-      tag: category_amount_entertainment
-      assert_text: "£45.00"
-
-  # ── Per-category budget rows ────────────────────────────────────────────────
-  - type: text
-    id: budgets_section_label
-    label: "Budget Progress"
-    content: "Budget Progress"
-    style:
-      typography: "Outfit/title_medium"
-      color: "#1A1C16"
-      font_weight: semibold
-      padding_horizontal: 20
-      padding_top: 4
-      padding_bottom: 12
-    a11y:
-      label: "Budget Progress section"
-      role: heading
-      level: 2
-    test_context:
-      tag: budgets_section_label
-      assert_text: "Budget Progress"
-
-  - type: box
-    id: budget_food_dining
-    label: "Food and Dining budget"
-    content: "Food and Dining budget"
-    style:
-      background: "#FFFFFF"
-      border_radius: 16
-      elevation: 1
-      padding_horizontal: 16
-      padding_vertical: 14
-      margin_horizontal: 20
-      margin_bottom: 10
-      border_color: "#F9FAEF"
-      border_width: 1
-    on_click:
-      action: edit_budget
-      target: food_dining
-    a11y:
-      label: "Food and Dining budget. Spent £320.50 of £350.00 budget. 92% used. Near limit."
-      role: button
-    keyboard:
-      focusable: true
-    api:
-      endpoint_id: obp_personal_data_fields
-      binding: "budgets[food_dining]"
-    component_states:
-      loading:
-        type: skeleton  # fix REG-001: shimmer → skeleton (registered)
-        count: 1
-        description: "shimmer matching budget progress card"
-      error:
-        type: banner  # fix REG-001: inline-error → banner (registered)
-        message: "Budget data unavailable."
-        retry: true
-      empty:
-        type: box  # fix REG-001: inline-empty → box (registered)
-        message: "No budget set for Food & Dining. Tap to set one."
-        icon: add_circle_outline
-    test_context:
-      tag: budget_food_dining
-
-  - type: stack
-    id: food_dining_header
-    label: "Food and Dining header"
-    style:
-      orientation: horizontal
-      justify: space_between
-      align: center
-      padding_bottom: 8
-    on_click:
-      action: edit_budget
-      target: food_dining
-    a11y:
-      label: ""
-      role: row
-    test_context:
-      tag: food_dining_header
-
-  - type: text
-    id: food_dining_category
-    label: "Food & Dining"
-    content: "Food & Dining"
-    style:
-      typography: "Outfit/body_medium"
-      color: "#1A1C16"
-      font_weight: semibold
-    a11y:
-      label: "Category: Food and Dining"
-      role: text
-    test_context:
-      tag: food_dining_category
-      assert_text: "Food & Dining"
-
-  - type: text
-    id: food_dining_amounts
-    label: "£320.50 / £350.00"
-    content: "£320.50 / £350.00"
-    style:
-      typography: "Outfit/body_medium"
-      color: "#BA1A1A"
-      font_weight: semibold
-    a11y:
-      label: "Spent £320.50 of £350.00 budget"
-      role: text
-    test_context:
-      tag: food_dining_amounts
-      assert_text: "£320.50 / £350.00"
-
-  - type: box
-    id: food_dining_progress_track
-    label: "Food and Dining progress track"
-    content: ""
-    style:
-      background: "#E1E4D5"
-      border_radius: 4
-      height: 8
-      width: full
-    on_click:
-      action: dismiss
-      target: ""
-    a11y:
-      label: "Food and Dining budget progress: 92%"
-      role: progressbar
-    test_context:
-      tag: food_dining_progress_track
-
-  - type: box
-    id: food_dining_progress_fill
-    label: "Food and Dining progress fill"
-    content: ""
-    style:
-      background: "#BA1A1A"
-      border_radius: 4
-      height: 8
-      width: "92%"
-    on_click:
-      action: dismiss
-      target: ""
-    a11y:
-      label: ""
-      role: none
-    test_context:
-      tag: food_dining_progress_fill
-
-  - type: box
-    id: budget_transport
-    label: "Transport budget"
-    content: "Transport budget"
-    style:
-      background: "#FFFFFF"
-      border_radius: 16
-      elevation: 1
-      padding_horizontal: 16
-      padding_vertical: 14
-      margin_horizontal: 20
-      margin_bottom: 10
-      border_color: "#F9FAEF"
-      border_width: 1
-    on_click:
-      action: edit_budget
-      target: ""
-    a11y:
-      label: "Transport budget. Spent £125.00 of £200.00 budget. 63% used."
-      role: button
-    keyboard:
-      focusable: true
-    api:
-      endpoint_id: obp_personal_data_fields
-      binding: "budgets[transport]"
-    component_states:
-      loading:
-        type: skeleton  # fix REG-001: shimmer → skeleton (registered)
-        count: 1
-        description: "shimmer matching budget progress card"
-      error:
-        type: banner  # fix REG-001: inline-error → banner (registered)
-        message: "Budget data unavailable."
-        retry: true
-      empty:
-        type: box  # fix REG-001: inline-empty → box (registered)
-        message: "No budget set for Transport. Tap to set one."
-        icon: add_circle_outline
-    test_context:
-      tag: budget_transport
-
-  - type: stack
-    id: transport_header
-    label: "Transport header"
-    style:
-      orientation: horizontal
-      justify: space_between
-      align: center
-      padding_bottom: 8
-    on_click:
-      action: edit_budget
-      target: transport
-    a11y:
-      label: ""
-      role: row
-    test_context:
-      tag: transport_header
-
-  - type: text
-    id: transport_category
-    label: "Transport"
-    content: "Transport"
-    style:
-      typography: "Outfit/body_medium"
-      color: "#1A1C16"
-      font_weight: semibold
-    a11y:
-      label: "Category: Transport"
-      role: text
-    test_context:
-      tag: transport_category
-      assert_text: "Transport"
-
-  - type: text
-    id: transport_amounts
-    label: "£125.00 / £200.00"
-    content: "£125.00 / £200.00"
-    style:
-      typography: "Outfit/body_medium"
-      color: "#44483D"
-    a11y:
-      label: "Spent £125.00 of £200.00 budget"
-      role: text
-    test_context:
-      tag: transport_amounts
-      assert_text: "£125.00 / £200.00"
-
-  - type: box
-    id: transport_progress_track
-    label: "Transport progress track"
-    content: ""
-    style:
-      background: "#E1E4D5"
-      border_radius: 4
-      height: 8
-      width: full
-    on_click:
-      action: dismiss
-      target: ""
-    a11y:
-      label: "Transport budget progress: 63%"
-      role: progressbar
-    test_context:
-      tag: transport_progress_track
-
-  - type: box
-    id: transport_progress_fill
-    label: "Transport progress fill"
-    content: ""
-    style:
-      background: "#E8A317"
-      border_radius: 4
-      height: 8
-      width: "63%"
-    on_click:
-      action: dismiss
-      target: ""
-    a11y:
-      label: ""
-      role: none
-    test_context:
-      tag: transport_progress_fill
-
-  - type: box
-    id: budget_shopping
-    label: "Shopping budget"
-    content: "Shopping budget"
-    style:
-      background: "#FFFFFF"
-      border_radius: 16
-      elevation: 1
-      padding_horizontal: 16
-      padding_vertical: 14
-      margin_horizontal: 20
-      margin_bottom: 10
-      border_color: "#F9FAEF"
-      border_width: 1
-    on_click:
-      action: edit_budget
-      target: ""
-    a11y:
-      label: "Shopping budget. Spent £89.30 of £150.00 budget. 60% used."
-      role: button
-    keyboard:
-      focusable: true
-    api:
-      endpoint_id: obp_personal_data_fields
-      binding: "budgets[shopping]"
-    component_states:
-      loading:
-        type: skeleton  # fix REG-001: shimmer → skeleton (registered)
-        count: 1
-        description: "shimmer matching budget progress card"
-      error:
-        type: banner  # fix REG-001: inline-error → banner (registered)
-        message: "Budget data unavailable."
-        retry: true
-      empty:
-        type: box  # fix REG-001: inline-empty → box (registered)
-        message: "No budget set for Shopping. Tap to set one."
-        icon: add_circle_outline
-    test_context:
-      tag: budget_shopping
-
-  - type: stack
-    id: shopping_header
-    label: "Shopping header"
-    style:
-      orientation: horizontal
-      justify: space_between
-      align: center
-      padding_bottom: 8
-    on_click:
-      action: edit_budget
-      target: shopping
-    a11y:
-      label: ""
-      role: row
-    test_context:
-      tag: shopping_header
-
-  - type: text
-    id: shopping_category
-    label: "Shopping"
-    content: "Shopping"
-    style:
-      typography: "Outfit/body_medium"
-      color: "#1A1C16"
-      font_weight: semibold
-    a11y:
-      label: "Category: Shopping"
-      role: text
-    test_context:
-      tag: shopping_category
-      assert_text: "Shopping"
-
-  - type: text
-    id: shopping_amounts
-    label: "£89.30 / £150.00"
-    content: "£89.30 / £150.00"
-    style:
-      typography: "Outfit/body_medium"
-      color: "#44483D"
-    a11y:
-      label: "Spent £89.30 of £150.00 budget"
-      role: text
-    test_context:
-      tag: shopping_amounts
-      assert_text: "£89.30 / £150.00"
-
-  - type: box
-    id: shopping_progress_track
-    label: "Shopping progress track"
-    content: ""
-    style:
-      background: "#E1E4D5"
-      border_radius: 4
-      height: 8
-      width: full
-    on_click:
-      action: dismiss
-      target: ""
-    a11y:
-      label: "Shopping budget progress: 60%"
-      role: progressbar
-    test_context:
-      tag: shopping_progress_track
-
-  - type: box
-    id: shopping_progress_fill
-    label: "Shopping progress fill"
-    content: ""
-    style:
-      background: "#4C662B"
-      border_radius: 4
-      height: 8
-      width: "60%"
-    on_click:
-      action: dismiss
-      target: ""
-    a11y:
-      label: ""
-      role: none
-    test_context:
-      tag: shopping_progress_fill
-
-  - type: box
-    id: budget_bills
-    label: "Bills budget"
-    content: "Bills budget"
-    style:
-      background: "#FFFFFF"
-      border_radius: 16
-      elevation: 1
-      padding_horizontal: 16
-      padding_vertical: 14
-      margin_horizontal: 20
-      margin_bottom: 10
-      border_color: "#F9FAEF"
-      border_width: 1
-    on_click:
-      action: edit_budget
-      target: ""
-    a11y:
-      label: "Bills budget. Spent £450.00 of £500.00 budget. 90% used. Near limit."
-      role: button
-    keyboard:
-      focusable: true
-    api:
-      endpoint_id: obp_personal_data_fields
-      binding: "budgets[bills]"
-    component_states:
-      loading:
-        type: skeleton  # fix REG-001: shimmer → skeleton (registered)
-        count: 1
-        description: "shimmer matching budget progress card"
-      error:
-        type: banner  # fix REG-001: inline-error → banner (registered)
-        message: "Budget data unavailable."
-        retry: true
-      empty:
-        type: box  # fix REG-001: inline-empty → box (registered)
-        message: "No budget set for Bills. Tap to set one."
-        icon: add_circle_outline
-    test_context:
-      tag: budget_bills
-
-  - type: stack
-    id: bills_header
-    label: "Bills header"
-    style:
-      orientation: horizontal
-      justify: space_between
-      align: center
-      padding_bottom: 8
-    on_click:
-      action: edit_budget
-      target: bills
-    a11y:
-      label: ""
-      role: row
-    test_context:
-      tag: bills_header
-
-  - type: text
-    id: bills_category
-    label: "Bills"
-    content: "Bills"
-    style:
-      typography: "Outfit/body_medium"
-      color: "#1A1C16"
-      font_weight: semibold
-    a11y:
-      label: "Category: Bills"
-      role: text
-    test_context:
-      tag: bills_category
-      assert_text: "Bills"
-
-  - type: text
-    id: bills_amounts
-    label: "£450.00 / £500.00"
-    content: "£450.00 / £500.00"
-    style:
-      typography: "Outfit/body_medium"
-      color: "#BA1A1A"
-      font_weight: semibold
-    a11y:
-      label: "Spent £450.00 of £500.00 budget"
-      role: text
-    test_context:
-      tag: bills_amounts
-      assert_text: "£450.00 / £500.00"
-
-  - type: box
-    id: bills_progress_track
-    label: "Bills progress track"
-    content: ""
-    style:
-      background: "#E1E4D5"
-      border_radius: 4
-      height: 8
-      width: full
-    on_click:
-      action: dismiss
-      target: ""
-    a11y:
-      label: "Bills budget progress: 90%"
-      role: progressbar
-    test_context:
-      tag: bills_progress_track
-
-  - type: box
-    id: bills_progress_fill
-    label: "Bills progress fill"
-    content: ""
-    style:
-      background: "#BA1A1A"
-      border_radius: 4
-      height: 8
-      width: "90%"
-    on_click:
-      action: dismiss
-      target: ""
-    a11y:
-      label: ""
-      role: none
-    test_context:
-      tag: bills_progress_fill
-
-  - type: box
-    id: budget_entertainment
-    label: "Entertainment budget"
-    content: "Entertainment budget"
-    style:
-      background: "#FFFFFF"
-      border_radius: 16
-      elevation: 1
-      padding_horizontal: 16
-      padding_vertical: 14
-      margin_horizontal: 20
-      margin_bottom: 10
-      border_color: "#F9FAEF"
-      border_width: 1
-    on_click:
-      action: edit_budget
-      target: ""
-    a11y:
-      label: "Entertainment budget. Spent £45.00 of £100.00 budget. 45% used."
-      role: button
-    keyboard:
-      focusable: true
-    api:
-      endpoint_id: obp_personal_data_fields
-      binding: "budgets[entertainment]"
-    component_states:
-      loading:
-        type: skeleton  # fix REG-001: shimmer → skeleton (registered)
-        count: 1
-        description: "shimmer matching budget progress card"
-      error:
-        type: banner  # fix REG-001: inline-error → banner (registered)
-        message: "Budget data unavailable."
-        retry: true
-      empty:
-        type: box  # fix REG-001: inline-empty → box (registered)
-        message: "No budget set for Entertainment. Tap to set one."
-        icon: add_circle_outline
-    test_context:
-      tag: budget_entertainment
-
-  - type: stack
-    id: entertainment_header
-    label: "Entertainment header"
-    style:
-      orientation: horizontal
-      justify: space_between
-      align: center
-      padding_bottom: 8
-    on_click:
-      action: edit_budget
-      target: entertainment
-    a11y:
-      label: ""
-      role: row
-    test_context:
-      tag: entertainment_header
-
-  - type: text
-    id: entertainment_category
-    label: "Entertainment"
-    content: "Entertainment"
-    style:
-      typography: "Outfit/body_medium"
-      color: "#1A1C16"
-      font_weight: semibold
-    a11y:
-      label: "Category: Entertainment"
-      role: text
-    test_context:
-      tag: entertainment_category
-      assert_text: "Entertainment"
-
-  - type: text
-    id: entertainment_amounts
-    label: "£45.00 / £100.00"
-    content: "£45.00 / £100.00"
-    style:
-      typography: "Outfit/body_medium"
-      color: "#44483D"
-    a11y:
-      label: "Spent £45.00 of £100.00 budget"
-      role: text
-    test_context:
-      tag: entertainment_amounts
-      assert_text: "£45.00 / £100.00"
-
-  - type: box
-    id: entertainment_progress_track
-    label: "Entertainment progress track"
-    content: ""
-    style:
-      background: "#E1E4D5"
-      border_radius: 4
-      height: 8
-      width: full
-    on_click:
-      action: dismiss
-      target: ""
-    a11y:
-      label: "Entertainment budget progress: 45%"
-      role: progressbar
-    test_context:
-      tag: entertainment_progress_track
-
-  - type: box
-    id: entertainment_progress_fill
-    label: "Entertainment progress fill"
-    content: ""
-    style:
-      background: "#4C662B"
-      border_radius: 4
-      height: 8
-      width: "45%"
-    on_click:
-      action: dismiss
-      target: ""
-    a11y:
-      label: ""
-      role: none
-    test_context:
-      tag: entertainment_progress_fill
-
-  - type: button
-    id: manage_budgets_button
-    label: "Manage Budgets"
-    supported_states: [idle, hover, focus_visible, pressed, disabled]
-    style:
-      variant: outlined
-      border_color: "#4C662B"
-      text_color: "#4C662B"
-      border_radius: 12
-      padding_horizontal: 24
-      padding_vertical: 14
-      typography: "Outfit/label_large"
-      align_self: center
-      margin_horizontal: 20
-      margin_top: 8
-      margin_bottom: 24
-    on_click:
-      action: manage_budgets
-      target: ""
-    a11y:
-      label: "Manage your spending budgets"
-      role: button
-    keyboard:
-      focusable: true
-    test_context:
-      tag: manage_budgets_button
-      assert_text: "Manage Budgets"
-
-  # ── Top merchants ────────────────────────────────────────────────────────────
-  - type: text
-    id: merchants_section_label
-    label: "Top Merchants"
-    content: "Top Merchants"
-    style:
-      typography: "Outfit/title_medium"
-      color: "#1A1C16"
-      font_weight: semibold
-      padding_horizontal: 20
-      padding_top: 4
-      padding_bottom: 12
-    a11y:
-      label: "Top merchants section"
-      role: heading
-      level: 2
-    test_context:
-      tag: merchants_section_label
-      assert_text: "Top Merchants"
-
-  - type: box
-    id: merchants_card
-    label: "Top merchants card"
-    content: "Top merchants card"
-    style:
-      background: "#FFFFFF"
-      border_radius: 20
-      elevation: 2
-      padding_horizontal: 16
-      padding_vertical: 8
-      margin_horizontal: 20
-      margin_bottom: 24
-      border_color: "#F9FAEF"
-      border_width: 1
-    on_click:
-      action: navigate
-      target: transactions
-    a11y:
-      label: "Top merchants by spending this month"
-      role: region
-    api:
-      endpoint_id: obp_transactions_list
-      binding: topMerchants
-    component_states:
-      loading:
-        type: skeleton  # fix REG-001: shimmer → skeleton (registered)
-        count: 4
-        description: "shimmer rows matching 4 merchant list items"
-      error:
-        type: banner  # fix REG-001: inline-error → banner (registered)
-        message: "Could not load merchant data. Please try again."
-        retry: true
-      empty:
-        type: box  # fix REG-001: inline-empty → box (registered)
-        message: "No top merchants for this period. Make some purchases to see your spending patterns!"
-        icon: storefront
-    test_context:
-      tag: merchants_card
-
-  - type: list_item
-    id: merchant_row_tesco
-    label: "Tesco"
-    style:
-      padding_horizontal: 4
-      padding_vertical: 12
-      divider: bottom
-      leading_icon: storefront
-      leading_icon_color: "#4C662B"
-      leading_icon_background: "#CDEDA3"
-      leading_icon_size: 40
-    on_click:
-      action: view_merchant_transactions
-      target: transactions
-    a11y:
-      label: "Tesco: £142.30 across 8 transactions. Tap to view."
-      role: button
-    keyboard:
-      focusable: true
-    test_context:
-      tag: merchant_row_tesco
-
-  - type: text
-    id: merchant_name_tesco
-    label: "Tesco"
-    content: "Tesco"
-    style:
-      typography: "Outfit/body_medium"
-      color: "#1A1C16"
-      font_weight: semibold
-    a11y:
-      label: "Merchant: Tesco"
-      role: text
-    test_context:
-      tag: merchant_name_tesco
-      assert_text: "Tesco"
-
-  - type: text
-    id: merchant_meta_tesco
-    label: "8 transactions"
-    content: "8 transactions"
-    style:
-      typography: "Outfit/label_small"
-      color: "#44483D"
-    a11y:
-      label: "8 transactions at Tesco"
-      role: text
-    test_context:
-      tag: merchant_meta_tesco
-      assert_text: "8 transactions"
-
-  - type: text
-    id: merchant_amount_tesco
-    label: "£142.30"
-    content: "£142.30"
-    style:
-      typography: "Outfit/body_medium"
-      color: "#BA1A1A"
-      font_weight: semibold
-    a11y:
-      label: "One hundred forty-two pounds thirty pence"
-      role: text
-    test_context:
-      tag: merchant_amount_tesco
-      assert_text: "£142.30"
-
-  - type: list_item
-    id: merchant_row_netflix
-    label: "Netflix"
-    style:
-      padding_horizontal: 4
-      padding_vertical: 12
-      divider: bottom
-      leading_icon: play_circle
-      leading_icon_color: "#BA1A1A"
-      leading_icon_background: "#CDEDA3"
-      leading_icon_size: 40
-    on_click:
-      action: view_merchant_transactions
-      target: transactions
-    a11y:
-      label: "Netflix: £17.99 across 1 transaction. Tap to view."
-      role: button
-    keyboard:
-      focusable: true
-    test_context:
-      tag: merchant_row_netflix
-
-  - type: text
-    id: merchant_name_netflix
-    label: "Netflix"
-    content: "Netflix"
-    style:
-      typography: "Outfit/body_medium"
-      color: "#1A1C16"
-      font_weight: semibold
-    a11y:
-      label: "Merchant: Netflix"
-      role: text
-    test_context:
-      tag: merchant_name_netflix
-      assert_text: "Netflix"
-
-  - type: text
-    id: merchant_meta_netflix
-    label: "1 transaction"
-    content: "1 transaction"
-    style:
-      typography: "Outfit/label_small"
-      color: "#44483D"
-    a11y:
-      label: "1 transaction at Netflix"
-      role: text
-    test_context:
-      tag: merchant_meta_netflix
-      assert_text: "1 transaction"
-
-  - type: text
-    id: merchant_amount_netflix
-    label: "£17.99"
-    content: "£17.99"
-    style:
-      typography: "Outfit/body_medium"
-      color: "#BA1A1A"
-      font_weight: semibold
-    a11y:
-      label: "Seventeen pounds ninety-nine pence"
-      role: text
-    test_context:
-      tag: merchant_amount_netflix
-      assert_text: "£17.99"
-
-  - type: list_item
-    id: merchant_row_spotify
-    label: "Spotify"
-    style:
-      padding_horizontal: 4
-      padding_vertical: 12
-      divider: bottom
-      leading_icon: music_note
-      leading_icon_color: "#4C662B"
-      leading_icon_background: "#CDEDA3"
-      leading_icon_size: 40
-    on_click:
-      action: view_merchant_transactions
-      target: transactions
-    a11y:
-      label: "Spotify: £11.99 across 1 transaction. Tap to view."
-      role: button
-    keyboard:
-      focusable: true
-    test_context:
-      tag: merchant_row_spotify
-
-  - type: text
-    id: merchant_name_spotify
-    label: "Spotify"
-    content: "Spotify"
-    style:
-      typography: "Outfit/body_medium"
-      color: "#1A1C16"
-      font_weight: semibold
-    a11y:
-      label: "Merchant: Spotify"
-      role: text
-    test_context:
-      tag: merchant_name_spotify
-      assert_text: "Spotify"
-
-  - type: text
-    id: merchant_meta_spotify
-    label: "1 transaction"
-    content: "1 transaction"
-    style:
-      typography: "Outfit/label_small"
-      color: "#44483D"
-    a11y:
-      label: "1 transaction at Spotify"
-      role: text
-    test_context:
-      tag: merchant_meta_spotify
-      assert_text: "1 transaction"
-
-  - type: text
-    id: merchant_amount_spotify
-    label: "£11.99"
-    content: "£11.99"
-    style:
-      typography: "Outfit/body_medium"
-      color: "#BA1A1A"
-      font_weight: semibold
-    a11y:
-      label: "Eleven pounds ninety-nine pence"
-      role: text
-    test_context:
-      tag: merchant_amount_spotify
-      assert_text: "£11.99"
-
-  - type: list_item
-    id: merchant_row_tfl
-    label: "Transport for London"
-    style:
-      padding_horizontal: 4
-      padding_vertical: 12
-      divider: none
-      leading_icon: directions_subway
-      leading_icon_color: "#386663"
-      leading_icon_background: "#DCE7C8"
-      leading_icon_size: 40
-    on_click:
-      action: view_merchant_transactions
-      target: transactions
-    a11y:
-      label: "Transport for London: £78.50 across 23 transactions. Tap to view."
-      role: button
-    keyboard:
-      focusable: true
-    test_context:
-      tag: merchant_row_tfl
-
-  - type: text
-    id: merchant_name_tfl
-    label: "Transport for London"
-    content: "Transport for London"
-    style:
-      typography: "Outfit/body_medium"
-      color: "#1A1C16"
-      font_weight: semibold
-    a11y:
-      label: "Merchant: Transport for London"
-      role: text
-    test_context:
-      tag: merchant_name_tfl
-      assert_text: "Transport for London"
-
-  - type: text
-    id: merchant_meta_tfl
-    label: "23 transactions"
-    content: "23 transactions"
-    style:
-      typography: "Outfit/label_small"
-      color: "#44483D"
-    a11y:
-      label: "23 transactions with Transport for London"
-      role: text
-    test_context:
-      tag: merchant_meta_tfl
-      assert_text: "23 transactions"
-
-  - type: text
-    id: merchant_amount_tfl
-    label: "£78.50"
-    content: "£78.50"
-    style:
-      typography: "Outfit/body_medium"
-      color: "#BA1A1A"
-      font_weight: semibold
-    a11y:
-      label: "Seventy-eight pounds fifty pence"
-      role: text
-    test_context:
-      tag: merchant_amount_tfl
-      assert_text: "£78.50"
-
-  - type: button
-    id: view_all_transactions_button
-    label: "View All Transactions"
-    supported_states: [idle, hover, focus_visible, pressed, disabled]
-    style:
-      variant: text
-      text_color: "#4C662B"
-      typography: "Outfit/label_large"
-      align_self: center
-      padding_vertical: 12
-      margin_bottom: 32
-    on_click:
-      action: navigate_to_transactions
-      target: transactions
-    a11y:
-      label: "View all transactions"
-      role: button
-    keyboard:
-      focusable: true
-    test_context:
-      tag: view_all_transactions_button
-      assert_text: "View All Transactions"
-
-  # ── no_budget_set banner ─────────────────────────────────────────────────────
+  # ── no-budget banner (PfmBudgetOverview when overallBudget == null) ──────────
+  # Mutually exclusive with overall_budget_card. Tappable → BudgetEditDialog (overall).
   - type: box
     id: no_budget_set_banner
     label: "No budget set banner"
-    content: "No budget set banner"
+    content: "No budget set"
     style:
-      background: "#CDEDA3"
+      background: "#F9FAEF"
       border_radius: 16
       elevation: 0
-      padding_horizontal: 20
+      border_color: "#C5C8BA"
+      border_width: 1
+      padding_horizontal: 16
       padding_vertical: 16
       margin_horizontal: 20
       margin_bottom: 16
-      border_color: "#E8A317"
-      border_width: 1
     on_click:
-      action: manage_budgets
-      target: ""
+      action: edit_overall_budget
+      target: budget_edit_dialog
     a11y:
-      label: "You have not set a monthly budget yet. Tap to set one now."
+      label: "No monthly budget set. Tap to set one."
       role: button
     keyboard:
       focusable: true
     test_context:
-      tag: no_budget_set_banner
+      tag: pfm_no_budget_banner
 
   - type: text
     id: no_budget_banner_title
@@ -2144,7 +621,7 @@ components:
     content: "No budget set"
     style:
       typography: "Outfit/title_small"
-      color: "#44483D"  # fix A11Y-002: was #E8A317 (≤2.17:1, FAIL); #44483D ≥7.25:1 PASS
+      color: "#1A1C16"
       font_weight: semibold
       padding_bottom: 4
     a11y:
@@ -2156,42 +633,346 @@ components:
 
   - type: text
     id: no_budget_banner_body
-    label: "Set a monthly budget to track how much you spend against your target."
-    content: "Set a monthly budget to track how much you spend against your target."
+    label: "Set a monthly budget to track how much you spend against your target. Tap to set one."
+    content: "Set a monthly budget to track how much you spend against your target. Tap to set one."
     style:
       typography: "Outfit/body_small"
-      color: "#44483D"  # fix A11Y-002: was #E8A317 (≤2.17:1, FAIL); #44483D ≥7.25:1 PASS
+      color: "#44483D"
     a11y:
-      label: "Set a monthly budget to track how much you spend against your target."
+      label: "Set a monthly budget to track how much you spend against your target. Tap to set one."
       role: text
     test_context:
       tag: no_budget_banner_body
 
-  - type: button
-    id: set_budget_cta_button
-    label: "Set Budget Now"
-    supported_states: [idle, hover, focus_visible, pressed, disabled]
+  # ── Spending by Category (PfmCategorySection — donut + dynamic legend) ───────
+  # Canvas donut (centre shows total spent + "spent"; % lives ON the donut arcs, NOT in
+  # the legend rows). Legend rows are DYNAMIC — one per category returned by analyze()
+  # over the PERSONAL_TAXONOMY; each row is colour-dot + label + amount (no per-row %).
+  # The fixed Food/Transport/Shopping/Bills/Entertainment rows from the old demo are gone.
+  - type: text
+    id: category_section_label
+    label: "Spending by Category"
+    content: "Spending by Category"
     style:
-      variant: filled
-      background: "#4C662B"
-      text_color: "#FFFFFF"
-      border_radius: 12
-      padding_horizontal: 24
-      padding_vertical: 14
-      typography: "Outfit/label_large"
-      align_self: center
-      margin_top: 12
-    on_click:
-      action: manage_budgets
-      target: ""
+      typography: "Outfit/title_medium"
+      color: "#1A1C16"
+      font_weight: semibold
+      padding_horizontal: 20
+      padding_bottom: 10
     a11y:
-      label: "Set your monthly spending budget now"
+      label: "Spending by Category"
+      role: heading
+    test_context:
+      tag: category_section_label
+      assert_text: "Spending by Category"
+
+  - type: box
+    id: category_card
+    label: "Category breakdown card"
+    content: "Category breakdown"
+    style:
+      background: "#F9FAEF"
+      border_radius: 16
+      elevation: 0
+      border_color: "#C5C8BA"
+      border_width: 1
+      padding_horizontal: 16
+      padding_vertical: 16
+      margin_horizontal: 20
+      margin_bottom: 16
+    a11y:
+      label: "Spending breakdown by category"
+      role: region
+    test_context:
+      tag: category_card
+
+  - type: chart
+    id: category_donut_chart
+    label: "Spending donut chart (dynamic)"
+    content: "Spending by category donut"
+    style:
+      variant: donut
+      size: 140
+      stroke_width: 28
+      center_label_source: total_spent
+      center_caption: "spent"
+      percent_on_arcs: true
+    a11y:
+      label: "Donut chart of spending by category. Percentages shown on the chart segments."
+      role: image
+    test_context:
+      tag: pfm_donut_chart
+
+  - type: list
+    id: category_legend_list
+    label: "Category legend (dynamic, one row per category)"
+    content: "Category legend"
+    style:
+      orientation: vertical
+      spacing: 4
+      item_template: category_legend_row
+    bind:
+      source: categories
+      key: id
+    a11y:
+      label: "Category legend — colour, name and amount per category"
+      role: list
+    test_context:
+      tag: category_legend_list
+
+  - type: list_item
+    id: category_legend_row
+    label: "Category legend row (template, dynamic)"
+    content: "{category.label} {category.amount}"
+    style:
+      orientation: horizontal
+      spacing: 8
+      padding_vertical: 4
+    a11y:
+      label: "{category.label}: {category.amount}"
+      role: listitem
+    test_context:
+      tag: pfm_category_row
+
+  # ── Budget Progress (PfmBudgetRowsSection — dynamic per-category rows) ───────
+  # One row per budget category from analyze(); tap any row → BudgetEditDialog for that
+  # category. Each row: label + ("{spent} / {limit}" when a limit is set, else
+  # "{spent} · Set budget") + progress bar (70% tertiary / 90%+ error). No fixed rows,
+  # no separate "Manage Budgets" button — editing happens per-row + via the overall card.
+  - type: text
+    id: budgets_section_label
+    label: "Budget Progress"
+    content: "Budget Progress"
+    style:
+      typography: "Outfit/title_medium"
+      color: "#1A1C16"
+      font_weight: semibold
+      padding_horizontal: 20
+      padding_bottom: 10
+    a11y:
+      label: "Budget Progress"
+      role: heading
+    test_context:
+      tag: budgets_section_label
+      assert_text: "Budget Progress"
+
+  - type: box
+    id: budget_rows_card
+    label: "Budget progress card"
+    content: "Budget progress"
+    style:
+      background: "#F9FAEF"
+      border_radius: 16
+      elevation: 0
+      border_color: "#C5C8BA"
+      border_width: 1
+      padding_horizontal: 16
+      padding_vertical: 6
+      margin_horizontal: 20
+      margin_bottom: 16
+    a11y:
+      label: "Per-category budget progress"
+      role: region
+    test_context:
+      tag: budget_rows_card
+
+  - type: list
+    id: budget_rows_list
+    label: "Budget rows (dynamic, one row per category)"
+    content: "Budget rows"
+    style:
+      orientation: vertical
+      divider: true
+      divider_color: "#C5C8BA"
+      item_template: budget_progress_row
+    bind:
+      source: budgetRows
+      key: categoryId
+    a11y:
+      label: "Budget progress rows"
+      role: list
+    test_context:
+      tag: budget_rows_list
+
+  - type: list_item
+    id: budget_progress_row
+    label: "Budget progress row (template, dynamic)"
+    content: "{row.label} {row.spent} / {row.limit}"
+    style:
+      orientation: vertical
+      padding_vertical: 10
+    on_click:
+      action: edit_category_budget
+      target: budget_edit_dialog
+    a11y:
+      label: "{row.label} budget. Tap to set or change the limit."
       role: button
     keyboard:
       focusable: true
     test_context:
-      tag: set_budget_cta_button
-      assert_text: "Set Budget Now"
+      tag: pfm_budget_row
+
+  # ── Top Merchants (PfmMerchantsSection — dynamic top 5 by debit total) ───────
+  # One row per merchant from analyze() (top 5 by debit total). Each row: initial-letter
+  # avatar + merchant name + ("1 transaction"/"N transactions") + negated amount (error
+  # colour). Tap any row → View All Transactions for the navBankId/navAccountId scope.
+  # Counterparty names follow the workspace counterparty rule (never the login username).
+  # The fixed Tesco/Netflix/Spotify/TfL rows from the old demo are gone.
+  - type: text
+    id: merchants_section_label
+    label: "Top Merchants"
+    content: "Top Merchants"
+    style:
+      typography: "Outfit/title_medium"
+      color: "#1A1C16"
+      font_weight: semibold
+      padding_horizontal: 20
+      padding_bottom: 10
+    a11y:
+      label: "Top Merchants"
+      role: heading
+    test_context:
+      tag: merchants_section_label
+      assert_text: "Top Merchants"
+
+  - type: box
+    id: merchants_card
+    label: "Top merchants card"
+    content: "Top merchants"
+    style:
+      background: "#F9FAEF"
+      border_radius: 16
+      elevation: 0
+      border_color: "#C5C8BA"
+      border_width: 1
+      padding_horizontal: 16
+      padding_vertical: 6
+      margin_horizontal: 20
+      margin_bottom: 8
+    a11y:
+      label: "Top merchants by spending"
+      role: region
+    test_context:
+      tag: pfm_merchants_card
+
+  - type: list
+    id: merchants_list
+    label: "Merchant rows (dynamic, top 5)"
+    content: "Merchant rows"
+    style:
+      orientation: vertical
+      divider: true
+      divider_color: "#C5C8BA"
+      item_template: merchant_row
+    bind:
+      source: topMerchants
+      key: name
+    a11y:
+      label: "Top merchant rows"
+      role: list
+    test_context:
+      tag: merchants_list
+
+  - type: list_item
+    id: merchant_row
+    label: "Merchant row (template, dynamic)"
+    content: "{merchant.name} {merchant.amount}"
+    style:
+      orientation: horizontal
+      spacing: 12
+      padding_vertical: 10
+      avatar: initial_letter
+    on_click:
+      action: view_merchant_transactions
+      target: transactions
+    a11y:
+      label: "{merchant.name}: {merchant.amount} across {merchant.count} transactions. Tap to view."
+      role: button
+    keyboard:
+      focusable: true
+    test_context:
+      tag: pfm_merchant_row
+
+  # ── View All Transactions (TextButton → TransactionsRoute for current scope) ─
+  - type: button
+    id: view_all_transactions_button
+    label: "View All Transactions"
+    content: "View All Transactions"
+    supported_states: [idle, hover, focus_visible, pressed]
+    style:
+      variant: text
+      text_color: "#4C662B"
+      typography: "Outfit/label_large"
+      align_self: center
+      padding_vertical: 12
+      margin_bottom: 32
+    on_click:
+      action: navigate_to_transactions
+      target: transactions
+    a11y:
+      label: "View all transactions for the current scope"
+      role: button
+    keyboard:
+      focusable: true
+    test_context:
+      tag: pfm_view_all_transactions
+      assert_text: "View All Transactions"
+
+  # ── No activity state (PfmNoActivity — shown when hasActivity == false) ──────
+  - type: box
+    id: no_activity_state
+    label: "No activity placeholder"
+    content: "No transaction history yet"
+    style:
+      align: center
+      padding_horizontal: 32
+      padding_vertical: 48
+    a11y:
+      label: "No transaction history yet for the selected period and scope."
+      role: status
+    test_context:
+      tag: no_activity_state
+
+  - type: icon
+    id: no_activity_icon
+    label: "Receipt icon"
+    content: receipt_long
+    style:
+      size: 48
+      color: "#75796C"
+    a11y:
+      label: "No transactions"
+      role: image
+    test_context:
+      tag: no_activity_icon
+
+  - type: text
+    id: no_activity_title
+    label: "No transaction history yet"
+    content: "No transaction history yet"
+    style:
+      typography: "Outfit/title_small"
+      color: "#1A1C16"
+      font_weight: semibold
+    a11y:
+      label: "No transaction history yet"
+      role: heading
+    test_context:
+      tag: no_activity_title
+      assert_text: "No transaction history yet"
+
+  - type: text
+    id: no_activity_body
+    label: "Your spending insights will appear once you have transactions in the selected period."
+    content: "Your spending insights will appear once you have transactions in the selected period."
+    style:
+      typography: "Outfit/body_small"
+      color: "#44483D"
+    a11y:
+      label: "Your spending insights will appear once you have transactions in the selected period."
+      role: text
+    test_context:
+      tag: no_activity_body
 
 responsive:
   mobile_only: false
@@ -2205,6 +986,13 @@ responsive:
     columns: 3
     content_max_width: 1200
 
+# States reconciled to the shipped ScreenState<PfmContent> contract on 2026-06-11. The
+# shipped screen has four top-level render states (loading / content / empty / error)
+# plus no_network + unauthenticated when the underlying ScreenState<T> surfaces them.
+# Within content, the overall budget block is either overall_budget_card OR
+# no_budget_set_banner (mutually exclusive). The category/budget/merchant rows are
+# DYNAMIC templates (one rendered row per analyze() result) — the visible_components
+# lists name the section anchors + row templates, not fixed per-category ids.
 states:
   initial_state: loading
   loading:
@@ -2214,6 +1002,7 @@ states:
     layout:
       visible_components:
         - pfm_title
+        - pfm_scope_chip
         - period_selector_row
         - period_chip_this_month
         - period_chip_last_month
@@ -2224,26 +1013,24 @@ states:
       skeleton_count: 5
       skeleton_height: 120
 
-  populated:
+  content:
     layout:
       visible_components:
         - pfm_title
+        - pfm_scope_chip
         - period_selector_row
         - period_chip_this_month
         - period_chip_last_month
         - period_chip_last_3_months
         - period_chip_custom
         - pfm_period_label
-        - this_month_summary_card
+        - pfm_summary_card
         - summary_section_label
         - summary_metrics_row
-        - spent_col
         - spent_label
         - spent_amount
-        - received_col
         - received_label
         - received_amount
-        - net_col
         - net_label
         - net_amount
         - overall_budget_card
@@ -2253,282 +1040,45 @@ states:
         - overall_budget_amounts_row
         - overall_budget_spent
         - overall_budget_remaining
-        - overall_budget_progress_track
-        - overall_budget_progress_fill
+        - overall_budget_progress
         - overall_budget_of_total
         - category_section_label
-        - category_pie_chart
-        - category_legend_col
-        - category_row_food
-        - category_dot_food
-        - category_name_food
-        - category_amount_food
-        - category_row_transport
-        - category_dot_transport
-        - category_name_transport
-        - category_amount_transport
-        - category_row_shopping
-        - category_dot_shopping
-        - category_name_shopping
-        - category_amount_shopping
-        - category_row_bills
-        - category_dot_bills
-        - category_name_bills
-        - category_amount_bills
-        - category_row_entertainment
-        - category_dot_entertainment
-        - category_name_entertainment
-        - category_amount_entertainment
+        - category_card
+        - category_donut_chart
+        - category_legend_list
+        - category_legend_row
         - budgets_section_label
-        - budget_food_dining
-        - food_dining_header
-        - food_dining_category
-        - food_dining_amounts
-        - food_dining_progress_track
-        - food_dining_progress_fill
-        - budget_transport
-        - transport_header
-        - transport_category
-        - transport_amounts
-        - transport_progress_track
-        - transport_progress_fill
-        - budget_shopping
-        - shopping_header
-        - shopping_category
-        - shopping_amounts
-        - shopping_progress_track
-        - shopping_progress_fill
-        - budget_bills
-        - bills_header
-        - bills_category
-        - bills_amounts
-        - bills_progress_track
-        - bills_progress_fill
-        - budget_entertainment
-        - entertainment_header
-        - entertainment_category
-        - entertainment_amounts
-        - entertainment_progress_track
-        - entertainment_progress_fill
-        - manage_budgets_button
+        - budget_rows_card
+        - budget_rows_list
+        - budget_progress_row
         - merchants_section_label
         - merchants_card
-        - merchant_row_tesco
-        - merchant_name_tesco
-        - merchant_meta_tesco
-        - merchant_amount_tesco
-        - merchant_row_netflix
-        - merchant_name_netflix
-        - merchant_meta_netflix
-        - merchant_amount_netflix
-        - merchant_row_spotify
-        - merchant_name_spotify
-        - merchant_meta_spotify
-        - merchant_amount_spotify
-        - merchant_row_tfl
-        - merchant_name_tfl
-        - merchant_meta_tfl
-        - merchant_amount_tfl
+        - merchants_list
+        - merchant_row
         - view_all_transactions_button
+    notes: "When overallBudget == null the overall_budget_card block is replaced by no_budget_set_banner + no_budget_banner_title + no_budget_banner_body (mutually exclusive). Category/budget/merchant rows are dynamic — the *_row template renders once per analyze() result."
 
   empty:
     layout:
       visible_components:
         - pfm_title
+        - pfm_scope_chip
         - period_selector_row
         - period_chip_this_month
         - period_chip_last_month
         - period_chip_last_3_months
         - period_chip_custom
         - pfm_period_label
-      show_empty_state: true
-      empty_state_icon: receipt_long
-      empty_state_title: "No transaction history yet"
-      empty_state_message: "Your spending insights will appear once you have transactions in the selected period."
-      empty_state_action_label: "View Accounts"
-      empty_state_action: navigate_to_accounts
-      empty_state_action_target: accounts
-
-  no_budget_set:
-    layout:
-      visible_components:
-        - pfm_title
-        - period_selector_row
-        - period_chip_this_month
-        - period_chip_last_month
-        - period_chip_last_3_months
-        - period_chip_custom
-        - pfm_period_label
-        - this_month_summary_card
-        - summary_section_label
-        - summary_metrics_row
-        - spent_col
-        - spent_label
-        - spent_amount
-        - received_col
-        - received_label
-        - received_amount
-        - net_col
-        - net_label
-        - net_amount
-        - category_section_label
-        - category_pie_chart
-        - category_legend_col
-        - category_row_food
-        - category_dot_food
-        - category_name_food
-        - category_amount_food
-        - category_row_transport
-        - category_dot_transport
-        - category_name_transport
-        - category_amount_transport
-        - category_row_shopping
-        - category_dot_shopping
-        - category_name_shopping
-        - category_amount_shopping
-        - category_row_bills
-        - category_dot_bills
-        - category_name_bills
-        - category_amount_bills
-        - category_row_entertainment
-        - category_dot_entertainment
-        - category_name_entertainment
-        - category_amount_entertainment
-        - no_budget_set_banner
-        - no_budget_banner_title
-        - no_budget_banner_body
-        - set_budget_cta_button
-        - merchants_section_label
-        - merchants_card
-        - merchant_row_tesco
-        - merchant_name_tesco
-        - merchant_meta_tesco
-        - merchant_amount_tesco
-        - merchant_row_netflix
-        - merchant_name_netflix
-        - merchant_meta_netflix
-        - merchant_amount_netflix
-        - merchant_row_spotify
-        - merchant_name_spotify
-        - merchant_meta_spotify
-        - merchant_amount_spotify
-        - merchant_row_tfl
-        - merchant_name_tfl
-        - merchant_meta_tfl
-        - merchant_amount_tfl
-        - view_all_transactions_button
-
-  content:
-    layout:
-      visible_components:
-        - pfm_title
-        - period_selector_row
-        - period_chip_this_month
-        - period_chip_last_month
-        - period_chip_last_3_months
-        - period_chip_custom
-        - pfm_period_label
-        - this_month_summary_card
-        - summary_section_label
-        - summary_metrics_row
-        - spent_col
-        - spent_label
-        - spent_amount
-        - received_col
-        - received_label
-        - received_amount
-        - net_col
-        - net_label
-        - net_amount
-        - overall_budget_card
-        - overall_budget_header_row
-        - overall_budget_title
-        - overall_budget_percent
-        - overall_budget_amounts_row
-        - overall_budget_spent
-        - overall_budget_remaining
-        - overall_budget_progress_track
-        - overall_budget_progress_fill
-        - overall_budget_of_total
-        - category_section_label
-        - category_pie_chart
-        - category_legend_col
-        - category_row_food
-        - category_dot_food
-        - category_name_food
-        - category_amount_food
-        - category_row_transport
-        - category_dot_transport
-        - category_name_transport
-        - category_amount_transport
-        - category_row_shopping
-        - category_dot_shopping
-        - category_name_shopping
-        - category_amount_shopping
-        - category_row_bills
-        - category_dot_bills
-        - category_name_bills
-        - category_amount_bills
-        - category_row_entertainment
-        - category_dot_entertainment
-        - category_name_entertainment
-        - category_amount_entertainment
-        - budgets_section_label
-        - budget_food_dining
-        - food_dining_header
-        - food_dining_category
-        - food_dining_amounts
-        - food_dining_progress_track
-        - food_dining_progress_fill
-        - budget_transport
-        - transport_header
-        - transport_category
-        - transport_amounts
-        - transport_progress_track
-        - transport_progress_fill
-        - budget_shopping
-        - shopping_header
-        - shopping_category
-        - shopping_amounts
-        - shopping_progress_track
-        - shopping_progress_fill
-        - budget_bills
-        - bills_header
-        - bills_category
-        - bills_amounts
-        - bills_progress_track
-        - bills_progress_fill
-        - budget_entertainment
-        - entertainment_header
-        - entertainment_category
-        - entertainment_amounts
-        - entertainment_progress_track
-        - entertainment_progress_fill
-        - manage_budgets_button
-        - merchants_section_label
-        - merchants_card
-        - merchant_row_tesco
-        - merchant_name_tesco
-        - merchant_meta_tesco
-        - merchant_amount_tesco
-        - merchant_row_netflix
-        - merchant_name_netflix
-        - merchant_meta_netflix
-        - merchant_amount_netflix
-        - merchant_row_spotify
-        - merchant_name_spotify
-        - merchant_meta_spotify
-        - merchant_amount_spotify
-        - merchant_row_tfl
-        - merchant_name_tfl
-        - merchant_meta_tfl
-        - merchant_amount_tfl
-        - view_all_transactions_button
+        - no_activity_state
+        - no_activity_icon
+        - no_activity_title
+        - no_activity_body
 
   error:
     layout:
       visible_components:
         - pfm_title
+        - pfm_scope_chip
         - period_selector_row
         - period_chip_this_month
         - period_chip_last_month
@@ -2540,77 +1090,114 @@ states:
       error_action_label: "Retry"
       error_action: retry_load
 
+  no_network:
+    layout:
+      show_error_state: true
+      error_message: "You're offline. Connect to the internet to load your spending insights."
+      error_action_label: "Retry"
+      error_action: retry_load
+    notes: "Surfaced by ScreenState<PfmContent> when the network is unavailable."
+
+  unauthenticated:
+    layout:
+      show_error_state: true
+      error_message: "Your session has expired. Sign in again to view your spending insights."
+      error_action_label: "Sign In"
+      error_action: navigate_to_login
+    notes: "Surfaced by ScreenState<PfmContent> when the DirectLogin token is missing or expired."
+
+# state_model reconciled to the shipped PfmDashboardViewModel on 2026-06-11. The public
+# surface is ScreenState<PfmContent> (Loading/Content/Empty/Error + NoNetwork/Unauthenticated
+# from the shared ScreenState<T>). Internally the VM holds a RawState (Loading/Failed/Loaded
+# over the fetched per-account transaction map) + a Selection (period / custom range /
+# account scope) and reprojects PfmContent client-side when the selection changes (no
+# refetch on scope change). A separate notice StateFlow<String?> carries transient banners
+# (FX-rate unavailable, budget-save failure).
 state_model:
   view_model: PfmDashboardViewModel
-  state_fields:
-    - name: totalSpent
-      type: "BigDecimal"
-      default: "BigDecimal.ZERO"
-    - name: totalReceived
-      type: "BigDecimal"
-      default: "BigDecimal.ZERO"
-    - name: categoryBreakdown
+  exposes: "ScreenState<PfmContent>"
+  content_type: PfmContent
+  content_fields:
+    - name: scopeLabel
+      type: String
+    - name: accountCount
+      type: Int
+    - name: currency
+      type: String
+    - name: selectedAccountId
+      type: "String?"
+    - name: accounts
+      type: "List<Account>"
+    - name: navBankId
+      type: String
+    - name: navAccountId
+      type: String
+    - name: period
+      type: PfmPeriod
+    - name: periodLabel
+      type: String
+    - name: hasActivity
+      type: Boolean
+    - name: summary
+      type: PfmSummary
+    - name: overallBudget
+      type: "OverallBudget?"
+    - name: categories
       type: "List<CategorySpend>"
-      default: "emptyList()"
-    - name: budgets
-      type: "List<BudgetEntry>"
-      default: "emptyList()"
-    - name: overallBudgetLimit
-      type: "BigDecimal?"
-      default: "null"
+    - name: budgetRows
+      type: "List<BudgetRow>"
     - name: topMerchants
       type: "List<MerchantSpend>"
-      default: "emptyList()"
-    - name: selectedPeriod
-      type: PfmPeriod
-      default: "PfmPeriod.THIS_MONTH"
-    - name: reportingPeriod
-      type: String
-      default: '""'
-    - name: uiState
-      type: PfmDashboardUiState
-      default: Loading
-    - name: error
-      type: "UiError?"
-      default: "null"
-  errors:
-    - field: global
-      code: LOAD_FAILED
-      message: "Unable to load spending insights. Please try again."
-    - field: budget_save
-      code: SAVE_FAILED
-      message: "Could not save budget. Please try again."
+  internal_state:
+    - name: raw
+      type: "RawState"
+      variants: [Loading, "Failed(error)", "Loaded(accountTxns)"]
+    - name: selection
+      type: Selection
+      fields: [period, "customStart: LocalDate?", "customEnd: LocalDate?", "accountId: String?"]
+    - name: notice
+      type: "StateFlow<String?>"
+      description: "Transient banner — FX-rate-unavailable + budget-save-error."
+  methods:
+    - "onPeriodSelected(period: PfmPeriod)"
+    - "onCustomRangeSelected(start: LocalDate, end: LocalDate)"
+    - "onAccountFilterSelected(accountId: String?)"
+    - "onSaveBudget(categoryId: String, amount: String)"
+    - "retry()"
   events:
-    - DataLoaded
-    - "BudgetEditClicked(categoryId: String)"
-    - ManageBudgetsClicked
-    - "ChartDetailClicked(categoryId: String?)"
+    - "ScopePickerOpened"
+    - "AccountFilterSelected(accountId: String?)"
     - "PeriodSelected(period: PfmPeriod)"
-    - "CategoryFilterClicked(categoryId: String)"
-    - "MerchantClicked(merchantName: String)"
+    - "CustomRangeSelected(start, end)"
+    - "BudgetSaved(categoryId, amount)"
+    - "BudgetEditOpened(categoryId: String)"
+    - "MerchantClicked"
+    - "ViewAllTransactionsClicked"
     - RetryLoad
-    - NavigateToTransactions
-    - NavigateToAccounts
   actions:
-    - edit_budget
-    - manage_budgets
-    - open_chart_detail
-    - open_pfm_settings
+    - open_scope_picker
     - select_period
     - open_custom_date_picker
-    - filter_by_category
+    - edit_overall_budget
+    - edit_category_budget
     - view_merchant_transactions
     - navigate_to_transactions
-    - navigate_to_accounts
+    - open_pfm_settings
+    - navigate_back
+    - retry_load
+  budget_meter_rule: "OverallBudget.spent/percent EXCLUDE own-account transfers and uncategorised ('other') debits; ATM cash withdrawals still count. The Spent/Received summary and category donut show ALL debits."
   di:
-    - PersonalDataFieldsRepository
+    - BudgetsRepository
+    - PfmAccountsService
+    - FxConverter
     - TransactionsRepository
+    - AccountsRepository
 
 api:
   - id: obp_personal_data_fields
     endpoint: "GET /obp/v6.0.0/my/personal-data-fields"
     tag: User
-    description: "Read PFM budgets stored as personal data fields (convention: pfm_budget_<categoryId>)"
+    description: "Read PFM budgets stored as personal data fields (convention: pfm_budget_<categoryId>; base currency as pfm_base_currency). BudgetsRepository reads the NEWEST row per name (append-only, newest-wins)."
     response:
       fields:
         - name: personal_data_fields
@@ -2627,7 +1214,7 @@ api:
   - id: obp_personal_data_field_create
     endpoint: "POST /obp/v6.0.0/my/personal-data-fields"
     tag: User
-    description: "Create/update budget entry"
+    description: "Append a budget/base-currency entry (POST appends per UserAttributeJsonV510 — not an upsert; reads pick the newest row)."
     request:
       fields:
         - name: name
@@ -2650,7 +1237,7 @@ api:
   - id: obp_transactions_list
     endpoint: "GET /obp/v6.0.0/my/accounts/{account_id}/transactions"
     tag: Transactions
-    description: "Fetch transactions for PFM analysis — filtered by date range for selected period"
+    description: "Fetch transactions per personal account for PFM analysis. Sandbox caps at the 50 newest and ignores date params; period filtering is applied client-side."
     request:
       params:
         - name: from_date
@@ -2681,44 +1268,118 @@ api:
         message: "USER_NOT_LOGGED_IN"
       - code: 404
         message: "ACCOUNT_NOT_FOUND"
+  - id: obp_fx_rate
+    endpoint: "GET /obp/v3.0.0/banks/{bankId}/fx/{fromCurrencyCode}/{toCurrencyCode}"
+    tag: FX
+    description: "Live FX rate per currency pair — FxConverter resolves per-transaction amounts into the user's base currency when aggregating across multi-currency personal accounts. Session-cached per (bankId, from, to). Added in PFM v2 (pfm-multi-account-budget-strategy)."
+    request:
+      params:
+        - name: bankId
+          type: String
+          example: "obp.bank.x"
+        - name: fromCurrencyCode
+          type: String
+          example: "EUR"
+        - name: toCurrencyCode
+          type: String
+          example: "GBP"
+    response:
+      fields:
+        - name: bank_id
+          type: String
+        - name: from_currency_code
+          type: String
+        - name: to_currency_code
+          type: String
+        - name: conversion_value
+          type: Double
+        - name: inverse_conversion_value
+          type: Double
+        - name: effective_date
+          type: String
+    errors:
+      - code: 401
+        message: "USER_NOT_LOGGED_IN"
+      - code: 404
+        message: "FX_CURRENCY_NOT_FOUND — pair unsupported by the bank; FxConverter degrades to a 1:1 passthrough and surfaces the FX-unavailable notice"
+  - id: obp_account_detail_owner
+    endpoint: "GET /obp/v4.0.0/banks/{bankId}/accounts/{accountId}/owner/account"
+    tag: Accounts
+    description: "Owner-view detail for one account — PfmAccountsService fetches this per account (in parallel, session-cached) to resolve product_code, which the /my/accounts list endpoint returns null. product_code drives personal (CURRENT/WALLET/SAVINGS) vs business classification; a failed detail fetch degrades to the base list account. Added in PFM v2."
+    request:
+      params:
+        - name: bankId
+          type: String
+          example: "obp.bank.x"
+        - name: accountId
+          type: String
+          example: "8ca8a7e4-6d02-40e3-a129-0b2bf89de9f1"
+    response:
+      fields:
+        - name: id
+          type: String
+        - name: bank_id
+          type: String
+        - name: label
+          type: String
+        - name: product_code
+          type: String
+        - name: account_type
+          type: String
+        - name: balance
+          type: object
+          children:
+            - name: currency
+              type: String
+            - name: amount
+              type: String
+        - name: owners
+          type: "List<AccountOwner>"
+        - name: account_attributes
+          type: "List<AccountAttribute>"
+    errors:
+      - code: 401
+        message: "USER_NOT_LOGGED_IN"
+      - code: 404
+        message: "ACCOUNT_NOT_FOUND"
 
 dependencies:
   tier: feature
   features:
     - transactions
     - accounts
+    - pfm-settings
 
 navigation:
-  - action: manage_budgets
+  - action: open_scope_picker
     target: ""
-    description: "Open budget management bottom sheet"
-  - action: open_chart_detail
-    target: ""
-    description: "Expand full-screen spending category chart"
-  - action: navigate_back
-    target: home
-    description: "Return to home screen"
-  - action: navigate_to_transactions
-    target: transactions
-    description: "Navigate to transactions list"
-  - action: navigate_to_accounts
-    target: accounts
-    description: "Navigate to accounts overview"
-  - action: filter_by_category
-    target: transactions
-    description: "Navigate to transactions filtered by selected category"
-  - action: view_merchant_transactions
-    target: transactions
-    description: "Navigate to transactions filtered by selected merchant"
+    description: "Open the AccountPickerBottomSheet to choose insights scope (all personal accounts or a single account) — pure client-side reprojection, no refetch."
   - action: select_period
     target: ""
-    description: "Update selected reporting period — reloads data in-place"
+    description: "Update selected reporting period — reprojects in-place."
   - action: open_custom_date_picker
     target: ""
-    description: "Open date range picker bottom sheet"
+    description: "Open the M3 DateRangePicker dialog for a custom period."
+  - action: edit_overall_budget
+    target: ""
+    description: "Open the BudgetEditDialog for the overall monthly budget."
+  - action: edit_category_budget
+    target: ""
+    description: "Open the BudgetEditDialog for a single category budget row."
+  - action: view_merchant_transactions
+    target: transactions
+    description: "Open transactions for the current scope (merchant rows navigate unfiltered)."
+  - action: navigate_to_transactions
+    target: transactions
+    description: "View All Transactions for the current navBankId/navAccountId scope."
   - action: open_pfm_settings
+    target: pfm-settings
+    description: "Open PFM settings (base-currency radio list)."
+  - action: navigate_back
+    target: home
+    description: "Return to the previous screen."
+  - action: retry_load
     target: ""
-    description: "Open PFM settings (categories, notification thresholds)"
-  - action: edit_budget
-    target: ""
-    description: "Open edit budget sheet for tapped category"
+    description: "Retry loading spending insights after an error."
+journey_ids:
+  - consumer-insights-utilities

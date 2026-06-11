@@ -1,0 +1,286 @@
+id: payment-result
+name: Payment Sent
+feature: payment-result
+flavor: consumer
+status: enriched
+quality_score: 90
+contract_version: "1.1.0"
+capabilities:
+  - has_ui
+status_history:
+  - to: enriched
+    at: "2026-06-11"
+    by: "/idea verify --source-drift (write-back, new screen from shipped code)"
+    note: "Created from shipped PaymentResultScreen.kt. Terminal success screen reached after a payment books — both the immediately-settled path and the post-SCA completion land here. Replaces the obsolete confirm-screen success snackbar. STATELESS — no ViewModel, no API; rendered entirely from nav args (amount, currency, beneficiaryName, fromLabel, transactionId, chargeAmount, chargeCurrency, status). Green HeroGradientCard with a check-circle, 'Payment sent', '{amount} to {beneficiary}' and a '● COMPLETED' StatusPill; a details card lists the shortened Transaction ID, From, Charge and 'Just now' posted time. 'View transaction' opens transaction-detail(bankId, accountId, transactionId); 'Done' pops back to send-money with the Home tab selected."
+
+screens:
+  - id: payment-result
+    name: Payment Sent
+    archetype: confirmation
+    shell:
+      top_bar: false
+      bottom_nav: false
+
+archetype: confirmation
+
+components:
+  - type: card
+    id: hero_card
+    label: "Payment success hero"
+    content: "Payment sent"
+    style:
+      background: gradient_primary
+      text_color: "#FFFFFF"
+      corner_radius_bottom: 28
+      padding_top: 72
+      padding_bottom: 36
+      padding_horizontal: 24
+      align: center
+    a11y:
+      label: "Payment sent successfully"
+      role: group
+    test_context:
+      tag: hero_card
+
+  - type: icon
+    id: success_check
+    label: "Success check"
+    content: check
+    style:
+      shape: circle
+      diameter: 92
+      background: "#FFFFFF"
+      icon_tint: "#4C662B"
+    a11y:
+      label: "Payment confirmed"
+      role: image
+    test_context:
+      tag: success_check
+
+  - type: text
+    id: result_title
+    label: "Payment sent"
+    content: "Payment sent"
+    style:
+      typography: "Outfit/display_small"
+      color: "#FFFFFF"
+      font_weight: 700
+      text_align: center
+    a11y:
+      label: "Payment sent"
+      role: heading
+    test_context:
+      tag: result_title
+      assert_text: "Payment sent"
+
+  - type: text
+    id: result_summary
+    label: "Amount to beneficiary"
+    content: "€250.00 to Liam Walker"
+    style:
+      typography: "Outfit/body_large"
+      color: "#F5FFE6"
+      text_align: center
+    a11y:
+      label: "€250.00 to Liam Walker"
+      role: text
+    test_context:
+      tag: result_summary
+
+  - type: badge
+    id: status_pill
+    label: "Status pill"
+    content: "● COMPLETED"
+    style:
+      shape: pill
+      background: "#FFFFFF"
+      background_alpha: 0.18
+      text_color: "#FFFFFF"
+      dot_color: "#B6F2C0"
+    a11y:
+      label: "Status: completed"
+      role: text
+    test_context:
+      tag: status_pill
+      assert_text: "COMPLETED"
+
+  - type: card
+    id: details_card
+    label: "Transaction details"
+    style:
+      background: "#FFFFFF"
+      corner_radius: 16
+      elevation: 2
+      padding_horizontal: 20
+      padding_vertical: 8
+      margin: 16
+    a11y:
+      label: "Transaction details"
+      role: group
+    test_context:
+      tag: details_card
+
+  - type: stack
+    id: transaction_id_row
+    label: "Transaction ID row"
+    content: "Transaction ID  99888bf1-69aa…"
+    style:
+      orientation: horizontal
+      justify: space_between
+      padding_vertical: 14
+    a11y:
+      label: "Transaction ID 99888bf1-69aa"
+      role: row
+    test_context:
+      tag: transaction_id_row
+
+  - type: divider
+    id: details_divider
+    style:
+      color: "#E1E4D5"
+      thickness: 1
+    a11y:
+      label: ""
+      role: separator
+    test_context:
+      tag: details_divider
+
+  - type: stack
+    id: from_row
+    label: "From row"
+    content: "From  Primary Checking"
+    style:
+      orientation: horizontal
+      justify: space_between
+      padding_vertical: 14
+    a11y:
+      label: "From Primary Checking"
+      role: row
+    test_context:
+      tag: from_row
+
+  - type: stack
+    id: charge_row
+    label: "Charge row"
+    content: "Charge  €0.00"
+    style:
+      orientation: horizontal
+      justify: space_between
+      padding_vertical: 14
+    a11y:
+      label: "Charge €0.00"
+      role: row
+    test_context:
+      tag: charge_row
+
+  - type: stack
+    id: posted_row
+    label: "Posted row"
+    content: "Posted  Just now"
+    style:
+      orientation: horizontal
+      justify: space_between
+      padding_vertical: 14
+    a11y:
+      label: "Posted Just now"
+      role: row
+    test_context:
+      tag: posted_row
+
+  - type: button
+    id: view_transaction_button
+    label: "View transaction"
+    supported_states: [idle, focus_visible, pressed]
+    style:
+      variant: filled
+      corner_radius: 12
+      full_width: true
+      height: 52
+    on_click:
+      action: navigate
+      target: transaction-detail
+    a11y:
+      label: "View this transaction"
+      role: button
+    keyboard:
+      focusable: true
+    test_context:
+      tag: view_transaction_button
+      assert_text: "View transaction"
+
+  - type: button
+    id: done_button
+    label: "Done"
+    supported_states: [idle, focus_visible, pressed]
+    style:
+      variant: text
+      full_width: true
+    on_click:
+      action: navigate
+      target: home
+    a11y:
+      label: "Done, return home"
+      role: button
+    keyboard:
+      focusable: true
+    test_context:
+      tag: done_button
+      assert_text: "Done"
+
+responsive:
+  mobile_only: true
+  baseline_width: 390
+
+states:
+  initial_state: content
+  content:
+    note: "Stateless screen — rendered directly from nav args. The hero summary line shows '{currencySymbol(currency)}{amount} to {beneficiaryName}' (falls back to 'beneficiary' when blank); status_pill shows the uppercased status (defaults to COMPLETED); charge_row shows '{chargeCurrency|currency}{chargeAmount|0.00}'; transaction_id_row shows the shortened transactionId (first 13 chars + ellipsis, or '—' when blank)."
+    layout:
+      visible_components:
+        - hero_card
+        - success_check
+        - result_title
+        - result_summary
+        - status_pill
+        - details_card
+        - transaction_id_row
+        - details_divider
+        - from_row
+        - charge_row
+        - posted_row
+        - view_transaction_button
+        - done_button
+
+state_model:
+  view_model: null
+  note: "No ViewModel — PaymentResultScreen is a stateless composable driven entirely by navigation arguments. No StateFlow, no async load, no DI."
+  nav_params:
+    - { name: amount, type: String }
+    - { name: currency, type: String }
+    - { name: beneficiaryName, type: String }
+    - { name: fromLabel, type: String }
+    - { name: transactionId, type: String }
+    - { name: chargeAmount, type: String }
+    - { name: chargeCurrency, type: String }
+    - { name: status, type: String }
+  actions:
+    - navigate
+  callbacks:
+    - name: onViewTransaction
+      signature: "() -> Unit"
+      consumer: transaction-detail
+    - name: onDone
+      signature: "() -> Unit"
+      consumer: send-money
+  di: []
+
+api:
+  endpoints: []
+  note: "Stateless display screen — all data arrives via nav args. No OBP API calls."
+
+dependencies:
+  tier: feature
+  features:
+    - send-money-confirm
+    - sca-challenge
+    - transaction-detail

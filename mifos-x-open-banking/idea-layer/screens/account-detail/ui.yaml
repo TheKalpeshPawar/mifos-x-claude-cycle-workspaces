@@ -2,7 +2,7 @@ id: account-detail
 name: Account Detail
 feature: account-detail
 flavor: consumer
-status: approved
+status: enriched
 quality_score: 94
 contract_version: "1.1.0"
 approve_hash: "sha256:05af12bd8c96e4f037af12bd8c96e4f037af12bd8c96e4f037af12bd8c96e4f0"
@@ -23,6 +23,11 @@ status_history:
     by: "/idea approve"
     contract_version: "1.1.0"
     bypass_flags: []
+  - from: approved
+    to: enriched
+    at: "2026-06-11"
+    by: "/idea verify --source-drift (write-back)"
+    note: "Reconciled spec to shipped Kotlin — full rewrite to read-only routing/product screen: removed recent-transactions list, View All link, Send/Request/Statement action row, BIC/SWIFT row; added HeroGradientCard header + ACTIVITY rows (Transaction history -> transactions, Direct debits -> direct-debits) + ACCOUNT & ROUTING card (holder/number/IBAN/bank, per-row copy + snackbar) + PLAN & FEES card (product + account_attributes); state_model -> ScreenState<AccountDetailContent>; DI={AccountsRepository,BanksRepository,CustomersRepository}; api -> v4.0.0 owner/account, transactions endpoint deferred; pending re-render + re-approve."
 
 shell:
   bottom_nav: true
@@ -68,10 +73,12 @@ components:
     variant: filled
     style:
       background: "#4C662B"
-      border_radius: 0
+      background_gradient: hero
+      border_radius: 20
+      margin_horizontal: 20
       padding_horizontal: 24
       padding_top: 20
-      padding_bottom: 32
+      padding_bottom: 28
     a11y:
       role: region
       label: "Account summary"
@@ -81,26 +88,26 @@ components:
     children:
       - type: text
         id: account_header_label
-        content: "Primary Checking"
+        content: "Everyday Current"
         style:
-          typography: label_large
-          color: "#FFFFFFB3"
+          typography: title_small
+          color: "#FFFFFFCC"
           padding_bottom: 4
         a11y:
           role: text
-          label: "Account: Primary Checking"
+          label: "Account: Everyday Current"
         test_context:
           test_id: account_header_label
-          assert_content: "Primary Checking"
+          assert_content: "Everyday Current"
 
       - type: text
         id: account_header_balance
         content: "£4,250.00"
         style:
-          typography: display_large
+          typography: display_small
           color: "#FFFFFF"
           font_weight: 700
-          padding_bottom: 4
+          padding_bottom: 10
         a11y:
           role: text
           label: "Balance: four thousand two hundred fifty pounds"
@@ -108,77 +115,335 @@ components:
           test_id: account_header_balance
           assert_content: "£4,250.00"
 
+      - type: box
+        id: account_currency_badge
+        style:
+          background: "#FFFFFF2E"
+          border_radius: 6
+          padding_horizontal: 8
+          padding_vertical: 4
+        children:
+          - type: text
+            id: account_currency_label
+            content: "GBP"
+            style:
+              typography: label_medium
+              color: "#FFFFFF"
+              font_weight: 500
+            a11y:
+              role: text
+              label: "Currency: British Pounds"
+            test_context:
+              test_id: account_currency_label
+
+  - type: text
+    id: activity_group_label
+    content: "ACTIVITY"
+    style:
+      typography: label_medium
+      color: "#44483D"
+      font_weight: 500
+      letter_spacing: 0.5
+      padding_horizontal: 24
+      padding_top: 20
+      padding_bottom: 8
+    a11y:
+      role: heading
+      level: 2
+      label: "Activity"
+    test_context:
+      test_id: activity_group_label
+
+  - type: box
+    id: activity_transactions_row
+    supported_states: [idle, hover, focus_visible, pressed]
+    style:
+      background: "#F0F1E6"
+      border_radius: 16
+      border_width: 1
+      border_color: "#C5C8BA"
+      padding: 20
+      margin_horizontal: 20
+      margin_bottom: 8
+    on_click:
+      action: navigate
+      target: transactions
+      params:
+        bank_id: "gh.29.uk"
+        account_id: "acc_checking_primary"
+    a11y:
+      role: button
+      label: "Transaction history, booked and pending payments, tap to view"
+    keyboard:
+      focusable: true
+    test_context:
+      test_id: activity_transactions_row
+      assert_clickable: true
+    children:
       - type: stack
-        id: account_header_meta
+        id: activity_txn_row
         style:
           direction: horizontal
           align: center
-          spacing: 8
         children:
-          - type: box
-            id: account_currency_badge
+          - type: stack
+            id: activity_txn_text_col
             style:
-              background: "#FFFFFF1A"
-              border_radius: 6
-              padding_horizontal: 8
-              padding_vertical: 4
+              direction: vertical
+              flex: 1
             children:
               - type: text
-                id: account_currency_label
-                content: "GBP"
+                id: activity_txn_title
+                content: "Transaction history"
                 style:
-                  typography: label_small
-                  color: "#FFFFFF"
+                  typography: body_large
+                  color: "#1A1C16"
+                  font_weight: 500
                 a11y:
                   role: text
-                  label: "Currency: British Pounds"
                 test_context:
-                  test_id: account_currency_label
+                  test_id: activity_txn_title
+                  assert_content: "Transaction history"
+              - type: text
+                id: activity_txn_subtitle
+                content: "Booked and pending payments"
+                style:
+                  typography: body_small
+                  color: "#44483D"
+                a11y:
+                  role: text
+                test_context:
+                  test_id: activity_txn_subtitle
+          - type: icon
+            id: activity_txn_chevron
+            content: "chevron_right"
+            style:
+              size: 24
+              color: "#44483D"
+            a11y:
+              role: img
+              label: "Open"
+            test_context:
+              test_id: activity_txn_chevron
 
-          - type: box
-            id: account_type_badge
+  - type: box
+    id: activity_direct_debits_row
+    supported_states: [idle, hover, focus_visible, pressed]
+    style:
+      background: "#F0F1E6"
+      border_radius: 16
+      border_width: 1
+      border_color: "#C5C8BA"
+      padding: 20
+      margin_horizontal: 20
+      margin_bottom: 16
+    on_click:
+      action: navigate
+      target: direct-debits
+      params:
+        bank_id: "gh.29.uk"
+        account_id: "acc_checking_primary"
+    a11y:
+      role: button
+      label: "Direct debits, mandates collecting from this account, tap to view"
+    keyboard:
+      focusable: true
+    test_context:
+      test_id: activity_direct_debits_row
+      assert_clickable: true
+    children:
+      - type: stack
+        id: activity_dd_row
+        style:
+          direction: horizontal
+          align: center
+        children:
+          - type: stack
+            id: activity_dd_text_col
             style:
-              background: "#FFFFFF1A"
-              border_radius: 6
-              padding_horizontal: 8
-              padding_vertical: 4
+              direction: vertical
+              flex: 1
             children:
               - type: text
-                id: account_type_label
-                content: "CHECKING"
+                id: activity_dd_title
+                content: "Direct debits"
                 style:
-                  typography: label_small
-                  color: "#FFFFFF"
+                  typography: body_large
+                  color: "#1A1C16"
+                  font_weight: 500
                 a11y:
                   role: text
-                  label: "Account type: Checking"
                 test_context:
-                  test_id: account_type_label
+                  test_id: activity_dd_title
+                  assert_content: "Direct debits"
+              - type: text
+                id: activity_dd_subtitle
+                content: "Mandates collecting from this account"
+                style:
+                  typography: body_small
+                  color: "#44483D"
+                a11y:
+                  role: text
+                test_context:
+                  test_id: activity_dd_subtitle
+          - type: icon
+            id: activity_dd_chevron
+            content: "chevron_right"
+            style:
+              size: 24
+              color: "#44483D"
+            a11y:
+              role: img
+              label: "Open"
+            test_context:
+              test_id: activity_dd_chevron
+
+  - type: text
+    id: routing_group_label
+    content: "ACCOUNT & ROUTING"
+    style:
+      typography: label_medium
+      color: "#44483D"
+      font_weight: 500
+      letter_spacing: 0.5
+      padding_horizontal: 24
+      padding_top: 8
+      padding_bottom: 8
+    a11y:
+      role: heading
+      level: 2
+      label: "Account and routing"
+    test_context:
+      test_id: routing_group_label
 
   - type: box
     id: account_info_card
-    variant: elevated
+    variant: filled
     style:
-      background: "#FFFFFF"
+      background: "#F0F1E6"
       border_radius: 16
+      border_width: 1
+      border_color: "#C5C8BA"
       padding: 20
       margin_horizontal: 20
-      margin_top: -16
       margin_bottom: 16
-      elevation: 3
     a11y:
       role: region
-      label: "Account routing information"
+      label: "Account and routing information"
     test_context:
       test_id: account_info_card
     children:
+      - type: stack
+        id: holder_row
+        style:
+          direction: vertical
+        children:
+          - type: text
+            id: holder_label
+            content: "Account Holder"
+            style:
+              typography: label_small
+              color: "#44483D"
+            a11y:
+              role: text
+            test_context:
+              test_id: holder_label
+          - type: text
+            id: holder_value
+            content: "Eve Adamson"
+            style:
+              typography: body_medium
+              color: "#1A1C16"
+            a11y:
+              role: text
+              label: "Account holder: Eve Adamson"
+            test_context:
+              test_id: holder_value
+              assert_content: "Eve Adamson"
+
+      - type: divider
+        id: info_divider_1
+        style:
+          color: "#C5C8BA"
+          margin_vertical: 16
+        a11y:
+          role: separator
+        test_context:
+          test_id: info_divider_1
+
+      - type: stack
+        id: number_row
+        style:
+          direction: horizontal
+          align: center
+          justify: space_between
+        children:
+          - type: stack
+            id: number_label_col
+            style:
+              direction: vertical
+              flex: 1
+            children:
+              - type: text
+                id: number_label
+                content: "Account Number"
+                style:
+                  typography: label_small
+                  color: "#44483D"
+                a11y:
+                  role: text
+                test_context:
+                  test_id: number_label
+              - type: text
+                id: number_value
+                content: "20294393"
+                style:
+                  typography: body_medium
+                  color: "#1A1C16"
+                a11y:
+                  role: text
+                  label: "Account number: 20294393"
+                test_context:
+                  test_id: number_value
+                  assert_content: "20294393"
+          - type: icon
+            id: copy_number_button
+            content: "content_copy"
+            supported_states: [idle, hover, focus_visible, pressed, disabled]
+            style:
+              size: 22
+              color: "#4C662B"
+              padding: 8
+            on_click:
+              action: copy_value
+              params:
+                value: "20294393"
+                what: "Account number"
+            a11y:
+              role: button
+              label: "Copy account number to clipboard"
+            keyboard:
+              focusable: true
+            test_context:
+              test_id: copy_number_button
+              assert_clickable: true
+
+      - type: divider
+        id: info_divider_2
+        style:
+          color: "#C5C8BA"
+          margin_vertical: 16
+        a11y:
+          role: separator
+        test_context:
+          test_id: info_divider_2
+
       - type: stack
         id: iban_row
         style:
           direction: horizontal
           align: center
           justify: space_between
-          padding_bottom: 16
         children:
           - type: stack
             id: iban_label_col
@@ -192,26 +457,23 @@ components:
                 style:
                   typography: label_small
                   color: "#44483D"
-                  letter_spacing: 0.5
                 a11y:
                   role: text
                 test_context:
                   test_id: iban_label
-
               - type: text
                 id: iban_value
-                content: "DE89 3704 0044 0532 0130 00"
+                content: "GB29 MFOS 2029 4393 0000 00"
                 style:
                   typography: body_medium
                   color: "#1A1C16"
                   font_family: monospace
                 a11y:
                   role: text
-                  label: "IBAN: DE89 3704 0044 0532 0130 00"
+                  label: "IBAN: GB29 MFOS 2029 4393 0000 00"
                 test_context:
                   test_id: iban_value
-                  assert_content: "DE89 3704 0044 0532 0130 00"
-
+                  assert_content: "GB29 MFOS 2029 4393 0000 00"
           - type: icon
             id: copy_iban_button
             content: "content_copy"
@@ -221,7 +483,10 @@ components:
               color: "#4C662B"
               padding: 8
             on_click:
-              action: copy_iban
+              action: copy_value
+              params:
+                value: "GB29MFOS20294393000000"
+                what: "IBAN"
             a11y:
               role: button
               label: "Copy IBAN to clipboard"
@@ -232,656 +497,143 @@ components:
               assert_clickable: true
 
       - type: divider
-        id: info_divider_1
+        id: info_divider_3
         style:
-          color: "#F9FAEF"
-          margin_bottom: 16
+          color: "#C5C8BA"
+          margin_vertical: 16
         a11y:
           role: separator
         test_context:
-          test_id: info_divider_1
+          test_id: info_divider_3
 
       - type: stack
-        id: bic_row
+        id: bank_row
         style:
-          direction: horizontal
-          align: center
-          justify: space_between
+          direction: vertical
         children:
-          - type: stack
-            id: bic_label_col
-            style:
-              direction: vertical
-              flex: 1
-            children:
-              - type: text
-                id: bic_label
-                content: "BIC / SWIFT"
-                style:
-                  typography: label_small
-                  color: "#44483D"
-                  letter_spacing: 0.5
-                a11y:
-                  role: text
-                test_context:
-                  test_id: bic_label
-
-              - type: text
-                id: bic_value
-                content: "COBADEFFXXX"
-                style:
-                  typography: body_medium
-                  color: "#1A1C16"
-                  font_family: monospace
-                a11y:
-                  role: text
-                  label: "BIC/SWIFT: COBADEFFXXX"
-                test_context:
-                  test_id: bic_value
-                  assert_content: "COBADEFFXXX"
-
-          - type: icon
-            id: copy_bic_button
-            content: "content_copy"
-            supported_states: [idle, hover, focus_visible, pressed, disabled]
-            style:
-              size: 22
-              color: "#4C662B"
-              padding: 8
-            on_click:
-              action: copy_bic
-            a11y:
-              role: button
-              label: "Copy BIC/SWIFT to clipboard"
-            keyboard:
-              focusable: true
-            test_context:
-              test_id: copy_bic_button
-              assert_clickable: true
-
-  - type: stack
-    id: action_row
-    style:
-      direction: horizontal
-      spacing: 10
-      padding_horizontal: 20
-      padding_bottom: 24
-    a11y:
-      role: group
-      label: "Account actions"
-    test_context:
-      test_id: action_row
-    children:
-      - type: button
-        id: btn_send_money
-        label: "Send Money"
-        supported_states: [idle, hover, focus_visible, pressed, disabled]
-        style:
-          variant: tonal
-          background: "#CDEDA3"
-          text_color: "#4C662B"
-          border_radius: 12
-          padding_horizontal: 12
-          padding_vertical: 12
-          typography: label_medium
-          flex: 1
-          icon: send
-        on_click:
-          action: navigate
-          target: send-money
-        a11y:
-          role: button
-          label: "Send money from this account"
-          hint: "Opens the send money screen"
-        keyboard:
-          focusable: true
-        test_context:
-          test_id: btn_send_money
-          assert_clickable: true
-
-      - type: button
-        id: btn_request_payment
-        label: "Request"
-        supported_states: [idle, hover, focus_visible, pressed, disabled]
-        style:
-          variant: outlined
-          border_color: "#4C662B"
-          text_color: "#4C662B"
-          border_radius: 12
-          padding_horizontal: 12
-          padding_vertical: 12
-          typography: label_medium
-          flex: 1
-          icon: request_quote
-        on_click:
-          action: request_payment
-        a11y:
-          role: button
-          label: "Request a payment"
-          hint: "Generates a payment request link"
-        keyboard:
-          focusable: true
-        test_context:
-          test_id: btn_request_payment
-          assert_clickable: true
-
-      - type: button
-        id: btn_download_statement
-        label: "Statement"
-        supported_states: [idle, hover, focus_visible, pressed, disabled]
-        style:
-          variant: outlined
-          border_color: "#4C662B"
-          text_color: "#4C662B"
-          border_radius: 12
-          padding_horizontal: 12
-          padding_vertical: 12
-          typography: label_medium
-          flex: 1
-          icon: download
-        on_click:
-          action: download_statement
-        a11y:
-          role: button
-          label: "Download account statement"
-          hint: "Downloads PDF statement for this account"
-        keyboard:
-          focusable: true
-        test_context:
-          test_id: btn_download_statement
-          assert_clickable: true
-
-  - type: divider
-    id: section_divider
-    style:
-      margin_horizontal: 20
-      color: "#E1E4D5"
-    a11y:
-      role: separator
-    test_context:
-      test_id: section_divider
-      assert: visible
-
-  - type: stack
-    id: transactions_header_row
-    style:
-      direction: horizontal
-      align: center
-      justify: space_between
-      padding_horizontal: 20
-      padding_top: 20
-      padding_bottom: 12
-    a11y:
-      role: group
-    test_context:
-      test_id: transactions_header_row
-      assert: visible
-    children:
-      - type: text
-        id: recent_transactions_title
-        content: "Recent Transactions"
-        style:
-          typography: title_large
-          color: "#1A1C16"
-        a11y:
-          role: heading
-          level: 2
-          label: "Recent Transactions"
-        test_context:
-          test_id: recent_transactions_title
-
-      - type: link
-        id: view_all_transactions_link
-        content: "View All"
-        style:
-          typography: label_medium
-          color: "#4C662B"
-        on_click:
-          action: navigate
-          target: transactions
-        a11y:
-          role: link
-          label: "View all transactions for this account"
-        keyboard:
-          focusable: true
-        test_context:
-          test_id: view_all_transactions_link
-          assert_clickable: true
-
-  - type: box
-    id: detail_txn_row_1
-    style:
-      background: "#FFFFFF"
-      border_radius: 12
-      padding: 16
-      margin_horizontal: 20
-      margin_bottom: 8
-      elevation: 1
-    a11y:
-      role: listitem
-      label: "Tesco Supermarket, debit forty-two pounds fifty, 23 May 2026"
-    test_context:
-      test_id: detail_txn_row_1
-    children:
-      - type: stack
-        id: dtxn1_row
-        style:
-          direction: horizontal
-          align: center
-          spacing: 12
-        children:
-          - type: box
-            id: dtxn1_icon_wrap
-            style:
-              background: "#CDEDA3"
-              border_radius: 22
-              width: 44
-              height: 44
-              align: center
-              justify: center
-            children:
-              - type: icon
-                id: dtxn1_icon
-                content: "shopping_basket"
-                supported_states: [idle, hover, focus_visible, pressed, disabled]
-                style:
-                  color: "#BA1A1A"
-                  size: 20
-                a11y:
-                  role: img
-                  label: "Shopping icon"
-                test_context:
-                  test_id: dtxn1_icon
-
-          - type: stack
-            id: dtxn1_details
-            style:
-              direction: vertical
-              flex: 1
-            children:
-              - type: text
-                id: dtxn1_merchant
-                content: "Tesco Supermarket"
-                style:
-                  typography: body_medium
-                  color: "#1A1C16"
-                a11y:
-                  role: text
-                test_context:
-                  test_id: dtxn1_merchant
-
-              - type: text
-                id: dtxn1_date
-                content: "23 May 2026"
-                style:
-                  typography: body_small
-                  color: "#44483D"
-                a11y:
-                  role: text
-                test_context:
-                  test_id: dtxn1_date
-
           - type: text
-            id: dtxn1_amount
-            content: "-£42.50"
+            id: bank_label
+            content: "Bank"
             style:
-              typography: body_large
-              color: "#BA1A1A"
-              font_weight: 600
+              typography: label_small
+              color: "#44483D"
             a11y:
               role: text
-              label: "Debit: forty-two pounds fifty"
             test_context:
-              test_id: dtxn1_amount
-              assert_content: "-£42.50"
-
-  - type: box
-    id: detail_txn_row_2
-    style:
-      background: "#FFFFFF"
-      border_radius: 12
-      padding: 16
-      margin_horizontal: 20
-      margin_bottom: 8
-      elevation: 1
-    a11y:
-      role: listitem
-      label: "Salary Payment, credit three thousand two hundred pounds, 22 May 2026"
-    test_context:
-      test_id: detail_txn_row_2
-    children:
-      - type: stack
-        id: dtxn2_row
-        style:
-          direction: horizontal
-          align: center
-          spacing: 12
-        children:
-          - type: box
-            id: dtxn2_icon_wrap
-            style:
-              background: "#CDEDA3"
-              border_radius: 22
-              width: 44
-              height: 44
-              align: center
-              justify: center
-            children:
-              - type: icon
-                id: dtxn2_icon
-                content: "payments"
-                supported_states: [idle, hover, focus_visible, pressed, disabled]
-                style:
-                  color: "#4C662B"
-                  size: 20
-                a11y:
-                  role: img
-                  label: "Income icon"
-                test_context:
-                  test_id: dtxn2_icon
-
-          - type: stack
-            id: dtxn2_details
-            style:
-              direction: vertical
-              flex: 1
-            children:
-              - type: text
-                id: dtxn2_merchant
-                content: "Salary Payment"
-                style:
-                  typography: body_medium
-                  color: "#1A1C16"
-                a11y:
-                  role: text
-                test_context:
-                  test_id: dtxn2_merchant
-
-              - type: text
-                id: dtxn2_date
-                content: "22 May 2026"
-                style:
-                  typography: body_small
-                  color: "#44483D"
-                a11y:
-                  role: text
-                test_context:
-                  test_id: dtxn2_date
-
+              test_id: bank_label
           - type: text
-            id: dtxn2_amount
-            content: "+£3,200.00"
+            id: bank_value
+            content: "Mifos Bank UK"
             style:
-              typography: body_large
-              color: "#4C662B"
-              font_weight: 600
+              typography: body_medium
+              color: "#1A1C16"
             a11y:
               role: text
-              label: "Credit: three thousand two hundred pounds"
+              label: "Bank: Mifos Bank UK"
             test_context:
-              test_id: dtxn2_amount
-              assert_content: "+£3,200.00"
+              test_id: bank_value
+              assert_content: "Mifos Bank UK"
+
+  - type: text
+    id: plan_group_label
+    content: "PLAN & FEES"
+    style:
+      typography: label_medium
+      color: "#44483D"
+      font_weight: 500
+      letter_spacing: 0.5
+      padding_horizontal: 24
+      padding_top: 8
+      padding_bottom: 8
+    a11y:
+      role: heading
+      level: 2
+      label: "Plan and fees"
+    test_context:
+      test_id: plan_group_label
 
   - type: box
-    id: detail_txn_row_3
+    id: account_plan_card
+    variant: filled
     style:
-      background: "#FFFFFF"
-      border_radius: 12
-      padding: 16
+      background: "#F0F1E6"
+      border_radius: 16
+      border_width: 1
+      border_color: "#C5C8BA"
+      padding: 20
       margin_horizontal: 20
-      margin_bottom: 8
-      elevation: 1
+      margin_bottom: 16
     a11y:
-      role: listitem
-      label: "EDF Energy, debit ninety-four pounds twenty, 20 May 2026"
+      role: region
+      label: "Plan and fees"
     test_context:
-      test_id: detail_txn_row_3
+      test_id: account_plan_card
     children:
       - type: stack
-        id: dtxn3_row
+        id: product_row
         style:
-          direction: horizontal
-          align: center
-          spacing: 12
+          direction: vertical
         children:
-          - type: box
-            id: dtxn3_icon_wrap
-            style:
-              background: "#CDEDA3"
-              border_radius: 22
-              width: 44
-              height: 44
-              align: center
-              justify: center
-            children:
-              - type: icon
-                id: dtxn3_icon
-                content: "bolt"
-                supported_states: [idle, hover, focus_visible, pressed, disabled]
-                style:
-                  color: "#44483D"  # fix A11Y-002: was #E8A317 (1.68:1 on CDEDA3, FAIL 3:1 icon min); #44483D = 7.25:1 PASS
-                  size: 20
-                a11y:
-                  role: img
-                  label: "Utilities icon"
-                test_context:
-                  test_id: dtxn3_icon
-
-          - type: stack
-            id: dtxn3_details
-            style:
-              direction: vertical
-              flex: 1
-            children:
-              - type: text
-                id: dtxn3_merchant
-                content: "EDF Energy"
-                style:
-                  typography: body_medium
-                  color: "#1A1C16"
-                a11y:
-                  role: text
-                test_context:
-                  test_id: dtxn3_merchant
-
-              - type: text
-                id: dtxn3_date
-                content: "20 May 2026"
-                style:
-                  typography: body_small
-                  color: "#44483D"
-                a11y:
-                  role: text
-                test_context:
-                  test_id: dtxn3_date
-
           - type: text
-            id: dtxn3_amount
-            content: "-£94.20"
+            id: product_label
+            content: "Product"
             style:
-              typography: body_large
-              color: "#BA1A1A"
-              font_weight: 600
+              typography: label_small
+              color: "#44483D"
             a11y:
               role: text
-              label: "Debit: ninety-four pounds twenty"
             test_context:
-              test_id: dtxn3_amount
-              assert_content: "-£94.20"
+              test_id: product_label
+          - type: text
+            id: product_value
+            content: "Business Current GBP"
+            style:
+              typography: body_medium
+              color: "#1A1C16"
+            a11y:
+              role: text
+              label: "Product: Business Current GBP"
+            test_context:
+              test_id: product_value
+              assert_content: "Business Current GBP"
 
-  - type: box
-    id: detail_txn_row_4
-    style:
-      background: "#FFFFFF"
-      border_radius: 12
-      padding: 16
-      margin_horizontal: 20
-      margin_bottom: 8
-      elevation: 1
-    a11y:
-      role: listitem
-      label: "Amazon Prime, debit eight pounds ninety-nine, 18 May 2026"
-    test_context:
-      test_id: detail_txn_row_4
-    children:
+      - type: divider
+        id: plan_divider_1
+        style:
+          color: "#C5C8BA"
+          margin_vertical: 16
+        a11y:
+          role: separator
+        test_context:
+          test_id: plan_divider_1
+
       - type: stack
-        id: dtxn4_row
+        id: attribute_row_1
         style:
-          direction: horizontal
-          align: center
-          spacing: 12
+          direction: vertical
         children:
-          - type: box
-            id: dtxn4_icon_wrap
-            style:
-              background: "#CDEDA3"
-              border_radius: 22
-              width: 44
-              height: 44
-              align: center
-              justify: center
-            children:
-              - type: icon
-                id: dtxn4_icon
-                content: "subscriptions"
-                supported_states: [idle, hover, focus_visible, pressed, disabled]
-                style:
-                  color: "#4C662B"
-                  size: 20
-                a11y:
-                  role: img
-                  label: "Subscription icon"
-                test_context:
-                  test_id: dtxn4_icon
-
-          - type: stack
-            id: dtxn4_details
-            style:
-              direction: vertical
-              flex: 1
-            children:
-              - type: text
-                id: dtxn4_merchant
-                content: "Amazon Prime"
-                style:
-                  typography: body_medium
-                  color: "#1A1C16"
-                a11y:
-                  role: text
-                test_context:
-                  test_id: dtxn4_merchant
-
-              - type: text
-                id: dtxn4_date
-                content: "18 May 2026"
-                style:
-                  typography: body_small
-                  color: "#44483D"
-                a11y:
-                  role: text
-                test_context:
-                  test_id: dtxn4_date
-
           - type: text
-            id: dtxn4_amount
-            content: "-£8.99"
+            id: attribute_1_label
+            content: "Monthly Fee"
             style:
-              typography: body_large
-              color: "#BA1A1A"
-              font_weight: 600
+              typography: label_small
+              color: "#44483D"
             a11y:
               role: text
-              label: "Debit: eight pounds ninety-nine"
             test_context:
-              test_id: dtxn4_amount
-              assert_content: "-£8.99"
-
-  - type: box
-    id: detail_txn_row_5
-    style:
-      background: "#FFFFFF"
-      border_radius: 12
-      padding: 16
-      margin_horizontal: 20
-      margin_bottom: 8
-      elevation: 1
-    a11y:
-      role: listitem
-      label: "Costa Coffee, debit three pounds seventy-five, 17 May 2026"
-    test_context:
-      test_id: detail_txn_row_5
-    children:
-      - type: stack
-        id: dtxn5_row
-        style:
-          direction: horizontal
-          align: center
-          spacing: 12
-        children:
-          - type: box
-            id: dtxn5_icon_wrap
-            style:
-              background: "#CDEDA3"
-              border_radius: 22
-              width: 44
-              height: 44
-              align: center
-              justify: center
-            children:
-              - type: icon
-                id: dtxn5_icon
-                content: "local_cafe"
-                supported_states: [idle, hover, focus_visible, pressed, disabled]
-                style:
-                  color: "#44483D"  # fix A11Y-002: was #E8A317 (1.68:1 on CDEDA3, FAIL 3:1 icon min); #44483D = 7.25:1 PASS
-                  size: 20
-                a11y:
-                  role: img
-                  label: "Coffee shop icon"
-                test_context:
-                  test_id: dtxn5_icon
-
-          - type: stack
-            id: dtxn5_details
-            style:
-              direction: vertical
-              flex: 1
-            children:
-              - type: text
-                id: dtxn5_merchant
-                content: "Costa Coffee"
-                style:
-                  typography: body_medium
-                  color: "#1A1C16"
-                a11y:
-                  role: text
-                test_context:
-                  test_id: dtxn5_merchant
-
-              - type: text
-                id: dtxn5_date
-                content: "17 May 2026"
-                style:
-                  typography: body_small
-                  color: "#44483D"
-                a11y:
-                  role: text
-                test_context:
-                  test_id: dtxn5_date
-
+              test_id: attribute_1_label
           - type: text
-            id: dtxn5_amount
-            content: "-£3.75"
+            id: attribute_1_value
+            content: "£25.00"
             style:
-              typography: body_large
-              color: "#BA1A1A"
-              font_weight: 600
+              typography: body_medium
+              color: "#1A1C16"
             a11y:
               role: text
-              label: "Debit: three pounds seventy-five"
+              label: "Monthly fee: twenty-five pounds"
             test_context:
-              test_id: dtxn5_amount
-              assert_content: "-£3.75"
+              test_id: attribute_1_value
+              assert_content: "£25.00"
 
   - type: spacer
     id: bottom_spacer
@@ -897,133 +649,141 @@ states:
   loading:
     layout:
       components_visible: []
-      skeleton:
-        - id: skeleton_header
-          type: box
-          style:
-            background: "#4C662B"
-            height: 160
-        - id: skeleton_info_card
-          type: box
-          style:
-            background: "#E1E4D5"
-            border_radius: 16
-            height: 120
-            margin_horizontal: 20
-            margin_top: -16
-        - id: skeleton_actions
-          type: box
-          style:
-            background: "#E1E4D5"
-            border_radius: 12
-            height: 52
-            margin_horizontal: 20
-            margin_top: 16
-        - id: skeleton_txn
-          type: box
-          style:
-            background: "#E1E4D5"
-            border_radius: 12
-            height: 64
-            margin_horizontal: 20
-            margin_top: 16
+      loading_indicator:
+        id: loading_spinner
+        type: loading_indicator
+        style:
+          align: center
+          color: "#4C662B"
 
   content:
     layout:
       components_visible:
         - account_header_card
+        - activity_group_label
+        - activity_transactions_row
+        - activity_direct_debits_row
+        - routing_group_label
         - account_info_card
-        - action_row
-        - section_divider
-        - transactions_header_row
-        - detail_txn_row_1
-        - detail_txn_row_2
-        - detail_txn_row_3
-        - detail_txn_row_4
-        - detail_txn_row_5
+        - plan_group_label
+        - account_plan_card
+        - bottom_spacer
 
   error:
     layout:
       components_visible: []
       error_card:
         id: error_state_card
-        title: "Could not load account"
-        message: "We were unable to retrieve account details. Please check your connection and try again."
-        action_label: "Retry"
+        title: "Couldn't load account details"
+        message: "Check your connection and try again."
+        action_label: "Try again"
         action: retry_load
-        icon: error_outline
+        icon: cloud_off
+
+  no_network:
+    layout:
+      components_visible: []
+      error_card:
+        id: no_network_state_card
+        title: "Couldn't load account details"
+        message: "Check your connection and try again."
+        action_label: "Try again"
+        action: retry_load
+        icon: cloud_off
+
+  unauthenticated:
+    layout:
+      components_visible: []
+      error_card:
+        id: unauthenticated_state_card
+        title: "Couldn't load account details"
+        message: "Check your connection and try again."
+        action_label: "Try again"
+        action: retry_load
+        icon: cloud_off
 
   empty:
     layout:
       components_visible: []
-      empty_card:
+      error_card:
         id: empty_state_card
-        title: "No account details available"
-        message: "Account information could not be found. This account may have been closed or is no longer accessible."
-        action_label: "Go to Accounts"
-        action: navigate
-        action_target: accounts
-        icon: account_balance
+        title: "Couldn't load account details"
+        message: "Check your connection and try again."
+        action_label: "Try again"
+        action: retry_load
+        icon: cloud_off
 
 state_model:
   view_model: AccountDetailViewModel
-  screen_state: AccountDetailScreenState
-  state_fields:
-    - name: isLoading
+  screen_state: "ScreenState<AccountDetailContent>"
+  state_wrapper: ScreenState
+  state_wrapper_states: [Loading, Content, Error, NoNetwork, Unauthenticated, Empty]
+  content_class: AccountDetailContent
+  content_fields:
+    - name: accountLabel
+      type: String
+    - name: balanceDisplay
+      type: String
+      note: "formatted, sign-preserving money string"
+    - name: currency
+      type: String
+    - name: holder
+      type: String
+      note: "resolved account-holder name (CustomersRepository.accountHolderName, owner displayName fallback); never an OBP login username"
+    - name: accountNumber
+      type: String
+    - name: ibanRaw
+      type: String
+      note: "un-spaced IBAN, the value copied to clipboard"
+    - name: ibanDisplay
+      type: String
+      note: "IBAN grouped into 4-char blocks for display"
+    - name: bankName
+      type: String
+      note: "resolved via BanksRepository.bankName(account.bankId)"
+    - name: productLabel
+      type: String
+      note: "humanized account_type/product_code"
+    - name: "attributes"
+      type: "List<AttributeRow>"
+      note: "derived from account.account_attributes; DOUBLE-typed values money-formatted"
+    - name: hasPlanSection
       type: Boolean
-      default: "true"
-    - name: account
-      type: "BankAccount?"
-      default: "null"
-    - name: recentTransactions
-      type: "List<TransactionSummary>"
-      default: "emptyList()"
-    - name: error
-      type: "UiError?"
-      default: "null"
-    - name: ibanCopied
-      type: Boolean
-      default: "false"
-    - name: bicCopied
-      type: Boolean
-      default: "false"
-    - name: isDownloadingStatement
-      type: Boolean
-      default: "false"
-  errors:
-    - id: network_error
-      message: "Network unavailable. Please check your connection."
-    - id: not_found
-      message: "Account no longer available."
-    - id: statement_download_failed
-      message: "Statement download failed. Please try again."
+      computed: true
+      note: "productLabel.isNotBlank() || attributes.isNotEmpty() — gates the PLAN & FEES card"
+  nested_classes:
+    - name: AttributeRow
+      fields:
+        - name: label
+          type: String
+        - name: value
+          type: String
+  dto: org.mifosx.openbanking.core.model.obp.Account
+  data_source:
+    pattern: suspend-load
+    note: "load(bankId, accountId) calls accountsRepository.accountDetail(bankId, accountId); then resolves bankName (BanksRepository) and holder (CustomersRepository). No transactions are loaded. Projects only fields OBP returns."
   events:
-    - RetryLoad
-    - CopyIban
-    - CopyBic
-    - RequestPayment
-    - DownloadStatement
-    - NavigateToSendMoney
-    - NavigateToTransactions
-  actions:
-    - name: loadAccountDetail
-      param: accountId
-      triggers: [ScreenOpened, RetryLoad]
-    - name: copyToClipboard
-      param: text
-    - name: downloadStatement
-    - name: navigateTo
-      param: screen_id
+    - "load(bankId: String, accountId: String)"
+    - onRetry
+    - "onCopy(value: String, what: String)"
+    - onViewTransactions
+    - onViewDirectDebits
+  nav_callbacks:
+    - "onBack()"
+    - "onViewTransactions()"
+    - "onViewDirectDebits()"
+  side_effects:
+    - "copy-to-clipboard via LocalClipboardManager, confirmed with a transient snackbar (\"<what> copied\"); no persisted ibanCopied/bicCopied flags"
   di:
     - AccountsRepository
-    - TransactionsRepository
-    - ClipboardManager
-    - StatementDownloader
+    - BanksRepository
+    - CustomersRepository
 
 api:
-  - endpoint: "GET /obp/v3.0.0/banks/{bankId}/accounts/{accountId}/account"
+  - endpoint: "GET /obp/v4.0.0/banks/{bankId}/accounts/{accountId}/owner/account"
     tag: Accounts
     auth: DirectLogin
+    note: "Shipped accountDetail() owner-view endpoint (v4.0.0); the no-view /account path returns OBP-10404, so owner view is fixed in the path. Returns owners, account_attributes, routings, number, balance. bankId defaults to config.bankId when blank."
     params:
       - name: bankId
         type: path
@@ -1032,11 +792,17 @@ api:
         type: path
     response:
       fields:
-        - name: id
+        - name: account_id
           type: String
         - name: label
           type: String
+        - name: product_code
+          type: String
         - name: account_type
+          type: String
+        - name: number
+          type: String
+        - name: iban
           type: String
         - name: balance
           type: object
@@ -1052,60 +818,41 @@ api:
               type: String
             - name: address
               type: String
+        - name: account_attributes
+          type: "List<AccountAttribute>"
+          children:
+            - name: name
+              type: String
+            - name: type
+              type: String
+            - name: value
+              type: String
+        - name: owners
+          type: "List<AccountOwner>"
+          children:
+            - name: display_name
+              type: String
     errors:
       - code: 401
         message: "Unauthorized"
       - code: 404
         message: "Account not found"
 
+  - resolution: bank_name
+    via: BanksRepository.bankName(bankId)
+    note: "Resolves owning bank display name; backed by the banks list/detail read. Not a screen-owned endpoint — VM-side resolution call."
+
+  - resolution: account_holder_name
+    via: CustomersRepository.accountHolderName(bankId, accountId)
+    note: "Resolves the real holder legal name (Owner customer-account link); falls back to owners[].display_name. Never renders an OBP login username. VM-side resolution call."
+
+deferred_apis:
   - endpoint: "GET /obp/v3.0.0/banks/{bankId}/accounts/{accountId}/owner/transactions"
-    tag: Transactions
-    auth: DirectLogin
-    params:
-      - name: accountId
-        type: path
-      - name: limit
-        type: query
-        value: "5"
-      - name: sort_direction
-        type: query
-        value: "DESC"
-    response:
-      fields:
-        - name: id
-          type: String
-        - name: details
-          type: object
-          children:
-            - name: type
-              type: String
-            - name: description
-              type: String
-            - name: posted
-              type: String
-            - name: value
-              type: object
-              children:
-                - name: currency
-                  type: String
-                - name: amount
-                  type: String
-        - name: other_account
-          type: object
-          children:
-            - name: holder
-              type: object
-            - name: metadata
-              type: object
-    errors:
-      - code: 401
-        message: "Unauthorized"
-      - code: 404
-        message: "Account not found"
+    reason: "Recent-transactions list was removed from the shipped screen; account-detail no longer loads transactions. Transaction history is reached via the ACTIVITY 'Transaction history' row navigating to the transactions screen."
 
 dependencies:
   tier: feature
   features:
-    - send-money
     - transactions
+    - direct-debits
     - accounts

@@ -2,7 +2,7 @@ id: login
 name: "Login"
 feature: login
 flavor: shared
-status: approved
+status: enriched
 quality_score: 95
 contract_version: "1.1.0"
 approve_hash: "sha256:27d6180e9dd82342a44423381edf44cc679a0445d91d2b25d10f2c05dd8460cf"
@@ -49,6 +49,11 @@ status_history:
     contract_version: "1.1.0"
     bypass_flags: []
     reason: "Re-approve after search-subtitle→footer redesign + re-export + re-render (quality_score 95). §5 predicate PASS (medium tier; has_ui+has_api). Exports SPEC/API/MOCKUP fresh + roundtrip:pass; preview HTML complete for all 8 states; app-flow node + mockup MANIFEST present. Only gap = Stitch high-fidelity PNG content (service 503) — ignorable per run directive, source design + exports + previews complete."
+  - from: approved
+    to: enriched
+    at: "2026-06-11"
+    by: "/idea verify --source-drift (write-back)"
+    note: "SOURCE→SPEC reconciliation to shipped LoginScreen.kt + LoginViewModel.kt. Reconciled UI to the shipped green HeroGradientCard hero (Mifos X badge + 'Welcome back' + 'Sign in to your sandbox account' subtitle) and white 'Direct Login' card; CTA 'Sign In'→'Login'; error banner red→primaryContainer bg + Info icon; footer bold-primary→muted bodySmall/onSurfaceVariant; removed login_empty + login_bottom_divider + login_header_logo; OAuth takeover gets Bank icon. state_model rewritten to shipped LoginState (oauthPhase enum replaces oauthState/oauthCodeVerifier; PKCE/CSRF live in ObpAuthRepository), DI = ObpAuthRepository/UserDataRepository/OidcCallbackBus (dropped ObpOidcClient/SessionManager/CredentialStore), internal DirectLoginResultReceive/OAuthResultReceive actions added. Removed imperative on_login_success nav (reactive via RootNavViewModel + UserDataRepository.setIsAuthenticated). DirectLogin endpoint version reconciled to /obp/v6.0.0/my/logins/direct."
 
 
 screens:
@@ -66,69 +71,108 @@ components:
       background: "#F9FAEF"
       padding: spacing.lg
     children:
-      - login_header_logo
+      - login_hero_badge
       - login_header_title
+      - login_header_subtitle
+      - login_card_title
       - login_username_input
       - login_password_input
       - login_remember_me_row
       - login_error_banner
       - login_cta_button
-      - login_divider
+      - login_or_divider_row
+      - login_oauth_button
+      - login_oauth_hint
       - login_forgot_password_link
       - login_footer
 
-  - type: image
-    id: login_header_logo
-    content: "mifos_logo"
-    label: "Mifos X logo"
+  - type: card
+    id: login_hero_badge
+    variant: filled
+    content: "Mifos X"
     style:
-      width: "80dp"
-      height: "80dp"
-      tint: "#4C662B"
+      background: "#FFFFFF2E"
+      border_radius: "18dp"
+      padding: spacing.md
       alignment: center
-      padding_bottom: spacing.md
+      typography: "Outfit/title_large"
+      font_weight: 700
+      color: "#FFFFFF"
     a11y:
-      role: image
-      label: "Mifos X Open Banking logo"
+      role: text
+      label: "Mifos X"
     test_context:
-      purpose: "Brand logo at the top of the login form for trust and recognition"
+      purpose: "White translucent 'Mifos X' badge inside the green HeroGradientCard at the top of the login screen"
       interaction_type: display
       data_driven: false
 
   - type: text
     id: login_header_title
-    content: "Welcome Back"
+    content: "Welcome back"
     variant: headline_large
     style:
-      typography: "Outfit/headline_small"
+      typography: "Outfit/headline_medium"
       color: "#4C662B"
       alignment: center
       padding_bottom: spacing.xs
     a11y:
       role: heading
       level: 1
-      label: "Welcome Back"
+      label: "Welcome back"
     test_context:
-      purpose: "Login screen headline for context and persona warmth"
+      purpose: "Login screen headline inside the green hero gradient card (HeroGradientCard) — 'Welcome back' over a 'Mifos X' badge and 'Sign in to your sandbox account' subtitle"
+      interaction_type: display
+      data_driven: false
+
+  - type: text
+    id: login_header_subtitle
+    content: "Sign in to your sandbox account"
+    variant: body_medium
+    style:
+      typography: "Outfit/body_medium"
+      color: "#FFFFFFD9"
+      alignment: center
+    a11y:
+      role: text
+      label: "Sign in to your sandbox account"
+    test_context:
+      purpose: "Subtitle copy inside the green hero gradient card below the 'Welcome back' headline"
+      interaction_type: display
+      data_driven: false
+
+  - type: text
+    id: login_card_title
+    content: "Direct Login"
+    variant: title_medium
+    style:
+      typography: "Outfit/title_medium"
+      color: "#1A1C16"
+      font_weight: 700
+      padding_bottom: spacing.sm
+    a11y:
+      role: heading
+      level: 2
+      label: "Direct Login"
+    test_context:
+      purpose: "Title of the white card that wraps the username/password DirectLogin form"
       interaction_type: display
       data_driven: false
 
   - type: text
     id: login_footer
     content: "Powered by Mifos"
-    variant: body_medium
+    variant: body_small
     style:
-      typography: "Outfit/body_medium"
-      color: "#4C662B"
-      font_weight: 700
+      typography: "Outfit/body_small"
+      color: "#44483D"
       alignment: center
-      padding_top: spacing.sm
+      padding_top: spacing.md
       padding_bottom: spacing.xl
     a11y:
       role: text
       label: "Powered by Mifos"
     test_context:
-      purpose: "Brand attribution footer pinned at the bottom of the login screen"
+      purpose: "Muted brand attribution footer (bodySmall / onSurfaceVariant) at the bottom of the login screen"
       interaction_type: display
       data_driven: false
 
@@ -233,7 +277,6 @@ components:
     variant: filled
     style:
       background: "#CDEDA3"
-      border_color: "#BA1A1A"
       border_radius: "8dp"
       padding: spacing.md
       margin_bottom: spacing.md
@@ -241,10 +284,11 @@ components:
     children:
       - login_error_icon
       - login_error_message
+    note: "Shipped uses primaryContainer background (mapped to #CDEDA3) with an Info icon — not a red error-styled banner. The message Text is tinted error red."
 
   - type: icon
     id: login_error_icon
-    content: "error_outline"
+    content: "info"
     variant: default
     supported_states: [idle, hover, focus_visible, pressed, disabled]
     style:
@@ -254,7 +298,7 @@ components:
       role: image
       label: "Error"
     test_context:
-      purpose: "Error icon in the authentication failure banner"
+      purpose: "Info icon (tinted error red) in the authentication failure banner; banner background is primaryContainer"
       interaction_type: display
       data_driven: false
 
@@ -276,7 +320,7 @@ components:
 
   - type: button
     id: login_cta_button
-    label: "Sign In"
+    label: "Login"
     variant: filled
     supported_states: [idle, hover, focus_visible, pressed, disabled]
     style:
@@ -293,7 +337,7 @@ components:
     loading_when: "uiState == Authenticating"
     a11y:
       role: button
-      label: "Sign In with DirectLogin"
+      label: "Login with DirectLogin"
     keyboard:
       focusable: true
     test_context:
@@ -397,19 +441,6 @@ components:
       interaction_type: display
       data_driven: false
 
-  - type: divider
-    id: login_bottom_divider
-    style:
-      color: "#E1E4D5"
-      margin_top: spacing.md
-      margin_bottom: spacing.md
-    a11y:
-      role: separator
-    test_context:
-      purpose: "Divider above forgot password link"
-      interaction_type: display
-      data_driven: false
-
   - type: link
     id: login_forgot_password_link
     label: "Forgot Password?"
@@ -431,6 +462,22 @@ components:
     test_context:
       purpose: "Secondary CTA for users who cannot recall their credentials"
       interaction_type: navigate
+      data_driven: false
+
+  - type: icon
+    id: oauth_takeover_icon
+    content: "account_balance"
+    variant: default
+    style:
+      color: "#4C662B"
+      size: "80dp"
+      alignment: center
+    a11y:
+      role: image
+      label: "Open Bank Project"
+    test_context:
+      purpose: "Bank icon shown at the top of the OAuth full-screen takeover (OAuthTakeover) for both redirecting and exchanging phases"
+      interaction_type: display
       data_driven: false
 
   - type: text
@@ -505,35 +552,29 @@ states:
   initial_state: idle
   idle:
     layout: { type: column, padding: spacing.lg }
-    visible_components: [login_header_logo, login_header_title, login_username_input, login_password_input, login_remember_me_row, login_cta_button, login_or_divider_row, login_oauth_button, login_oauth_hint, login_bottom_divider, login_forgot_password_link, login_footer]
+    visible_components: [login_hero_badge, login_header_title, login_header_subtitle, login_card_title, login_username_input, login_password_input, login_remember_me_row, login_cta_button, login_or_divider_row, login_oauth_button, login_oauth_hint, login_forgot_password_link, login_footer]
   loading:
     layout: { type: column, padding: spacing.lg }
-    visible_components: [login_header_logo, login_header_title, login_username_input, login_password_input, login_remember_me_row, login_cta_button, login_or_divider_row, login_oauth_button, login_oauth_hint, login_bottom_divider, login_forgot_password_link, login_footer]
+    visible_components: [login_hero_badge, login_header_title, login_header_subtitle, login_card_title, login_username_input, login_password_input, login_remember_me_row, login_cta_button, login_or_divider_row, login_oauth_button, login_oauth_hint, login_forgot_password_link, login_footer]
     note: "Canonical loading state alias — same as authenticating; login_cta_button shows loading spinner"
   authenticating:
     layout: { type: column, padding: spacing.lg }
-    visible_components: [login_header_logo, login_header_title, login_username_input, login_password_input, login_remember_me_row, login_cta_button, login_or_divider_row, login_oauth_button, login_oauth_hint, login_bottom_divider, login_forgot_password_link, login_footer]
+    visible_components: [login_hero_badge, login_header_title, login_header_subtitle, login_card_title, login_username_input, login_password_input, login_remember_me_row, login_cta_button, login_or_divider_row, login_oauth_button, login_oauth_hint, login_forgot_password_link, login_footer]
     note: "login_cta_button shows loading spinner; inputs disabled; oauth button disabled"
   oauth_redirecting:
     layout: { type: column, padding: spacing.lg, align: center, justify: center }
-    visible_components: [login_header_logo, oauth_redirect_title, oauth_redirect_msg, oauth_redirect_spinner]
-    note: "Full-screen takeover — logo + redirecting message + spinner. System browser opens to OBP OIDC auth endpoint."
+    visible_components: [oauth_takeover_icon, oauth_redirect_title, oauth_redirect_msg, oauth_redirect_spinner]
+    note: "Full-screen takeover (OAuthTakeover) — Bank icon + 'Redirecting to Open Bank Project' + message + spinner. System browser opens to OBP OIDC auth endpoint."
   oauth_exchanging:
     layout: { type: column, padding: spacing.lg, align: center, justify: center }
-    visible_components: [login_header_logo, oauth_exchange_title, oauth_exchange_msg, oauth_exchange_spinner]
-    note: "Full-screen takeover — logo + exchanging message + spinner. App returned from browser with auth code; exchanging code for token."
+    visible_components: [oauth_takeover_icon, oauth_exchange_title, oauth_exchange_msg, oauth_exchange_spinner]
+    note: "Full-screen takeover (OAuthTakeover) — Bank icon + 'Completing Sign In' + message + spinner. App returned from browser with auth code; exchanging code for token."
   error:
     layout: { type: column, padding: spacing.lg }
-    visible_components: [login_header_logo, login_header_title, login_username_input, login_password_input, login_remember_me_row, login_error_banner, login_cta_button, login_or_divider_row, login_oauth_button, login_oauth_hint, login_bottom_divider, login_forgot_password_link, login_footer]
+    visible_components: [login_hero_badge, login_header_title, login_header_subtitle, login_card_title, login_username_input, login_password_input, login_remember_me_row, login_error_banner, login_cta_button, login_or_divider_row, login_oauth_button, login_oauth_hint, login_forgot_password_link, login_footer]
   content:
     layout: { type: column, padding: spacing.lg }
-    visible_components: [login_header_logo, login_header_title, login_username_input, login_password_input, login_remember_me_row, login_cta_button, login_or_divider_row, login_oauth_button, login_oauth_hint, login_bottom_divider, login_forgot_password_link, login_footer]
-  empty:
-    layout: { type: column, padding: spacing.lg }
-    visible_components: [login_header_logo, login_header_title, login_footer]
-    show_empty_state: true
-    empty_state_icon: account_circle_off
-    empty_state_message: "No accounts found. Contact your bank to set up online banking."
+    visible_components: [login_hero_badge, login_header_title, login_header_subtitle, login_card_title, login_username_input, login_password_input, login_remember_me_row, login_cta_button, login_or_divider_row, login_oauth_button, login_oauth_hint, login_forgot_password_link, login_footer]
 
 state_model:
   LoginViewModel:
@@ -560,56 +601,50 @@ state_model:
       - field: authMethod
         type: "AuthMethod"
         default: "AuthMethod.NONE"
-        note: "NONE | DIRECT_LOGIN | OAUTH_OIDC — tracks which auth flow is active"
-      - field: oauthState
-        type: "String?"
-        default: "null"
-        note: "CSRF state parameter for OAuth authorization_code flow"
-      - field: oauthCodeVerifier
-        type: "String?"
-        default: "null"
-        note: "PKCE code_verifier for OAuth PKCE flow"
-    errors: [NETWORK_ERROR, INVALID_CREDENTIALS, UNAUTHORIZED, SERVER_ERROR, OAUTH_CANCELLED, OAUTH_TOKEN_EXCHANGE_FAILED, OAUTH_STATE_MISMATCH]
-    events: [OnUsernameChanged, OnPasswordChanged, OnRememberMeToggled, OnPasswordVisibilityToggled, OnDirectLoginClicked, OnOAuthLoginClicked, OnOAuthCallback, OnForgotPasswordClicked, OnLoginSuccess, OnLoginError]
-    actions: [onUsernameChanged(value: String), onPasswordChanged(value: String), onRememberMeToggled(), onPasswordVisibilityToggled(), onDirectLoginClicked(), onOAuthLoginClicked(), onOAuthCallback(code: String, state: String), onForgotPasswordClicked()]
-    di: [ObpAuthRepository, ObpOidcClient, SessionManager, CredentialStore]
+        note: "enum AuthMethod { NONE, DIRECT_LOGIN, OAUTH_OIDC } — tracks which auth flow is in flight"
+      - field: oauthPhase
+        type: "OAuthPhase"
+        default: "OAuthPhase.NONE"
+        note: "enum OAuthPhase { NONE, REDIRECTING, EXCHANGING } — drives the full-screen OAuth takeover. PKCE code_verifier / CSRF state live inside ObpAuthRepository, NOT in UI state."
+    derived:
+      - field: isFormValid
+        type: Boolean
+        note: "computed get(): username.isNotBlank() && password.isNotBlank()"
+    errors: [UNAUTHORIZED, BAD_REQUEST, REQUEST_TIMEOUT, TOO_MANY_REQUESTS, UNKNOWN]
+    events:
+      - LoginEvent.NavigateToForgotPassword
+      - "LoginEvent.LaunchOidcAuth(authUrl: String)"
+    actions:
+      - "LoginAction.UsernameChanged(value: String)"
+      - "LoginAction.PasswordChanged(value: String)"
+      - LoginAction.RememberMeToggled
+      - LoginAction.PasswordVisibilityToggled
+      - LoginAction.DirectLoginClicked
+      - LoginAction.OAuthLoginClicked
+      - "LoginAction.OAuthCallback(code: String, state: String) — posted internally from OidcCallbackBus, not a user gesture"
+      - LoginAction.ForgotPasswordClicked
+      - "LoginAction.Internal.DirectLoginResultReceive(result) — internal async result"
+      - "LoginAction.Internal.OAuthResultReceive(result) — internal async result"
+    di: [ObpAuthRepository, UserDataRepository, OidcCallbackBus]
+    base: "template.core.base.ui.viewmodel.BaseViewModel<LoginState, LoginEvent, LoginAction>"
+    note: "Login success is REACTIVE: onAuthResult flips UserDataRepository.setIsAuthenticated(true); RootNavViewModel observes the authenticated session and routes to home/fo-dashboard. The screen never navigates to home/fo-dashboard imperatively — only NavigateToForgotPassword + LaunchOidcAuth are emitted as one-shot events."
 
 navigation:
-  - id: nav_to_consumer_home
-    target: home
-    trigger: on_login_success
-    condition: "userRole == CONSUMER"
-    on_click:
-      action: navigate
-      target: home
-  - id: nav_to_home
-    target: home
-    trigger: on_login_success
-    condition: "userRole == CONSUMER"
-    on_click:
-      action: navigate
-      target: home
-  - id: nav_to_fo_dashboard
-    target: fo-dashboard
-    trigger: on_login_success
-    condition: "userRole == FIELD_OFFICER"
-    on_click:
-      action: navigate
-      target: fo-dashboard
   - id: nav_to_forgot_password
     target: forgot-password
     trigger: forgot_password_click
     on_click:
       action: navigate
       target: forgot-password
+    note: "Only outbound nav from the screen is forgot-password (one-shot LoginEvent.NavigateToForgotPassword). Post-login routing to home / fo-dashboard is handled reactively by RootNavViewModel observing UserDataRepository — NOT an imperative navigate from this screen."
 
 api:
   # ── DirectLogin (form-based, sandbox-friendly) ───────────────────────
   - id: obp_direct_login
-    endpoint: "POST /my/logins/direct"
+    endpoint: "POST /obp/v6.0.0/my/logins/direct"
     tag: Authentication
     trigger: on_direct_login_clicked
-    description: "DirectLogin sends credentials in Authorization header"
+    description: "DirectLogin sends credentials in Authorization header (AuthApi.directLogin → v6.0.0/my/logins/direct)"
     request:
       headers:
         Authorization: 'DirectLogin username="{username}", password="{password}", consumer_key="{consumer_key}"'

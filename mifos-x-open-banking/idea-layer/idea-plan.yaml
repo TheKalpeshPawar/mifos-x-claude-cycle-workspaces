@@ -308,7 +308,7 @@ features:
       flavor: consumer
       description: "Money transfer — recipient selection, amount entry, and validation"
       priority: P0
-      screen_refs: [send-money]
+      screen_refs: [send-money, send-money-amount, sca-challenge, payment-result]
       api_refs: [TransactionRequests, Counterparties]
     - name: send-money-confirm
       flavor: consumer
@@ -338,7 +338,7 @@ features:
       flavor: consumer
       description: "Recurring automated payment schedules with management actions"
       priority: P1
-      screen_refs: [standing-orders]
+      screen_refs: [standing-orders, standing-order-create]
       api_refs: [Standing-Orders]
     - name: direct-debits
       flavor: consumer
@@ -568,6 +568,19 @@ requirements:
     - id: FR-040
       feature_ref: agent-registration
       description: "New agent/field officer can register with required credentials for admin approval."
+    # Consumer Banking — send-money + standing-orders (reverse-engineered from source 2026-06-11)
+    - id: FR-041
+      feature_ref: send-money
+      description: "Consumer enters the transfer amount, selects the beneficiary and payment rail, and sees a live funds check against the source account balance before continuing."
+    - id: FR-042
+      feature_ref: send-money
+      description: "Consumer enters the one-time SCA code to authorise an above-threshold payment (Strong Customer Authentication step) before submission."
+    - id: FR-043
+      feature_ref: send-money
+      description: "Consumer sees a terminal payment confirmation showing the amount, payee, and transaction id, with links to the transaction detail and back to home."
+    - id: FR-044
+      feature_ref: standing-orders
+      description: "Consumer authors a new recurring standing order (amount, frequency, start/end date, beneficiary) and submits it via POST."
 
 # ─── §10 SCREENS ────────────────────────────────────────────────────────────
 screens:
@@ -651,11 +664,26 @@ screens:
       feature_ref: send-money
       flavor: consumer
       states: [loading, draft, validating, content, empty, error]
+    - name: send-money-amount
+      archetype: form
+      feature_ref: send-money
+      flavor: consumer
+      states: [loading, content, empty, error, no_network, unauthenticated]
     - name: send-money-confirm
       archetype: detail_screen
       feature_ref: send-money-confirm
       flavor: consumer
       states: [loading, review, submitting, success, content, empty, error]
+    - name: sca-challenge
+      archetype: form
+      feature_ref: send-money
+      flavor: consumer
+      states: [content, submitting, error]
+    - name: payment-result
+      archetype: detail_screen
+      feature_ref: send-money
+      flavor: consumer
+      states: [content]
     - name: beneficiaries
       archetype: index_list
       feature_ref: beneficiaries
@@ -676,6 +704,11 @@ screens:
       feature_ref: standing-orders
       flavor: consumer
       states: [loading, content, empty, error]
+    - name: standing-order-create
+      archetype: form
+      feature_ref: standing-orders
+      flavor: consumer
+      states: [loading, content, submitting, error]
     - name: direct-debits
       archetype: index_list
       feature_ref: direct-debits

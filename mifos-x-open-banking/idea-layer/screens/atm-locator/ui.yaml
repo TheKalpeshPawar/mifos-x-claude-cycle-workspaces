@@ -2,7 +2,7 @@ id: atm-locator
 name: "ATM & Branch Locator"
 feature: atm-locator
 flavor: consumer
-status: approved
+status: enriched
 quality_score: 93
 contract_version: "1.1.0"
 approve_hash: "sha256:0eaf12bd8c96e4f037af12bd8c96e4f037af12bd8c96e4f037af12bd8c96e4f0"
@@ -23,6 +23,12 @@ status_history:
     by: "/idea approve"
     contract_version: "1.1.0"
     bypass_flags: []
+  - from: approved
+    to: enriched
+    at: "2026-06-11"
+    by: "/idea verify --source-drift (write-back)"
+    contract_version: "1.1.0"
+    note: "SOURCE→SPEC reconciliation to shipped AtmLocatorScreen.kt + AtmLocatorViewModel.kt. Shipped = a real MapLibre map (AtmMapView expect/actual) above a searchable, distance-aware list with per-ATM expandable detail. ATMs are aggregated across every bank the user holds an account at (atmRepository.atmsForBanks over accounts' bankIds). Device location flows via rememberDeviceLocationRequester → onUserLocation (MyLocation IconButton, no permission banner/denied state); rows sort nearest-first by great-circle distance; expanded detail shows address, Accessible/Deposits chips, and a 'Directions' button opening a geo: URI. ScreenState<AtmLocatorContent>. Removed (never built): filter chips (filter_all/atms/branches/24_7 + filter_type, free-text search only); BRANCHES entirely (ATM-only — obp_get_branches UNUSED, marked deferred, no BranchesApi exists); location_permission_banner + enable_location_button + location_denied state; per-row withdrawal-limit text; hardcoded Oxford/Bond/Mayfair demo rows; loading skeleton (→ CircularProgressIndicator). Added: +no_network and +unauthenticated states (ScreenState sealed type). state_model rewritten to AtmLocatorContent (resultSummary string; no selectedFilter/AtmFilter, no locationPermissionGranted); Directions is a geo: URI emitted in the screen (no DirectionsRequested event); no LocationService/NavigationService classes. DI = AtmRepository + AccountsRepository. Endpoint corrected to path-only v3.0.0/banks/{bankId}/atms (per-bank aggregate, client-side sort — no lat/long query params)."
 
 screens:
   - id: atm_locator_main
@@ -31,6 +37,14 @@ screens:
     route: /atm-locator
 
 archetype: index_list
+
+shell:
+  top_app_bar:
+    show: true
+    title: "ATM & Branches"
+    navigation_icon: arrow_back
+    navigation_action: navigate_back
+  bottom_nav: false
 
 components:
   - type: text
@@ -49,6 +63,39 @@ components:
       test_id: atm_locator_title
       assert: text_visible
 
+  - type: image
+    id: atm_map_area
+    content: "ATM map"
+    style:
+      background: "#E1E4D5"
+      height: 260
+      margin_horizontal: 0
+      margin_top: 0
+      border_radius: 0
+      object_fit: cover
+    a11y:
+      role: img
+      label: "Map showing nearby ATMs across your banks"
+      alt: "Map showing nearby ATMs across your banks"
+    test_context:
+      test_id: atm_map_view
+      assert: map_renders_when_content
+
+  - type: stack
+    id: atm_search_row
+    style:
+      direction: horizontal
+      align_items: center
+      spacing: 8
+      padding_horizontal: 12
+      padding_vertical: 8
+    a11y:
+      role: group
+      label: "Search ATMs by location and use my location"
+    test_context:
+      test_id: atm_search_row
+      assert: visible
+
   - type: input
     id: location_search_input
     label: "Search location"
@@ -56,505 +103,464 @@ components:
     supported_states: [idle, hover, focus_visible, pressed, disabled]
     style:
       variant: search
-      placeholder: "Enter city, postcode or address..."
+      placeholder: "Search city, postcode or address"
       background: "#F9FAEF"
-      border_radius: 28
+      border_radius: 12
       padding_horizontal: 16
       padding_vertical: 12
-      margin_horizontal: 16
-      margin_top: 12
       icon_leading: "search"
+      weight: 1
     on_click:
-      action: search_location
+      action: query_changed
       target: atm_locator_main
     a11y:
       role: searchbox
       label_source: visible_label
-      label: "Search for ATMs and branches by location"
-      hint: "Enter city, postcode or address"
+      label: "Search for ATMs by city, postcode or address"
+      hint: "Search city, postcode or address"
     keyboard:
       focusable: true
     test_context:
-      test_id: location_search_input
+      test_id: atm_search_field
       assert: input_focusable
 
-  - type: box
-    id: location_permission_banner
-    content: "Use my location for nearby ATMs"
-    style:
-      background: "#DCE7C8"
-      border_color: "#4C662B"
-      border_width: 1
-      border_radius: 8
-      padding: 12
-      margin_horizontal: 16
-      margin_top: 8
-      direction: row
-      align_items: center
-      conditional: location_not_granted
-    a11y:
-      role: region
-      label: "Location permission request banner"
-    test_context:
-      test_id: location_permission_banner
-      assert: visible_when_location_denied
-
-  - type: button
-    id: enable_location_button
-    label: "Enable"
+  - type: icon_button
+    id: use_my_location_button
+    content: "my_location"
     supported_states: [idle, hover, focus_visible, pressed, disabled]
     style:
-      variant: text
       color: "#4C662B"
-      typography: label_medium
-      padding_horizontal: 8
     on_click:
-      action: request_location_permission
+      action: request_user_location
       target: atm_locator_main
     a11y:
       role: button
-      label: "Enable location access to find nearby ATMs"
+      label: "Use my location"
     keyboard:
       focusable: true
     test_context:
-      test_id: enable_location_button
-      assert: triggers_permission_request
-
-  - type: image
-    id: atm_map_area
-    content: "Map loading..."
-    style:
-      background: "#E1E4D5"
-      height: 240
-      margin_horizontal: 16
-      margin_top: 12
-      border_radius: 12
-      object_fit: cover
-    a11y:
-      role: img
-      label: "ATM map showing nearby locations"
-      alt: "ATM map showing nearby locations"
-    test_context:
-      test_id: atm_map_area
-      assert: map_renders_when_content
-
-  - type: stack
-    id: filter_chips_row
-    style:
-      direction: horizontal
-      spacing: 8
-      padding_horizontal: 16
-      padding_vertical: 12
-      overflow_x: scroll
-    a11y:
-      role: group
-      label: "Filter ATMs and branches by type"
-    test_context:
-      test_id: filter_chips_row
-      assert: all_chips_visible
-
-  - type: input
-    id: filter_all
-    label: "All"
-    content: "all"
-    supported_states: [idle, hover, focus_visible, pressed, disabled]
-    style:
-      variant: radio
-      chip_style: true
-      selected: true
-      background_selected: "#4C662B"
-      color_selected: "#FFFFFF"
-      border_radius: 16
-      padding_horizontal: 16
-      padding_vertical: 8
-    on_click:
-      action: filter_type
-      target: atm_locator_main
-    a11y:
-      role: radio
-      label_source: visible_label
-      label: "Show all ATMs and branches"
-    keyboard:
-      focusable: true
-    test_context:
-      test_id: filter_all
-      assert: default_selected
-
-  - type: input
-    id: filter_atms
-    label: "ATMs"
-    content: "atm"
-    supported_states: [idle, hover, focus_visible, pressed, disabled]
-    style:
-      variant: radio
-      chip_style: true
-      border_radius: 16
-      padding_horizontal: 16
-      padding_vertical: 8
-    on_click:
-      action: filter_type
-      target: atm_locator_main
-    a11y:
-      role: radio
-      label_source: visible_label
-      label: "Show ATMs only"
-    keyboard:
-      focusable: true
-    test_context:
-      test_id: filter_atms
-      assert: filters_to_atm_type
-
-  - type: input
-    id: filter_branches
-    label: "Branches"
-    content: "branch"
-    supported_states: [idle, hover, focus_visible, pressed, disabled]
-    style:
-      variant: radio
-      chip_style: true
-      border_radius: 16
-      padding_horizontal: 16
-      padding_vertical: 8
-    on_click:
-      action: filter_type
-      target: atm_locator_main
-    a11y:
-      role: radio
-      label_source: visible_label
-      label: "Show branches only"
-    keyboard:
-      focusable: true
-    test_context:
-      test_id: filter_branches
-      assert: filters_to_branch_type
-
-  - type: input
-    id: filter_24_7
-    label: "24/7"
-    content: "24_7"
-    supported_states: [idle, hover, focus_visible, pressed, disabled]
-    style:
-      variant: radio
-      chip_style: true
-      border_radius: 16
-      padding_horizontal: 16
-      padding_vertical: 8
-    on_click:
-      action: filter_type
-      target: atm_locator_main
-    a11y:
-      role: radio
-      label_source: visible_label
-      label: "Show 24/7 locations only"
-    keyboard:
-      focusable: true
-    test_context:
-      test_id: filter_24_7
-      assert: filters_to_24_7
+      test_id: atm_near_me
+      assert: requests_device_location
 
   - type: text
     id: nearby_results_header
-    content: "3 ATMs found within 500m"
+    content: "4 ATMs near you"
     style:
-      typography: title_medium
+      typography: title_small
       color: "#1A1C16"
+      font_weight: 600
       padding_horizontal: 16
-      padding_top: 8
-      padding_bottom: 4
+      padding_vertical: 4
     a11y:
       role: heading
       level: 2
-      label: "Nearby results: 3 ATMs found within 500 metres"
+      label: "Result summary: 4 ATMs near you"
     test_context:
-      test_id: nearby_results_header
-      assert: count_updates_on_filter
+      test_id: atm_result_header
+      assert: summary_updates_on_query_and_location
+
+  # ── ATM list rows (selectable; expand to show detail) ─────────────────────────
 
   - type: box
-    id: atm_result_oxford_street
+    id: atm_result_kcb_westlands
     content: ""
+    supported_states: [idle, hover, focus_visible, pressed]
     style:
       background: "#FFFFFF"
       border_radius: 12
-      elevation: 2
+      elevation: 0
       padding: 16
       margin_horizontal: 16
-      margin_bottom: 8
+      margin_vertical: 4
     on_click:
-      action: view_atm_detail
+      action: select_atm
       target: atm_locator_main
     a11y:
       role: listitem
-      label: "Mifos ATM Oxford Street, 0.2 kilometres away, Open 24/7"
+      label: "KCB Westlands ATM, 4 ATMs near you, tap to expand details"
     keyboard:
       focusable: true
     test_context:
-      test_id: atm_result_oxford_street
-      assert: navigates_to_detail_on_tap
+      test_id: atm_row_kcb_westlands
+      assert: toggles_detail_on_tap
 
   - type: text
-    id: atm_oxford_name
-    content: "Mifos ATM — Oxford Street"
+    id: atm_kcb_name
+    content: "KCB Westlands ATM"
     style:
-      typography: title_small
+      typography: title_medium
       color: "#1A1C16"
       font_weight: 600
     a11y:
       role: text
-      label: "Mifos ATM Oxford Street"
+      label: "KCB Westlands ATM"
     test_context:
-      test_id: atm_oxford_name
+      test_id: atm_kcb_name
       assert: text_visible
 
   - type: text
-    id: atm_oxford_distance
-    content: "0.2km away"
+    id: atm_kcb_hours
+    content: "Open 24 hours"
     style:
-      typography: body_small
+      typography: body_medium
       color: "#44483D"
     a11y:
       role: text
-      label: "0.2 kilometres away"
+      label: "Open 24 hours"
     test_context:
-      test_id: atm_oxford_distance
+      test_id: atm_kcb_hours
       assert: text_visible
 
-  - type: text
-    id: atm_oxford_hours
-    content: "Open 24/7"
+  - type: badge
+    id: atm_kcb_distance
+    content: "320 m"
+    variant: tonal
     style:
-      typography: body_small
-      color: "#4C662B"
-      font_weight: 500
-    a11y:
-      role: text
-      label: "Open 24 hours, 7 days a week"
-    test_context:
-      test_id: atm_oxford_hours
-      assert: text_visible
-
-  - type: text
-    id: atm_oxford_limit
-    content: "£300 max withdrawal"
-    style:
-      typography: body_small
-      color: "#44483D"
-    a11y:
-      role: text
-      label: "Maximum withdrawal limit £300"
-    test_context:
-      test_id: atm_oxford_limit
-      assert: text_visible
-
-  - type: link
-    id: atm_oxford_directions
-    label: "Get Directions"
-    content: ""
-    style:
-      color: "#4C662B"
+      background: "#DCE7C8"
+      text_color: "#1A1C16"
+      border_radius: 8
+      padding_horizontal: 8
+      padding_vertical: "3dp"
       typography: label_medium
-      icon_trailing: "directions"
+    a11y:
+      role: text
+      label: "320 metres away"
+    test_context:
+      test_id: atm_kcb_distance
+      assert: visible_when_location_known
+
+  - type: text
+    id: atm_kcb_address
+    content: "Westlands Commercial Centre, Waiyaki Way, Nairobi, Nairobi County, 00100"
+    style:
+      typography: body_medium
+      color: "#1A1C16"
+    a11y:
+      role: text
+      label: "Address: Westlands Commercial Centre, Waiyaki Way, Nairobi"
+    test_context:
+      test_id: atm_kcb_address
+      assert: visible_when_expanded
+
+  - type: chip
+    id: atm_kcb_accessible_chip
+    label: "Accessible"
+    content: "accessible"
+    style:
+      background: "#FFD8E4"
+      text_color: "#31111D"
+      border_radius: 8
+      icon_leading: "accessible"
+    a11y:
+      role: text
+      label: "Wheelchair accessible"
+    test_context:
+      test_id: atm_kcb_accessible_chip
+      assert: visible_when_accessible
+
+  - type: chip
+    id: atm_kcb_deposits_chip
+    label: "Deposits"
+    content: "deposits"
+    style:
+      background: "#FFD8E4"
+      text_color: "#31111D"
+      border_radius: 8
+      icon_leading: "savings"
+    a11y:
+      role: text
+      label: "Accepts deposits"
+    test_context:
+      test_id: atm_kcb_deposits_chip
+      assert: visible_when_accepts_deposits
+
+  - type: button
+    id: atm_kcb_directions
+    label: "Directions"
+    variant: outlined
+    supported_states: [idle, hover, focus_visible, pressed]
+    style:
+      border_color: "#4C662B"
+      color: "#4C662B"
+      typography: label_large
+      border_radius: 12
+      icon_leading: "navigation"
     on_click:
       action: open_directions
       target: atm_locator_main
     a11y:
-      role: link
-      label: "Get directions to Mifos ATM Oxford Street"
+      role: button
+      label: "Get directions to KCB Westlands ATM"
     keyboard:
       focusable: true
     test_context:
-      test_id: atm_oxford_directions
-      assert: opens_maps_app
+      test_id: atm_kcb_directions
+      assert: opens_geo_uri
 
   - type: box
-    id: atm_result_bond_street
+    id: atm_result_equity_cbd
     content: ""
+    supported_states: [idle, hover, focus_visible, pressed]
     style:
       background: "#FFFFFF"
       border_radius: 12
-      elevation: 2
+      elevation: 0
       padding: 16
       margin_horizontal: 16
-      margin_bottom: 8
+      margin_vertical: 4
     on_click:
-      action: view_atm_detail
+      action: select_atm
       target: atm_locator_main
     a11y:
       role: listitem
-      label: "Mifos ATM Bond Street Station, 0.5 kilometres away, Open 24/7"
+      label: "Equity Bank CBD ATM, tap to expand details"
     keyboard:
       focusable: true
     test_context:
-      test_id: atm_result_bond_street
-      assert: navigates_to_detail_on_tap
+      test_id: atm_row_equity_cbd
+      assert: toggles_detail_on_tap
 
   - type: text
-    id: atm_bond_name
-    content: "Mifos ATM — Bond Street Station"
+    id: atm_equity_name
+    content: "Equity Bank CBD ATM"
     style:
-      typography: title_small
+      typography: title_medium
       color: "#1A1C16"
       font_weight: 600
     a11y:
       role: text
-      label: "Mifos ATM Bond Street Station"
+      label: "Equity Bank CBD ATM"
     test_context:
-      test_id: atm_bond_name
+      test_id: atm_equity_name
       assert: text_visible
 
   - type: text
-    id: atm_bond_distance
-    content: "0.5km away"
+    id: atm_equity_hours
+    content: "Open 24 hours"
     style:
-      typography: body_small
+      typography: body_medium
       color: "#44483D"
     a11y:
       role: text
-      label: "0.5 kilometres away"
+      label: "Open 24 hours"
     test_context:
-      test_id: atm_bond_distance
+      test_id: atm_equity_hours
       assert: text_visible
 
-  - type: text
-    id: atm_bond_hours
-    content: "Open 24/7"
+  - type: badge
+    id: atm_equity_distance
+    content: "1.2 km"
+    variant: tonal
     style:
-      typography: body_small
-      color: "#4C662B"
-      font_weight: 500
+      background: "#DCE7C8"
+      text_color: "#1A1C16"
+      border_radius: 8
+      padding_horizontal: 8
+      padding_vertical: "3dp"
+      typography: label_medium
     a11y:
       role: text
-      label: "Open 24 hours, 7 days a week"
+      label: "1.2 kilometres away"
     test_context:
-      test_id: atm_bond_hours
-      assert: text_visible
-
-  - type: link
-    id: atm_bond_directions
-    label: "Get Directions"
-    content: ""
-    style:
-      color: "#4C662B"
-      typography: label_medium
-      icon_trailing: "directions"
-    on_click:
-      action: open_directions
-      target: atm_locator_main
-    a11y:
-      role: link
-      label: "Get directions to Mifos ATM Bond Street Station"
-    keyboard:
-      focusable: true
-    test_context:
-      test_id: atm_bond_directions
-      assert: opens_maps_app
+      test_id: atm_equity_distance
+      assert: visible_when_location_known
 
   - type: box
-    id: atm_result_mayfair_branch
+    id: atm_result_coop_karen
     content: ""
+    supported_states: [idle, hover, focus_visible, pressed]
     style:
       background: "#FFFFFF"
       border_radius: 12
-      elevation: 2
+      elevation: 0
       padding: 16
       margin_horizontal: 16
-      margin_bottom: 8
+      margin_vertical: 4
     on_click:
-      action: view_atm_detail
+      action: select_atm
       target: atm_locator_main
     a11y:
       role: listitem
-      label: "Mifos Branch Mayfair, 0.8 kilometres away, Monday to Friday 9am to 5pm"
+      label: "Co-op Bank Karen ATM, tap to expand details"
     keyboard:
       focusable: true
     test_context:
-      test_id: atm_result_mayfair_branch
-      assert: navigates_to_detail_on_tap
+      test_id: atm_row_coop_karen
+      assert: toggles_detail_on_tap
 
   - type: text
-    id: branch_mayfair_name
-    content: "Mifos Branch — Mayfair"
+    id: atm_coop_name
+    content: "Co-op Bank Karen ATM"
     style:
-      typography: title_small
+      typography: title_medium
       color: "#1A1C16"
       font_weight: 600
     a11y:
       role: text
-      label: "Mifos Branch Mayfair"
+      label: "Co-op Bank Karen ATM"
     test_context:
-      test_id: branch_mayfair_name
+      test_id: atm_coop_name
       assert: text_visible
 
   - type: text
-    id: branch_mayfair_distance
-    content: "0.8km away"
+    id: atm_coop_hours
+    content: "Daily 06:00–22:00"
     style:
-      typography: body_small
+      typography: body_medium
       color: "#44483D"
     a11y:
       role: text
-      label: "0.8 kilometres away"
+      label: "Open daily 6am to 10pm"
     test_context:
-      test_id: branch_mayfair_distance
+      test_id: atm_coop_hours
       assert: text_visible
 
-  - type: text
-    id: branch_mayfair_hours
-    content: "Mon–Fri 9am–5pm"
+  - type: badge
+    id: atm_coop_distance
+    content: "6.4 km"
+    variant: tonal
     style:
-      typography: body_small
-      color: "#44483D"  # fix A11Y-002: was #E8A317 (2.17:1 on white, FAIL); #44483D = 8.91:1 PASS
-      font_weight: 500
+      background: "#DCE7C8"
+      text_color: "#1A1C16"
+      border_radius: 8
+      padding_horizontal: 8
+      padding_vertical: "3dp"
+      typography: label_medium
     a11y:
       role: text
-      label: "Open Monday to Friday 9am to 5pm"
+      label: "6.4 kilometres away"
     test_context:
-      test_id: branch_mayfair_hours
-      assert: text_visible
+      test_id: atm_coop_distance
+      assert: visible_when_location_known
 
-  - type: text
-    id: branch_mayfair_services
-    content: "Services: Cashier · FX · Safe Deposit"
+  # ── Empty state ───────────────────────────────────────────────────────────────
+
+  - type: stack
+    id: atm_empty_state
+    variant: column
     style:
-      typography: body_small
+      alignment: center
+      padding: 32
+    children:
+      - atm_empty_icon
+      - atm_empty_title
+      - atm_empty_message
+
+  - type: icon
+    id: atm_empty_icon
+    content: "location_off"
+    style:
       color: "#44483D"
+      size: "48dp"
     a11y:
-      role: text
-      label: "Available services: Cashier, Foreign Exchange, Safe Deposit"
+      role: image
+      label: "No ATMs"
     test_context:
-      test_id: branch_mayfair_services
+      test_id: atm_empty_icon
+      assert: visible_when_empty
+
+  - type: text
+    id: atm_empty_title
+    content: "No ATMs nearby"
+    style:
+      typography: title_large
+      color: "#1A1C16"
+    a11y:
+      role: heading
+      level: 2
+      label: "No ATMs nearby"
+    test_context:
+      test_id: atm_empty_title
       assert: text_visible
 
-  - type: link
-    id: branch_mayfair_directions
-    label: "Get Directions"
-    content: ""
+  - type: text
+    id: atm_empty_message
+    content: "None of your banks have published ATM locations yet."
+    style:
+      typography: body_medium
+      color: "#44483D"
+      alignment: center
+    a11y:
+      role: text
+      label: "None of your banks have published ATM locations yet"
+    test_context:
+      test_id: atm_empty_message
+      assert: text_visible
+
+  # ── Error / no-network / unauthenticated state ────────────────────────────────
+
+  - type: stack
+    id: atm_error_state
+    variant: column
+    style:
+      alignment: center
+      padding: 32
+    children:
+      - atm_error_icon
+      - atm_error_title
+      - atm_error_message
+      - atm_retry_button
+
+  - type: icon
+    id: atm_error_icon
+    content: "cloud_off"
+    style:
+      color: "#44483D"
+      size: "48dp"
+    a11y:
+      role: image
+      label: "Couldn't load ATMs"
+    test_context:
+      test_id: atm_error_icon
+      assert: visible_when_error
+
+  - type: text
+    id: atm_error_title
+    content: "Couldn't load ATMs"
+    style:
+      typography: title_large
+      color: "#1A1C16"
+    a11y:
+      role: heading
+      level: 2
+      label: "Couldn't load ATMs"
+    test_context:
+      test_id: atm_error_title
+      assert: text_visible
+
+  - type: text
+    id: atm_error_message
+    content: "Check your connection and try again"
+    style:
+      typography: body_medium
+      color: "#44483D"
+      alignment: center
+    a11y:
+      role: text
+      label: "Check your connection and try again"
+    test_context:
+      test_id: atm_error_message
+      assert: text_visible
+
+  - type: button
+    id: atm_retry_button
+    label: "Retry"
+    variant: text
+    supported_states: [idle, hover, focus_visible, pressed, disabled]
     style:
       color: "#4C662B"
-      typography: label_medium
-      icon_trailing: "directions"
+      typography: label_large
     on_click:
-      action: open_directions
+      action: retry_load
       target: atm_locator_main
     a11y:
-      role: link
-      label: "Get directions to Mifos Branch Mayfair"
+      role: button
+      label: "Retry loading ATMs"
     keyboard:
       focusable: true
     test_context:
-      test_id: branch_mayfair_directions
-      assert: opens_maps_app
-
-  - type: divider
-    id: results_divider
-    style:
-      margin_horizontal: 16
-      color: "#E1E4D5"
-    a11y:
-      role: separator
-      label: ""
-    test_context:
-      test_id: results_divider
-      assert: visible
+      test_id: atm_retry_button
+      assert: triggers_reload
 
 responsive:
   mobile_only: true
@@ -564,183 +570,183 @@ states:
   initial_state: loading
   loading:
     motion:
-      shimmer_duration: short4
       reduced_motion_fallback: static_placeholder
     layout:
       show_components:
         - atm_locator_title
-        - location_search_input
-        - filter_chips_row
-        - filter_all
-        - filter_atms
-        - filter_branches
-        - filter_24_7
-      skeleton_components:
-        - atm_map_area
-        - nearby_results_header
-        - atm_result_oxford_street
-        - atm_result_bond_street
-        - atm_result_mayfair_branch
+      progress_components:
+        - atm_progress_indicator
       hide_components:
-        - location_permission_banner
-        - enable_location_button
+        - atm_map_area
+        - atm_search_row
+        - nearby_results_header
+        - atm_result_kcb_westlands
+        - atm_result_equity_cbd
+        - atm_result_coop_karen
+        - atm_empty_state
+        - atm_error_state
+    note: "Centered CircularProgressIndicator while bank list + per-bank ATMs load (no skeleton)."
   content:
     layout:
       show_components:
         - atm_locator_title
-        - location_search_input
         - atm_map_area
-        - filter_chips_row
-        - filter_all
-        - filter_atms
-        - filter_branches
-        - filter_24_7
-        - nearby_results_header
-        - atm_result_oxford_street
-        - atm_oxford_name
-        - atm_oxford_distance
-        - atm_oxford_hours
-        - atm_oxford_limit
-        - atm_oxford_directions
-        - atm_result_bond_street
-        - atm_bond_name
-        - atm_bond_distance
-        - atm_bond_hours
-        - atm_bond_directions
-        - atm_result_mayfair_branch
-        - branch_mayfair_name
-        - branch_mayfair_distance
-        - branch_mayfair_hours
-        - branch_mayfair_services
-        - branch_mayfair_directions
-        - results_divider
-      hide_components:
-        - location_permission_banner
-        - enable_location_button
-  error:
-    layout:
-      show_components:
-        - atm_locator_title
+        - atm_search_row
         - location_search_input
-      hide_components:
-        - atm_map_area
+        - use_my_location_button
         - nearby_results_header
-        - atm_result_oxford_street
-        - atm_result_bond_street
-        - atm_result_mayfair_branch
-      error_message: "Unable to load ATMs. Check your connection and try again."
+        - atm_result_kcb_westlands
+        - atm_kcb_name
+        - atm_kcb_hours
+        - atm_kcb_distance
+        - atm_kcb_address
+        - atm_kcb_accessible_chip
+        - atm_kcb_deposits_chip
+        - atm_kcb_directions
+        - atm_result_equity_cbd
+        - atm_equity_name
+        - atm_equity_hours
+        - atm_equity_distance
+        - atm_result_coop_karen
+        - atm_coop_name
+        - atm_coop_hours
+        - atm_coop_distance
+      hide_components:
+        - atm_empty_state
+        - atm_error_state
+    note: "Address + Accessible/Deposits chips + Directions appear only inside the selected (expanded) ATM row."
   empty:
     layout:
       show_components:
         - atm_locator_title
-        - location_search_input
-        - filter_chips_row
+        - atm_empty_state
+        - atm_empty_icon
+        - atm_empty_title
+        - atm_empty_message
       hide_components:
         - atm_map_area
+        - atm_search_row
         - nearby_results_header
-        - atm_result_oxford_street
-        - atm_result_bond_street
-        - atm_result_mayfair_branch
-      empty_message: "No ATMs or branches found in this area"
-  location_denied:
+    note: "Shown when the user's banks expose no ATMs (RawState.Loaded with empty list)."
+  error:
     layout:
       show_components:
         - atm_locator_title
-        - location_search_input
-        - location_permission_banner
-        - enable_location_button
-        - filter_chips_row
+        - atm_error_state
+        - atm_error_icon
+        - atm_error_title
+        - atm_error_message
+        - atm_retry_button
       hide_components:
         - atm_map_area
+        - atm_search_row
+        - nearby_results_header
+    note: "ScreenState.Error — every bank fetch failed or accounts lookup failed."
+  no_network:
+    layout:
+      show_components:
+        - atm_locator_title
+        - atm_error_state
+        - atm_error_icon
+        - atm_error_title
+        - atm_error_message
+        - atm_retry_button
+      hide_components:
+        - atm_map_area
+        - atm_search_row
+        - nearby_results_header
+    note: "ScreenState.NoNetwork — rendered identically to error with retry (shipped AtmErrorState covers Error/NoNetwork/Unauthenticated)."
+  unauthenticated:
+    layout:
+      show_components:
+        - atm_locator_title
+        - atm_error_state
+        - atm_error_icon
+        - atm_error_title
+        - atm_error_message
+        - atm_retry_button
+      hide_components:
+        - atm_map_area
+        - atm_search_row
+        - nearby_results_header
+    note: "ScreenState.Unauthenticated — session expired; rendered via the shared AtmErrorState branch with retry."
 
 state_model:
   view_model: AtmLocatorViewModel
-  state_fields:
-    - name: atmList
-      type: "List<AtmLocation>"
-      default: "emptyList()"
-    - name: searchQuery
+  content_type: AtmLocatorContent
+  screen_state: "ScreenState<AtmLocatorContent>"
+  content_fields:
+    - name: atms
+      type: "List<AtmRow>"
+      note: "Each row: id, name, addressLine, distanceLabel, distanceMeters?, lat, lng, hoursLabel, accessible, acceptsDeposits, moreInfo."
+    - name: query
       type: String
       default: '""'
-    - name: selectedFilter
-      type: AtmFilter
-      default: "AtmFilter.ALL"
-    - name: userLocation
-      type: "LatLng?"
-      default: "null"
-    - name: locationPermissionGranted
+    - name: hasLocation
       type: Boolean
       default: "false"
-    - name: isLoading
-      type: Boolean
-      default: "true"
-    - name: resultCount
-      type: Int
-      default: "0"
-  errors:
-    - name: networkError
-      type: "String?"
-      default: "null"
-    - name: locationError
-      type: "String?"
-      default: "null"
+    - name: resultSummary
+      type: String
+      note: "e.g. 'No matching ATMs' / '4 ATMs' / '4 ATMs near you'."
+    - name: selectedAtmId
+      type: String
+      default: '""'
+      note: "Id of the single expanded ATM row; tapping the open one clears it."
+    - name: center
+      type: "MapCoordinate?"
+      note: "Device location when known, else centroid of matched ATMs."
+  internal_filters:
+    - name: query
+      type: String
+    - name: location
+      type: "MapCoordinate?"
+    - name: selectedAtmId
+      type: String
   events:
-    - SearchLocationEvent
-    - FilterChangedEvent
-    - RequestLocationPermissionEvent
-    - AtmSelectedEvent
-    - DirectionsRequestedEvent
+    - onRetry
+    - onQueryChanged
+    - onUserLocation
+    - onAtmSelected
   actions:
-    - search_location
-    - filter_type
-    - request_location_permission
-    - view_atm_detail
+    - retry_load
+    - query_changed
+    - request_user_location
+    - select_atm
     - open_directions
   di:
     - AtmRepository
-    - LocationService
-    - NavigationService
+    - AccountsRepository
+  notes:
+    - "Static @Composable host with koinViewModel(); device location obtained via rememberDeviceLocationRequester in the screen (no LocationService class)."
+    - "Directions is a geo: URI built in the screen (directionsUri) and opened via LocalUriHandler — no DirectionsRequested event, no NavigationService."
+    - "ATMs aggregated across all of the user's banks via atmRepository.atmsForBanks(bankIds); rows sorted nearest-first once device location is known."
 
 api:
-  - endpoint: "GET /obp/v3.0.0/banks/{bankId}/atms"
+  - id: obp_get_atms
+    endpoint: "GET /obp/v3.0.0/banks/{bankId}/atms"
     tag: ATM
-    params:
-      - latitude
-      - longitude
-      - limit: 10
+    note: "Called once per bank the user holds an account at (atmsForBanks), flattened + de-duplicated client-side. Path-only — no lat/long query params; distance sort happens on-device."
     response:
       fields:
         - id: String
+        - bank_id: String
         - name: String
-        - address: Address
-        - location: LatLng
-        - open_24_hours: Boolean
-        - cash_withdrawal_national_amount: String
-        - supported_languages: "List<String>"
-        - services: "List<String>"
+        - address: PostalAddress
+        - location: GeoLocation
+        - more_info: String
+        - is_accessible: String
+        - has_deposit_capability: String
+        - monday..sunday: OpeningHours
     errors:
       - 401: "Unauthorized — missing or invalid token"
       - 404: "Bank not found"
       - 500: "Internal server error"
 
-  - endpoint: "GET /obp/v3.0.0/banks/{bankId}/branches"
+  - id: obp_get_branches
+    endpoint: "GET /obp/v3.0.0/banks/{bankId}/branches"
     tag: Branch
-    params:
-      - latitude
-      - longitude
-    response:
-      fields:
-        - id: String
-        - name: String
-        - address: Address
-        - location: LatLng
-        - lobby: LobbyHours
-        - drive_up: DriveUpHours
-        - branch_routings: "List<BranchRouting>"
-    errors:
-      - 401: "Unauthorized — missing or invalid token"
-      - 404: "Bank not found"
-      - 500: "Internal server error"
+    status: deferred
+    note: "DEFERRED — branches were never built. The shipped feature is ATM-only; no BranchesApi/BranchRepository exists. Endpoint retained here as a deferred marker, NOT consumed by any code."
 
 dependencies:
   tier: consumer

@@ -2,7 +2,7 @@ id: home
 name: Home Dashboard
 feature: home
 flavor: consumer
-status: approved
+status: enriched
 quality_score: 95
 contract_version: "1.1.0"
 approve_hash: "sha256:03af12bd8c96e4f037af12bd8c96e4f037af12bd8c96e4f037af12bd8c96e4f0"
@@ -54,6 +54,12 @@ status_history:
     by: "/kmp-implement products (grid update, user directive)"
     contract_version: "1.1.0"
     note: "Pay Bill tile REMOVED entirely (no planned feature behind it) — Products tile (Category icon, real feature module ProductsRoute) takes its slot. The home screen now has zero deferred surfaces: every tile and action lands on a real screen. Grid: row 1 Standing Orders / Business / Products; row 2 FX Rates / Find ATM / Insights. The onDeferred snackbar plumbing was removed from the home navigation chain."
+  - from: approved
+    to: enriched
+    at: "2026-06-11"
+    by: "/idea verify --source-drift (write-back)"
+    contract_version: "1.1.0"
+    note: "SOURCE→SPEC reconciliation to shipped HomeScreen.kt + HomeViewModel.kt (code = truth). The components[] block was genuinely stale vs the shipped UI. REMOVED (never built in shipped HomeLoaded): hero quick-action chips (btn_transfer/pay_bill/top_up/more_actions + quick_actions_row), total_balance_chip, the entire recent-transactions list (recent_transactions_header + transaction_row_1/2/3 + view_all_link — home renders NO transactions), and the old services tiles Accounts/Transfers/Statements/Cards/Support. ADDED to match shipped: gradient HeroGradientCard (full-bleed RectangleShape, onPrimary text, owner-initials avatar, greeting derived from account owner, tappable → AccountPickerBottomSheet default-account picker, shows default account label/identifier + Available Balance) and a 6-tile Banking Services grid (Standing Orders / Business→business-insights / Products / FX Rates / Find ATM (optional, showFindAtm) / Insights→pfm-dashboard). state_model rewritten to the shipped ScreenState<HomeContent> contract (greetingName, primaryAccount, accounts, totalAccountCount — NO totalBalance, NO recentTransactions); DI = AccountsRepository + UserPreferencesRepository (SessionManager/TransactionsRepository dropped). api: obp_get_home_transactions marked deferred (UNUSED in shipped); accounts sourced from obp_my_accounts_cross_bank (/my/accounts), not per-bank."
 
 
 shell:
@@ -89,686 +95,171 @@ screens:
 
 archetype: dashboard
 
+# Reconciled to shipped HomeScreen.kt (HomeLoaded) on 2026-06-11. The shipped Home
+# renders exactly two regions: a full-bleed gradient hero card (greeting + owner avatar
+# + default account + Available Balance, tappable → AccountPickerBottomSheet) and a
+# 2×3 Banking Services tile grid. There is NO recent-transactions list and NO total-
+# portfolio chip on Home (both removed below as never-built).
 components:
-  - type: text
-    id: greeting_text
-    content: "Good morning, Alex"
-    style:
-      typography: "Outfit/headline_medium"
-      color: "#4C662B"
-      padding_top: spacing.lg
-      padding_horizontal: spacing.md
-    a11y:
-      role: heading
-      level: 1
-      label: "Greeting: Good morning, Alex"
-    test_context:
-      tag: greeting_text
-      assert_visible: true
-      assert_content: "Good morning, Alex"
-
-  - type: text
-    id: greeting_date
-    content: "Monday, 25 May 2026"
-    style:
-      typography: "Outfit/body_medium"
-      color: "#44483D"
-      padding_horizontal: spacing.md
-      padding_bottom: spacing.md
-    a11y:
-      role: text
-      label: "Today's date: Monday, 25 May 2026"
-    test_context:
-      tag: greeting_date
-      assert_visible: true
-
-  - type: box
+  # ── Full-bleed gradient hero (HeroGradientCard, RectangleShape, onPrimary text) ──
+  - type: card
     id: primary_account_card
-    style:
-      background: "#F0F1E6"          # surface_container — light card (was solid #4C662B; design = light surface)
-      border_radius: 16
-      padding: spacing.md
-      margin_horizontal: spacing.md
-      margin_bottom: spacing.sm
-      border_color: "#C5C8BA"        # outline_variant — 1dp hairline
-      border_width: 1
-    a11y:
-      role: region
-      label: "Primary Checking account card"
-    test_context:
-      tag: primary_account_card
-      assert_visible: true
-    children:
-      - type: text
-        id: account_card_label
-        content: "Primary Checking"
-        style:
-          typography: "Outfit/label_medium"
-          color: "#44483D"               # on_surface_variant
-        a11y:
-          role: text
-          label: "Account type: Primary Checking"
-        test_context:
-          tag: account_card_label
-
-      - type: text
-        id: account_card_balance_label
-        content: "Available Balance"
-        style:
-          typography: "Outfit/label_small"
-          color: "#44483D"               # on_surface_variant
-          padding_top: spacing.sm
-        a11y:
-          role: text
-        test_context:
-          tag: account_card_balance_label
-
-      - type: text
-        id: account_card_balance
-        content: "£4,250.00"
-        style:
-          typography: "Outfit/display_small"
-          color: "#4C662B"               # primary — balance accent
-          padding_bottom: spacing.xs
-        a11y:
-          role: text
-          label: "Account balance: four thousand two hundred fifty pounds"
-        test_context:
-          tag: account_card_balance
-          assert_content: "£4,250.00"
-
-      - type: text
-        id: account_card_iban
-        content: "•••• •••• •••• 0130"
-        style:
-          typography: "Outfit/body_medium"
-          color: "#75796C"               # outline
-          padding_bottom: spacing.md
-        a11y:
-          role: text
-          label: "Account number ending 0130"
-        test_context:
-          tag: account_card_iban
-
-      - type: stack
-        id: quick_actions_row
-        style:
-          direction: horizontal
-          spacing: 8
-        a11y:
-          role: group
-          label: "Quick actions"
-        test_context:
-          tag: quick_actions_row
-        children:
-          - type: button
-            id: btn_transfer
-            label: "Transfer"
-            supported_states: [idle, hover, focus_visible, pressed, disabled]
-            style:
-              variant: tonal
-              background: "#EAECE1"        # surface_container_high — chip
-              text_color: "#1A1C16"        # on_surface
-              border_color: "#C5C8BA"      # outline_variant
-              border_radius: 16
-              padding_horizontal: spacing.sm
-              padding_vertical: spacing.sm
-              typography: "Outfit/label_medium"
-              flex: 1
-            on_click:
-              action: navigate
-              target: send-money
-            a11y:
-              role: button
-              label: "Transfer money"
-              hint: "Opens the send money screen"
-            keyboard:
-              focusable: true
-            test_context:
-              tag: btn_transfer
-              assert_clickable: true
-
-          - type: button
-            id: btn_pay_bill
-            label: "Pay Bill"
-            supported_states: [idle, hover, focus_visible, pressed, disabled]
-            style:
-              variant: tonal
-              background: "#EAECE1"
-              text_color: "#1A1C16"
-              border_color: "#C5C8BA"
-              border_radius: 16
-              padding_horizontal: spacing.sm
-              padding_vertical: spacing.sm
-              typography: "Outfit/label_medium"
-              flex: 1
-            on_click:
-              action: pay_bill
-            a11y:
-              role: button
-              label: "Pay a bill"
-            keyboard:
-              focusable: true
-            test_context:
-              tag: btn_pay_bill
-              assert_clickable: true
-
-          - type: button
-            id: btn_top_up
-            label: "Top-up"
-            supported_states: [idle, hover, focus_visible, pressed, disabled]
-            style:
-              variant: tonal
-              background: "#EAECE1"
-              text_color: "#1A1C16"
-              border_color: "#C5C8BA"
-              border_radius: 16
-              padding_horizontal: spacing.sm
-              padding_vertical: spacing.sm
-              typography: "Outfit/label_medium"
-              flex: 1
-            on_click:
-              action: top_up
-            a11y:
-              role: button
-              label: "Top up balance"
-            keyboard:
-              focusable: true
-            test_context:
-              tag: btn_top_up
-              assert_clickable: true
-
-          - type: button
-            id: btn_more_actions
-            label: "More"
-            supported_states: [idle, hover, focus_visible, pressed, disabled]
-            style:
-              variant: tonal
-              background: "#EAECE1"
-              text_color: "#44483D"        # on_surface_variant — muted
-              border_color: "#C5C8BA"
-              border_radius: 16
-              padding_horizontal: spacing.sm
-              padding_vertical: spacing.sm
-              typography: "Outfit/label_medium"
-              flex: 1
-            on_click:
-              action: more_actions
-            a11y:
-              role: button
-              label: "More actions"
-            keyboard:
-              focusable: true
-            test_context:
-              tag: btn_more_actions
-              assert_clickable: true
-
-  - type: box
-    id: total_balance_chip
+    label: "Home hero card"
     supported_states: [idle, hover, focus_visible, pressed]
     style:
-      background: "#EAECE1"            # surface_container_high (was #CDEDA3)
-      border_radius: 12
-      padding_horizontal: spacing.md
-      padding_vertical: 12
-      margin_horizontal: spacing.md
-      margin_top: 12
-      margin_bottom: spacing.sm
+      surface: hero_gradient            # core/ui/card/HeroGradientCard — brand gradient
+      shape: rectangle                  # RectangleShape — full-bleed, square corners
+      full_width: true
+      padding_start: 20
+      padding_end: 20
+      padding_top: 16
+      padding_bottom: 24
     on_click:
-      action: navigate
-      target: accounts
+      action: open_default_account_picker
+      target: account_picker_sheet
     a11y:
       role: button
-      label: "Total Portfolio: twelve thousand four hundred eighty pounds fifty pence. Opens accounts."
+      label: "Account hero. Tap to choose your default account."
+    keyboard:
+      focusable: true
     test_context:
-      tag: total_balance_chip
+      tag: primary_account_card
       assert_visible: true
       assert_clickable: true
     children:
       - type: stack
-        id: total_balance_row
+        id: hero_header_row
         style:
           direction: horizontal
-          justify: space_between
-          align: center
+          align: flex_start
         children:
-          - type: text
-            id: total_portfolio_label
-            content: "Total Portfolio"
-            style:
-              typography: "Outfit/label_medium"
-              color: "#44483D"          # on_surface_variant
-            a11y:
-              role: text
-            test_context:
-              tag: total_portfolio_label
-
           - type: stack
-            id: total_balance_value_row
+            id: hero_greeting_col
             style:
-              direction: horizontal
-              spacing: 4
-              align: center
+              direction: vertical
+              flex: 1
             children:
               - type: text
-                id: total_balance_text
-                content: "£12,480.50"
+                id: hero_greeting_line
+                content: "Good morning"      # derived at runtime from time-of-day
                 style:
-                  typography: "Outfit/label_large"
-                  color: "#4C662B"      # primary
+                  typography: "Outfit/label_medium"
+                  color: on_primary_85       # onPrimary @ 85% — never hardcoded hex
                 a11y:
                   role: text
                 test_context:
-                  tag: total_balance_text
-                  assert_content: "£12,480.50"
+                  tag: hero_greeting_line
 
-              - type: icon
-                id: total_balance_chevron
-                content: "chevron_right"
+              - type: text
+                id: hero_greeting_name
+                content: "Hello, Liam Carter"  # "Hello, {account owner displayName}"
                 style:
-                  size: 20
-                  color: "#75796C"      # outline
+                  typography: "Outfit/headline_small"
+                  color: on_primary
+                  font_weight: bold
+                a11y:
+                  role: heading
+                  level: 1
+                  label: "Greeting: Hello, Liam Carter"
+                test_context:
+                  tag: hero_greeting_name
+                  assert_content: "Hello, Liam Carter"
+
+              - type: text
+                id: hero_greeting_date
+                content: "Monday, 25 May 2026"
+                style:
+                  typography: "Outfit/label_small"
+                  color: on_primary_70
+                a11y:
+                  role: text
+                test_context:
+                  tag: hero_greeting_date
+
+          - type: box
+            id: hero_avatar
+            style:
+              background: on_primary_translucent  # white @ 22% over the gradient
+              shape: circle
+              width: 40
+              height: 40
+              align: center
+              justify: center
+            children:
+              - type: text
+                id: hero_avatar_initials
+                content: "LC"                # initials({owner display name})
+                style:
+                  typography: "Outfit/label_medium"
+                  color: on_primary
+                  font_weight: semibold
                 a11y:
                   role: img
-                  label: "Open accounts"
+                  label: "Account owner avatar"
                 test_context:
-                  tag: total_balance_chevron
+                  tag: hero_avatar_initials
 
-  - type: stack
-    id: recent_transactions_header
-    style:
-      direction: horizontal
-      align: center
-      justify: space_between
-      padding_horizontal: spacing.md
-      padding_top: spacing.md
-      padding_bottom: spacing.sm
-    a11y:
-      role: group
-    test_context:
-      tag: recent_transactions_header
-    children:
       - type: text
-        id: recent_transactions_title
-        content: "Recent Transactions"
-        style:
-          typography: "Outfit/title_large"
-          color: "#1A1C16"
-        a11y:
-          role: heading
-          level: 2
-          label: "Recent Transactions"
-        test_context:
-          tag: recent_transactions_title
-
-      - type: link
-        id: view_all_link
-        content: "View All"
+        id: hero_account_label
+        content: "Everyday Current"          # default account.label, "Account" fallback
         style:
           typography: "Outfit/label_medium"
-          color: "#4C662B"
-        on_click:
-          action: navigate
-          target: transactions
+          color: on_primary_85
+          padding_top: 20
         a11y:
-          role: link
-          label: "View all transactions"
-          hint: "Opens the full transactions history"
-        keyboard:
-          focusable: true
+          role: text
         test_context:
-          tag: view_all_link
-          assert_clickable: true
+          tag: hero_account_label
 
-  - type: box
-    id: transaction_row_1
-    style:
-      background: "#FFFFFF"
-      border_radius: 12
-      padding: spacing.md
-      margin_horizontal: spacing.md
-      margin_bottom: spacing.sm
-      elevation: 1
-    a11y:
-      role: listitem
-      label: "Tesco Supermarket, debit forty-two pounds fifty, 23 May 2026"
-    test_context:
-      tag: transaction_row_1
-      assert_visible: true
-    children:
-      - type: stack
-        id: txn1_row
+      - type: text
+        id: hero_account_identifier
+        content: "GB29 NWBK 6016 1331 9268 19"  # default account.displayIdentifier, "—" fallback
         style:
-          direction: horizontal
-          align: center
-          spacing: 12
-        children:
-          - type: box
-            id: txn1_icon_container
-            style:
-              background: "#CDEDA3"
-              border_radius: 24
-              width: 44
-              height: 44
-              align: center
-              justify: center
-            children:
-              - type: icon
-                id: txn1_icon
-                content: "shopping_cart"
-                style:
-                  color: "#4C662B"
-                  size: 22
-                a11y:
-                  role: img
-                  label: "Shopping category icon"
-                test_context:
-                  tag: txn1_icon
+          typography: "Outfit/label_small"
+          font_family: monospace
+          color: on_primary_65
+        a11y:
+          role: text
+          label: "Account identifier"
+        test_context:
+          tag: hero_account_identifier
 
-          - type: stack
-            id: txn1_details
-            style:
-              direction: vertical
-              flex: 1
-            children:
-              - type: text
-                id: txn1_merchant
-                content: "Tesco Supermarket"
-                style:
-                  typography: "Outfit/body_large"
-                  color: "#1A1C16"
-                a11y:
-                  role: text
-                test_context:
-                  tag: txn1_merchant
-                  assert_content: "Tesco Supermarket"
-
-              - type: text
-                id: txn1_date
-                content: "23 May 2026 · Groceries"
-                style:
-                  typography: "Outfit/body_small"
-                  color: "#44483D"
-                a11y:
-                  role: text
-                test_context:
-                  tag: txn1_date
-
-          - type: stack
-            id: txn1_amount_col
-            style:
-              direction: vertical
-              align: flex_end
-            children:
-              - type: text
-                id: txn1_amount
-                content: "-£42.50"
-                style:
-                  typography: "Outfit/body_large"
-                  color: "#BA1A1A"
-                  font_weight: bold
-                a11y:
-                  role: text
-                  label: "Debit forty-two pounds fifty"
-                test_context:
-                  tag: txn1_amount
-                  assert_content: "-£42.50"
-
-              - type: box
-                id: txn1_badge
-                style:
-                  background: "#CDEDA3"
-                  border_radius: 4
-                  padding_horizontal: 6
-                  padding_vertical: 2
-                children:
-                  - type: text
-                    id: txn1_badge_label
-                    content: "DEBIT"
-                    style:
-                      typography: "Outfit/label_small"
-                      color: "#BA1A1A"
-                    a11y:
-                      role: text
-                      label: "Debit transaction"
-                    test_context:
-                      tag: txn1_badge_label
-
-  - type: box
-    id: transaction_row_2
-    style:
-      background: "#FFFFFF"
-      border_radius: 12
-      padding: spacing.md
-      margin_horizontal: spacing.md
-      margin_bottom: spacing.sm
-      elevation: 1
-    a11y:
-      role: listitem
-      label: "Salary Payment, credit three thousand two hundred pounds, 22 May 2026"
-    test_context:
-      tag: transaction_row_2
-    children:
-      - type: stack
-        id: txn2_row
+      - type: text
+        id: hero_balance_label
+        content: "Available Balance"
         style:
-          direction: horizontal
-          align: center
-          spacing: 12
-        children:
-          - type: box
-            id: txn2_icon_container
-            style:
-              background: "#CDEDA3"
-              border_radius: 24
-              width: 44
-              height: 44
-              align: center
-              justify: center
-            children:
-              - type: icon
-                id: txn2_icon
-                content: "payments"
-                style:
-                  color: "#4C662B"
-                  size: 22
-                a11y:
-                  role: img
-                  label: "Payment category icon"
-                test_context:
-                  tag: txn2_icon
+          typography: "Outfit/label_small"
+          color: on_primary_80
+          padding_top: 12
+        a11y:
+          role: text
+        test_context:
+          tag: hero_balance_label
 
-          - type: stack
-            id: txn2_details
-            style:
-              direction: vertical
-              flex: 1
-            children:
-              - type: text
-                id: txn2_merchant
-                content: "Salary Payment"
-                style:
-                  typography: "Outfit/body_large"
-                  color: "#1A1C16"
-                a11y:
-                  role: text
-                test_context:
-                  tag: txn2_merchant
-                  assert_content: "Salary Payment"
-
-              - type: text
-                id: txn2_date
-                content: "22 May 2026 · Income"
-                style:
-                  typography: "Outfit/body_small"
-                  color: "#44483D"
-                a11y:
-                  role: text
-                test_context:
-                  tag: txn2_date
-
-          - type: stack
-            id: txn2_amount_col
-            style:
-              direction: vertical
-              align: flex_end
-            children:
-              - type: text
-                id: txn2_amount
-                content: "+£3,200.00"
-                style:
-                  typography: "Outfit/body_large"
-                  color: "#4C662B"
-                  font_weight: bold
-                a11y:
-                  role: text
-                  label: "Credit three thousand two hundred pounds"
-                test_context:
-                  tag: txn2_amount
-                  assert_content: "+£3,200.00"
-
-              - type: box
-                id: txn2_badge
-                style:
-                  background: "#CDEDA3"
-                  border_radius: 4
-                  padding_horizontal: 6
-                  padding_vertical: 2
-                children:
-                  - type: text
-                    id: txn2_badge_label
-                    content: "CREDIT"
-                    style:
-                      typography: "Outfit/label_small"
-                      color: "#4C662B"
-                    a11y:
-                      role: text
-                      label: "Credit transaction"
-                    test_context:
-                      tag: txn2_badge_label
-
-  - type: box
-    id: transaction_row_3
-    style:
-      background: "#FFFFFF"
-      border_radius: 12
-      padding: spacing.md
-      margin_horizontal: spacing.md
-      margin_bottom: spacing.sm
-      elevation: 1
-    a11y:
-      role: listitem
-      label: "EDF Energy, debit ninety-four pounds twenty, 20 May 2026"
-    test_context:
-      tag: transaction_row_3
-    children:
-      - type: stack
-        id: txn3_row
+      - type: text
+        id: hero_balance_amount
+        content: "£4,250.00"                 # formatMoney(default account.balance)
         style:
-          direction: horizontal
-          align: center
-          spacing: 12
-        children:
-          - type: box
-            id: txn3_icon_container
-            style:
-              background: "#CDEDA3"
-              border_radius: 24
-              width: 44
-              height: 44
-              align: center
-              justify: center
-            children:
-              - type: icon
-                id: txn3_icon
-                content: "bolt"
-                style:
-                  color: "#44483D"  # fix: A11Y-002 — was #E8A317 (1.68:1 on #CDEDA3 FAIL, even for icons 3:1 required); #44483D = 7.26:1 PASS
-                  size: 22
-                a11y:
-                  role: img
-                  label: "Utilities category icon"
-                test_context:
-                  tag: txn3_icon
+          typography: "Outfit/headline_medium"
+          color: on_primary
+          font_weight: bold
+        a11y:
+          role: text
+          label: "Available balance: four thousand two hundred fifty pounds"
+        test_context:
+          tag: hero_balance_amount
+          assert_content: "£4,250.00"
 
-          - type: stack
-            id: txn3_details
-            style:
-              direction: vertical
-              flex: 1
-            children:
-              - type: text
-                id: txn3_merchant
-                content: "EDF Energy"
-                style:
-                  typography: "Outfit/body_large"
-                  color: "#1A1C16"
-                a11y:
-                  role: text
-                test_context:
-                  tag: txn3_merchant
-                  assert_content: "EDF Energy"
-
-              - type: text
-                id: txn3_date
-                content: "20 May 2026 · Utilities"
-                style:
-                  typography: "Outfit/body_small"
-                  color: "#44483D"
-                a11y:
-                  role: text
-                test_context:
-                  tag: txn3_date
-
-          - type: stack
-            id: txn3_amount_col
-            style:
-              direction: vertical
-              align: flex_end
-            children:
-              - type: text
-                id: txn3_amount
-                content: "-£94.20"
-                style:
-                  typography: "Outfit/body_large"
-                  color: "#BA1A1A"
-                  font_weight: bold
-                a11y:
-                  role: text
-                  label: "Debit ninety-four pounds twenty"
-                test_context:
-                  tag: txn3_amount
-                  assert_content: "-£94.20"
-
-              - type: box
-                id: txn3_badge
-                style:
-                  background: "#CDEDA3"
-                  border_radius: 4
-                  padding_horizontal: 6
-                  padding_vertical: 2
-                children:
-                  - type: text
-                    id: txn3_badge_label
-                    content: "DEBIT"
-                    style:
-                      typography: "Outfit/label_small"
-                      color: "#BA1A1A"
-                    a11y:
-                      role: text
-                      label: "Debit transaction"
-                    test_context:
-                      tag: txn3_badge_label
-
+  # ── Banking Services ─────────────────────────────────────────────────────────
   - type: text
     id: services_section_title
     content: "Banking Services"
     style:
-      typography: "Outfit/title_large"
+      typography: "Outfit/title_medium"
       color: "#1A1C16"
-      padding_horizontal: spacing.md
-      padding_top: spacing.md
-      padding_bottom: spacing.sm
+      font_weight: semibold
+      padding_horizontal: 16
+      padding_top: 8
     a11y:
       role: heading
       level: 2
@@ -776,168 +267,177 @@ components:
     test_context:
       tag: services_section_title
 
+  # Shipped grid: row 1 Standing Orders / Business / Products; row 2 FX Rates /
+  # Find ATM (only when showFindAtm) / Insights. Each tile = bordered surfaceContainer
+  # card with a primary-tinted icon over a centered label.
   - type: stack
     id: services_grid
     style:
       direction: horizontal
       spacing: 12
-      padding_horizontal: spacing.md
-      padding_bottom: spacing.md
+      padding_horizontal: 16
+      padding_bottom: 16
       flex_wrap: wrap
-      overflow: hidden
     children:
-      - type: box
-        id: service_accounts
+      - type: card
+        id: service_standing_orders
         supported_states: [idle, hover, focus_visible, pressed]
         style:
-          background: "#F0F1E6"          # surface_container
-          border_radius: 12
-          border_color: "#C5C8BA"        # outline_variant
-          border_width: 1
-          padding: 16
-          flex: 1
-        on_click:
-          action: navigate
-          target: accounts
-        a11y:
-          role: button
-          label: "Accounts"
-        keyboard:
-          focusable: true
-        test_context:
-          tag: service_accounts
-          assert_clickable: true
-        children:
-          - type: icon
-            id: service_accounts_icon
-            content: "account_balance"
-            style:
-              size: 28
-              color: "#4C662B"           # primary
-          - type: text
-            id: service_accounts_label
-            content: "Accounts"
-            style:
-              typography: "Outfit/label_medium"
-              color: "#44483D"           # on_surface_variant
-              padding_top: spacing.sm
-
-      - type: box
-        id: service_transfers
-        supported_states: [idle, hover, focus_visible, pressed]
-        style:
-          background: "#F0F1E6"
-          border_radius: 12
+          surface: surface_container
           border_color: "#C5C8BA"
           border_width: 1
-          padding: 16
+          border_radius: 12
+          height: 88
+          padding: 12
           flex: 1
         on_click:
           action: navigate
-          target: send-money
+          target: standing-orders
         a11y:
           role: button
-          label: "Transfers"
+          label: "Standing Orders"
         keyboard:
           focusable: true
         test_context:
-          tag: service_transfers
+          tag: service_standing_orders
           assert_clickable: true
         children:
           - type: icon
-            id: service_transfers_icon
-            content: "sync_alt"
+            id: service_standing_orders_icon
+            content: "event_repeat"
             style:
               size: 28
               color: "#4C662B"
           - type: text
-            id: service_transfers_label
-            content: "Transfers"
+            id: service_standing_orders_label
+            content: "Standing Orders"
             style:
               typography: "Outfit/label_medium"
               color: "#44483D"
-              padding_top: spacing.sm
+              padding_top: 8
 
-      - type: box
-        id: service_statements
+      - type: card
+        id: service_business
         supported_states: [idle, hover, focus_visible, pressed]
         style:
-          background: "#F0F1E6"
-          border_radius: 12
+          surface: surface_container
           border_color: "#C5C8BA"
           border_width: 1
-          padding: 16
-          flex: 1
-        on_click:
-          action: open_statements
-        a11y:
-          role: button
-          label: "Statements"
-        keyboard:
-          focusable: true
-        test_context:
-          tag: service_statements
-          assert_clickable: true
-        children:
-          - type: icon
-            id: service_statements_icon
-            content: "description"
-            style:
-              size: 28
-              color: "#4C662B"
-          - type: text
-            id: service_statements_label
-            content: "Statements"
-            style:
-              typography: "Outfit/label_medium"
-              color: "#44483D"
-              padding_top: spacing.sm
-
-      - type: box
-        id: service_cards
-        supported_states: [idle, hover, focus_visible, pressed]
-        style:
-          background: "#F0F1E6"
           border_radius: 12
-          border_color: "#C5C8BA"
-          border_width: 1
-          padding: 16
+          height: 88
+          padding: 12
           flex: 1
         on_click:
           action: navigate
-          target: cards
+          target: business-insights
         a11y:
           role: button
-          label: "Cards"
+          label: "Business"
         keyboard:
           focusable: true
         test_context:
-          tag: service_cards
+          tag: service_business
           assert_clickable: true
         children:
           - type: icon
-            id: service_cards_icon
-            content: "credit_card"
+            id: service_business_icon
+            content: "storefront"
             style:
               size: 28
               color: "#4C662B"
           - type: text
-            id: service_cards_label
-            content: "Cards"
+            id: service_business_label
+            content: "Business"
             style:
               typography: "Outfit/label_medium"
               color: "#44483D"
-              padding_top: spacing.sm
+              padding_top: 8
 
-      - type: box
+      - type: card
+        id: service_products
+        supported_states: [idle, hover, focus_visible, pressed]
+        style:
+          surface: surface_container
+          border_color: "#C5C8BA"
+          border_width: 1
+          border_radius: 12
+          height: 88
+          padding: 12
+          flex: 1
+        on_click:
+          action: navigate
+          target: products
+        a11y:
+          role: button
+          label: "Products"
+        keyboard:
+          focusable: true
+        test_context:
+          tag: service_products
+          assert_clickable: true
+        children:
+          - type: icon
+            id: service_products_icon
+            content: "category"
+            style:
+              size: 28
+              color: "#4C662B"
+          - type: text
+            id: service_products_label
+            content: "Products"
+            style:
+              typography: "Outfit/label_medium"
+              color: "#44483D"
+              padding_top: 8
+
+      - type: card
+        id: service_fx_rates
+        supported_states: [idle, hover, focus_visible, pressed]
+        style:
+          surface: surface_container
+          border_color: "#C5C8BA"
+          border_width: 1
+          border_radius: 12
+          height: 88
+          padding: 12
+          flex: 1
+        on_click:
+          action: navigate
+          target: fx-rates
+        a11y:
+          role: button
+          label: "FX Rates"
+        keyboard:
+          focusable: true
+        test_context:
+          tag: service_fx_rates
+          assert_clickable: true
+        children:
+          - type: icon
+            id: service_fx_rates_icon
+            content: "currency_exchange"
+            style:
+              size: 28
+              color: "#4C662B"
+          - type: text
+            id: service_fx_rates_label
+            content: "FX Rates"
+            style:
+              typography: "Outfit/label_medium"
+              color: "#44483D"
+              padding_top: 8
+
+      - type: card
         id: service_find_atm
+        optional: true                       # rendered only when showFindAtm == true
         supported_states: [idle, hover, focus_visible, pressed]
         style:
-          background: "#F0F1E6"
-          border_radius: 12
+          surface: surface_container
           border_color: "#C5C8BA"
           border_width: 1
-          padding: 16
+          border_radius: 12
+          height: 88
+          padding: 12
           flex: 1
         on_click:
           action: navigate
@@ -963,42 +463,84 @@ components:
             style:
               typography: "Outfit/label_medium"
               color: "#44483D"
-              padding_top: spacing.sm
+              padding_top: 8
 
-      - type: box
-        id: service_support
+      - type: card
+        id: service_insights
         supported_states: [idle, hover, focus_visible, pressed]
         style:
-          background: "#F0F1E6"
-          border_radius: 12
+          surface: surface_container
           border_color: "#C5C8BA"
           border_width: 1
-          padding: 16
+          border_radius: 12
+          height: 88
+          padding: 12
           flex: 1
         on_click:
-          action: open_support
+          action: navigate
+          target: pfm-dashboard
         a11y:
           role: button
-          label: "Support"
+          label: "Insights"
         keyboard:
           focusable: true
         test_context:
-          tag: service_support
+          tag: service_insights
           assert_clickable: true
         children:
           - type: icon
-            id: service_support_icon
-            content: "headset_mic"
+            id: service_insights_icon
+            content: "pie_chart"
             style:
               size: 28
               color: "#4C662B"
           - type: text
-            id: service_support_label
-            content: "Support"
+            id: service_insights_label
+            content: "Insights"
             style:
               typography: "Outfit/label_medium"
               color: "#44483D"
-              padding_top: spacing.sm
+              padding_top: 8
+
+  # ── Default-account picker (reusable AccountPickerBottomSheet) ───────────────
+  - type: dialog
+    id: account_picker_sheet
+    label: "Choose default account"
+    style:
+      variant: modal_bottom_sheet
+    a11y:
+      role: dialog
+      label: "Choose default account"
+    test_context:
+      tag: account_picker_sheet
+    children:
+      - type: text
+        id: account_picker_title
+        content: "Choose default account"
+        style:
+          typography: "Outfit/title_medium"
+          color: "#1A1C16"
+          font_weight: semibold
+        a11y:
+          role: heading
+          level: 2
+        test_context:
+          tag: account_picker_title
+      - type: list_item
+        id: account_picker_row
+        label: "Account option (one per account; check on the selected default)"
+        style:
+          divider: bottom
+        on_click:
+          action: select_default_account
+          target: account_picker_sheet
+        a11y:
+          role: button
+          label: "Select this account as default"
+        keyboard:
+          focusable: true
+        test_context:
+          tag: account_picker_row
 
   - type: spacer
     id: bottom_spacer
@@ -1017,149 +559,117 @@ responsive:
     columns: 3
     content_max_width: 1200
 
+# States map 1:1 to the shipped ScreenState<HomeContent> when-branches in HomeScreen.kt.
 states:
   initial_state: loading
+
   loading:
     motion:
-      shimmer_duration: short4
       reduced_motion_fallback: static_placeholder
     layout:
-      components_visible:
-        - greeting_text
-        - greeting_date
-      skeleton:
-        - id: skeleton_account_card
-          type: box
-          style:
-            background: "#E1E4D5"
-            border_radius: 20
-            height: 200
-            margin_horizontal: 20
-        - id: skeleton_txn_1
-          type: box
-          style:
-            background: "#E1E4D5"
-            border_radius: 12
-            height: 72
-            margin_horizontal: 20
-            margin_top: 8
-        - id: skeleton_txn_2
-          type: box
-          style:
-            background: "#E1E4D5"
-            border_radius: 12
-            height: 72
-            margin_horizontal: 20
-            margin_top: 8
-        - id: skeleton_txn_3
-          type: box
-          style:
-            background: "#E1E4D5"
-            border_radius: 12
-            height: 72
-            margin_horizontal: 20
-            margin_top: 8
+      centered: true
+      indicator: circular_progress       # ScreenState.Loading → CircularProgressIndicator
 
   content:
     layout:
       components_visible:
-        - greeting_text
-        - greeting_date
         - primary_account_card
-        - total_balance_chip
-        - recent_transactions_header
-        - transaction_row_1
-        - transaction_row_2
-        - transaction_row_3
-        - view_all_link
+        - services_section_title
+        - services_grid
+
+  empty:
+    layout:
+      empty_card:
+        id: empty_state_card
+        title: "No accounts yet"
+        message: "Your accounts will appear here once your profile is set up."
+        action_label: "Set Up Account"
+        action: navigate
+        action_target: accounts          # onSetUpAccount → onAccounts
 
   error:
     layout:
-      components_visible:
-        - greeting_text
-        - greeting_date
       error_card:
         id: error_state_card
         title: "Could not load your account"
         message: "We were unable to fetch your account data. Check your connection and try again."
         action_label: "Retry"
-        action: retry_load
+        action: retry_load               # viewModel.onRetry()
         icon: error_outline
 
-  empty:
+  # ScreenState.NoNetwork and .Unauthenticated reuse the same HomeError surface as .Error.
+  no_network:
     layout:
-      components_visible:
-        - greeting_text
-        - greeting_date
-      empty_card:
-        id: empty_state_card
-        illustration: account_empty
-        title: "No accounts yet"
-        message: "Your accounts will appear here once your profile is set up."
-        action_label: "Set Up Account"
-        action: navigate
-        action_target: accounts
+      reuses: error
 
+  unauthenticated:
+    layout:
+      reuses: error
+
+# Reconciled to the shipped HomeViewModel.kt contract: one ScreenState<HomeContent>
+# stream, combine(accountsStream, observeDefaultAccountId). No isLoading/error fields —
+# the sealed ScreenState carries loading/empty/error/no-network/unauthenticated.
 state_model:
   view_model: HomeViewModel
-  screen_state: HomeScreenState
-  state_fields:
-    - name: isLoading
-      type: Boolean
-      default: "true"
+  screen_state: "ScreenState<HomeContent>"   # template.core.base.store.screen.ScreenState
+  content_model: HomeContent
+  content_fields:
+    - name: greetingName
+      type: String                            # primary account owner displayName (blank → "there")
     - name: primaryAccount
-      type: "AccountSummary?"
-      default: "null"
-    - name: totalBalance
-      type: "BigDecimal?"
-      default: "null"
+      type: "Account?"                         # persisted default → checking-first → first
+    - name: accounts
+      type: "List<Account>"
+      default: "emptyList()"
     - name: totalAccountCount
       type: Int
-      default: "0"
-    - name: recentTransactions
-      type: "List<TransactionSummary>"
-      default: "emptyList()"
-    - name: error
-      type: "UiError?"
-      default: "null"
-    - name: greetingName
-      type: String
-      default: '"Alex"'
-  errors:
-    - id: network_error
-      message: "Could not connect to banking services. Please try again."
-    - id: auth_error
-      message: "Session expired. Please log in again."
-    - id: unknown_error
-      message: "Something went wrong. Please try again."
-  events:
-    - RetryLoad
-    - NavigateToTransactions
-    - NavigateToSendMoney
-    - NavigateToAccounts
-    - NavigateToBeneficiaries
-    - NavigateToCards
-  actions:
-    - name: loadDashboardData
-      triggers: [RetryLoad, ScreenOpened]
-    - name: navigateTo
-      param: screen_id
+  screen_states:
+    - Loading
+    - "Content(HomeContent)"
+    - Empty                                    # user has zero accounts
+    - Error
+    - NoNetwork
+    - Unauthenticated
+  methods:
+    - name: onRetry
+      desc: "stream.retry() — re-runs the offline-first fetch"
+    - name: onRefresh
+      desc: "stream.refresh()"
+    - name: onDefaultAccountSelected
+      param: "account: Account"
+      desc: "Persists UserData.defaultAccountId via UserPreferencesRepository"
+  derivation:
+    primary_account: "default-id match → first checking-type → first"
+    greeting_name: "primaryAccount.owners.firstOrNull().displayName"
+  nav_callbacks:                               # HomeScreen lambdas (homeGraph wiring)
+    - onAccounts
+    - onStandingOrders
+    - onBusinessInsights
+    - onProducts
+    - onFxRates
+    - onFindAtm
+    - onInsights
+  flags:
+    - name: showFindAtm
+      type: Boolean
+      default: "true"                          # gates the Find ATM tile
   di:
-    - AccountsRepository
-    - TransactionsRepository
-    - SessionManager
+    - AccountsRepository                        # accountsStream — Store5 cache-then-network, /my/accounts
+    - UserPreferencesRepository                 # default-account preference (multiplatform-settings)
 
+# Shipped Home calls ONLY the cross-bank accounts stream. The per-bank accounts and
+# home-transactions endpoints below the live one are retained as deferred references.
 api:
-  - endpoint: "GET /obp/v3.0.0/banks/{bankId}/accounts"
+  - id: obp_my_accounts_cross_bank
+    endpoint: "GET /obp/v3.0.0/my/accounts"
     tag: Accounts
     auth: DirectLogin
-    params:
-      - name: bankId
-        type: path
-        value: "gh.29.uk"
+    description: "Cross-bank account aggregation — the ONLY endpoint the shipped Home consumes (via AccountsRepository.accountsStream, offline-first Store5)."
     response:
       fields:
         - name: id
+          type: String
+        - name: bank_id
           type: String
         - name: label
           type: String
@@ -1174,66 +684,28 @@ api:
               type: String
         - name: account_routings
           type: "List<AccountRouting>"
+        - name: owners
+          type: "List<AccountOwner>"
     errors:
       - code: 401
         message: "Unauthorized — DirectLogin token missing or expired"
-      - code: 404
-        message: "Bank not found"
       - code: 500
         message: "OBP server error"
 
-  - endpoint: "GET /obp/v3.0.0/banks/{bankId}/accounts/{accountId}/owner/transactions"
+  - id: obp_get_home_transactions
+    deferred: true
+    endpoint: "GET /obp/v3.0.0/banks/{bankId}/accounts/{accountId}/owner/transactions"
     tag: Transactions
-    auth: DirectLogin
-    params:
-      - name: accountId
-        type: path
-      - name: limit
-        type: query
-        value: "5"
-      - name: sort_direction
-        type: query
-        value: "DESC"
-    response:
-      fields:
-        - name: id
-          type: String
-        - name: this_account
-          type: object
-        - name: other_account
-          type: object
-        - name: details
-          type: object
-          children:
-            - name: type
-              type: String
-            - name: description
-              type: String
-            - name: posted
-              type: String
-            - name: value
-              type: object
-              children:
-                - name: currency
-                  type: String
-                - name: amount
-                  type: String
-    errors:
-      - code: 401
-        message: "Unauthorized"
-      - code: 404
-        message: "Account not found"
-
-  - id: obp_my_accounts_cross_bank
-    endpoint: "GET /obp/v3.0.0/my/accounts"
-    tag: Accounts
-    description: "Cross-bank account aggregation"
+    description: "DEFERRED — UNUSED in shipped Home. The recent-transactions list was never built on Home; transactions live on the Transactions tab. Kept for traceability only."
 
 dependencies:
   tier: feature
   features:
     - accounts
-    - transactions
+    - standing-orders
+    - business-insights
+    - products
+    - fx-rates
+    - atm-locator
+    - pfm-dashboard
     - send-money
-    - beneficiaries
-    - cards

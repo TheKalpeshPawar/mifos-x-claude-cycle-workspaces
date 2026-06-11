@@ -3,13 +3,14 @@ schema_version: "4.0"
 feature_id: fx-rates
 api:
   - id: obp_currencies
-    endpoint: "GET /obp/v3.0.0/banks/{bankId}/currencies"
+    endpoint: "GET /obp/v5.1.0/banks/{bankId}/currencies"
     tag: FX
-    description: "List supported currencies for dropdown population"
+    description: "Supported currencies for the dropdowns. Shipped FxApi.getCurrencies at v5.1.0. The sandbox returns an empty list for every bank, so FxRepositoryImpl falls back to the codes the sandbox FX engine actually quotes (GBP/EUR/USD/JPY/INR/AUD/AED, probed live)."
 
   - id: obp_get_fx_rate
     endpoint: "GET /obp/v3.0.0/banks/{bankId}/fx/{fromCurrencyCode}/{toCurrencyCode}"
     tag: FX
+    note: "Per-pair live rate, fetched lazily per pair (ensureRate) and cached for the session; unquotable pairs answer 400 and are remembered so they are not refetched."
     params:
       - fromCurrencyCode: GBP
       - toCurrencyCode: EUR
@@ -22,6 +23,7 @@ api:
         - inverse_conversion_value: Double
         - effective_date: String
     errors:
+      - 400: "Currency pair not quotable by this bank"
       - 401: "Unauthorized — missing or invalid token"
       - 404: "Currency pair not supported"
       - 500: "Internal server error"

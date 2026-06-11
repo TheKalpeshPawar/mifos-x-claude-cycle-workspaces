@@ -57,38 +57,60 @@ api:
       - code: 404
         message: "OBP-30005: View not found for Account"
 
+  # Last-payment metadata source — TransactionsRepository.listTransactions(bankId, accountId).
+  # The screen joins the transaction description to each counterparty name to derive the
+  # last-payment amount/date/recency. Verified shipped 2026-06-11.
+  - id: obp_get_account_transactions
+    endpoint: "GET /obp/v3.0.0/my/banks/{bankId}/accounts/{accountId}/transactions"
+    tag: Transaction
+    description: "Owner transactions for the selected account; used only to derive last-payment per beneficiary."
+    response:
+      fields:
+        - name: transactions
+          type: List<Transaction>
+    errors:
+      - code: 401
+        message: "OBP-20001: User not logged in"
+
+  # Account list source — AccountsRepository.myAccounts(). Drives the AccountSelector and
+  # the per-account scoping of the whole screen. Verified shipped 2026-06-11.
+  - id: obp_get_my_accounts
+    endpoint: "GET /obp/v3.0.0/my/accounts"
+    tag: Account
+    description: "The user's accounts; populates the AccountSelector and picks the default account."
+    response:
+      fields:
+        - name: accounts
+          type: List<Account>
+        - name: id
+          type: String
+        - name: bank_id
+          type: String
+        - name: label
+          type: String
+    errors:
+      - code: 401
+        message: "OBP-20001: User not logged in"
+
+  # DEFERRED — Add Beneficiary never shipped. No create path exists in the UI, so this
+  # endpoint is NOT called by this screen. Retained as a deferred reference for a future
+  # Add-Beneficiary flow (verified shipped 2026-06-11).
   - id: obp_create_counterparty
+    deferred: true
+    deferred_reason: "Add Beneficiary FAB + create sheet never shipped — no UI write path. Endpoint exists but is unused by this screen."
     endpoint: "POST /obp/v4.0.0/banks/{bankId}/accounts/{accountId}/{viewId}/counterparties"
     tag: Counterparties
-    description: "Create an explicit counterparty (Add Beneficiary). viewId is owner."
+    description: "Create an explicit counterparty (Add Beneficiary). viewId is owner. NOT wired."
     request:
       fields:
         - name: name
-          type: String
-        - name: description
-          type: String
-        - name: currency
           type: String
         - name: other_account_routing_scheme
           type: String
         - name: other_account_routing_address
           type: String
-        - name: other_bank_routing_scheme
-          type: String
-        - name: other_bank_routing_address
-          type: String
-        - name: other_branch_routing_scheme
-          type: String
-        - name: other_branch_routing_address
-          type: String
-        - name: other_account_secondary_routing_scheme
-          type: String
-        - name: other_account_secondary_routing_address
-          type: String
         - name: is_beneficiary
           type: Boolean
-        - name: bespoke
-          type: List<Bespoke>
     response:
       fields:
         - name: counterparty_id

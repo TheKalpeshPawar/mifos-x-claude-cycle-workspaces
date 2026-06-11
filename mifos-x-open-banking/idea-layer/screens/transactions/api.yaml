@@ -2,78 +2,110 @@ sibling: api
 schema_version: "4.0"
 feature_id: transactions
 api:
-  - id: obp_get_transactions
-    endpoint: "GET /obp/v3.0.0/banks/{bankId}/accounts/{accountId}/owner/transactions"
+  # Booked rows — shipped list call. v6.0.0 returns transaction_attributes inline (TXN_TYPE →
+  # category badge), no N+1 fetch. The sandbox caps the window at the 50 newest transactions and
+  # ignores limit/offset/from_date/to_date/type/sort_direction, so filter/search/date-range/paging
+  # all run client-side. The v3.0.0 .../owner/transactions sibling endpoint still exists in the
+  # client but is consumed only by CounterpartyNameResolver's mirror-join, not by this screen.
+  - id: obp_list_transactions_with_attributes
+    endpoint: "GET /obp/v6.0.0/banks/{bankId}/accounts/{accountId}/owner/transactions"
     tag: Transactions
     auth: DirectLogin
     params:
+      - name: bankId
+        type: path
       - name: accountId
         type: path
       - name: limit
         type: query
-        value: "20"
+        optional: true
+        note: "ignored by sandbox"
       - name: offset
         type: query
-        value: "0"
-      - name: from_date
-        type: query
-        example: "2026-04-25T00:00:00.000Z"
-      - name: to_date
-        type: query
-        example: "2026-05-25T23:59:59.999Z"
-      - name: type
-        type: query
         optional: true
-        values: [DEBIT, CREDIT, SEPA_CREDIT_TRANSFERS, UK_FASTER_PAYMENTS_SEND]
-      - name: sort_direction
-        type: query
-        value: "DESC"
+        note: "ignored by sandbox"
     response:
       fields:
-        - name: id
-          type: String
-        - name: this_account
-          type: object
-        - name: other_account
-          type: object
+        - name: transactions
+          type: "List<Transaction>"
           children:
-            - name: holder
+            - name: id
+              type: String
+            - name: this_account
               type: object
-            - name: metadata
-              type: object
-        - name: details
-          type: object
-          children:
-            - name: type
-              type: String
-            - name: description
-              type: String
-            - name: posted
-              type: String
-            - name: completed
-              type: String
-            - name: new_balance
+            - name: other_account
               type: object
               children:
-                - name: currency
+                - name: id
                   type: String
-                - name: amount
-                  type: String
-            - name: value
+                - name: holder
+                  type: object
+            - name: details
               type: object
               children:
-                - name: currency
+                - name: type
                   type: String
-                - name: amount
+                - name: description
                   type: String
-        - name: metadata
-          type: object
+                - name: posted
+                  type: String
+                - name: completed
+                  type: String
+                - name: value
+                  type: object
+                  children:
+                    - name: currency
+                      type: String
+                    - name: amount
+                      type: String
+            - name: transaction_attributes
+              type: "List<TransactionAttribute>"
+              note: "TXN_TYPE drives the category badge"
     errors:
-      - code: 400
-        message: "Invalid date range or filter parameters"
       - code: 401
         message: "Unauthorized"
       - code: 404
         message: "Account not found"
       - code: 500
         message: "OBP server error"
+
+  # Pending payments — transaction-requests still INITIATED (no booked transaction). Filtered
+  # client-side to isPending; shown muted above the booked groups and excluded from monthly totals.
+  - id: obp_list_transaction_requests
+    endpoint: "GET /obp/v4.0.0/banks/{bankId}/accounts/{accountId}/owner/transaction-requests"
+    tag: Transaction-Requests
+    auth: DirectLogin
+    params:
+      - name: bankId
+        type: path
+      - name: accountId
+        type: path
+    response:
+      fields:
+        - name: transaction_requests
+          type: "List<TransactionRequestSummary>"
+          children:
+            - name: id
+              type: String
+            - name: status
+              type: String
+              note: "INITIATED → isPending"
+            - name: start_date
+              type: String
+            - name: details
+              type: object
+              children:
+                - name: description
+                  type: String
+                - name: value
+                  type: object
+                  children:
+                    - name: currency
+                      type: String
+                    - name: amount
+                      type: String
+    errors:
+      - code: 401
+        message: "Unauthorized"
+      - code: 404
+        message: "Account not found"

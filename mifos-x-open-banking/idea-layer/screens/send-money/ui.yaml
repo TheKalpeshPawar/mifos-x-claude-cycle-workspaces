@@ -2,7 +2,7 @@ id: send-money
 name: Send Money
 feature: send-money
 flavor: consumer
-status: approved
+status: enriched
 quality_score: 95
 contract_version: "1.2.0"
 approve_hash: "sha256:08af12bd8c96e4f037af12bd8c96e4f037af12bd8c96e4f037af12bd8c96e4f0"
@@ -35,6 +35,12 @@ status_history:
     by: "/kmp-implement send-money (payment-rail classification)"
     contract_version: "1.2.0"
     note: "Payment type chips (SEPA/Domestic/International) are now derived per (account, beneficiary) pair by PaymentRailClassifier instead of free user choice: recipient country from IBAN prefix / BIC chars 5-6 / OBP bank lookup (Bank.countryCode via SWIFT_BIC attribute); DOMESTIC = same bank country, SEPA = recipient IBAN in SEPA zone (source may be non-EUR — conversion note shown, FX fee label), INTERNATIONAL = BIC/OBP-routed fallback. Recommended rail auto-selected; ineligible chips disabled with reason. Confirm screen routes SEPA-classified payments to the OBP SEPA transaction-request (by IBAN); sandbox deviation: SEPA-by-IBAN resolves only when the counterparty carries the IBAN in other_account_secondary_routing_address AND its primary routing maps to a hosted account (OBP-30012/30074 otherwise) — confirm VM falls back to COUNTERPARTY on those two codes. Cross-currency SEPA (GBP account → EUR value) verified working on apisandbox 2026-06-06."
+  - from: approved
+    to: enriched
+    at: "2026-06-11"
+    by: "/idea verify --source-drift (write-back)"
+    contract_version: "1.2.0"
+    note: "Reconciled hub spec to shipped SendMoneyHubScreen + SendMoneyHubViewModel. Added FROM ACCOUNT selector (AccountPickerBottomSheet), recent-recipient initials avatars, beneficiary initials avatar + 'SEPA · Bank ·· last4' subtitle, top-bar person_search new-recipient action. Removed the never-built 'CHOOSE A WAY TO SEND' section (ways_to_send_header / way_local_transfer / way_local_transfer_subtitle) — shipped hub has no way-to-send cards. Fixed empty/error copy to shipped strings ('No recipients yet' / 'People you pay will appear here.' / 'Couldn't load recipients') and dropped the person_off empty-icon (shipped EmptyHub uses no icon; ErrorHub uses cloud_off). Added no_network + unauthenticated states (ScreenState<SendMoneyHubContent>). state_model rewritten: SendMoneyHubContent (accounts/selectedAccountId/recentRecipients/allBeneficiaries), onAccountSelected event, DI = UserPreferencesRepository + AccountsRepository + PaymentsRepository.listTransactionRequests + BanksRepository (TransactionsRepository removed — recency comes from PaymentsRepository.listTransactionRequests). Moved SEPA/COUNTERPARTY POST endpoints out of the hub api block (they belong to send-money-amount + send-money-confirm); hub now only READS counterparties + banks + accounts + transaction-requests."
 
 screens:
   - id: send-money
@@ -52,6 +58,44 @@ screens:
 archetype: index_list
 
 components:
+  - type: text
+    id: from_account_header
+    label: "From account"
+    content: "FROM ACCOUNT"
+    style:
+      typography: "Outfit/label_medium"
+      color: "#44483D"
+      font_weight: semibold
+    a11y:
+      label: "From account section"
+      role: heading
+    test_context:
+      tag: from_account_header
+      assert_text: "FROM ACCOUNT"
+
+  - type: list_item
+    id: account_selector
+    label: "From account"
+    content: "Primary Checking — €4,820.00"
+    style:
+      background: "#FFFFFF"
+      border_radius: 12
+      border_color: "#E1E4D5"
+      border_width: 1
+      padding: 14
+      leading_icon: account_balance
+      trailing_icon: arrow_drop_down
+    on_click:
+      action: select_account
+      target: ""
+    a11y:
+      label: "From account. Tap to choose another account."
+      role: button
+    keyboard:
+      focusable: true
+    test_context:
+      tag: account_selector
+
   - type: text
     id: recent_recipients_header
     label: "Recent Recipients"
@@ -76,9 +120,10 @@ components:
       diameter: 60
       background: "#CDEDA3"
       text_color: "#102000"
+      leading_icon: add
     on_click:
       action: new_recipient
-      target: ""
+      target: send-money-amount
     a11y:
       label: "Start a new transfer"
       role: button
@@ -91,7 +136,7 @@ components:
   - type: box
     id: recent_recipient_item
     label: "Recent recipient"
-    content: ""
+    content: "LW"
     style:
       shape: circle
       diameter: 60
@@ -99,7 +144,7 @@ components:
       text_color: "#FFFFFF"
     on_click:
       action: select_recipient
-      target: send-money-confirm
+      target: send-money-amount
     a11y:
       label: "Send money to a recent recipient"
       role: button
@@ -107,59 +152,6 @@ components:
       focusable: true
     test_context:
       tag: recent_recipient_item
-
-  - type: text
-    id: ways_to_send_header
-    label: "Choose a way to send"
-    content: "CHOOSE A WAY TO SEND"
-    style:
-      typography: "Outfit/label_medium"
-      color: "#44483D"
-      font_weight: semibold
-    a11y:
-      label: "Choose a way to send section"
-      role: heading
-    test_context:
-      tag: ways_to_send_header
-      assert_text: "CHOOSE A WAY TO SEND"
-
-  - type: box
-    id: way_local_transfer
-    label: "Local transfer"
-    content: "Local transfer"
-    style:
-      background: "#FFFFFF"
-      border_radius: 12
-      elevation: 1
-      padding_horizontal: spacing.md
-      padding_vertical: spacing.md
-      border_color: "#E1E4D5"
-      border_width: 1
-      leading_icon: send
-    on_click:
-      action: new_recipient
-      target: ""
-    a11y:
-      label: "Local transfer. Free, arrives instantly."
-      role: button
-    keyboard:
-      focusable: true
-    test_context:
-      tag: way_local_transfer
-      assert_text: "Local transfer"
-
-  - type: text
-    id: way_local_transfer_subtitle
-    label: "Free · Arrives instantly"
-    content: "Free · Arrives instantly"
-    style:
-      typography: "Outfit/body_small"
-      color: "#44483D"
-    a11y:
-      label: "Free, arrives instantly"
-      role: text
-    test_context:
-      tag: way_local_transfer_subtitle
 
   - type: text
     id: all_beneficiaries_header
@@ -176,21 +168,22 @@ components:
       tag: all_beneficiaries_header
       assert_text: "ALL BENEFICIARIES"
 
-  - type: box
+  - type: list_item
     id: beneficiary_item
     label: "Beneficiary"
-    content: ""
+    content: "Liam Walker"
     style:
-      background: "#FFFFFF"
+      background: "#F3F4EC"
       border_radius: 12
-      elevation: 1
-      padding_horizontal: spacing.md
-      padding_vertical: 14
+      padding: 14
       border_color: "#E1E4D5"
       border_width: 1
+      leading_avatar: initials
+      avatar_background: "#386663"
+      avatar_text_color: "#FFFFFF"
     on_click:
       action: select_recipient
-      target: send-money-confirm
+      target: send-money-amount
     a11y:
       label: "Send money to this beneficiary"
       role: button
@@ -198,6 +191,32 @@ components:
       focusable: true
     test_context:
       tag: beneficiary_item
+
+  - type: text
+    id: beneficiary_subtitle
+    label: "SEPA · Afternoon Coffee Bank ·· 8842"
+    content: "SEPA · Afternoon Coffee Bank ·· 8842"
+    style:
+      typography: "Outfit/body_small"
+      color: "#44483D"
+    a11y:
+      label: "SEPA, Afternoon Coffee Bank, ending 8842"
+      role: text
+    test_context:
+      tag: beneficiary_subtitle
+
+  - type: text
+    id: no_beneficiaries_note
+    label: "No payees on this account yet"
+    content: "No payees on this account yet. Switch accounts above."
+    style:
+      typography: "Outfit/body_medium"
+      color: "#44483D"
+    a11y:
+      label: "No payees on this account yet. Switch accounts above."
+      role: text
+    test_context:
+      tag: no_beneficiaries_note
 
 responsive:
   mobile_only: true
@@ -211,74 +230,116 @@ states:
       reduced_motion_fallback: static_placeholder
     layout:
       visible_components:
-        - recent_recipients_header
-      show_skeleton_list: true
-      skeleton_count: 4
+        - from_account_header
+      show_progress_indicator: true
   content:
     layout:
       visible_components:
+        - from_account_header
+        - account_selector
         - recent_recipients_header
         - recipient_new
         - recent_recipient_item
-        - ways_to_send_header
-        - way_local_transfer
-        - way_local_transfer_subtitle
         - all_beneficiaries_header
         - beneficiary_item
+        - beneficiary_subtitle
+        - no_beneficiaries_note
   empty:
     layout:
-      visible_components:
-        - recent_recipients_header
-        - recipient_new
-        - ways_to_send_header
-        - way_local_transfer
-        - way_local_transfer_subtitle
+      visible_components: []
       show_empty_state: true
-      empty_state_icon: person_off
       empty_state_title: "No recipients yet"
-      empty_state_message: "Add a beneficiary, then send money to them in a tap."
+      empty_state_message: "People you pay will appear here."
+      empty_state_cta: "New transfer"
   error:
     layout:
-      visible_components:
-        - recent_recipients_header
+      visible_components: []
       show_error_state: true
       error_icon: cloud_off
-      error_title: "Could not load recipients"
-      error_message: "Check your connection and try again"
+      error_title: "Couldn't load recipients"
+      error_message: "We couldn't load this account's recipients. Try again, or switch to another account."
+      show_retry_button: true
+  no_network:
+    layout:
+      visible_components: []
+      show_error_state: true
+      error_icon: cloud_off
+      error_title: "You're offline"
+      error_message: "We can't reach your bank right now. Check your connection and try again."
+      show_retry_button: true
+  unauthenticated:
+    layout:
+      visible_components: []
+      show_error_state: true
+      error_icon: cloud_off
+      error_title: "Session expired"
+      error_message: "Your sign-in has expired. Sign in again to load your recipients."
       show_retry_button: true
 
 state_model:
   view_model: SendMoneyHubViewModel
-  state_fields:
+  ui_state_type: "ScreenState<SendMoneyHubContent>"
+  content_type: SendMoneyHubContent
+  content_fields:
+    - name: accounts
+      type: List<Account>
+    - name: selectedAccountId
+      type: String
     - name: recentRecipients
       type: List<HubRecipient>
-      default: "emptyList()"
     - name: allBeneficiaries
       type: List<HubRecipient>
-      default: "emptyList()"
-    - name: uiState
-      type: ScreenState<SendMoneyHubContent>
-      default: Loading
+  states:
+    - Loading
+    - Content
+    - Empty
+    - Error
+    - NoNetwork
+    - Unauthenticated
   errors:
     - field: global
       code: LOAD_FAILED
-      message: "Could not load recipients."
+      message: "Couldn't load recipients."
   events:
-    - RecipientSelected
-    - NewTransferClicked
-    - RefreshTriggered
+    - onRefresh
+    - onRetry
+    - onAccountSelected
   actions:
     - select_recipient
     - new_recipient
+    - select_account
+  callbacks:
+    - name: onRecipientSelected
+      signature: "(accountId: String, counterpartyId: String) -> Unit"
+      consumer: send-money-amount
+    - name: onNewTransfer
+      signature: "(accountId: String) -> Unit"
+      consumer: send-money-amount
+    - name: onBack
+      signature: "() -> Unit"
   di:
     - AccountsRepository
     - PaymentsRepository
     - BanksRepository
-    - TransactionsRepository
+    - UserPreferencesRepository
 
 api:
-  - endpoint: "GET /obp/v4.0.0/banks/{bankId}/accounts/{accountId}/{viewId}/counterparties"
+  - endpoint: "GET /obp/v3.0.0/banks/{bankId}/accounts"
+    tag: Accounts
+    description: "List the user's accounts to populate the FROM ACCOUNT selector; default account from UserPreferencesRepository."
+    response:
+      fields:
+        - name: accounts
+          type: List<Account>
+        - name: id
+          type: String
+        - name: label
+          type: String
+        - name: balance
+          type: MoneyAmount
+  - endpoint: "GET /obp/v4.0.0/banks/{bankId}/accounts/{accountId}/owner/counterparties"
     tag: Counterparties
+    description: "Selected account's beneficiaries (filtered is_beneficiary). Used to build recent recipients + all beneficiaries lists. viewId fixed to owner in the shipped path."
     response:
       fields:
         - name: counterparties
@@ -291,6 +352,8 @@ api:
           type: String
         - name: other_account_routing_address
           type: String
+        - name: other_bank_routing_scheme
+          type: String
         - name: other_bank_routing_address
           type: String
     errors:
@@ -298,9 +361,24 @@ api:
         message: "OBP-20001: User not logged in"
       - code: 404
         message: "OBP-30018: Bank Account not found"
+  - endpoint: "GET /obp/v4.0.0/banks/{bankId}/accounts/{accountId}/owner/transaction-requests"
+    tag: TransactionRequests
+    description: "Past transaction-requests for the account — the authoritative record of which counterparty/IBAN/sandbox-account was paid and when. Recent-recipients recency is derived from this (OBP transactions do not reliably identify the payee)."
+    response:
+      fields:
+        - name: transaction_requests
+          type: List<TransactionRequestSummary>
+        - name: start_date
+          type: DateTime
+        - name: details.to_counterparty.counterparty_id
+          type: String
+        - name: details.to_sepa.iban
+          type: String
+        - name: details.to_sandbox_tan.account_id
+          type: String
   - endpoint: "GET /obp/v4.0.0/banks/{bankId}"
     tag: Banks
-    description: "Bank directory entry (cached). bank_routings + the SWIFT_BIC attribute drive Bank.countryCode (BIC chars 5-6), which feeds PaymentRailClassifier (domestic = same bank country; OBP-routed payees resolve destination country here)."
+    description: "Bank directory entry (cached) used to resolve each beneficiary's bank display name (BanksRepository.bankName) for the 'SEPA · BankName ·· last4' subtitle when the routing scheme is OBP."
     response:
       fields:
         - name: full_name
@@ -309,60 +387,10 @@ api:
           type: List<AccountRouting>
         - name: attributes
           type: List<BankAttribute>
-  - endpoint: "POST /obp/v4.0.0/banks/{bankId}/accounts/{accountId}/{viewId}/transaction-request-types/SEPA/transaction-requests"
-    tag: TransactionRequests
-    description: "Execute SEPA-classified payments (on send-money-confirm) by recipient IBAN. Sandbox: resolves only when the counterparty carries the IBAN in other_account_secondary_routing_address and its primary routing maps to a hosted account; OBP-30012/OBP-30074 trigger automatic COUNTERPARTY fallback. Cross-currency from non-EUR accounts accepted (verified 2026-06-06)."
-    request:
-      fields:
-        - name: to.iban
-          type: String
-        - name: value.currency
-          type: String
-        - name: value.amount
-          type: String
-        - name: description
-          type: String
-        - name: charge_policy
-          type: String
-    errors:
-      - code: 404
-        message: "OBP-30012: Counterparty not found (IBAN not in secondary routing) — app falls back to COUNTERPARTY"
-      - code: 404
-        message: "OBP-30074: Bank Account not found for IBAN — app falls back to COUNTERPARTY"
-  - endpoint: "POST /obp/v4.0.0/banks/{bankId}/accounts/{accountId}/{viewId}/transaction-request-types/COUNTERPARTY/transaction-requests"
-    tag: TransactionRequests
-    description: "Execute Domestic/International payments (and SEPA fallback) on send-money-confirm. Pays a counterparty by id — works for any beneficiary regardless of routing scheme. viewId is owner."
-    request:
-      fields:
-        - name: to.counterparty_id
-          type: String
-        - name: value.currency
-          type: String
-        - name: value.amount
-          type: String
-        - name: description
-          type: String
-        - name: charge_policy
-          type: String
-    response:
-      fields:
-        - name: id
-          type: String
-        - name: status
-          type: String
-        - name: transaction_ids
-          type: List<String>
-        - name: charge
-          type: Charge
-    errors:
-      - code: 400
-        message: "OBP-10001: Incorrect json format"
-      - code: 422
-        message: "OBP-40008: Can't send a payment with a value of 0 or less"
 
 dependencies:
   tier: feature
   features:
     - accounts
     - beneficiaries
-    - send-money-confirm
+    - send-money-amount

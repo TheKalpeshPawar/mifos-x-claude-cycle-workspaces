@@ -2,7 +2,7 @@ id: fx-rates
 name: "Exchange Rates"
 feature: fx-rates
 flavor: consumer
-status: approved
+status: enriched
 quality_score: 97
 contract_version: "1.1.0"
 approve_hash: "sha256:0faf12bd8c96e4f037af12bd8c96e4f037af12bd8c96e4f037af12bd8c96e4f0"
@@ -34,6 +34,12 @@ status_history:
     by: "/kmp-implement fx-rates"
     contract_version: "1.1.0"
     note: "Implemented as feature/fx-rates (new module). Converter card (amount input, from/to currency dropdowns, swap, live result + rate line, Send CTA → Pay tab) plus six tappable popular-pair rows that populate the converter. Client layer reuses the pre-existing FxApi/FxRepository (PFM groundwork); added GET v5.1.0 bank currencies endpoint — the sandbox returns an empty list for every bank, so the repository falls back to the codes the sandbox FX engine actually quotes (GBP/EUR/USD/JPY/INR/AUD/AED, probed live; pairs outside the set answer 400). All six spec pairs verified live. Per-pair rates cached for the session; unquotable pairs remembered and surfaced as an in-card unavailable notice. Deviations: rate-change chips (+0.2% etc.) omitted — OBP has no historical-rate endpoint so daily change is underivable; skeleton shimmer replaced by the app-standard loading indicator; selected-pair failure is a screen-level error with retry while popular rows degrade row-by-row. Entry point: home Banking Services grid — FX Rates tile took the Cards slot (Cards remains a bottom tab; user directive). 10 VM tests + 4 repository tests."
+  - from: approved
+    to: enriched
+    at: "2026-06-11"
+    by: "/idea verify --source-drift (write-back)"
+    contract_version: "1.1.0"
+    note: "SOURCE→SPEC reconciliation to shipped FxRatesScreen.kt + FxRatesViewModel.kt. Added: session rate cache + per-pair lazy fetch (ensureRate); unquotable pairs surface a 'No exchange rate available for {from} / {to}.' in-card notice (rateAvailable=false) with the Send CTA disabled; currency-list fallback to sandbox-quotable codes; amount sanitization (digits + single dot, max 12 chars). Removed: per-pair rate-change %% chips (rate_change_* +0.2% etc. — OBP has no historical-rate endpoint, daily change underivable); skeleton shimmer (→ standard centered CircularProgressIndicator); empty-state Reset-to-GBP/EUR action (Empty folds into the shared error/retry view — shipped projects Loading/Failed→Error/Content only); flag emojis in the currency pickers (plain codes via OutlinedButton). state_model rewritten to ScreenState<FxRatesContent> with Selection(fromCurrency, toCurrency, amountInput:String) + RawState.Loaded(currencies, rates:Map, unavailable:Set); events onRetry/onAmountChanged/onFromCurrencySelected/onToCurrencySelected/onSwapCurrencies/onPairSelected; 6 POPULAR_PAIRS (GBP/EUR, GBP/USD, GBP/JPY, EUR/USD, USD/INR, EUR/GBP); nav via onSendMoney lambda (no NavigationService). Added +no_network and +unauthenticated states (rendered identically to error). api: obp_currencies corrected to v5.1.0 bank-currencies (sandbox empty → code fallback); obp_get_fx_rate stays v3.0.0 per-pair; response fields conversion_value/inverse_conversion_value/effective_date."
 
 
 screens:
@@ -44,6 +50,14 @@ screens:
     initial_state: loading
 
 archetype: dashboard
+
+shell:
+  top_app_bar:
+    show: true
+    title: "Exchange Rates"
+    navigation_icon: arrow_back
+    navigation_action: navigate_back
+  bottom_nav: false
 
 components:
   - type: text
@@ -64,7 +78,7 @@ components:
 
   - type: text
     id: last_updated_text
-    content: "Rates updated: 14 May 2026, 15:42 UTC"
+    content: "Rates updated: 7 June 2026, 11:44 UTC"
     style:
       typography: "Outfit/body_small"
       color: "#44483D"
@@ -74,22 +88,10 @@ components:
     api:
       ref: obp_get_fx_rate
       field: effective_date
-    component_states:
-      loading:
-        type: skeleton  # fix REG-001: shimmer → skeleton (registered)
-        count: 1
-        description: "shimmer matching single-line timestamp label"
-      error:
-        type: banner  # fix REG-001: inline-error → banner (registered)
-        message: "Could not retrieve rate timestamp."
-        retry: false
-      empty:
-        type: box  # fix REG-001: inline-empty → box (registered)
-        message: "Rate update time unavailable."
-        icon: "schedule"
+    note: "Hidden when the selected pair's rate carries no effective_date (lastUpdatedLabel blank)."
     a11y:
       role: text
-      label: "Exchange rates last updated 14 May 2026 at 15:42 UTC"
+      label: "Exchange rates last updated 7 June 2026 at 11:44 UTC"
     test_context:
       test_id: last_updated_text
       assert: timestamp_reflects_api_response
@@ -100,25 +102,14 @@ components:
     style:
       background: "#FFFFFF"
       border_radius: 16
-      elevation: 4
+      elevation: 0
+      border_width: 1
+      border_color: "#E1E4D5"
       padding: 20
       margin_horizontal: 16
       margin_bottom: 16
     api:
       ref: obp_get_fx_rate
-    component_states:
-      loading:
-        type: skeleton  # fix REG-001: shimmer → skeleton (registered)
-        count: 1
-        description: "shimmer matching full converter card height with input and result rows"
-      error:
-        type: banner  # fix REG-001: inline-error → banner (registered)
-        message: "Could not load exchange rate. Please try again."
-        retry: true
-      empty:
-        type: box  # fix REG-001: inline-empty → box (registered)
-        message: "No rate data available for the selected currency pair."
-        icon: "currency_exchange"
     a11y:
       role: region
       label: "Currency converter"
@@ -129,7 +120,7 @@ components:
   - type: input
     id: send_amount_input
     label: "I want to send"
-    content: "1,000"
+    content: "1000"
     supported_states: [idle, hover, focus_visible, pressed, disabled]
     style:
       variant: number
@@ -145,6 +136,7 @@ components:
     on_click:
       action: update_amount
       target: fx_rates_main
+    note: "Sanitized on change: digits + at most one decimal point, capped at 12 chars."
     a11y:
       role: spinbutton
       label: "Amount to send"
@@ -162,7 +154,7 @@ components:
     supported_states: [idle, hover, focus_visible, pressed, disabled]
     style:
       variant: select
-      display_value: "GBP \U0001F1EC\U0001F1E7"
+      display_value: "GBP"
       icon_trailing: "arrow_drop_down"
       background: "#F9FAEF"
       border_radius: 8
@@ -172,25 +164,13 @@ components:
     api:
       ref: obp_currencies
       field: currency_code
-    component_states:
-      loading:
-        type: skeleton  # fix REG-001: shimmer → skeleton (registered)
-        count: 1
-        description: "shimmer matching currency dropdown field width"
-      error:
-        type: banner  # fix REG-001: inline-error → banner (registered)
-        message: "Could not load supported currencies. Please try again."
-        retry: true
-      empty:
-        type: box  # fix REG-001: inline-empty → box (registered)
-        message: "No currencies available for this bank."
-        icon: "money_off"
+    note: "Plain currency code (no flag emoji). Picking the code already on the To side swaps the pair."
     on_click:
       action: select_from_currency
       target: fx_rates_main
     a11y:
       role: combobox
-      label: "Select source currency, currently British Pound"
+      label: "Select source currency, currently GBP"
       label_source: visible_label
       hint: "Tap to change the currency you are converting from"
     keyboard:
@@ -205,7 +185,7 @@ components:
     supported_states: [idle, hover, focus_visible, pressed, disabled]
     style:
       size: 32
-      color: "#4C662B"
+      color: "#31111D"
       background: "#CDEDA3"
       border_radius: 16
       padding: 8
@@ -230,7 +210,7 @@ components:
     supported_states: [idle, hover, focus_visible, pressed, disabled]
     style:
       variant: select
-      display_value: "EUR \U0001F1EA\U0001F1FA"
+      display_value: "EUR"
       icon_trailing: "arrow_drop_down"
       background: "#F9FAEF"
       border_radius: 8
@@ -241,25 +221,13 @@ components:
     api:
       ref: obp_currencies
       field: currency_code
-    component_states:
-      loading:
-        type: skeleton  # fix REG-001: shimmer → skeleton (registered)
-        count: 1
-        description: "shimmer matching currency dropdown field width"
-      error:
-        type: banner  # fix REG-001: inline-error → banner (registered)
-        message: "Could not load supported currencies. Please try again."
-        retry: true
-      empty:
-        type: box  # fix REG-001: inline-empty → box (registered)
-        message: "No currencies available for this bank."
-        icon: "money_off"
+    note: "Plain currency code (no flag emoji). Picking the code already on the From side swaps the pair."
     on_click:
       action: select_to_currency
       target: fx_rates_main
     a11y:
       role: combobox
-      label: "Select destination currency, currently Euro"
+      label: "Select destination currency, currently EUR"
       label_source: visible_label
       hint: "Tap to change the currency you are converting to"
     keyboard:
@@ -272,7 +240,7 @@ components:
     id: converted_result_display
     content: "= 1,167.20 EUR"
     style:
-      typography: "Outfit/display_medium"
+      typography: "Outfit/headline_medium"
       font_weight: 700
       color: "#4C662B"
       text_align: center
@@ -280,22 +248,10 @@ components:
     api:
       ref: obp_get_fx_rate
       field: conversion_value
-    component_states:
-      loading:
-        type: skeleton  # fix REG-001: shimmer → skeleton (registered)
-        count: 1
-        description: "shimmer matching large result display text"
-      error:
-        type: banner  # fix REG-001: inline-error → banner (registered)
-        message: "Rate data temporarily unavailable. Please retry."
-        retry: true
-      empty:
-        type: box  # fix REG-001: inline-empty → box (registered)
-        message: "Conversion result unavailable for the selected pair."
-        icon: "calculate"
+    note: "Shown only when rateAvailable; otherwise replaced by fx_rate_unavailable_notice in the same slot."
     a11y:
       role: text
-      label: "Converted amount: 1,167.20 Euros"
+      label: "Converted amount displayed when a rate is available"
     test_context:
       test_id: converted_result_display
       assert: updates_when_amount_or_currency_changes
@@ -311,25 +267,29 @@ components:
     api:
       ref: obp_get_fx_rate
       field: conversion_value
-    component_states:
-      loading:
-        type: skeleton  # fix REG-001: shimmer → skeleton (registered)
-        count: 1
-        description: "shimmer matching short rate label"
-      error:
-        type: banner  # fix REG-001: inline-error → banner (registered)
-        message: "Live rate unavailable."
-        retry: false
-      empty:
-        type: box  # fix REG-001: inline-empty → box (registered)
-        message: "Rate information not available for this pair."
-        icon: "info_outline"
+    note: "Shown only when rateAvailable."
     a11y:
       role: text
-      label: "Exchange rate: 1 British Pound equals 1.1672 Euros"
+      label: "Live exchange rate for the selected pair"
     test_context:
       test_id: rate_info_text
       assert: reflects_live_rate
+
+  - type: text
+    id: fx_rate_unavailable_notice
+    content: "No exchange rate available for GBP / EUR."
+    style:
+      typography: "Outfit/body_medium"
+      color: "#44483D"
+      text_align: center
+      padding_vertical: 8
+    a11y:
+      role: text
+      label: "No exchange rate available for the selected pair"
+    test_context:
+      test_id: fx_rate_unavailable_notice
+      assert: shown_when_pair_unquotable
+    note: "Replaces the converted result + rate line when the bank cannot quote the pair (rateAvailable=false). Remembered in RawState.Loaded.unavailable so the pair is not refetched."
 
   - type: button
     id: send_money_cta
@@ -347,9 +307,10 @@ components:
     on_click:
       action: navigate
       target: send-money
+    note: "Disabled when rateAvailable=false. Invokes the onSendMoney lambda (host wires it to the Send Money / Pay destination)."
     a11y:
       role: button
-      label: "Send 1000 GBP — proceed to send money"
+      label: "Send this amount — proceed to send money"
     keyboard:
       focusable: true
     test_context:
@@ -396,7 +357,7 @@ components:
       padding_horizontal: 16
       padding_vertical: 14
       margin_horizontal: 16
-      margin_bottom: 2
+      margin_bottom: 4
       direction: row
       justify_content: space_between
       align_items: center
@@ -405,25 +366,13 @@ components:
       params:
         fromCurrencyCode: GBP
         toCurrencyCode: EUR
-    component_states:
-      loading:
-        type: skeleton  # fix REG-001: shimmer → skeleton (registered)
-        count: 1
-        description: "shimmer matching rate row with pair label and value"
-      error:
-        type: banner  # fix REG-001: inline-error → banner (registered)
-        message: "Could not load GBP/EUR rate. Please try again."
-        retry: true
-      empty:
-        type: box  # fix REG-001: inline-empty → box (registered)
-        message: "No exchange rate available for GBP / EUR."
-        icon: "currency_exchange"
+    note: "Popular rows degrade individually — a pair whose rate fails simply drops out of content.pairs."
     on_click:
       action: select_pair
       target: fx_rates_main
     a11y:
       role: listitem
-      label: "GBP to EUR rate: 1.1672, up 0.2 percent"
+      label: "GBP to EUR rate, tap to load into the converter"
     keyboard:
       focusable: true
     test_context:
@@ -458,21 +407,6 @@ components:
       test_id: rate_value_gbp_eur
       assert: text_visible
 
-  - type: text
-    id: rate_change_gbp_eur
-    content: "+0.2%"
-    style:
-      typography: "Outfit/body_small"
-      color: "#4C662B"
-      font_weight: 500
-      icon_leading: "arrow_upward"
-    a11y:
-      role: text
-      label: "Up 0.2 percent today"
-    test_context:
-      test_id: rate_change_gbp_eur
-      assert: green_color_for_positive_change
-
   - type: box
     id: rate_row_gbp_usd
     content: ""
@@ -482,7 +416,7 @@ components:
       padding_horizontal: 16
       padding_vertical: 14
       margin_horizontal: 16
-      margin_bottom: 2
+      margin_bottom: 4
       direction: row
       justify_content: space_between
       align_items: center
@@ -491,25 +425,12 @@ components:
       params:
         fromCurrencyCode: GBP
         toCurrencyCode: USD
-    component_states:
-      loading:
-        type: skeleton  # fix REG-001: shimmer → skeleton (registered)
-        count: 1
-        description: "shimmer matching rate row with pair label and value"
-      error:
-        type: banner  # fix REG-001: inline-error → banner (registered)
-        message: "Could not load GBP/USD rate. Please try again."
-        retry: true
-      empty:
-        type: box  # fix REG-001: inline-empty → box (registered)
-        message: "No exchange rate available for GBP / USD."
-        icon: "currency_exchange"
     on_click:
       action: select_pair
       target: fx_rates_main
     a11y:
       role: listitem
-      label: "GBP to USD rate: 1.2834, down 0.1 percent"
+      label: "GBP to USD rate, tap to load into the converter"
     keyboard:
       focusable: true
     test_context:
@@ -544,21 +465,6 @@ components:
       test_id: rate_value_gbp_usd
       assert: text_visible
 
-  - type: text
-    id: rate_change_gbp_usd
-    content: "-0.1%"
-    style:
-      typography: "Outfit/body_small"
-      color: "#BA1A1A"
-      font_weight: 500
-      icon_leading: "arrow_downward"
-    a11y:
-      role: text
-      label: "Down 0.1 percent today"
-    test_context:
-      test_id: rate_change_gbp_usd
-      assert: red_color_for_negative_change
-
   - type: box
     id: rate_row_gbp_jpy
     content: ""
@@ -568,7 +474,7 @@ components:
       padding_horizontal: 16
       padding_vertical: 14
       margin_horizontal: 16
-      margin_bottom: 2
+      margin_bottom: 4
       direction: row
       justify_content: space_between
       align_items: center
@@ -577,25 +483,12 @@ components:
       params:
         fromCurrencyCode: GBP
         toCurrencyCode: JPY
-    component_states:
-      loading:
-        type: skeleton  # fix REG-001: shimmer → skeleton (registered)
-        count: 1
-        description: "shimmer matching rate row with pair label and value"
-      error:
-        type: banner  # fix REG-001: inline-error → banner (registered)
-        message: "Could not load GBP/JPY rate. Please try again."
-        retry: true
-      empty:
-        type: box  # fix REG-001: inline-empty → box (registered)
-        message: "No exchange rate available for GBP / JPY."
-        icon: "currency_exchange"
     on_click:
       action: select_pair
       target: fx_rates_main
     a11y:
       role: listitem
-      label: "GBP to JPY rate: 193.45, up 0.4 percent"
+      label: "GBP to JPY rate, tap to load into the converter"
     keyboard:
       focusable: true
     test_context:
@@ -630,21 +523,6 @@ components:
       test_id: rate_value_gbp_jpy
       assert: text_visible
 
-  - type: text
-    id: rate_change_gbp_jpy
-    content: "+0.4%"
-    style:
-      typography: "Outfit/body_small"
-      color: "#4C662B"
-      font_weight: 500
-      icon_leading: "arrow_upward"
-    a11y:
-      role: text
-      label: "Up 0.4 percent today"
-    test_context:
-      test_id: rate_change_gbp_jpy
-      assert: green_color_for_positive_change
-
   - type: box
     id: rate_row_eur_usd
     content: ""
@@ -654,7 +532,7 @@ components:
       padding_horizontal: 16
       padding_vertical: 14
       margin_horizontal: 16
-      margin_bottom: 2
+      margin_bottom: 4
       direction: row
       justify_content: space_between
       align_items: center
@@ -663,25 +541,12 @@ components:
       params:
         fromCurrencyCode: EUR
         toCurrencyCode: USD
-    component_states:
-      loading:
-        type: skeleton  # fix REG-001: shimmer → skeleton (registered)
-        count: 1
-        description: "shimmer matching rate row with pair label and value"
-      error:
-        type: banner  # fix REG-001: inline-error → banner (registered)
-        message: "Could not load EUR/USD rate. Please try again."
-        retry: true
-      empty:
-        type: box  # fix REG-001: inline-empty → box (registered)
-        message: "No exchange rate available for EUR / USD."
-        icon: "currency_exchange"
     on_click:
       action: select_pair
       target: fx_rates_main
     a11y:
       role: listitem
-      label: "EUR to USD rate: 1.0993, down 0.3 percent"
+      label: "EUR to USD rate, tap to load into the converter"
     keyboard:
       focusable: true
     test_context:
@@ -716,21 +581,6 @@ components:
       test_id: rate_value_eur_usd
       assert: text_visible
 
-  - type: text
-    id: rate_change_eur_usd
-    content: "-0.3%"
-    style:
-      typography: "Outfit/body_small"
-      color: "#BA1A1A"
-      font_weight: 500
-      icon_leading: "arrow_downward"
-    a11y:
-      role: text
-      label: "Down 0.3 percent today"
-    test_context:
-      test_id: rate_change_eur_usd
-      assert: red_color_for_negative_change
-
   - type: box
     id: rate_row_usd_inr
     content: ""
@@ -740,7 +590,7 @@ components:
       padding_horizontal: 16
       padding_vertical: 14
       margin_horizontal: 16
-      margin_bottom: 2
+      margin_bottom: 4
       direction: row
       justify_content: space_between
       align_items: center
@@ -749,25 +599,12 @@ components:
       params:
         fromCurrencyCode: USD
         toCurrencyCode: INR
-    component_states:
-      loading:
-        type: skeleton  # fix REG-001: shimmer → skeleton (registered)
-        count: 1
-        description: "shimmer matching rate row with pair label and value"
-      error:
-        type: banner  # fix REG-001: inline-error → banner (registered)
-        message: "Could not load USD/INR rate. Please try again."
-        retry: true
-      empty:
-        type: box  # fix REG-001: inline-empty → box (registered)
-        message: "No exchange rate available for USD / INR."
-        icon: "currency_exchange"
     on_click:
       action: select_pair
       target: fx_rates_main
     a11y:
       role: listitem
-      label: "USD to INR rate: 83.22, unchanged"
+      label: "USD to INR rate, tap to load into the converter"
     keyboard:
       focusable: true
     test_context:
@@ -802,21 +639,6 @@ components:
       test_id: rate_value_usd_inr
       assert: text_visible
 
-  - type: text
-    id: rate_change_usd_inr
-    content: "0.0%"
-    style:
-      typography: "Outfit/body_small"
-      color: "#44483D"
-      font_weight: 500
-      icon_leading: "remove"
-    a11y:
-      role: text
-      label: "No change today"
-    test_context:
-      test_id: rate_change_usd_inr
-      assert: gray_color_for_no_change
-
   - type: box
     id: rate_row_eur_gbp
     content: ""
@@ -835,25 +657,12 @@ components:
       params:
         fromCurrencyCode: EUR
         toCurrencyCode: GBP
-    component_states:
-      loading:
-        type: skeleton  # fix REG-001: shimmer → skeleton (registered)
-        count: 1
-        description: "shimmer matching rate row with pair label and value"
-      error:
-        type: banner  # fix REG-001: inline-error → banner (registered)
-        message: "Could not load EUR/GBP rate. Please try again."
-        retry: true
-      empty:
-        type: box  # fix REG-001: inline-empty → box (registered)
-        message: "No exchange rate available for EUR / GBP."
-        icon: "currency_exchange"
     on_click:
       action: select_pair
       target: fx_rates_main
     a11y:
       role: listitem
-      label: "EUR to GBP rate: 0.8568, down 0.2 percent"
+      label: "EUR to GBP rate, tap to load into the converter"
     keyboard:
       focusable: true
     test_context:
@@ -888,20 +697,78 @@ components:
       test_id: rate_value_eur_gbp
       assert: text_visible
 
-  - type: text
-    id: rate_change_eur_gbp
-    content: "-0.2%"
+  # ── Loading / error shared surfaces ───────────────────────────────────────────
+
+  - type: progress
+    id: fx_progress_indicator
+    variant: circular
     style:
-      typography: "Outfit/body_small"
-      color: "#BA1A1A"
-      font_weight: 500
-      icon_leading: "arrow_downward"
+      color: "#4C662B"
+      alignment: center
+    a11y:
+      role: progressbar
+      label: "Loading exchange rates"
+    test_context:
+      test_id: fx_progress_indicator
+      assert: visible_when_loading
+
+  - type: stack
+    id: fx_error_state
+    variant: column
+    style:
+      alignment: center
+      padding: 32
+    children:
+      - fx_error_icon
+      - fx_error_message
+      - fx_retry_button
+
+  - type: icon
+    id: fx_error_icon
+    content: "cloud_off"
+    style:
+      color: "#44483D"
+      size: "48dp"
+    a11y:
+      role: image
+      label: "Unable to load exchange rates"
+    test_context:
+      test_id: fx_error_icon
+      assert: visible_when_error
+
+  - type: text
+    id: fx_error_message
+    content: "Unable to load exchange rates. Check your connection and try again."
+    style:
+      typography: "Outfit/body_medium"
+      color: "#44483D"
+      alignment: center
     a11y:
       role: text
-      label: "Down 0.2 percent today"
+      label: "Unable to load exchange rates. Check your connection and try again."
     test_context:
-      test_id: rate_change_eur_gbp
-      assert: red_color_for_negative_change
+      test_id: fx_error_message
+      assert: text_visible
+
+  - type: button
+    id: fx_retry_button
+    label: "Retry"
+    variant: text
+    supported_states: [idle, hover, focus_visible, pressed, disabled]
+    style:
+      color: "#4C662B"
+      typography: "Outfit/label_large"
+    on_click:
+      action: retry_load
+      target: fx_rates_main
+    a11y:
+      role: button
+      label: "Retry loading exchange rates"
+    keyboard:
+      focusable: true
+    test_context:
+      test_id: fx_retry_button
+      assert: triggers_reload
 
 responsive:
   mobile_only: true
@@ -911,21 +778,15 @@ states:
   initial_state: loading
   loading:
     motion:
-      shimmer_duration: short4
       reduced_motion_fallback: static_placeholder
     layout:
       show_components:
         - fx_rates_title
-      skeleton_components:
+      progress_components:
+        - fx_progress_indicator
+      hide_components:
         - last_updated_text
         - converter_card
-        - send_amount_input
-        - from_currency_select
-        - swap_currencies_icon
-        - to_currency_select
-        - converted_result_display
-        - rate_info_text
-        - send_money_cta
         - popular_pairs_header
         - rate_row_gbp_eur
         - rate_row_gbp_usd
@@ -933,6 +794,8 @@ states:
         - rate_row_eur_usd
         - rate_row_usd_inr
         - rate_row_eur_gbp
+        - fx_error_state
+    note: "Centered CircularProgressIndicator while the selected pair + popular pairs + currencies load (no skeleton)."
   content:
     layout:
       show_components:
@@ -951,31 +814,36 @@ states:
         - rate_row_gbp_eur
         - pair_label_gbp_eur
         - rate_value_gbp_eur
-        - rate_change_gbp_eur
         - rate_row_gbp_usd
         - pair_label_gbp_usd
         - rate_value_gbp_usd
-        - rate_change_gbp_usd
         - rate_row_gbp_jpy
         - pair_label_gbp_jpy
         - rate_value_gbp_jpy
-        - rate_change_gbp_jpy
         - rate_row_eur_usd
         - pair_label_eur_usd
         - rate_value_eur_usd
-        - rate_change_eur_usd
         - rate_row_usd_inr
         - pair_label_usd_inr
         - rate_value_usd_inr
-        - rate_change_usd_inr
         - rate_row_eur_gbp
         - pair_label_eur_gbp
         - rate_value_eur_gbp
-        - rate_change_eur_gbp
+      conditional_components:
+        rate_available:
+          - converted_result_display
+          - rate_info_text
+        rate_unavailable:
+          - fx_rate_unavailable_notice
+      note: "When the selected pair is unquotable, converted_result_display + rate_info_text are replaced by fx_rate_unavailable_notice and send_money_cta is disabled. last_updated_text hides when effective_date is blank."
   error:
     layout:
       show_components:
         - fx_rates_title
+        - fx_error_state
+        - fx_error_icon
+        - fx_error_message
+        - fx_retry_button
       hide_components:
         - converter_card
         - popular_pairs_header
@@ -985,91 +853,123 @@ states:
         - rate_row_eur_usd
         - rate_row_usd_inr
         - rate_row_eur_gbp
-      error_message: "Unable to load exchange rates. Check your connection and try again."
-
+    note: "ScreenState.Error — the mandatory selected-pair rate could not be fetched. Empty also routes here (shipped FxErrorState handles Empty/Error/NoNetwork/Unauthenticated)."
   empty:
     layout:
       show_components:
         - fx_rates_title
+        - fx_error_state
+        - fx_error_icon
+        - fx_error_message
+        - fx_retry_button
       hide_components:
         - converter_card
         - popular_pairs_header
-        - rate_row_gbp_eur
-        - rate_row_gbp_usd
-        - rate_row_gbp_jpy
-        - rate_row_eur_usd
-        - rate_row_usd_inr
-        - rate_row_eur_gbp
-      empty_message: "No exchange rates available for the selected currencies. Try a different currency pair."
-      empty_icon: "currency_exchange"
-      empty_action_label: "Reset to GBP / EUR"
-      empty_action: reset_currency_pair
+    note: "Folded into the shared error/retry view — no separate Reset-to-pair action (shipped projects only Loading/Failed→Error/Content)."
+  no_network:
+    layout:
+      show_components:
+        - fx_rates_title
+        - fx_error_state
+        - fx_error_icon
+        - fx_error_message
+        - fx_retry_button
+      hide_components:
+        - converter_card
+        - popular_pairs_header
+    note: "ScreenState.NoNetwork — rendered identically to error with retry via the shared FxErrorState branch."
+  unauthenticated:
+    layout:
+      show_components:
+        - fx_rates_title
+        - fx_error_state
+        - fx_error_icon
+        - fx_error_message
+        - fx_retry_button
+      hide_components:
+        - converter_card
+        - popular_pairs_header
+    note: "ScreenState.Unauthenticated — session expired; rendered via the shared FxErrorState branch with retry."
 
 state_model:
   view_model: FxRatesViewModel
-  state_fields:
+  content_type: FxRatesContent
+  screen_state: "ScreenState<FxRatesContent>"
+  selection:
     - name: fromCurrency
       type: String
       default: '"GBP"'
     - name: toCurrency
       type: String
       default: '"EUR"'
-    - name: sendAmount
-      type: Double
-      default: "1000.0"
-    - name: convertedAmount
-      type: Double
-      default: "1167.20"
-    - name: exchangeRate
-      type: Double
-      default: "1.1672"
-    - name: rateList
-      type: "List<FxRate>"
-      default: "emptyList()"
-    - name: lastUpdated
+    - name: amountInput
       type: String
-      default: '""'
-    - name: isLoading
+      default: '"1000"'
+      note: "String, not Double — sanitized to digits + single dot, max 12 chars; parsed on render."
+  raw_state:
+    type: "Loading | Failed(error) | Loaded(currencies, rates, unavailable)"
+    loaded_fields:
+      - name: currencies
+        type: "List<String>"
+        note: "From v5.1.0 bank-currencies; sandbox returns empty so falls back to GBP/EUR/USD/JPY/INR/AUD/AED."
+      - name: rates
+        type: "Map<String, FxRate>"
+        note: "Keyed 'FROM/TO'; per-pair lazy fetch via ensureRate, cached for the session."
+      - name: unavailable
+        type: "Set<String>"
+        note: "Pair keys the bank cannot quote (400); not refetched, surfaced as the unavailable notice."
+  content_fields:
+    - name: fromCurrency
+      type: String
+    - name: toCurrency
+      type: String
+    - name: amountInput
+      type: String
+    - name: currencies
+      type: "List<String>"
+    - name: rateAvailable
       type: Boolean
-      default: "true"
-  errors:
-    - name: networkError
-      type: "String?"
-      default: "null"
-    - name: rateUnavailable
-      type: "String?"
-      default: "null"
+    - name: convertedLabel
+      type: String
+    - name: rateLabel
+      type: String
+    - name: lastUpdatedLabel
+      type: String
+    - name: pairs
+      type: "List<FxPairRow>"
+      note: "Popular pairs that currently have a rate; a failed pair drops out individually."
   events:
-    - AmountChangedEvent
-    - FromCurrencySelectedEvent
-    - ToCurrencySelectedEvent
-    - SwapCurrenciesEvent
-    - PairSelectedEvent
-    - SendMoneyEvent
-    - RetryLoadEvent
+    - onRetry
+    - onAmountChanged
+    - onFromCurrencySelected
+    - onToCurrencySelected
+    - onSwapCurrencies
+    - onPairSelected
   actions:
+    - retry_load
     - update_amount
     - select_from_currency
     - select_to_currency
     - swap_currencies
     - select_pair
     - navigate
-    - retry_load
   di:
-    - FxRatesRepository
-    - NavigationService
+    - FxRepository
+  notes:
+    - "Navigation to Send Money is the onSendMoney lambda passed to FxRatesScreen (no NavigationService); back is the onBack lambda."
+    - "Selecting the currency already on the other side swaps the pair instead of duplicating it."
+    - "POPULAR_PAIRS = GBP/EUR, GBP/USD, GBP/JPY, EUR/USD, USD/INR, EUR/GBP (all quotable on the sandbox, verified live)."
 
 api:
   - id: obp_currencies
-    endpoint: "GET /obp/v3.0.0/banks/{bankId}/currencies"
+    endpoint: "GET /obp/v5.1.0/banks/{bankId}/currencies"
     tag: FX
-    description: "List supported currencies for dropdown population"
+    description: "Supported currencies for the dropdowns. Sandbox returns an empty list for every bank, so the repository falls back to GBP/EUR/USD/JPY/INR/AUD/AED (codes the sandbox FX engine actually quotes)."
 
-  - endpoint: "GET /obp/v3.0.0/banks/{bankId}/fx/{fromCurrencyCode}/{toCurrencyCode}"
+  - id: obp_get_fx_rate
+    endpoint: "GET /obp/v3.0.0/banks/{bankId}/fx/{fromCurrencyCode}/{toCurrencyCode}"
     tag: FX
-    params:
-      - fromCurrencyCode: GBP
-      - toCurrencyCode: EUR
+    note: "Per-pair live rate. Called lazily per pair (ensureRate) and cached for the session; unquotable pairs answer 400 and are remembered in the unavailable set."
     response:
       fields:
         - bank_id: String
@@ -1079,6 +979,7 @@ api:
         - inverse_conversion_value: Double
         - effective_date: String
     errors:
+      - 400: "Currency pair not quotable by this bank"
       - 401: "Unauthorized — missing or invalid token"
       - 404: "Currency pair not supported"
       - 500: "Internal server error"
@@ -1087,6 +988,7 @@ navigation:
   - target: send-money
     label: "Send Money"
     trigger: send_money_cta
+    note: "Via the onSendMoney lambda."
 
 dependencies:
   tier: consumer

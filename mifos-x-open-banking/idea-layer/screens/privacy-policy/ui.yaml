@@ -2,7 +2,7 @@ id: privacy-policy
 name: "Privacy Policy"
 feature: shared
 flavor: shared
-status: approved
+status: enriched
 quality_score: 92
 schema_version: "3.1"
 contract_version: "1.1.0"
@@ -29,11 +29,16 @@ status_history:
     by: "/kmp-implement privacy-policy (legal batch)"
     contract_version: "1.1.0"
     note: "Implemented in feature/legal as a static scrollable screen: GDPR/sandbox notice banner + nine section cards (data touched, lawful basis, use, where data lives, diagnostics, sharing, retention, rights, contact) + last-updated footer. Deviation: spec prose claiming live-bank obligations (FCA reporting, AML/KYC, 7-year retention, Firebase SDKs, identity-document collection) replaced with truthful sandbox-demo content — the app touches only sandbox credentials/data plus local preferences, password never stored. ViewModel/repository/loading states dropped (static content). Entry: Settings → Privacy Policy."
+  - from: approved
+    to: enriched
+    at: "2026-06-11"
+    by: "/idea verify --source-drift (write-back)"
+    contract_version: "1.1.0"
+    note: "SOURCE→SPEC truthfulness rewrite to shipped PrivacyPolicyScreen.kt (static @Composable, privacyPolicySections baked in, no ViewModel/DI). Replaced the fabricated real-bank prose (SHA-256 token + FCA + AML/KYC + 7-year retention + Firebase/Crashlytics + KYC providers + DPO addresses + ICO escalation) with the shipped sandbox-truthful content: sandbox-scope GDPR banner + nine sections (Data This App Touches, Lawful Basis for Processing, How Your Data Is Used, Where Your Data Lives, Diagnostics & Crash Reporting, Data Sharing, Data Retention, Your Rights, Contact) + last-updated stamp. Component ids realigned to shipped test tags (added pp_local_storage_card, pp_diagnostics_card; pp_dpo_card now the Contact section). Removed: loading skeleton (pp_loading_skeleton), error+retry (pp_error_state/pp_retry_button), scroll-position tracking, PrivacyPolicyViewModel state_model — screen does no network."
 
 screens:
   - id: privacy-policy
     name: "Privacy Policy"
-    viewmodel: "PrivacyPolicyViewModel"
     route: /legal/privacy
 
 archetype: settings
@@ -55,10 +60,18 @@ components:
       padding: spacing.lg
     children:
       - pp_gdpr_banner
-      - pp_scroll_content
+      - pp_data_collection_card
+      - pp_lawful_basis_card
+      - pp_purpose_card
+      - pp_local_storage_card
+      - pp_diagnostics_card
+      - pp_third_party_card
+      - pp_retention_card
+      - pp_user_rights_card
+      - pp_dpo_card
       - pp_last_updated_text
 
-  # ── GDPR banner ───────────────────────────────────────────────────────────────
+  # ── Sandbox-scope notice banner ───────────────────────────────────────────────
 
   - type: banner
     id: pp_gdpr_banner
@@ -73,36 +86,20 @@ components:
 
   - type: text
     id: pp_gdpr_banner_text
-    content: "This policy complies with UK GDPR, the Data Protection Act 2018, and EU GDPR (Regulation 2016/679)."
+    content: "Mifos X Open Banking is an open-source demonstration client for the Open Bank Project sandbox, maintained by the community around the Mifos Initiative. Every account, balance and transaction shown here is sandbox test data — the app never connects to a live bank. This policy describes, in terms aligned with UK GDPR and EU GDPR (Regulation 2016/679), how the demo handles your data."
     variant: body_small
     style:
       typography: "Outfit/body_small"
       color: "#1A1C16"
     a11y:
       role: text
-      label: "GDPR compliance notice"
+      label: "Sandbox-only demo notice and GDPR alignment"
     test_context:
-      purpose: "Prominent GDPR compliance badge at top of privacy policy"
+      purpose: "Banner declaring the sandbox-only scope of the app, above all policy sections"
       interaction_type: display
       data_driven: false
 
-  # ── Scrollable sections ───────────────────────────────────────────────────────
-
-  - type: stack
-    id: pp_scroll_content
-    variant: column
-    style:
-      padding_bottom: spacing.xl
-    children:
-      - pp_data_collection_card
-      - pp_lawful_basis_card
-      - pp_purpose_card
-      - pp_third_party_card
-      - pp_retention_card
-      - pp_user_rights_card
-      - pp_dpo_card
-
-  # ── Data Collection ───────────────────────────────────────────────────────────
+  # ── Data This App Touches ─────────────────────────────────────────────────────
 
   - type: card
     id: pp_data_collection_card
@@ -119,7 +116,7 @@ components:
 
   - type: text
     id: pp_data_collection_header
-    content: "Data We Collect"
+    content: "Data This App Touches"
     variant: title_medium
     style:
       typography: "Outfit/title_medium"
@@ -127,15 +124,15 @@ components:
       padding_bottom: spacing.sm
     a11y:
       role: heading
-      label: "Data We Collect"
+      label: "Data This App Touches"
     test_context:
-      purpose: "Section header for data collection disclosure"
+      purpose: "Section header for what data the app handles"
       interaction_type: display
       data_driven: false
 
   - type: text
     id: pp_data_collection_body
-    content: "We collect the following categories of personal data: (a) Identity data — name, date of birth, national ID; (b) Contact data — email address, phone number; (c) Financial data — account numbers, IBAN, transaction history, balances, standing orders, card references; (d) Technical data — device type, OS version, app version, crash logs, and anonymised usage analytics; (e) Authentication data — DirectLogin token (never stored in plaintext, hashed with SHA-256 and time-limited to 1 hour)."
+    content: "The app handles only what it needs to operate against the Open Bank Project sandbox: (a) Sandbox credentials — the username and password you use to sign in to your sandbox profile; (b) Sandbox banking data — demo accounts, balances, transactions, beneficiaries, cards, standing orders and direct debits returned by the sandbox API; (c) App preferences — theme, language and notification choices made on this device. The app never requests your contacts, location, camera, microphone, photos or any other device data."
     variant: body_medium
     style:
       typography: "Outfit/body_medium"
@@ -143,13 +140,13 @@ components:
       line_height: "1.6"
     a11y:
       role: text
-      label: "Data collection categories"
+      label: "Data the app touches"
     test_context:
-      purpose: "Enumerated list of data categories collected"
+      purpose: "Describes the limited categories of data the app handles in the sandbox"
       interaction_type: display
       data_driven: false
 
-  # ── Lawful Basis ──────────────────────────────────────────────────────────────
+  # ── Lawful Basis for Processing ───────────────────────────────────────────────
 
   - type: card
     id: pp_lawful_basis_card
@@ -182,7 +179,7 @@ components:
 
   - type: text
     id: pp_lawful_basis_body
-    content: "We process your personal data under the following GDPR lawful bases: (a) Contract performance — processing necessary to provide the banking services you have requested; (b) Legal obligation — AML/KYC checks, regulatory reporting to the FCA; (c) Legitimate interests — fraud detection, security monitoring, crash analytics — balanced against your rights; (d) Consent — for optional marketing communications, which you may withdraw at any time via Settings."
+    content: "Where GDPR applies, processing rests on: (a) Contract performance — exchanging your sandbox credentials for a session token is necessary to deliver the sign-in you asked for; (b) Legitimate interests — keeping the app stable through crash diagnostics that carry no identifying data, balanced against your rights and freedoms; (c) Consent — for any optional diagnostics setting you switch on, which you can withdraw at any time from Settings."
     variant: body_medium
     style:
       typography: "Outfit/body_medium"
@@ -192,11 +189,11 @@ components:
       role: text
       label: "Lawful bases for data processing"
     test_context:
-      purpose: "GDPR Article 6 lawful basis enumeration"
+      purpose: "GDPR lawful-basis enumeration scoped to the demo"
       interaction_type: display
       data_driven: false
 
-  # ── Purpose ───────────────────────────────────────────────────────────────────
+  # ── How Your Data Is Used ─────────────────────────────────────────────────────
 
   - type: card
     id: pp_purpose_card
@@ -213,7 +210,7 @@ components:
 
   - type: text
     id: pp_purpose_header
-    content: "How We Use Your Data"
+    content: "How Your Data Is Used"
     variant: title_medium
     style:
       typography: "Outfit/title_medium"
@@ -221,7 +218,7 @@ components:
       padding_bottom: spacing.sm
     a11y:
       role: heading
-      label: "How We Use Your Data"
+      label: "How Your Data Is Used"
     test_context:
       purpose: "Section header for data purpose specification"
       interaction_type: display
@@ -229,7 +226,7 @@ components:
 
   - type: text
     id: pp_purpose_body
-    content: "Your data is used exclusively to: provide account balance and transaction display; initiate and record payment transactions; manage standing orders and direct debits; facilitate KYC onboarding for field officers; detect and prevent fraudulent activity; deliver in-app push notifications (Firebase Cloud Messaging, Android only); and generate aggregated, anonymised usage reports to improve app performance."
+    content: "Your sandbox credentials are sent once at sign-in and exchanged for a short-lived session token that authenticates every later API call; the password itself is never stored. Sandbox banking data is fetched on demand and rendered on screen so you can explore the product flows. Preferences are read solely to apply the appearance and behaviour you chose. Nothing is profiled, scored, sold or used for advertising."
     variant: body_medium
     style:
       typography: "Outfit/body_medium"
@@ -239,11 +236,105 @@ components:
       role: text
       label: "Purposes for data use"
     test_context:
-      purpose: "Specific and limited purposes for which data is processed"
+      purpose: "Limited purposes for which data is processed in the demo"
       interaction_type: display
       data_driven: false
 
-  # ── Third-Party Sharing ───────────────────────────────────────────────────────
+  # ── Where Your Data Lives ─────────────────────────────────────────────────────
+
+  - type: card
+    id: pp_local_storage_card
+    variant: filled
+    supported_states: [idle]
+    style:
+      background: "#FFFFFF"
+      border_radius: "12dp"
+      padding: spacing.md
+      margin_bottom: spacing.md
+    children:
+      - pp_local_storage_header
+      - pp_local_storage_body
+
+  - type: text
+    id: pp_local_storage_header
+    content: "Where Your Data Lives"
+    variant: title_medium
+    style:
+      typography: "Outfit/title_medium"
+      color: "#4C662B"
+      padding_bottom: spacing.sm
+    a11y:
+      role: heading
+      label: "Where Your Data Lives"
+    test_context:
+      purpose: "Section header for on-device storage disclosure"
+      interaction_type: display
+      data_driven: false
+
+  - type: text
+    id: pp_local_storage_body
+    content: "Your session token and preferences are kept in app-private storage on this device, protected by the operating system's application sandbox. Recently viewed sandbox data may be cached locally so screens stay responsive when the connection drops. The app has no backend of its own — nothing you do here is uploaded to servers run by the app's maintainers."
+    variant: body_medium
+    style:
+      typography: "Outfit/body_medium"
+      color: "#44483D"
+      line_height: "1.6"
+    a11y:
+      role: text
+      label: "Where data is stored"
+    test_context:
+      purpose: "States that data lives in app-private storage with no maintainer backend"
+      interaction_type: display
+      data_driven: false
+
+  # ── Diagnostics & Crash Reporting ─────────────────────────────────────────────
+
+  - type: card
+    id: pp_diagnostics_card
+    variant: filled
+    supported_states: [idle]
+    style:
+      background: "#FFFFFF"
+      border_radius: "12dp"
+      padding: spacing.md
+      margin_bottom: spacing.md
+    children:
+      - pp_diagnostics_header
+      - pp_diagnostics_body
+
+  - type: text
+    id: pp_diagnostics_header
+    content: "Diagnostics & Crash Reporting"
+    variant: title_medium
+    style:
+      typography: "Outfit/title_medium"
+      color: "#4C662B"
+      padding_bottom: spacing.sm
+    a11y:
+      role: heading
+      label: "Diagnostics and Crash Reporting"
+    test_context:
+      purpose: "Section header for diagnostics and crash reporting"
+      interaction_type: display
+      data_driven: false
+
+  - type: text
+    id: pp_diagnostics_body
+    content: "Builds of this app may include a diagnostics module that records crash reports and anonymous performance measurements, such as app start time and screen render duration, so maintainers can find and fix defects. Diagnostic records never contain your sandbox credentials, session token, account numbers or transaction details. When a build ships with diagnostics enabled, a toggle in Settings lets you turn it off."
+    variant: body_medium
+    style:
+      typography: "Outfit/body_medium"
+      color: "#44483D"
+      line_height: "1.6"
+    a11y:
+      role: text
+      label: "Diagnostics and crash reporting disclosure"
+    test_context:
+      purpose: "Describes optional, non-identifying crash diagnostics"
+      interaction_type: display
+      data_driven: false
+
+  # ── Data Sharing ──────────────────────────────────────────────────────────────
 
   - type: card
     id: pp_third_party_card
@@ -260,7 +351,7 @@ components:
 
   - type: text
     id: pp_third_party_header
-    content: "Third-Party Data Sharing"
+    content: "Data Sharing"
     variant: title_medium
     style:
       typography: "Outfit/title_medium"
@@ -268,15 +359,15 @@ components:
       padding_bottom: spacing.sm
     a11y:
       role: heading
-      label: "Third-Party Data Sharing"
+      label: "Data Sharing"
     test_context:
-      purpose: "Section header for third-party processor disclosure"
+      purpose: "Section header for data sharing disclosure"
       interaction_type: display
       data_driven: false
 
   - type: text
     id: pp_third_party_body
-    content: "We share data with the following processors under GDPR-compliant Data Processing Agreements (DPAs): (a) Open Bank Project Limited — acts as data processor for all API-mediated banking data; they operate under their own privacy policy at openbankproject.com/privacy; (b) KYC providers — identity verification partners engaged by partner institutions for field officer onboarding flows; (c) Firebase / Google — crash reporting (Crashlytics) and performance monitoring, on Android only, under anonymised identifiers. We do not sell your personal data to any third party."
+    content: "Data leaves this app in exactly one direction: API requests to the Open Bank Project sandbox you signed in to. The sandbox operator processes those requests under its own published terms at openbankproject.com. The app shares nothing with advertisers, data brokers or social networks, and it embeds no third-party tracking SDKs."
     variant: body_medium
     style:
       typography: "Outfit/body_medium"
@@ -284,13 +375,13 @@ components:
       line_height: "1.6"
     a11y:
       role: text
-      label: "Third party data sharing disclosure"
+      label: "Data sharing disclosure"
     test_context:
-      purpose: "Named third-party processors with DPA basis"
+      purpose: "States data only flows to the OBP sandbox, no advertisers or trackers"
       interaction_type: display
       data_driven: false
 
-  # ── Retention ─────────────────────────────────────────────────────────────────
+  # ── Data Retention ────────────────────────────────────────────────────────────
 
   - type: card
     id: pp_retention_card
@@ -317,13 +408,13 @@ components:
       role: heading
       label: "Data Retention"
     test_context:
-      purpose: "Section header for retention schedule"
+      purpose: "Section header for retention statement"
       interaction_type: display
       data_driven: false
 
   - type: text
     id: pp_retention_body
-    content: "Transaction records are retained for 7 years to comply with the UK Money Laundering Regulations 2017. DirectLogin tokens expire after 1 hour and are not persisted. Crash logs and usage analytics are retained for 90 days in Firebase. Account profile data is retained for 30 days after account deletion to allow dispute resolution. After retention periods expire, data is securely deleted or anonymised."
+    content: "Sandbox banking data lives on the Open Bank Project sandbox and follows the sandbox operator's own retention schedule — this app is a window onto it, never its custodian. The local cache and your session token are cleared when you sign out, and uninstalling the app removes everything it stored on this device. Crash reports, where enabled, are kept only as long as needed to diagnose the defect they describe."
     variant: body_medium
     style:
       typography: "Outfit/body_medium"
@@ -331,13 +422,13 @@ components:
       line_height: "1.6"
     a11y:
       role: text
-      label: "Data retention schedule"
+      label: "Data retention statement"
     test_context:
-      purpose: "Retention periods per data category"
+      purpose: "Sandbox-scoped retention — operator-owned data, local clears on sign-out/uninstall"
       interaction_type: display
       data_driven: false
 
-  # ── User Rights ───────────────────────────────────────────────────────────────
+  # ── Your Rights ───────────────────────────────────────────────────────────────
 
   - type: card
     id: pp_user_rights_card
@@ -354,7 +445,7 @@ components:
 
   - type: text
     id: pp_user_rights_header
-    content: "Your Rights Under GDPR"
+    content: "Your Rights"
     variant: title_medium
     style:
       typography: "Outfit/title_medium"
@@ -362,15 +453,15 @@ components:
       padding_bottom: spacing.sm
     a11y:
       role: heading
-      label: "Your Rights Under GDPR"
+      label: "Your Rights"
     test_context:
-      purpose: "Section header for GDPR data subject rights"
+      purpose: "Section header for data subject rights"
       interaction_type: display
       data_driven: false
 
   - type: text
     id: pp_user_rights_body
-    content: "Under UK GDPR and EU GDPR you have the right to: (a) Access — request a copy of personal data we hold about you; (b) Rectification — correct inaccurate or incomplete data; (c) Erasure (\"Right to be Forgotten\") — request deletion of data where no legal retention obligation applies; (d) Data Portability — receive your data in a structured, machine-readable format (JSON); (e) Restriction of Processing — pause processing while accuracy is disputed; (f) Objection — object to processing based on legitimate interests; (g) Withdraw Consent — for any processing based solely on consent. Submit requests to privacy@mifos.org. We will respond within 30 days."
+    content: "Because personal data stays on your device, you can act on most rights directly: review preferences in Settings, sign out to clear your session and cache, or uninstall to erase all local data. Where GDPR or similar law applies you also hold the rights of access, rectification, erasure, restriction of processing, data portability and objection. For data held inside the sandbox itself, direct requests to the Open Bank Project, which operates the sandbox as an independent service."
     variant: body_medium
     style:
       typography: "Outfit/body_medium"
@@ -378,13 +469,13 @@ components:
       line_height: "1.6"
     a11y:
       role: text
-      label: "GDPR data subject rights enumeration"
+      label: "Data subject rights enumeration"
     test_context:
-      purpose: "Full enumeration of GDPR Articles 15-22 rights"
+      purpose: "Rights the user can exercise directly plus GDPR rights, with OBP referral for sandbox data"
       interaction_type: display
       data_driven: false
 
-  # ── DPO Contact ───────────────────────────────────────────────────────────────
+  # ── Contact ───────────────────────────────────────────────────────────────────
 
   - type: card
     id: pp_dpo_card
@@ -397,13 +488,11 @@ components:
       margin_bottom: spacing.md
     children:
       - pp_dpo_header
-      - pp_dpo_controller_text
-      - pp_dpo_processor_text
-      - pp_dpo_contact_text
+      - pp_dpo_body
 
   - type: text
     id: pp_dpo_header
-    content: "Data Controller & DPO Contact"
+    content: "Contact"
     variant: title_medium
     style:
       typography: "Outfit/title_medium"
@@ -411,47 +500,15 @@ components:
       padding_bottom: spacing.sm
     a11y:
       role: heading
-      label: "Data Controller and DPO Contact"
+      label: "Contact"
     test_context:
-      purpose: "Section header for data controller and DPO identification"
+      purpose: "Section header for contact details"
       interaction_type: display
       data_driven: false
 
   - type: text
-    id: pp_dpo_controller_text
-    content: "Data Controller: Mifos Initiative, 1 World Trade Center, New York, NY 10007, USA (operating internationally under applicable data protection regimes)."
-    variant: body_medium
-    style:
-      typography: "Outfit/body_medium"
-      color: "#44483D"
-      padding_bottom: spacing.sm
-    a11y:
-      role: text
-      label: "Data controller identity"
-    test_context:
-      purpose: "Identifies Mifos Initiative as the data controller"
-      interaction_type: display
-      data_driven: false
-
-  - type: text
-    id: pp_dpo_processor_text
-    content: "Data Processor (API services): Open Bank Project Limited, 11 Leadenhall Street, London EC3V 1LP, United Kingdom."
-    variant: body_medium
-    style:
-      typography: "Outfit/body_medium"
-      color: "#44483D"
-      padding_bottom: spacing.sm
-    a11y:
-      role: text
-      label: "Data processor identity"
-    test_context:
-      purpose: "Identifies OBP Limited as the API data processor"
-      interaction_type: display
-      data_driven: false
-
-  - type: text
-    id: pp_dpo_contact_text
-    content: "Data Protection Officer: privacy@mifos.org. To exercise your rights or raise a concern, email our DPO. You also have the right to lodge a complaint with the UK Information Commissioner's Office (ICO) at ico.org.uk, or with your local supervisory authority in the EU."
+    id: pp_dpo_body
+    content: "Mifos X Open Banking is community-maintained open-source software associated with the Mifos Initiative. Questions about this policy are best raised as an issue on the project's GitHub repository, or by email to privacy@mifos.org. Concerns about sandbox-side processing can be sent to the Open Bank Project via openbankproject.com. If you believe your data-protection rights have been infringed, you may also complain to your local supervisory authority."
     variant: body_medium
     style:
       typography: "Outfit/body_medium"
@@ -459,9 +516,9 @@ components:
       line_height: "1.6"
     a11y:
       role: text
-      label: "DPO contact details and ICO complaint right"
+      label: "Contact details for privacy questions"
     test_context:
-      purpose: "DPO email and ICO/supervisory authority escalation path"
+      purpose: "Community contact path for policy questions plus supervisory-authority right"
       interaction_type: display
       data_driven: false
 
@@ -469,11 +526,11 @@ components:
 
   - type: text
     id: pp_last_updated_text
-    content: "Last updated: 28 May 2026 — Version 1.0"
+    content: "Last updated: 28 May 2026 · Version 1.0"
     variant: body_small
     style:
       typography: "Outfit/body_small"
-      color: "#C5C8BA"
+      color: "#44483D"
       alignment: center
       padding_top: spacing.md
       padding_bottom: spacing.xl
@@ -481,94 +538,8 @@ components:
       role: text
       label: "Privacy policy last updated 28 May 2026 version 1.0"
     test_context:
-      purpose: "Version stamp for the privacy policy document"
+      purpose: "Date and version stamp for the bundled policy text"
       interaction_type: display
-      data_driven: false
-
-  # ── Loading Skeleton ──────────────────────────────────────────────────────────
-
-  - type: skeleton
-    id: pp_loading_skeleton
-    variant: settings
-    style:
-      background: "#F9FAEF"
-      padding: spacing.lg
-    a11y:
-      role: progressbar
-      label: "Loading privacy policy"
-    test_context:
-      purpose: "Shimmer while bundled privacy policy content deserializes"
-      interaction_type: display
-      data_driven: false
-
-  # ── Error State ───────────────────────────────────────────────────────────────
-
-  - type: stack
-    id: pp_error_state
-    variant: column
-    style:
-      alignment: center
-      padding: spacing.xl
-    children:
-      - pp_error_icon
-      - pp_error_message
-      - pp_retry_button
-
-  - type: icon
-    id: pp_error_icon
-    content: "policy"
-    style:
-      color: "#BA1A1A"
-      size: "48dp"
-      alignment: center
-      padding_bottom: spacing.md
-    a11y:
-      role: image
-      label: "Error loading privacy policy"
-    test_context:
-      purpose: "Error icon when privacy policy content cannot be retrieved"
-      interaction_type: display
-      data_driven: false
-
-  - type: text
-    id: pp_error_message
-    content: "Unable to load Privacy Policy. Please check your connection and try again."
-    variant: body_medium
-    style:
-      typography: "Outfit/body_medium"
-      color: "#44483D"
-      alignment: center
-      padding_bottom: spacing.md
-    a11y:
-      role: text
-      label: "Unable to load Privacy Policy"
-    test_context:
-      purpose: "Error message when privacy policy content fails to load"
-      interaction_type: display
-      data_driven: false
-
-  - type: button
-    id: pp_retry_button
-    label: "Retry"
-    variant: outlined
-    supported_states: [idle, hover, focus_visible, pressed, disabled]
-    style:
-      border_color: "#4C662B"
-      color: "#4C662B"
-      typography: "Outfit/label_large"
-      alignment: center
-    on_click:
-      action: retry_load
-      target: privacy-policy
-      intent: api
-    a11y:
-      role: button
-      label: "Retry loading Privacy Policy"
-    keyboard:
-      focusable: true
-    test_context:
-      purpose: "Retry button to reload privacy policy after failure"
-      interaction_type: action
       data_driven: false
 
 responsive:
@@ -581,52 +552,25 @@ states:
     layout: { type: column, padding: spacing.lg }
     visible_components:
       - pp_gdpr_banner
-      - pp_scroll_content
+      - pp_data_collection_card
+      - pp_lawful_basis_card
+      - pp_purpose_card
+      - pp_local_storage_card
+      - pp_diagnostics_card
+      - pp_third_party_card
+      - pp_retention_card
+      - pp_user_rights_card
+      - pp_dpo_card
       - pp_last_updated_text
-  loading:
-    motion:
-      shimmer_duration: short4
-      reduced_motion_fallback: static_placeholder
-    layout: { type: column, padding: spacing.lg }
-    visible_components:
-      - pp_loading_skeleton
-    note: "Shimmer while bundled privacy policy content deserializes"
-  error:
-    layout: { type: column, padding: spacing.xl, alignment: center }
-    visible_components:
-      - pp_error_state
-    note: "Shown when bundled asset load fails"
-  empty:
-    layout: { type: column, padding: spacing.lg }
-    visible_components:
-      - pp_gdpr_banner
-      - pp_scroll_content
-    show_empty_state: false
-    note: "Privacy policy always has static content — empty state not applicable"
 
 state_model:
-  PrivacyPolicyViewModel:
-    screen_state: PrivacyPolicyUiState
-    state:
-      - field: policyContent
-        type: String
-        default: "\"\""
-      - field: scrollPosition
-        type: Int
-        default: "0"
-      - field: isLoading
-        type: Boolean
-        default: "true"
-    errors:
-      - id: load_failed
-        message: "Failed to load Privacy Policy."
-    events: [OnBack, OnRetry, OnScrollPositionChanged]
-    actions: [onRetry(), onScrollPositionChanged(position: Int)]
-    di: [LegalContentRepository]
+  type: static_content
+  note: "Static @Composable PrivacyPolicyScreen(onBack, modifier). No ViewModel, no DI, no repository, no events, no network. The policy is the compile-time constant privacyPolicySections (nine PolicySection entries) rendered verbatim inside a vertical scroll, above the sandbox notice banner and below the last-updated stamp. No loading/error/empty states — content can never fail to load. Back navigation icon invokes the onBack lambda."
 
 navigation:
   - id: nav_back
     target: about
+    note: "Back navigation icon → onBack lambda (returns to the Settings entry point)"
 
 dependencies:
   tier: feature

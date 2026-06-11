@@ -2,7 +2,7 @@ id: standing-orders
 name: Standing Orders
 feature: standing-orders
 flavor: consumer
-status: approved
+status: enriched
 quality_score: 93
 contract_version: "1.1.0"
 approve_hash: "sha256:0daf12bd8c96e4f037af12bd8c96e4f037af12bd8c96e4f037af12bd8c96e4f0"
@@ -14,13 +14,17 @@ capabilities:
   - has_ui
 impl_status: implemented
 impl_notes: >
-  Implemented 2026-06-05 via feature/standing-orders module. Deviations from this spec,
-  driven by OBP API reality (POST-create is the ONLY standing-order endpoint; no
-  list/get/delete exists at any version): list rows are DERIVED from transaction history
-  (TXN_TYPE=SO attribute, grouped by description); per-card edit/delete icons are omitted
-  (no server mutation possible); the Create FAB is real and POSTs the OBP create endpoint
-  via a bottom-sheet form (payee + amount + frequency). Entry point: Standing Orders tile
-  in Home "Banking Services" (replaced the Accounts tile, per user decision).
+  Reconciled to shipped feature/standing-orders module (2026-06-11). OBP reality: POST-create
+  is the ONLY standing-order endpoint — no list/get/pause/resume/delete at any version
+  (live-verified 404). The list is DERIVED from transaction history (TXN_TYPE=SO grouped by
+  description). The screen is per-account: an AccountSelector (AccountPickerBottomSheet when
+  more than one account) scopes the list, a stats row shows ACTIVE / MONTHLY TOTAL / PAUSED,
+  and StandingOrderFilter chips (All/Active/Paused/Cancelled) filter. The extended FAB
+  ("New order") checks the selected account's beneficiaries first: no payees shows a
+  "No payees" dialog (CreateGate.NoPayees), otherwise navigates to standing-order-create
+  (CreateStandingOrderScreen, wired via StandingOrderEditRoute(accountId)). Per-card inline
+  edit/delete icons were NEVER built (no server mutation possible). Entry point: Standing
+  Orders tile in Home "Banking Services".
 status_history:
   - status: designed
     at: "2026-05-25T00:00:00Z"
@@ -32,162 +36,254 @@ status_history:
     by: "/idea approve"
     contract_version: "1.1.0"
     bypass_flags: []
-
+  - from: approved
+    to: enriched
+    at: "2026-06-11"
+    by: "/idea verify --source-drift (write-back)"
+    contract_version: "1.1.0"
+    note: >
+      SOURCE→SPEC reconciliation to shipped Kotlin (code = truth). Added account picker,
+      stats row, filter chips, no-payees CreateGate dialog, per-card "From {account}" line
+      and masked counterparty hint. Removed per-card edit/delete icons + edit/delete actions
+      (never built — no OBP mutation), the filter_list top-bar action (replaced by chips), and
+      the hardcoded rent/netflix/gym demo cards (now data-driven LazyColumn). Split state_model
+      into StandingOrdersHeader StateFlow + uiState ScreenState<List<StandingOrder>> + createGate
+      StateFlow. api.yaml: list is derived from transaction history (no GET); POST create only.
 
 screens:
   - id: standing-orders
     name: Standing Orders
     archetype: index_list
+    viewmodel: "StandingOrdersViewModel"
     shell:
       top_bar:
         title: "Standing Orders"
         navigation_icon: arrow_back
-        actions:
-          - icon: filter_list
-            action: filter_standing_orders
       bottom_nav: false
 
 archetype: index_list
 
 components:
-  - type: stack
-    id: title_count_row
-    label: "Standing Orders Header"
-    variant: row
-    style:
-      orientation: horizontal
-      spacing: spacing.md
-      padding_bottom: spacing.md
-      align: center
-    on_click:
-      action: state_change
-      target: standing_orders_filter
-    a11y:
-      label: "Standing orders header with active count"
-      role: row
-    test_context:
-      tag: title_count_row
-      purpose: "Header row displaying screen title and active order count chip"
-      interaction_type: display
-      data_driven: true
-
-  - type: text
-    id: standing_orders_title
-    label: "Standing Orders"
-    content: "Standing Orders"
-    style:
-      typography: "Outfit/headline_large"
-      color: "#4C662B"
-    a11y:
-      label: "Standing Orders screen title"
-      role: heading
-    test_context:
-      tag: standing_orders_title
-      assert_text: "Standing Orders"
-      purpose: "Primary heading for the standing orders screen"
-      interaction_type: display
-      data_driven: false
-
-  - type: box
-    id: active_count_chip
-    label: "3 active"
-    content: "3 active"
-    variant: status
-    style:
-      background: "#CDEDA3"
-      border_radius: 12
-      padding_horizontal: 10
-      padding_vertical: spacing.xs
-      text_color: "#4C662B"
-      typography: "Outfit/label_medium"
-      font_weight: semibold
-    on_click:
-      action: state_change
-      target: filter_active
-    a11y:
-      label: "3 active standing orders"
-      role: status
-    test_context:
-      tag: active_count_chip
-      assert_text: "3 active"
-      purpose: "Chip showing count of currently active standing orders"
-      interaction_type: display
-      data_driven: true
-
-  - type: box
-    id: standing_order_rent
-    label: "Rent Payment"
-    content: "Rent Payment"
-    variant: elevated
+  # ── Pinned header: account picker + stats + filter chips ──────────────────────
+  - type: card
+    id: account_selector
+    label: "From account"
+    variant: outlined
+    supported_states: [idle, hover, focus_visible, pressed]
     style:
       background: "#FFFFFF"
-      border_radius: 16
-      elevation: 2
-      padding_horizontal: spacing.md
-      padding_vertical: spacing.md
-      border_color: "#F9FAEF"
+      border_radius: 12
+      border_color: "#E1E4D5"
       border_width: 1
-      margin_bottom: spacing.md
+      padding: spacing.md
+      margin_top: spacing.sm
     on_click:
-      action: view_standing_order
-      target: ""
+      action: open_account_picker
+      target: account_picker_sheet
     a11y:
-      label: "Rent Payment standing order. £1,200 monthly to Landlord Holdings Ltd. Next payment 1 June 2026. Active."
+      label: "From account selector. Tap to change which account these standing orders belong to."
       role: button
-    keyboard:
-      focusable: true
-    supported_states: [idle, hover, focus_visible, pressed, disabled]
     test_context:
-      tag: standing_order_rent
-      purpose: "Tappable card for the Rent Payment recurring standing order"
+      tag: account_selector
+      purpose: "Per-account scoping card — opens AccountPickerBottomSheet when the user has more than one account"
       interaction_type: action
       data_driven: true
 
+  - type: text
+    id: account_selector_label
+    label: "From account"
+    content: "From account"
+    style:
+      typography: "Outfit/label_small"
+      color: "#44483D"
+    a11y:
+      label: "From account label"
+      role: text
+    test_context:
+      tag: account_selector_label
+      purpose: "Caption above the selected account name"
+      interaction_type: display
+      data_driven: false
+
+  - type: text
+    id: account_selector_value
+    label: "Selected account name"
+    content: "Current Account"
+    style:
+      typography: "Outfit/title_small"
+      color: "#1A1C16"
+      font_weight: semibold
+    a11y:
+      label: "Selected account"
+      role: text
+    test_context:
+      tag: account_selector_value
+      purpose: "Display name of the selected account (label, else type + masked last-4)"
+      interaction_type: display
+      data_driven: true
+
   - type: stack
-    id: rent_header_row
-    label: "Rent Payment row"
+    id: title_count_row
+    label: "Stats row"
     variant: row
     style:
       orientation: horizontal
-      spacing: 0
-      justify: space_between
-      align: flex_start
-      padding_bottom: spacing.sm
+      spacing: spacing.sm
+      padding_top: spacing.sm
+      padding_bottom: spacing.md
+      align: center
+    a11y:
+      label: "Standing orders summary stats"
+      role: row
+    test_context:
+      tag: title_count_row
+      purpose: "Stats row holding the ACTIVE / MONTHLY TOTAL / PAUSED cards"
+      interaction_type: display
+      data_driven: true
+
+  - type: card
+    id: stat_active
+    label: "ACTIVE stat"
+    variant: outlined
+    style:
+      background: "#FFFFFF"
+      border_radius: 14
+      border_color: "#E1E4D5"
+      border_width: 1
+      padding: spacing.md
+    a11y:
+      label: "Active standing orders count"
+      role: status
+    test_context:
+      tag: stat_active
+      purpose: "Card showing the count of active standing orders"
+      interaction_type: display
+      data_driven: true
+
+  - type: card
+    id: stat_monthly_total
+    label: "MONTHLY TOTAL stat"
+    variant: outlined
+    style:
+      background: "#FFFFFF"
+      border_radius: 14
+      border_color: "#E1E4D5"
+      border_width: 1
+      padding: spacing.md
+    a11y:
+      label: "Total monthly amount of active standing orders"
+      role: status
+    test_context:
+      tag: stat_monthly_total
+      purpose: "Card showing the summed amount of active standing orders"
+      interaction_type: display
+      data_driven: true
+
+  - type: card
+    id: stat_paused
+    label: "PAUSED stat"
+    variant: outlined
+    style:
+      background: "#FFFFFF"
+      border_radius: 14
+      border_color: "#E1E4D5"
+      border_width: 1
+      padding: spacing.md
+    a11y:
+      label: "Paused standing orders count"
+      role: status
+    test_context:
+      tag: stat_paused
+      purpose: "Card showing the count of paused standing orders"
+      interaction_type: display
+      data_driven: true
+
+  - type: chip_group
+    id: filter_chips
+    label: "Status filter chips"
+    variant: filter
+    style:
+      orientation: horizontal
+      spacing: spacing.sm
+      padding_bottom: spacing.md
+      scroll: horizontal
+    on_click:
+      action: filter_changed
+      target: standing_orders_filter
+    a11y:
+      label: "Filter standing orders by status: All, Active, Paused, Cancelled"
+      role: tablist
+    test_context:
+      tag: filter_chips
+      purpose: "FilterChip row driving StandingOrderFilter (All/Active/Paused/Cancelled)"
+      interaction_type: action
+      data_driven: true
+
+  # ── Data-driven list ─────────────────────────────────────────────────────────
+  - type: list
+    id: orders_list
+    label: "Standing orders list"
+    variant: lazy_column
+    style:
+      padding_horizontal: 16
+      padding_bottom: 96
+    a11y:
+      label: "List of standing orders for the selected account"
+      role: list
+    test_context:
+      tag: orders_list
+      purpose: "LazyColumn of derived standing orders under the active filter; data-driven, no hardcoded rows"
+      interaction_type: display
+      data_driven: true
+
+  - type: card
+    id: order_card
+    label: "Standing order card"
+    variant: outlined
+    supported_states: [idle, hover, focus_visible, pressed]
+    style:
+      background: "#FFFFFF"
+      border_radius: 16
+      border_color: "#E1E4D5"
+      border_width: 1
+      padding: 16
+      margin_bottom: 12
     on_click:
       action: navigate
       target: standing-order-detail
     a11y:
-      label: ""
-      role: row
+      label: "Standing order. Tap to view details."
+      role: button
+    keyboard:
+      focusable: true
     test_context:
-      tag: rent_header_row
-      purpose: "Header row with order name and status badge for Rent Payment"
-      interaction_type: display
-      data_driven: false
+      tag: order_card
+      purpose: "Tappable per-order card — name, status badge, 'To {counterparty}', 'From {account}', amount, frequency, schedule line. Navigates to standing-order-detail with the selected account's bankId/accountId."
+      interaction_type: action
+      data_driven: true
 
   - type: text
-    id: rent_title
-    label: "Rent Payment"
-    content: "Rent Payment"
+    id: order_name
+    label: "Order name"
+    content: "Standing order name"
     style:
       typography: "Outfit/title_medium"
       color: "#1A1C16"
       font_weight: semibold
     a11y:
-      label: "Standing order name: Rent Payment"
+      label: "Standing order name"
       role: text
     test_context:
-      tag: rent_title
-      assert_text: "Rent Payment"
-      purpose: "Name label for the Rent Payment standing order"
+      tag: order_name
+      purpose: "Order display name (recurring transaction description / counterparty)"
       interaction_type: display
       data_driven: true
 
-  - type: box
-    id: rent_active_badge
-    label: "Active"
+  - type: badge
+    id: order_status_badge
+    label: "Status badge"
     content: "Active"
-    variant: status
+    variant: tonal
     style:
       background: "#CDEDA3"
       border_radius: 10
@@ -195,472 +291,101 @@ components:
       padding_vertical: 3
       text_color: "#4C662B"
       typography: "Outfit/label_small"
-    on_click:
-      action: state_change
-      target: filter_by_status
     a11y:
-      label: "Status: Active"
+      label: "Status"
       role: status
     test_context:
-      tag: rent_active_badge
-      assert_text: "Active"
-      purpose: "Badge indicating Rent Payment order is currently active"
+      tag: order_status_badge
+      purpose: "Status badge: Active / Paused / Cancelled"
       interaction_type: display
       data_driven: true
 
   - type: text
-    id: rent_beneficiary
-    label: "Landlord Holdings Ltd"
-    content: "To: Landlord Holdings Ltd"
+    id: order_counterparty
+    label: "To counterparty"
+    content: "To Landlord Holdings Ltd · Acc ••s001"
     style:
-      typography: "Outfit/body_medium"
+      typography: "Outfit/body_small"
       color: "#44483D"
-      padding_bottom: spacing.xs
     a11y:
-      label: "Recipient: Landlord Holdings Ltd"
+      label: "Recipient and masked account hint"
       role: text
     test_context:
-      tag: rent_beneficiary
-      purpose: "Beneficiary name for Rent Payment standing order"
-      interaction_type: display
-      data_driven: true
-
-  - type: stack
-    id: rent_amount_row
-    label: "Rent amount and schedule"
-    variant: row
-    style:
-      orientation: horizontal
-      spacing: 0
-      justify: space_between
-      align: center
-    on_click:
-      action: navigate
-      target: standing-order-detail
-    a11y:
-      label: ""
-      role: row
-    test_context:
-      tag: rent_amount_row
-      purpose: "Row displaying rent amount alongside next scheduled date"
+      tag: order_counterparty
+      purpose: "'To {counterpartyName} · Acc ••{last4}' — shown only when counterparty resolved (never the login username, per counterparty rule)"
       interaction_type: display
       data_driven: true
 
   - type: text
-    id: rent_amount
-    label: "£1,200 / month"
-    content: "£1,200 / month"
+    id: order_from_account
+    label: "From account line"
+    content: "From Current Account"
     style:
-      typography: "Outfit/body_large"
+      typography: "Outfit/body_small"
+      color: "#44483D"
+    a11y:
+      label: "Source account"
+      role: text
+    test_context:
+      tag: order_from_account
+      purpose: "'From {selected account display name}' line"
+      interaction_type: display
+      data_driven: true
+
+  - type: text
+    id: order_amount
+    label: "Amount"
+    content: "£1,200.00"
+    style:
+      typography: "Outfit/headline_small"
       color: "#4C662B"
       font_weight: semibold
     a11y:
-      label: "Amount: £1,200 per month"
+      label: "Payment amount"
       role: text
     test_context:
-      tag: rent_amount
-      assert_text: "£1,200 / month"
-      purpose: "Payment amount and frequency for Rent Payment"
+      tag: order_amount
+      purpose: "Formatted payment amount (muted when not active)"
       interaction_type: display
       data_driven: true
 
   - type: text
-    id: rent_next_date
-    label: "Next: 1 Jun 2026"
+    id: order_frequency
+    label: "Frequency"
+    content: "Monthly"
+    style:
+      typography: "Outfit/body_small"
+      color: "#44483D"
+    a11y:
+      label: "Frequency"
+      role: text
+    test_context:
+      tag: order_frequency
+      purpose: "Human frequency label (Fortnightly for BI-WEEKLY)"
+      interaction_type: display
+      data_driven: true
+
+  - type: text
+    id: order_schedule_line
+    label: "Schedule line"
     content: "Next: 1 Jun 2026"
     style:
       typography: "Outfit/body_small"
       color: "#44483D"
     a11y:
-      label: "Next payment: 1 June 2026"
+      label: "Schedule"
       role: text
     test_context:
-      tag: rent_next_date
-      assert_text: "Next: 1 Jun 2026"
-      purpose: "Next scheduled payment date for Rent Payment"
+      tag: order_schedule_line
+      purpose: "Calendar/pause icon + schedule text: 'Next: {date}' / 'Paused since {date}' / 'Last paid {date}'"
       interaction_type: display
       data_driven: true
 
-  - type: stack
-    id: rent_actions_row
-    label: "Rent actions"
-    variant: row
-    style:
-      orientation: horizontal
-      spacing: spacing.sm
-      justify: flex_end
-      padding_top: spacing.md
-    on_click:
-      action: state_change
-      target: rent_actions_expanded
-    a11y:
-      label: "Actions for Rent Payment standing order"
-      role: row
-    test_context:
-      tag: rent_actions_row
-      purpose: "Action row with edit and delete controls for Rent Payment"
-      interaction_type: display
-      data_driven: false
-
-  - type: icon
-    id: rent_edit_icon
-    label: "Edit Rent Payment"
-    variant: icon_button
-    supported_states: [idle, hover, focus_visible, pressed, disabled]
-    style:
-      icon_name: edit_outlined
-      size: 22
-      color: "#4C662B"
-      padding: spacing.sm
-    on_click:
-      action: edit_standing_order
-      target: ""
-    a11y:
-      label: "Edit Rent Payment standing order"
-      role: button
-    keyboard:
-      focusable: true
-    test_context:
-      tag: rent_edit_icon
-      purpose: "Icon button to navigate to edit form for Rent Payment order"
-      interaction_type: action
-      data_driven: false
-
-  - type: icon
-    id: rent_delete_icon
-    label: "Delete Rent Payment"
-    variant: icon_button
-    supported_states: [idle, hover, focus_visible, pressed, disabled]
-    style:
-      icon_name: delete_outlined
-      size: 22
-      color: "#BA1A1A"
-      padding: spacing.sm
-    on_click:
-      action: delete_standing_order
-      target: ""
-    a11y:
-      label: "Delete Rent Payment standing order. This action cannot be undone."
-      role: button
-    keyboard:
-      focusable: true
-    test_context:
-      tag: rent_delete_icon
-      purpose: "Destructive icon button to delete Rent Payment; triggers confirmation dialog"
-      interaction_type: action
-      data_driven: false
-
-  - type: box
-    id: standing_order_netflix
-    label: "Netflix Subscription"
-    content: "Netflix Subscription"
-    variant: elevated
-    style:
-      background: "#FFFFFF"
-      border_radius: 16
-      elevation: 2
-      padding_horizontal: spacing.md
-      padding_vertical: spacing.md
-      border_color: "#F9FAEF"
-      border_width: 1
-      margin_bottom: spacing.md
-    on_click:
-      action: view_standing_order
-      target: ""
-    a11y:
-      label: "Netflix Subscription standing order. £15.99 monthly. Next payment 7 June 2026. Active."
-      role: button
-    keyboard:
-      focusable: true
-    supported_states: [idle, hover, focus_visible, pressed, disabled]
-    test_context:
-      tag: standing_order_netflix
-      purpose: "Tappable card for the Netflix Subscription standing order"
-      interaction_type: action
-      data_driven: true
-
-  - type: text
-    id: netflix_title
-    label: "Netflix Subscription"
-    content: "Netflix Subscription"
-    style:
-      typography: "Outfit/title_medium"
-      color: "#1A1C16"
-      font_weight: semibold
-    a11y:
-      label: "Standing order name: Netflix Subscription"
-      role: text
-    test_context:
-      tag: netflix_title
-      assert_text: "Netflix Subscription"
-      purpose: "Name label for the Netflix Subscription standing order"
-      interaction_type: display
-      data_driven: true
-
-  - type: box
-    id: netflix_active_badge
-    label: "Active"
-    content: "Active"
-    variant: status
-    style:
-      background: "#CDEDA3"
-      border_radius: 10
-      padding_horizontal: spacing.sm
-      padding_vertical: 3
-      text_color: "#4C662B"
-      typography: "Outfit/label_small"
-    on_click:
-      action: state_change
-      target: filter_by_status
-    a11y:
-      label: "Status: Active"
-      role: status
-    test_context:
-      tag: netflix_active_badge
-      purpose: "Badge indicating Netflix Subscription order is currently active"
-      interaction_type: display
-      data_driven: true
-
-  - type: text
-    id: netflix_amount
-    label: "£15.99 / month"
-    content: "£15.99 / month"
-    style:
-      typography: "Outfit/body_large"
-      color: "#4C662B"
-      font_weight: semibold
-    a11y:
-      label: "Amount: £15.99 per month"
-      role: text
-    test_context:
-      tag: netflix_amount
-      assert_text: "£15.99 / month"
-      purpose: "Payment amount and frequency for Netflix Subscription"
-      interaction_type: display
-      data_driven: true
-
-  - type: text
-    id: netflix_next_date
-    label: "Next: 7 Jun 2026"
-    content: "Next: 7 Jun 2026"
-    style:
-      typography: "Outfit/body_small"
-      color: "#44483D"
-    a11y:
-      label: "Next payment: 7 June 2026"
-      role: text
-    test_context:
-      tag: netflix_next_date
-      assert_text: "Next: 7 Jun 2026"
-      purpose: "Next scheduled payment date for Netflix Subscription"
-      interaction_type: display
-      data_driven: true
-
-  - type: icon
-    id: netflix_edit_icon
-    label: "Edit Netflix Subscription"
-    variant: icon_button
-    supported_states: [idle, hover, focus_visible, pressed, disabled]
-    style:
-      icon_name: edit_outlined
-      size: 22
-      color: "#4C662B"
-      padding: spacing.sm
-    on_click:
-      action: edit_standing_order
-      target: ""
-    a11y:
-      label: "Edit Netflix Subscription standing order"
-      role: button
-    keyboard:
-      focusable: true
-    test_context:
-      tag: netflix_edit_icon
-      purpose: "Icon button to edit Netflix Subscription standing order"
-      interaction_type: action
-      data_driven: false
-
-  - type: icon
-    id: netflix_delete_icon
-    label: "Delete Netflix Subscription"
-    variant: icon_button
-    supported_states: [idle, hover, focus_visible, pressed, disabled]
-    style:
-      icon_name: delete_outlined
-      size: 22
-      color: "#BA1A1A"
-      padding: spacing.sm
-    on_click:
-      action: delete_standing_order
-      target: ""
-    a11y:
-      label: "Delete Netflix Subscription standing order"
-      role: button
-    keyboard:
-      focusable: true
-    test_context:
-      tag: netflix_delete_icon
-      purpose: "Destructive icon button to delete Netflix Subscription; triggers confirmation dialog"
-      interaction_type: action
-      data_driven: false
-
-  - type: box
-    id: standing_order_gym
-    label: "Gym Membership"
-    content: "Gym Membership"
-    variant: outlined
-    style:
-      background: "#F9FAEF"
-      border_radius: 16
-      elevation: 1
-      padding_horizontal: spacing.md
-      padding_vertical: spacing.md
-      border_color: "#E1E4D5"
-      border_width: 1
-      margin_bottom: spacing.md
-    on_click:
-      action: view_standing_order
-      target: ""
-    a11y:
-      label: "Gym Membership standing order. £45 monthly. Next payment 15 June 2026. Paused."
-      role: button
-    keyboard:
-      focusable: true
-    supported_states: [idle, hover, focus_visible, pressed, disabled]
-    test_context:
-      tag: standing_order_gym
-      purpose: "Tappable card for Gym Membership (currently paused) standing order"
-      interaction_type: action
-      data_driven: true
-
-  - type: text
-    id: gym_title
-    label: "Gym Membership"
-    content: "Gym Membership"
-    style:
-      typography: "Outfit/title_medium"
-      color: "#44483D"
-      font_weight: semibold
-    a11y:
-      label: "Standing order name: Gym Membership (paused)"
-      role: text
-    test_context:
-      tag: gym_title
-      assert_text: "Gym Membership"
-      purpose: "Name label for the Gym Membership standing order; muted color signals paused state"
-      interaction_type: display
-      data_driven: true
-
-  - type: box
-    id: gym_paused_badge
-    label: "Paused"
-    content: "Paused"
-    variant: status
-    style:
-      background: "#F9FAEF"
-      border_radius: 10
-      padding_horizontal: spacing.sm
-      padding_vertical: 3
-      text_color: "#44483D"
-      typography: "Outfit/label_small"
-    on_click:
-      action: state_change
-      target: filter_by_status
-    a11y:
-      label: "Status: Paused"
-      role: status
-    test_context:
-      tag: gym_paused_badge
-      assert_text: "Paused"
-      purpose: "Badge indicating Gym Membership order is currently paused"
-      interaction_type: display
-      data_driven: true
-
-  - type: text
-    id: gym_amount
-    label: "£45.00 / month"
-    content: "£45.00 / month"
-    style:
-      typography: "Outfit/body_large"
-      color: "#44483D"
-      font_weight: semibold
-    a11y:
-      label: "Amount: £45.00 per month"
-      role: text
-    test_context:
-      tag: gym_amount
-      assert_text: "£45.00 / month"
-      purpose: "Payment amount for Gym Membership; muted color signals paused state"
-      interaction_type: display
-      data_driven: true
-
-  - type: text
-    id: gym_next_date
-    label: "Next: 15 Jun 2026"
-    content: "Next: 15 Jun 2026 (Paused)"
-    style:
-      typography: "Outfit/body_small"
-      color: "#44483D"
-    a11y:
-      label: "Next scheduled: 15 June 2026, currently paused"
-      role: text
-    test_context:
-      tag: gym_next_date
-      purpose: "Next date with paused qualifier for Gym Membership order"
-      interaction_type: display
-      data_driven: true
-
-  - type: icon
-    id: gym_edit_icon
-    label: "Edit Gym Membership"
-    variant: icon_button
-    supported_states: [idle, hover, focus_visible, pressed, disabled]
-    style:
-      icon_name: edit_outlined
-      size: 22
-      color: "#4C662B"
-      padding: spacing.sm
-    on_click:
-      action: edit_standing_order
-      target: ""
-    a11y:
-      label: "Edit Gym Membership standing order"
-      role: button
-    keyboard:
-      focusable: true
-    test_context:
-      tag: gym_edit_icon
-      purpose: "Icon button to edit Gym Membership standing order"
-      interaction_type: action
-      data_driven: false
-
-  - type: icon
-    id: gym_delete_icon
-    label: "Delete Gym Membership"
-    variant: icon_button
-    supported_states: [idle, hover, focus_visible, pressed, disabled]
-    style:
-      icon_name: delete_outlined
-      size: 22
-      color: "#BA1A1A"
-      padding: spacing.sm
-    on_click:
-      action: delete_standing_order
-      target: ""
-    a11y:
-      label: "Delete Gym Membership standing order"
-      role: button
-    keyboard:
-      focusable: true
-    test_context:
-      tag: gym_delete_icon
-      purpose: "Destructive icon button to delete Gym Membership; triggers confirmation dialog"
-      interaction_type: action
-      data_driven: false
-
+  # ── Create FAB (gated) ───────────────────────────────────────────────────────
   - type: button
     id: create_standing_order_fab
-    label: "Create Standing Order"
+    label: "New order"
+    content: "New order"
     variant: extended_fab
     supported_states: [idle, hover, focus_visible, pressed, disabled]
     style:
@@ -671,8 +396,8 @@ components:
       elevation: 6
       position: floating_action_button
     on_click:
-      action: create_standing_order
-      target: ""
+      action: create_clicked
+      target: standing-order-create
     a11y:
       label: "Create a new standing order"
       role: button
@@ -680,8 +405,64 @@ components:
       focusable: true
     test_context:
       tag: create_standing_order_fab
-      assert_text: "Create Standing Order"
-      purpose: "Floating action button to open the standing order creation flow"
+      assert_text: "New order"
+      purpose: "Extended FAB. Checks the selected account's beneficiaries (CreateGate): no payees → no-payees dialog; otherwise navigates to standing-order-create."
+      interaction_type: action
+      data_driven: false
+
+  # ── No-payees gate dialog ────────────────────────────────────────────────────
+  - type: dialog
+    id: no_payees_dialog
+    label: "No payees"
+    variant: alert
+    title: "No payees"
+    message: "This account has no beneficiaries yet. Add a beneficiary first — standing orders pay an existing payee."
+    supported_states: [idle, visible, dismissed]
+    style:
+      background: "#FFFFFF"
+      border_radius: 16
+      padding: spacing.lg
+    on_click:
+      action: dismiss_no_payees
+      target: no_payees_dialog
+    a11y:
+      label: "No payees on this account"
+      role: dialog
+    test_context:
+      tag: no_payees_dialog
+      purpose: "Shown when the New order FAB is tapped on an account with no beneficiaries (CreateGate.NoPayees); single OK dismiss"
+      interaction_type: action
+      data_driven: false
+
+  # ── Empty / Error placeholders (list area) ───────────────────────────────────
+  - type: empty_state
+    id: empty_state
+    label: "No standing orders"
+    style:
+      empty_icon: event_repeat
+    a11y:
+      label: "No standing orders"
+      role: status
+    test_context:
+      tag: empty_state
+      purpose: "Empty list-area state: 'No standing orders' + 'Set up recurring payments to automate your regular bills'"
+      interaction_type: display
+      data_driven: false
+
+  - type: error_state
+    id: error_state
+    label: "Unable to load"
+    style:
+      error_icon: cloud_off
+    on_click:
+      action: retry
+      target: standing-orders
+    a11y:
+      label: "Unable to load standing orders. Retry."
+      role: status
+    test_context:
+      tag: error_state
+      purpose: "List-area error/no-network/unauthenticated state with Retry — header (picker + zeroed stats + chips) stays visible above it"
       interaction_type: action
       data_driven: false
 
@@ -697,153 +478,138 @@ states:
       reduced_motion_fallback: static_placeholder
     layout:
       visible_components:
+        - account_selector
+        - account_selector_label
+        - account_selector_value
         - title_count_row
-        - standing_orders_title
+        - stat_active
+        - stat_monthly_total
+        - stat_paused
+        - filter_chips
+        - create_standing_order_fab
       show_skeleton_list: true
       skeleton_count: 3
+      note: "Header (picker + zeroed stats + chips) stays pinned; list area shows centered progress."
   content:
     layout:
       visible_components:
+        - account_selector
+        - account_selector_label
+        - account_selector_value
         - title_count_row
-        - standing_orders_title
-        - active_count_chip
-        - standing_order_rent
-        - rent_header_row
-        - rent_title
-        - rent_active_badge
-        - rent_beneficiary
-        - rent_amount_row
-        - rent_amount
-        - rent_next_date
-        - rent_actions_row
-        - rent_edit_icon
-        - rent_delete_icon
-        - standing_order_netflix
-        - netflix_title
-        - netflix_active_badge
-        - netflix_amount
-        - netflix_next_date
-        - netflix_edit_icon
-        - netflix_delete_icon
-        - standing_order_gym
-        - gym_title
-        - gym_paused_badge
-        - gym_amount
-        - gym_next_date
-        - gym_edit_icon
-        - gym_delete_icon
+        - stat_active
+        - stat_monthly_total
+        - stat_paused
+        - filter_chips
+        - orders_list
+        - order_card
+        - order_name
+        - order_status_badge
+        - order_counterparty
+        - order_from_account
+        - order_amount
+        - order_frequency
+        - order_schedule_line
         - create_standing_order_fab
   empty:
     layout:
       visible_components:
+        - account_selector
+        - account_selector_label
+        - account_selector_value
         - title_count_row
-        - standing_orders_title
+        - stat_active
+        - stat_monthly_total
+        - stat_paused
+        - filter_chips
+        - empty_state
         - create_standing_order_fab
-      active_count_chip_visible: false
-      show_empty_state: true
-      empty_state_icon: repeat_off
-      empty_state_title: "No standing orders"
-      empty_state_message: "Set up recurring payments to automate your regular bills"
   error:
     layout:
       visible_components:
+        - account_selector
+        - account_selector_label
+        - account_selector_value
         - title_count_row
-        - standing_orders_title
+        - stat_active
+        - stat_monthly_total
+        - stat_paused
+        - filter_chips
+        - error_state
         - create_standing_order_fab
-      active_count_chip_visible: false
-      show_error_state: true
-      error_icon: cloud_off
-      error_title: "Unable to load standing orders"
-      error_message: "Check your connection and try again"
-      show_retry_button: true
+  no_network:
+    layout:
+      visible_components:
+        - account_selector
+        - title_count_row
+        - filter_chips
+        - error_state
+        - create_standing_order_fab
+      note: "ScreenState.NoNetwork — same Retry treatment as error."
+  unauthenticated:
+    layout:
+      visible_components:
+        - account_selector
+        - title_count_row
+        - filter_chips
+        - error_state
+        - create_standing_order_fab
+      note: "ScreenState.Unauthenticated — same Retry treatment as error."
 
 state_model:
   view_model: StandingOrdersViewModel
-  state_fields:
-    - name: standingOrders
-      type: List<StandingOrder>
-      default: "emptyList()"
-    - name: activeCount
-      type: Int
-      default: 0
-    - name: selectedOrderId
-      type: String
-      default: ""
+  state_contract:
+    note: >
+      Three independent StateFlows. The pinned header lives OUTSIDE uiState so the
+      account picker + stats + chips stay visible (with zeroed stats) while the list
+      below shows loading/empty/error. uiState carries only the list area.
+  flows:
+    - name: header
+      type: "StateFlow<StandingOrdersHeader>"
+      fields:
+        - { name: accounts, type: "List<Account>", default: "emptyList()" }
+        - { name: selectedAccountId, type: String, default: "\"\"" }
+        - { name: activeCount, type: Int, default: 0 }
+        - { name: pausedCount, type: Int, default: 0 }
+        - { name: monthlyTotal, type: String, default: "\"0.00\"" }
+        - { name: filter, type: StandingOrderFilter, default: "StandingOrderFilter.All" }
     - name: uiState
-      type: StandingOrdersUiState
-      default: Loading
-  errors:
-    - field: global
-      code: LOAD_FAILED
-      message: "Unable to load standing orders. Please try again."
-    - field: delete
-      code: DELETE_FAILED
-      message: "Could not delete standing order. Please try again."
-    - field: create
-      code: CREATE_FAILED
-      message: "Could not create standing order. Please try again."
-  events:
-    - OrdersLoaded
-    - ViewOrderClicked
-    - EditOrderClicked
-    - DeleteOrderClicked
-    - DeleteOrderConfirmed
-    - CreateOrderClicked
-    - FilterChanged
-    - RefreshTriggered
-  actions:
-    - view_standing_order
-    - edit_standing_order
-    - delete_standing_order
-    - create_standing_order
-    - filter_standing_orders
+      type: "StateFlow<ScreenState<List<StandingOrder>>>"
+      default: "ScreenState.Loading"
+    - name: createGate
+      type: "StateFlow<CreateGate>"
+      default: "CreateGate.Idle"
+  supporting_types:
+    - name: StandingOrderFilter
+      kind: enum
+      values: [All, Active, Paused, Cancelled]
+    - name: CreateGate
+      kind: sealed_interface
+      cases: [Idle, Checking, NoPayees, "Ready(accountId: String)"]
+  methods:
+    - onRetry
+    - onRefresh
+    - onFilterChanged
+    - onCreateClicked
+    - onCreateGateConsumed
+    - onAccountSelected
   di:
-    - StandingOrderRepository
-    - AccountRepository
+    - StandingOrdersRepository
+    - AccountsRepository
+    - UserPreferencesRepository
+    - PaymentsRepository
 
 api:
   - endpoint: "POST /obp/v4.0.0/banks/{bankId}/accounts/{accountId}/owner/standing-order"
-    note: "POST-only (no GET list endpoint). Show recurring via transaction history."
+    note: >
+      The ONLY OBP standing-order endpoint (verified against v6.0.0 spec: no list/get/delete
+      at any version). Invoked from standing-order-create, not this screen. The list here is
+      DERIVED from transaction history — see api.yaml.
     tag: Standing-Orders
-    response:
-      fields:
-        - name: standing_orders
-          type: List<StandingOrder>
-        - name: id
-          type: String
-        - name: bank_id
-          type: String
-        - name: account_id
-          type: String
-        - name: counterparty
-          type: Counterparty
-        - name: counterparty.name
-          type: String
-        - name: amount_value
-          type: String
-        - name: amount_currency
-          type: String
-        - name: when
-          type: StandingOrderSchedule
-        - name: when.frequency
-          type: String
-        - name: when.start_date
-          type: String
-        - name: when.final_date
-          type: String
-        - name: active
-          type: Boolean
-    errors:
-      - code: 400
-        message: "INVALID_BANK_ID"
-      - code: 401
-        message: "USER_NOT_LOGGED_IN"
-      - code: 403
-        message: "INSUFFICIENT_AUTHORISATION"
-      - code: 404
-        message: "BANK_ACCOUNT_NOT_FOUND"
 
 dependencies:
   tier: feature
   features:
     - accounts
+    - beneficiaries
+    - transactions

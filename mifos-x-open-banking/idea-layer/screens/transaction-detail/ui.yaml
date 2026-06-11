@@ -2,7 +2,7 @@ id: transaction-detail
 name: Transaction Detail
 feature: transaction-detail
 flavor: consumer
-status: approved
+status: enriched
 quality_score: 93
 contract_version: "1.1.0"
 approve_hash: "sha256:07af12bd8c96e4f037af12bd8c96e4f037af12bd8c96e4f037af12bd8c96e4f0"
@@ -29,6 +29,11 @@ status_history:
     by: "/kmp-implement transaction-detail"
     contract_version: "1.1.0"
     note: "Implemented inside feature/transactions (same module as the list — send-money multi-screen pattern, no new gradle module). TransactionDetailViewModel loads via the existing TransactionsRepository.getTransaction (v3.0.0 single-transaction endpoint, already in the client layer); content projects display fields (signed amount + currency symbol, debit=error/credit=primary colors, category from TXN_TYPE fallback detail type, '25 May 2026, 14:32' date-time, reference = transaction UUID). Screen: amount hero on primaryContainer + Completed badge, counterparty card (initial-letter avatar — sandbox has no merchant logos), details card with house 0-elevation style, copy-reference to clipboard with snackbar. Deviations: share top-bar action omitted; download_receipt_button + report_issue_link surface 'coming soon' snackbars (no consumer OBP receipt/dispute endpoint); manage_tags_row navigates to the transaction-tags Phase-2 placeholder as specced; skeleton loading = centered progress indicator (house pattern). Pending payments (transaction-requests INITIATED, SCA challenge unanswered) ALSO open this screen: PendingRow is clickable → requestId load path (no per-request OBP read endpoint, so the request is found in the account's transaction-request list); pending detail shows muted amount, Schedule badge 'Awaiting confirmation', category 'Pending', To row with SEPA IBAN/counterparty, reference = request id; receipt + tags hidden (nothing booked yet). TransactionDetailRoute(bankId, accountId, transactionId, requestId) replaced the arg-less placeholder; wired from transactions rows (booked + pending) AND cards-screen recent-transaction rows (this_account routing from the v6 payload). 11 VM tests (field derivation, credit sign, holder fallback, unparseable date, error, retry, blank-ids empty without API call, pending derivation, request-not-found, list failure, booked-path-not-called)."
+  - from: approved
+    to: enriched
+    at: "2026-06-11"
+    by: "/idea verify --source-drift (write-back)"
+    note: "Reconciled spec to shipped Kotlin. Dual-mode load made explicit: booked path (transactionId → getTransaction v3.0.0) vs pending path (requestId → found in PaymentsRepository.listTransactionRequests). uiState = ScreenState<TransactionDetailContent>; added no_network + unauthenticated states (fold into the same 'Transaction not found' card as error). state_model rewritten to the shipped TransactionDetailContent projection (amount/isDebit/isPending/statusLabel/counterpartyName/category/dateTime/reference/typeLabel/fromAccountLabel/fromAccountTail/toDetail/narrative); statusLabel 'Completed' vs 'Awaiting confirmation'; pending amount unsigned; typeLabel() maps SEPA/SANDBOX_TAN/COUNTERPARTY/DIRECT_DEBIT/STANDING_ORDER; counterpartyName via counterpartyDisplayName(...).ifBlank{'Payment'}; toDetail only populated for pending (SEPA iban/counterparty/sandbox-tan), booked toDetail = ''. Marked deferred: download_receipt_button (no real download — 'coming soon' snackbar), report_issue_link/open_dispute_form (no dispute endpoint), share_transaction top-bar action (omitted). Receipt/tags rows hidden for pending. api.yaml: single-transaction GET (v3.0.0) + added PaymentsRepository.listTransactionRequests (v4.0.0) for the pending path. Counterparty hard-rule documented. Pending re-render + re-approve."
 
 
 shell:
@@ -38,10 +43,8 @@ shell:
     title: "Transaction Details"
     navigation_icon: arrow_back
     navigation_action: navigate_back
-    actions:
-      - icon: share
-        action: share_transaction
-        label: "Share transaction"
+    # Shipped TopAppBar has no actions — the share action was omitted (no share endpoint/intent).
+    actions: []
 
 screens:
   - id: transaction_detail_content
@@ -116,9 +119,12 @@ components:
                     test_context:
                       tag: status_icon
 
+                  # content.statusLabel — "Completed" (booked, check_circle icon) or
+                  # "Awaiting confirmation" (pending, schedule icon, muted color).
                   - type: text
                     id: status_label
                     content: "Completed"
+                    bound_field: statusLabel
                     style:
                       typography: "Outfit/label_medium"
                       color: "#4C662B"
@@ -172,9 +178,13 @@ components:
               direction: vertical
               flex: 1
             children:
+              # content.counterpartyName — resolved via counterpartyDisplayName(...).ifBlank{"Payment"}.
+              # NEVER the raw other_account.holder.name (that's the OBP login-username placeholder).
+              # Avatar shows the first letter of this name; sandbox has no merchant logos.
               - type: text
                 id: merchant_name
                 content: "Tesco Supermarket"
+                bound_field: counterpartyName
                 style:
                   typography: "Outfit/title_large"
                   color: "#1A1C16"
@@ -444,6 +454,10 @@ components:
         test_context:
           tag: detail_div_4
 
+      # Shipped: label is "To" when isDebit else "From"; value is content.counterpartyName
+      # (NOT a separate beneficiary name); secondary line = content.toDetail and is only
+      # populated for pending payments (SEPA iban / counterparty id / sandbox-tan accountId) —
+      # booked transactions have toDetail = "" so no secondary line renders.
       - type: stack
         id: detail_to_row
         style:
@@ -453,7 +467,8 @@ components:
         children:
           - type: text
             id: detail_to_label
-            content: "To Beneficiary"
+            content: "To"
+            dynamic_label: "isDebit ? 'To' : 'From'"
             style:
               typography: "Outfit/label_small"
               color: "#44483D"
@@ -472,6 +487,7 @@ components:
               - type: text
                 id: detail_to_name
                 content: "Tesco PLC"
+                bound_field: counterpartyName
                 style:
                   typography: "Outfit/body_medium"
                   color: "#1A1C16"
@@ -482,9 +498,12 @@ components:
                   tag: detail_to_name
                   assert_content: "Tesco PLC"
 
+              # Secondary line — content.toDetail. Pending only; blank for booked transactions.
               - type: text
                 id: detail_to_iban
                 content: "DE89 3704...0044"
+                bound_field: toDetail
+                visible_when: "toDetail.isNotBlank()"
                 style:
                   typography: "Outfit/body_small"
                   color: "#44483D"
@@ -495,8 +514,14 @@ components:
                 test_context:
                   tag: detail_to_iban
 
+  # DEFERRED (shipped as placeholder): no consumer OBP receipt-download endpoint, so tapping
+  # surfaces a 'Receipt download is coming soon' snackbar instead of generating a PDF. Only
+  # rendered for booked transactions (hidden when isPending).
   - type: button
     id: download_receipt_button
+    deferred: true
+    deferred_reason: "No OBP receipt-download endpoint; shipped surfaces a 'coming soon' snackbar."
+    visible_when: "!isPending"
     label: "Download Receipt"
     supported_states: [idle, hover, focus_visible, pressed, disabled]
     style:
@@ -510,7 +535,7 @@ components:
       margin_bottom: spacing.sm
       icon: download
     on_click:
-      action: download_receipt
+      action: notify_coming_soon
     a11y:
       role: button
       label: "Download transaction receipt as PDF"
@@ -547,14 +572,18 @@ components:
         test_context:
           tag: report_issue_icon
 
+      # DEFERRED (shipped as placeholder): no OBP dispute endpoint, so tapping surfaces a
+      # 'Disputes are coming soon' snackbar instead of opening a dispute form.
       - type: link
         id: report_issue_link
+        deferred: true
+        deferred_reason: "No OBP dispute endpoint; shipped surfaces a 'coming soon' snackbar."
         content: "Report an Issue"
         style:
           typography: "Outfit/label_medium"
           color: "#BA1A1A"
         on_click:
-          action: open_dispute_form
+          action: notify_coming_soon
         a11y:
           role: link
           label: "Report an issue with this transaction"
@@ -640,6 +669,8 @@ states:
             margin_top: spacing.md
 
   content:
+    # Booked: all rows render. Pending (isPending): download_receipt_button + manage_tags_row
+    # are hidden (nothing booked yet — no receipt, no tags); report_issue_row still renders.
     layout:
       components_visible:
         - amount_hero_section
@@ -648,6 +679,9 @@ states:
         - download_receipt_button
         - manage_tags_row
         - report_issue_row
+      pending_hidden:
+        - download_receipt_button
+        - manage_tags_row
 
   error:
     layout:
@@ -656,9 +690,33 @@ states:
         id: error_state_card
         title: "Transaction not found"
         message: "We could not load this transaction. It may have been removed or there may be a connection issue."
-        action_label: "Go Back"
-        action: navigate_back
-        icon: error_outline
+        action_label: "Retry"
+        action: retry_load
+        icon: cloud_off
+
+  # ScreenState.NoNetwork / Unauthenticated fold into the same 'Transaction not found' card
+  # as error in the shipped composable.
+  no_network:
+    layout:
+      components_visible: []
+      error_card:
+        id: error_state_card
+        title: "Transaction not found"
+        message: "We could not load this transaction. It may have been removed or there may be a connection issue."
+        action_label: "Retry"
+        action: retry_load
+        icon: cloud_off
+
+  unauthenticated:
+    layout:
+      components_visible: []
+      error_card:
+        id: error_state_card
+        title: "Transaction not found"
+        message: "We could not load this transaction. It may have been removed or there may be a connection issue."
+        action_label: "Retry"
+        action: retry_load
+        icon: cloud_off
 
   empty:
     layout:
@@ -673,61 +731,102 @@ states:
 
 state_model:
   view_model: TransactionDetailViewModel
-  screen_state: TransactionDetailScreenState
-  state_fields:
-    - name: isLoading
+  # Shipped: a single StateFlow<ScreenState<TransactionDetailContent>>. load() dispatches on the
+  # constructor args — transactionId non-blank → booked path (getTransaction); else requestId
+  # non-blank → pending path (listTransactionRequests, find by id); else ScreenState.Empty.
+  screen_state: "ScreenState<TransactionDetailContent>"
+  state_wrapper: ScreenState
+  screen_states: [Loading, Content, Empty, Error, NoNetwork, Unauthenticated]
+  content_class: TransactionDetailContent
+  content_fields:
+    - name: amount
+      type: String
+      note: "Signed for booked (formatSigned), unsigned for pending (formatUnsigned — money not yet debited)"
+    - name: isDebit
       type: Boolean
-      default: "true"
-    - name: transaction
-      type: "TransactionDetail?"
-      default: "null"
-    - name: error
-      type: "UiError?"
-      default: "null"
-    - name: isDownloadingReceipt
+    - name: isPending
       type: Boolean
-      default: "false"
-    - name: referenceCopied
-      type: Boolean
-      default: "false"
+    - name: statusLabel
+      type: String
+      note: "'Completed' (booked) or 'Awaiting confirmation' (pending)"
+    - name: counterpartyName
+      type: String
+      note: "counterpartyDisplayName(...).ifBlank{'Payment'} — never the raw login-username holder"
+    - name: category
+      type: String
+      note: "categoryLabel(txn) for booked; 'Pending' for pending"
+    - name: dateTime
+      type: String
+      note: "formatDateTime — '25 May 2026, 14:32'"
+    - name: reference
+      type: String
+      note: "txId for booked; request id for pending"
+    - name: typeLabel
+      type: String
+      note: "typeLabel(details.type) — see type_label_map"
+    - name: fromAccountLabel
+      type: String
+    - name: fromAccountTail
+      type: String
+      note: "'...' + last 4 of the account id"
+    - name: toDetail
+      type: String
+      note: "pending only (SEPA iban / counterparty id / sandbox-tan accountId); '' for booked"
+    - name: narrative
+      type: String
+      note: "metadata.narrative for booked; '' for pending"
+  load_modes:
+    booked:
+      trigger: "transactionId.isNotBlank()"
+      source: "TransactionsRepository.getTransaction(bankId, accountId, transactionId)"
+    pending:
+      trigger: "requestId.isNotBlank()"
+      source: "PaymentsRepository.listTransactionRequests(bankId, accountId) → first { it.id == requestId }"
+      note: "No per-request OBP read endpoint, so the request is found in the account's list."
+    empty:
+      trigger: "both blank"
+      result: "ScreenState.Empty"
+  type_label_map:
+    SEPA: "SEPA Credit Transfer"
+    SANDBOX_TAN: "Transfer"
+    COUNTERPARTY: "Counterparty Transfer"
+    DIRECT_DEBIT: "Direct Debit"
+    STANDING_ORDER: "Standing Order"
+    default: "type or 'Payment'"
   errors:
     - id: not_found
-      message: "This transaction could not be found."
-    - id: network_error
-      message: "Network unavailable. Please check your connection."
-    - id: receipt_download_failed
-      message: "Receipt download failed. Please try again."
-    - id: dispute_unavailable
-      message: "Dispute form is temporarily unavailable."
+      message: "We could not load this transaction. It may have been removed or there may be a connection issue."
   events:
     - RetryLoad
-    - DownloadReceipt
-    - OpenDisputeForm
     - CopyReference
-    - ShareTransaction
-    - NavigateBack
-  actions:
-    - name: loadTransactionDetail
-      param: transactionId
-      triggers: [ScreenOpened, RetryLoad]
-    - name: downloadReceipt
-    - name: copyReferenceToClipboard
-    - name: openDisputeForm
-    - name: shareTransaction
+  methods:
+    - name: onRetry
+      note: "re-runs load() (booked or pending per the same constructor args)"
+  side_effects:
+    - name: copy_reference
+      note: "ClipboardManager.setText(reference) + 'Reference copied' snackbar — UI-side, not a VM event"
+    - name: notify_coming_soon
+      note: "Receipt download + Report-an-issue surface 'coming soon' snackbars (no consumer endpoint)"
   di:
     - TransactionsRepository
-    - ClipboardManager
-    - ReceiptDownloader
-    - DisputeFormLauncher
+    - PaymentsRepository
+    - CounterpartyNameResolver
+
+# Counterparty display — HARD RULE (workspaces/mifos-x/CLAUDE.md): counterpartyName comes from
+# counterpartyDisplayName(txn, resolvedNames, placeholder).ifBlank{"Payment"}; the raw
+# other_account.holder.name (OBP login-username placeholder) is never shown.
 
 api:
-  - endpoint: "GET /obp/v3.0.0/banks/{bankId}/accounts/{accountId}/owner/transactions/{transactionId}/transaction"
+  # Booked path — single-transaction read. v3.0.0; no attributes inline, so category falls back
+  # to the detail type when the row was opened without a TXN_TYPE.
+  - id: obp_get_transaction_detail
+    endpoint: "GET /obp/v3.0.0/banks/{bankId}/accounts/{accountId}/owner/transactions/{transactionId}/transaction"
     tag: Transactions
     auth: DirectLogin
+    used_for: booked
     params:
       - name: bankId
         type: path
-        value: "gh.29.uk"
       - name: accountId
         type: path
       - name: transactionId
@@ -738,11 +837,6 @@ api:
           type: String
         - name: this_account
           type: object
-          children:
-            - name: id
-              type: String
-            - name: account_routings
-              type: "List<AccountRouting>"
         - name: other_account
           type: object
           children:
@@ -750,18 +844,6 @@ api:
               type: String
             - name: holder
               type: object
-              children:
-                - name: name
-                  type: String
-                - name: is_alias
-                  type: Boolean
-            - name: account_routings
-              type: "List<AccountRouting>"
-            - name: metadata
-              type: object
-              children:
-                - name: image_url
-                  type: "String?"
         - name: details
           type: object
           children:
@@ -773,13 +855,6 @@ api:
               type: String
             - name: completed
               type: String
-            - name: new_balance
-              type: object
-              children:
-                - name: currency
-                  type: String
-                - name: amount
-                  type: String
             - name: value
               type: object
               children:
@@ -792,10 +867,6 @@ api:
           children:
             - name: narrative
               type: "String?"
-            - name: comments
-              type: "List<Comment>"
-            - name: tags
-              type: "List<Tag>"
     errors:
       - code: 401
         message: "Unauthorized — DirectLogin token missing or expired"
@@ -803,6 +874,55 @@ api:
         message: "Transaction not found"
       - code: 500
         message: "OBP server error"
+
+  # Pending path — no per-request read endpoint exists, so the request is located in the
+  # account's transaction-request list by requestId.
+  - id: obp_list_transaction_requests
+    endpoint: "GET /obp/v4.0.0/banks/{bankId}/accounts/{accountId}/owner/transaction-requests"
+    tag: Transaction-Requests
+    auth: DirectLogin
+    used_for: pending
+    params:
+      - name: bankId
+        type: path
+      - name: accountId
+        type: path
+    response:
+      fields:
+        - name: transaction_requests
+          type: "List<TransactionRequestSummary>"
+          children:
+            - name: id
+              type: String
+            - name: type
+              type: String
+            - name: status
+              type: String
+            - name: start_date
+              type: String
+            - name: details
+              type: object
+              children:
+                - name: description
+                  type: String
+                - name: to_sepa
+                  type: "object?"
+                - name: to_counterparty
+                  type: "object?"
+                - name: to_sandbox_tan
+                  type: "object?"
+                - name: value
+                  type: object
+                  children:
+                    - name: currency
+                      type: String
+                    - name: amount
+                      type: String
+    errors:
+      - code: 401
+        message: "Unauthorized"
+      - code: 404
+        message: "Account not found"
 
 dependencies:
   tier: feature

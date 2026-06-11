@@ -1,12 +1,20 @@
 sibling: api
 schema_version: "4.0"
 feature_id: products
+# Reconciled to shipped feature/products 2026-06-11. The shipped ProductsApi is
+# @GET("v3.0.0/banks/{bankId}/products") — NOT v5.0.0 as the earlier draft had. category and
+# family come back null on the sandbox, so the screen derives both the Personal/Business
+# audience split (scopeOf / BUSINESS_MARKERS) and the per-card category badge (categoryOf)
+# client-side from each product's code + name.
 api:
   - id: obp_products
-    endpoint: "GET /obp/v5.0.0/banks/{bankId}/products"
+    endpoint: "GET /obp/v3.0.0/banks/{bankId}/products"
     tag: Product
-    description: "List available banking products from OBP v5.0.0"
+    description: "List a bank's published products. Fetched per bank, in parallel, once per session."
+    trigger: "on load (per bank held) / onRetry — ProductsRepository.listProducts(bankId)"
     response:
+      wrapper: products
+      dto: Product
       fields:
         - name: products
           type: "List<Product>"
@@ -14,25 +22,39 @@ api:
           type: String
         - name: name
           type: String
+        - name: description
+          type: String
         - name: category
           type: String
-          enum: [SAVINGS, LOANS, CARDS, MORTGAGES, CURRENT]
         - name: family
           type: String
         - name: super_family
           type: String
         - name: more_info_url
           type: String
-        - name: details
-          type: ProductDetails
-        - name: meta
-          type: ProductMeta
     errors:
-      - code: 400
-        message: "INVALID_BANK_ID"
       - code: 401
         message: "USER_NOT_LOGGED_IN"
       - code: 404
         message: "BANK_NOT_FOUND"
-      - code: 503
-        message: "SERVICE_UNAVAILABLE"
+
+  - id: obp_get_my_accounts
+    endpoint: "GET /obp/v3.0.0/my/accounts"
+    tag: Account
+    description: "The user's accounts; the distinct bankIds determine which bank catalogues are offered."
+    trigger: "on load — AccountsRepository.myAccounts"
+    response:
+      fields:
+        - name: accounts
+          type: List<Account>
+        - name: bank_id
+          type: String
+    errors:
+      - code: 401
+        message: "USER_NOT_LOGGED_IN"
+
+  # DEFERRED — product search never shipped. No search_products endpoint is called by this
+  # screen; the top-bar search action was removed (verified shipped 2026-06-11).
+  - id: search_products
+    deferred: true
+    deferred_reason: "Product search was never wired on this screen — top-bar search action removed. No endpoint called."

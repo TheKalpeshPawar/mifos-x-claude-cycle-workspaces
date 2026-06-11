@@ -1,0 +1,85 @@
+sibling: api
+schema_version: "4.0"
+feature_id: standing-order-create
+notes: >
+  Authored from shipped source 2026-06-11. POST-create is the ONLY OBP standing-order endpoint
+  (no GET/PUT/DELETE/pause/resume at any version, live-verified). This screen is the sole caller
+  of it in the app. The created order is then recorded in the local Room JSON cache so it appears
+  immediately in the derived list (the server cannot return it).
+api:
+  - id: obp_create_standing_order
+    endpoint: "POST /obp/v4.0.0/banks/{bankId}/accounts/{accountId}/owner/standing-order"
+    tag: Standing-Orders
+    trigger: onSubmit
+    description: "Create a new standing order for the source account, paying an existing counterparty."
+    request:
+      dto: CreateStandingOrderRequest
+      fields:
+        - name: customer_id
+          type: String
+          note: "current user's customer record at the source account's bank"
+        - name: user_id
+          type: String
+          note: "current user's OBP user id"
+        - name: counterparty_id
+          type: String
+          note: "selected payee (beneficiary of the source account)"
+        - name: amount
+          type: AmountOfMoney
+          note: "{currency: source account currency, amount: validated > 0}"
+        - name: when
+          type: StandingOrderSchedule
+          note: "{frequency: DAILY|WEEKLY|BI-WEEKLY|MONTHLY|YEARLY, detail: FIRST_DAY}"
+        - name: date_signed
+          type: String
+          note: "today at T00:00:00Z"
+        - name: date_starts
+          type: String
+          note: "chosen first-payment date at T00:00:00Z (recurrence anchor)"
+        - name: date_expires
+          type: "String?"
+          note: "optional end date at T00:00:00Z; null = pay until cancelled"
+    response:
+      dto: CreateStandingOrderResponse
+      fields:
+        - name: standing_order_id
+          type: String
+        - name: bank_id
+          type: String
+        - name: account_id
+          type: String
+        - name: counterparty_id
+          type: String
+        - name: amount
+          type: AmountOfMoney
+        - name: when
+          type: StandingOrderSchedule
+        - name: date_starts
+          type: String
+        - name: date_expires
+          type: String
+        - name: active
+          type: Boolean
+    errors:
+      - code: 400
+        message: "INVALID_BANK_ID"
+      - code: 401
+        message: "USER_NOT_LOGGED_IN"
+      - code: 403
+        message: "INSUFFICIENT_AUTHORISATION"
+      - code: 404
+        message: "BANK_ACCOUNT_NOT_FOUND"
+
+local_writes:
+  - id: persist_created_standing_order
+    source: "StandingOrdersRepository.create(...) → persistCreated(accountId, order)"
+    note: >
+      After a successful POST the created StandingOrder is appended to the per-account
+      'standing-orders-created:{accountId}' entry in the Room JSON cache, so it shows in the
+      derived list immediately (the server exposes no GET to read it back).
+
+deferred:
+  note: >
+    No GET/PUT/DELETE/pause/resume endpoints exist for standing orders on OBP — editing
+    (standing-order-edit, PUT) is unimplemented, and there is no server cancel. This screen is
+    create-only.

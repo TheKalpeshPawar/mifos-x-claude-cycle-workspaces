@@ -1,36 +1,56 @@
 sibling: api
 schema_version: "4.0"
 feature_id: standing-orders
+notes: >
+  Reconciled to shipped source 2026-06-11. OBP exposes ONLY POST-create for standing orders —
+  there is NO list/get/pause/resume/delete at any API version (live-verified 404). The list is
+  therefore DERIVED in StandingOrdersRepository.listRecurring(): it reads the account's
+  transaction history (TXN_TYPE=SO attribute, grouped by description into series), resolves
+  counterparty names (never the login username), and merges orders created on this device
+  (persisted in the local Room JSON cache). No GET endpoint exists to document.
 api:
   - id: obp_create_standing_order
     endpoint: "POST /obp/v4.0.0/banks/{bankId}/accounts/{accountId}/owner/standing-order"
-    note: "POST-only (no GET list endpoint). Show recurring via transaction history."
     tag: Standing-Orders
-    response:
+    trigger: invoked_from_standing_order_create
+    note: >
+      The only real OBP call in this feature. Called by standing-order-create, not by the list
+      screen. Request body = CreateStandingOrderRequest; response = CreateStandingOrderResponse.
+    request:
+      dto: CreateStandingOrderRequest
       fields:
-        - name: standing_orders
-          type: List<StandingOrder>
-        - name: id
+        - name: customer_id
+          type: String
+        - name: user_id
+          type: String
+        - name: counterparty_id
+          type: String
+        - name: amount
+          type: AmountOfMoney
+        - name: when
+          type: StandingOrderSchedule
+        - name: date_signed
+          type: String
+        - name: date_starts
+          type: String
+        - name: date_expires
+          type: "String?"
+    response:
+      dto: CreateStandingOrderResponse
+      fields:
+        - name: standing_order_id
           type: String
         - name: bank_id
           type: String
         - name: account_id
           type: String
-        - name: counterparty
-          type: Counterparty
-        - name: counterparty.name
-          type: String
-        - name: amount_value
-          type: String
-        - name: amount_currency
-          type: String
+        - name: amount
+          type: AmountOfMoney
         - name: when
           type: StandingOrderSchedule
-        - name: when.frequency
+        - name: date_starts
           type: String
-        - name: when.start_date
-          type: String
-        - name: when.final_date
+        - name: date_expires
           type: String
         - name: active
           type: Boolean
@@ -43,3 +63,19 @@ api:
         message: "INSUFFICIENT_AUTHORISATION"
       - code: 404
         message: "BANK_ACCOUNT_NOT_FOUND"
+
+derived_reads:
+  - id: derive_standing_orders_from_history
+    source: "TransactionsRepository.listTransactionsWithAttributes(bankId, accountId)"
+    filter: "TXN_TYPE=SO"
+    grouping: "by description into recurring series"
+    output_dto: "List<StandingOrder>"
+    note: >
+      Replaces the non-existent GET-list endpoint. Status (ACTIVE/PAUSED/CANCELLED) is inferred
+      from payment cadence; created-on-device orders are merged from the local cache.
+
+deferred:
+  note: >
+    GET list / GET detail / POST pause / POST resume / DELETE were specified in the original
+    design but DO NOT EXIST on OBP. Dropped from the contract; the derived read above is the
+    real data source. Re-add only if OBP ships read/mutation endpoints.

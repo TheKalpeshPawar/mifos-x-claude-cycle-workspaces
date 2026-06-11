@@ -25,6 +25,10 @@ api:
           type: String
         - name: card_type
           type: String
+        - name: expires_date
+          type: String
+        - name: network
+          type: String
         - name: networks
           type: List<String>
         - name: allows
@@ -41,17 +45,20 @@ api:
       - code: 401
         message: "OBP-20001: User not logged in. Authentication is required!"
 
-  # ── Card transactions section (per-account, verified 200) ───────────────────
-  # Card transactions are not a distinct OBP resource — they are the owning
-  # account's transactions, fetched via card.account.id. Verified: ac.checking.001
-  # returned 28 transactions.
+  # ── Card transactions section (per-account) — DEFERRED, NOT wired ───────────
+  # The card-transactions list never shipped on the Cards screen; CardsViewModel
+  # injects only CardsRepository (no TransactionRepository). Endpoint exists +
+  # verified live but is NOT called by this screen. Retained as a deferred
+  # reference for a possible future card-transactions view (verified shipped 2026-06-11).
   - id: obp_get_card_transactions
+    deferred: true
+    deferred_reason: "Card-transactions list never shipped on the Cards screen — no TransactionRepository in CardsViewModel. Endpoint verified live but unused by this screen."
     endpoint: "GET /obp/v3.0.0/banks/{bankId}/accounts/{accountId}/owner/transactions"
     tag: Transaction
-    summary: "Recent transactions for the account that owns a card"
+    summary: "Recent transactions for the account that owns a card (NOT wired)"
     auth: DirectLogin
-    trigger: "after cards load — accountId = card.account.id of the first/selected card"
-    verified: "2026-05-31 — 200, owner view, 28 transactions"
+    trigger: "n/a — not wired"
+    verified: "2026-05-31 — 200, owner view, 28 transactions (endpoint only; screen does not call it)"
     response:
       wrapper: transactions
       dto: Transaction

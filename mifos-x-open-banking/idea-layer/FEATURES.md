@@ -1,7 +1,8 @@
 # Features — Mifos X Open Banking
 
-All 44 features organized by flavor and OBP API integration points.
+All features organized by flavor and OBP API integration points.
 Updated 2026-05-29 — added standing-order-edit.
+Updated 2026-06-11 — added send-money-amount, sca-challenge, payment-result, standing-order-create (source-drift write-back).
 
 ---
 
@@ -67,9 +68,11 @@ Updated 2026-05-29 — added standing-order-edit.
 
 ---
 
-## Complete Screen List (44 Screens)
+## Complete Screen List (50 Screens)
 
-### Consumer Screens (22)
+> Updated 2026-06-11 — registered send-money-amount, sca-challenge, payment-result (send-money), and standing-order-create (standing-orders) from source-drift write-back. Count of 50 also reflects pfm-settings + business-insights added in the PFM v2 epic (tracked in EXPORT_MATRIX.yaml).
+
+### Consumer Screens (26)
 
 1. **home** — `consumer`
 2. **accounts** — `consumer`
@@ -78,21 +81,25 @@ Updated 2026-05-29 — added standing-order-edit.
 5. **transaction-detail** — `consumer`
 6. **transaction-tags** — `consumer`
 7. **send-money** — `consumer`
-8. **send-money-confirm** — `consumer`
-9. **beneficiaries** — `consumer`
-10. **cards** — `consumer`
-11. **card-detail** — `consumer`
-12. **standing-orders** — `consumer`
-13. **standing-order-detail** — `consumer`
-14. **standing-order-edit** — `consumer`
-15. **direct-debits** — `consumer`
-16. **direct-debit-detail** — `consumer`
-17. **atm-locator** — `consumer`
-18. **fx-rates** — `consumer`
-19. **consent-manager** — `consumer`
-20. **notifications** — `consumer`
-21. **pfm-dashboard** — `consumer`
-22. **products** — `consumer`
+8. **send-money-amount** — `consumer`
+9. **send-money-confirm** — `consumer`
+10. **sca-challenge** — `consumer`
+11. **payment-result** — `consumer`
+12. **beneficiaries** — `consumer`
+13. **cards** — `consumer`
+14. **card-detail** — `consumer`
+15. **standing-orders** — `consumer`
+16. **standing-order-create** — `consumer`
+17. **standing-order-detail** — `consumer`
+18. **standing-order-edit** — `consumer`
+19. **direct-debits** — `consumer`
+20. **direct-debit-detail** — `consumer`
+21. **atm-locator** — `consumer`
+22. **fx-rates** — `consumer`
+23. **consent-manager** — `consumer`
+24. **notifications** — `consumer`
+25. **pfm-dashboard** — `consumer`
+26. **products** — `consumer`
 
 ### Field Officer Screens (12)
 

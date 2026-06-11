@@ -2,7 +2,7 @@ id: profile
 name: "User Profile"
 feature: profile
 flavor: shared
-status: approved
+status: enriched
 quality_score: 99
 contract_version: "1.1.0"
 approve_hash: "sha256:16af12bd8c96e4f037af12bd8c96e4f037af12bd8c96e4f037af12bd8c96e4f0"
@@ -30,6 +30,11 @@ status_history:
     at: "2026-05-27"
     by: "/idea enrich"
     note: "re-enriched: +component_states, +initial_state, +api bindings"
+  - from: approved
+    to: enriched
+    at: "2026-06-11"
+    by: "/idea verify --source-drift (write-back)"
+    note: "SOURCE→SPEC reconciliation to shipped ProfileViewModel.kt + ProfileScreen.kt + ProfileApi.kt. The shipped Profile is READ-ONLY display — there is NO editing. Modelled as a single ScreenState<ProfileContent>{displayName, initials, fullName, email, phone}; Loading → CircularProgressIndicator; Error → 'Could not load your profile' + Retry; Content → avatar (INITIALS box, no photo) + read-only fields + disabled Change Password + Log Out. Reconciliation: REMOVED all editing surfaces that were never built — Save Changes button (profile_save_button), editing/saving/saved states, profile_save_success_banner, avatar photo picker + avatar_url, and the editable form-section semantics (fields are now display-only). REMOVED state_model fields avatarUrl/hasUnsavedChanges/errorMessage and editing actions. The avatar edit icon is DECORATIVE only (no picker). profile_change_password_button renders DISABLED (enabled=false) in shipped — marked deferred, not removed. Phone is hardcoded blank \"\" (UserProfile has no phone field). actions reduced to onRetry() + onLogout(). DI = ProfileRepository, UserDataRepository. Logout is REACTIVE: onLogout() flips UserDataRepository.setIsAuthenticated(false); RootNavViewModel observes userData and routes to auth — the screen never navigates to login imperatively. api: obp_get_user_profile GET v4.0.0/users/current is the only consumed endpoint (phone not in response). obp_update_user_profile PUT v4.0.0/users/current exists in ProfileApi but is NOT consumed — marked deferred."
 
 screens:
   - id: profile
@@ -48,8 +53,8 @@ components:
     children:
       - profile_avatar_section
       - profile_form_section
-      - profile_action_section
-      - profile_danger_section
+      - profile_change_password_button
+      - profile_logout_button
 
   - type: stack
     id: profile_avatar_section
@@ -58,91 +63,64 @@ components:
       alignment: center
       padding_bottom: spacing.xl
     children:
-      - profile_avatar_image
+      - profile_avatar_initials
       - profile_avatar_edit_icon
       - profile_display_name
 
-  - type: image
-    id: profile_avatar_image
-    content: "user_avatar_placeholder"
-    label: "Profile avatar"
-    variant: circle
+  - type: box
+    id: profile_avatar_initials
+    content: "MS"
     style:
       width: "96dp"
       height: "96dp"
+      shape: circle
       border_color: "#4C662B"
       border_width: "2dp"
       background: "#CDEDA3"
+      typography: "Outfit/headline_medium"
+      font_weight: 700
+      color: "#4C662B"
+      alignment: center
     a11y:
       role: image
-      label: "Your profile photo"
-    api:
-      endpoint_id: obp_get_user_profile
-      field: avatar_url
-    component_states:
-      loading:
-        type: skeleton  # fix REG-001: shimmer → skeleton (registered)
-        description: "circular shimmer placeholder 96dp matching avatar size"
-      error:
-        type: banner  # fix REG-001: inline-error → banner (registered)
-        message: "Could not load your account photo"
-        retry: true
-      empty:
-        type: box  # fix REG-001: inline-empty → box (registered)
-        message: "No profile photo on file — tap to add one"
+      label: "Your profile initials"
     test_context:
-      purpose: "User avatar fetched from profile data; falls back to initials placeholder"
+      purpose: "Initials avatar — shipped renders a circular primaryContainer box with up to two uppercase initials from the display name (initialsOf). No profile photo; there is no image fetch."
       interaction_type: display
       data_driven: true
 
   - type: icon
     id: profile_avatar_edit_icon
-    content: "edit_photo"
+    content: "edit"
     variant: filled
-    supported_states: [idle, hover, focus_visible, pressed, disabled]
     style:
       background: "#4C662B"
       color: "#FFFFFF"
-      size: "28dp"
-      offset: "{ x: 32dp, y: -16dp }"
-    on_click:
-      action: submit
-      target: profile
+      size: "32dp"
+      offset: "{ x: 2dp, y: 2dp }"
     a11y:
-      role: button
-      label: "Change profile photo"
-    keyboard:
-      focusable: true
+      role: image
+      label: "Edit"
     test_context:
-      purpose: "Overlaid edit icon on avatar; tapping opens photo picker"
-      interaction_type: action
+      purpose: "Decorative edit badge overlaid on the initials avatar (contentDescription 'Change profile photo'). NOT interactive in shipped — no photo picker is wired."
+      interaction_type: display
       data_driven: false
 
   - type: text
     id: profile_display_name
     content: "Maria Santos"
-    variant: headline_small
+    variant: title_large
     style:
-      typography: "Outfit/headline_small"
+      typography: "Outfit/title_large"
       color: "#4C662B"
+      font_weight: 600
       alignment: center
       padding_top: spacing.sm
     a11y:
       role: heading
       label: "Profile name"
-    api:
-      endpoint_id: obp_get_user_profile
-      field: username
-    component_states:
-      loading:
-        type: skeleton  # fix REG-001: shimmer → skeleton (registered)
-        description: "text-line shimmer placeholder matching headline_small width"
-      error:
-        type: banner  # fix REG-001: inline-error → banner (registered)
-        message: "Unable to retrieve account holder name"
-        retry: true
     test_context:
-      purpose: "Displays the current full name from profile state — real data, not placeholder"
+      purpose: "Display name — shipped uses ProfileContent.displayName (username, or email local-part when username is blank). Real data, not placeholder."
       interaction_type: display
       data_driven: true
 
@@ -156,9 +134,9 @@ components:
       margin_bottom: spacing.md
     children:
       - profile_section_header
-      - profile_full_name_input
-      - profile_email_input
-      - profile_phone_input
+      - profile_full_name_field
+      - profile_email_field
+      - profile_phone_field
 
   - type: text
     id: profile_section_header
@@ -167,276 +145,209 @@ components:
     style:
       typography: "Outfit/title_medium"
       color: "#4C662B"
+      font_weight: 600
       padding_bottom: spacing.md
     a11y:
       role: heading
       label: "Personal Information section"
     test_context:
-      purpose: "Section header to organize the editable profile fields"
+      purpose: "Section header above the read-only profile fields"
       interaction_type: display
       data_driven: false
 
   - type: input
-    id: profile_full_name_input
+    id: profile_full_name_field
     label: "Full Name"
     variant: text
-    supported_states: [idle, hover, focus_visible, pressed, disabled]
+    supported_states: [disabled]
     style:
-      background: "#F9FAEF"
+      background: "#FFFFFF"
       typography: "Outfit/body_large"
       border_color: "#C5C8BA"
-      focused_border_color: "#4C662B"
       padding: spacing.md
       margin_bottom: spacing.md
-    placeholder: "e.g. Maria Santos"
-    keyboard_type: text
-    ime_action: next
     prefill: "fullName"
     a11y:
       role: textbox
       label: "Full Name"
       label_source: visible_label
-    keyboard:
-      focusable: true
-    api:
-      endpoint_id: obp_get_user_profile
-      field: username
-    component_states:
-      loading:
-        type: skeleton  # fix REG-001: shimmer → skeleton (registered)
-        description: "input-field shimmer matching full-name field height and width"
-      error:
-        type: banner  # fix REG-001: inline-error → banner (registered)
-        message: "Could not pre-fill your registered name"
-        retry: true
-      empty:
-        type: box  # fix REG-001: inline-empty → box (registered)
-        message: "No registered name on file — please enter your full name"
     test_context:
-      purpose: "Editable full name field pre-filled from ProfileUiState.fullName"
-      interaction_type: input
+      purpose: "READ-ONLY full name. Shipped renders a disabled OutlinedTextField bound to ProfileContent.fullName — no editing, no save."
+      interaction_type: display
       data_driven: true
 
   - type: input
-    id: profile_email_input
+    id: profile_email_field
     label: "Email Address"
     variant: email
-    supported_states: [idle, hover, focus_visible, pressed, disabled]
+    supported_states: [disabled]
     style:
-      background: "#F9FAEF"
+      background: "#FFFFFF"
       typography: "Outfit/body_large"
       border_color: "#C5C8BA"
-      focused_border_color: "#4C662B"
       padding: spacing.md
       margin_bottom: spacing.md
-    placeholder: "e.g. maria.santos@example.com"
-    keyboard_type: email
-    ime_action: next
     prefill: "email"
     a11y:
       role: textbox
       label: "Email Address"
       label_source: visible_label
-    keyboard:
-      focusable: true
-    api:
-      endpoint_id: obp_get_user_profile
-      field: email
-    component_states:
-      loading:
-        type: skeleton  # fix REG-001: shimmer → skeleton (registered)
-        description: "input-field shimmer matching email field height and width"
-      error:
-        type: banner  # fix REG-001: inline-error → banner (registered)
-        message: "Could not pre-fill your registered email address"
-        retry: true
-      empty:
-        type: box  # fix REG-001: inline-empty → box (registered)
-        message: "No email address on record — please enter a valid email"
     test_context:
-      purpose: "Editable email field; validated against RFC-5322 format before save"
-      interaction_type: input
+      purpose: "READ-ONLY email. Disabled OutlinedTextField bound to ProfileContent.email."
+      interaction_type: display
       data_driven: true
 
   - type: input
-    id: profile_phone_input
+    id: profile_phone_field
     label: "Phone Number"
     variant: text
-    supported_states: [idle, hover, focus_visible, pressed, disabled]
+    supported_states: [disabled]
     style:
-      background: "#F9FAEF"
+      background: "#FFFFFF"
       typography: "Outfit/body_large"
       border_color: "#C5C8BA"
-      focused_border_color: "#4C662B"
       padding: spacing.md
-    placeholder: "e.g. +63 917 123 4567"
-    keyboard_type: tel
-    ime_action: done
-    prefill: "phoneNumber"
+    prefill: "phone"
     a11y:
       role: textbox
       label: "Phone Number"
       label_source: visible_label
-    keyboard:
-      focusable: true
-    api:
-      endpoint_id: obp_get_user_profile
-      field: phone_number
-    component_states:
-      loading:
-        type: skeleton  # fix REG-001: shimmer → skeleton (registered)
-        description: "input-field shimmer matching phone field height and width"
-      error:
-        type: banner  # fix REG-001: inline-error → banner (registered)
-        message: "Could not pre-fill your registered phone number"
-        retry: true
-      empty:
-        type: box  # fix REG-001: inline-empty → box (registered)
-        message: "No phone number on record — please enter your contact number"
     test_context:
-      purpose: "Editable phone field with tel keyboard; validated for E.164 format"
-      interaction_type: input
+      purpose: "READ-ONLY phone. Disabled OutlinedTextField bound to ProfileContent.phone, which is hardcoded blank \"\" — OBP UserProfile has no phone field. Renders empty."
+      interaction_type: display
       data_driven: true
-
-  - type: stack
-    id: profile_action_section
-    variant: column
-    style:
-      padding_bottom: spacing.md
-    children:
-      - profile_save_button
-      - profile_change_password_button
-
-  - type: button
-    id: profile_save_button
-    label: "Save Changes"
-    variant: filled
-    supported_states: [idle, hover, focus_visible, pressed, disabled]
-    style:
-      background: "#4C662B"
-      typography: "Outfit/label_large"
-      color: "#FFFFFF"
-      border_radius: "8dp"
-      padding: spacing.md
-      margin_bottom: spacing.sm
-      width: "match_parent"
-    on_click:
-      action: submit
-      target: profile
-    loading_when: "uiState == Saving"
-    disabled_when: "uiState == Viewing || !hasUnsavedChanges"
-    a11y:
-      role: button
-      label: "Save profile changes"
-    keyboard:
-      focusable: true
-    test_context:
-      purpose: "Submits edited profile fields to API; enabled only when unsaved changes exist"
-      interaction_type: action
-      data_driven: false
 
   - type: button
     id: profile_change_password_button
     label: "Change Password"
     variant: outlined
-    supported_states: [idle, hover, focus_visible, pressed, disabled]
+    enabled: false
+    disabled_until: "change-password screen implemented"
+    supported_states: [disabled]
     style:
       border_color: "#4C662B"
       typography: "Outfit/label_large"
       color: "#4C662B"
+      font_weight: 600
       border_radius: "8dp"
       padding: spacing.md
       width: "match_parent"
-    on_click:
-      action: navigate
-      target: change-password
+      margin_top: spacing.lg
     a11y:
       role: button
-      label: "Navigate to change password screen"
-    keyboard:
-      focusable: true
+      label: "Change Password (not yet available)"
     test_context:
-      purpose: "Secondary CTA to update password separately from profile info"
-      interaction_type: navigate
+      purpose: "Shipped renders this OutlinedButton DISABLED (enabled = false) with an empty onClick — change-password is not built. Marked deferred; kept so the spec reflects the visible (disabled) control."
+      interaction_type: display
       data_driven: false
-
-  - type: stack
-    id: profile_danger_section
-    variant: column
-    style:
-      background: "#FFFFFF"
-      border_radius: "12dp"
-      padding: spacing.lg
-      margin_top: spacing.md
-    children:
-      - profile_logout_button
 
   - type: button
     id: profile_logout_button
     label: "Log Out"
     variant: text
-    supported_states: [idle, hover, focus_visible, pressed, disabled]
+    supported_states: [idle, hover, focus_visible, pressed]
     style:
       typography: "Outfit/label_large"
       color: "#BA1A1A"
+      font_weight: 600
       padding: spacing.md
       width: "match_parent"
+      margin_top: spacing.md
     on_click:
-      action: submit
-      target: login
+      action: logout
     a11y:
       role: button
       label: "Log out of your account"
     keyboard:
       focusable: true
     test_context:
-      purpose: "Clears session token and navigates to login; presented in danger zone"
+      purpose: "Calls ProfileViewModel.onLogout() → UserDataRepository.setIsAuthenticated(false). REACTIVE: RootNavViewModel observes userData and routes back to auth. The screen does NOT navigate to login imperatively."
       interaction_type: action
       data_driven: false
 
-  - type: card
-    id: profile_save_success_banner
-    variant: filled
-    supported_states: [idle, hover, focus_visible, pressed, disabled]
-    style:
-      background: "#CDEDA3"
-      border_color: "#4C662B"
-      border_radius: "8dp"
-      padding: spacing.md
-      margin_bottom: spacing.md
-    visible_when: "uiState == Saved"
-    children:
-      - profile_success_icon
-      - profile_success_message
+  # ── Error state ──────────────────────────────────────────────────────────────
 
   - type: icon
-    id: profile_success_icon
-    content: "check_circle"
+    id: profile_error_icon
+    content: "error_outline"
     variant: default
     style:
-      color: "#4C662B"
-      size: "20dp"
+      color: "#BA1A1A"
+      size: "40dp"
+      alignment: center
     a11y:
       role: image
-      label: "Success"
+      label: "Error"
     test_context:
-      purpose: "Success icon in the save confirmation banner"
+      purpose: "Error icon shown in the full-screen ProfileError state"
       interaction_type: display
       data_driven: false
 
   - type: text
-    id: profile_success_message
-    content: "Your profile has been updated successfully."
-    variant: body_small
+    id: profile_error_title
+    content: "Could not load your profile"
+    variant: title_medium
     style:
-      typography: "Outfit/body_small"
-      color: "#4C662B"
-      padding_start: spacing.sm
+      typography: "Outfit/title_medium"
+      color: "#1A1C16"
+      alignment: center
     a11y:
-      role: alert
-      label: "Profile saved successfully"
+      role: heading
+      label: "Could not load your profile"
     test_context:
-      purpose: "Inline confirmation after successful profile save API response"
+      purpose: "Headline of the Profile error state (ScreenState.Error)"
+      interaction_type: display
+      data_driven: false
+
+  - type: text
+    id: profile_error_body
+    content: "Check your connection and try again."
+    variant: body_medium
+    style:
+      typography: "Outfit/body_medium"
+      color: "#44483D"
+      alignment: center
+    a11y:
+      role: text
+      label: "Check your connection and try again."
+    test_context:
+      purpose: "Supporting copy in the Profile error state"
+      interaction_type: display
+      data_driven: false
+
+  - type: button
+    id: profile_error_retry_button
+    label: "Retry"
+    variant: text
+    supported_states: [idle, hover, focus_visible, pressed]
+    style:
+      typography: "Outfit/label_large"
+      color: "#4C662B"
+      alignment: center
+    on_click:
+      action: retry
+    a11y:
+      role: button
+      label: "Retry loading your profile"
+    keyboard:
+      focusable: true
+    test_context:
+      purpose: "Calls ProfileViewModel.onRetry() to reload the profile after a network error"
+      interaction_type: action
+      data_driven: false
+
+  - type: loading_indicator
+    id: profile_loading_spinner
+    variant: circular_indeterminate
+    style:
+      color: "#4C662B"
+      size: "40dp"
+      alignment: center
+    a11y:
+      role: progressbar
+      label: "Loading your profile"
+    test_context:
+      purpose: "Centered CircularProgressIndicator shown while the OBP profile loads (ScreenState.Loading)"
       interaction_type: display
       data_driven: false
 
@@ -447,127 +358,80 @@ responsive:
 states:
   initial_state: loading
   loading:
-    motion:
-      shimmer_duration: short4
-      reduced_motion_fallback: static_placeholder
-    layout: { type: column, padding: spacing.lg }
-    visible_components: [profile_avatar_section, profile_form_section]
-    note: "Skeleton shimmer shown for avatar, display name, and all pre-filled input fields while OBP profile data is fetched"
-  viewing:
-    layout: { type: column, padding: spacing.lg }
-    visible_components: [profile_avatar_section, profile_form_section, profile_action_section, profile_danger_section]
-    note: "Fields are read-only; Save button disabled"
-  editing:
-    layout: { type: column, padding: spacing.lg }
-    visible_components: [profile_avatar_section, profile_form_section, profile_action_section, profile_danger_section]
-    note: "Fields are editable; Save button enabled"
-  saving:
-    layout: { type: column, padding: spacing.lg }
-    visible_components: [profile_avatar_section, profile_form_section, profile_action_section, profile_danger_section]
-    note: "Save button shows loading spinner; inputs disabled"
-  saved:
-    layout: { type: column, padding: spacing.lg }
-    visible_components: [profile_save_success_banner, profile_avatar_section, profile_form_section, profile_action_section, profile_danger_section]
-    note: "Success banner visible at top; auto-transitions to viewing after 2s"
+    layout: { type: column, padding: spacing.lg, align: center, justify: center }
+    visible_components: [profile_loading_spinner]
+    note: "ScreenState.Loading — centered CircularProgressIndicator while the OBP profile fetches."
   content:
     layout: { type: column, padding: spacing.lg }
-    visible_components: [profile_avatar_section, profile_form_section, profile_action_section, profile_danger_section]
-    note: "Profile data loaded — same layout as viewing state; default loaded state alias"
-  empty:
-    layout: { type: column, padding: spacing.lg }
-    visible_components: [profile_avatar_section, profile_action_section, profile_danger_section]
-    note: "No profile data available. Please update your profile."
+    visible_components: [profile_avatar_section, profile_form_section, profile_change_password_button, profile_logout_button]
+    note: "ScreenState.Content — read-only profile: initials avatar, display name, three disabled fields, disabled Change Password, Log Out."
   error:
-    layout: { type: column, padding: spacing.lg }
-    visible_components: [profile_avatar_section, profile_form_section, profile_action_section, profile_danger_section]
+    layout: { type: column, padding: spacing.lg, align: center, justify: center }
+    visible_components: [profile_error_icon, profile_error_title, profile_error_body, profile_error_retry_button]
+    note: "ScreenState.Error — full-screen error with Retry (onRetry)."
 
 state_model:
   ProfileViewModel:
-    screen_state: ProfileUiState
-    state:
+    screen_state: "ScreenState<ProfileContent>"
+    content_type: ProfileContent
+    content_fields:
+      - field: displayName
+        type: String
+        note: "username, or email local-part when username is blank"
+      - field: initials
+        type: String
+        note: "up to two uppercase initials from displayName (initialsOf)"
       - field: fullName
         type: String
-        default: "\"\""
+        note: "same as displayName in shipped — bound to the read-only Full Name field"
       - field: email
         type: String
-        default: "\"\""
-      - field: phoneNumber
+      - field: phone
         type: String
-        default: "\"\""
-      - field: avatarUrl
-        type: "String?"
-        default: "null"
-      - field: hasUnsavedChanges
-        type: Boolean
-        default: "false"
-      - field: isLoading
-        type: Boolean
-        default: "false"
-      - field: errorMessage
-        type: "String?"
-        default: "null"
-    errors: [NETWORK_ERROR, VALIDATION_ERROR, AUTH_ERROR]
-    events: [LoadProfile, OnFullNameChanged, OnEmailChanged, OnPhoneChanged, OnSaveClicked, OnChangePasswordClicked, OnLogoutClicked, OnProfileSaved, OnProfileError]
-    actions: [onLoadProfile(), onFullNameChanged(value: String), onEmailChanged(value: String), onPhoneChanged(value: String), onSaveClicked(), onChangePasswordClicked(), onLogoutClicked()]
-    di: [ObpAuthRepository, UserProfileRepository, SessionManager]
+        note: "hardcoded blank \"\" — OBP UserProfile has no phone field"
+    state_wrapper:
+      type: "ScreenState<ProfileContent>"
+      variants: [Loading, "Content(ProfileContent, DataFreshness)", "Error(throwable, isNetworkError)"]
+    actions:
+      - "onRetry() — reloads the profile (load())"
+      - "onLogout() — UserDataRepository.setIsAuthenticated(false); routing is reactive via RootNavViewModel"
+    di: [ProfileRepository, UserDataRepository]
+    base: "androidx.lifecycle.ViewModel (exposes StateFlow<ScreenState<ProfileContent>>)"
+    note: "READ-ONLY screen. No editing, no save, no avatar upload. Logout is reactive — RootNavViewModel observes UserDataRepository.userData and routes to the auth graph; the screen never navigates to login imperatively. ProfileApi.updateCurrentUser (PUT v4.0.0/users/current) is NOT consumed."
 
 navigation:
-  - id: nav_to_change_password
-    target: change-password
-    on_click:
-      action: navigate
-      target: change-password
-  - id: nav_to_login_on_logout
-    target: login
-    trigger: on_logout_confirmed
-    on_click:
-      action: navigate
-      target: login
+  - id: profile_logout_reactive
+    trigger: on_logout_clicked
+    note: "No imperative navigation. onLogout() flips UserDataRepository.setIsAuthenticated(false); RootNavViewModel observes the session and routes back to the auth graph. change-password is NOT reachable — its button is rendered disabled."
 
 api:
   - id: obp_get_user_profile
     endpoint: "GET /obp/v4.0.0/users/current"
     tag: UserProfile
     trigger: on_screen_load
+    description: "Shipped ProfileApi.getCurrentUser — the only endpoint consumed by Profile. phone is NOT in the response."
     response:
       fields:
         - name: user_id
           type: String
-        - name: email
-          type: String
         - name: username
+          type: String
+        - name: email
           type: String
     errors:
       - code: 401
         name: AUTH_ERROR
-        ui_message: "Session expired. Please sign in again."
+        ui_message: "Could not load your profile"
       - code: 500
         name: NETWORK_ERROR
-        ui_message: "Could not load your profile. Please check your connection."
+        ui_message: "Could not load your profile"
 
   - id: obp_update_user_profile
     endpoint: "PUT /obp/v4.0.0/users/current"
     tag: UserProfile
-    trigger: on_save_clicked
-    request:
-      fields:
-        - name: email
-          type: String
-          source: profile_email_input
-        - name: phone_number
-          type: String
-          source: profile_phone_input
-    response:
-      fields:
-        - name: user_id
-          type: String
-    errors:
-      - code: 400
-        name: VALIDATION_ERROR
-        ui_message: "Please correct the errors in the form before saving."
-      - code: 401
-        name: AUTH_ERROR
-        ui_message: "Session expired. Please sign in again."
+    trigger: deferred
+    status: deferred
+    description: "ProfileApi.updateCurrentUser exists but is NOT consumed — Profile is read-only and never calls it. Listed for contract completeness only."
 
 dependencies:
   tier: feature

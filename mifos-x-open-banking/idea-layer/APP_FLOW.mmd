@@ -3,6 +3,7 @@
 %% Updated 2026-05-28 by /idea sync — 43 screens (added terms-of-service, privacy-policy, licenses, standing-order-detail)
 %% Updated 2026-05-29 by /idea sync — nav-graph wiring: +Settings→ConsentManager, +Settings→ChangePassword, +FoDashboard→AgentRegistration, +FoDashboard→CorporateOnboarding
 %% Updated 2026-06-11 by /idea sync — added standing-order-edit, pfm-settings, business-insights (PFM v2 epic)
+%% Updated 2026-06-11 by /idea sync — added send-money-amount, sca-challenge, payment-result, standing-order-create (source-drift write-back)
 %% OBP Sandbox: https://apisandbox.openbankproject.com
 
 flowchart TB
@@ -39,11 +40,15 @@ flowchart TB
       Transactions[Transactions]
       TransactionDetail[Transaction\nDetail]
       SendMoney[Send Money]
+      SendMoneyAmount[Send Money\nAmount]
       SendMoneyConfirm[Send Money\nConfirm]
+      ScaChallenge[SCA\nChallenge]
+      PaymentResult[Payment\nResult]
       Beneficiaries[Beneficiaries]
       Cards[Cards]
       CardDetail[Card Detail]
       StandingOrders[Standing\nOrders]
+      StandingOrderCreate[Create Standing\nOrder]
       StandingOrderDetail[Standing Order\nDetail]
       StandingOrderEdit[Standing Order\nEdit]
     end
@@ -81,15 +86,22 @@ flowchart TB
   Transactions --> TransactionDetail
   TransactionDetail --> TransactionTags
 
-  SendMoney --> SendMoneyConfirm
-  SendMoneyConfirm -->|success| Home
-  SendMoneyConfirm -->|back| SendMoney
+  SendMoney --> SendMoneyAmount
+  SendMoneyAmount --> SendMoneyConfirm
+  SendMoneyConfirm -->|success| PaymentResult
+  SendMoneyConfirm -->|SCA required| ScaChallenge
+  ScaChallenge -->|verified| PaymentResult
+  SendMoneyConfirm -->|edit| SendMoneyAmount
+  PaymentResult --> TransactionDetail
+  PaymentResult -->|done| Home
   Beneficiaries --> SendMoney
 
   Cards --> CardDetail
   CardDetail --> Transactions
   Cards --> TransactionDetail
 
+  StandingOrders --> StandingOrderCreate
+  StandingOrderCreate -->|back / created| StandingOrders
   StandingOrders --> StandingOrderDetail
   StandingOrderDetail -->|back| StandingOrders
   StandingOrderDetail --> StandingOrderEdit
@@ -181,6 +193,6 @@ flowchart TB
   classDef entry fill:#FCF8FF,stroke:#1B1B24,color:#1B1B24
 
   class Splash,Login,Profile,Settings,ChangePassword,TermsOfService,PrivacyPolicy,Licenses shared_style
-  class Home,Accounts,AccountDetail,Transactions,TransactionDetail,SendMoney,SendMoneyConfirm,Beneficiaries,Cards,CardDetail,StandingOrders,StandingOrderDetail,StandingOrderEdit,AtmLocator,FxRates,Notifications,DirectDebits,PfmDashboard,PfmSettings,BusinessInsights,Products,ConsentManager,TransactionTags consumer_style
+  class Home,Accounts,AccountDetail,Transactions,TransactionDetail,SendMoney,SendMoneyAmount,SendMoneyConfirm,ScaChallenge,PaymentResult,Beneficiaries,Cards,CardDetail,StandingOrders,StandingOrderCreate,StandingOrderDetail,StandingOrderEdit,AtmLocator,FxRates,Notifications,DirectDebits,PfmDashboard,PfmSettings,BusinessInsights,Products,ConsentManager,TransactionTags consumer_style
   class FoDashboard,CustomerSearch,CustomerDetail,CustomerProfile,CustomerOnboarding,CorporateOnboarding,KycReview,AccountApplications,ApplicationDetail,CustomerMessages,Meetings,AgentRegistration fo_style
   class Launch entry

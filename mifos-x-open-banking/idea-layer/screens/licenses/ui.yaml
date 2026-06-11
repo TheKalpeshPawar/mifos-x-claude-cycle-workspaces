@@ -2,7 +2,7 @@ id: licenses
 name: "Open Source Licenses"
 feature: shared
 flavor: shared
-status: approved
+status: enriched
 quality_score: 90
 schema_version: "3.1"
 contract_version: "1.1.0"
@@ -29,11 +29,16 @@ status_history:
     by: "/kmp-implement licenses (legal batch)"
     contract_version: "1.1.0"
     note: "Implemented in feature/legal: app-license card (MPL-2.0, Mifos Initiative, kmp-project-template origin, OBP data provenance) + library list grouped by license (Apache-2.0 / MIT / MPL-2.0 / EPL-1.0) with name, maintainer, URL and license badge per row. The 21-entry list was verified against gradle/libs.versions.toml and lives in a separate unit-testable file (OpenSourceLibrary.kt, OPEN_SOURCE_LIBRARIES) with 3 invariant tests (non-empty+complete fields, no duplicates, core stack acknowledged). Deviations: DataStore omitted (project uses Multiplatform Settings), per-row external link tap dropped (static screen — URL rendered as text), version numbers omitted (would rot against the catalog). Entry: Settings → Open Source Licenses."
+  - from: approved
+    to: enriched
+    at: "2026-06-11"
+    by: "/idea verify --source-drift (write-back)"
+    contract_version: "1.1.0"
+    note: "SOURCE→SPEC reconciliation to shipped LicensesScreen.kt + OpenSourceLibrary.kt (static @Composable, compile-time OPEN_SOURCE_LIBRARIES list of 21 libs, no ViewModel). Replaced the flat 8-library tappable list with the shipped shape: subtitle prose, AppLicenseCard (app's own MPL-2.0 note), then libraries grouped by license with section headers (Apache-2.0 / MIT / MPL-2.0 / EPL-1.0), each row showing name + maintainer (author) + project URL + license badge, plus a closing footer. Removed: per-row open_external tap (rows are STATIC text, URL as plain text), per-library version numbers (omitted to avoid rot), loading skeleton, error state, empty state, LicensesViewModel state_model."
 
 screens:
   - id: licenses
     name: "Open Source Licenses"
-    viewmodel: "LicensesViewModel"
     route: /legal/licenses
 
 archetype: index_list
@@ -55,11 +60,20 @@ components:
       padding: spacing.lg
     children:
       - licenses_subtitle_text
-      - licenses_list
+      - licenses_app_license
+      - licenses_group_apache_2_0
+      - licenses_apache_card
+      - licenses_group_mit
+      - licenses_mit_card
+      - licenses_group_mpl_2_0
+      - licenses_mpl_card
+      - licenses_group_epl_1_0
+      - licenses_epl_card
+      - licenses_footer_text
 
   - type: text
     id: licenses_subtitle_text
-    content: "Mifos X Open Banking is built on these outstanding open-source libraries."
+    content: "Mifos X Open Banking is built on these outstanding open-source libraries. Each entry lists the project, the team that maintains it, and the license it is distributed under."
     variant: body_medium
     style:
       typography: "Outfit/body_medium"
@@ -73,746 +87,1105 @@ components:
       interaction_type: display
       data_driven: false
 
-  # ── License List ──────────────────────────────────────────────────────────────
+  # ── App's own license card ────────────────────────────────────────────────────
 
-  - type: stack
-    id: licenses_list
-    variant: column
+  - type: card
+    id: licenses_app_license
+    variant: filled
+    supported_states: [idle]
     style:
       background: "#FFFFFF"
       border_radius: "12dp"
+      padding: spacing.md
+      margin_bottom: spacing.sm
     children:
-      - license_item_compose
-      - license_divider_1
-      - license_item_ktor
-      - license_divider_2
-      - license_item_koin
-      - license_divider_3
-      - license_item_store5
-      - license_divider_4
-      - license_item_room
-      - license_divider_5
-      - license_item_serialization
-      - license_divider_6
-      - license_item_coroutines
-      - license_divider_7
-      - license_item_material3
-
-  # ── Compose Multiplatform ─────────────────────────────────────────────────────
-
-  - type: list_item
-    id: license_item_compose
-    variant: two_line
-    supported_states: [idle, hover, focus_visible, pressed]
-    style:
-      padding_horizontal: spacing.md
-      padding_vertical: spacing.md
-    on_click:
-      action: open_external
-      target: "https://www.apache.org/licenses/LICENSE-2.0"
-      intent: system
-    a11y:
-      role: button
-      label: "Compose Multiplatform 1.8.2 — Apache 2.0 license. Opens external link."
-    keyboard:
-      focusable: true
-    test_context:
-      purpose: "License row for Compose Multiplatform — taps open Apache 2.0 license URL"
-      interaction_type: action
-      data_driven: true
-    children:
-      - license_compose_name
-      - license_compose_meta
-      - license_compose_badge
-
-  - type: text
-    id: license_compose_name
-    content: "Compose Multiplatform"
-    variant: body_large
-    style:
-      typography: "Outfit/body_large"
-      color: "#1A1C16"
-      font_weight: "500"
-    a11y:
-      role: text
-      label: "Compose Multiplatform"
-    test_context:
-      purpose: "Library name for Compose Multiplatform"
-      interaction_type: display
-      data_driven: true
-
-  - type: text
-    id: license_compose_meta
-    content: "v1.8.2 · JetBrains"
-    variant: body_small
-    style:
-      typography: "Outfit/body_small"
-      color: "#44483D"
-    a11y:
-      role: text
-      label: "Version 1.8.2 by JetBrains"
-    test_context:
-      purpose: "Version and author metadata for Compose Multiplatform"
-      interaction_type: display
-      data_driven: true
-
-  - type: badge
-    id: license_compose_badge
-    content: "Apache 2.0"
-    variant: tonal
-    style:
-      background: "#CDEDA3"
-      border_radius: "6dp"
-      padding_horizontal: spacing.sm
-      padding_vertical: "3dp"
-      text_color: "#4C662B"
-      typography: "Outfit/label_small"
-    a11y:
-      role: text
-      label: "Apache 2.0 license"
-    test_context:
-      purpose: "License identifier badge for Compose Multiplatform"
-      interaction_type: display
-      data_driven: true
-
-  - type: divider
-    id: license_divider_1
-    style: { color: "#E1E4D5", margin_horizontal: spacing.md }
-    a11y: { role: separator, label: "" }
-    test_context: { purpose: "Separator between license rows", interaction_type: display, data_driven: false }
-
-  # ── Ktor ──────────────────────────────────────────────────────────────────────
-
-  - type: list_item
-    id: license_item_ktor
-    variant: two_line
-    supported_states: [idle, hover, focus_visible, pressed]
-    style:
-      padding_horizontal: spacing.md
-      padding_vertical: spacing.md
-    on_click:
-      action: open_external
-      target: "https://www.apache.org/licenses/LICENSE-2.0"
-      intent: system
-    a11y:
-      role: button
-      label: "Ktor 3.2.0 — Apache 2.0 license. Opens external link."
-    keyboard:
-      focusable: true
-    test_context:
-      purpose: "License row for Ktor HTTP client"
-      interaction_type: action
-      data_driven: true
-    children:
-      - license_ktor_name
-      - license_ktor_meta
-      - license_ktor_badge
-
-  - type: text
-    id: license_ktor_name
-    content: "Ktor"
-    variant: body_large
-    style:
-      typography: "Outfit/body_large"
-      color: "#1A1C16"
-      font_weight: "500"
-    a11y:
-      role: text
-      label: "Ktor"
-    test_context:
-      purpose: "Library name for Ktor"
-      interaction_type: display
-      data_driven: true
-
-  - type: text
-    id: license_ktor_meta
-    content: "v3.2.0 · JetBrains"
-    variant: body_small
-    style:
-      typography: "Outfit/body_small"
-      color: "#44483D"
-    a11y:
-      role: text
-      label: "Version 3.2.0 by JetBrains"
-    test_context:
-      purpose: "Version and author metadata for Ktor"
-      interaction_type: display
-      data_driven: true
-
-  - type: badge
-    id: license_ktor_badge
-    content: "Apache 2.0"
-    variant: tonal
-    style:
-      background: "#CDEDA3"
-      border_radius: "6dp"
-      padding_horizontal: spacing.sm
-      padding_vertical: "3dp"
-      text_color: "#4C662B"
-      typography: "Outfit/label_small"
-    a11y:
-      role: text
-      label: "Apache 2.0 license"
-    test_context:
-      purpose: "License identifier badge for Ktor"
-      interaction_type: display
-      data_driven: true
-
-  - type: divider
-    id: license_divider_2
-    style: { color: "#E1E4D5", margin_horizontal: spacing.md }
-    a11y: { role: separator, label: "" }
-    test_context: { purpose: "Separator", interaction_type: display, data_driven: false }
-
-  # ── Koin ──────────────────────────────────────────────────────────────────────
-
-  - type: list_item
-    id: license_item_koin
-    variant: two_line
-    supported_states: [idle, hover, focus_visible, pressed]
-    style:
-      padding_horizontal: spacing.md
-      padding_vertical: spacing.md
-    on_click:
-      action: open_external
-      target: "https://www.apache.org/licenses/LICENSE-2.0"
-      intent: system
-    a11y:
-      role: button
-      label: "Koin 4.1.0 — Apache 2.0 license. Opens external link."
-    keyboard:
-      focusable: true
-    test_context:
-      purpose: "License row for Koin DI framework"
-      interaction_type: action
-      data_driven: true
-    children:
-      - license_koin_name
-      - license_koin_meta
-      - license_koin_badge
-
-  - type: text
-    id: license_koin_name
-    content: "Koin"
-    variant: body_large
-    style:
-      typography: "Outfit/body_large"
-      color: "#1A1C16"
-      font_weight: "500"
-    a11y:
-      role: text
-      label: "Koin"
-    test_context:
-      purpose: "Library name for Koin"
-      interaction_type: display
-      data_driven: true
-
-  - type: text
-    id: license_koin_meta
-    content: "v4.1.0 · insert-koin.io"
-    variant: body_small
-    style:
-      typography: "Outfit/body_small"
-      color: "#44483D"
-    a11y:
-      role: text
-      label: "Version 4.1.0"
-    test_context:
-      purpose: "Version metadata for Koin"
-      interaction_type: display
-      data_driven: true
-
-  - type: badge
-    id: license_koin_badge
-    content: "Apache 2.0"
-    variant: tonal
-    style:
-      background: "#CDEDA3"
-      border_radius: "6dp"
-      padding_horizontal: spacing.sm
-      padding_vertical: "3dp"
-      text_color: "#4C662B"
-      typography: "Outfit/label_small"
-    a11y:
-      role: text
-      label: "Apache 2.0 license"
-    test_context:
-      purpose: "License badge for Koin"
-      interaction_type: display
-      data_driven: true
-
-  - type: divider
-    id: license_divider_3
-    style: { color: "#E1E4D5", margin_horizontal: spacing.md }
-    a11y: { role: separator, label: "" }
-    test_context: { purpose: "Separator", interaction_type: display, data_driven: false }
-
-  # ── Store5 ────────────────────────────────────────────────────────────────────
-
-  - type: list_item
-    id: license_item_store5
-    variant: two_line
-    supported_states: [idle, hover, focus_visible, pressed]
-    style:
-      padding_horizontal: spacing.md
-      padding_vertical: spacing.md
-    on_click:
-      action: open_external
-      target: "https://www.apache.org/licenses/LICENSE-2.0"
-      intent: system
-    a11y:
-      role: button
-      label: "Store5 — Apache 2.0 license. Opens external link."
-    keyboard:
-      focusable: true
-    test_context:
-      purpose: "License row for Store5 cache library"
-      interaction_type: action
-      data_driven: true
-    children:
-      - license_store5_name
-      - license_store5_meta
-      - license_store5_badge
-
-  - type: text
-    id: license_store5_name
-    content: "Store5"
-    variant: body_large
-    style:
-      typography: "Outfit/body_large"
-      color: "#1A1C16"
-      font_weight: "500"
-    a11y:
-      role: text
-      label: "Store5"
-    test_context:
-      purpose: "Library name for Store5"
-      interaction_type: display
-      data_driven: true
-
-  - type: text
-    id: license_store5_meta
-    content: "v5.1.0 · Mobile Kotlin"
-    variant: body_small
-    style:
-      typography: "Outfit/body_small"
-      color: "#44483D"
-    a11y:
-      role: text
-      label: "Version 5.1.0 by Mobile Kotlin"
-    test_context:
-      purpose: "Version metadata for Store5"
-      interaction_type: display
-      data_driven: true
-
-  - type: badge
-    id: license_store5_badge
-    content: "Apache 2.0"
-    variant: tonal
-    style:
-      background: "#CDEDA3"
-      border_radius: "6dp"
-      padding_horizontal: spacing.sm
-      padding_vertical: "3dp"
-      text_color: "#4C662B"
-      typography: "Outfit/label_small"
-    a11y:
-      role: text
-      label: "Apache 2.0 license"
-    test_context:
-      purpose: "License badge for Store5"
-      interaction_type: display
-      data_driven: true
-
-  - type: divider
-    id: license_divider_4
-    style: { color: "#E1E4D5", margin_horizontal: spacing.md }
-    a11y: { role: separator, label: "" }
-    test_context: { purpose: "Separator", interaction_type: display, data_driven: false }
-
-  # ── Room KMP ──────────────────────────────────────────────────────────────────
-
-  - type: list_item
-    id: license_item_room
-    variant: two_line
-    supported_states: [idle, hover, focus_visible, pressed]
-    style:
-      padding_horizontal: spacing.md
-      padding_vertical: spacing.md
-    on_click:
-      action: open_external
-      target: "https://www.apache.org/licenses/LICENSE-2.0"
-      intent: system
-    a11y:
-      role: button
-      label: "Room KMP — Apache 2.0 license. Opens external link."
-    keyboard:
-      focusable: true
-    test_context:
-      purpose: "License row for Room KMP database library"
-      interaction_type: action
-      data_driven: true
-    children:
-      - license_room_name
-      - license_room_meta
-      - license_room_badge
-
-  - type: text
-    id: license_room_name
-    content: "Room KMP"
-    variant: body_large
-    style:
-      typography: "Outfit/body_large"
-      color: "#1A1C16"
-      font_weight: "500"
-    a11y:
-      role: text
-      label: "Room KMP"
-    test_context:
-      purpose: "Library name for Room KMP"
-      interaction_type: display
-      data_driven: true
-
-  - type: text
-    id: license_room_meta
-    content: "v2.7.0 · Google / AndroidX"
-    variant: body_small
-    style:
-      typography: "Outfit/body_small"
-      color: "#44483D"
-    a11y:
-      role: text
-      label: "Version 2.7.0 by Google"
-    test_context:
-      purpose: "Version metadata for Room KMP"
-      interaction_type: display
-      data_driven: true
-
-  - type: badge
-    id: license_room_badge
-    content: "Apache 2.0"
-    variant: tonal
-    style:
-      background: "#CDEDA3"
-      border_radius: "6dp"
-      padding_horizontal: spacing.sm
-      padding_vertical: "3dp"
-      text_color: "#4C662B"
-      typography: "Outfit/label_small"
-    a11y:
-      role: text
-      label: "Apache 2.0 license"
-    test_context:
-      purpose: "License badge for Room KMP"
-      interaction_type: display
-      data_driven: true
-
-  - type: divider
-    id: license_divider_5
-    style: { color: "#E1E4D5", margin_horizontal: spacing.md }
-    a11y: { role: separator, label: "" }
-    test_context: { purpose: "Separator", interaction_type: display, data_driven: false }
-
-  # ── kotlinx.serialization ─────────────────────────────────────────────────────
-
-  - type: list_item
-    id: license_item_serialization
-    variant: two_line
-    supported_states: [idle, hover, focus_visible, pressed]
-    style:
-      padding_horizontal: spacing.md
-      padding_vertical: spacing.md
-    on_click:
-      action: open_external
-      target: "https://www.apache.org/licenses/LICENSE-2.0"
-      intent: system
-    a11y:
-      role: button
-      label: "kotlinx.serialization — Apache 2.0 license. Opens external link."
-    keyboard:
-      focusable: true
-    test_context:
-      purpose: "License row for kotlinx.serialization"
-      interaction_type: action
-      data_driven: true
-    children:
-      - license_serialization_name
-      - license_serialization_meta
-      - license_serialization_badge
-
-  - type: text
-    id: license_serialization_name
-    content: "kotlinx.serialization"
-    variant: body_large
-    style:
-      typography: "Outfit/body_large"
-      color: "#1A1C16"
-      font_weight: "500"
-    a11y:
-      role: text
-      label: "kotlinx.serialization"
-    test_context:
-      purpose: "Library name for kotlinx.serialization"
-      interaction_type: display
-      data_driven: true
-
-  - type: text
-    id: license_serialization_meta
-    content: "v1.8.1 · JetBrains"
-    variant: body_small
-    style:
-      typography: "Outfit/body_small"
-      color: "#44483D"
-    a11y:
-      role: text
-      label: "Version 1.8.1 by JetBrains"
-    test_context:
-      purpose: "Version metadata for kotlinx.serialization"
-      interaction_type: display
-      data_driven: true
-
-  - type: badge
-    id: license_serialization_badge
-    content: "Apache 2.0"
-    variant: tonal
-    style:
-      background: "#CDEDA3"
-      border_radius: "6dp"
-      padding_horizontal: spacing.sm
-      padding_vertical: "3dp"
-      text_color: "#4C662B"
-      typography: "Outfit/label_small"
-    a11y:
-      role: text
-      label: "Apache 2.0 license"
-    test_context:
-      purpose: "License badge for kotlinx.serialization"
-      interaction_type: display
-      data_driven: true
-
-  - type: divider
-    id: license_divider_6
-    style: { color: "#E1E4D5", margin_horizontal: spacing.md }
-    a11y: { role: separator, label: "" }
-    test_context: { purpose: "Separator", interaction_type: display, data_driven: false }
-
-  # ── kotlinx.coroutines ────────────────────────────────────────────────────────
-
-  - type: list_item
-    id: license_item_coroutines
-    variant: two_line
-    supported_states: [idle, hover, focus_visible, pressed]
-    style:
-      padding_horizontal: spacing.md
-      padding_vertical: spacing.md
-    on_click:
-      action: open_external
-      target: "https://www.apache.org/licenses/LICENSE-2.0"
-      intent: system
-    a11y:
-      role: button
-      label: "kotlinx.coroutines — Apache 2.0 license. Opens external link."
-    keyboard:
-      focusable: true
-    test_context:
-      purpose: "License row for kotlinx.coroutines"
-      interaction_type: action
-      data_driven: true
-    children:
-      - license_coroutines_name
-      - license_coroutines_meta
-      - license_coroutines_badge
-
-  - type: text
-    id: license_coroutines_name
-    content: "kotlinx.coroutines"
-    variant: body_large
-    style:
-      typography: "Outfit/body_large"
-      color: "#1A1C16"
-      font_weight: "500"
-    a11y:
-      role: text
-      label: "kotlinx.coroutines"
-    test_context:
-      purpose: "Library name for kotlinx.coroutines"
-      interaction_type: display
-      data_driven: true
-
-  - type: text
-    id: license_coroutines_meta
-    content: "v1.10.1 · JetBrains"
-    variant: body_small
-    style:
-      typography: "Outfit/body_small"
-      color: "#44483D"
-    a11y:
-      role: text
-      label: "Version 1.10.1 by JetBrains"
-    test_context:
-      purpose: "Version metadata for kotlinx.coroutines"
-      interaction_type: display
-      data_driven: true
-
-  - type: badge
-    id: license_coroutines_badge
-    content: "Apache 2.0"
-    variant: tonal
-    style:
-      background: "#CDEDA3"
-      border_radius: "6dp"
-      padding_horizontal: spacing.sm
-      padding_vertical: "3dp"
-      text_color: "#4C662B"
-      typography: "Outfit/label_small"
-    a11y:
-      role: text
-      label: "Apache 2.0 license"
-    test_context:
-      purpose: "License badge for kotlinx.coroutines"
-      interaction_type: display
-      data_driven: true
-
-  - type: divider
-    id: license_divider_7
-    style: { color: "#E1E4D5", margin_horizontal: spacing.md }
-    a11y: { role: separator, label: "" }
-    test_context: { purpose: "Separator", interaction_type: display, data_driven: false }
-
-  # ── Material 3 ────────────────────────────────────────────────────────────────
-
-  - type: list_item
-    id: license_item_material3
-    variant: two_line
-    supported_states: [idle, hover, focus_visible, pressed]
-    style:
-      padding_horizontal: spacing.md
-      padding_vertical: spacing.md
-    on_click:
-      action: open_external
-      target: "https://www.apache.org/licenses/LICENSE-2.0"
-      intent: system
-    a11y:
-      role: button
-      label: "Material3 — Apache 2.0 license. Opens external link."
-    keyboard:
-      focusable: true
-    test_context:
-      purpose: "License row for Material3 design components"
-      interaction_type: action
-      data_driven: true
-    children:
-      - license_material3_name
-      - license_material3_meta
-      - license_material3_badge
-
-  - type: text
-    id: license_material3_name
-    content: "Material3"
-    variant: body_large
-    style:
-      typography: "Outfit/body_large"
-      color: "#1A1C16"
-      font_weight: "500"
-    a11y:
-      role: text
-      label: "Material3"
-    test_context:
-      purpose: "Library name for Material3"
-      interaction_type: display
-      data_driven: true
-
-  - type: text
-    id: license_material3_meta
-    content: "v1.3.2 · Google / Compose"
-    variant: body_small
-    style:
-      typography: "Outfit/body_small"
-      color: "#44483D"
-    a11y:
-      role: text
-      label: "Version 1.3.2 by Google"
-    test_context:
-      purpose: "Version metadata for Material3"
-      interaction_type: display
-      data_driven: true
-
-  - type: badge
-    id: license_material3_badge
-    content: "Apache 2.0"
-    variant: tonal
-    style:
-      background: "#CDEDA3"
-      border_radius: "6dp"
-      padding_horizontal: spacing.sm
-      padding_vertical: "3dp"
-      text_color: "#4C662B"
-      typography: "Outfit/label_small"
-    a11y:
-      role: text
-      label: "Apache 2.0 license"
-    test_context:
-      purpose: "License badge for Material3"
-      interaction_type: display
-      data_driven: true
-
-  # ── Loading Skeleton ──────────────────────────────────────────────────────────
-
-  - type: skeleton
-    id: licenses_loading_skeleton
-    variant: list
-    style:
-      background: "#F9FAEF"
-      padding: spacing.lg
-    a11y:
-      role: progressbar
-      label: "Loading open source licenses"
-    test_context:
-      purpose: "Shimmer while license list loads"
-      interaction_type: display
-      data_driven: false
-
-  # ── Error State ───────────────────────────────────────────────────────────────
+      - licenses_app_header_row
+      - licenses_app_note
 
   - type: stack
-    id: licenses_error_state
-    variant: column
+    id: licenses_app_header_row
+    variant: row
     style:
-      alignment: center
-      padding: spacing.xl
+      alignment: center_space_between
     children:
-      - licenses_error_icon
-      - licenses_error_message
+      - licenses_app_name
+      - licenses_app_badge
 
-  - type: icon
-    id: licenses_error_icon
-    content: "code_off"
+  - type: text
+    id: licenses_app_name
+    content: "Mifos X Open Banking"
+    variant: title_medium
     style:
-      color: "#BA1A1A"
-      size: "48dp"
-      alignment: center
-      padding_bottom: spacing.md
+      typography: "Outfit/title_medium"
+      color: "#1A1C16"
+      font_weight: "600"
     a11y:
-      role: image
-      label: "Error loading licenses"
+      role: text
+      label: "Mifos X Open Banking"
     test_context:
-      purpose: "Error icon when license list fails to load"
+      purpose: "App name in its own license card"
+      interaction_type: display
+      data_driven: false
+
+  - type: badge
+    id: licenses_app_badge
+    content: "MPL-2.0"
+    variant: tonal
+    style:
+      background: "#CDEDA3"
+      border_radius: "6dp"
+      padding_horizontal: spacing.sm
+      padding_vertical: "3dp"
+      text_color: "#4C662B"
+      typography: "Outfit/label_small"
+    a11y:
+      role: text
+      label: "MPL-2.0 license"
+    test_context:
+      purpose: "License badge for the app itself"
       interaction_type: display
       data_driven: false
 
   - type: text
-    id: licenses_error_message
-    content: "Unable to load license information. Please restart the app."
+    id: licenses_app_note
+    content: "Mifos X Open Banking is a free, open-source demo client maintained by the Mifos Initiative. The app is licensed under the Mozilla Public License 2.0 and is built from the openMF kmp-project-template. All accounts, transactions, and payments shown in the app come from the Open Bank Project sandbox and exist for demonstration purposes only."
     variant: body_medium
     style:
       typography: "Outfit/body_medium"
       color: "#44483D"
-      alignment: center
+      padding_top: spacing.sm
     a11y:
       role: text
-      label: "Unable to load license information"
+      label: "App license note"
     test_context:
-      purpose: "Error message when licenses fail to load"
+      purpose: "Prose stating the app's own MPL-2.0 license and OBP sandbox provenance"
+      interaction_type: display
+      data_driven: false
+
+  # ── Apache License 2.0 group (18 libraries) ───────────────────────────────────
+
+  - type: text
+    id: licenses_group_apache_2_0
+    content: "Apache License 2.0"
+    variant: title_small
+    style:
+      typography: "Outfit/title_small"
+      color: "#4C662B"
+      font_weight: "600"
+      padding_top: spacing.md
+      padding_bottom: spacing.sm
+    a11y:
+      role: heading
+      label: "Apache License 2.0 group"
+    test_context:
+      purpose: "Section header for libraries distributed under Apache-2.0"
+      interaction_type: display
+      data_driven: true
+
+  - type: card
+    id: licenses_apache_card
+    variant: filled
+    supported_states: [idle]
+    style:
+      background: "#FFFFFF"
+      border_radius: "12dp"
+      margin_bottom: spacing.sm
+    children:
+      - lic_row_kotlin
+      - lic_row_coroutines
+      - lic_row_serialization
+      - lic_row_datetime
+      - lic_row_immutable
+      - lic_row_compose
+      - lic_row_lifecycle
+      - lic_row_navigation
+      - lic_row_room
+      - lic_row_ktor
+      - lic_row_ktorfit
+      - lic_row_koin
+      - lic_row_store5
+      - lic_row_coil
+      - lic_row_settings
+      - lic_row_okio
+      - lic_row_kermit
+      - lic_row_aboutlibraries
+
+  - type: list_item
+    id: lic_row_kotlin
+    variant: two_line
+    supported_states: [idle]
+    style:
+      padding_horizontal: spacing.md
+      padding_vertical: spacing.md
+    a11y:
+      role: text
+      label: "Kotlin by JetBrains, Apache-2.0"
+    test_context:
+      purpose: "Static library row: name, maintainer, project URL, license badge (no tap)"
+      interaction_type: display
+      data_driven: true
+    children: [lic_kotlin_name, lic_kotlin_author, lic_kotlin_url, lic_kotlin_badge]
+
+  - type: text
+    id: lic_kotlin_name
+    content: "Kotlin"
+    variant: body_large
+    style: { typography: "Outfit/body_large", color: "#1A1C16", font_weight: "500" }
+    a11y: { role: text, label: "Kotlin" }
+    test_context: { purpose: "Library name", interaction_type: display, data_driven: true }
+
+  - type: text
+    id: lic_kotlin_author
+    content: "JetBrains"
+    variant: body_small
+    style: { typography: "Outfit/body_small", color: "#44483D" }
+    a11y: { role: text, label: "Maintained by JetBrains" }
+    test_context: { purpose: "Library maintainer", interaction_type: display, data_driven: true }
+
+  - type: text
+    id: lic_kotlin_url
+    content: "https://github.com/JetBrains/kotlin"
+    variant: body_small
+    style: { typography: "Outfit/body_small", color: "#4C662B" }
+    a11y: { role: text, label: "Project URL" }
+    test_context: { purpose: "Project URL rendered as plain text (not tappable)", interaction_type: display, data_driven: true }
+
+  - type: badge
+    id: lic_kotlin_badge
+    content: "Apache-2.0"
+    variant: tonal
+    style: { background: "#CDEDA3", border_radius: "6dp", padding_horizontal: spacing.sm, padding_vertical: "3dp", text_color: "#4C662B", typography: "Outfit/label_small" }
+    a11y: { role: text, label: "Apache-2.0 license" }
+    test_context: { purpose: "License badge", interaction_type: display, data_driven: true }
+
+  - type: list_item
+    id: lic_row_coroutines
+    variant: two_line
+    supported_states: [idle]
+    style: { padding_horizontal: spacing.md, padding_vertical: spacing.md }
+    a11y: { role: text, label: "kotlinx.coroutines by JetBrains, Apache-2.0" }
+    test_context: { purpose: "Static library row", interaction_type: display, data_driven: true }
+    children: [lic_coroutines_name, lic_coroutines_author, lic_coroutines_url, lic_coroutines_badge]
+
+  - type: text
+    id: lic_coroutines_name
+    content: "kotlinx.coroutines"
+    variant: body_large
+    style: { typography: "Outfit/body_large", color: "#1A1C16", font_weight: "500" }
+    a11y: { role: text, label: "kotlinx.coroutines" }
+    test_context: { purpose: "Library name", interaction_type: display, data_driven: true }
+
+  - type: text
+    id: lic_coroutines_author
+    content: "JetBrains"
+    variant: body_small
+    style: { typography: "Outfit/body_small", color: "#44483D" }
+    a11y: { role: text, label: "Maintained by JetBrains" }
+    test_context: { purpose: "Library maintainer", interaction_type: display, data_driven: true }
+
+  - type: text
+    id: lic_coroutines_url
+    content: "https://github.com/Kotlin/kotlinx.coroutines"
+    variant: body_small
+    style: { typography: "Outfit/body_small", color: "#4C662B" }
+    a11y: { role: text, label: "Project URL" }
+    test_context: { purpose: "Project URL plain text", interaction_type: display, data_driven: true }
+
+  - type: badge
+    id: lic_coroutines_badge
+    content: "Apache-2.0"
+    variant: tonal
+    style: { background: "#CDEDA3", border_radius: "6dp", padding_horizontal: spacing.sm, padding_vertical: "3dp", text_color: "#4C662B", typography: "Outfit/label_small" }
+    a11y: { role: text, label: "Apache-2.0 license" }
+    test_context: { purpose: "License badge", interaction_type: display, data_driven: true }
+
+  - type: list_item
+    id: lic_row_serialization
+    variant: two_line
+    supported_states: [idle]
+    style: { padding_horizontal: spacing.md, padding_vertical: spacing.md }
+    a11y: { role: text, label: "kotlinx.serialization by JetBrains, Apache-2.0" }
+    test_context: { purpose: "Static library row", interaction_type: display, data_driven: true }
+    children: [lic_serialization_name, lic_serialization_author, lic_serialization_url, lic_serialization_badge]
+
+  - type: text
+    id: lic_serialization_name
+    content: "kotlinx.serialization"
+    variant: body_large
+    style: { typography: "Outfit/body_large", color: "#1A1C16", font_weight: "500" }
+    a11y: { role: text, label: "kotlinx.serialization" }
+    test_context: { purpose: "Library name", interaction_type: display, data_driven: true }
+
+  - type: text
+    id: lic_serialization_author
+    content: "JetBrains"
+    variant: body_small
+    style: { typography: "Outfit/body_small", color: "#44483D" }
+    a11y: { role: text, label: "Maintained by JetBrains" }
+    test_context: { purpose: "Library maintainer", interaction_type: display, data_driven: true }
+
+  - type: text
+    id: lic_serialization_url
+    content: "https://github.com/Kotlin/kotlinx.serialization"
+    variant: body_small
+    style: { typography: "Outfit/body_small", color: "#4C662B" }
+    a11y: { role: text, label: "Project URL" }
+    test_context: { purpose: "Project URL plain text", interaction_type: display, data_driven: true }
+
+  - type: badge
+    id: lic_serialization_badge
+    content: "Apache-2.0"
+    variant: tonal
+    style: { background: "#CDEDA3", border_radius: "6dp", padding_horizontal: spacing.sm, padding_vertical: "3dp", text_color: "#4C662B", typography: "Outfit/label_small" }
+    a11y: { role: text, label: "Apache-2.0 license" }
+    test_context: { purpose: "License badge", interaction_type: display, data_driven: true }
+
+  - type: list_item
+    id: lic_row_datetime
+    variant: two_line
+    supported_states: [idle]
+    style: { padding_horizontal: spacing.md, padding_vertical: spacing.md }
+    a11y: { role: text, label: "kotlinx-datetime by JetBrains, Apache-2.0" }
+    test_context: { purpose: "Static library row", interaction_type: display, data_driven: true }
+    children: [lic_datetime_name, lic_datetime_author, lic_datetime_url, lic_datetime_badge]
+
+  - type: text
+    id: lic_datetime_name
+    content: "kotlinx-datetime"
+    variant: body_large
+    style: { typography: "Outfit/body_large", color: "#1A1C16", font_weight: "500" }
+    a11y: { role: text, label: "kotlinx-datetime" }
+    test_context: { purpose: "Library name", interaction_type: display, data_driven: true }
+
+  - type: text
+    id: lic_datetime_author
+    content: "JetBrains"
+    variant: body_small
+    style: { typography: "Outfit/body_small", color: "#44483D" }
+    a11y: { role: text, label: "Maintained by JetBrains" }
+    test_context: { purpose: "Library maintainer", interaction_type: display, data_driven: true }
+
+  - type: text
+    id: lic_datetime_url
+    content: "https://github.com/Kotlin/kotlinx-datetime"
+    variant: body_small
+    style: { typography: "Outfit/body_small", color: "#4C662B" }
+    a11y: { role: text, label: "Project URL" }
+    test_context: { purpose: "Project URL plain text", interaction_type: display, data_driven: true }
+
+  - type: badge
+    id: lic_datetime_badge
+    content: "Apache-2.0"
+    variant: tonal
+    style: { background: "#CDEDA3", border_radius: "6dp", padding_horizontal: spacing.sm, padding_vertical: "3dp", text_color: "#4C662B", typography: "Outfit/label_small" }
+    a11y: { role: text, label: "Apache-2.0 license" }
+    test_context: { purpose: "License badge", interaction_type: display, data_driven: true }
+
+  - type: list_item
+    id: lic_row_immutable
+    variant: two_line
+    supported_states: [idle]
+    style: { padding_horizontal: spacing.md, padding_vertical: spacing.md }
+    a11y: { role: text, label: "kotlinx.collections.immutable by JetBrains, Apache-2.0" }
+    test_context: { purpose: "Static library row", interaction_type: display, data_driven: true }
+    children: [lic_immutable_name, lic_immutable_author, lic_immutable_url, lic_immutable_badge]
+
+  - type: text
+    id: lic_immutable_name
+    content: "kotlinx.collections.immutable"
+    variant: body_large
+    style: { typography: "Outfit/body_large", color: "#1A1C16", font_weight: "500" }
+    a11y: { role: text, label: "kotlinx.collections.immutable" }
+    test_context: { purpose: "Library name", interaction_type: display, data_driven: true }
+
+  - type: text
+    id: lic_immutable_author
+    content: "JetBrains"
+    variant: body_small
+    style: { typography: "Outfit/body_small", color: "#44483D" }
+    a11y: { role: text, label: "Maintained by JetBrains" }
+    test_context: { purpose: "Library maintainer", interaction_type: display, data_driven: true }
+
+  - type: text
+    id: lic_immutable_url
+    content: "https://github.com/Kotlin/kotlinx.collections.immutable"
+    variant: body_small
+    style: { typography: "Outfit/body_small", color: "#4C662B" }
+    a11y: { role: text, label: "Project URL" }
+    test_context: { purpose: "Project URL plain text", interaction_type: display, data_driven: true }
+
+  - type: badge
+    id: lic_immutable_badge
+    content: "Apache-2.0"
+    variant: tonal
+    style: { background: "#CDEDA3", border_radius: "6dp", padding_horizontal: spacing.sm, padding_vertical: "3dp", text_color: "#4C662B", typography: "Outfit/label_small" }
+    a11y: { role: text, label: "Apache-2.0 license" }
+    test_context: { purpose: "License badge", interaction_type: display, data_driven: true }
+
+  - type: list_item
+    id: lic_row_compose
+    variant: two_line
+    supported_states: [idle]
+    style: { padding_horizontal: spacing.md, padding_vertical: spacing.md }
+    a11y: { role: text, label: "Compose Multiplatform by JetBrains, Apache-2.0" }
+    test_context: { purpose: "Static library row", interaction_type: display, data_driven: true }
+    children: [lic_compose_name, lic_compose_author, lic_compose_url, lic_compose_badge]
+
+  - type: text
+    id: lic_compose_name
+    content: "Compose Multiplatform"
+    variant: body_large
+    style: { typography: "Outfit/body_large", color: "#1A1C16", font_weight: "500" }
+    a11y: { role: text, label: "Compose Multiplatform" }
+    test_context: { purpose: "Library name", interaction_type: display, data_driven: true }
+
+  - type: text
+    id: lic_compose_author
+    content: "JetBrains"
+    variant: body_small
+    style: { typography: "Outfit/body_small", color: "#44483D" }
+    a11y: { role: text, label: "Maintained by JetBrains" }
+    test_context: { purpose: "Library maintainer", interaction_type: display, data_driven: true }
+
+  - type: text
+    id: lic_compose_url
+    content: "https://github.com/JetBrains/compose-multiplatform"
+    variant: body_small
+    style: { typography: "Outfit/body_small", color: "#4C662B" }
+    a11y: { role: text, label: "Project URL" }
+    test_context: { purpose: "Project URL plain text", interaction_type: display, data_driven: true }
+
+  - type: badge
+    id: lic_compose_badge
+    content: "Apache-2.0"
+    variant: tonal
+    style: { background: "#CDEDA3", border_radius: "6dp", padding_horizontal: spacing.sm, padding_vertical: "3dp", text_color: "#4C662B", typography: "Outfit/label_small" }
+    a11y: { role: text, label: "Apache-2.0 license" }
+    test_context: { purpose: "License badge", interaction_type: display, data_driven: true }
+
+  - type: list_item
+    id: lic_row_lifecycle
+    variant: two_line
+    supported_states: [idle]
+    style: { padding_horizontal: spacing.md, padding_vertical: spacing.md }
+    a11y: { role: text, label: "AndroidX Lifecycle by Google and JetBrains, Apache-2.0" }
+    test_context: { purpose: "Static library row", interaction_type: display, data_driven: true }
+    children: [lic_lifecycle_name, lic_lifecycle_author, lic_lifecycle_url, lic_lifecycle_badge]
+
+  - type: text
+    id: lic_lifecycle_name
+    content: "AndroidX Lifecycle"
+    variant: body_large
+    style: { typography: "Outfit/body_large", color: "#1A1C16", font_weight: "500" }
+    a11y: { role: text, label: "AndroidX Lifecycle" }
+    test_context: { purpose: "Library name", interaction_type: display, data_driven: true }
+
+  - type: text
+    id: lic_lifecycle_author
+    content: "Google & JetBrains"
+    variant: body_small
+    style: { typography: "Outfit/body_small", color: "#44483D" }
+    a11y: { role: text, label: "Maintained by Google and JetBrains" }
+    test_context: { purpose: "Library maintainer", interaction_type: display, data_driven: true }
+
+  - type: text
+    id: lic_lifecycle_url
+    content: "https://developer.android.com/jetpack/androidx/releases/lifecycle"
+    variant: body_small
+    style: { typography: "Outfit/body_small", color: "#4C662B" }
+    a11y: { role: text, label: "Project URL" }
+    test_context: { purpose: "Project URL plain text", interaction_type: display, data_driven: true }
+
+  - type: badge
+    id: lic_lifecycle_badge
+    content: "Apache-2.0"
+    variant: tonal
+    style: { background: "#CDEDA3", border_radius: "6dp", padding_horizontal: spacing.sm, padding_vertical: "3dp", text_color: "#4C662B", typography: "Outfit/label_small" }
+    a11y: { role: text, label: "Apache-2.0 license" }
+    test_context: { purpose: "License badge", interaction_type: display, data_driven: true }
+
+  - type: list_item
+    id: lic_row_navigation
+    variant: two_line
+    supported_states: [idle]
+    style: { padding_horizontal: spacing.md, padding_vertical: spacing.md }
+    a11y: { role: text, label: "AndroidX Navigation Compose by Google and JetBrains, Apache-2.0" }
+    test_context: { purpose: "Static library row", interaction_type: display, data_driven: true }
+    children: [lic_navigation_name, lic_navigation_author, lic_navigation_url, lic_navigation_badge]
+
+  - type: text
+    id: lic_navigation_name
+    content: "AndroidX Navigation Compose"
+    variant: body_large
+    style: { typography: "Outfit/body_large", color: "#1A1C16", font_weight: "500" }
+    a11y: { role: text, label: "AndroidX Navigation Compose" }
+    test_context: { purpose: "Library name", interaction_type: display, data_driven: true }
+
+  - type: text
+    id: lic_navigation_author
+    content: "Google & JetBrains"
+    variant: body_small
+    style: { typography: "Outfit/body_small", color: "#44483D" }
+    a11y: { role: text, label: "Maintained by Google and JetBrains" }
+    test_context: { purpose: "Library maintainer", interaction_type: display, data_driven: true }
+
+  - type: text
+    id: lic_navigation_url
+    content: "https://developer.android.com/jetpack/androidx/releases/navigation"
+    variant: body_small
+    style: { typography: "Outfit/body_small", color: "#4C662B" }
+    a11y: { role: text, label: "Project URL" }
+    test_context: { purpose: "Project URL plain text", interaction_type: display, data_driven: true }
+
+  - type: badge
+    id: lic_navigation_badge
+    content: "Apache-2.0"
+    variant: tonal
+    style: { background: "#CDEDA3", border_radius: "6dp", padding_horizontal: spacing.sm, padding_vertical: "3dp", text_color: "#4C662B", typography: "Outfit/label_small" }
+    a11y: { role: text, label: "Apache-2.0 license" }
+    test_context: { purpose: "License badge", interaction_type: display, data_driven: true }
+
+  - type: list_item
+    id: lic_row_room
+    variant: two_line
+    supported_states: [idle]
+    style: { padding_horizontal: spacing.md, padding_vertical: spacing.md }
+    a11y: { role: text, label: "AndroidX Room by Google, Apache-2.0" }
+    test_context: { purpose: "Static library row", interaction_type: display, data_driven: true }
+    children: [lic_room_name, lic_room_author, lic_room_url, lic_room_badge]
+
+  - type: text
+    id: lic_room_name
+    content: "AndroidX Room"
+    variant: body_large
+    style: { typography: "Outfit/body_large", color: "#1A1C16", font_weight: "500" }
+    a11y: { role: text, label: "AndroidX Room" }
+    test_context: { purpose: "Library name", interaction_type: display, data_driven: true }
+
+  - type: text
+    id: lic_room_author
+    content: "Google"
+    variant: body_small
+    style: { typography: "Outfit/body_small", color: "#44483D" }
+    a11y: { role: text, label: "Maintained by Google" }
+    test_context: { purpose: "Library maintainer", interaction_type: display, data_driven: true }
+
+  - type: text
+    id: lic_room_url
+    content: "https://developer.android.com/jetpack/androidx/releases/room"
+    variant: body_small
+    style: { typography: "Outfit/body_small", color: "#4C662B" }
+    a11y: { role: text, label: "Project URL" }
+    test_context: { purpose: "Project URL plain text", interaction_type: display, data_driven: true }
+
+  - type: badge
+    id: lic_room_badge
+    content: "Apache-2.0"
+    variant: tonal
+    style: { background: "#CDEDA3", border_radius: "6dp", padding_horizontal: spacing.sm, padding_vertical: "3dp", text_color: "#4C662B", typography: "Outfit/label_small" }
+    a11y: { role: text, label: "Apache-2.0 license" }
+    test_context: { purpose: "License badge", interaction_type: display, data_driven: true }
+
+  - type: list_item
+    id: lic_row_ktor
+    variant: two_line
+    supported_states: [idle]
+    style: { padding_horizontal: spacing.md, padding_vertical: spacing.md }
+    a11y: { role: text, label: "Ktor by JetBrains, Apache-2.0" }
+    test_context: { purpose: "Static library row", interaction_type: display, data_driven: true }
+    children: [lic_ktor_name, lic_ktor_author, lic_ktor_url, lic_ktor_badge]
+
+  - type: text
+    id: lic_ktor_name
+    content: "Ktor"
+    variant: body_large
+    style: { typography: "Outfit/body_large", color: "#1A1C16", font_weight: "500" }
+    a11y: { role: text, label: "Ktor" }
+    test_context: { purpose: "Library name", interaction_type: display, data_driven: true }
+
+  - type: text
+    id: lic_ktor_author
+    content: "JetBrains"
+    variant: body_small
+    style: { typography: "Outfit/body_small", color: "#44483D" }
+    a11y: { role: text, label: "Maintained by JetBrains" }
+    test_context: { purpose: "Library maintainer", interaction_type: display, data_driven: true }
+
+  - type: text
+    id: lic_ktor_url
+    content: "https://github.com/ktorio/ktor"
+    variant: body_small
+    style: { typography: "Outfit/body_small", color: "#4C662B" }
+    a11y: { role: text, label: "Project URL" }
+    test_context: { purpose: "Project URL plain text", interaction_type: display, data_driven: true }
+
+  - type: badge
+    id: lic_ktor_badge
+    content: "Apache-2.0"
+    variant: tonal
+    style: { background: "#CDEDA3", border_radius: "6dp", padding_horizontal: spacing.sm, padding_vertical: "3dp", text_color: "#4C662B", typography: "Outfit/label_small" }
+    a11y: { role: text, label: "Apache-2.0 license" }
+    test_context: { purpose: "License badge", interaction_type: display, data_driven: true }
+
+  - type: list_item
+    id: lic_row_ktorfit
+    variant: two_line
+    supported_states: [idle]
+    style: { padding_horizontal: spacing.md, padding_vertical: spacing.md }
+    a11y: { role: text, label: "Ktorfit by Jens Klingenberg, Apache-2.0" }
+    test_context: { purpose: "Static library row", interaction_type: display, data_driven: true }
+    children: [lic_ktorfit_name, lic_ktorfit_author, lic_ktorfit_url, lic_ktorfit_badge]
+
+  - type: text
+    id: lic_ktorfit_name
+    content: "Ktorfit"
+    variant: body_large
+    style: { typography: "Outfit/body_large", color: "#1A1C16", font_weight: "500" }
+    a11y: { role: text, label: "Ktorfit" }
+    test_context: { purpose: "Library name", interaction_type: display, data_driven: true }
+
+  - type: text
+    id: lic_ktorfit_author
+    content: "Jens Klingenberg"
+    variant: body_small
+    style: { typography: "Outfit/body_small", color: "#44483D" }
+    a11y: { role: text, label: "Maintained by Jens Klingenberg" }
+    test_context: { purpose: "Library maintainer", interaction_type: display, data_driven: true }
+
+  - type: text
+    id: lic_ktorfit_url
+    content: "https://github.com/Foso/Ktorfit"
+    variant: body_small
+    style: { typography: "Outfit/body_small", color: "#4C662B" }
+    a11y: { role: text, label: "Project URL" }
+    test_context: { purpose: "Project URL plain text", interaction_type: display, data_driven: true }
+
+  - type: badge
+    id: lic_ktorfit_badge
+    content: "Apache-2.0"
+    variant: tonal
+    style: { background: "#CDEDA3", border_radius: "6dp", padding_horizontal: spacing.sm, padding_vertical: "3dp", text_color: "#4C662B", typography: "Outfit/label_small" }
+    a11y: { role: text, label: "Apache-2.0 license" }
+    test_context: { purpose: "License badge", interaction_type: display, data_driven: true }
+
+  - type: list_item
+    id: lic_row_koin
+    variant: two_line
+    supported_states: [idle]
+    style: { padding_horizontal: spacing.md, padding_vertical: spacing.md }
+    a11y: { role: text, label: "Koin by Kotzilla and Koin contributors, Apache-2.0" }
+    test_context: { purpose: "Static library row", interaction_type: display, data_driven: true }
+    children: [lic_koin_name, lic_koin_author, lic_koin_url, lic_koin_badge]
+
+  - type: text
+    id: lic_koin_name
+    content: "Koin"
+    variant: body_large
+    style: { typography: "Outfit/body_large", color: "#1A1C16", font_weight: "500" }
+    a11y: { role: text, label: "Koin" }
+    test_context: { purpose: "Library name", interaction_type: display, data_driven: true }
+
+  - type: text
+    id: lic_koin_author
+    content: "Kotzilla & Koin contributors"
+    variant: body_small
+    style: { typography: "Outfit/body_small", color: "#44483D" }
+    a11y: { role: text, label: "Maintained by Kotzilla and Koin contributors" }
+    test_context: { purpose: "Library maintainer", interaction_type: display, data_driven: true }
+
+  - type: text
+    id: lic_koin_url
+    content: "https://github.com/InsertKoinIO/koin"
+    variant: body_small
+    style: { typography: "Outfit/body_small", color: "#4C662B" }
+    a11y: { role: text, label: "Project URL" }
+    test_context: { purpose: "Project URL plain text", interaction_type: display, data_driven: true }
+
+  - type: badge
+    id: lic_koin_badge
+    content: "Apache-2.0"
+    variant: tonal
+    style: { background: "#CDEDA3", border_radius: "6dp", padding_horizontal: spacing.sm, padding_vertical: "3dp", text_color: "#4C662B", typography: "Outfit/label_small" }
+    a11y: { role: text, label: "Apache-2.0 license" }
+    test_context: { purpose: "License badge", interaction_type: display, data_driven: true }
+
+  - type: list_item
+    id: lic_row_store5
+    variant: two_line
+    supported_states: [idle]
+    style: { padding_horizontal: spacing.md, padding_vertical: spacing.md }
+    a11y: { role: text, label: "Store5 by Mobile Native Foundation, Apache-2.0" }
+    test_context: { purpose: "Static library row", interaction_type: display, data_driven: true }
+    children: [lic_store5_name, lic_store5_author, lic_store5_url, lic_store5_badge]
+
+  - type: text
+    id: lic_store5_name
+    content: "Store5"
+    variant: body_large
+    style: { typography: "Outfit/body_large", color: "#1A1C16", font_weight: "500" }
+    a11y: { role: text, label: "Store5" }
+    test_context: { purpose: "Library name", interaction_type: display, data_driven: true }
+
+  - type: text
+    id: lic_store5_author
+    content: "Mobile Native Foundation"
+    variant: body_small
+    style: { typography: "Outfit/body_small", color: "#44483D" }
+    a11y: { role: text, label: "Maintained by Mobile Native Foundation" }
+    test_context: { purpose: "Library maintainer", interaction_type: display, data_driven: true }
+
+  - type: text
+    id: lic_store5_url
+    content: "https://github.com/MobileNativeFoundation/Store"
+    variant: body_small
+    style: { typography: "Outfit/body_small", color: "#4C662B" }
+    a11y: { role: text, label: "Project URL" }
+    test_context: { purpose: "Project URL plain text", interaction_type: display, data_driven: true }
+
+  - type: badge
+    id: lic_store5_badge
+    content: "Apache-2.0"
+    variant: tonal
+    style: { background: "#CDEDA3", border_radius: "6dp", padding_horizontal: spacing.sm, padding_vertical: "3dp", text_color: "#4C662B", typography: "Outfit/label_small" }
+    a11y: { role: text, label: "Apache-2.0 license" }
+    test_context: { purpose: "License badge", interaction_type: display, data_driven: true }
+
+  - type: list_item
+    id: lic_row_coil
+    variant: two_line
+    supported_states: [idle]
+    style: { padding_horizontal: spacing.md, padding_vertical: spacing.md }
+    a11y: { role: text, label: "Coil by Coil Contributors, Apache-2.0" }
+    test_context: { purpose: "Static library row", interaction_type: display, data_driven: true }
+    children: [lic_coil_name, lic_coil_author, lic_coil_url, lic_coil_badge]
+
+  - type: text
+    id: lic_coil_name
+    content: "Coil"
+    variant: body_large
+    style: { typography: "Outfit/body_large", color: "#1A1C16", font_weight: "500" }
+    a11y: { role: text, label: "Coil" }
+    test_context: { purpose: "Library name", interaction_type: display, data_driven: true }
+
+  - type: text
+    id: lic_coil_author
+    content: "Coil Contributors"
+    variant: body_small
+    style: { typography: "Outfit/body_small", color: "#44483D" }
+    a11y: { role: text, label: "Maintained by Coil Contributors" }
+    test_context: { purpose: "Library maintainer", interaction_type: display, data_driven: true }
+
+  - type: text
+    id: lic_coil_url
+    content: "https://github.com/coil-kt/coil"
+    variant: body_small
+    style: { typography: "Outfit/body_small", color: "#4C662B" }
+    a11y: { role: text, label: "Project URL" }
+    test_context: { purpose: "Project URL plain text", interaction_type: display, data_driven: true }
+
+  - type: badge
+    id: lic_coil_badge
+    content: "Apache-2.0"
+    variant: tonal
+    style: { background: "#CDEDA3", border_radius: "6dp", padding_horizontal: spacing.sm, padding_vertical: "3dp", text_color: "#4C662B", typography: "Outfit/label_small" }
+    a11y: { role: text, label: "Apache-2.0 license" }
+    test_context: { purpose: "License badge", interaction_type: display, data_driven: true }
+
+  - type: list_item
+    id: lic_row_settings
+    variant: two_line
+    supported_states: [idle]
+    style: { padding_horizontal: spacing.md, padding_vertical: spacing.md }
+    a11y: { role: text, label: "Multiplatform Settings by Russell Wolf, Apache-2.0" }
+    test_context: { purpose: "Static library row", interaction_type: display, data_driven: true }
+    children: [lic_settings_name, lic_settings_author, lic_settings_url, lic_settings_badge]
+
+  - type: text
+    id: lic_settings_name
+    content: "Multiplatform Settings"
+    variant: body_large
+    style: { typography: "Outfit/body_large", color: "#1A1C16", font_weight: "500" }
+    a11y: { role: text, label: "Multiplatform Settings" }
+    test_context: { purpose: "Library name", interaction_type: display, data_driven: true }
+
+  - type: text
+    id: lic_settings_author
+    content: "Russell Wolf"
+    variant: body_small
+    style: { typography: "Outfit/body_small", color: "#44483D" }
+    a11y: { role: text, label: "Maintained by Russell Wolf" }
+    test_context: { purpose: "Library maintainer", interaction_type: display, data_driven: true }
+
+  - type: text
+    id: lic_settings_url
+    content: "https://github.com/russhwolf/multiplatform-settings"
+    variant: body_small
+    style: { typography: "Outfit/body_small", color: "#4C662B" }
+    a11y: { role: text, label: "Project URL" }
+    test_context: { purpose: "Project URL plain text", interaction_type: display, data_driven: true }
+
+  - type: badge
+    id: lic_settings_badge
+    content: "Apache-2.0"
+    variant: tonal
+    style: { background: "#CDEDA3", border_radius: "6dp", padding_horizontal: spacing.sm, padding_vertical: "3dp", text_color: "#4C662B", typography: "Outfit/label_small" }
+    a11y: { role: text, label: "Apache-2.0 license" }
+    test_context: { purpose: "License badge", interaction_type: display, data_driven: true }
+
+  - type: list_item
+    id: lic_row_okio
+    variant: two_line
+    supported_states: [idle]
+    style: { padding_horizontal: spacing.md, padding_vertical: spacing.md }
+    a11y: { role: text, label: "Okio by Square, Apache-2.0" }
+    test_context: { purpose: "Static library row", interaction_type: display, data_driven: true }
+    children: [lic_okio_name, lic_okio_author, lic_okio_url, lic_okio_badge]
+
+  - type: text
+    id: lic_okio_name
+    content: "Okio"
+    variant: body_large
+    style: { typography: "Outfit/body_large", color: "#1A1C16", font_weight: "500" }
+    a11y: { role: text, label: "Okio" }
+    test_context: { purpose: "Library name", interaction_type: display, data_driven: true }
+
+  - type: text
+    id: lic_okio_author
+    content: "Square"
+    variant: body_small
+    style: { typography: "Outfit/body_small", color: "#44483D" }
+    a11y: { role: text, label: "Maintained by Square" }
+    test_context: { purpose: "Library maintainer", interaction_type: display, data_driven: true }
+
+  - type: text
+    id: lic_okio_url
+    content: "https://github.com/square/okio"
+    variant: body_small
+    style: { typography: "Outfit/body_small", color: "#4C662B" }
+    a11y: { role: text, label: "Project URL" }
+    test_context: { purpose: "Project URL plain text", interaction_type: display, data_driven: true }
+
+  - type: badge
+    id: lic_okio_badge
+    content: "Apache-2.0"
+    variant: tonal
+    style: { background: "#CDEDA3", border_radius: "6dp", padding_horizontal: spacing.sm, padding_vertical: "3dp", text_color: "#4C662B", typography: "Outfit/label_small" }
+    a11y: { role: text, label: "Apache-2.0 license" }
+    test_context: { purpose: "License badge", interaction_type: display, data_driven: true }
+
+  - type: list_item
+    id: lic_row_kermit
+    variant: two_line
+    supported_states: [idle]
+    style: { padding_horizontal: spacing.md, padding_vertical: spacing.md }
+    a11y: { role: text, label: "Kermit by Touchlab, Apache-2.0" }
+    test_context: { purpose: "Static library row", interaction_type: display, data_driven: true }
+    children: [lic_kermit_name, lic_kermit_author, lic_kermit_url, lic_kermit_badge]
+
+  - type: text
+    id: lic_kermit_name
+    content: "Kermit"
+    variant: body_large
+    style: { typography: "Outfit/body_large", color: "#1A1C16", font_weight: "500" }
+    a11y: { role: text, label: "Kermit" }
+    test_context: { purpose: "Library name", interaction_type: display, data_driven: true }
+
+  - type: text
+    id: lic_kermit_author
+    content: "Touchlab"
+    variant: body_small
+    style: { typography: "Outfit/body_small", color: "#44483D" }
+    a11y: { role: text, label: "Maintained by Touchlab" }
+    test_context: { purpose: "Library maintainer", interaction_type: display, data_driven: true }
+
+  - type: text
+    id: lic_kermit_url
+    content: "https://github.com/touchlab/Kermit"
+    variant: body_small
+    style: { typography: "Outfit/body_small", color: "#4C662B" }
+    a11y: { role: text, label: "Project URL" }
+    test_context: { purpose: "Project URL plain text", interaction_type: display, data_driven: true }
+
+  - type: badge
+    id: lic_kermit_badge
+    content: "Apache-2.0"
+    variant: tonal
+    style: { background: "#CDEDA3", border_radius: "6dp", padding_horizontal: spacing.sm, padding_vertical: "3dp", text_color: "#4C662B", typography: "Outfit/label_small" }
+    a11y: { role: text, label: "Apache-2.0 license" }
+    test_context: { purpose: "License badge", interaction_type: display, data_driven: true }
+
+  - type: list_item
+    id: lic_row_aboutlibraries
+    variant: two_line
+    supported_states: [idle]
+    style: { padding_horizontal: spacing.md, padding_vertical: spacing.md }
+    a11y: { role: text, label: "AboutLibraries by Mike Penz, Apache-2.0" }
+    test_context: { purpose: "Static library row", interaction_type: display, data_driven: true }
+    children: [lic_aboutlibraries_name, lic_aboutlibraries_author, lic_aboutlibraries_url, lic_aboutlibraries_badge]
+
+  - type: text
+    id: lic_aboutlibraries_name
+    content: "AboutLibraries"
+    variant: body_large
+    style: { typography: "Outfit/body_large", color: "#1A1C16", font_weight: "500" }
+    a11y: { role: text, label: "AboutLibraries" }
+    test_context: { purpose: "Library name", interaction_type: display, data_driven: true }
+
+  - type: text
+    id: lic_aboutlibraries_author
+    content: "Mike Penz"
+    variant: body_small
+    style: { typography: "Outfit/body_small", color: "#44483D" }
+    a11y: { role: text, label: "Maintained by Mike Penz" }
+    test_context: { purpose: "Library maintainer", interaction_type: display, data_driven: true }
+
+  - type: text
+    id: lic_aboutlibraries_url
+    content: "https://github.com/mikepenz/AboutLibraries"
+    variant: body_small
+    style: { typography: "Outfit/body_small", color: "#4C662B" }
+    a11y: { role: text, label: "Project URL" }
+    test_context: { purpose: "Project URL plain text", interaction_type: display, data_driven: true }
+
+  - type: badge
+    id: lic_aboutlibraries_badge
+    content: "Apache-2.0"
+    variant: tonal
+    style: { background: "#CDEDA3", border_radius: "6dp", padding_horizontal: spacing.sm, padding_vertical: "3dp", text_color: "#4C662B", typography: "Outfit/label_small" }
+    a11y: { role: text, label: "Apache-2.0 license" }
+    test_context: { purpose: "License badge", interaction_type: display, data_driven: true }
+
+  # ── MIT group (1 library) ─────────────────────────────────────────────────────
+
+  - type: text
+    id: licenses_group_mit
+    content: "MIT License"
+    variant: title_small
+    style:
+      typography: "Outfit/title_small"
+      color: "#4C662B"
+      font_weight: "600"
+      padding_top: spacing.md
+      padding_bottom: spacing.sm
+    a11y:
+      role: heading
+      label: "MIT License group"
+    test_context:
+      purpose: "Section header for libraries distributed under MIT"
+      interaction_type: display
+      data_driven: true
+
+  - type: card
+    id: licenses_mit_card
+    variant: filled
+    supported_states: [idle]
+    style:
+      background: "#FFFFFF"
+      border_radius: "12dp"
+      margin_bottom: spacing.sm
+    children:
+      - lic_row_compottie
+
+  - type: list_item
+    id: lic_row_compottie
+    variant: two_line
+    supported_states: [idle]
+    style: { padding_horizontal: spacing.md, padding_vertical: spacing.md }
+    a11y: { role: text, label: "Compottie by Alexander Zhirkevich, MIT" }
+    test_context: { purpose: "Static library row", interaction_type: display, data_driven: true }
+    children: [lic_compottie_name, lic_compottie_author, lic_compottie_url, lic_compottie_badge]
+
+  - type: text
+    id: lic_compottie_name
+    content: "Compottie"
+    variant: body_large
+    style: { typography: "Outfit/body_large", color: "#1A1C16", font_weight: "500" }
+    a11y: { role: text, label: "Compottie" }
+    test_context: { purpose: "Library name", interaction_type: display, data_driven: true }
+
+  - type: text
+    id: lic_compottie_author
+    content: "Alexander Zhirkevich"
+    variant: body_small
+    style: { typography: "Outfit/body_small", color: "#44483D" }
+    a11y: { role: text, label: "Maintained by Alexander Zhirkevich" }
+    test_context: { purpose: "Library maintainer", interaction_type: display, data_driven: true }
+
+  - type: text
+    id: lic_compottie_url
+    content: "https://github.com/alexzhirkevich/compottie"
+    variant: body_small
+    style: { typography: "Outfit/body_small", color: "#4C662B" }
+    a11y: { role: text, label: "Project URL" }
+    test_context: { purpose: "Project URL plain text", interaction_type: display, data_driven: true }
+
+  - type: badge
+    id: lic_compottie_badge
+    content: "MIT"
+    variant: tonal
+    style: { background: "#CDEDA3", border_radius: "6dp", padding_horizontal: spacing.sm, padding_vertical: "3dp", text_color: "#4C662B", typography: "Outfit/label_small" }
+    a11y: { role: text, label: "MIT license" }
+    test_context: { purpose: "License badge", interaction_type: display, data_driven: true }
+
+  # ── MPL-2.0 group (1 library) ─────────────────────────────────────────────────
+
+  - type: text
+    id: licenses_group_mpl_2_0
+    content: "Mozilla Public License 2.0"
+    variant: title_small
+    style:
+      typography: "Outfit/title_small"
+      color: "#4C662B"
+      font_weight: "600"
+      padding_top: spacing.md
+      padding_bottom: spacing.sm
+    a11y:
+      role: heading
+      label: "Mozilla Public License 2.0 group"
+    test_context:
+      purpose: "Section header for libraries distributed under MPL-2.0"
+      interaction_type: display
+      data_driven: true
+
+  - type: card
+    id: licenses_mpl_card
+    variant: filled
+    supported_states: [idle]
+    style:
+      background: "#FFFFFF"
+      border_radius: "12dp"
+      margin_bottom: spacing.sm
+    children:
+      - lic_row_template
+
+  - type: list_item
+    id: lic_row_template
+    variant: two_line
+    supported_states: [idle]
+    style: { padding_horizontal: spacing.md, padding_vertical: spacing.md }
+    a11y: { role: text, label: "kmp-project-template by Mifos Initiative, MPL-2.0" }
+    test_context: { purpose: "Static library row", interaction_type: display, data_driven: true }
+    children: [lic_template_name, lic_template_author, lic_template_url, lic_template_badge]
+
+  - type: text
+    id: lic_template_name
+    content: "kmp-project-template"
+    variant: body_large
+    style: { typography: "Outfit/body_large", color: "#1A1C16", font_weight: "500" }
+    a11y: { role: text, label: "kmp-project-template" }
+    test_context: { purpose: "Library name", interaction_type: display, data_driven: true }
+
+  - type: text
+    id: lic_template_author
+    content: "Mifos Initiative"
+    variant: body_small
+    style: { typography: "Outfit/body_small", color: "#44483D" }
+    a11y: { role: text, label: "Maintained by Mifos Initiative" }
+    test_context: { purpose: "Library maintainer", interaction_type: display, data_driven: true }
+
+  - type: text
+    id: lic_template_url
+    content: "https://github.com/openMF/kmp-project-template"
+    variant: body_small
+    style: { typography: "Outfit/body_small", color: "#4C662B" }
+    a11y: { role: text, label: "Project URL" }
+    test_context: { purpose: "Project URL plain text", interaction_type: display, data_driven: true }
+
+  - type: badge
+    id: lic_template_badge
+    content: "MPL-2.0"
+    variant: tonal
+    style: { background: "#CDEDA3", border_radius: "6dp", padding_horizontal: spacing.sm, padding_vertical: "3dp", text_color: "#4C662B", typography: "Outfit/label_small" }
+    a11y: { role: text, label: "MPL-2.0 license" }
+    test_context: { purpose: "License badge", interaction_type: display, data_driven: true }
+
+  # ── EPL-1.0 group (1 library) ─────────────────────────────────────────────────
+
+  - type: text
+    id: licenses_group_epl_1_0
+    content: "Eclipse Public License 1.0"
+    variant: title_small
+    style:
+      typography: "Outfit/title_small"
+      color: "#4C662B"
+      font_weight: "600"
+      padding_top: spacing.md
+      padding_bottom: spacing.sm
+    a11y:
+      role: heading
+      label: "Eclipse Public License 1.0 group"
+    test_context:
+      purpose: "Section header for libraries distributed under EPL-1.0"
+      interaction_type: display
+      data_driven: true
+
+  - type: card
+    id: licenses_epl_card
+    variant: filled
+    supported_states: [idle]
+    style:
+      background: "#FFFFFF"
+      border_radius: "12dp"
+      margin_bottom: spacing.sm
+    children:
+      - lic_row_junit
+
+  - type: list_item
+    id: lic_row_junit
+    variant: two_line
+    supported_states: [idle]
+    style: { padding_horizontal: spacing.md, padding_vertical: spacing.md }
+    a11y: { role: text, label: "JUnit 4 by JUnit Team, EPL-1.0" }
+    test_context: { purpose: "Static library row", interaction_type: display, data_driven: true }
+    children: [lic_junit_name, lic_junit_author, lic_junit_url, lic_junit_badge]
+
+  - type: text
+    id: lic_junit_name
+    content: "JUnit 4"
+    variant: body_large
+    style: { typography: "Outfit/body_large", color: "#1A1C16", font_weight: "500" }
+    a11y: { role: text, label: "JUnit 4" }
+    test_context: { purpose: "Library name", interaction_type: display, data_driven: true }
+
+  - type: text
+    id: lic_junit_author
+    content: "JUnit Team"
+    variant: body_small
+    style: { typography: "Outfit/body_small", color: "#44483D" }
+    a11y: { role: text, label: "Maintained by JUnit Team" }
+    test_context: { purpose: "Library maintainer", interaction_type: display, data_driven: true }
+
+  - type: text
+    id: lic_junit_url
+    content: "https://github.com/junit-team/junit4"
+    variant: body_small
+    style: { typography: "Outfit/body_small", color: "#4C662B" }
+    a11y: { role: text, label: "Project URL" }
+    test_context: { purpose: "Project URL plain text", interaction_type: display, data_driven: true }
+
+  - type: badge
+    id: lic_junit_badge
+    content: "EPL-1.0"
+    variant: tonal
+    style: { background: "#CDEDA3", border_radius: "6dp", padding_horizontal: spacing.sm, padding_vertical: "3dp", text_color: "#4C662B", typography: "Outfit/label_small" }
+    a11y: { role: text, label: "EPL-1.0 license" }
+    test_context: { purpose: "License badge", interaction_type: display, data_driven: true }
+
+  # ── Footer ────────────────────────────────────────────────────────────────────
+
+  - type: text
+    id: licenses_footer_text
+    content: "Full license texts are available at each project's homepage. The Mifos Initiative thanks every maintainer and contributor whose work makes this app possible."
+    variant: body_small
+    style:
+      typography: "Outfit/body_small"
+      color: "#44483D"
+      padding_top: spacing.md
+    a11y:
+      role: text
+      label: "Licenses footer acknowledgement"
+    test_context:
+      purpose: "Closing acknowledgement after the last license group"
       interaction_type: display
       data_driven: false
 
@@ -826,50 +1199,25 @@ states:
     layout: { type: column, padding: spacing.lg }
     visible_components:
       - licenses_subtitle_text
-      - licenses_list
-  loading:
-    motion:
-      shimmer_duration: short4
-      reduced_motion_fallback: static_placeholder
-    layout: { type: column, padding: spacing.lg }
-    visible_components:
-      - licenses_loading_skeleton
-    note: "Shimmer while license data loads from bundled asset"
-  error:
-    layout: { type: column, padding: spacing.xl, alignment: center }
-    visible_components:
-      - licenses_error_state
-    note: "Shown if bundled license asset is unreadable"
-  empty:
-    layout: { type: column, padding: spacing.lg }
-    visible_components:
-      - licenses_subtitle_text
-    show_empty_state: true
-    empty_state_icon: "code_off"
-    empty_state_title: "No licenses found"
-    empty_state_message: "License data could not be parsed."
-    note: "Should never occur in production — all 8 licenses are bundled"
+      - licenses_app_license
+      - licenses_group_apache_2_0
+      - licenses_apache_card
+      - licenses_group_mit
+      - licenses_mit_card
+      - licenses_group_mpl_2_0
+      - licenses_mpl_card
+      - licenses_group_epl_1_0
+      - licenses_epl_card
+      - licenses_footer_text
 
 state_model:
-  LicensesViewModel:
-    screen_state: LicensesUiState
-    state:
-      - field: licenses
-        type: List<LibraryLicense>
-        default: "emptyList()"
-      - field: isLoading
-        type: Boolean
-        default: "true"
-    errors:
-      - id: load_failed
-        message: "Failed to load open source license data."
-    events: [OnBack, OnLicenseClicked]
-    actions: [onLicenseClicked(licenseUrl: String)]
-    di: [LicenseRepository, ExternalLinkLauncher]
+  type: static_content
+  note: "Static @Composable LicensesScreen(onBack, modifier). No ViewModel, no DI, no repository, no events. The library list is the compile-time constant OPEN_SOURCE_LIBRARIES (21 entries in OpenSourceLibrary.kt), grouped by license at render time via groupBy. Rows are non-interactive text (name + maintainer + URL as plain text + license badge); URLs are NOT tappable. No loading/error/empty states. Back navigation icon invokes the onBack lambda."
 
 navigation:
   - id: nav_back
     target: about
+    note: "Back navigation icon → onBack lambda"
 
 dependencies:
   tier: feature

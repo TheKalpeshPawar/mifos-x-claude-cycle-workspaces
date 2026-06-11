@@ -2,14 +2,15 @@ sibling: api
 schema_version: "4.0"
 feature_id: transaction-detail
 api:
+  # Booked path — single-transaction read (v3.0.0, no attributes inline).
   - id: obp_get_transaction_detail
     endpoint: "GET /obp/v3.0.0/banks/{bankId}/accounts/{accountId}/owner/transactions/{transactionId}/transaction"
     tag: Transactions
     auth: DirectLogin
+    used_for: booked
     params:
       - name: bankId
         type: path
-        value: "gh.29.uk"
       - name: accountId
         type: path
       - name: transactionId
@@ -20,11 +21,6 @@ api:
           type: String
         - name: this_account
           type: object
-          children:
-            - name: id
-              type: String
-            - name: account_routings
-              type: "List<AccountRouting>"
         - name: other_account
           type: object
           children:
@@ -32,18 +28,6 @@ api:
               type: String
             - name: holder
               type: object
-              children:
-                - name: name
-                  type: String
-                - name: is_alias
-                  type: Boolean
-            - name: account_routings
-              type: "List<AccountRouting>"
-            - name: metadata
-              type: object
-              children:
-                - name: image_url
-                  type: "String?"
         - name: details
           type: object
           children:
@@ -55,13 +39,6 @@ api:
               type: String
             - name: completed
               type: String
-            - name: new_balance
-              type: object
-              children:
-                - name: currency
-                  type: String
-                - name: amount
-                  type: String
             - name: value
               type: object
               children:
@@ -74,10 +51,6 @@ api:
           children:
             - name: narrative
               type: "String?"
-            - name: comments
-              type: "List<Comment>"
-            - name: tags
-              type: "List<Tag>"
     errors:
       - code: 401
         message: "Unauthorized — DirectLogin token missing or expired"
@@ -85,3 +58,52 @@ api:
         message: "Transaction not found"
       - code: 500
         message: "OBP server error"
+
+  # Pending path — the request is found in the account's transaction-request list by requestId
+  # (no per-request OBP read endpoint).
+  - id: obp_list_transaction_requests
+    endpoint: "GET /obp/v4.0.0/banks/{bankId}/accounts/{accountId}/owner/transaction-requests"
+    tag: Transaction-Requests
+    auth: DirectLogin
+    used_for: pending
+    params:
+      - name: bankId
+        type: path
+      - name: accountId
+        type: path
+    response:
+      fields:
+        - name: transaction_requests
+          type: "List<TransactionRequestSummary>"
+          children:
+            - name: id
+              type: String
+            - name: type
+              type: String
+            - name: status
+              type: String
+            - name: start_date
+              type: String
+            - name: details
+              type: object
+              children:
+                - name: description
+                  type: String
+                - name: to_sepa
+                  type: "object?"
+                - name: to_counterparty
+                  type: "object?"
+                - name: to_sandbox_tan
+                  type: "object?"
+                - name: value
+                  type: object
+                  children:
+                    - name: currency
+                      type: String
+                    - name: amount
+                      type: String
+    errors:
+      - code: 401
+        message: "Unauthorized"
+      - code: 404
+        message: "Account not found"

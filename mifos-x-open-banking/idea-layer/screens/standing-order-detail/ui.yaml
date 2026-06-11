@@ -2,7 +2,7 @@ id: standing-order-detail
 name: "Standing Order Detail"
 feature: standing-orders
 flavor: consumer
-status: approved
+status: enriched
 quality_score: 93
 schema_version: "3.1"
 contract_version: "1.1.0"
@@ -28,7 +28,23 @@ status_history:
     at: "2026-06-06T17:10:00Z"
     by: "/kmp-implement standing-order-detail"
     contract_version: "1.1.0"
-    note: "Implemented inside feature/standing-orders (same module as the list). The ui.yaml API block (GET/pause/resume/DELETE standing-orders) does not exist on OBP — data comes from the derived/created order set: new StandingOrdersRepository.detail() finds the order by series id and recovers Recent Executions from the booked TXN_TYPE=SO transactions of its series (StandingOrderExecution model + deriveExecutions in core/data; shared seriesId() extracted from derivation). Screen: primaryContainer header with name + status badge, Recipient card (name + masked account — IBAN/bank are not observable in derived data, rows omitted), Schedule card (Frequency / First / Last / Next Payment / Final Date 'Ongoing'), Amount card with currency chip, Recent Executions (max 5, each row navigates to transaction-detail via the underlying transactionId — bonus integration), Pause-or-Resume + Cancel buttons surface 'coming soon' snackbars (no OBP endpoint; sod_delete_dialog not implemented since there is nothing to delete), top-bar Edit action omitted (OBP cannot edit standing orders). Created-on-device orders show 'hasn't made a payment yet' history. StandingOrderDetailRoute(bankId, accountId, standingOrderId) replaced the arg-less placeholder; StandingOrderCard rows are now clickable (bankId/accountId resolved from the list's selected account). Tests: 3 new repository tests (detail by id, executions newest-first, created-order empty history, unknown-id failure) + 7 VM tests (mapping incl. masked account + formatted dates, executions cap 5, paused label, created order, recipient fallback, error, retry)."
+    note: "Implemented inside feature/standing-orders (same module as the list). Data comes from the derived/created order set; Recent Executions recovered from booked TXN_TYPE=SO transactions, each row navigating to transaction-detail. Pause/Resume + Cancel surface 'coming soon' snackbars; top-bar Edit omitted; no delete dialog (nothing to delete on OBP)."
+  - from: approved
+    to: enriched
+    at: "2026-06-11"
+    by: "/idea verify --source-drift (write-back)"
+    contract_version: "1.1.0"
+    note: >
+      SOURCE→SPEC reconciliation to shipped Kotlin (code = truth). Single uiState
+      ScreenState<StandingOrderDetailContent> (display-ready label strings, no typed enums,
+      no dialog/action-in-progress state, only onRetry; ctor bankId/accountId/standingOrderId).
+      REMOVED: beneficiary IBAN + bank rows (not observable in derived data), top-bar Edit
+      action (→ standing-order-edit), functional Pause/Resume + Cancel (now "coming soon"
+      snackbars), delete confirmation dialog, execution status labels (each row is "Completed"),
+      finalDate (shipped hardcodes "Ongoing"). ADDED: Recent Executions rows clickable →
+      transaction-detail (ExecutionRow.transactionId); isCreated flag distinguishes
+      "hasn't made a payment yet" from "No payments observed yet". api.yaml: GET/pause/resume/
+      DELETE do not exist on OBP — dropped; uses StandingOrdersRepository.detail() + derived executions.
 
 screens:
   - id: standing-order-detail
@@ -44,10 +60,7 @@ shell:
     title: "Standing Order"
     navigation_icon: arrow_back
     navigation_action: navigate_back
-    actions:
-      - icon: edit
-        action: edit_standing_order
-        label: "Edit standing order"
+    actions: []
   bottom_nav: false
 
 components:
@@ -57,915 +70,415 @@ components:
     style:
       background: "#F9FAEF"
     children:
-      - sod_header_card
-      - sod_beneficiary_card
+      - sod_recipient_card
       - sod_schedule_card
       - sod_amount_card
       - sod_history_card
       - sod_action_row
       - sod_bottom_spacer
 
-  # ── Header Card — title + status badge ───────────────────────────────────────
-
+  # ── Recipient Card (name + masked account only) ───────────────────────────────
   - type: card
-    id: sod_header_card
-    variant: filled
-    supported_states: [idle]
-    style:
-      background: "#4C662B"
-      border_radius: "0dp"
-      padding_horizontal: spacing.lg
-      padding_top: spacing.lg
-      padding_bottom: spacing.xl
-    children:
-      - sod_order_name_text
-      - sod_status_badge_row
-
-  - type: text
-    id: sod_order_name_text
-    content: "Rent Payment"
-    variant: headline_medium
-    style:
-      typography: "Outfit/headline_medium"
-      color: "#FFFFFF"
-      font_weight: "600"
-      padding_bottom: spacing.sm
-    a11y:
-      role: heading
-      label: "Standing order name: Rent Payment"
-    test_context:
-      purpose: "Primary title of the standing order displayed in header"
-      interaction_type: display
-      data_driven: true
-
-  - type: stack
-    id: sod_status_badge_row
-    variant: row
-    style:
-      alignment: center_start
-    children:
-      - sod_status_badge
-
-  - type: badge
-    id: sod_status_badge
-    content: "Active"
-    variant: tonal
-    style:
-      background: "#CDEDA3"
-      border_radius: "20dp"
-      padding_horizontal: spacing.md
-      padding_vertical: "4dp"
-      text_color: "#4C662B"
-      typography: "Outfit/label_medium"
-      font_weight: "600"
-    a11y:
-      role: status
-      label: "Status: Active"
-    test_context:
-      purpose: "Status badge showing current standing order state (Active/Paused/Cancelled)"
-      interaction_type: display
-      data_driven: true
-
-  # ── Beneficiary Card ──────────────────────────────────────────────────────────
-
-  - type: card
-    id: sod_beneficiary_card
-    variant: filled
+    id: sod_recipient_card
+    variant: outlined
     supported_states: [idle]
     style:
       background: "#FFFFFF"
       border_radius: "16dp"
+      border_color: "#E1E4D5"
+      border_width: 1
       padding: spacing.md
       margin_horizontal: spacing.lg
-      margin_top: "-24dp"
+      margin_top: spacing.md
       margin_bottom: spacing.md
-      elevation: "4dp"
     children:
-      - sod_beneficiary_header
-      - sod_beneficiary_name_row
-      - sod_beneficiary_iban_row
-      - sod_beneficiary_bank_row
+      - sod_recipient_header
+      - sod_recipient_name_row
+      - sod_recipient_account_row
 
   - type: text
-    id: sod_beneficiary_header
-    content: "Recipient"
+    id: sod_recipient_header
+    content: "RECIPIENT"
     variant: label_small
     style:
       typography: "Outfit/label_small"
       color: "#44483D"
-      letter_spacing: "0.8dp"
-      padding_bottom: spacing.sm
       text_transform: uppercase
-    a11y:
-      role: text
-      label: "Recipient section"
-    test_context:
-      purpose: "Section label for beneficiary block"
-      interaction_type: display
-      data_driven: false
+    a11y: { role: text, label: "Recipient section" }
+    test_context: { purpose: "Section label for the recipient block", interaction_type: display, data_driven: false }
 
   - type: stack
-    id: sod_beneficiary_name_row
+    id: sod_recipient_name_row
     variant: row
-    style:
-      alignment: center_space_between
-      padding_bottom: spacing.xs
-    children:
-      - sod_beneficiary_name_label
-      - sod_beneficiary_name_value
+    style: { alignment: center_space_between }
+    children: [sod_recipient_name_label, sod_recipient_name_value]
 
   - type: text
-    id: sod_beneficiary_name_label
+    id: sod_recipient_name_label
     content: "Name"
     variant: body_medium
-    style:
-      typography: "Outfit/body_medium"
-      color: "#44483D"
-    a11y:
-      role: text
-      label: "Recipient name label"
-    test_context:
-      purpose: "Label for beneficiary name field"
-      interaction_type: display
-      data_driven: false
+    style: { typography: "Outfit/body_medium", color: "#44483D" }
+    a11y: { role: text, label: "Recipient name label" }
+    test_context: { purpose: "Label for recipient name", interaction_type: display, data_driven: false }
 
   - type: text
-    id: sod_beneficiary_name_value
+    id: sod_recipient_name_value
     content: "Landlord Holdings Ltd"
     variant: body_medium
-    style:
-      typography: "Outfit/body_medium"
-      color: "#1A1C16"
-      font_weight: "500"
-    a11y:
-      role: text
-      label: "Recipient: Landlord Holdings Ltd"
+    style: { typography: "Outfit/body_medium", color: "#1A1C16", font_weight: "500" }
+    a11y: { role: text, label: "Recipient name" }
     test_context:
-      purpose: "Beneficiary name from standing order data"
+      purpose: "Recipient name — counterparty name, else order name, else 'Recipient' (never the login username)"
       interaction_type: display
       data_driven: true
 
   - type: stack
-    id: sod_beneficiary_iban_row
+    id: sod_recipient_account_row
     variant: row
-    style:
-      alignment: center_space_between
-      padding_bottom: spacing.xs
-    children:
-      - sod_beneficiary_iban_label
-      - sod_beneficiary_iban_value
+    style: { alignment: center_space_between }
+    children: [sod_recipient_account_label, sod_recipient_account_value]
+    note: "Rendered only when a masked counterparty account is available."
 
   - type: text
-    id: sod_beneficiary_iban_label
-    content: "IBAN"
+    id: sod_recipient_account_label
+    content: "Account"
     variant: body_medium
-    style:
-      typography: "Outfit/body_medium"
-      color: "#44483D"
-    a11y:
-      role: text
-      label: "IBAN label"
-    test_context:
-      purpose: "Label for beneficiary IBAN field"
-      interaction_type: display
-      data_driven: false
+    style: { typography: "Outfit/body_medium", color: "#44483D" }
+    a11y: { role: text, label: "Recipient account label" }
+    test_context: { purpose: "Label for masked recipient account", interaction_type: display, data_driven: false }
 
   - type: text
-    id: sod_beneficiary_iban_value
-    content: "GB29 NWBK 6016 1331 9268 19"
+    id: sod_recipient_account_value
+    content: "····s001"
     variant: body_small
-    style:
-      typography: "Outfit/body_small"
-      color: "#1A1C16"
-      font_family: monospace
-    a11y:
-      role: text
-      label: "IBAN: GB29 NWBK 6016 1331 9268 19"
+    style: { typography: "Outfit/body_small", color: "#1A1C16", font_family: monospace }
+    a11y: { role: text, label: "Masked recipient account" }
     test_context:
-      purpose: "Beneficiary IBAN displayed monospaced for readability"
-      interaction_type: display
-      data_driven: true
-
-  - type: stack
-    id: sod_beneficiary_bank_row
-    variant: row
-    style:
-      alignment: center_space_between
-    children:
-      - sod_beneficiary_bank_label
-      - sod_beneficiary_bank_value
-
-  - type: text
-    id: sod_beneficiary_bank_label
-    content: "Bank"
-    variant: body_medium
-    style:
-      typography: "Outfit/body_medium"
-      color: "#44483D"
-    a11y:
-      role: text
-      label: "Bank label"
-    test_context:
-      purpose: "Label for beneficiary bank field"
-      interaction_type: display
-      data_driven: false
-
-  - type: text
-    id: sod_beneficiary_bank_value
-    content: "NatWest Bank"
-    variant: body_medium
-    style:
-      typography: "Outfit/body_medium"
-      color: "#1A1C16"
-      font_weight: "500"
-    a11y:
-      role: text
-      label: "Beneficiary bank: NatWest Bank"
-    test_context:
-      purpose: "Beneficiary bank name from standing order data"
+      purpose: "Masked counterparty account (last 4 alphanumerics). IBAN + bank rows are NOT observable in derived data and were removed."
       interaction_type: display
       data_driven: true
 
   # ── Schedule Card ─────────────────────────────────────────────────────────────
-
   - type: card
     id: sod_schedule_card
-    variant: filled
+    variant: outlined
     supported_states: [idle]
     style:
       background: "#FFFFFF"
       border_radius: "16dp"
+      border_color: "#E1E4D5"
+      border_width: 1
       padding: spacing.md
       margin_horizontal: spacing.lg
       margin_bottom: spacing.md
-      elevation: "1dp"
     children:
       - sod_schedule_header
+      - sod_status_row
       - sod_frequency_row
-      - sod_schedule_divider_1
-      - sod_start_date_row
-      - sod_schedule_divider_2
+      - sod_first_payment_row
+      - sod_last_payment_row
       - sod_next_payment_row
-      - sod_schedule_divider_3
       - sod_final_date_row
 
   - type: text
     id: sod_schedule_header
-    content: "Schedule"
+    content: "SCHEDULE"
     variant: label_small
-    style:
-      typography: "Outfit/label_small"
-      color: "#44483D"
-      letter_spacing: "0.8dp"
-      padding_bottom: spacing.sm
-      text_transform: uppercase
-    a11y:
-      role: text
-      label: "Schedule section"
+    style: { typography: "Outfit/label_small", color: "#44483D", text_transform: uppercase }
+    a11y: { role: text, label: "Schedule section" }
+    test_context: { purpose: "Section label for schedule block", interaction_type: display, data_driven: false }
+
+  - type: stack
+    id: sod_status_row
+    variant: row
+    style: { alignment: center_space_between }
+    children: [sod_status_label, sod_status_value]
+
+  - type: text
+    id: sod_status_label
+    content: "Status"
+    variant: body_medium
+    style: { typography: "Outfit/body_medium", color: "#44483D" }
+    a11y: { role: text, label: "Status label" }
+    test_context: { purpose: "Label for status row", interaction_type: display, data_driven: false }
+
+  - type: text
+    id: sod_status_value
+    content: "Active"
+    variant: body_medium
+    style: { typography: "Outfit/body_medium", color: "#4C662B", font_weight: "600" }
+    a11y: { role: text, label: "Status value" }
     test_context:
-      purpose: "Section label for schedule block"
+      purpose: "Status label string (Active/Paused/Cancelled). Highlighted green when active."
       interaction_type: display
-      data_driven: false
+      data_driven: true
 
   - type: stack
     id: sod_frequency_row
     variant: row
-    style:
-      alignment: center_space_between
-      padding_bottom: spacing.sm
-    children:
-      - sod_frequency_label
-      - sod_frequency_value
+    style: { alignment: center_space_between }
+    children: [sod_frequency_label, sod_frequency_value]
 
   - type: text
     id: sod_frequency_label
     content: "Frequency"
     variant: body_medium
-    style:
-      typography: "Outfit/body_medium"
-      color: "#44483D"
-    a11y:
-      role: text
-      label: "Frequency label"
-    test_context:
-      purpose: "Label for frequency field"
-      interaction_type: display
-      data_driven: false
+    style: { typography: "Outfit/body_medium", color: "#44483D" }
+    a11y: { role: text, label: "Frequency label" }
+    test_context: { purpose: "Label for frequency", interaction_type: display, data_driven: false }
 
   - type: text
     id: sod_frequency_value
     content: "Monthly"
     variant: body_medium
-    style:
-      typography: "Outfit/body_medium"
-      color: "#1A1C16"
-      font_weight: "500"
-    a11y:
-      role: text
-      label: "Frequency: Monthly"
+    style: { typography: "Outfit/body_medium", color: "#1A1C16", font_weight: "500" }
+    a11y: { role: text, label: "Frequency value" }
     test_context:
-      purpose: "Human-readable frequency from StandingOrderFrequency enum"
+      purpose: "Human frequency (Daily/Weekly/Every 2 weeks/Monthly/Yearly)"
       interaction_type: display
       data_driven: true
-
-  - type: divider
-    id: sod_schedule_divider_1
-    style: { color: "#F9FAEF", margin_vertical: spacing.xs }
-    a11y: { role: separator, label: "" }
-    test_context: { purpose: "Separator between schedule rows", interaction_type: display, data_driven: false }
 
   - type: stack
-    id: sod_start_date_row
+    id: sod_first_payment_row
     variant: row
-    style:
-      alignment: center_space_between
-      padding_bottom: spacing.sm
-      padding_top: spacing.sm
-    children:
-      - sod_start_date_label
-      - sod_start_date_value
+    style: { alignment: center_space_between }
+    children: [sod_first_payment_label, sod_first_payment_value]
+    note: "Rendered only when the order has observed executions (derived from oldest execution)."
 
   - type: text
-    id: sod_start_date_label
-    content: "Start Date"
+    id: sod_first_payment_label
+    content: "First Payment"
     variant: body_medium
-    style:
-      typography: "Outfit/body_medium"
-      color: "#44483D"
-    a11y:
-      role: text
-      label: "Start date label"
-    test_context:
-      purpose: "Label for start date field"
-      interaction_type: display
-      data_driven: false
+    style: { typography: "Outfit/body_medium", color: "#44483D" }
+    a11y: { role: text, label: "First payment label" }
+    test_context: { purpose: "Label for first observed payment", interaction_type: display, data_driven: false }
 
   - type: text
-    id: sod_start_date_value
+    id: sod_first_payment_value
     content: "1 Jan 2026"
     variant: body_medium
-    style:
-      typography: "Outfit/body_medium"
-      color: "#1A1C16"
-      font_weight: "500"
-    a11y:
-      role: text
-      label: "Start date: 1 January 2026"
+    style: { typography: "Outfit/body_medium", color: "#1A1C16", font_weight: "500" }
+    a11y: { role: text, label: "First payment date" }
     test_context:
-      purpose: "Standing order start date formatted locale-aware"
+      purpose: "Date of the oldest observed execution (startedOn)"
       interaction_type: display
       data_driven: true
 
-  - type: divider
-    id: sod_schedule_divider_2
-    style: { color: "#F9FAEF", margin_vertical: spacing.xs }
-    a11y: { role: separator, label: "" }
-    test_context: { purpose: "Separator", interaction_type: display, data_driven: false }
+  - type: stack
+    id: sod_last_payment_row
+    variant: row
+    style: { alignment: center_space_between }
+    children: [sod_last_payment_label, sod_last_payment_value]
+    note: "Rendered only when lastPaymentDate is non-blank."
+
+  - type: text
+    id: sod_last_payment_label
+    content: "Last Payment"
+    variant: body_medium
+    style: { typography: "Outfit/body_medium", color: "#44483D" }
+    a11y: { role: text, label: "Last payment label" }
+    test_context: { purpose: "Label for last payment", interaction_type: display, data_driven: false }
+
+  - type: text
+    id: sod_last_payment_value
+    content: "1 May 2026"
+    variant: body_medium
+    style: { typography: "Outfit/body_medium", color: "#1A1C16", font_weight: "500" }
+    a11y: { role: text, label: "Last payment date" }
+    test_context: { purpose: "Most recent observed payment date", interaction_type: display, data_driven: true }
 
   - type: stack
     id: sod_next_payment_row
     variant: row
-    style:
-      alignment: center_space_between
-      padding_bottom: spacing.sm
-      padding_top: spacing.sm
-    children:
-      - sod_next_payment_label
-      - sod_next_payment_value
+    style: { alignment: center_space_between }
+    children: [sod_next_payment_label, sod_next_payment_value]
+    note: "Rendered only when nextPaymentDate is non-blank."
 
   - type: text
     id: sod_next_payment_label
     content: "Next Payment"
     variant: body_medium
-    style:
-      typography: "Outfit/body_medium"
-      color: "#44483D"
-    a11y:
-      role: text
-      label: "Next payment date label"
-    test_context:
-      purpose: "Label for next payment date field"
-      interaction_type: display
-      data_driven: false
+    style: { typography: "Outfit/body_medium", color: "#44483D" }
+    a11y: { role: text, label: "Next payment label" }
+    test_context: { purpose: "Label for next payment", interaction_type: display, data_driven: false }
 
   - type: text
     id: sod_next_payment_value
     content: "1 Jun 2026"
     variant: body_medium
-    style:
-      typography: "Outfit/body_medium"
-      color: "#4C662B"
-      font_weight: "600"
-    a11y:
-      role: text
-      label: "Next payment: 1 June 2026"
+    style: { typography: "Outfit/body_medium", color: "#4C662B", font_weight: "600" }
+    a11y: { role: text, label: "Next payment date" }
     test_context:
-      purpose: "Upcoming payment date highlighted in brand green"
+      purpose: "Upcoming payment date, highlighted green when active"
       interaction_type: display
       data_driven: true
-
-  - type: divider
-    id: sod_schedule_divider_3
-    style: { color: "#F9FAEF", margin_vertical: spacing.xs }
-    a11y: { role: separator, label: "" }
-    test_context: { purpose: "Separator", interaction_type: display, data_driven: false }
 
   - type: stack
     id: sod_final_date_row
     variant: row
-    style:
-      alignment: center_space_between
-      padding_top: spacing.sm
-    children:
-      - sod_final_date_label
-      - sod_final_date_value
+    style: { alignment: center_space_between }
+    children: [sod_final_date_label, sod_final_date_value]
 
   - type: text
     id: sod_final_date_label
     content: "Final Date"
     variant: body_medium
-    style:
-      typography: "Outfit/body_medium"
-      color: "#44483D"
-    a11y:
-      role: text
-      label: "Final date label"
-    test_context:
-      purpose: "Label for optional final payment date field"
-      interaction_type: display
-      data_driven: false
+    style: { typography: "Outfit/body_medium", color: "#44483D" }
+    a11y: { role: text, label: "Final date label" }
+    test_context: { purpose: "Label for final date", interaction_type: display, data_driven: false }
 
   - type: text
     id: sod_final_date_value
-    content: "31 Dec 2026"
+    content: "Ongoing"
     variant: body_medium
-    style:
-      typography: "Outfit/body_medium"
-      color: "#1A1C16"
-      font_weight: "500"
-    a11y:
-      role: text
-      label: "Final date: 31 December 2026"
+    style: { typography: "Outfit/body_medium", color: "#1A1C16", font_weight: "500" }
+    a11y: { role: text, label: "Final date" }
     test_context:
-      purpose: "Final payment date — shows 'Ongoing' if finalDate is null"
+      purpose: "Shipped hardcodes 'Ongoing' — OBP derived data exposes no end date."
       interaction_type: display
-      data_driven: true
+      data_driven: false
 
   # ── Amount Card ───────────────────────────────────────────────────────────────
-
   - type: card
     id: sod_amount_card
-    variant: filled
+    variant: outlined
     supported_states: [idle]
     style:
       background: "#FFFFFF"
       border_radius: "16dp"
+      border_color: "#E1E4D5"
+      border_width: 1
       padding: spacing.md
       margin_horizontal: spacing.lg
       margin_bottom: spacing.md
-      elevation: "1dp"
-    children:
-      - sod_amount_header
-      - sod_amount_value_row
+    children: [sod_amount_header, sod_amount_value_row]
 
   - type: text
     id: sod_amount_header
-    content: "Payment Amount"
+    content: "PAYMENT AMOUNT"
     variant: label_small
-    style:
-      typography: "Outfit/label_small"
-      color: "#44483D"
-      letter_spacing: "0.8dp"
-      padding_bottom: spacing.sm
-      text_transform: uppercase
-    a11y:
-      role: text
-      label: "Payment amount section"
-    test_context:
-      purpose: "Section label for amount block"
-      interaction_type: display
-      data_driven: false
+    style: { typography: "Outfit/label_small", color: "#44483D", text_transform: uppercase }
+    a11y: { role: text, label: "Payment amount section" }
+    test_context: { purpose: "Section label for amount block", interaction_type: display, data_driven: false }
 
   - type: stack
     id: sod_amount_value_row
     variant: row
-    style:
-      alignment: center_start
-      spacing: spacing.sm
-    children:
-      - sod_amount_value
-      - sod_currency_badge
+    style: { alignment: center_start, spacing: spacing.sm }
+    children: [sod_amount_value, sod_currency_badge]
 
   - type: text
     id: sod_amount_value
     content: "£1,200.00"
     variant: display_small
-    style:
-      typography: "Outfit/display_small"
-      color: "#1A1C16"
-      font_weight: "700"
-    a11y:
-      role: text
-      label: "Payment amount: one thousand two hundred pounds"
-    test_context:
-      purpose: "Formatted payment amount using locale-aware currency formatting"
-      interaction_type: display
-      data_driven: true
+    style: { typography: "Outfit/display_small", color: "#1A1C16", font_weight: "700" }
+    a11y: { role: text, label: "Payment amount" }
+    test_context: { purpose: "Formatted payment amount", interaction_type: display, data_driven: true }
 
   - type: badge
     id: sod_currency_badge
     content: "GBP"
     variant: tonal
     style:
-      background: "#F9FAEF"
+      background: "#CDEDA3"
       border_radius: "6dp"
       padding_horizontal: spacing.sm
       padding_vertical: "4dp"
-      text_color: "#44483D"
+      text_color: "#4C662B"
       typography: "Outfit/label_medium"
-    a11y:
-      role: text
-      label: "Currency: GBP"
-    test_context:
-      purpose: "Currency code badge beside amount value"
-      interaction_type: display
-      data_driven: true
+    a11y: { role: text, label: "Currency" }
+    test_context: { purpose: "Currency code badge beside the amount", interaction_type: display, data_driven: true }
 
-  # ── Execution History Card ────────────────────────────────────────────────────
-
+  # ── Recent Executions Card (rows → transaction-detail) ────────────────────────
   - type: card
     id: sod_history_card
-    variant: filled
+    variant: outlined
     supported_states: [idle]
     style:
       background: "#FFFFFF"
       border_radius: "16dp"
-      padding: spacing.md
+      border_color: "#E1E4D5"
+      border_width: 1
+      padding: "4dp"
       margin_horizontal: spacing.lg
       margin_bottom: spacing.md
-      elevation: "1dp"
-    children:
-      - sod_history_header
-      - sod_history_item_1
-      - sod_history_divider_1
-      - sod_history_item_2
-      - sod_history_divider_2
-      - sod_history_item_3
-      - sod_history_divider_3
-      - sod_history_item_4
-      - sod_history_divider_4
-      - sod_history_item_5
+    children: [sod_history_header, sod_history_list]
 
   - type: text
     id: sod_history_header
-    content: "Recent Executions"
+    content: "RECENT EXECUTIONS"
     variant: label_small
-    style:
-      typography: "Outfit/label_small"
-      color: "#44483D"
-      letter_spacing: "0.8dp"
-      padding_bottom: spacing.sm
-      text_transform: uppercase
-    a11y:
-      role: text
-      label: "Recent executions section — last 5 payments"
+    style: { typography: "Outfit/label_small", color: "#44483D", text_transform: uppercase }
+    a11y: { role: text, label: "Recent executions section — up to 5 payments" }
+    test_context: { purpose: "Section label for execution history", interaction_type: display, data_driven: false }
+
+  - type: list
+    id: sod_history_list
+    variant: column
+    style: { padding: 0 }
+    a11y: { role: list, label: "Recent executions" }
     test_context:
-      purpose: "Section label for execution history block"
+      purpose: "Up to 5 booked TXN_TYPE=SO executions, newest first. Empty → 'This order hasn't made a payment yet.' (isCreated) or 'No payments observed yet.'"
+      interaction_type: display
+      data_driven: true
+
+  - type: list_item
+    id: sod_history_row
+    variant: two_line
+    style: { padding_horizontal: "12dp", padding_vertical: "12dp" }
+    on_click:
+      action: navigate
+      target: transaction-detail
+    a11y: { role: button, label: "Execution. Tap to view the underlying transaction." }
+    keyboard: { focusable: true }
+    test_context:
+      tag: sod_history_row
+      purpose: "One execution row: date label + 'Completed' + amount. Clickable → transaction-detail via ExecutionRow.transactionId (passes bankId/accountId/transactionId)."
+      interaction_type: action
+      data_driven: true
+
+  - type: text
+    id: sod_history_row_date
+    content: "1 May 2026"
+    variant: body_medium
+    style: { typography: "Outfit/body_medium", color: "#1A1C16", font_weight: "500" }
+    a11y: { role: text, label: "Execution date" }
+    test_context: { purpose: "Execution date label", interaction_type: display, data_driven: true }
+
+  - type: text
+    id: sod_history_row_status
+    content: "Completed"
+    variant: body_small
+    style: { typography: "Outfit/body_small", color: "#4C662B" }
+    a11y: { role: text, label: "Status: Completed" }
+    test_context:
+      purpose: "Every observed execution is 'Completed' (booked TXN_TYPE=SO). Failed/insufficient-funds statuses are NOT observable and were removed."
       interaction_type: display
       data_driven: false
 
-  - type: list_item
-    id: sod_history_item_1
-    variant: two_line
-    style:
-      padding_vertical: spacing.sm
-    children:
-      - sod_history_item_1_date
-      - sod_history_item_1_status
-      - sod_history_item_1_amount
-
   - type: text
-    id: sod_history_item_1_date
-    content: "1 May 2026"
-    variant: body_medium
-    style:
-      typography: "Outfit/body_medium"
-      color: "#1A1C16"
-      font_weight: "500"
-    a11y:
-      role: text
-      label: "Execution date: 1 May 2026"
-    test_context:
-      purpose: "Execution date for most recent payment"
-      interaction_type: display
-      data_driven: true
-
-  - type: text
-    id: sod_history_item_1_status
-    content: "Completed"
-    variant: body_small
-    style:
-      typography: "Outfit/body_small"
-      color: "#4C662B"
-    a11y:
-      role: text
-      label: "Status: Completed"
-    test_context:
-      purpose: "Execution result status"
-      interaction_type: display
-      data_driven: true
-
-  - type: text
-    id: sod_history_item_1_amount
+    id: sod_history_row_amount
     content: "£1,200.00"
     variant: body_medium
-    style:
-      typography: "Outfit/body_medium"
-      color: "#1A1C16"
-      font_weight: "600"
-      text_align: end
-    a11y:
-      role: text
-      label: "Amount paid: £1,200.00"
-    test_context:
-      purpose: "Amount for this execution"
-      interaction_type: display
-      data_driven: true
+    style: { typography: "Outfit/body_medium", color: "#1A1C16", font_weight: "600" }
+    a11y: { role: text, label: "Amount paid" }
+    test_context: { purpose: "Execution amount", interaction_type: display, data_driven: true }
 
-  - type: divider
-    id: sod_history_divider_1
-    style: { color: "#F9FAEF", margin_vertical: spacing.xs }
-    a11y: { role: separator, label: "" }
-    test_context: { purpose: "Separator between history items", interaction_type: display, data_driven: false }
-
-  - type: list_item
-    id: sod_history_item_2
-    variant: two_line
-    style:
-      padding_vertical: spacing.sm
-    children:
-      - sod_history_item_2_date
-      - sod_history_item_2_status
-      - sod_history_item_2_amount
-
-  - type: text
-    id: sod_history_item_2_date
-    content: "1 Apr 2026"
-    variant: body_medium
-    style:
-      typography: "Outfit/body_medium"
-      color: "#1A1C16"
-      font_weight: "500"
-    a11y:
-      role: text
-      label: "Execution date: 1 April 2026"
-    test_context:
-      purpose: "Execution date for second most recent payment"
-      interaction_type: display
-      data_driven: true
-
-  - type: text
-    id: sod_history_item_2_status
-    content: "Completed"
-    variant: body_small
-    style:
-      typography: "Outfit/body_small"
-      color: "#4C662B"
-    a11y:
-      role: text
-      label: "Status: Completed"
-    test_context:
-      purpose: "Execution result status"
-      interaction_type: display
-      data_driven: true
-
-  - type: text
-    id: sod_history_item_2_amount
-    content: "£1,200.00"
-    variant: body_medium
-    style:
-      typography: "Outfit/body_medium"
-      color: "#1A1C16"
-      font_weight: "600"
-      text_align: end
-    a11y:
-      role: text
-      label: "Amount paid: £1,200.00"
-    test_context:
-      purpose: "Amount for this execution"
-      interaction_type: display
-      data_driven: true
-
-  - type: divider
-    id: sod_history_divider_2
-    style: { color: "#F9FAEF", margin_vertical: spacing.xs }
-    a11y: { role: separator, label: "" }
-    test_context: { purpose: "Separator", interaction_type: display, data_driven: false }
-
-  - type: list_item
-    id: sod_history_item_3
-    variant: two_line
-    style:
-      padding_vertical: spacing.sm
-    children:
-      - sod_history_item_3_date
-      - sod_history_item_3_status
-      - sod_history_item_3_amount
-
-  - type: text
-    id: sod_history_item_3_date
-    content: "1 Mar 2026"
-    variant: body_medium
-    style:
-      typography: "Outfit/body_medium"
-      color: "#1A1C16"
-      font_weight: "500"
-    a11y:
-      role: text
-      label: "Execution date: 1 March 2026"
-    test_context:
-      purpose: "Execution date"
-      interaction_type: display
-      data_driven: true
-
-  - type: text
-    id: sod_history_item_3_status
-    content: "Completed"
-    variant: body_small
-    style:
-      typography: "Outfit/body_small"
-      color: "#4C662B"
-    a11y:
-      role: text
-      label: "Status: Completed"
-    test_context:
-      purpose: "Execution result status"
-      interaction_type: display
-      data_driven: true
-
-  - type: text
-    id: sod_history_item_3_amount
-    content: "£1,200.00"
-    variant: body_medium
-    style:
-      typography: "Outfit/body_medium"
-      color: "#1A1C16"
-      font_weight: "600"
-      text_align: end
-    a11y:
-      role: text
-      label: "Amount paid: £1,200.00"
-    test_context:
-      purpose: "Amount for this execution"
-      interaction_type: display
-      data_driven: true
-
-  - type: divider
-    id: sod_history_divider_3
-    style: { color: "#F9FAEF", margin_vertical: spacing.xs }
-    a11y: { role: separator, label: "" }
-    test_context: { purpose: "Separator", interaction_type: display, data_driven: false }
-
-  - type: list_item
-    id: sod_history_item_4
-    variant: two_line
-    style:
-      padding_vertical: spacing.sm
-    children:
-      - sod_history_item_4_date
-      - sod_history_item_4_status
-      - sod_history_item_4_amount
-
-  - type: text
-    id: sod_history_item_4_date
-    content: "1 Feb 2026"
-    variant: body_medium
-    style:
-      typography: "Outfit/body_medium"
-      color: "#1A1C16"
-      font_weight: "500"
-    a11y:
-      role: text
-      label: "Execution date: 1 February 2026"
-    test_context:
-      purpose: "Execution date"
-      interaction_type: display
-      data_driven: true
-
-  - type: text
-    id: sod_history_item_4_status
-    content: "Failed — Insufficient Funds"
-    variant: body_small
-    style:
-      typography: "Outfit/body_small"
-      color: "#BA1A1A"
-    a11y:
-      role: text
-      label: "Status: Failed due to insufficient funds"
-    test_context:
-      purpose: "Failed execution shown in error color to signal attention needed"
-      interaction_type: display
-      data_driven: true
-
-  - type: text
-    id: sod_history_item_4_amount
-    content: "£1,200.00"
-    variant: body_medium
-    style:
-      typography: "Outfit/body_medium"
-      color: "#BA1A1A"
-      font_weight: "600"
-      text_align: end
-    a11y:
-      role: text
-      label: "Amount: £1,200.00 — payment failed"
-    test_context:
-      purpose: "Amount in error color to signal failed payment"
-      interaction_type: display
-      data_driven: true
-
-  - type: divider
-    id: sod_history_divider_4
-    style: { color: "#F9FAEF", margin_vertical: spacing.xs }
-    a11y: { role: separator, label: "" }
-    test_context: { purpose: "Separator", interaction_type: display, data_driven: false }
-
-  - type: list_item
-    id: sod_history_item_5
-    variant: two_line
-    style:
-      padding_vertical: spacing.sm
-    children:
-      - sod_history_item_5_date
-      - sod_history_item_5_status
-      - sod_history_item_5_amount
-
-  - type: text
-    id: sod_history_item_5_date
-    content: "1 Jan 2026"
-    variant: body_medium
-    style:
-      typography: "Outfit/body_medium"
-      color: "#1A1C16"
-      font_weight: "500"
-    a11y:
-      role: text
-      label: "Execution date: 1 January 2026"
-    test_context:
-      purpose: "Oldest of the last 5 executions"
-      interaction_type: display
-      data_driven: true
-
-  - type: text
-    id: sod_history_item_5_status
-    content: "Completed"
-    variant: body_small
-    style:
-      typography: "Outfit/body_small"
-      color: "#4C662B"
-    a11y:
-      role: text
-      label: "Status: Completed"
-    test_context:
-      purpose: "Execution result status"
-      interaction_type: display
-      data_driven: true
-
-  - type: text
-    id: sod_history_item_5_amount
-    content: "£1,200.00"
-    variant: body_medium
-    style:
-      typography: "Outfit/body_medium"
-      color: "#1A1C16"
-      font_weight: "600"
-      text_align: end
-    a11y:
-      role: text
-      label: "Amount paid: £1,200.00"
-    test_context:
-      purpose: "Amount for first execution"
-      interaction_type: display
-      data_driven: true
-
-  # ── Action Row ────────────────────────────────────────────────────────────────
-
+  # ── Action Row — both surface "coming soon" snackbars ─────────────────────────
   - type: stack
     id: sod_action_row
-    variant: column
+    variant: row
     style:
       padding_horizontal: spacing.lg
       padding_bottom: spacing.md
       spacing: spacing.sm
-    children:
-      - sod_pause_resume_button
-      - sod_delete_button
+    children: [sod_pause_resume_button, sod_cancel_button]
 
   - type: button
     id: sod_pause_resume_button
-    label: "Pause Standing Order"
+    label: "Pause"
     variant: outlined
-    supported_states: [idle, hover, focus_visible, pressed, disabled]
+    supported_states: [idle, hover, focus_visible, pressed]
     style:
       border_color: "#4C662B"
       color: "#4C662B"
@@ -974,24 +487,24 @@ components:
       padding_vertical: "14dp"
       leading_icon: pause_circle
     on_click:
-      action: pause_standing_order
-      target: standing-order-detail
-      intent: api
+      action: show_coming_soon_snackbar
+      target: ""
+      intent: snackbar
     a11y:
       role: button
-      label: "Pause this standing order — no payments will be taken while paused"
-    keyboard:
-      focusable: true
+      label: "Pause or resume this standing order — coming soon"
+    keyboard: { focusable: true }
     test_context:
-      purpose: "Pauses the standing order via POST .../{id}/pause. Label toggles to 'Resume' when status=PAUSED"
+      tag: sod_pause_resume_button
+      purpose: "Label toggles Pause/Resume by status. Tapping shows 'Pausing standing orders is coming soon' — OBP has no pause/resume endpoint."
       interaction_type: action
       data_driven: true
 
   - type: button
-    id: sod_delete_button
-    label: "Cancel Standing Order"
+    id: sod_cancel_button
+    label: "Cancel"
     variant: outlined
-    supported_states: [idle, hover, focus_visible, pressed, disabled]
+    supported_states: [idle, hover, focus_visible, pressed]
     style:
       border_color: "#BA1A1A"
       color: "#BA1A1A"
@@ -1000,271 +513,107 @@ components:
       padding_vertical: "14dp"
       leading_icon: delete_outline
     on_click:
-      action: show_delete_dialog
-      target: sod_delete_dialog
-      intent: dialog
+      action: show_coming_soon_snackbar
+      target: ""
+      intent: snackbar
     a11y:
       role: button
-      label: "Cancel and delete this standing order permanently"
-    keyboard:
-      focusable: true
+      label: "Cancel this standing order — coming soon"
+    keyboard: { focusable: true }
     test_context:
-      purpose: "Triggers confirmation dialog before soft-deleting the standing order"
+      tag: sod_cancel_button
+      purpose: "Shows 'Cancelling standing orders is coming soon' — OBP has no delete endpoint, so there is no confirmation dialog."
       interaction_type: action
       data_driven: false
-
-  # ── Delete Confirmation Dialog ────────────────────────────────────────────────
-
-  - type: dialog
-    id: sod_delete_dialog
-    variant: alert
-    title: "Cancel Standing Order?"
-    message: "This will permanently cancel the standing order for Rent Payment. No further payments will be made. This action cannot be undone."
-    supported_states: [idle, visible, dismissed]
-    style:
-      background: "#FFFFFF"
-      border_radius: "28dp"
-      padding: spacing.lg
-    children:
-      - sod_delete_dialog_cancel_btn
-      - sod_delete_dialog_confirm_btn
-    on_click:
-      action: dismiss
-      intent: dismiss
-    a11y:
-      role: dialog
-      label: "Confirm cancellation of standing order"
-    test_context:
-      purpose: "Confirmation dialog shown before DELETE API call to prevent accidental cancellation"
-      interaction_type: action
-      data_driven: false
-
-  - type: button
-    id: sod_delete_dialog_cancel_btn
-    label: "Keep"
-    variant: text
-    supported_states: [idle, hover, focus_visible, pressed]
-    style:
-      color: "#4C662B"
-      typography: "Outfit/label_large"
-    on_click:
-      action: dismiss_dialog
-      target: sod_delete_dialog
-      intent: dismiss
-    a11y:
-      role: button
-      label: "Keep the standing order — dismiss dialog"
-    keyboard:
-      focusable: true
-    test_context:
-      purpose: "Dismiss the delete dialog without taking action"
-      interaction_type: action
-      data_driven: false
-
-  - type: button
-    id: sod_delete_dialog_confirm_btn
-    label: "Cancel Order"
-    variant: filled
-    supported_states: [idle, hover, focus_visible, pressed, disabled]
-    style:
-      background: "#BA1A1A"
-      color: "#FFFFFF"
-      typography: "Outfit/label_large"
-      border_radius: "8dp"
-    on_click:
-      action: confirm_delete_standing_order
-      target: standing-orders
-      intent: api
-    a11y:
-      role: button
-      label: "Confirm: permanently cancel this standing order"
-    keyboard:
-      focusable: true
-    test_context:
-      purpose: "Confirms soft-delete of standing order via DELETE API — navigates back to list on success"
-      interaction_type: action
-      data_driven: false
-
-  # ── Bottom Spacer ─────────────────────────────────────────────────────────────
 
   - type: spacer
     id: sod_bottom_spacer
-    style:
-      height: "24dp"
+    style: { height: "24dp" }
 
-  # ── Loading Skeleton ──────────────────────────────────────────────────────────
-
+  # ── Loading / Error / Empty ───────────────────────────────────────────────────
   - type: skeleton
     id: sod_loading_skeleton
     variant: detail
-    style:
-      background: "#F9FAEF"
-      padding: spacing.lg
-    a11y:
-      role: progressbar
-      label: "Loading standing order details"
-    test_context:
-      purpose: "Shimmer while standing order data loads from API"
-      interaction_type: display
-      data_driven: false
-
-  # ── Error State ───────────────────────────────────────────────────────────────
+    style: { background: "#F9FAEF", padding: spacing.lg }
+    a11y: { role: progressbar, label: "Loading standing order details" }
+    test_context: { purpose: "Centered progress while detail loads", interaction_type: display, data_driven: false }
 
   - type: stack
     id: sod_error_state
     variant: column
-    style:
-      alignment: center
-      padding: spacing.xl
-    children:
-      - sod_error_icon
-      - sod_error_title
-      - sod_error_message
-      - sod_retry_button
+    style: { alignment: center, padding: spacing.xl }
+    children: [sod_error_icon, sod_error_title, sod_error_message, sod_retry_button]
 
   - type: icon
     id: sod_error_icon
-    content: "sync_problem"
-    style:
-      color: "#BA1A1A"
-      size: "48dp"
-      alignment: center
-      padding_bottom: spacing.md
-    a11y:
-      role: image
-      label: "Error loading standing order"
-    test_context:
-      purpose: "Error icon when detail API call fails"
-      interaction_type: display
-      data_driven: false
+    content: "cloud_off"
+    style: { color: "#44483D", size: "48dp", alignment: center }
+    a11y: { role: image, label: "Error loading standing order" }
+    test_context: { purpose: "Error icon", interaction_type: display, data_driven: false }
 
   - type: text
     id: sod_error_title
     content: "Standing Order Not Found"
     variant: title_medium
-    style:
-      typography: "Outfit/title_medium"
-      color: "#1A1C16"
-      alignment: center
-      padding_bottom: spacing.xs
-    a11y:
-      role: text
-      label: "Standing order not found"
-    test_context:
-      purpose: "Error heading when standing order cannot be loaded"
-      interaction_type: display
-      data_driven: false
+    style: { typography: "Outfit/title_medium", color: "#1A1C16", alignment: center }
+    a11y: { role: text, label: "Standing order not found" }
+    test_context: { purpose: "Error/no-network/unauthenticated heading", interaction_type: display, data_driven: false }
 
   - type: text
     id: sod_error_message
     content: "We could not load this standing order. It may have been cancelled or there may be a connection issue."
     variant: body_medium
-    style:
-      typography: "Outfit/body_medium"
-      color: "#44483D"
-      alignment: center
-      padding_bottom: spacing.md
-    a11y:
-      role: text
-      label: "Standing order load error message"
-    test_context:
-      purpose: "User-facing error description"
-      interaction_type: display
-      data_driven: false
+    style: { typography: "Outfit/body_medium", color: "#44483D", alignment: center }
+    a11y: { role: text, label: "Error message" }
+    test_context: { purpose: "Error description", interaction_type: display, data_driven: false }
 
   - type: button
     id: sod_retry_button
     label: "Retry"
-    variant: outlined
-    supported_states: [idle, hover, focus_visible, pressed, disabled]
-    style:
-      border_color: "#4C662B"
-      color: "#4C662B"
-      typography: "Outfit/label_large"
-      alignment: center
+    variant: text
+    supported_states: [idle, hover, focus_visible, pressed]
+    style: { color: "#4C662B", typography: "Outfit/label_large", alignment: center }
     on_click:
-      action: retry_load
+      action: retry
       target: standing-order-detail
-      intent: api
-    a11y:
-      role: button
-      label: "Retry loading standing order"
-    keyboard:
-      focusable: true
-    test_context:
-      purpose: "Retry fetching standing order detail"
-      interaction_type: action
-      data_driven: false
-
-  # ── Empty State ───────────────────────────────────────────────────────────────
+    a11y: { role: button, label: "Retry loading standing order" }
+    keyboard: { focusable: true }
+    test_context: { purpose: "Re-runs StandingOrderDetailViewModel.onRetry()", interaction_type: action, data_driven: false }
 
   - type: stack
     id: sod_empty_state
     variant: column
-    style:
-      alignment: center
-      padding: spacing.xl
-    children:
-      - sod_empty_icon
-      - sod_empty_message
-      - sod_back_to_list_button
+    style: { alignment: center, padding: spacing.xl }
+    children: [sod_empty_icon, sod_empty_message, sod_back_to_list_button]
 
   - type: icon
     id: sod_empty_icon
-    content: "repeat_off"
-    style:
-      color: "#C5C8BA"
-      size: "48dp"
-      alignment: center
-      padding_bottom: spacing.md
-    a11y:
-      role: image
-      label: "No standing order detail available"
-    test_context:
-      purpose: "Empty icon when no standing order data is returned"
-      interaction_type: display
-      data_driven: false
+    content: "cloud_off"
+    style: { color: "#C5C8BA", size: "48dp", alignment: center }
+    a11y: { role: image, label: "No detail available" }
+    test_context: { purpose: "Empty-state icon", interaction_type: display, data_driven: false }
 
   - type: text
     id: sod_empty_message
     content: "No details are available for this standing order."
     variant: body_medium
-    style:
-      typography: "Outfit/body_medium"
-      color: "#44483D"
-      alignment: center
-      padding_bottom: spacing.md
-    a11y:
-      role: text
-      label: "No standing order details available"
-    test_context:
-      purpose: "Empty state message"
-      interaction_type: display
-      data_driven: false
+    style: { typography: "Outfit/body_medium", color: "#44483D", alignment: center }
+    a11y: { role: text, label: "No details available" }
+    test_context: { purpose: "Empty-state message", interaction_type: display, data_driven: false }
 
   - type: button
     id: sod_back_to_list_button
-    label: "Back to Standing Orders"
-    variant: outlined
+    label: "Go Back"
+    variant: text
     supported_states: [idle, hover, focus_visible, pressed]
-    style:
-      border_color: "#4C662B"
-      color: "#4C662B"
-      typography: "Outfit/label_large"
-      alignment: center
+    style: { color: "#4C662B", typography: "Outfit/label_large", alignment: center }
     on_click:
       action: navigate_back
-      intent: target
       target: standing-orders
-    a11y:
-      role: button
-      label: "Go back to standing orders list"
-    keyboard:
-      focusable: true
-    test_context:
-      purpose: "Navigation back to list when no detail is available"
-      interaction_type: action
-      data_driven: false
+      intent: target
+    a11y: { role: button, label: "Go back to standing orders list" }
+    keyboard: { focusable: true }
+    test_context: { purpose: "Back navigation on empty state", interaction_type: action, data_driven: false }
 
 responsive:
   mobile_only: true
@@ -1275,8 +624,7 @@ states:
   content:
     layout: { type: column, scroll: vertical }
     visible_components:
-      - sod_header_card
-      - sod_beneficiary_card
+      - sod_recipient_card
       - sod_schedule_card
       - sod_amount_card
       - sod_history_card
@@ -1287,244 +635,82 @@ states:
       shimmer_duration: short4
       reduced_motion_fallback: static_placeholder
     layout: { type: column }
-    visible_components:
-      - sod_loading_skeleton
-    note: "Shimmer matching content block structure while API call resolves"
+    visible_components: [sod_loading_skeleton]
+    note: "Centered CircularProgressIndicator while StandingOrdersRepository.detail() resolves."
   error:
     layout: { type: column, padding: spacing.xl, alignment: center }
-    visible_components:
-      - sod_error_state
-    note: "Shown on API 404 or network failure"
+    visible_components: [sod_error_state]
+    note: "ScreenState.Error / NoNetwork / Unauthenticated all render this message + Retry."
+  no_network:
+    layout: { type: column, padding: spacing.xl, alignment: center }
+    visible_components: [sod_error_state]
+  unauthenticated:
+    layout: { type: column, padding: spacing.xl, alignment: center }
+    visible_components: [sod_error_state]
   empty:
     layout: { type: column, padding: spacing.xl, alignment: center }
-    visible_components:
-      - sod_empty_state
-    note: "Shown when API returns 200 but empty/null standing order body"
+    visible_components: [sod_empty_state]
+    note: "ScreenState.Empty — no detail body."
 
 state_model:
-  StandingOrderDetailViewModel:
-    screen_state: StandingOrderDetailUiState
-    state:
-      - field: standingOrderId
-        type: String
-        default: "\"\""
-      - field: beneficiaryName
-        type: String
-        default: "\"\""
-      - field: beneficiaryIban
-        type: String
-        default: "\"\""
-      - field: beneficiaryBankName
-        type: String
-        default: "\"\""
-      - field: amount
-        type: BigDecimal
-        default: "BigDecimal.ZERO"
-      - field: currency
-        type: String
-        default: "\"GBP\""
-      - field: frequency
-        type: StandingOrderFrequency
-        default: "StandingOrderFrequency.MONTHLY"
-      - field: startDate
-        type: LocalDate
-        default: "LocalDate.now()"
-      - field: nextPaymentDate
-        type: LocalDate
-        default: "LocalDate.now()"
-      - field: finalDate
-        type: "LocalDate?"
-        default: "null"
-      - field: status
-        type: StandingOrderStatus
-        default: "StandingOrderStatus.ACTIVE"
-      - field: executionHistory
-        type: List<StandingOrderExecution>
-        default: "emptyList()"
-      - field: uiState
-        type: StandingOrderDetailUiState
-        default: "StandingOrderDetailUiState.Loading"
-      - field: isDeleteDialogVisible
-        type: Boolean
-        default: "false"
-      - field: isActionInProgress
-        type: Boolean
-        default: "false"
-    errors:
-      - id: not_found
-        message: "This standing order could not be found."
-      - id: network_error
-        message: "Network unavailable. Please check your connection."
-      - id: pause_failed
-        message: "Could not pause this standing order. Please try again."
-      - id: resume_failed
-        message: "Could not resume this standing order. Please try again."
-      - id: delete_failed
-        message: "Could not cancel this standing order. Please try again."
-    events:
-      - RetryLoad
-      - PauseClicked
-      - ResumeClicked
-      - DeleteClicked
-      - DeleteConfirmed
-      - DeleteDismissed
-      - EditClicked
-      - NavigateBack
-    actions:
-      - name: loadDetail
-        param: standingOrderId
-        triggers: [ScreenOpened, RetryLoad]
-      - name: pauseStandingOrder
-      - name: resumeStandingOrder
-      - name: deleteStandingOrder
-      - name: showDeleteDialog
-      - name: dismissDeleteDialog
-    di:
-      - StandingOrderRepository
-      - AccountRepository
+  view_model: StandingOrderDetailViewModel
+  constructor:
+    - { name: bankId, type: String }
+    - { name: accountId, type: String }
+    - { name: standingOrderId, type: String }
+  flows:
+    - name: uiState
+      type: "StateFlow<ScreenState<StandingOrderDetailContent>>"
+      default: "ScreenState.Loading"
+  content_type:
+    name: StandingOrderDetailContent
+    note: "Display-ready label strings only — no typed enums, no dialog/action-in-progress flags."
+    fields:
+      - { name: name, type: String }
+      - { name: statusLabel, type: String }
+      - { name: isActive, type: Boolean }
+      - { name: isCreated, type: Boolean }
+      - { name: recipientName, type: String }
+      - { name: recipientAccount, type: String, note: "masked; '' when unknown" }
+      - { name: amount, type: String }
+      - { name: currency, type: String }
+      - { name: frequencyLabel, type: String }
+      - { name: startedOn, type: String }
+      - { name: lastPayment, type: String }
+      - { name: nextPayment, type: String }
+      - { name: finalDate, type: String, note: "always 'Ongoing'" }
+      - { name: executions, type: "List<ExecutionRow>" }
+  supporting_types:
+    - name: ExecutionRow
+      fields:
+        - { name: transactionId, type: String }
+        - { name: dateLabel, type: String }
+        - { name: amountLabel, type: String }
+  methods:
+    - onRetry
+  constants:
+    - { name: MAX_EXECUTIONS, value: 5 }
+  di:
+    - StandingOrdersRepository
 
 api:
-  - endpoint: "GET /v4.0.0/banks/{bank_id}/accounts/{account_id}/standing-orders/{standing_order_id}"
-    tag: Standing-Orders
-    auth_required: true
-    auth_scheme: DirectLogin
-    params:
-      - name: bank_id
-        type: path
-        value: "rbs"
-      - name: account_id
-        type: path
-      - name: standing_order_id
-        type: path
-    response:
-      fields:
-        - name: id
-          type: String
-        - name: bank_id
-          type: String
-        - name: account_id
-          type: String
-        - name: beneficiary_name
-          type: String
-        - name: beneficiary_iban
-          type: String
-        - name: beneficiary_bank
-          type: String
-        - name: amount_value
-          type: String
-        - name: amount_currency
-          type: String
-        - name: frequency
-          type: String
-        - name: start_date
-          type: String
-        - name: next_payment_date
-          type: String
-        - name: final_date
-          type: "String?"
-        - name: status
-          type: String
-        - name: execution_history
-          type: "List<StandingOrderExecution>"
-    errors:
-      - code: 401
-        message: "USER_NOT_LOGGED_IN"
-      - code: 403
-        message: "INSUFFICIENT_AUTHORISATION"
-      - code: 404
-        message: "STANDING_ORDER_NOT_FOUND"
-
-  - endpoint: "POST /v4.0.0/banks/{bank_id}/accounts/{account_id}/standing-orders/{standing_order_id}/pause"
-    tag: Standing-Orders
-    auth_required: true
-    auth_scheme: DirectLogin
-    description: "Pause a standing order — idempotent. Returns updated standing order."
-    params:
-      - name: bank_id
-        type: path
-      - name: account_id
-        type: path
-      - name: standing_order_id
-        type: path
-    response:
-      fields:
-        - name: id
-          type: String
-        - name: status
-          type: String
-          value: "PAUSED"
-    errors:
-      - code: 401
-        message: "USER_NOT_LOGGED_IN"
-      - code: 404
-        message: "STANDING_ORDER_NOT_FOUND"
-      - code: 409
-        message: "STANDING_ORDER_ALREADY_PAUSED"
-
-  - endpoint: "POST /v4.0.0/banks/{bank_id}/accounts/{account_id}/standing-orders/{standing_order_id}/resume"
-    tag: Standing-Orders
-    auth_required: true
-    auth_scheme: DirectLogin
-    description: "Resume a paused standing order — idempotent."
-    params:
-      - name: bank_id
-        type: path
-      - name: account_id
-        type: path
-      - name: standing_order_id
-        type: path
-    response:
-      fields:
-        - name: id
-          type: String
-        - name: status
-          type: String
-          value: "ACTIVE"
-    errors:
-      - code: 401
-        message: "USER_NOT_LOGGED_IN"
-      - code: 404
-        message: "STANDING_ORDER_NOT_FOUND"
-      - code: 409
-        message: "STANDING_ORDER_NOT_PAUSED"
-
-  - endpoint: "DELETE /v4.0.0/banks/{bank_id}/accounts/{account_id}/standing-orders/{standing_order_id}"
-    tag: Standing-Orders
-    auth_required: true
-    auth_scheme: DirectLogin
-    description: "Soft-delete (cancel) a standing order. No further payments will be initiated."
-    params:
-      - name: bank_id
-        type: path
-      - name: account_id
-        type: path
-      - name: standing_order_id
-        type: path
-    response:
-      fields:
-        - name: id
-          type: String
-        - name: status
-          type: String
-          value: "CANCELLED"
-    errors:
-      - code: 401
-        message: "USER_NOT_LOGGED_IN"
-      - code: 404
-        message: "STANDING_ORDER_NOT_FOUND"
+  note: >
+    NONE of the originally specified standing-order detail endpoints exist on OBP
+    (GET detail / POST pause / POST resume / DELETE — all live-verified 404). They are
+    dropped. Detail is sourced via StandingOrdersRepository.detail() (find order by series
+    id in the derived/created set) and executions via deriveExecutions over TXN_TYPE=SO history.
+    See api.yaml.
 
 navigation:
   - id: nav_back
     target: standing-orders
+    on_click: { action: navigate_back }
+  - id: nav_execution
+    target: transaction-detail
     on_click:
-      action: navigate_back
-  - id: nav_edit
-    target: standing-order-edit
-    on_click:
-      action: edit_standing_order
-      intent: target
-      note: "Edit action in the top app bar navigates to standing-order-edit, passing standingOrderId + accountId"
+      action: navigate
+      note: "Each Recent Executions row drills into transaction-detail via the underlying transactionId."
 
 dependencies:
   tier: feature
-  features: [standing-orders, accounts]
+  features: [standing-orders, accounts, transactions]

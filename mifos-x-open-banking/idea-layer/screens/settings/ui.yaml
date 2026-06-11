@@ -2,7 +2,7 @@ id: settings
 name: "Settings"
 feature: settings
 flavor: shared
-status: approved
+status: enriched
 quality_score: 93
 contract_version: "1.1.0"
 approve_hash: "sha256:17af12bd8c96e4f037af12bd8c96e4f037af12bd8c96e4f037af12bd8c96e4f0"
@@ -25,6 +25,11 @@ status_history:
     by: "/idea approve"
     contract_version: "1.1.0"
     bypass_flags: []
+  - from: approved
+    to: enriched
+    at: "2026-06-11"
+    by: "/idea verify --source-drift (write-back)"
+    note: "SOURCE→SPEC reconciliation to shipped SettingsScreen.kt + SettingsViewModel.kt. Major divergence. ADDED shipped surfaces: a tappable Profile header card (name/email/initials → Profile); THREE mutually-exclusive theme-mode toggle rows (Follow System / Light / Dark) bound to DarkThemeConfig (replacing the single dark-mode boolean); a Security 'Reset Password' row that opens an in-screen AlertDialog (ResetPasswordDialog → authRecoveryRepository.initiateReset, then a result AlertDialog) instead of navigating; a Sign-out OutlinedButton at the bottom that CLEARS the session (obpAuthRepository.logout() + userDataRepository.clearUserData()); the About entries rendered as individual tappable cards (About/Terms/Privacy/Licenses); and a centered footer 'Mifos X Open Banking · v1.0.0'. REMOVED never-built surfaces: the ENTIRE Notifications section (group + push/transaction-alerts/marketing toggles + their dividers), settings_change_password_row (replaced by the Reset Password dialog), settings_consent_manager_row (Data & Consent → consent-manager), the single settings_dark_mode_toggle boolean, and the App Version row (replaced by the footer text). LanguageRow and the Biometric toggle ARE rendered but DISABLED (enabled=false) — kept and marked disabled_until. state_model rewritten to ScreenState<SettingsUiState>{profileName, profileEmail, profileInitials, themeConfig:DarkThemeConfig, selectedLanguage, isBiometricLoginEnabled, isBiometricAvailableOnDevice, appVersion, isLoading} — the three notification booleans removed. actions = onThemeConfigSelected/onLanguageSelected/onBiometricToggled/onSignOut/onResetPassword/onResetMessageConsumed. DI = UserDataRepository, ProfileRepository, AuthRecoveryRepository, ObpAuthRepository. api: was []; shipped has no fetch endpoints but performs runtime auth side-effects (logout token revoke + AuthRecoveryRepository.initiateReset password-reset email) — noted."
 
 screens:
   - id: settings
@@ -32,7 +37,7 @@ screens:
     viewmodel: "SettingsViewModel"
     impl_status: implemented
     impl_at: "2026-06-03"
-    impl_notes: "Reuses UserDataRepository (extended with notification prefs) per dark/language/biometric single-source-of-truth decision; nav targets default no-op pending destination screens."
+    impl_notes: "Reuses UserDataRepository as the single source of truth for theme/language/biometric prefs; profile header from ProfileRepository.current(); reset-password via AuthRecoveryRepository; sign-out via ObpAuthRepository.logout() + clearUserData(). Notification prefs were never built. Nav targets default no-op pending destination screens; Language + Biometric rows render disabled."
 
 archetype: settings
 
@@ -44,65 +49,264 @@ components:
       background: "#F9FAEF"
       padding: spacing.lg
     children:
+      - settings_profile_header_card
+      - settings_appearance_header
       - settings_appearance_group
-      - settings_notifications_group
+      - settings_security_header
       - settings_security_group
-      - settings_about_group
+      - settings_about_header
+      - settings_about_about_card
+      - settings_about_terms_card
+      - settings_about_privacy_card
+      - settings_about_licenses_card
+      - settings_sign_out_button
+      - settings_footer
+
+  # ── Profile Header ──────────────────────────────────────────────────────────
+
+  - type: card
+    id: settings_profile_header_card
+    variant: filled
+    supported_states: [idle, hover, focus_visible, pressed]
+    style:
+      background: "#CDEDA3"
+      border_radius: "16dp"
+      padding: spacing.md
+      margin_bottom: spacing.md
+    on_click:
+      action: navigate
+      target: profile
+    children:
+      - settings_profile_initials
+      - settings_profile_name
+      - settings_profile_email
+    a11y:
+      role: button
+      label: "Open your profile"
+    test_context:
+      purpose: "Tappable header card showing the signed-in user's initials, name, and email; navigates to Profile. Data from ProfileRepository.current() merged into SettingsUiState (profileName/profileEmail/profileInitials)."
+      interaction_type: navigate
+      data_driven: true
+
+  - type: box
+    id: settings_profile_initials
+    content: "M"
+    style:
+      width: "48dp"
+      height: "48dp"
+      shape: circle
+      background: "#4C662B"
+      color: "#FFFFFF"
+      typography: "Outfit/title_medium"
+      font_weight: 700
+      alignment: center
+    a11y:
+      role: image
+      label: "Your initials"
+    test_context:
+      purpose: "Circular initials badge in the profile header (SettingsUiState.profileInitials; 'M' fallback)"
+      interaction_type: display
+      data_driven: true
+
+  - type: text
+    id: settings_profile_name
+    content: "Mifos User"
+    variant: title_medium
+    style:
+      typography: "Outfit/title_medium"
+      color: "#1A1C16"
+      font_weight: 600
+    a11y:
+      role: text
+      label: "Your name"
+    test_context:
+      purpose: "Profile display name in the header (SettingsUiState.profileName; 'Mifos User' fallback)"
+      interaction_type: display
+      data_driven: true
+
+  - type: text
+    id: settings_profile_email
+    content: "user@example.com"
+    variant: body_small
+    style:
+      typography: "Outfit/body_small"
+      color: "#44483D"
+    a11y:
+      role: text
+      label: "Your email"
+    test_context:
+      purpose: "Profile email in the header (SettingsUiState.profileEmail); hidden when blank"
+      interaction_type: display
+      data_driven: true
 
   # ── Appearance Section ──────────────────────────────────────────────────────
 
   - type: text
     id: settings_appearance_header
     content: "Appearance"
-    variant: title_medium
+    variant: label_medium
     style:
-      typography: "Outfit/title_medium"
+      typography: "Outfit/label_medium"
       color: "#4C662B"
-      padding_bottom: spacing.sm
-      padding_top: spacing.lg
+      font_weight: 600
+      padding_bottom: spacing.xs
+      padding_top: spacing.sm
     a11y:
       role: heading
       label: "Appearance settings section"
     test_context:
-      purpose: "Section header grouping display-related preferences"
+      purpose: "Uppercased section header above the Appearance card"
       interaction_type: display
       data_driven: false
 
   - type: card
     id: settings_appearance_group
-    variant: filled
-    supported_states: [idle, hover, focus_visible, pressed, disabled]
+    variant: outlined
     style:
       background: "#FFFFFF"
       border_radius: "12dp"
-      padding: spacing.md
+      padding: spacing.sm
       margin_bottom: spacing.md
     children:
-      - settings_appearance_header
-      - settings_dark_mode_row
-      - settings_divider_1
+      - settings_theme_follow_system_row
+      - settings_divider_theme_1
+      - settings_theme_light_row
+      - settings_divider_theme_2
+      - settings_theme_dark_row
+      - settings_divider_appearance
       - settings_language_row
 
   - type: stack
-    id: settings_dark_mode_row
+    id: settings_theme_follow_system_row
     variant: row
     style:
       alignment: center_space_between
       padding_top: spacing.sm
       padding_bottom: spacing.sm
     children:
-      - settings_dark_mode_label_group
-      - settings_dark_mode_toggle
-
-  - type: stack
-    id: settings_dark_mode_label_group
-    variant: column
-    children:
-      - settings_dark_mode_label
-      - settings_dark_mode_description
+      - settings_theme_follow_system_label
+      - settings_theme_follow_system_toggle
 
   - type: text
-    id: settings_dark_mode_label
+    id: settings_theme_follow_system_label
+    content: "Follow System"
+    variant: body_large
+    style:
+      typography: "Outfit/body_large"
+      color: "#1A1C16"
+    a11y:
+      role: text
+      label: "Follow System"
+    test_context:
+      purpose: "Label for the Follow System theme-mode row (description: 'Match your device's light or dark setting')"
+      interaction_type: display
+      data_driven: false
+
+  - type: input
+    id: settings_theme_follow_system_toggle
+    label: "Follow System"
+    variant: switch
+    supported_states: [idle, hover, focus_visible, pressed]
+    style:
+      color_active: "#4C662B"
+      color_inactive: "#C5C8BA"
+    prefill: "themeConfig == FOLLOW_SYSTEM"
+    on_click:
+      action: select_theme
+      value: FOLLOW_SYSTEM
+    a11y:
+      role: switch
+      label: "Use the system theme"
+    keyboard:
+      focusable: true
+    test_context:
+      purpose: "One of three mutually-exclusive theme switches. Checked when themeConfig == DarkThemeConfig.FOLLOW_SYSTEM; toggling calls onThemeConfigSelected(FOLLOW_SYSTEM)."
+      interaction_type: action
+      data_driven: true
+
+  - type: divider
+    id: settings_divider_theme_1
+    style:
+      color: "#E1E4D5"
+    a11y:
+      role: separator
+    test_context:
+      purpose: "Separator between Follow System and Light Mode theme rows"
+      interaction_type: display
+      data_driven: false
+
+  - type: stack
+    id: settings_theme_light_row
+    variant: row
+    style:
+      alignment: center_space_between
+      padding_top: spacing.sm
+      padding_bottom: spacing.sm
+    children:
+      - settings_theme_light_label
+      - settings_theme_light_toggle
+
+  - type: text
+    id: settings_theme_light_label
+    content: "Light Mode"
+    variant: body_large
+    style:
+      typography: "Outfit/body_large"
+      color: "#1A1C16"
+    a11y:
+      role: text
+      label: "Light Mode"
+    test_context:
+      purpose: "Label for the Light Mode theme-mode row (description: 'Always use the light theme')"
+      interaction_type: display
+      data_driven: false
+
+  - type: input
+    id: settings_theme_light_toggle
+    label: "Light Mode"
+    variant: switch
+    supported_states: [idle, hover, focus_visible, pressed]
+    style:
+      color_active: "#4C662B"
+      color_inactive: "#C5C8BA"
+    prefill: "themeConfig == LIGHT"
+    on_click:
+      action: select_theme
+      value: LIGHT
+    a11y:
+      role: switch
+      label: "Always use the light theme"
+    keyboard:
+      focusable: true
+    test_context:
+      purpose: "Checked when themeConfig == DarkThemeConfig.LIGHT; toggling calls onThemeConfigSelected(LIGHT)."
+      interaction_type: action
+      data_driven: true
+
+  - type: divider
+    id: settings_divider_theme_2
+    style:
+      color: "#E1E4D5"
+    a11y:
+      role: separator
+    test_context:
+      purpose: "Separator between Light Mode and Dark Mode theme rows"
+      interaction_type: display
+      data_driven: false
+
+  - type: stack
+    id: settings_theme_dark_row
+    variant: row
+    style:
+      alignment: center_space_between
+      padding_top: spacing.sm
+      padding_bottom: spacing.sm
+    children:
+      - settings_theme_dark_label
+      - settings_theme_dark_toggle
+
+  - type: text
+    id: settings_theme_dark_label
     content: "Dark Mode"
     variant: body_large
     style:
@@ -112,58 +316,40 @@ components:
       role: text
       label: "Dark Mode"
     test_context:
-      purpose: "Row label for the dark mode theme toggle"
-      interaction_type: display
-      data_driven: false
-
-  - type: text
-    id: settings_dark_mode_description
-    content: "Switch to a darker color scheme"
-    variant: body_small
-    style:
-      typography: "Outfit/body_small"
-      color: "#44483D"
-    a11y:
-      role: text
-      label: "Switch to a darker color scheme"
-    test_context:
-      purpose: "Supplemental description below dark mode label"
+      purpose: "Label for the Dark Mode theme-mode row (description: 'Always use the dark theme')"
       interaction_type: display
       data_driven: false
 
   - type: input
-    id: settings_dark_mode_toggle
+    id: settings_theme_dark_toggle
     label: "Dark Mode"
     variant: switch
-    supported_states: [idle, hover, focus_visible, pressed, disabled]
+    supported_states: [idle, hover, focus_visible, pressed]
     style:
       color_active: "#4C662B"
       color_inactive: "#C5C8BA"
-    prefill: "isDarkModeEnabled"
+    prefill: "themeConfig == DARK"
     on_click:
-      action: toggle
-      target: settings
+      action: select_theme
+      value: DARK
     a11y:
       role: switch
-      label: "Toggle dark mode"
+      label: "Always use the dark theme"
     keyboard:
       focusable: true
     test_context:
-      purpose: "Persists dark mode preference to DataStore; triggers app-wide theme recomposition"
+      purpose: "Checked when themeConfig == DarkThemeConfig.DARK; toggling calls onThemeConfigSelected(DARK)."
       interaction_type: action
       data_driven: true
 
   - type: divider
-    id: settings_divider_1
+    id: settings_divider_appearance
     style:
       color: "#E1E4D5"
-      margin_top: spacing.xs
-      margin_bottom: spacing.xs
     a11y:
       role: separator
-      label: "Divider"
     test_context:
-      purpose: "Visual separator between preference rows within the Appearance card"
+      purpose: "Separator between the theme rows and the Language row"
       interaction_type: display
       data_driven: false
 
@@ -175,15 +361,8 @@ components:
       padding_top: spacing.sm
       padding_bottom: spacing.sm
     children:
-      - settings_language_label_group
-      - settings_language_select
-
-  - type: stack
-    id: settings_language_label_group
-    variant: column
-    children:
       - settings_language_label
-      - settings_language_description
+      - settings_language_select
 
   - type: text
     id: settings_language_label
@@ -196,22 +375,7 @@ components:
       role: text
       label: "Language"
     test_context:
-      purpose: "Row label for the language selection dropdown"
-      interaction_type: display
-      data_driven: false
-
-  - type: text
-    id: settings_language_description
-    content: "Choose your preferred display language"
-    variant: body_small
-    style:
-      typography: "Outfit/body_small"
-      color: "#44483D"
-    a11y:
-      role: text
-      label: "Choose your preferred display language"
-    test_context:
-      purpose: "Supplemental description below language label"
+      purpose: "Label for the Language row (description: 'Choose your preferred display language')"
       interaction_type: display
       data_driven: false
 
@@ -219,7 +383,9 @@ components:
     id: settings_language_select
     label: "Language"
     variant: select
-    supported_states: [idle, hover, focus_visible, pressed, disabled]
+    enabled: false
+    disabled_until: "app-wide locale switching applied"
+    supported_states: [disabled]
     options:
       - { label: "English", value: "en" }
       - { label: "Spanish", value: "es" }
@@ -228,333 +394,48 @@ components:
       - { label: "Arabic", value: "ar" }
     prefill: "selectedLanguage"
     style:
-      border_color: "#C5C8BA"
-      focused_border_color: "#4C662B"
       typography: "Outfit/body_medium"
       color: "#1A1C16"
-      min_width: "140dp"
-    on_click:
-      action: toggle
-      target: settings
     a11y:
       role: combobox
-      label: "Select language"
-      label_source: visible_label
-    keyboard:
-      focusable: true
+      label: "Select language (not yet available)"
     test_context:
-      purpose: "Language picker; selection triggers LocaleManager update and full UI recomposition"
-      interaction_type: action
-      data_driven: true
-
-  # ── Notifications Section ────────────────────────────────────────────────────
-
-  - type: card
-    id: settings_notifications_group
-    variant: filled
-    supported_states: [idle, hover, focus_visible, pressed, disabled]
-    style:
-      background: "#FFFFFF"
-      border_radius: "12dp"
-      padding: spacing.md
-      margin_bottom: spacing.md
-    children:
-      - settings_notifications_header
-      - settings_push_notifications_row
-      - settings_divider_2
-      - settings_transaction_alerts_row
-      - settings_divider_notifications_2
-      - settings_marketing_row
-
-  - type: text
-    id: settings_notifications_header
-    content: "Notifications"
-    variant: title_medium
-    style:
-      typography: "Outfit/title_medium"
-      color: "#4C662B"
-      padding_bottom: spacing.sm
-    a11y:
-      role: heading
-      label: "Notifications settings section"
-    test_context:
-      purpose: "Section header grouping notification preferences"
+      purpose: "Language dropdown — the picker + onLanguageSelected persistence is fully wired in shipped, but the row renders DISABLED (enabled=false) until locale switching applies app-wide. Marked deferred."
       interaction_type: display
-      data_driven: false
-
-  - type: stack
-    id: settings_push_notifications_row
-    variant: row
-    style:
-      alignment: center_space_between
-      padding_top: spacing.sm
-      padding_bottom: spacing.sm
-    children:
-      - settings_push_notifications_label_group
-      - settings_push_notifications_toggle
-
-  - type: stack
-    id: settings_push_notifications_label_group
-    variant: column
-    children:
-      - settings_push_notifications_label
-      - settings_push_notifications_description
-
-  - type: text
-    id: settings_push_notifications_label
-    content: "Push Notifications"
-    variant: body_large
-    style:
-      typography: "Outfit/body_large"
-      color: "#1A1C16"
-    a11y:
-      role: text
-      label: "Push Notifications"
-    test_context:
-      purpose: "Row label for the push notifications master toggle"
-      interaction_type: display
-      data_driven: false
-
-  - type: text
-    id: settings_push_notifications_description
-    content: "Receive alerts and updates from Mifos X"
-    variant: body_small
-    style:
-      typography: "Outfit/body_small"
-      color: "#44483D"
-    a11y:
-      role: text
-      label: "Receive alerts and updates from Mifos X"
-    test_context:
-      purpose: "Supplemental description below push notifications label"
-      interaction_type: display
-      data_driven: false
-
-  - type: input
-    id: settings_push_notifications_toggle
-    label: "Push Notifications"
-    variant: switch
-    supported_states: [idle, hover, focus_visible, pressed, disabled]
-    style:
-      color_active: "#4C662B"
-      color_inactive: "#C5C8BA"
-    prefill: "isPushNotificationsEnabled"
-    on_click:
-      action: toggle
-      target: settings
-    a11y:
-      role: switch
-      label: "Toggle push notifications"
-    keyboard:
-      focusable: true
-    test_context:
-      purpose: "Master switch for push notifications; disabling cascades to hide sub-toggles"
-      interaction_type: action
-      data_driven: true
-
-  - type: divider
-    id: settings_divider_2
-    style:
-      color: "#E1E4D5"
-      margin_top: spacing.xs
-      margin_bottom: spacing.xs
-    a11y:
-      role: separator
-      label: "Divider"
-    test_context:
-      purpose: "Visual separator between push notification and transaction alert rows"
-      interaction_type: display
-      data_driven: false
-
-  - type: stack
-    id: settings_transaction_alerts_row
-    variant: row
-    style:
-      alignment: center_space_between
-      padding_top: spacing.sm
-      padding_bottom: spacing.sm
-    children:
-      - settings_transaction_alerts_label_group
-      - settings_transaction_alerts_toggle
-
-  - type: stack
-    id: settings_transaction_alerts_label_group
-    variant: column
-    children:
-      - settings_transaction_alerts_label
-      - settings_transaction_alerts_description
-
-  - type: text
-    id: settings_transaction_alerts_label
-    content: "Transaction Alerts"
-    variant: body_large
-    style:
-      typography: "Outfit/body_large"
-      color: "#1A1C16"
-    a11y:
-      role: text
-      label: "Transaction Alerts"
-    test_context:
-      purpose: "Row label for the transaction notification sub-toggle"
-      interaction_type: display
-      data_driven: false
-
-  - type: text
-    id: settings_transaction_alerts_description
-    content: "Notify me for every debit and credit activity"
-    variant: body_small
-    style:
-      typography: "Outfit/body_small"
-      color: "#44483D"
-    a11y:
-      role: text
-      label: "Notify me for every debit and credit activity"
-    test_context:
-      purpose: "Supplemental description below transaction alerts label"
-      interaction_type: display
-      data_driven: false
-
-  - type: input
-    id: settings_transaction_alerts_toggle
-    label: "Transaction Alerts"
-    variant: switch
-    supported_states: [idle, hover, focus_visible, pressed, disabled]
-    style:
-      color_active: "#386663"
-      color_inactive: "#C5C8BA"
-    prefill: "isTransactionAlertsEnabled"
-    disabled_when: "!isPushNotificationsEnabled"
-    on_click:
-      action: toggle
-      target: settings
-    a11y:
-      role: switch
-      label: "Toggle transaction alerts"
-    keyboard:
-      focusable: true
-    test_context:
-      purpose: "Transaction-specific notification toggle; disabled when push notifications are off"
-      interaction_type: action
-      data_driven: true
-
-  - type: divider
-    id: settings_divider_notifications_2
-    style:
-      color: "#E1E4D5"
-      margin_top: spacing.xs
-      margin_bottom: spacing.xs
-    a11y:
-      role: separator
-      label: "Divider"
-    test_context:
-      purpose: "Visual separator between transaction alerts and marketing updates rows"
-      interaction_type: display
-      data_driven: false
-
-  - type: stack
-    id: settings_marketing_row
-    variant: row
-    style:
-      alignment: center_space_between
-      padding_top: spacing.sm
-      padding_bottom: spacing.sm
-    children:
-      - settings_marketing_label_group
-      - settings_marketing_toggle
-
-  - type: stack
-    id: settings_marketing_label_group
-    variant: column
-    children:
-      - settings_marketing_label
-      - settings_marketing_description
-
-  - type: text
-    id: settings_marketing_label
-    content: "Marketing Updates"
-    variant: body_large
-    style:
-      typography: "Outfit/body_large"
-      color: "#1A1C16"
-    a11y:
-      role: text
-      label: "Marketing Updates"
-    test_context:
-      purpose: "Row label for the marketing communications opt-in toggle"
-      interaction_type: display
-      data_driven: false
-
-  - type: text
-    id: settings_marketing_description
-    content: "Product news and promotions"
-    variant: body_small
-    style:
-      typography: "Outfit/body_small"
-      color: "#44483D"
-    a11y:
-      role: text
-      label: "Product news and promotions"
-    test_context:
-      purpose: "Supplemental description below marketing updates label"
-      interaction_type: display
-      data_driven: false
-
-  - type: input
-    id: settings_marketing_toggle
-    label: "Marketing Updates"
-    variant: switch
-    supported_states: [idle, hover, focus_visible, pressed, disabled]
-    style:
-      color_active: "#4C662B"
-      color_inactive: "#C5C8BA"
-    prefill: "isMarketingEnabled"
-    on_click:
-      action: toggle
-      target: settings
-    a11y:
-      role: switch
-      label: "Toggle marketing updates"
-    keyboard:
-      focusable: true
-    test_context:
-      purpose: "Opt-in toggle for promotional communications; persists to DataStore"
-      interaction_type: action
       data_driven: true
 
   # ── Security Section ─────────────────────────────────────────────────────────
 
-  - type: card
-    id: settings_security_group
-    variant: filled
-    supported_states: [idle, hover, focus_visible, pressed, disabled]
-    style:
-      background: "#FFFFFF"
-      border_radius: "12dp"
-      padding: spacing.md
-      margin_bottom: spacing.md
-    children:
-      - settings_security_header
-      - settings_biometric_row
-      - settings_divider_security
-      - settings_consent_manager_row
-      - settings_divider_security_2
-      - settings_change_password_row
-
   - type: text
     id: settings_security_header
     content: "Security"
-    variant: title_medium
+    variant: label_medium
     style:
-      typography: "Outfit/title_medium"
+      typography: "Outfit/label_medium"
       color: "#4C662B"
-      padding_bottom: spacing.sm
+      font_weight: 600
+      padding_bottom: spacing.xs
+      padding_top: spacing.sm
     a11y:
       role: heading
       label: "Security settings section"
     test_context:
-      purpose: "Section header grouping security-related preferences"
+      purpose: "Uppercased section header above the Security card"
       interaction_type: display
       data_driven: false
+
+  - type: card
+    id: settings_security_group
+    variant: outlined
+    style:
+      background: "#FFFFFF"
+      border_radius: "12dp"
+      padding: spacing.sm
+      margin_bottom: spacing.md
+    children:
+      - settings_biometric_row
+      - settings_divider_security
+      - settings_reset_password_row
 
   - type: stack
     id: settings_biometric_row
@@ -564,15 +445,8 @@ components:
       padding_top: spacing.sm
       padding_bottom: spacing.sm
     children:
-      - settings_biometric_label_group
-      - settings_biometric_toggle
-
-  - type: stack
-    id: settings_biometric_label_group
-    variant: column
-    children:
       - settings_biometric_label
-      - settings_biometric_description
+      - settings_biometric_toggle
 
   - type: text
     id: settings_biometric_label
@@ -585,22 +459,7 @@ components:
       role: text
       label: "Biometric Login"
     test_context:
-      purpose: "Row label for fingerprint or face unlock authentication toggle"
-      interaction_type: display
-      data_driven: false
-
-  - type: text
-    id: settings_biometric_description
-    content: "Use fingerprint or face ID to sign in faster"
-    variant: body_small
-    style:
-      typography: "Outfit/body_small"
-      color: "#44483D"
-    a11y:
-      role: text
-      label: "Use fingerprint or face ID to sign in faster"
-    test_context:
-      purpose: "Supplemental description below biometric login label"
+      purpose: "Label for the Biometric Login row (description: 'Use fingerprint or face ID to sign in faster')"
       interaction_type: display
       data_driven: false
 
@@ -608,508 +467,477 @@ components:
     id: settings_biometric_toggle
     label: "Biometric Login"
     variant: switch
-    supported_states: [idle, hover, focus_visible, pressed, disabled]
+    enabled: false
+    disabled_until: "biometric login flow wired end-to-end"
+    supported_states: [disabled]
     style:
       color_active: "#4C662B"
       color_inactive: "#C5C8BA"
     prefill: "isBiometricLoginEnabled"
-    disabled_when: "!isBiometricAvailableOnDevice"
-    on_click:
-      action: toggle
-      target: settings
     a11y:
       role: switch
-      label: "Toggle biometric login"
-    keyboard:
-      focusable: true
+      label: "Toggle biometric login (not yet available)"
     test_context:
-      purpose: "Enables BiometricPrompt-backed login; disabled on devices without biometric hardware"
-      interaction_type: action
+      purpose: "Biometric toggle — bound to SettingsUiState.isBiometricLoginEnabled and onBiometricToggled, but shipped renders it DISABLED (enabled=false). Marked deferred. (isBiometricAvailableOnDevice is surfaced in state but the row is hard-disabled today.)"
+      interaction_type: display
       data_driven: true
 
   - type: divider
     id: settings_divider_security
     style:
       color: "#E1E4D5"
-      margin_top: spacing.xs
-      margin_bottom: spacing.xs
     a11y:
       role: separator
-      label: "Divider"
     test_context:
-      purpose: "Visual separator between biometric login and data consent rows"
+      purpose: "Separator between Biometric Login and Reset Password rows"
       interaction_type: display
       data_driven: false
 
   - type: stack
-    id: settings_consent_manager_row
+    id: settings_reset_password_row
     variant: row
     style:
       alignment: center_space_between
       padding_top: spacing.sm
       padding_bottom: spacing.sm
     children:
-      - settings_consent_manager_label_group
-      - settings_consent_manager_chevron
-
-  - type: stack
-    id: settings_consent_manager_label_group
-    variant: column
-    children:
-      - settings_consent_manager_label
-      - settings_consent_manager_description
+      - settings_reset_password_label
+      - settings_reset_password_chevron
 
   - type: text
-    id: settings_consent_manager_label
-    content: "Data & Consent"
+    id: settings_reset_password_label
+    content: "Reset Password"
     variant: body_large
     style:
       typography: "Outfit/body_large"
       color: "#1A1C16"
     a11y:
       role: text
-      label: "Data and Consent"
+      label: "Reset Password"
     test_context:
-      purpose: "Row label linking to the consent manager for managing third-party data sharing"
-      interaction_type: display
-      data_driven: false
-
-  - type: text
-    id: settings_consent_manager_description
-    content: "Manage your data sharing consents"
-    variant: body_small
-    style:
-      typography: "Outfit/body_small"
-      color: "#44483D"
-    a11y:
-      role: text
-      label: "Manage your data sharing consents"
-    test_context:
-      purpose: "Supplemental description below consent manager label"
+      purpose: "Label for the Reset Password row (description: 'Email yourself a password reset link'). Replaces the old change-password navigation row."
       interaction_type: display
       data_driven: false
 
   - type: icon
-    id: settings_consent_manager_chevron
+    id: settings_reset_password_chevron
     content: "chevron_right"
     variant: default
     style:
       color: "#C5C8BA"
       size: "20dp"
     on_click:
-      action: navigate
-      target: consent-manager
-      intent: target
+      action: open_reset_password_dialog
     a11y:
       role: button
-      label: "Navigate to Data and Consent manager"
+      label: "Email yourself a password reset link"
     keyboard:
       focusable: true
     test_context:
-      purpose: "Tappable chevron navigating to the open banking consent manager"
-      interaction_type: navigate
+      purpose: "Tapping the Reset Password row opens an in-screen ResetPasswordDialog (AlertDialog). Confirm calls onResetPassword() → authRecoveryRepository.initiateReset; result is shown in a second AlertDialog. NO navigation."
+      interaction_type: action
       data_driven: false
 
-  - type: divider
-    id: settings_divider_security_2
+  # ── Reset Password dialogs (in-screen) ───────────────────────────────────────
+
+  - type: dialog
+    id: settings_reset_password_dialog
+    variant: alert
     style:
-      color: "#E1E4D5"
-      margin_top: spacing.xs
-      margin_bottom: spacing.xs
+      title: "Reset password?"
+    visible_when: "showResetDialog"
+    children:
+      - settings_reset_password_dialog_body
+      - settings_reset_password_dialog_confirm
+      - settings_reset_password_dialog_cancel
     a11y:
-      role: separator
-      label: "Divider"
+      role: dialog
+      label: "Reset password confirmation"
     test_context:
-      purpose: "Visual separator between data consent and change password rows"
+      purpose: "AlertDialog asking to confirm sending a reset link. Body: 'We'll email a password reset link to {email}.' (or generic copy when email is blank)."
       interaction_type: display
+      data_driven: true
+
+  - type: text
+    id: settings_reset_password_dialog_body
+    content: "We'll email a password reset link to your registered address."
+    variant: body_medium
+    style:
+      typography: "Outfit/body_medium"
+      color: "#44483D"
+    a11y:
+      role: text
+      label: "Reset link will be emailed"
+    test_context:
+      purpose: "Dialog body copy; shipped interpolates the email when present"
+      interaction_type: display
+      data_driven: true
+
+  - type: button
+    id: settings_reset_password_dialog_confirm
+    label: "Send link"
+    variant: text
+    supported_states: [idle, hover, focus_visible, pressed]
+    style:
+      color: "#4C662B"
+    on_click:
+      action: confirm_reset_password
+    a11y:
+      role: button
+      label: "Send the password reset link"
+    keyboard:
+      focusable: true
+    test_context:
+      purpose: "Confirm button — dismisses the dialog and calls onResetPassword()"
+      interaction_type: action
       data_driven: false
 
-  - type: stack
-    id: settings_change_password_row
-    variant: row
+  - type: button
+    id: settings_reset_password_dialog_cancel
+    label: "Cancel"
+    variant: text
+    supported_states: [idle, hover, focus_visible, pressed]
     style:
-      alignment: center_space_between
+      color: "#44483D"
+    on_click:
+      action: dismiss_reset_password_dialog
+    a11y:
+      role: button
+      label: "Cancel password reset"
+    keyboard:
+      focusable: true
+    test_context:
+      purpose: "Dismisses the ResetPasswordDialog without sending"
+      interaction_type: action
+      data_driven: false
+
+  - type: dialog
+    id: settings_reset_message_dialog
+    variant: alert
+    style:
+      title: "Password reset"
+    visible_when: "resetMessage != null"
+    children:
+      - settings_reset_message_body
+      - settings_reset_message_ok
+    a11y:
+      role: dialog
+      label: "Password reset result"
+    test_context:
+      purpose: "Result AlertDialog shown after onResetPassword(); body is SettingsViewModel.resetMessage (success or failure copy)."
+      interaction_type: display
+      data_driven: true
+
+  - type: text
+    id: settings_reset_message_body
+    content: "If your account is valid, a password reset link has been emailed to you."
+    variant: body_medium
+    style:
+      typography: "Outfit/body_medium"
+      color: "#44483D"
+    a11y:
+      role: alert
+      label: "Password reset result message"
+    test_context:
+      purpose: "Result message body bound to resetMessage"
+      interaction_type: display
+      data_driven: true
+
+  - type: button
+    id: settings_reset_message_ok
+    label: "OK"
+    variant: text
+    supported_states: [idle, hover, focus_visible, pressed]
+    style:
+      color: "#4C662B"
+    on_click:
+      action: dismiss_reset_message
+    a11y:
+      role: button
+      label: "Dismiss"
+    keyboard:
+      focusable: true
+    test_context:
+      purpose: "Dismisses the result dialog — calls onResetMessageConsumed()"
+      interaction_type: action
+      data_driven: false
+
+  # ── About Section (one tappable card per entry) ──────────────────────────────
+
+  - type: text
+    id: settings_about_header
+    content: "About"
+    variant: label_medium
+    style:
+      typography: "Outfit/label_medium"
+      color: "#4C662B"
+      font_weight: 600
+      padding_bottom: spacing.xs
       padding_top: spacing.sm
-      padding_bottom: spacing.sm
-    children:
-      - settings_change_password_label_group
-      - settings_change_password_chevron
-
-  - type: stack
-    id: settings_change_password_label_group
-    variant: column
-    children:
-      - settings_change_password_label
-      - settings_change_password_description
-
-  - type: text
-    id: settings_change_password_label
-    content: "Change Password"
-    variant: body_large
-    style:
-      typography: "Outfit/body_large"
-      color: "#1A1C16"
     a11y:
-      role: text
-      label: "Change Password"
+      role: heading
+      label: "About section"
     test_context:
-      purpose: "Row label linking to the change password screen"
+      purpose: "Uppercased section header above the About cards"
       interaction_type: display
       data_driven: false
-
-  - type: text
-    id: settings_change_password_description
-    content: "Update your account login password"
-    variant: body_small
-    style:
-      typography: "Outfit/body_small"
-      color: "#44483D"
-    a11y:
-      role: text
-      label: "Update your account login password"
-    test_context:
-      purpose: "Supplemental description below change password label"
-      interaction_type: display
-      data_driven: false
-
-  - type: icon
-    id: settings_change_password_chevron
-    content: "chevron_right"
-    variant: default
-    style:
-      color: "#C5C8BA"
-      size: "20dp"
-    on_click:
-      action: navigate
-      target: change-password
-      intent: target
-    a11y:
-      role: button
-      label: "Navigate to Change Password"
-    keyboard:
-      focusable: true
-    test_context:
-      purpose: "Tappable chevron navigating to the change password screen"
-      interaction_type: navigate
-      data_driven: false
-
-  # ── About Section ────────────────────────────────────────────────────────────
 
   - type: card
-    id: settings_about_group
-    variant: filled
-    supported_states: [idle, hover, focus_visible, pressed, disabled]
+    id: settings_about_about_card
+    variant: outlined
+    supported_states: [idle, hover, focus_visible, pressed]
+    style:
+      background: "#FFFFFF"
+      border_radius: "12dp"
+      padding: spacing.md
+      margin_bottom: spacing.sm
+    on_click:
+      action: navigate
+      target: about
+    children:
+      - settings_about_about_icon
+      - settings_about_about_label
+    a11y:
+      role: button
+      label: "About Mifos X Open Banking"
+    test_context:
+      purpose: "Tappable card (info icon + label) navigating to the About screen"
+      interaction_type: navigate
+      data_driven: false
+
+  - type: icon
+    id: settings_about_about_icon
+    content: "info"
+    variant: default
+    style:
+      color: "#4C662B"
+      size: "20dp"
+    a11y:
+      role: image
+      label: ""
+    test_context:
+      purpose: "Leading icon for the About card"
+      interaction_type: display
+      data_driven: false
+
+  - type: text
+    id: settings_about_about_label
+    content: "About Mifos X Open Banking"
+    variant: body_large
+    style:
+      typography: "Outfit/body_large"
+      color: "#1A1C16"
+    a11y:
+      role: text
+      label: "About Mifos X Open Banking"
+    test_context:
+      purpose: "Label for the About card"
+      interaction_type: display
+      data_driven: false
+
+  - type: card
+    id: settings_about_terms_card
+    variant: outlined
+    supported_states: [idle, hover, focus_visible, pressed]
+    style:
+      background: "#FFFFFF"
+      border_radius: "12dp"
+      padding: spacing.md
+      margin_bottom: spacing.sm
+    on_click:
+      action: navigate
+      target: terms-of-service
+    children:
+      - settings_about_terms_icon
+      - settings_about_terms_label
+    a11y:
+      role: button
+      label: "Terms of Service"
+    test_context:
+      purpose: "Tappable card (article icon + label) navigating to Terms of Service"
+      interaction_type: navigate
+      data_driven: false
+
+  - type: icon
+    id: settings_about_terms_icon
+    content: "article"
+    variant: default
+    style:
+      color: "#4C662B"
+      size: "20dp"
+    a11y:
+      role: image
+      label: ""
+    test_context:
+      purpose: "Leading icon for the Terms of Service card"
+      interaction_type: display
+      data_driven: false
+
+  - type: text
+    id: settings_about_terms_label
+    content: "Terms of Service"
+    variant: body_large
+    style:
+      typography: "Outfit/body_large"
+      color: "#1A1C16"
+    a11y:
+      role: text
+      label: "Terms of Service"
+    test_context:
+      purpose: "Label for the Terms of Service card"
+      interaction_type: display
+      data_driven: false
+
+  - type: card
+    id: settings_about_privacy_card
+    variant: outlined
+    supported_states: [idle, hover, focus_visible, pressed]
+    style:
+      background: "#FFFFFF"
+      border_radius: "12dp"
+      padding: spacing.md
+      margin_bottom: spacing.sm
+    on_click:
+      action: navigate
+      target: privacy-policy
+    children:
+      - settings_about_privacy_icon
+      - settings_about_privacy_label
+    a11y:
+      role: button
+      label: "Privacy Policy"
+    test_context:
+      purpose: "Tappable card (privacy icon + label) navigating to Privacy Policy"
+      interaction_type: navigate
+      data_driven: false
+
+  - type: icon
+    id: settings_about_privacy_icon
+    content: "privacy_tip"
+    variant: default
+    style:
+      color: "#4C662B"
+      size: "20dp"
+    a11y:
+      role: image
+      label: ""
+    test_context:
+      purpose: "Leading icon for the Privacy Policy card"
+      interaction_type: display
+      data_driven: false
+
+  - type: text
+    id: settings_about_privacy_label
+    content: "Privacy Policy"
+    variant: body_large
+    style:
+      typography: "Outfit/body_large"
+      color: "#1A1C16"
+    a11y:
+      role: text
+      label: "Privacy Policy"
+    test_context:
+      purpose: "Label for the Privacy Policy card"
+      interaction_type: display
+      data_driven: false
+
+  - type: card
+    id: settings_about_licenses_card
+    variant: outlined
+    supported_states: [idle, hover, focus_visible, pressed]
     style:
       background: "#FFFFFF"
       border_radius: "12dp"
       padding: spacing.md
       margin_bottom: spacing.md
-    children:
-      - settings_about_header
-      - settings_about_link_row
-      - settings_divider_about_1
-      - settings_terms_row
-      - settings_divider_about_2
-      - settings_privacy_row
-      - settings_divider_about_3
-      - settings_licenses_row
-      - settings_divider_3
-      - settings_app_version_row
-
-  - type: text
-    id: settings_about_header
-    content: "About"
-    variant: title_medium
-    style:
-      typography: "Outfit/title_medium"
-      color: "#4C662B"
-      padding_bottom: spacing.sm
-    a11y:
-      role: heading
-      label: "About section"
-    test_context:
-      purpose: "Section header grouping app information and legal links"
-      interaction_type: display
-      data_driven: false
-
-  - type: stack
-    id: settings_about_link_row
-    variant: row
-    style:
-      alignment: center_space_between
-      padding_top: spacing.sm
-      padding_bottom: spacing.sm
-    children:
-      - settings_about_link
-      - settings_about_chevron
-
-  - type: link
-    id: settings_about_link
-    label: "About Mifos X Open Banking"
-    variant: inline
-    style:
-      typography: "Outfit/body_large"
-      color: "#1A1C16"
-    on_click:
-      action: navigate
-      target: about
-    a11y:
-      role: link
-      label: "Navigate to About Mifos X Open Banking"
-    keyboard:
-      focusable: true
-    test_context:
-      purpose: "Links to the About screen showing open-source credits, OBP API version, licenses"
-      interaction_type: navigate
-      data_driven: false
-
-  - type: icon
-    id: settings_about_chevron
-    content: "chevron_right"
-    variant: default
-    style:
-      color: "#C5C8BA"
-      size: "20dp"
-    a11y:
-      role: image
-      label: ""
-    test_context:
-      purpose: "Trailing affordance icon indicating the About row is tappable"
-      interaction_type: display
-      data_driven: false
-
-  - type: divider
-    id: settings_divider_about_1
-    style:
-      color: "#E1E4D5"
-      margin_top: spacing.xs
-      margin_bottom: spacing.xs
-    a11y:
-      role: separator
-      label: "Divider"
-    test_context:
-      purpose: "Visual separator between About link and Terms of Service rows"
-      interaction_type: display
-      data_driven: false
-
-  - type: stack
-    id: settings_terms_row
-    variant: row
-    style:
-      alignment: center_space_between
-      padding_top: spacing.sm
-      padding_bottom: spacing.sm
-    children:
-      - settings_terms_link
-      - settings_terms_chevron
-
-  - type: link
-    id: settings_terms_link
-    label: "Terms of Service"
-    variant: inline
-    style:
-      typography: "Outfit/body_large"
-      color: "#1A1C16"
-    on_click:
-      action: navigate
-      target: terms-of-service
-    a11y:
-      role: link
-      label: "Navigate to Terms of Service"
-    keyboard:
-      focusable: true
-    test_context:
-      purpose: "Links to the Terms of Service legal screen"
-      interaction_type: navigate
-      data_driven: false
-
-  - type: icon
-    id: settings_terms_chevron
-    content: "chevron_right"
-    variant: default
-    style:
-      color: "#C5C8BA"
-      size: "20dp"
-    a11y:
-      role: image
-      label: ""
-    test_context:
-      purpose: "Trailing affordance icon indicating the Terms row is tappable"
-      interaction_type: display
-      data_driven: false
-
-  - type: divider
-    id: settings_divider_about_2
-    style:
-      color: "#E1E4D5"
-      margin_top: spacing.xs
-      margin_bottom: spacing.xs
-    a11y:
-      role: separator
-      label: "Divider"
-    test_context:
-      purpose: "Visual separator between Terms of Service and Privacy Policy rows"
-      interaction_type: display
-      data_driven: false
-
-  - type: stack
-    id: settings_privacy_row
-    variant: row
-    style:
-      alignment: center_space_between
-      padding_top: spacing.sm
-      padding_bottom: spacing.sm
-    children:
-      - settings_privacy_link
-      - settings_privacy_chevron
-
-  - type: link
-    id: settings_privacy_link
-    label: "Privacy Policy"
-    variant: inline
-    style:
-      typography: "Outfit/body_large"
-      color: "#1A1C16"
-    on_click:
-      action: navigate
-      target: privacy-policy
-    a11y:
-      role: link
-      label: "Navigate to Privacy Policy"
-    keyboard:
-      focusable: true
-    test_context:
-      purpose: "Links to the Privacy Policy legal screen"
-      interaction_type: navigate
-      data_driven: false
-
-  - type: icon
-    id: settings_privacy_chevron
-    content: "chevron_right"
-    variant: default
-    style:
-      color: "#C5C8BA"
-      size: "20dp"
-    a11y:
-      role: image
-      label: ""
-    test_context:
-      purpose: "Trailing affordance icon indicating the Privacy row is tappable"
-      interaction_type: display
-      data_driven: false
-
-  - type: divider
-    id: settings_divider_about_3
-    style:
-      color: "#E1E4D5"
-      margin_top: spacing.xs
-      margin_bottom: spacing.xs
-    a11y:
-      role: separator
-      label: "Divider"
-    test_context:
-      purpose: "Visual separator between Privacy Policy and Open-source Licences rows"
-      interaction_type: display
-      data_driven: false
-
-  - type: stack
-    id: settings_licenses_row
-    variant: row
-    style:
-      alignment: center_space_between
-      padding_top: spacing.sm
-      padding_bottom: spacing.sm
-    children:
-      - settings_licenses_link
-      - settings_licenses_chevron
-
-  - type: link
-    id: settings_licenses_link
-    label: "Open-source Licences"
-    variant: inline
-    style:
-      typography: "Outfit/body_large"
-      color: "#1A1C16"
     on_click:
       action: navigate
       target: licenses
+    children:
+      - settings_about_licenses_icon
+      - settings_about_licenses_label
     a11y:
-      role: link
-      label: "Navigate to Open-source Licences"
-    keyboard:
-      focusable: true
+      role: button
+      label: "Open-source Licences"
     test_context:
-      purpose: "Links to the Open-source Licences screen"
+      purpose: "Tappable card (gavel icon + label) navigating to Open-source Licences"
       interaction_type: navigate
       data_driven: false
 
   - type: icon
-    id: settings_licenses_chevron
-    content: "chevron_right"
+    id: settings_about_licenses_icon
+    content: "gavel"
     variant: default
     style:
-      color: "#C5C8BA"
+      color: "#4C662B"
       size: "20dp"
     a11y:
       role: image
       label: ""
     test_context:
-      purpose: "Trailing affordance icon indicating the Licences row is tappable"
+      purpose: "Leading icon for the Open-source Licences card"
       interaction_type: display
       data_driven: false
-
-  - type: divider
-    id: settings_divider_3
-    style:
-      color: "#E1E4D5"
-      margin_top: spacing.xs
-      margin_bottom: spacing.xs
-    a11y:
-      role: separator
-      label: "Divider"
-    test_context:
-      purpose: "Visual separator between About link and app version rows"
-      interaction_type: display
-      data_driven: false
-
-  - type: stack
-    id: settings_app_version_row
-    variant: row
-    style:
-      alignment: center_space_between
-      padding_top: spacing.sm
-      padding_bottom: spacing.sm
-    children:
-      - settings_app_version_label
-      - settings_app_version_value
 
   - type: text
-    id: settings_app_version_label
-    content: "App Version"
+    id: settings_about_licenses_label
+    content: "Open-source Licences"
     variant: body_large
     style:
       typography: "Outfit/body_large"
       color: "#1A1C16"
     a11y:
       role: text
-      label: "App Version"
+      label: "Open-source Licences"
     test_context:
-      purpose: "Label for the current build version row"
+      purpose: "Label for the Open-source Licences card"
       interaction_type: display
       data_driven: false
 
+  # ── Sign out + footer ────────────────────────────────────────────────────────
+
+  - type: button
+    id: settings_sign_out_button
+    label: "Sign out"
+    variant: outlined
+    supported_states: [idle, hover, focus_visible, pressed]
+    style:
+      border_color: "#BA1A1A"
+      color: "#BA1A1A"
+      typography: "Outfit/label_large"
+      font_weight: 600
+      border_radius: "12dp"
+      padding: spacing.md
+      width: "match_parent"
+      icon_start: "logout"
+      margin_top: spacing.sm
+    on_click:
+      action: sign_out
+    a11y:
+      role: button
+      label: "Sign out of your account"
+    keyboard:
+      focusable: true
+    test_context:
+      purpose: "OutlinedButton at the bottom. Calls onSignOut() → obpAuthRepository.logout() (revokes/clears the held token) + userDataRepository.clearUserData(). REACTIVE: RootNavViewModel observes userData and routes back to auth. No imperative nav."
+      interaction_type: action
+      data_driven: false
+
   - type: text
-    id: settings_app_version_value
-    content: "v1.0.0"
+    id: settings_footer
+    content: "Mifos X Open Banking  ·  v1.0.0"
     variant: body_small
     style:
       typography: "Outfit/body_small"
       color: "#44483D"
+      alignment: center
+      padding_top: spacing.md
+      padding_bottom: spacing.lg
     a11y:
       role: text
-      label: "Version 1.0.0"
+      label: "Mifos X Open Banking version 1.0.0"
     test_context:
-      purpose: "Displays the current app version string from BuildConfig.VERSION_NAME"
+      purpose: "Centered footer combining the app name and version (SettingsUiState.appVersion). Replaces the old App Version row."
       interaction_type: display
       data_driven: true
 
@@ -1122,30 +950,33 @@ states:
   loading:
     layout: { type: column, padding: spacing.lg }
     visible_components: []
-    note: "Skeleton shimmer shown while preferences load from DataStore"
+    note: "ScreenState.Loading — four skeleton cards while UserData + profile load."
   content:
     layout: { type: column, padding: spacing.lg }
-    visible_components: [settings_appearance_group, settings_notifications_group, settings_security_group, settings_about_group]
+    visible_components: [settings_profile_header_card, settings_appearance_header, settings_appearance_group, settings_security_header, settings_security_group, settings_about_header, settings_about_about_card, settings_about_terms_card, settings_about_privacy_card, settings_about_licenses_card, settings_sign_out_button, settings_footer]
+    note: "ScreenState.Content — profile header + Appearance/Security/About + Sign out + footer. The two Reset Password dialogs overlay this state when triggered."
 
 state_model:
   SettingsViewModel:
-    screen_state: SettingsUiState
+    screen_state: "ScreenState<SettingsUiState>"
+    content_type: SettingsUiState
     state:
-      - field: isDarkModeEnabled
-        type: Boolean
-        default: "false"
+      - field: profileName
+        type: String
+        default: "\"\""
+      - field: profileEmail
+        type: String
+        default: "\"\""
+      - field: profileInitials
+        type: String
+        default: "\"\""
+      - field: themeConfig
+        type: DarkThemeConfig
+        default: "DarkThemeConfig.FOLLOW_SYSTEM"
+        note: "enum DarkThemeConfig { FOLLOW_SYSTEM, LIGHT, DARK } — drives the three theme-mode switches"
       - field: selectedLanguage
         type: String
         default: "\"en\""
-      - field: isPushNotificationsEnabled
-        type: Boolean
-        default: "true"
-      - field: isTransactionAlertsEnabled
-        type: Boolean
-        default: "true"
-      - field: isMarketingEnabled
-        type: Boolean
-        default: "false"
       - field: isBiometricLoginEnabled
         type: Boolean
         default: "false"
@@ -1157,28 +988,39 @@ state_model:
         default: "\"v1.0.0\""
       - field: isLoading
         type: Boolean
-        default: "true"
-    errors: [NETWORK_ERROR]
-    events: [LoadSettings, OnDarkModeToggled, OnLanguageSelected, OnPushNotificationsToggled, OnTransactionAlertsToggled, OnMarketingToggled, OnBiometricToggled, OnAboutClicked]
-    actions: [onLoadSettings(), onDarkModeToggled(), onLanguageSelected(language: String), onPushNotificationsToggled(), onTransactionAlertsToggled(), onMarketingToggled(), onBiometricToggled(), onAboutClicked()]
-    di: [SettingsRepository, BiometricManager, NotificationManager, LocaleManager]
+        default: "false"
+    side_effect_state:
+      - field: resetMessage
+        type: "String?"
+        default: "null"
+        note: "separate StateFlow<String?> — drives the result AlertDialog after a password-reset request"
+    state_wrapper:
+      type: "ScreenState<SettingsUiState>"
+      variants: [Loading, "Content(SettingsUiState, DataFreshness)"]
+      note: "Error variant unused — profile load failure falls back to a 'Mifos User' header rather than an error screen."
+    actions:
+      - "onThemeConfigSelected(config: DarkThemeConfig)"
+      - "onLanguageSelected(language: String)"
+      - "onBiometricToggled()"
+      - "onSignOut() — obpAuthRepository.logout() + userDataRepository.clearUserData()"
+      - "onResetPassword() — authRecoveryRepository.initiateReset(username, email)"
+      - "onResetMessageConsumed()"
+    di: [UserDataRepository, ProfileRepository, AuthRecoveryRepository, ObpAuthRepository]
+    base: "androidx.lifecycle.ViewModel (exposes StateFlow<ScreenState<SettingsUiState>> + StateFlow<String?> resetMessage)"
+    note: "Preference state is the single source of truth in UserDataRepository.userData; UI state is derived reactively (combine), so toggles persist and flow straight back. Profile header is loaded once from ProfileRepository.current(). Sign-out + theme/language/biometric persistence all go through the repositories; RootNavViewModel observes UserData for post-logout routing."
 
 navigation:
+  - id: nav_to_profile
+    target: profile
+    trigger: profile_header_click
+    on_click:
+      action: navigate
+      target: profile
   - id: nav_to_about
     target: about
     on_click:
       action: navigate
       target: about
-  - id: nav_to_consent_manager
-    target: consent-manager
-    on_click:
-      action: navigate
-      target: consent-manager
-  - id: nav_to_change_password
-    target: change-password
-    on_click:
-      action: navigate
-      target: change-password
   - id: nav_to_terms_of_service
     target: terms-of-service
     on_click:
@@ -1194,8 +1036,25 @@ navigation:
     on_click:
       action: navigate
       target: licenses
+  - id: sign_out_reactive
+    trigger: on_sign_out
+    note: "No imperative nav. onSignOut() clears the session (obpAuthRepository.logout() + userDataRepository.clearUserData()); RootNavViewModel observes UserData and routes back to the auth graph."
 
-api: []
+api:
+  - id: settings_runtime_auth_side_effects
+    status: runtime-side-effect
+    description: "Settings has no fetch endpoints, but two user actions trigger auth-repository calls at runtime:"
+    operations:
+      - id: obp_initiate_password_reset
+        endpoint: "POST /obp/v6.0.0/users/password-reset-url"
+        trigger: on_reset_password_confirmed
+        via: "AuthRecoveryRepository.initiateReset(username, email)"
+        note: "Emails a password-reset link for the signed-in user; result surfaced via resetMessage dialog."
+      - id: obp_logout_revoke
+        endpoint: "POST /obp/v5.1.0/logout (or OIDC revoke)"
+        trigger: on_sign_out
+        via: "ObpAuthRepository.logout()"
+        note: "Clears/revokes the held OBP token on sign-out; exact endpoint depends on the auth method (DirectLogin vs OIDC)."
 
 dependencies:
   tier: feature

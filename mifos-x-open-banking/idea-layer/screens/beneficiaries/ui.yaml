@@ -2,7 +2,7 @@ id: beneficiaries
 name: Beneficiaries
 feature: beneficiaries
 flavor: consumer
-status: approved
+status: enriched
 quality_score: 93
 contract_version: "1.1.0"
 approve_hash: "sha256:0aaf12bd8c96e4f037af12bd8c96e4f037af12bd8c96e4f037af12bd8c96e4f0"
@@ -23,24 +23,59 @@ status_history:
     by: "/idea approve"
     contract_version: "1.1.0"
     bypass_flags: []
+  - from: approved
+    to: enriched
+    at: "2026-06-11"
+    by: "/idea verify --source-drift (write-back)"
+    quality_score: 93
+    note: "MAJOR source-drift reconciliation against shipped feature/beneficiaries (BeneficiariesScreen.kt + BeneficiariesViewModel.kt + BeneficiariesModule.kt + BeneficiariesTestTags.kt). ADDED never-specced shipped features: AccountSelector card + dropdown ('Beneficiaries of <account>', per-account scoping, dropdown when >1 account, onAccountSelected); client-side sort toggle moved INTO the All Beneficiaries header IconButton (toggleSort, AlphaAscending/Descending); dynamic last-payment derived from transactions (join on description) + bank-name resolution via BanksRepository; NoMatchRow vs NoPayeesRow distinction; initials avatars (CircleAvatar recent / SquareAvatar all). REMOVED never-built: add_beneficiary_fab + open_add_beneficiary_sheet (no Add path shipped → obp_create_counterparty UNUSED → deferred); hardcoded bank logo images (natwest_logo/santander_logo — shipped uses initials avatars); the distinct 'searching' state (folded into Content); sort affordance removed from the top bar. state_model rewritten: BeneficiariesContent{accounts, selectedAccountId, recentlyUsed, all, query, sortOrder, totalCount} + BeneficiaryRow{id,name,bankName,accountIdentifier,lastPayment,initials,matches()}; events drop AddBeneficiaryClicked, add onAccountSelected; DI adds UserPreferencesRepository; ScreenState adds NoNetwork/Unauthenticated. api: obp_get_counterparties (v4.0.0, owner view, filter isBeneficiary); ADDED TransactionsRepository.listTransactions (v3.0.0) + AccountsRepository.myAccounts (v3.0.0) as actually-called sources; obp_create_counterparty marked deferred (no network endpoint exists)."
 
 
 screens:
   - id: beneficiaries
     name: Beneficiaries
+    viewmodel: BeneficiariesViewModel
     archetype: index_list
+    states_handled: [loading, content, empty, error, no_network, unauthenticated]
     shell:
       top_bar:
         title: "Beneficiaries"
         navigation_icon: arrow_back
-        actions:
-          - icon: filter_list
-            action: sort_beneficiaries
+        actions: []
       bottom_nav: false
 
 archetype: index_list
 
 components:
+  # Account selector — beneficiaries are per-account. Single account → read-only field;
+  # >1 account → tappable Card opening a DropdownMenu (onAccountSelected). Shipped: AccountSelector.
+  - type: card
+    id: beneficiary_account_selector
+    label: "Beneficiaries of <account>"
+    content: "Beneficiaries of <account>"
+    supported_states: [idle, hover, focus_visible, pressed]
+    style:
+      background: "#FFFFFF"
+      border_radius: 12
+      border_color: "#C5C8BA"
+      border_width: 1
+      elevation: 0
+      leading_icon: account_balance
+      padding: 14
+      margin_horizontal: 16
+      margin_vertical: 12
+    on_click:
+      action: onAccountSelected
+      target: ""
+    a11y:
+      label: "Selected account for beneficiaries. Tap to switch when you hold more than one account."
+      role: button
+    keyboard:
+      focusable: true
+    test_context:
+      tag: beneficiary_account_selector
+      assert_text: "Beneficiaries of"
+
   - type: input
     id: beneficiary_search_bar
     label: "Search"
@@ -53,7 +88,6 @@ components:
       leading_icon: search
       trailing_icon: clear
       border_radius: 28
-      background: "#F9FAEF"
       padding_horizontal: spacing.md
     on_click:
       action: search
@@ -67,6 +101,7 @@ components:
       tag: beneficiary_search_bar
       assert_hint: "Search beneficiaries by name or IBAN..."
 
+  # "Recently Used" section header — shown only when recentlyUsed is non-empty AND search is blank.
   - type: text
     id: recently_used_header
     label: "Recently Used"
@@ -84,207 +119,43 @@ components:
       tag: recently_used_header
       assert_text: "Recently Used"
 
-  - type: box
-    id: recent_beneficiary_john
-    label: "John Smith"
-    content: "John Smith"
+  # Recent beneficiary card (RecentCard) — repeated per row in content.recentlyUsed (max 3).
+  # CircleAvatar initials (alternating primary/secondary), name, resolved bank name,
+  # last-payment "amount · relativeDate". Tapping → onBeneficiaryClick(id) → Pay tab.
+  - type: card
+    id: recent_beneficiary_card
+    label: "Recent beneficiary"
+    content: "Recent beneficiary"
+    supported_states: [idle, hover, focus_visible, pressed]
     style:
       background: "#FFFFFF"
       border_radius: 12
       elevation: 1
-      padding_horizontal: spacing.md
-      padding_vertical: 14
-      border_color: "#F9FAEF"
+      padding: 14
+      border_color: "#C5C8BA"
       border_width: 1
+      leading_avatar: circle_initials
     on_click:
       action: navigate
       target: send-money
     a11y:
-      label: "John Smith at Barclays UK. Last payment £500, 2 days ago. Tap to send money."
+      label: "Recently paid beneficiary. Tap to send money."
       role: button
     keyboard:
       focusable: true
     test_context:
-      tag: recent_beneficiary_john
-      assert_text: "John Smith"
-
-  - type: box
-    id: recent_beneficiary_john_avatar
-    label: "JS"
-    content: "JS"
-    style:
-      shape: circle
-      diameter: 44
-      background: "#4C662B"
-      text_color: "#FFFFFF"
-      typography: "Outfit/title_medium"
-      font_weight: bold
-    on_click:
-      action: navigate
-      target: send-money
-    a11y:
-      label: "John Smith initials avatar"
-      role: image
-    test_context:
-      tag: recent_beneficiary_john_avatar
-
-  - type: text
-    id: recent_john_bank
-    label: "Barclays UK"
-    content: "Barclays UK"
-    style:
-      typography: "Outfit/body_small"
-      color: "#44483D"
-    a11y:
-      label: "Bank: Barclays UK"
-      role: text
-    test_context:
-      tag: recent_john_bank
-
-  - type: text
-    id: recent_john_last_payment
-    label: "£500 · 2 days ago"
-    content: "£500 · 2 days ago"
-    style:
-      typography: "Outfit/body_small"
-      color: "#386663"
-    a11y:
-      label: "Last payment: £500, 2 days ago"
-      role: text
-    test_context:
-      tag: recent_john_last_payment
-
-  - type: box
-    id: recent_beneficiary_sarah
-    label: "Sarah Williams"
-    content: "Sarah Williams"
-    style:
-      background: "#FFFFFF"
-      border_radius: 12
-      elevation: 1
-      padding_horizontal: spacing.md
-      padding_vertical: 14
-      border_color: "#F9FAEF"
-      border_width: 1
-    on_click:
-      action: navigate
-      target: send-money
-    a11y:
-      label: "Sarah Williams at HSBC UK. Last payment £1,200, 5 days ago. Tap to send money."
-      role: button
-    keyboard:
-      focusable: true
-    test_context:
-      tag: recent_beneficiary_sarah
-
-  - type: box
-    id: recent_beneficiary_sarah_avatar
-    label: "SW"
-    content: "SW"
-    style:
-      shape: circle
-      diameter: 44
-      background: "#386663"
-      text_color: "#FFFFFF"
-      typography: "Outfit/title_medium"
-      font_weight: bold
-    on_click:
-      action: navigate
-      target: send-money
-    a11y:
-      label: "Sarah Williams initials avatar"
-      role: image
-    test_context:
-      tag: recent_beneficiary_sarah_avatar
-
-  - type: text
-    id: recent_sarah_bank
-    label: "HSBC UK"
-    content: "HSBC UK"
-    style:
-      typography: "Outfit/body_small"
-      color: "#44483D"
-    a11y:
-      label: "Bank: HSBC UK"
-      role: text
-    test_context:
-      tag: recent_sarah_bank
-
-  - type: text
-    id: recent_sarah_last_payment
-    label: "£1,200 · 5 days ago"
-    content: "£1,200 · 5 days ago"
-    style:
-      typography: "Outfit/body_small"
-      color: "#386663"
-    a11y:
-      label: "Last payment: £1,200, 5 days ago"
-      role: text
-    test_context:
-      tag: recent_sarah_last_payment
-
-  - type: box
-    id: recent_beneficiary_michael
-    label: "Michael Chen"
-    content: "Michael Chen"
-    style:
-      background: "#FFFFFF"
-      border_radius: 12
-      elevation: 1
-      padding_horizontal: spacing.md
-      padding_vertical: 14
-      border_color: "#F9FAEF"
-      border_width: 1
-    on_click:
-      action: navigate
-      target: send-money
-    a11y:
-      label: "Michael Chen at Lloyds Bank. Last payment £250, 1 week ago. Tap to send money."
-      role: button
-    keyboard:
-      focusable: true
-    test_context:
-      tag: recent_beneficiary_michael
-
-  - type: box
-    id: recent_beneficiary_michael_avatar
-    label: "MC"
-    content: "MC"
-    style:
-      shape: circle
-      diameter: 44
-      background: "#4C662B"
-      text_color: "#FFFFFF"
-      typography: "Outfit/title_medium"
-      font_weight: bold
-    on_click:
-      action: navigate
-      target: send-money
-    a11y:
-      label: "Michael Chen initials avatar"
-      role: image
-    test_context:
-      tag: recent_beneficiary_michael_avatar
-
-  - type: text
-    id: recent_michael_bank
-    label: "Lloyds Bank"
-    content: "Lloyds Bank"
-    style:
-      typography: "Outfit/body_small"
-      color: "#44483D"
-    a11y:
-      label: "Bank: Lloyds Bank"
-      role: text
-    test_context:
-      tag: recent_michael_bank
+      tag: recent_beneficiary_card
+      purpose: "One recently-used beneficiary row (RecentCard) — circle initials avatar, name, bank name, last-payment amount + relative date; opens the Pay tab"
+      interaction_type: navigate
+      data_driven: true
+      required_fields: [id, name, bankName, initials, lastPayment]
 
   - type: divider
     id: section_divider
     style:
       color: "#E1E4D5"
       thickness: 1
-      padding_vertical: spacing.sm
+      padding_vertical: spacing.md
     a11y:
       label: ""
       role: separator
@@ -324,10 +195,12 @@ components:
       tag: all_beneficiaries_header
       assert_text: "All Beneficiaries"
 
+  # Sort toggle — lives INSIDE the All Beneficiaries header (IconButton), NOT the top bar.
+  # Toggles client-side AlphaAscending ⇄ AlphaDescending (toggleSort). No network.
   - type: icon
     id: sort_button
     label: "Sort"
-    supported_states: [idle, hover, focus_visible, pressed, disabled]
+    supported_states: [idle, hover, focus_visible, pressed]
     style:
       icon_name: sort
       size: 24
@@ -337,157 +210,79 @@ components:
       action: sort
       target: ""
     a11y:
-      label: "Sort beneficiaries list"
+      label: "Sort beneficiaries by name, ascending or descending"
       role: button
     keyboard:
       focusable: true
     test_context:
       tag: sort_button
+      purpose: "Client-side alphabetical sort toggle (AlphaAscending ⇄ AlphaDescending) in the All Beneficiaries header"
+      interaction_type: action
+      data_driven: false
 
-  - type: box
-    id: beneficiary_item_anderson
-    label: "James Anderson"
-    content: "James Anderson"
+  # All beneficiaries row (AllCard) — repeated per row in content.all. SquareAvatar initials,
+  # name, masked accountIdentifier (IBAN), optional "Last: <date>". Tapping → onBeneficiaryClick(id).
+  - type: card
+    id: beneficiary_row
+    label: "Beneficiary"
+    content: "Beneficiary"
+    supported_states: [idle, hover, focus_visible, pressed]
     style:
       background: "#FFFFFF"
       border_radius: 12
       elevation: 1
-      padding_horizontal: spacing.md
-      padding_vertical: 14
-      border_color: "#F9FAEF"
+      padding: 14
+      border_color: "#C5C8BA"
       border_width: 1
+      leading_avatar: square_initials
     on_click:
       action: navigate
       target: send-money
     a11y:
-      label: "James Anderson at NatWest. IBAN ending 8819. Last payment 12 May 2026."
+      label: "Beneficiary. Tap to send money."
       role: button
     keyboard:
       focusable: true
     test_context:
-      tag: beneficiary_item_anderson
+      tag: beneficiary_row
+      purpose: "One beneficiary in the All list (AllCard) — square initials avatar, name, masked IBAN, optional last-payment date; opens the Pay tab"
+      interaction_type: navigate
+      data_driven: true
+      required_fields: [id, name, accountIdentifier, initials, lastPayment]
 
-  - type: image
-    id: natwest_logo
-    label: "NatWest"
-    style:
-      width: 32
-      height: 32
-      border_radius: 4
-      content_scale: fit
-    on_click:
-      action: navigate
-      target: send-money
-    a11y:
-      label: "NatWest bank logo"
-      role: image
-    test_context:
-      tag: natwest_logo
-
+  # No-result rows in the All section (mutually exclusive): NoPayeesRow when query blank +
+  # account has no beneficiaries; NoMatchRow when a search matches nothing.
   - type: text
-    id: anderson_iban
-    label: "GB29 NWBK ··· 8819"
-    content: "GB29 NWBK ··· 8819"
+    id: no_payees_row
+    label: "No beneficiaries on this account yet. Switch accounts above."
+    content: "No beneficiaries on this account yet. Switch accounts above."
     style:
-      typography: "Outfit/body_small"
+      typography: "Outfit/body_medium"
       color: "#44483D"
-      font_family: monospace
+      text_align: center
+      padding: 32
     a11y:
-      label: "IBAN ending in 8819"
+      label: "This account has no beneficiaries yet"
       role: text
     test_context:
-      tag: anderson_iban
+      tag: no_payees_row
+      assert_text: "No beneficiaries on this account yet"
 
   - type: text
-    id: anderson_last_payment
-    label: "Last: 12 May 2026"
-    content: "Last: 12 May 2026"
+    id: no_match_row
+    label: "No beneficiaries match your search."
+    content: "No beneficiaries match your search."
     style:
-      typography: "Outfit/body_small"
+      typography: "Outfit/body_medium"
       color: "#44483D"
+      text_align: center
+      padding: 32
     a11y:
-      label: "Last payment: 12 May 2026"
+      label: "No beneficiaries match the current search"
       role: text
     test_context:
-      tag: anderson_last_payment
-
-  - type: box
-    id: beneficiary_item_patel
-    label: "Priya Patel"
-    content: "Priya Patel"
-    style:
-      background: "#FFFFFF"
-      border_radius: 12
-      elevation: 1
-      padding_horizontal: spacing.md
-      padding_vertical: 14
-      border_color: "#F9FAEF"
-      border_width: 1
-    on_click:
-      action: navigate
-      target: send-money
-    a11y:
-      label: "Priya Patel at Santander UK. IBAN ending 4421. Last payment 3 May 2026."
-      role: button
-    keyboard:
-      focusable: true
-    test_context:
-      tag: beneficiary_item_patel
-
-  - type: image
-    id: santander_logo
-    label: "Santander"
-    style:
-      width: 32
-      height: 32
-      border_radius: 4
-      content_scale: fit
-    on_click:
-      action: navigate
-      target: send-money
-    a11y:
-      label: "Santander bank logo"
-      role: image
-    test_context:
-      tag: santander_logo
-
-  - type: text
-    id: patel_iban
-    label: "GB72 ABBY ··· 4421"
-    content: "GB72 ABBY ··· 4421"
-    style:
-      typography: "Outfit/body_small"
-      color: "#44483D"
-      font_family: monospace
-    a11y:
-      label: "IBAN ending in 4421"
-      role: text
-    test_context:
-      tag: patel_iban
-
-  - type: button
-    id: add_beneficiary_fab
-    label: "Add Beneficiary"
-    supported_states: [idle, hover, focus_visible, pressed, disabled]
-    style:
-      variant: filled
-      background: "#4C662B"
-      text_color: "#FFFFFF"
-      border_radius: 16
-      leading_icon: person_add
-      elevation: 6
-      position: floating_action_button
-    on_click:
-      action: open_add_beneficiary_sheet
-      target: ""
-    a11y:
-      label: "Add a new beneficiary"
-      role: button
-    keyboard:
-      focusable: true
-    test_context:
-      tag: add_beneficiary_fab
-      assert_text: "Add Beneficiary"
+      tag: no_match_row
+      assert_text: "No beneficiaries match your search"
 
 responsive:
   mobile_only: true
@@ -495,63 +290,57 @@ responsive:
 
 states:
   initial_state: loading
+  # Shipped state set = ScreenState<BeneficiariesContent>: Loading / Content / Empty / Error /
+  # NoNetwork / Unauthenticated. A search that matches nothing stays Content (search bar
+  # operable) with no_match_row in the All section — there is NO distinct `searching` state.
   loading:
     motion:
       shimmer_duration: short4
       reduced_motion_fallback: static_placeholder
     layout:
-      visible_components:
-        - beneficiary_search_bar
-      show_skeleton_list: true
-      skeleton_count: 6
+      visible_components: []
+      show_loading_icon: true
   content:
     layout:
       visible_components:
+        - beneficiary_account_selector
         - beneficiary_search_bar
         - recently_used_header
-        - recent_beneficiary_john
-        - recent_beneficiary_john_avatar
-        - recent_john_bank
-        - recent_john_last_payment
-        - recent_beneficiary_sarah
-        - recent_beneficiary_sarah_avatar
-        - recent_sarah_bank
-        - recent_sarah_last_payment
-        - recent_beneficiary_michael
-        - recent_beneficiary_michael_avatar
-        - recent_michael_bank
+        - recent_beneficiary_card
         - section_divider
         - all_beneficiaries_header_row
         - all_beneficiaries_header
         - sort_button
-        - beneficiary_item_anderson
-        - natwest_logo
-        - anderson_iban
-        - anderson_last_payment
-        - beneficiary_item_patel
-        - santander_logo
-        - patel_iban
-        - add_beneficiary_fab
+        - beneficiary_row
+        - no_payees_row
+        - no_match_row
   empty:
     layout:
       visible_components:
         - beneficiary_search_bar
-        - add_beneficiary_fab
       show_empty_state: true
       empty_state_icon: person_off
       empty_state_title: "No beneficiaries yet"
-      empty_state_message: "Add a beneficiary to start sending money quickly"
-  searching:
-    layout:
-      visible_components:
-        - beneficiary_search_bar
-      show_search_results: true
-      search_results_placeholder: "Showing results for query"
+      empty_state_message: "People you pay will appear here"
   error:
     layout:
-      visible_components:
-        - beneficiary_search_bar
-        - add_beneficiary_fab
+      visible_components: []
+      show_error_state: true
+      error_icon: cloud_off
+      error_title: "Unable to load beneficiaries"
+      error_message: "Check your connection and try again"
+      show_retry_button: true
+  no_network:
+    layout:
+      visible_components: []
+      show_error_state: true
+      error_icon: cloud_off
+      error_title: "Unable to load beneficiaries"
+      error_message: "Check your connection and try again"
+      show_retry_button: true
+  unauthenticated:
+    layout:
+      visible_components: []
       show_error_state: true
       error_icon: cloud_off
       error_title: "Unable to load beneficiaries"
@@ -560,49 +349,79 @@ states:
 
 state_model:
   view_model: BeneficiariesViewModel
-  state_fields:
-    - name: beneficiaries
-      type: List<Counterparty>
+  screen_state: "ScreenState<BeneficiariesContent>"
+  content_type: BeneficiariesContent
+  content_fields:
+    - name: accounts
+      type: List<Account>
       default: "emptyList()"
-    - name: recentBeneficiaries
-      type: List<Counterparty>
-      default: "emptyList()"
-    - name: searchQuery
+    - name: selectedAccountId
       type: String
       default: ""
-    - name: filteredBeneficiaries
-      type: List<Counterparty>
+    - name: recentlyUsed
+      type: List<BeneficiaryRow>
       default: "emptyList()"
+    - name: all
+      type: List<BeneficiaryRow>
+      default: "emptyList()"
+    - name: query
+      type: String
+      default: ""
     - name: sortOrder
       type: SortOrder
       default: AlphaAscending
-    - name: uiState
-      type: BeneficiariesUiState
-      default: Loading
+    - name: totalCount
+      type: Int
+      default: "0"
+  row_type:
+    name: BeneficiaryRow
+    fields:
+      - name: id
+        type: String
+      - name: name
+        type: String
+      - name: bankName
+        type: String
+      - name: accountIdentifier
+        type: String
+      - name: lastPayment
+        type: "LastPayment?"
+      - name: initials
+        type: String
+        derived: "first two name initials, else '?'"
+    methods:
+      - "matches(query): name | accountIdentifier | bankName contains, case-insensitive"
   errors:
     - field: global
       code: LOAD_FAILED
       message: "Unable to load beneficiaries. Please try again."
   events:
-    - SearchQueryChanged
-    - BeneficiarySelected
-    - AddBeneficiaryClicked
-    - SortChanged
-    - RefreshTriggered
+    - onSearchQueryChanged
+    - onSortChanged
+    - toggleSort
+    - onAccountSelected
+    - onRetry
+    - onRefresh
   actions:
     - search
-    - navigate
-    - open_add_beneficiary_sheet
     - sort
+    - onAccountSelected
+    - navigate
+  states_handled: [loading, content, empty, error, no_network, unauthenticated]
   di:
     - PaymentsRepository
     - BanksRepository
     - TransactionsRepository
     - AccountsRepository
+    - UserPreferencesRepository
 
 api:
-  - endpoint: "GET /obp/v4.0.0/banks/{bankId}/accounts/{accountId}/{viewId}/counterparties"
+  # Counterparty list — PaymentsRepository.listBeneficiaries(bankId, accountId), filtered to
+  # is_beneficiary. viewId is owner.
+  - id: obp_get_counterparties
+    endpoint: "GET /obp/v4.0.0/banks/{bankId}/accounts/{accountId}/{viewId}/counterparties"
     tag: Counterparties
+    trigger: "on load / onAccountSelected — PaymentsRepository.listBeneficiaries"
     response:
       fields:
         - name: counterparties
@@ -611,33 +430,51 @@ api:
           type: String
         - name: name
           type: String
-        - name: description
-          type: String
-        - name: currency
-          type: String
         - name: other_bank_routing_scheme
           type: String
         - name: other_bank_routing_address
           type: String
-        - name: other_account_routing_scheme
-          type: String
         - name: other_account_routing_address
-          type: String
-        - name: other_account_secondary_routing_scheme
-          type: String
-        - name: other_account_secondary_routing_address
           type: String
         - name: is_beneficiary
           type: Boolean
-        - name: created_by_user_id
-          type: String
-        - name: bespoke
-          type: List<Bespoke>
     errors:
       - code: 401
         message: "OBP-20001: User not logged in"
       - code: 404
         message: "OBP-30018: Bank Account not found"
+  # Accounts list — AccountsRepository.myAccounts(); drives the AccountSelector + per-account scoping.
+  - id: obp_get_my_accounts
+    endpoint: "GET /obp/v3.0.0/my/accounts"
+    tag: Account
+    trigger: "on load — AccountsRepository.myAccounts"
+    response:
+      fields:
+        - name: accounts
+          type: List<Account>
+        - name: id
+          type: String
+        - name: bank_id
+          type: String
+        - name: label
+          type: String
+  # Transactions — TransactionsRepository.listTransactions(bankId, accountId); last-payment
+  # amount/date/recency derived by joining transaction description to counterparty name.
+  - id: obp_get_account_transactions
+    endpoint: "GET /obp/v3.0.0/my/banks/{bankId}/accounts/{accountId}/transactions"
+    tag: Transaction
+    trigger: "on loadForAccount — TransactionsRepository.listTransactions (last-payment join)"
+    response:
+      fields:
+        - name: transactions
+          type: List<Transaction>
+  # DEFERRED — Add Beneficiary never shipped. There is no create path in the UI, so
+  # POST counterparties is unused by this screen (verified shipped 2026-06-11).
+  - id: obp_create_counterparty
+    deferred: true
+    deferred_reason: "Add Beneficiary FAB + create sheet never shipped — no UI write path. Endpoint exists but is not called by this screen."
+    endpoint: "POST /obp/v4.0.0/banks/{bankId}/accounts/{accountId}/{viewId}/counterparties"
+    tag: Counterparties
 
 dependencies:
   tier: feature

@@ -3,10 +3,10 @@ schema_version: "4.0"
 feature_id: forgot-password
 api:
   - id: obp_request_password_reset
-    endpoint: "POST /obp/v7.0.0/users/forgot-password/reset-emails"
+    endpoint: "POST /obp/v6.0.0/users/password-reset-url"
     tag: User
     trigger: OnSubmitClicked
-    description: "Request a password reset email for the specified user account"
+    description: "Shipped AuthRecoveryApi.initiateReset — requests a password-reset email. Body sends BOTH username and email (PasswordResetRequest); both must match a real account."
     request:
       fields:
         - name: username
@@ -15,14 +15,28 @@ api:
           type: String
     response:
       fields:
-        - name: success
-          type: Boolean
         - name: message
           type: String
     errors:
       - code: 404
-        message: "ACCOUNT_NOT_FOUND"
+        message: "NOT_FOUND"
+      - code: 400
+        message: "BAD_REQUEST"
       - code: 429
-        message: "RATE_LIMITED"
-      - code: 500
-        message: "INTERNAL_SERVER_ERROR"
+        message: "TOO_MANY_REQUESTS"
+  - id: obp_confirm_password_reset
+    endpoint: "POST /obp/v6.0.0/users/password"
+    tag: User
+    trigger: deferred
+    status: deferred
+    description: "AuthRecoveryApi.confirmReset (body {token, new_password}) exists but is NOT consumed by the app — the reset is completed via the emailed web link. Listed for contract completeness; no UI trigger."
+    request:
+      fields:
+        - name: token
+          type: String
+        - name: new_password
+          type: String
+    response:
+      fields:
+        - name: message
+          type: String

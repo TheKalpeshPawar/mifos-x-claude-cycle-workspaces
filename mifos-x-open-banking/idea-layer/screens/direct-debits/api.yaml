@@ -1,65 +1,39 @@
 sibling: api
 schema_version: "4.0"
 feature_id: direct-debits
-api:
-  - id: obp_get_direct_debits
-    endpoint: "GET /obp/v4.0.0/banks/{bankId}/accounts/{accountId}/owner/direct-debits"
-    tag: Direct-Debit
-    description: "Retrieve all direct debit mandates for the account"
-    response:
-      fields:
-        - name: direct_debits
-          type: "List<DirectDebit>"
-    errors:
-      - code: 401
-        message: "USER_NOT_LOGGED_IN"
-      - code: 403
-        message: "INSUFFICIENT_AUTHORISATION"
-      - code: 404
-        message: "BANK_ACCOUNT_NOT_FOUND"
+notes: >
+  Reconciled to shipped source 2026-06-11. OBP exposes NO read/cancel endpoint for direct
+  debits (only POST-create exists at any API version, live-verified 404). Mandates are
+  therefore DERIVED in DirectDebitsRepository.listMandates(): it reads the account's
+  transaction history (TXN_TYPE=DD attribute, grouped by description into collection series),
+  then overlays locally-recorded cancellations from the Room JSON cache. There is no GET to
+  document, and cancellation is local-only (no server DELETE).
+api: []
 
-  - id: obp_create_direct_debit
-    endpoint: "POST /obp/v4.0.0/banks/{bankId}/accounts/{accountId}/owner/direct-debit"
-    tag: Direct-Debit
-    description: "Create direct debit mandate"
-    request:
-      fields:
-        - name: start_date
-          type: String
-        - name: end_date
-          type: String
-        - name: to
-          type: DirectDebitCounterparty
-        - name: amount_value
-          type: String
-        - name: amount_currency
-          type: String
-    response:
-      fields:
-        - name: direct_debit_id
-          type: String
-        - name: bank_id
-          type: String
-        - name: account_id
-          type: String
-        - name: counterparty_id
-          type: String
-        - name: amount_value
-          type: String
-        - name: amount_currency
-          type: String
-        - name: start_date
-          type: String
-        - name: end_date
-          type: String
-        - name: active
-          type: Boolean
-    errors:
-      - code: 400
-        message: "INVALID_BANK_ID"
-      - code: 401
-        message: "USER_NOT_LOGGED_IN"
-      - code: 403
-        message: "INSUFFICIENT_AUTHORISATION"
-      - code: 404
-        message: "BANK_ACCOUNT_NOT_FOUND"
+derived_reads:
+  - id: derive_direct_debits_from_history
+    source: "TransactionsRepository.listTransactionsWithAttributes(bankId, accountId)"
+    filter: "TXN_TYPE=DD"
+    grouping: "by description into collection series"
+    output_dto: "List<DirectDebitMandate>"
+    note: >
+      Replaces the non-existent GET-list endpoint (DirectDebitsRepository.listMandates).
+      Each mandate carries merchant, amount, derived next-collection date and a stable
+      DD-{initials}-{first collection yyyyMMdd} reference. Mandates whose id is in the local
+      cancelled set render as CANCELLED with a cleared next-collection date.
+
+local_mutations:
+  - id: cancel_direct_debit_local
+    source: "DirectDebitsRepository.cancel(accountId, mandateId)"
+    note: >
+      OBP has no cancel endpoint, so cancellation is recorded LOCALLY (the mandate id is
+      appended to the per-account cancelled set in the Room JSON cache) and the list is
+      re-projected — the mandate flips to CANCELLED and the active count drops. Persists
+      across restarts; never reaches the server.
+
+deferred:
+  note: >
+    GET list / GET detail / DELETE cancel were specified in the original design but DO NOT
+    EXIST on OBP. The Set-Up Direct Debit create flow was also dropped — direct debits are
+    merchant-initiated, so the consumer surface can only view + cancel. Re-add a server cancel
+    only if OBP ships a DELETE endpoint.

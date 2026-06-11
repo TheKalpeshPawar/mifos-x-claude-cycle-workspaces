@@ -1,18 +1,20 @@
 sibling: api
 schema_version: "4.0"
 feature_id: home
+# Reconciled to shipped HomeViewModel.kt on 2026-06-11: Home consumes ONLY the cross-bank
+# /my/accounts stream (via AccountsRepository). The per-bank accounts endpoint and the
+# home-transactions endpoint were never wired — retained below as deferred references.
 api:
-  - id: obp_get_home_accounts
-    endpoint: "GET /obp/v3.0.0/banks/{bankId}/accounts"
+  - id: obp_my_accounts_cross_bank
+    endpoint: "GET /obp/v3.0.0/my/accounts"
     tag: Accounts
     auth: DirectLogin
-    params:
-      - name: bankId
-        type: path
-        value: "gh.29.uk"
+    description: "Cross-bank account aggregation — the ONLY endpoint shipped Home calls (AccountsRepository.accountsStream, offline-first Store5 cache-then-network)."
     response:
       fields:
         - name: id
+          type: String
+        - name: bank_id
           type: String
         - name: label
           type: String
@@ -27,58 +29,22 @@ api:
               type: String
         - name: account_routings
           type: "List<AccountRouting>"
+        - name: owners
+          type: "List<AccountOwner>"
     errors:
       - code: 401
         message: "Unauthorized — DirectLogin token missing or expired"
-      - code: 404
-        message: "Bank not found"
       - code: 500
         message: "OBP server error"
 
+  - id: obp_get_home_accounts
+    deferred: true
+    endpoint: "GET /obp/v3.0.0/banks/{bankId}/accounts"
+    tag: Accounts
+    description: "DEFERRED — per-bank accounts endpoint NOT used by shipped Home (it reads cross-bank /my/accounts instead). Kept for traceability."
+
   - id: obp_get_home_transactions
+    deferred: true
     endpoint: "GET /obp/v3.0.0/banks/{bankId}/accounts/{accountId}/owner/transactions"
     tag: Transactions
-    auth: DirectLogin
-    params:
-      - name: accountId
-        type: path
-      - name: limit
-        type: query
-        value: "5"
-      - name: sort_direction
-        type: query
-        value: "DESC"
-    response:
-      fields:
-        - name: id
-          type: String
-        - name: this_account
-          type: object
-        - name: other_account
-          type: object
-        - name: details
-          type: object
-          children:
-            - name: type
-              type: String
-            - name: description
-              type: String
-            - name: posted
-              type: String
-            - name: value
-              type: object
-              children:
-                - name: currency
-                  type: String
-                - name: amount
-                  type: String
-    errors:
-      - code: 401
-        message: "Unauthorized"
-      - code: 404
-        message: "Account not found"
-
-  - id: obp_my_accounts_cross_bank
-    endpoint: "GET /obp/v3.0.0/my/accounts"
-    tag: Accounts
-    description: "Cross-bank account aggregation"
+    description: "DEFERRED — UNUSED in shipped Home. The recent-transactions list was never built on Home."

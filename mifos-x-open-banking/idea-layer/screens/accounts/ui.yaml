@@ -2,7 +2,7 @@ id: accounts
 name: My Accounts
 feature: accounts
 flavor: consumer
-status: designed
+status: enriched
 quality_score: 100
 contract_version: "1.1.0"
 approve_hash: "sha256:04af12bd8c96e4f037af12bd8c96e4f037af12bd8c96e4f037af12bd8c96e4f0"
@@ -39,6 +39,11 @@ status_history:
     by: "/idea export"
     exports: [spec_md, api_md, mockup_md, prompts_stitch_loading, prompts_stitch_content, prompts_stitch_empty, prompts_stitch_error]
     note: "Regenerated all exports reflecting search-bar + bank-grouping redesign. Filter tabs removed."
+  - from: designed
+    to: enriched
+    at: "2026-06-11"
+    by: "/idea verify --source-drift (write-back)"
+    note: "Reconciled spec to shipped Kotlin — removed add_account_fab/total_balance_footer/footer_divider/per-bank subtotals/help-icon action; rewrote state_model to ScreenState<AccountsContent>; added no_network+unauthenticated states + NoMatchRow; DI=AccountsRepository only; DTO=Account; nav onAccountClick(bankId,accountId); pending re-render + re-approve."
 
 exports:
   spec_md:
@@ -132,13 +137,9 @@ components:
         style:
           size: 24
           color: "#44483D"
-        on_click:
-          action: open_account_help
         a11y:
-          role: button
-          label: "Help with accounts"
-        keyboard:
-          focusable: true
+          role: img
+          label: "Account help"
         test_context:
           tag: accounts_help_icon
 
@@ -176,14 +177,13 @@ components:
     style:
       direction: horizontal
       align: center
-      justify: space_between
       padding_horizontal: 20
       padding_top: spacing.lg
       padding_bottom: spacing.sm
     a11y:
       role: heading
       level: 2
-      label: "Mifos Bank UK, 2 accounts, subtotal ten thousand four hundred thirty pounds fifty"
+      label: "Mifos Bank UK, 2 accounts"
     test_context:
       tag: bank_group_1_header
     children:
@@ -232,18 +232,6 @@ components:
                   role: text
                 test_context:
                   tag: bank_group_1_count
-      - type: text
-        id: bank_group_1_subtotal
-        content: "£10,430.50"
-        style:
-          typography: "Outfit/title_medium"
-          color: "#4C662B"
-        a11y:
-          role: text
-          label: "Subtotal: ten thousand four hundred thirty pounds fifty"
-        test_context:
-          tag: bank_group_1_subtotal
-          assert_content: "£10,430.50"
 
   - type: box
     id: account_card_1
@@ -261,6 +249,7 @@ components:
       action: navigate
       target: account-detail
       params:
+        bank_id: "gh.29.uk"
         account_id: "acc_checking_primary"
     a11y:
       role: button
@@ -375,6 +364,7 @@ components:
       action: navigate
       target: account-detail
       params:
+        bank_id: "gh.29.uk"
         account_id: "acc_savings_goal"
     a11y:
       role: button
@@ -478,14 +468,13 @@ components:
     style:
       direction: horizontal
       align: center
-      justify: space_between
       padding_horizontal: 20
       padding_top: spacing.lg
       padding_bottom: spacing.sm
     a11y:
       role: heading
       level: 2
-      label: "Mifos Business UK, 1 account, subtotal two thousand fifty pounds"
+      label: "Mifos Business UK, 1 account"
     test_context:
       tag: bank_group_2_header
     children:
@@ -534,18 +523,6 @@ components:
                   role: text
                 test_context:
                   tag: bank_group_2_count
-      - type: text
-        id: bank_group_2_subtotal
-        content: "£2,050.00"
-        style:
-          typography: "Outfit/title_medium"
-          color: "#4C662B"
-        a11y:
-          role: text
-          label: "Subtotal: two thousand fifty pounds"
-        test_context:
-          tag: bank_group_2_subtotal
-          assert_content: "£2,050.00"
 
   - type: box
     id: account_card_3
@@ -563,6 +540,7 @@ components:
       action: navigate
       target: account-detail
       params:
+        bank_id: "gh.29.uk"
         account_id: "acc_business_main"
     a11y:
       role: button
@@ -661,91 +639,21 @@ components:
             test_context:
               tag: acct3_iban
 
-  - type: divider
-    id: footer_divider
+  - type: text
+    id: accounts_no_match_row
+    visible_in_states: [content]
     style:
+      typography: "Outfit/body_medium"
+      color: "#44483D"
+      text_align: center
+      padding: spacing.xl
       margin_horizontal: 20
-      margin_vertical: spacing.xs
-      color: "#E1E4D5"
-    a11y:
-      role: separator
-    test_context:
-      tag: footer_divider
-
-  - type: box
-    id: total_balance_footer
-    style:
-      background: "#F9FAEF"
-      border_radius: 12
-      padding: spacing.md
-      margin_horizontal: 20
-      margin_top: spacing.xs
-      margin_bottom: 80
+    content: "No accounts match your search."
     a11y:
       role: text
-      label: "Total: twelve thousand four hundred eighty pounds fifty pence across three accounts"
+      label: "No accounts match your search."
     test_context:
-      tag: total_balance_footer
-    children:
-      - type: stack
-        id: total_balance_footer_row
-        style:
-          direction: horizontal
-          align: center
-          justify: space_between
-        children:
-          - type: text
-            id: total_balance_footer_label
-            content: "Total across 3 accounts"
-            style:
-              typography: "Outfit/body_medium"
-              color: "#44483D"
-            a11y:
-              role: text
-            test_context:
-              tag: total_balance_footer_label
-
-          - type: text
-            id: total_balance_footer_amount
-            content: "£12,480.50"
-            style:
-              typography: "Outfit/title_large"
-              color: "#4C662B"
-              font_weight: 700
-            a11y:
-              role: text
-              label: "Total: twelve thousand four hundred eighty pounds fifty"
-            test_context:
-              tag: total_balance_footer_amount
-              assert_content: "£12,480.50"
-
-  - type: button
-    id: add_account_fab
-    label: "add"
-    supported_states: [idle, hover, focus_visible, pressed, disabled]
-    style:
-      variant: fab
-      background: "#4C662B"
-      icon: add
-      icon_color: "#FFFFFF"
-      position: fixed
-      bottom: 80
-      right: 20
-      width: 56
-      height: 56
-      border_radius: 16
-      elevation: 6
-    on_click:
-      action: request_new_account
-    a11y:
-      role: button
-      label: "Request a new account"
-      hint: "Opens the account request form"
-    keyboard:
-      focusable: true
-    test_context:
-      tag: add_account_fab
-      assert_clickable: true
+      tag: accounts_no_match_row
 
 responsive:
   mobile_only: false
@@ -789,14 +697,6 @@ states:
             height: 120
             margin_horizontal: 20
             margin_bottom: spacing.md
-        - id: skeleton_total_footer
-          type: box
-          style:
-            background: "#E1E4D5"
-            border_radius: 12
-            height: 48
-            margin_horizontal: 20
-            margin_top: spacing.xs
 
   content:
     layout:
@@ -808,26 +708,19 @@ states:
         - account_card_2
         - bank_group_2_header
         - account_card_3
-        - footer_divider
-        - total_balance_footer
-        - add_account_fab
 
   empty:
     layout:
-      components_visible:
-        - accounts_header
+      components_visible: []
       empty_card:
         id: empty_state_card
-        illustration: no_accounts
+        icon: account_balance_wallet
         title: "No accounts found"
-        message: "You don't have any accounts yet. Request a new account to get started."
-        action_label: "Request Account"
-        action: request_new_account
+        message: "Your accounts will appear here once your profile is set up."
 
   error:
     layout:
-      components_visible:
-        - accounts_header
+      components_visible: []
       error_card:
         id: error_state_card
         title: "Could not load accounts"
@@ -836,56 +729,62 @@ states:
         action: retry_load
         icon: error_outline
 
+  no_network:
+    layout:
+      components_visible: []
+      error_card:
+        id: no_network_state_card
+        title: "Could not load accounts"
+        message: "We were unable to fetch your account list. Please check your connection and try again."
+        action_label: "Retry"
+        action: retry_load
+        icon: error_outline
+
+  unauthenticated:
+    layout:
+      components_visible: []
+      error_card:
+        id: unauthenticated_state_card
+        title: "Could not load accounts"
+        message: "We were unable to fetch your account list. Please check your connection and try again."
+        action_label: "Retry"
+        action: retry_load
+        icon: error_outline
+
 state_model:
   view_model: AccountsViewModel
-  screen_state: AccountsScreenState
-  state_fields:
-    - name: isLoading
-      type: Boolean
-      default: "true"
-    - name: accounts
-      type: "List<BankAccount>"
-      default: "emptyList()"
+  screen_state: "ScreenState<AccountsContent>"
+  state_wrapper: ScreenState
+  state_wrapper_states: [Loading, Content, Empty, Error, NoNetwork, Unauthenticated]
+  content_class: AccountsContent
+  content_fields:
     - name: filteredAccounts
-      type: "List<BankAccount>"
-      default: "emptyList()"
-    - name: groupedByBank
-      type: "Map<String, List<BankAccount>>"
-      default: "emptyMap()"
-    - name: searchQuery
+      type: "List<Account>"
+      note: "client-side search result over the offline-first account stream"
+    - name: query
       type: String
-      default: '""'
-    - name: totalBalance
-      type: "BigDecimal"
-      default: "BigDecimal.ZERO"
-    - name: error
-      type: "UiError?"
-      default: "null"
-  errors:
-    - id: network_error
-      message: "Network unavailable. Please try again."
-    - id: auth_error
-      message: "Session expired. Please log in again."
+    - name: accountCount
+      type: Int
+      note: "total accounts before search filter; Empty when 0"
+  dto: org.mifosx.openbanking.core.model.obp.Account
+  data_source:
+    pattern: ScreenDataStream
+    stream: "accountsRepository.accountsStream(viewModelScope)"
+    note: "Store5 cache-then-network, auto-refresh on reconnect; search re-derives Content without a network call. A search matching nothing stays Content (search bar operable) with an empty list; Empty means zero accounts."
   events:
-    - RetryLoad
-    - "SearchQueryChanged(query: String)"
-    - "AccountSelected(accountId: String)"
-    - RequestNewAccount
-  actions:
-    - name: loadAccounts
-      triggers: [ScreenOpened, RetryLoad]
-    - name: searchAccounts
-      param: query
-    - name: navigateToDetail
-      param: accountId
+    - "onSearchQueryChanged(query: String)"
+    - onRetry
+    - onRefresh
+  nav_callbacks:
+    - "onAccountClick(bankId: String, accountId: String)"
   di:
     - AccountsRepository
-    - SessionManager
 
 api:
   - endpoint: "GET /obp/v3.0.0/banks/{bankId}/accounts"
     tag: Accounts
     auth: DirectLogin
+    note: "Account DTO is a superset of fields used here (id, label, account_type, balance, account_routings, number, iban). Repository also exposes /obp/v3.0.0/my/accounts as the cross-bank list read — listAccounts()/myAccounts() both call my/accounts; the accountsStream feeds this screen."
     params:
       - name: bankId
         type: path
@@ -897,6 +796,12 @@ api:
         - name: label
           type: String
         - name: account_type
+          type: String
+        - name: bank_id
+          type: String
+        - name: number
+          type: String
+        - name: iban
           type: String
         - name: balance
           type: object

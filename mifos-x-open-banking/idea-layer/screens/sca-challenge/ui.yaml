@@ -1,0 +1,235 @@
+id: sca-challenge
+name: Confirm Payment
+feature: sca-challenge
+flavor: consumer
+status: enriched
+quality_score: 90
+contract_version: "1.1.0"
+capabilities:
+  - has_ui
+status_history:
+  - to: enriched
+    at: "2026-06-11"
+    by: "/idea verify --source-drift (write-back, new screen from shipped code)"
+    note: "Created from shipped ScaChallengeScreen.kt + ScaChallengeViewModel. Strong Customer Authentication step: an above-threshold payment comes back INITIATED with a one-time-code challenge; the user enters the code (sandbox accepts 123) and on a COMPLETED response the payment books and navigation continues to payment-result. Stateful — ScaChallengeUiState {answer, isSubmitting, errorMessage}; isAnswerValid = answer.isNotBlank(). DI = PaymentsRepository; constructed via koin parametersOf(bankId, accountId, type, requestId, challengeId). Calls PaymentsRepository.answerChallenge."
+
+screens:
+  - id: sca-challenge
+    name: Confirm Payment
+    archetype: form
+    shell:
+      top_bar:
+        title: "Confirm Payment"
+        navigation_icon: arrow_back
+        actions: []
+      bottom_nav: false
+
+archetype: form
+
+components:
+  - type: text
+    id: challenge_title
+    label: "Enter your authentication code"
+    content: "Enter your authentication code"
+    style:
+      typography: "Outfit/title_medium"
+      color: "#1A1C16"
+      font_weight: semibold
+    a11y:
+      label: "Enter your authentication code"
+      role: heading
+    test_context:
+      tag: challenge_title
+      assert_text: "Enter your authentication code"
+
+  - type: text
+    id: challenge_helper
+    label: "One-time code helper"
+    content: "We've sent a one-time code to confirm this payment. In the sandbox, enter 123."
+    style:
+      typography: "Outfit/body_medium"
+      color: "#44483D"
+    a11y:
+      label: "We've sent a one-time code to confirm this payment. In the sandbox, enter 123."
+      role: text
+    test_context:
+      tag: challenge_helper
+
+  - type: input
+    id: code_input
+    label: "Authentication code"
+    content: ""
+    supported_states: [idle, focus_visible, error, disabled]
+    style:
+      variant: outlined
+      keyboard_type: number
+      ime_action: done
+      corner_radius: 4
+    validation:
+      required: true
+      rule: "answer.isNotBlank()"
+      error_message: "That code wasn't accepted. Please check it and try again."
+    on_click:
+      action: enter_code
+      target: ""
+    a11y:
+      label: "Authentication code"
+      role: textbox
+    keyboard:
+      focusable: true
+    test_context:
+      tag: code_input
+
+  - type: box
+    id: challenge_error
+    label: "Challenge error"
+    content: "That code wasn't accepted. Please check it and try again."
+    style:
+      background: "#FFDAD6"
+      corner_radius: 8
+      padding: 16
+      text_color: "#410002"
+    a11y:
+      label: "Authentication error message"
+      role: alert
+    test_context:
+      tag: challenge_error
+
+  - type: button
+    id: confirm_payment_button
+    label: "Confirm Payment"
+    supported_states: [idle, focus_visible, pressed, disabled, loading]
+    style:
+      variant: filled
+      corner_radius: 12
+      full_width: true
+      height: 52
+    on_click:
+      action: submit
+      target: payment-result
+    a11y:
+      label: "Confirm payment with the entered code"
+      role: button
+    keyboard:
+      focusable: true
+    test_context:
+      tag: confirm_payment_button
+      assert_text: "Confirm Payment"
+
+responsive:
+  mobile_only: true
+  baseline_width: 390
+
+states:
+  initial_state: content
+  content:
+    note: "ScaChallengeUiState default — code_input empty, challenge_error hidden, Confirm Payment disabled until isAnswerValid (answer.isNotBlank())."
+    layout:
+      visible_components:
+        - challenge_title
+        - challenge_helper
+        - code_input
+        - confirm_payment_button
+      confirm_payment_button_enabled: false
+  submitting:
+    note: "isSubmitting == true — code_input disabled, Confirm Payment shows an inline spinner and is disabled."
+    layout:
+      visible_components:
+        - challenge_title
+        - challenge_helper
+        - code_input
+        - confirm_payment_button
+      confirm_payment_button_loading: true
+      confirm_payment_button_enabled: false
+  error:
+    note: "errorMessage != null — challenge_error Surface shown above the button; code_input flagged isError; button re-enabled for retry. Messages mapped from OBP codes 40014 (too many attempts), 40011 (no longer confirmable), 40009 (payment changed), 30279 (needs a different authoriser); else generic."
+    layout:
+      visible_components:
+        - challenge_title
+        - challenge_helper
+        - code_input
+        - challenge_error
+        - confirm_payment_button
+      confirm_payment_button_enabled: true
+
+state_model:
+  view_model: ScaChallengeViewModel
+  ui_state_type: ScaChallengeUiState
+  content_type: ScaChallengeUiState
+  content_fields:
+    - { name: answer, type: String }
+    - { name: isSubmitting, type: Boolean }
+    - { name: errorMessage, type: "String?" }
+    - { name: isAnswerValid, type: Boolean, derived: true }
+  states:
+    - Content
+    - Submitting
+    - Error
+  errors:
+    - field: global
+      code: "40014"
+      message: "Too many incorrect attempts. Please start the payment again."
+    - field: global
+      code: "40011"
+      message: "This payment can no longer be confirmed. Please start it again."
+    - field: global
+      code: "40009"
+      message: "Something changed with this payment. Please start it again."
+    - field: global
+      code: "30279"
+      message: "This payment needs approval from a different authoriser on the account."
+    - field: global
+      code: GENERIC
+      message: "That code wasn't accepted. Please check it and try again."
+  events:
+    - onAnswerChanged
+    - onSubmit
+  actions:
+    - enter_code
+    - submit
+  nav_params:
+    - { name: bankId, type: String }
+    - { name: accountId, type: String }
+    - { name: type, type: String }
+    - { name: requestId, type: String }
+    - { name: challengeId, type: String }
+  callbacks:
+    - name: onCompleted
+      signature: "(TransactionRequest) -> Unit"
+      consumer: payment-result
+    - name: onBack
+      signature: "() -> Unit"
+  koin_parameters:
+    - bankId
+    - accountId
+    - type
+    - requestId
+    - challengeId
+  di:
+    - PaymentsRepository
+
+api:
+  - endpoint: "POST /obp/v4.0.0/banks/{bankId}/accounts/{accountId}/owner/transaction-request-types/{type}/transaction-requests/{requestId}/challenge"
+    tag: TransactionRequests
+    description: "PaymentsRepository.answerChallenge(bankId, accountId, type, requestId, challengeId, answer) — submits the entered one-time code against the INITIATED request's challenge. A COMPLETED response books the payment."
+    request:
+      fields:
+        - { name: id, type: String, note: "challengeId" }
+        - { name: answer, type: String, note: "the entered code" }
+    response:
+      fields:
+        - { name: id, type: String }
+        - { name: status, type: String, note: "COMPLETED on success" }
+        - { name: transaction_ids, type: List<String> }
+        - { name: charge, type: Charge }
+    errors:
+      - code: 400
+        message: "OBP-40014 too many attempts / OBP-40011 no longer confirmable / OBP-40009 payment changed"
+      - code: 403
+        message: "OBP-30279 needs approval from a different authoriser"
+
+dependencies:
+  tier: feature
+  features:
+    - send-money-confirm
+    - payment-result

@@ -5,20 +5,24 @@ api:
   - id: obp_get_atms
     endpoint: "GET /obp/v3.0.0/banks/{bankId}/atms"
     tag: ATM
-    params:
-      - latitude
-      - longitude
-      - limit: 10
+    note: "Shipped AtmApi.listAtms(bankId) — path-only, no query params. Called once per bank the user holds an account at (AtmRepository.atmsForBanks), results flattened and de-duplicated by id; nearest-first sort and great-circle distance are computed on-device in AtmLocatorViewModel."
     response:
       fields:
         - id: String
+        - bank_id: String
         - name: String
         - address: PostalAddress
         - location: GeoLocation
-        - open_24_hours: Boolean
-        - cash_withdrawal_national_amount: String
-        - supported_languages: "List<String>"
-        - services: "List<String>"
+        - more_info: String
+        - is_accessible: String
+        - has_deposit_capability: String
+        - monday: OpeningHours
+        - tuesday: OpeningHours
+        - wednesday: OpeningHours
+        - thursday: OpeningHours
+        - friday: OpeningHours
+        - saturday: OpeningHours
+        - sunday: OpeningHours
     errors:
       - 401: "Unauthorized — missing or invalid token"
       - 404: "Bank not found"
@@ -27,19 +31,5 @@ api:
   - id: obp_get_branches
     endpoint: "GET /obp/v3.0.0/banks/{bankId}/branches"
     tag: Branch
-    params:
-      - latitude
-      - longitude
-    response:
-      fields:
-        - id: String
-        - name: String
-        - address: PostalAddress
-        - location: GeoLocation
-        - lobby: LobbyHours
-        - drive_up: DriveUpHours
-        - branch_routings: "List<BranchRouting>"
-    errors:
-      - 401: "Unauthorized — missing or invalid token"
-      - 404: "Bank not found"
-      - 500: "Internal server error"
+    status: deferred
+    note: "DEFERRED — UNUSED by shipped code. The locator feature is ATM-only; no BranchesApi or BranchRepository exists. Retained as a deferred marker only; not consumed anywhere. Lat/long query params dropped — the shipped ATM endpoint takes no query params either."

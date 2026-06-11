@@ -2,7 +2,7 @@ id: send-money-confirm
 name: Confirm Payment
 feature: send-money-confirm
 flavor: consumer
-status: approved
+status: enriched
 quality_score: 93
 contract_version: "1.1.0"
 approve_hash: "sha256:09af12bd8c96e4f037af12bd8c96e4f037af12bd8c96e4f037af12bd8c96e4f0"
@@ -23,6 +23,12 @@ status_history:
     by: "/idea approve"
     contract_version: "1.1.0"
     bypass_flags: []
+  - from: approved
+    to: enriched
+    at: "2026-06-11"
+    by: "/idea verify --source-drift (write-back)"
+    contract_version: "1.1.0"
+    note: "Reconciled to shipped SendMoneyConfirmScreen + SendMoneyConfirmViewModel. ADDED: 'Sent via' rail row (SEPA/Domestic/International/Internal transfer), conversion_note line under Fee (cross-currency FX), inline error Surface (ConfirmUiState.Failed). REMOVED scheduled_date_selector (no scheduling shipped). CHANGED success model: the in-place success snackbar + navigate-home is OBSOLETE — shipped confirm has NO Success state; on immediate-settle it navigates to payment-result (onCompleted → PaymentResultRoute), on above-threshold it navigates to sca-challenge (onChallengeRequired). iban_row shown only when iban.isNotBlank(). state_model rewritten to ConfirmUiState {Review, Submitting, Failed}; DI = [PaymentsRepository] only; takes the full PaymentDraft (12 fields) as nav args. submit(draft, onCompleted, onChallengeRequired) + reset(). Three rails actually called: sendSepaPayment (SEPA by IBAN), sendToCounterparty (Domestic/Intl + SEPA fallback on OBP-30012/30074), sendToSandboxTan (internal). Errors mapped: LIMIT substring, 40003 currency-mismatch, INSUFFICIENT."
 
 screens:
   - id: send-money-confirm
@@ -290,6 +296,47 @@ components:
     test_context:
       tag: reference_value
 
+  - type: stack
+    id: sent_via_row
+    label: "Sent via"
+    style:
+      orientation: horizontal
+      spacing: 0
+      padding_vertical: 10
+      justify: space_between
+    a11y:
+      label: "Payment rail"
+      role: row
+    test_context:
+      tag: sent_via_row
+
+  - type: text
+    id: sent_via_label
+    label: "Sent via"
+    content: "Sent via"
+    style:
+      typography: "Outfit/body_medium"
+      color: "#44483D"
+    a11y:
+      label: "Sent via label"
+      role: text
+    test_context:
+      tag: sent_via_label
+
+  - type: text
+    id: sent_via_value
+    label: "SEPA"
+    content: "SEPA"
+    style:
+      typography: "Outfit/body_medium"
+      color: "#1A1C16"
+      font_weight: 500
+    a11y:
+      label: "Sent via SEPA"
+      role: text
+    test_context:
+      tag: sent_via_value
+
   - type: divider
     id: fee_divider
     style:
@@ -346,6 +393,19 @@ components:
       tag: fee_value
       assert_text: "£0.00"
 
+  - type: text
+    id: conversion_note
+    label: "Converted from GBP at today's rate"
+    content: "Converted from GBP at today's rate"
+    style:
+      typography: "Outfit/body_small"
+      color: "#44483D"
+    a11y:
+      label: "Cross-currency conversion note"
+      role: text
+    test_context:
+      tag: conversion_note
+
   - type: stack
     id: total_row
     label: "Total"
@@ -395,27 +455,20 @@ components:
       tag: total_value
       assert_text: "£500.00"
 
-  - type: input
-    id: scheduled_date_selector
-    label: "Scheduled for"
-    content: "Immediate"
-    supported_states: [idle, hover, focus_visible, pressed, disabled]
+  - type: box
+    id: payment_error
+    label: "Payment error"
+    content: "Payment could not be processed. Please try again."
     style:
-      variant: outlined
-      trailing_icon: calendar_today
-      corner_radius: 12
-      padding_top: spacing.md
-    on_click:
-      action: select_schedule_date
-      target: ""
+      background: "#FFDAD6"
+      corner_radius: 8
+      padding: 16
+      text_color: "#410002"
     a11y:
-      label: "Select payment date. Currently set to immediate"
-      role: button
-    keyboard:
-      focusable: true
+      label: "Payment error message"
+      role: alert
     test_context:
-      tag: scheduled_date_selector
-      assert_text: "Immediate"
+      tag: payment_error
 
   - type: text
     id: terms_text
@@ -471,7 +524,7 @@ components:
       typography: "Outfit/label_large"
     on_click:
       action: navigate
-      target: send-money
+      target: send-money-amount
     a11y:
       label: "Go back and edit this payment"
       role: button
@@ -486,37 +539,11 @@ responsive:
   baseline_width: 390
 
 states:
-  initial_state: loading
-  loading:
-    layout:
-      visible_components:
-        - confirm_title
-        - payment_summary_card
-        - payment_amount
-        - amount_divider
-        - to_row
-        - from_row
-        - fee_row
-        - total_row
-        - scheduled_date_selector
-        - confirm_send_button
-        - edit_payment_button
-      skeleton_shimmer: true
-      shimmer_components:
-        - payment_amount
-        - to_value
-        - iban_value
-        - from_value
-        - reference_value
-        - fee_value
-        - total_value
-      confirm_send_button_enabled: false
-      edit_payment_button_enabled: false
-      progress_indicator: linear
+  initial_state: review
   review:
+    note: "ConfirmUiState.Review — the screen renders the args-driven draft immediately (no load step; data arrives via nav args). iban_row + conversion_note shown only when iban / conversionNote are non-blank; sent_via_value shows 'Internal transfer' when sandboxTan != null."
     layout:
       visible_components:
-        - confirm_title
         - review_subtitle
         - payment_summary_card
         - payment_amount
@@ -533,22 +560,25 @@ states:
         - reference_row
         - reference_label
         - reference_value
+        - sent_via_row
+        - sent_via_label
+        - sent_via_value
         - fee_divider
         - fee_row
         - fee_label
         - fee_value
+        - conversion_note
         - total_row
         - total_label
         - total_value
-        - scheduled_date_selector
         - terms_text
         - confirm_send_button
         - edit_payment_button
       confirm_send_button_enabled: true
   submitting:
+    note: "ConfirmUiState.Submitting — full-screen progress overlay; both buttons disabled, primary shows 'Sending...'."
     layout:
       visible_components:
-        - confirm_title
         - payment_summary_card
         - payment_amount
         - to_value
@@ -557,145 +587,106 @@ states:
       confirm_send_button_loading: true
       confirm_send_button_enabled: false
       edit_payment_button_enabled: false
-      progress_indicator: linear
-  success:
-    layout:
-      visible_components: []
-      show_success_snackbar: true
-      snackbar_message: "Payment of £500.00 sent to John Smith"
-      navigate_to: home
-  content:
+      progress_indicator: circular
+  failed:
+    note: "ConfirmUiState.Failed — inline error Surface above the terms text; buttons re-enabled for retry. Messages: LIMIT → daily-limit, 40003 → currency-mismatch, INSUFFICIENT → insufficient-funds, else generic."
     layout:
       visible_components:
-        - confirm_title
         - review_subtitle
         - payment_summary_card
         - payment_amount
         - amount_divider
         - to_row
-        - to_label
         - to_value
-        - iban_row
-        - iban_label
-        - iban_value
         - from_row
-        - from_label
         - from_value
-        - reference_row
-        - reference_label
-        - reference_value
-        - fee_divider
+        - sent_via_row
+        - sent_via_value
         - fee_row
-        - fee_label
         - fee_value
         - total_row
-        - total_label
         - total_value
-        - scheduled_date_selector
+        - payment_error
         - terms_text
         - confirm_send_button
         - edit_payment_button
-      confirm_send_button_enabled: true
-    note: "Payment details loaded — same layout as review state; default loaded state alias"
-  empty:
-    layout:
-      visible_components:
-        - confirm_title
-        - edit_payment_button
-      showEmptyState: true
-      emptyMessage: "No transaction to confirm. Start a new payment."
-      confirm_send_button_enabled: false
-  error:
-    layout:
-      visible_components:
-        - confirm_title
-        - payment_summary_card
-        - payment_amount
-        - to_value
-        - fee_value
-        - total_value
-        - terms_text
-        - confirm_send_button
-        - edit_payment_button
-      show_error_banner: true
-      error_message: "Payment could not be processed. Please try again."
       confirm_send_button_enabled: true
 
 state_model:
   view_model: SendMoneyConfirmViewModel
-  state_fields:
-    - name: amount
-      type: String
-      default: ""
-    - name: currency
-      type: String
-      default: "GBP"
-    - name: beneficiaryName
-      type: String
-      default: ""
-    - name: beneficiaryBank
-      type: String
-      default: ""
-    - name: iban
-      type: String
-      default: ""
-    - name: fromAccountLabel
-      type: String
-      default: ""
-    - name: reference
-      type: String
-      default: ""
-    - name: fee
-      type: String
-      default: "£0.00"
-    - name: total
-      type: String
-      default: ""
-    - name: scheduledDate
-      type: String
-      default: "Immediate"
-    - name: uiState
-      type: ConfirmPaymentUiState
-      default: Review
+  ui_state_type: ConfirmUiState
+  states:
+    - Review
+    - Submitting
+    - Failed
+  nav_args:
+    type: PaymentDraft
+    fields:
+      - { name: fromBankId, type: String }
+      - { name: fromAccountId, type: String }
+      - { name: fromLabel, type: String }
+      - { name: amount, type: String }
+      - { name: currency, type: String }
+      - { name: counterpartyId, type: String }
+      - { name: beneficiaryName, type: String }
+      - { name: beneficiaryBank, type: String }
+      - { name: iban, type: String }
+      - { name: reference, type: String }
+      - { name: paymentType, type: PaymentType, default: SEPA }
+      - { name: conversionNote, type: "String?", default: "null" }
+      - { name: useSandboxTan, type: Boolean, default: "false" }
+      - { name: toBankId, type: String, default: "" }
+      - { name: toAccountId, type: String, default: "" }
   errors:
     - field: global
-      code: PAYMENT_FAILED
-      message: "Payment could not be processed. Please try again."
-    - field: global
-      code: INSUFFICIENT_FUNDS
+      code: INSUFFICIENT
       message: "Insufficient funds in your account."
     - field: global
-      code: INVALID_BENEFICIARY
-      message: "The beneficiary account details are invalid."
-    - field: global
-      code: DAILY_LIMIT_EXCEEDED
+      code: LIMIT
       message: "This payment exceeds your daily transfer limit."
-  events:
-    - ScheduleDateSelected
-    - ConfirmClicked
-    - EditClicked
-    - PaymentSucceeded
-    - PaymentFailed
+    - field: global
+      code: "40003"
+      message: "Payment currency must match the source account currency."
+    - field: global
+      code: GENERIC
+      message: "Payment could not be processed. Please try again."
+  methods:
+    - name: submit
+      signature: "submit(draft: PaymentDraft, onCompleted: (TransactionRequest) -> Unit, onChallengeRequired: (ScaChallengeArgs) -> Unit)"
+    - name: reset
+      signature: "reset()"
+  callbacks:
+    - name: onCompleted
+      signature: "(TransactionRequest) -> Unit"
+      consumer: payment-result
+    - name: onChallengeRequired
+      signature: "(ScaChallengeArgs) -> Unit"
+      consumer: sca-challenge
+    - name: onEdit
+      signature: "() -> Unit"
+      consumer: send-money-amount
+    - name: onBack
+      signature: "() -> Unit"
   actions:
     - submit
     - navigate
-    - select_schedule_date
   di:
-    - PaymentRepository
-    - TransactionRequestUseCase
-    - AccountRepository
-
-navigation:
-  - id: nav_to_home_success
-    target: home
-    trigger: on_payment_success
-    on_click:
-      action: navigate
-      target: home
+    - PaymentsRepository
 
 api:
   - endpoint: "POST /obp/v4.0.0/banks/{bankId}/accounts/{accountId}/owner/transaction-request-types/SEPA/transaction-requests"
     tag: TransactionRequests
+    description: "Rail 1 — SEPA by recipient IBAN (PaymentsRepository.sendSepaPayment), used when paymentType == SEPA && iban not blank. Falls back to COUNTERPARTY on OBP-30012 / OBP-30074 in the response message."
+    request:
+      fields:
+        - name: to.iban
+          type: String
+        - name: value.currency
+          type: String
+        - name: value.amount
+          type: String
+        - name: description
+          type: String
     response:
       fields:
         - name: id
@@ -704,34 +695,74 @@ api:
           type: String
         - name: status
           type: String
-        - name: start_date
-          type: DateTime
-        - name: charge
-          type: Charge
-        - name: charge.summary
-          type: String
-        - name: charge.value.amount
-          type: String
-        - name: charge.value.currency
-          type: String
         - name: challenge
           type: Challenge
+        - name: charge
+          type: Charge
         - name: transaction_ids
           type: List<String>
     errors:
-      - code: 400
-        message: "INVALID_JSON_FORMAT"
-      - code: 403
-        message: "INSUFFICIENT_AUTHORISATION"
       - code: 404
-        message: "BANK_ACCOUNT_NOT_FOUND"
+        message: "OBP-30012 / OBP-30074 — IBAN not resolvable; app falls back to COUNTERPARTY"
       - code: 422
         message: "INSUFFICIENT_FUNDS"
-      - code: 423
-        message: "DAILY_LIMIT_EXCEEDED"
+  - endpoint: "POST /obp/v4.0.0/banks/{bankId}/accounts/{accountId}/owner/transaction-request-types/COUNTERPARTY/transaction-requests"
+    tag: TransactionRequests
+    description: "Rail 2 — pay a counterparty by id (PaymentsRepository.sendToCounterparty). Used for Domestic / International and as the SEPA fallback."
+    request:
+      fields:
+        - name: to.counterparty_id
+          type: String
+        - name: value.currency
+          type: String
+        - name: value.amount
+          type: String
+        - name: description
+          type: String
+    response:
+      fields:
+        - name: id
+          type: String
+        - name: type
+          type: String
+        - name: status
+          type: String
+        - name: challenge
+          type: Challenge
+        - name: charge
+          type: Charge
+        - name: transaction_ids
+          type: List<String>
+    errors:
+      - code: 422
+        message: "OBP-40003 currency mismatch / LIMIT exceeded / INSUFFICIENT_FUNDS"
+  - endpoint: "POST /obp/v2.1.0/banks/{bankId}/accounts/{accountId}/owner/transaction-request-types/SANDBOX_TAN/transaction-requests"
+    tag: TransactionRequests
+    description: "Rail 3 — sandbox-only internal transfer to an OBP-hosted account (PaymentsRepository.sendToSandboxTan). Self-answerable SCA (no maker/checker)."
+    request:
+      fields:
+        - name: to.bank_id
+          type: String
+        - name: to.account_id
+          type: String
+        - name: value.currency
+          type: String
+        - name: value.amount
+          type: String
+        - name: description
+          type: String
+    response:
+      fields:
+        - name: id
+          type: String
+        - name: status
+          type: String
+        - name: challenge
+          type: Challenge
 
 dependencies:
   tier: feature
   features:
-    - send-money
-    - home
+    - send-money-amount
+    - sca-challenge
+    - payment-result
