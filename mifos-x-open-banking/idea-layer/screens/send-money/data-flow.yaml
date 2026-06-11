@@ -5,70 +5,42 @@ entries:
   - screen_id: send-money
     trigger: on_mount
     endpoints:
-      - obp_get_sender_accounts
-      - obp_get_beneficiary_counterparties
+      - get_accounts
+      - get_account_beneficiaries
     direction: read
     dtos:
-      - name: Account
+      - name: OBReadAccount6
         role: response
-        api_id: obp_get_sender_accounts
-      - name: Counterparty
+        api_id: get_accounts
+      - name: OBReadBeneficiary5
         role: response
-        api_id: obp_get_beneficiary_counterparties
+        api_id: get_account_beneficiaries
     produces_state: content
     error_paths:
       - error_code: 401
         behavior: navigate_login
+      - error_code: 403
+        behavior: error_state
       - error_code: 500
         behavior: error_state
 
   - screen_id: send-money
     trigger: on_interact
-    event: ValidateIban
+    event: AccountSelected
     endpoints:
-      - obp_iban_check
+      - get_account_balances
+      - get_account_beneficiaries
     direction: read
     dtos:
-      - name: IbanCheckResult
+      - name: OBReadBalance1
         role: response
-        api_id: obp_iban_check
+        api_id: get_account_balances
+      - name: OBReadBeneficiary5
+        role: response
+        api_id: get_account_beneficiaries
     produces_state: content
     error_paths:
-      - error_code: 400
-        behavior: error_state
-
-  - screen_id: send-money
-    trigger: on_interact
-    event: ContinueClicked
-    endpoints:
-      - obp_funds_available
-    direction: read
-    dtos:
-      - name: MoneyAmount
-        role: response
-        api_id: obp_funds_available
-    produces_state: content
-    error_paths:
-      - error_code: 400
+      - error_code: 403
         behavior: error_state
       - error_code: 401
         behavior: navigate_login
-
-  - screen_id: send-money
-    trigger: on_interact
-    event: ConfirmTransfer
-    endpoints:
-      - obp_create_sepa_transfer
-    direction: write
-    dtos:
-      - name: SepaTransactionRequest
-        role: response
-        api_id: obp_create_sepa_transfer
-    produces_state: content
-    error_paths:
-      - error_code: 400
-        behavior: error_state
-      - error_code: 401
-        behavior: navigate_login
-      - error_code: 500
-        behavior: error_state

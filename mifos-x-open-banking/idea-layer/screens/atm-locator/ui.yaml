@@ -676,7 +676,7 @@ states:
         - atm_map_area
         - atm_search_row
         - nearby_results_header
-    note: "ScreenState.Unauthenticated — session expired; rendered via the shared AtmErrorState branch with retry."
+    note: "ScreenState.Unauthenticated — retained for the shared AtmErrorState branch, but Open Data ATM Locator is UNAUTHENTICATED (no token/consent), so this branch is no longer reachable from the ATM fetch itself; kept only for sealed-type exhaustiveness."
 
 state_model:
   view_model: AtmLocatorViewModel
@@ -685,7 +685,7 @@ state_model:
   content_fields:
     - name: atms
       type: "List<AtmRow>"
-      note: "Each row: id, name, addressLine, distanceLabel, distanceMeters?, lat, lng, hoursLabel, accessible, acceptsDeposits, moreInfo."
+      note: "Each row mapped from OBIE data[].Brand[].ATM[]: id←ATM[].Identification, name←Location.Site.Name/BrandName, addressLine←Location.PostalAddress (StreetName/TownName/PostCode), lat←GeoLocation.GeographicCoordinates.Latitude (String), lng←Longitude (String), distanceLabel/distanceMeters? computed on-device, accessible←ATM[].Accessibility[] non-empty, acceptsDeposits←ATM[].ATMServices contains a deposit code, moreInfo←ATM[].MinimumPossibleAmount/SupportedLanguages. Open Data is unauthenticated; no hoursLabel field exists in the OBIE ATM object."
     - name: query
       type: String
       default: '""'
@@ -729,31 +729,33 @@ state_model:
     - "ATMs aggregated across all of the user's banks via atmRepository.atmsForBanks(bankIds); rows sorted nearest-first once device location is known."
 
 api:
-  - id: obp_get_atms
-    endpoint: "GET /obp/v3.0.0/banks/{bankId}/atms"
+  - id: opendata_get_atms
+    endpoint: "GET /open-banking/opendata/v2.4.0/atms"
     tag: ATM
-    note: "Called once per bank the user holds an account at (atmsForBanks), flattened + de-duplicated client-side. Path-only — no lat/long query params; distance sort happens on-device."
+    auth_required: false
+    note: "OBIE Open Data ATM Locator — UNAUTHENTICATED (no token, no account-access consent, no scope). Returns a meta + data[].Brand[].ATM[] envelope; ATMs are flattened across brands and de-duplicated by Identification client-side. No lat/long query params; distance sort happens on-device from ATM[].Location.PostalAddress.GeoLocation.GeographicCoordinates."
     response:
       fields:
-        - id: String
-        - bank_id: String
-        - name: String
-        - address: PostalAddress
-        - location: GeoLocation
-        - more_info: String
-        - is_accessible: String
-        - has_deposit_capability: String
-        - monday..sunday: OpeningHours
+        - meta.LastUpdated: String
+        - data[].Brand[].BrandName: String
+        - data[].Brand[].ATM[].Identification: String
+        - data[].Brand[].ATM[].ATMServices: Array
+        - data[].Brand[].ATM[].Accessibility: Array
+        - data[].Brand[].ATM[].MinimumPossibleAmount: String
+        - data[].Brand[].ATM[].Location.PostalAddress: Object
+        - data[].Brand[].ATM[].Location.PostalAddress.GeoLocation.GeographicCoordinates.Latitude: String
+        - data[].Brand[].ATM[].Location.PostalAddress.GeoLocation.GeographicCoordinates.Longitude: String
     errors:
-      - 401: "Unauthorized — missing or invalid token"
-      - 404: "Bank not found"
+      - 400: "Bad Request"
+      - 429: "TOO_MANY_REQUESTS — retryable"
       - 500: "Internal server error"
 
-  - id: obp_get_branches
-    endpoint: "GET /obp/v3.0.0/banks/{bankId}/branches"
+  - id: opendata_get_branches
+    endpoint: "GET /open-banking/opendata/v2.4.0/branches"
     tag: Branch
     status: deferred
-    note: "DEFERRED — branches were never built. The shipped feature is ATM-only; no BranchesApi/BranchRepository exists. Endpoint retained here as a deferred marker, NOT consumed by any code."
+    auth_required: false
+    note: "DEFERRED — branches were never built. The shipped feature is ATM-only; no BranchesApi/BranchRepository exists. OBIE Open Data Branch Locator (unauthenticated); retained as a deferred marker, NOT consumed by any code."
 
 dependencies:
   tier: consumer

@@ -583,6 +583,16 @@ state_model:
     - name: uiState
       type: "StateFlow<ScreenState<List<StandingOrder>>>"
       default: "ScreenState.Loading"
+      obie_field_map:
+        note: >
+          Each StandingOrder row is built from an OBIE Data.StandingOrder[] entry
+          (get_account_standing_orders). Surfaced OBIE shapes:
+          id ← Data.StandingOrder[].StandingOrderId (String)
+          status ← Data.StandingOrder[].StandingOrderStatusCode (String, ExternalMandateStatus1Code)
+          frequency ← Data.StandingOrder[].Frequency (String, e.g. UK.OBIE.Monthly)
+          amount ← Data.StandingOrder[].NextPaymentAmount.Amount (String) + .NextPaymentAmount.Currency (String)
+          scheduleDate ← Data.StandingOrder[].NextPaymentDateTime (String, ISODateTime) / .FirstPaymentDateTime
+          counterparty ← Data.StandingOrder[].CreditorAccount.Name + .CreditorAccount.Identification (Detail permission only)
     - name: createGate
       type: "StateFlow<CreateGate>"
       default: "CreateGate.Idle"
@@ -607,11 +617,13 @@ state_model:
     - PaymentsRepository
 
 api:
-  - endpoint: "POST /obp/v4.0.0/banks/{bankId}/accounts/{accountId}/owner/standing-order"
+  - endpoint: "GET /obie/open-banking/v4.0/aisp/accounts/{AccountId}/standing-orders"
+    id: get_account_standing_orders
     note: >
-      The ONLY OBP standing-order endpoint (verified against v6.0.0 spec: no list/get/delete
-      at any version). Invoked from standing-order-create, not this screen. The list here is
-      DERIVED from transaction history — see api.yaml.
+      HSBC OBIE AISP read endpoint (OBReadStandingOrder6). Lists the standing orders on the
+      selected AccountId — READ-ONLY. Requires an authorised account-access consent with
+      ReadStandingOrders permission. Creating a standing order is PISP, handled by
+      standing-order-create — not this screen. See api.yaml.
     tag: Standing-Orders
 
 dependencies:

@@ -1,0 +1,413 @@
+schema_version: "4.0"
+api_group: pisp-domestic
+name: "Domestic Payment (PISP) API"
+base_url: "https://secure.sandbox.ob.hsbc.co.uk"
+auth_scheme: OAuth2-FAPI
+api_version: v4.0
+generated_at: "2026-06-11"
+source: "HSBC UK/CE Open Banking sandbox (OBIE Read/Write v4.0); per-brand hosts in HSBC_Sandbox/docs/04-domestic-payment.md. [PORTAL UNREACHABLE — T2 OBIE PISP]: HSBC portal Payments narrative (T3) was HTTP 429; payment semantics + response schemas sourced from OBIE PISP v4.0. OAuth2 token/authorize endpoints (Get CC Token, Get Access Token, Initiate Consent Authorization) are excluded here and live in the auth group. Grant rule: consent POST + all GETs except funds-confirmation use Client Credentials; payment POST + funds-confirmation GET use Authorization Code. CE HSBCnet is on v3.1 with a /ce path prefix; all other brands on v4.0."
+endpoints:
+  - id: create_domestic_payment_consent
+    method: POST
+    path: "/obie/open-banking/v4.0/pisp/domestic-payment-consents"
+    description: "Stages a domestic-payment-consent; ASPSP returns a unique ConsentId with default Status AWAU (awaiting PSU authorisation). Client Credentials grant. CE HSBCnet: POST /ce/obie/open-banking/v3.1/pisp/domestic-payment-consents."
+    auth_required: true
+    scopes: [payments]
+    request_schema:
+      - field: Data.ReadRefundAccount
+        type: String
+        required: false
+        validation: "Enum OBInternalReadRefundAccount1Code (e.g. Yes/No). Requests sharing of refund account details."
+      - field: Data.Initiation.InstructionIdentification
+        type: String
+        required: true
+        validation: "PISP instruction identification. Part of OBDomestic2 Initiation block (mandatory)."
+      - field: Data.Initiation.EndToEndIdentification
+        type: String
+        required: false
+        validation: "End-to-end identification reference."
+      - field: Data.Initiation.LocalInstrument
+        type: String
+        required: false
+        validation: "Payment scheme, e.g. UK.OBIE.CHAPS."
+      - field: Data.Initiation.InstructedAmount.Amount
+        type: String
+        required: true
+        validation: "Decimal string, e.g. 1.55."
+      - field: Data.Initiation.InstructedAmount.Currency
+        type: String
+        required: true
+        validation: "ISO 4217 currency code, e.g. EUR."
+      - field: Data.Initiation.DebtorAccount.SchemeName
+        type: String
+        required: false
+        validation: "Account scheme, e.g. UK.OBIE.IBAN."
+      - field: Data.Initiation.DebtorAccount.Identification
+        type: String
+        required: false
+        validation: "Debtor account identification."
+      - field: Data.Initiation.CreditorAccount.SchemeName
+        type: String
+        required: true
+        validation: "Account scheme, e.g. UK.OBIE.IBAN."
+      - field: Data.Initiation.CreditorAccount.Identification
+        type: String
+        required: true
+        validation: "Creditor account identification."
+      - field: Data.Initiation.CreditorAccount.Name
+        type: String
+        required: true
+        validation: "Creditor account name."
+      - field: Data.Initiation.RemittanceInformation.Reference
+        type: String
+        required: false
+        validation: "Remittance reference."
+      - field: Risk.PaymentContextCode
+        type: String
+        required: true
+        validation: "e.g. EcommerceMerchantInitiatedPayment. Part of the Risk block."
+      - field: Risk.DeliveryAddress
+        type: Object
+        required: false
+        validation: "Optional delivery address (street, postcode, town, country)."
+    response_schema:
+      - field: Data.ConsentId
+        type: String
+        nullable: false
+        description: "ASPSP-assigned consent identifier (OBWriteDomesticConsentResponse5)."
+      - field: Data.Status
+        type: String
+        nullable: false
+        description: "Consent status: AWAU (awaiting authorisation), AUTH, RJCT, COND."
+      - field: Data.CreationDateTime
+        type: String
+        nullable: false
+        description: "ISODateTime the consent was created."
+      - field: Data.StatusUpdateDateTime
+        type: String
+        nullable: false
+        description: "ISODateTime of the last status update."
+      - field: Data.StatusReason
+        type: Array
+        nullable: true
+        description: "Optional StatusReason[] with StatusReasonCode, StatusReasonDescription, Path."
+      - field: Data.Initiation
+        type: Object
+        nullable: false
+        description: "Echoed Initiation block from the request."
+      - field: Risk
+        type: Object
+        nullable: false
+        description: "Echoed Risk block."
+      - field: Links
+        type: Object
+        nullable: false
+        description: "OBIE Links (self)."
+      - field: Meta
+        type: Object
+        nullable: false
+        description: "OBIE Meta."
+    error_codes:
+      - code: 400
+        message: "OB.Field.Invalid"
+        retry: false
+      - code: 401
+        message: "UNAUTHORIZED"
+        retry: false
+      - code: 403
+        message: "OB.Resource.InvalidConsentStatus"
+        retry: false
+      - code: 429
+        message: "TOO_MANY_REQUESTS"
+        retry: true
+      - code: 500
+        message: "OB.UnexpectedError"
+        retry: true
+  - id: get_domestic_payment_consent_funds_confirmation
+    method: GET
+    path: "/obie/open-banking/v4.0/pisp/domestic-payment-consents/{ConsentId}/funds-confirmation"
+    description: "Confirms funds against the consent. Valid only while consent Status is AUTH; otherwise ASPSP returns 400 with error U009. Does not change consent status. Uses the Authorization Code grant token. CE HSBCnet: /ce/obie/open-banking/v3.1/pisp/domestic-payment-consents/{ConsentId}/funds-confirmation."
+    auth_required: true
+    scopes: [payments]
+    request_schema: []
+    response_schema:
+      - field: Data.FundsAvailableResult.FundsAvailable
+        type: Boolean
+        nullable: false
+        description: "Whether funds are available (OBWriteFundsConfirmationResponse1)."
+      - field: Data.FundsAvailableResult.FundsAvailableDateTime
+        type: String
+        nullable: false
+        description: "ISODateTime the funds availability was confirmed."
+      - field: Data.SupplementaryData
+        type: Object
+        nullable: true
+        description: "Optional supplementary data."
+      - field: Links
+        type: Object
+        nullable: false
+        description: "OBIE Links (self)."
+      - field: Meta
+        type: Object
+        nullable: false
+        description: "OBIE Meta."
+    error_codes:
+      - code: 400
+        message: "OB.Resource.InvalidConsentStatus"
+        retry: false
+      - code: 401
+        message: "UNAUTHORIZED"
+        retry: false
+      - code: 403
+        message: "FORBIDDEN"
+        retry: false
+      - code: 429
+        message: "TOO_MANY_REQUESTS"
+        retry: true
+      - code: 500
+        message: "OB.UnexpectedError"
+        retry: true
+  - id: create_domestic_payment
+    method: POST
+    path: "/obie/open-banking/v4.0/pisp/domestic-payments"
+    description: "Submits the authorised domestic payment for processing. Creatable only when the consent Status is AUTH; Initiation/Risk must match the consent or ASPSP returns 400. Initial Status is RCVD or RJCT. Authorization Code grant. CE HSBCnet: POST /ce/obie/open-banking/v3.1/pisp/domestic-payments."
+    auth_required: true
+    scopes: [payments]
+    request_schema:
+      - field: Data.ConsentId
+        type: String
+        required: true
+        validation: "Identifier of the authorised consent (OBWriteDomestic2). Ties the payment to the consent."
+      - field: Data.Initiation.InstructionIdentification
+        type: String
+        required: true
+        validation: "Must equal the consent Initiation."
+      - field: Data.Initiation.EndToEndIdentification
+        type: String
+        required: false
+        validation: "Must equal the consent Initiation."
+      - field: Data.Initiation.LocalInstrument
+        type: String
+        required: false
+        validation: "Payment scheme, e.g. UK.OBIE.CHAPS."
+      - field: Data.Initiation.InstructedAmount.Amount
+        type: String
+        required: true
+        validation: "Decimal string. Must equal the consent."
+      - field: Data.Initiation.InstructedAmount.Currency
+        type: String
+        required: true
+        validation: "ISO 4217 currency code. Must equal the consent."
+      - field: Data.Initiation.CreditorAccount.Identification
+        type: String
+        required: true
+        validation: "Creditor account identification. Must equal the consent."
+      - field: Data.Initiation.CreditorAccount.Name
+        type: String
+        required: true
+        validation: "Creditor account name."
+      - field: Data.Initiation.RemittanceInformation.Reference
+        type: String
+        required: false
+        validation: "Remittance reference."
+      - field: Risk.PaymentContextCode
+        type: String
+        required: true
+        validation: "Must equal the consent Risk block."
+    response_schema:
+      - field: Data.DomesticPaymentId
+        type: String
+        nullable: false
+        description: "ASPSP-assigned payment resource id (OBWriteDomesticResponse5)."
+      - field: Data.ConsentId
+        type: String
+        nullable: false
+        description: "Identifier of the consent this payment was created from."
+      - field: Data.CreationDateTime
+        type: String
+        nullable: false
+        description: "ISODateTime the payment resource was created."
+      - field: Data.Status
+        type: String
+        nullable: false
+        description: "Initial status RCVD or RJCT (ExternalPaymentTransactionStatus1Code)."
+      - field: Data.StatusUpdateDateTime
+        type: String
+        nullable: false
+        description: "ISODateTime of the last status update."
+      - field: Data.StatusReason
+        type: Array
+        nullable: true
+        description: "Optional StatusReason[]."
+      - field: Data.ExpectedExecutionDateTime
+        type: String
+        nullable: true
+        description: "Expected execution date/time."
+      - field: Data.ExpectedSettlementDateTime
+        type: String
+        nullable: true
+        description: "Expected settlement date/time."
+      - field: Data.Refund
+        type: Object
+        nullable: true
+        description: "Optional refund account details."
+      - field: Data.Charges
+        type: Array
+        nullable: true
+        description: "Optional Charges[] applied to the payment."
+      - field: Data.Initiation
+        type: Object
+        nullable: false
+        description: "Echoed Initiation block."
+      - field: Links
+        type: Object
+        nullable: false
+        description: "OBIE Links (self)."
+      - field: Meta
+        type: Object
+        nullable: false
+        description: "OBIE Meta."
+    error_codes:
+      - code: 400
+        message: "OB.Field.Invalid"
+        retry: false
+      - code: 401
+        message: "UNAUTHORIZED"
+        retry: false
+      - code: 403
+        message: "OB.Resource.InvalidConsentStatus"
+        retry: false
+      - code: 429
+        message: "TOO_MANY_REQUESTS"
+        retry: true
+      - code: 500
+        message: "OB.UnexpectedError"
+        retry: true
+  - id: get_domestic_payment_status
+    method: GET
+    path: "/obie/open-banking/v4.0/pisp/domestic-payments/{DomesticPaymentId}"
+    description: "Retrieves the domestic-payment resource so the PISP can poll its status. Client Credentials grant. CE HSBCnet: /ce/obie/open-banking/v3.1/pisp/domestic-payments/{DomesticPaymentId}."
+    auth_required: true
+    scopes: [payments]
+    request_schema: []
+    response_schema:
+      - field: Data.DomesticPaymentId
+        type: String
+        nullable: false
+        description: "ASPSP-assigned payment resource id (OBWriteDomesticResponse5)."
+      - field: Data.ConsentId
+        type: String
+        nullable: false
+        description: "Identifier of the consent this payment was created from."
+      - field: Data.Status
+        type: String
+        nullable: false
+        description: "ExternalPaymentTransactionStatus1Code: RCVD, PDNG, ACTC, PATC, ACCP, ACFC, ACSP, ACWC, ACSC, ACWP, ACCC, BLCK, RJCT."
+      - field: Data.CreationDateTime
+        type: String
+        nullable: false
+        description: "ISODateTime the payment resource was created."
+      - field: Data.StatusUpdateDateTime
+        type: String
+        nullable: false
+        description: "ISODateTime of the last status update."
+      - field: Data.ExpectedExecutionDateTime
+        type: String
+        nullable: true
+        description: "Expected execution date/time."
+      - field: Data.ExpectedSettlementDateTime
+        type: String
+        nullable: true
+        description: "Expected settlement date/time."
+      - field: Data.Charges
+        type: Array
+        nullable: true
+        description: "Optional Charges[]."
+      - field: Data.Initiation
+        type: Object
+        nullable: false
+        description: "Echoed Initiation block."
+      - field: Links
+        type: Object
+        nullable: false
+        description: "OBIE Links (self)."
+      - field: Meta
+        type: Object
+        nullable: false
+        description: "OBIE Meta."
+    error_codes:
+      - code: 400
+        message: "OB.Field.Invalid"
+        retry: false
+      - code: 401
+        message: "UNAUTHORIZED"
+        retry: false
+      - code: 404
+        message: "OB.Resource.NotFound"
+        retry: false
+      - code: 429
+        message: "TOO_MANY_REQUESTS"
+        retry: true
+      - code: 500
+        message: "OB.UnexpectedError"
+        retry: true
+  - id: get_domestic_payment_consent_status
+    method: GET
+    path: "/obie/open-banking/v4.0/pisp/domestic-payment-consents/{ConsentId}"
+    description: "Retrieves the consent the PISP created to check its status. Client Credentials grant. CE HSBCnet: /ce/obie/open-banking/v3.1/pisp/domestic-payment-consents/{ConsentId}."
+    auth_required: true
+    scopes: [payments]
+    request_schema: []
+    response_schema:
+      - field: Data.ConsentId
+        type: String
+        nullable: false
+        description: "ASPSP-assigned consent identifier (OBWriteDomesticConsentResponse5)."
+      - field: Data.Status
+        type: String
+        nullable: false
+        description: "Consent status: AWAU (awaiting authorisation), AUTH (authorised), RJCT (rejected), COND (consented action completed)."
+      - field: Data.CreationDateTime
+        type: String
+        nullable: false
+        description: "ISODateTime the consent was created."
+      - field: Data.StatusUpdateDateTime
+        type: String
+        nullable: false
+        description: "ISODateTime of the last status update."
+      - field: Data.StatusReason
+        type: Array
+        nullable: true
+        description: "Optional StatusReason[]."
+      - field: Data.Initiation
+        type: Object
+        nullable: false
+        description: "Echoed Initiation block."
+      - field: Risk
+        type: Object
+        nullable: false
+        description: "Echoed Risk block."
+      - field: Links
+        type: Object
+        nullable: false
+        description: "OBIE Links (self)."
+      - field: Meta
+        type: Object
+        nullable: false
+        description: "OBIE Meta."
+    error_codes:
+      - code: 400
+        message: "OB.Field.Invalid"
+        retry: false
+      - code: 401
+        message: "UNAUTHORIZED"
+        retry: false
+      - code: 404
+        message: "OB.Resource.NotFound"
+        retry: false
+      - code: 429
+        message: "TOO_MANY_REQUESTS"
+        retry: true
+      - code: 500
+        message: "OB.UnexpectedError"
+        retry: true

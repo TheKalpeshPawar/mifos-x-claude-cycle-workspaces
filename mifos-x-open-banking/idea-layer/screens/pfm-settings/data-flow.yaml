@@ -5,39 +5,45 @@ entries:
   - screen_id: pfm-settings
     trigger: on_mount
     endpoints:
-      - obp_personal_data_fields
+      - get_accounts
+      - get_party
+      - local_base_currency_pref
     direction: read
     dtos:
-      - name: PersonalDataField
+      - name: OBReadAccount6
         role: response
-        api_id: obp_personal_data_fields
+        api_id: get_accounts
+      - name: OBReadParty2
+        role: response
+        api_id: get_party
     produces_state: populated
     notes: >-
-      Reads the persisted pfm_base_currency field (append-only store, newest row wins).
-      When no row exists, the selection is seeded from the user's default account currency.
+      Derives the currency option set from Data.Account[].Currency across the authorised
+      accounts (get_accounts), and the header holder name from Data.Party.Name (get_party,
+      with counterparty precedence: resolved holder name over raw login). The persisted base
+      currency is read from the LOCAL preference store (OBIE has no preferences endpoint);
+      when no value exists the selection is seeded from the default account's currency.
+      All reads require an authorised account-access consent (Status AUTH) + an
+      authorization-code token.
     error_paths:
       - error_code: 401
         behavior: navigate_login
-      - error_code: 500
+      - error_code: 403
         behavior: error_state
 
   - screen_id: pfm-settings
     trigger: on_interact
     event: SelectBaseCurrency
     endpoints:
-      - obp_personal_data_field_create
+      - local_base_currency_pref
     direction: write
-    dtos:
-      - name: PersonalDataField
-        role: request
-        api_id: obp_personal_data_field_create
+    dtos: []
     produces_state: populated
     notes: >-
-      Persists the chosen base currency by appending a new pfm_base_currency row
-      (name=pfm_base_currency, value=selected currency). Optimistic UI selection;
-      on success a confirmation snackbar appears, on failure the selection reverts.
+      Persists the chosen base currency to the LOCAL preference store
+      (name=pfm_base_currency, value=selected currency) — OBIE Account Information has no
+      preferences endpoint. Optimistic UI selection; on success a confirmation snackbar
+      appears, on failure the selection reverts.
     error_paths:
-      - error_code: 400
+      - error_code: 500
         behavior: revert_and_toast
-      - error_code: 401
-        behavior: navigate_login

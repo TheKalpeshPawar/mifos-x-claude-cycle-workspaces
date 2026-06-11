@@ -1,0 +1,44 @@
+id: consent-expired
+feature: consent-expired
+contract_version: "1.1.0"
+flavor: consumer
+operations:
+  - id: obie_get_consent_status
+    method: GET
+    path: "/obie/open-banking/v4.0/aisp/account-access-consents/{ConsentId}"
+    tag: Consent
+    trigger: on_mount
+    description: "Reads the current OBIE consent to confirm it has lapsed before rendering. Expected Status here is EXPD (expired) or RJCT/CANC (revoked); AUTH would mean the consent is still valid and the caller should route back to home instead."
+    request:
+      path_params:
+        - name: ConsentId
+          type: String
+          source: stored_consent_id
+      headers:
+        Authorization: "Bearer {access_token}"
+        x-fapi-interaction-id: "{uuid}"
+    response:
+      fields:
+        - name: ConsentId
+          type: String
+        - name: Status
+          type: String
+          note: "OBIE consent Status enum — AWAU | AUTH | RJCT | CANC | EXPD"
+        - name: StatusUpdateDateTime
+          type: String
+        - name: ExpirationDateTime
+          type: String
+    errors:
+      - code: 400
+        name: CONSENT_STATUS_CHECK_FAILED
+        ui_message: "We couldn't check your connection. You can still reconnect."
+      - code: 404
+        name: CONSENT_NOT_FOUND
+        ui_message: "Your previous connection is no longer available. Please reconnect."
+      - code: 401
+        name: UNAUTHORIZED
+        ui_message: "Your session has ended. Please reconnect to continue."
+note: "Read-only status check. The 'Reconnect' CTA does not call an endpoint here — it navigates to consent-request, which re-issues POST /obie/open-banking/v4.0/aisp/account-access-consents (Status AWAU) to start a fresh consent."
+dependencies:
+  tier: feature
+  features: [obie-consent]

@@ -92,9 +92,9 @@ shell:
       icon: send
       target: send-money
     - id: nav_cards
-      label: Cards
-      icon: credit_card
-      target: cards
+      label: Insights
+      icon: insights
+      target: pfm-dashboard
     - id: nav_more
       label: More
       icon: more_horiz
@@ -256,8 +256,7 @@ components:
       action: navigate
       target: account-detail
       params:
-        bank_id: "gh.29.uk"
-        account_id: "acc_checking_primary"
+        account_id: "22289"
     a11y:
       role: button
       label: "Primary Checking account, balance four thousand two hundred fifty pounds, tap to view details"
@@ -371,8 +370,7 @@ components:
       action: navigate
       target: account-detail
       params:
-        bank_id: "gh.29.uk"
-        account_id: "acc_savings_goal"
+        account_id: "31820"
     a11y:
       role: button
       label: "Holiday Savings account, balance six thousand one hundred eighty pounds fifty, tap to view details"
@@ -547,8 +545,7 @@ components:
       action: navigate
       target: account-detail
       params:
-        bank_id: "gh.29.uk"
-        account_id: "acc_business_main"
+        account_id: "42619"
     a11y:
       role: button
       label: "Business Current account, balance two thousand fifty pounds, tap to view details"
@@ -766,71 +763,109 @@ state_model:
   content_class: AccountsContent
   content_fields:
     - name: filteredAccounts
-      type: "List<Account>"
-      note: "client-side search result over the offline-first account stream"
+      type: "List<ObieAccount>"
+      note: "client-side search result over the authorised OBIE account list (get_accounts + per-account get_balances merged)"
+      obie_shape:
+        account_id: "Data.Account[].AccountId"            # String
+        account_type: "Data.Account[].AccountTypeCode"    # String
+        nickname: "Data.Account[].Nickname"               # String (card label, falls back to Account[].Name)
+        scheme_name: "Data.Account[].Account[].SchemeName"      # String
+        identification: "Data.Account[].Account[].Identification"  # String (the IBAN/account number shown)
+        name: "Data.Account[].Account[].Name"             # String
+        balance_amount: "Data.Balance[].Amount.Amount"    # String (from get_balances, InterimAvailable)
+        balance_currency: "Data.Balance[].Amount.Currency"  # String
     - name: query
       type: String
     - name: accountCount
       type: Int
       note: "total accounts before search filter; Empty when 0"
-  dto: org.mifosx.openbanking.core.model.obp.Account
+  dto: org.mifosx.openbanking.core.model.obie.ObieAccount
   data_source:
     pattern: ScreenDataStream
-    stream: "accountsRepository.accountsStream(viewModelScope)"
-    note: "Store5 cache-then-network, auto-refresh on reconnect; search re-derives Content without a network call. A search matching nothing stays Content (search bar operable) with an empty list; Empty means zero accounts."
+    stream: "aisRepository.accountsStream(viewModelScope)"
+    note: "get_accounts then per-AccountId get_balances, merged into ObieAccount rows; cache-then-network, auto-refresh on reconnect. Search re-derives Content without a network call. A search matching nothing stays Content (search bar operable) with an empty list; Empty means zero authorised accounts. All calls require an AUTH account-access-consent + authorization-code token."
   events:
     - "onSearchQueryChanged(query: String)"
     - onRetry
     - onRefresh
   nav_callbacks:
-    - "onAccountClick(bankId: String, accountId: String)"
+    - "onAccountClick(accountId: String)"
   di:
-    - AccountsRepository
+    - AisRepository
+    - ConsentRepository
 
+# HSBC OBIE AIS. Reads require an authorised account-access-consent (AUTH) + a scoped
+# authorization-code token (scope accounts). get_balances is fanned out per AccountId.
+consent:
+  required: true
+  type: account-access-consent
+  permissions: [ReadAccountsBasic, ReadAccountsDetail, ReadBalances]
+  token: authorization-code
 api:
-  - endpoint: "GET /obp/v3.0.0/banks/{bankId}/accounts"
+  - id: get_accounts
+    endpoint: "GET /obie/open-banking/v4.0/aisp/accounts"
     tag: Accounts
-    auth: DirectLogin
-    note: "Account DTO is a superset of fields used here (id, label, account_type, balance, account_routings, number, iban). Repository also exposes /obp/v3.0.0/my/accounts as the cross-bank list read — listAccounts()/myAccounts() both call my/accounts; the accountsStream feeds this screen."
-    params:
-      - name: bankId
-        type: path
-        value: "gh.29.uk"
+    auth: OAuth2-FAPI
+    consent_required: true
+    note: "Authorised account list — drives the account cards, search and bank grouping. OBIE OBReadAccount6; supports pagination."
     response:
       fields:
-        - name: id
+        - name: Data.Account[].AccountId
           type: String
-        - name: label
+        - name: Data.Account[].Currency
           type: String
-        - name: account_type
+        - name: Data.Account[].AccountCategory
           type: String
-        - name: bank_id
+        - name: Data.Account[].AccountTypeCode
           type: String
-        - name: number
+        - name: Data.Account[].Nickname
           type: String
-        - name: iban
+        - name: Data.Account[].Account[].SchemeName
           type: String
-        - name: balance
-          type: object
-          children:
-            - name: currency
-              type: String
-            - name: amount
-              type: String
-        - name: account_routings
-          type: "List<AccountRouting>"
-          children:
-            - name: scheme
-              type: String
-            - name: address
-              type: String
+        - name: Data.Account[].Account[].Identification
+          type: String
+        - name: Data.Account[].Account[].Name
+          type: String
+        - name: Data.Account[].Servicer.Identification
+          type: String
+        - name: Meta.TotalPages
+          type: Integer
     errors:
       - code: 401
-        message: "Unauthorized — DirectLogin token missing or expired"
-      - code: 404
-        message: "Bank not found"
+        message: "UNAUTHORIZED — token missing or expired"
+      - code: 403
+        message: "OB.Resource.InvalidConsentStatus — consent not AUTH"
       - code: 500
-        message: "OBP server error"
+        message: "OB.UnexpectedError"
+
+  - id: get_balances
+    endpoint: "GET /obie/open-banking/v4.0/aisp/accounts/{AccountId}/balances"
+    tag: Balances
+    auth: OAuth2-FAPI
+    consent_required: true
+    note: "Per-card balance amount. Requires ReadBalances. Called per AccountId; card surfaces the InterimAvailable Type. OBIE OBReadBalance1."
+    params:
+      - name: AccountId
+        type: path
+    response:
+      fields:
+        - name: Data.Balance[].AccountId
+          type: String
+        - name: Data.Balance[].Type
+          type: String
+        - name: Data.Balance[].CreditDebitIndicator
+          type: String
+        - name: Data.Balance[].Amount.Amount
+          type: String
+        - name: Data.Balance[].Amount.Currency
+          type: String
+    errors:
+      - code: 401
+        message: "UNAUTHORIZED"
+      - code: 403
+        message: "OB.Resource.InvalidConsentStatus — missing ReadBalances"
+      - code: 500
+        message: "OB.UnexpectedError"
 
 dependencies:
   tier: feature

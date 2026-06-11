@@ -1,0 +1,191 @@
+schema_version: "4.0"
+api_group: pisp-multibill
+name: "Multi-Bill Payment (PISP) API"
+base_url: "https://secure.sandbox.ob.business.hsbc.co.uk"
+auth_scheme: OAuth2-FAPI
+api_version: v4.0
+generated_at: "2026-06-11"
+source: "HSBC UK Open Banking sandbox — HSBC-specific 'Multi-Bill Payment' category, UK Business brand ONLY (single brand, single version v4.0). NOT a standard OBIE resource: _downloads/obie/obie-pisp-resources-v4.0.md contains no multi-bill/multibill page (verified absent), so purpose/role and ALL response schemas are intentionally gap-marked from the docs (portal 429 unreachable) and NOT invented. The category reuses the OBIE pisp/file-payment-consents and pisp/file-payments paths; its request file is a multi-transaction ISO 20022 pain.001.001.08 credit-transfer initiation with three PmtInf groups (GBP 1.01 + 500000 + 1000000 = CtrlSum 1500001.01) to distinct beneficiaries — hence 'multi-bill'. OAuth2 token/authorize endpoints (Get CC Token, Get Access Token, Initiate Consent Authorization) belong to the auth group and are referenced here only. Paths/methods/bodies/brand from inventory/by-category/multi-bill-payment.json (T1, authoritative); HSBC-specific gap context from docs/11-multi-bill-payment.md."
+endpoints:
+  - id: create_multibill_consent
+    method: POST
+    path: "/obie/open-banking/v4.0/pisp/file-payment-consents"
+    description: "Stages a payment consent carrying file metadata (FileType/FileHash/ControlSum); on success an ASPSP returns a ConsentId (inferred from endpoint name + body, T1). UK Business brand only."
+    auth_required: true
+    scopes: [payments]
+    request_schema:
+      - field: Data.Initiation.FileType
+        type: String
+        required: true
+        validation: "Literal from T1: UK.OBIE.pain.001.001.08."
+      - field: Data.Initiation.FileHash
+        type: String
+        required: true
+        validation: "Base64 hash of the file to be uploaded (sandbox placeholder value in T1)."
+      - field: Data.Initiation.ControlSum
+        type: String
+        required: false
+        validation: "Decimal string. Literal from T1: 1500001.01 (sum of the three multi-bill transactions)."
+    response_schema: []
+    note: "Documented HSBC-specific gap (docs/11-multi-bill-payment.md): T1 confirms the endpoint + request body, but the response/status schema was not captured from the portal (429) and no OBIE multi-bill page exists — not invented."
+    error_codes:
+      - code: 400
+        message: "OB.Field.Invalid"
+        retry: false
+      - code: 401
+        message: "UNAUTHORIZED"
+        retry: false
+      - code: 403
+        message: "OB.Resource.InvalidConsentStatus"
+        retry: false
+      - code: 429
+        message: "TOO_MANY_REQUESTS"
+        retry: true
+      - code: 500
+        message: "OB.UnexpectedError"
+        retry: true
+  - id: upload_multibill_consent_file
+    method: POST
+    path: "/obie/open-banking/v4.0/pisp/file-payment-consents/{ConsentId}/file"
+    description: "Uploads the multi-transaction payment file against the staged consent (inferred from endpoint name + body, T1). UK Business brand only."
+    auth_required: true
+    scopes: [payments]
+    request_schema:
+      - field: body
+        type: String
+        required: true
+        validation: "ISO 20022 pain.001.001.08 credit-transfer initiation (urn:iso:std:iso:20022:tech:xsd:pain.001.001.08) with three PmtInf groups — NbOfTxs=3, CtrlSum=1500001.01. The three credit-transfer lines (GBP 1.01, 500000, 1000000 to Beneficiary2/Beneficiary2/Beneficiary3) sum to the ControlSum. Full body verbatim from T1."
+    response_schema: []
+    note: "Documented HSBC-specific gap (docs/11-multi-bill-payment.md): T1 confirms the endpoint + file body, but the response/status schema was not captured (429) and no OBIE multi-bill page exists — not invented."
+    error_codes:
+      - code: 400
+        message: "OB.Field.Invalid"
+        retry: false
+      - code: 401
+        message: "UNAUTHORIZED"
+        retry: false
+      - code: 403
+        message: "OB.Resource.InvalidConsentStatus"
+        retry: false
+      - code: 429
+        message: "TOO_MANY_REQUESTS"
+        retry: true
+      - code: 500
+        message: "OB.UnexpectedError"
+        retry: true
+  - id: download_multibill_consent_file
+    method: GET
+    path: "/obie/open-banking/v4.0/pisp/file-payment-consents/{ConsentId}/file"
+    description: "Retrieves the file previously uploaded against the consent (inferred from endpoint name, T1). UK Business brand only."
+    auth_required: true
+    scopes: [payments]
+    request_schema: []
+    response_schema: []
+    note: "Documented HSBC-specific gap (docs/11-multi-bill-payment.md): T1 confirms the endpoint; the response (the file body) schema was not captured (429) and no OBIE multi-bill page exists — not invented."
+    error_codes:
+      - code: 400
+        message: "OB.Field.Invalid"
+        retry: false
+      - code: 401
+        message: "UNAUTHORIZED"
+        retry: false
+      - code: 403
+        message: "OB.Resource.InvalidConsentStatus"
+        retry: false
+      - code: 429
+        message: "TOO_MANY_REQUESTS"
+        retry: true
+      - code: 500
+        message: "OB.UnexpectedError"
+        retry: true
+  - id: get_multibill_consent_status
+    method: GET
+    path: "/obie/open-banking/v4.0/pisp/file-payment-consents/{ConsentId}"
+    description: "Polls the staged consent's status (inferred from endpoint name, T1). UK Business brand only."
+    auth_required: true
+    scopes: [payments]
+    request_schema: []
+    response_schema: []
+    note: "Documented HSBC-specific gap (docs/11-multi-bill-payment.md): T1 confirms the endpoint; the response schema was not captured (429) and no OBIE multi-bill page exists — not invented."
+    error_codes:
+      - code: 400
+        message: "OB.Field.Invalid"
+        retry: false
+      - code: 401
+        message: "UNAUTHORIZED"
+        retry: false
+      - code: 403
+        message: "OB.Resource.InvalidConsentStatus"
+        retry: false
+      - code: 429
+        message: "TOO_MANY_REQUESTS"
+        retry: true
+      - code: 500
+        message: "OB.UnexpectedError"
+        retry: true
+  - id: create_multibill_payment
+    method: POST
+    path: "/obie/open-banking/v4.0/pisp/file-payments"
+    description: "Submits the payment referencing the authorised ConsentId (inferred from endpoint name + body, T1). UK Business brand only."
+    auth_required: true
+    scopes: [payments]
+    request_schema:
+      - field: Data.ConsentId
+        type: String
+        required: true
+        validation: "References the staged consent (Postman var in T1)."
+      - field: Data.Initiation.FileType
+        type: String
+        required: true
+        validation: "Literal from T1: UK.OBIE.pain.001.001.08. Mirrors the Create Consent metadata."
+      - field: Data.Initiation.FileHash
+        type: String
+        required: true
+        validation: "Base64 hash mirroring the Create Consent metadata (sandbox placeholder value in T1)."
+      - field: Data.Initiation.ControlSum
+        type: String
+        required: false
+        validation: "Decimal string. Literal from T1: 1500001.01."
+    response_schema: []
+    note: "Documented HSBC-specific gap (docs/11-multi-bill-payment.md): T1 confirms the endpoint + request body, but the response schema was not captured (429) and no OBIE multi-bill page exists — not invented."
+    error_codes:
+      - code: 400
+        message: "OB.Field.Invalid"
+        retry: false
+      - code: 401
+        message: "UNAUTHORIZED"
+        retry: false
+      - code: 403
+        message: "OB.Resource.InvalidConsentStatus"
+        retry: false
+      - code: 429
+        message: "TOO_MANY_REQUESTS"
+        retry: true
+      - code: 500
+        message: "OB.UnexpectedError"
+        retry: true
+  - id: get_multibill_payment_status
+    method: GET
+    path: "/obie/open-banking/v4.0/pisp/file-payments/{FilePaymentId}"
+    description: "Polls the submitted payment's status (inferred from endpoint name, T1). UK Business brand only."
+    auth_required: true
+    scopes: [payments]
+    request_schema: []
+    response_schema: []
+    note: "Documented HSBC-specific gap (docs/11-multi-bill-payment.md): T1 confirms the endpoint; the response schema was not captured (429) and no OBIE multi-bill page exists — not invented."
+    error_codes:
+      - code: 400
+        message: "OB.Field.Invalid"
+        retry: false
+      - code: 401
+        message: "UNAUTHORIZED"
+        retry: false
+      - code: 403
+        message: "OB.Resource.InvalidConsentStatus"
+        retry: false
+      - code: 429
+        message: "TOO_MANY_REQUESTS"
+        retry: true
+      - code: 500
+        message: "OB.UnexpectedError"
+        retry: true

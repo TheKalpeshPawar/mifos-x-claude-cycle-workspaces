@@ -2,79 +2,76 @@ sibling: api
 schema_version: "4.0"
 feature_id: send-money
 api:
-  - id: obp_get_sender_accounts
-    endpoint: "GET /obp/v3.0.0/banks/{bankId}/accounts"
-    tag: Accounts
-    description: "List the user's accounts to populate the FROM ACCOUNT selector. AccountsRepository.myAccounts()."
+  - id: get_accounts
+    endpoint: "GET /obie/open-banking/v4.0/aisp/accounts"
+    tag: AISP
+    description: "List the PSU's authorised accounts to populate the FROM ACCOUNT selector. Requires an authorised account-access-consent (Status AUTH) + an authorization-code token (scope accounts). OBIE object OBReadAccount6."
     response:
       fields:
-        - name: accounts
-          type: List<Account>
-        - name: id
+        - name: Data.Account[].AccountId
           type: String
-        - name: label
+        - name: Data.Account[].Nickname
           type: String
-        - name: balance
-          type: MoneyAmount
-        - name: currency
+        - name: Data.Account[].AccountTypeCode
+          type: String
+        - name: Data.Account[].Currency
+          type: String
+        - name: Data.Account[].Account[].SchemeName
+          type: String
+        - name: Data.Account[].Account[].Identification
+          type: String
+        - name: Data.Account[].Account[].Name
           type: String
     errors:
       - code: 400
-        message: "INVALID_BANK_ID"
+        message: "OB.Field.Invalid"
       - code: 401
-        message: "USER_NOT_LOGGED_IN"
-      - code: 404
-        message: "BANK_NOT_FOUND"
-  - id: obp_get_beneficiary_counterparties
-    endpoint: "GET /obp/v4.0.0/banks/{bankId}/accounts/{accountId}/owner/counterparties"
-    tag: Counterparties
-    description: "Selected account's beneficiaries (filtered is_beneficiary). PaymentsRepository.listBeneficiaries(bankId, accountId). viewId fixed to owner in shipped path."
+        message: "UNAUTHORIZED"
+      - code: 403
+        message: "OB.Resource.InvalidConsentStatus"
+  - id: get_account_balances
+    endpoint: "GET /obie/open-banking/v4.0/aisp/accounts/{AccountId}/balances"
+    tag: AISP
+    description: "Available balance for the selected source account, shown in the FROM ACCOUNT row. Requires ReadBalances on the account-access-consent + an authorization-code token. OBIE object OBReadBalance1; prefer Type InterimAvailable."
     response:
       fields:
-        - name: counterparties
-          type: List<Counterparty>
-        - name: counterparty_id
+        - name: Data.Balance[].AccountId
           type: String
-        - name: name
+        - name: Data.Balance[].Type
           type: String
-        - name: other_bank_routing_scheme
+        - name: Data.Balance[].CreditDebitIndicator
           type: String
-        - name: other_bank_routing_address
+        - name: Data.Balance[].Amount.Amount
           type: String
-        - name: other_account_routing_scheme
+        - name: Data.Balance[].Amount.Currency
           type: String
-        - name: other_account_routing_address
+    errors:
+      - code: 401
+        message: "UNAUTHORIZED"
+      - code: 403
+        message: "OB.Resource.InvalidConsentStatus"
+  - id: get_account_beneficiaries
+    endpoint: "GET /obie/open-banking/v4.0/aisp/accounts/{AccountId}/beneficiaries"
+    tag: AISP
+    description: "Saved beneficiaries linked to the selected account — populates recent recipients + all beneficiaries lists. Requires ReadBeneficiariesBasic/Detail on the account-access-consent + an authorization-code token. OBIE object OBReadBeneficiary5. NOTE: OBIE AIS exposes no payee-recency timeline; 'recent recipients' is a client-side ordering over the returned beneficiaries (no separate transaction-requests endpoint exists under OBIE)."
+    response:
+      fields:
+        - name: Data.Beneficiary[].BeneficiaryId
+          type: String
+        - name: Data.Beneficiary[].BeneficiaryType
+          type: String
+        - name: Data.Beneficiary[].Reference
+          type: String
+        - name: Data.Beneficiary[].CreditorAccount.SchemeName
+          type: String
+        - name: Data.Beneficiary[].CreditorAccount.Identification
+          type: String
+        - name: Data.Beneficiary[].CreditorAccount.Name
           type: String
     errors:
       - code: 400
-        message: "INVALID_BANK_ID"
+        message: "OB.Field.Invalid"
       - code: 401
-        message: "USER_NOT_LOGGED_IN"
-  - id: obp_list_transaction_requests
-    endpoint: "GET /obp/v4.0.0/banks/{bankId}/accounts/{accountId}/owner/transaction-requests"
-    tag: TransactionRequests
-    description: "Past transaction-requests — recency source for 'recent recipients'. PaymentsRepository.listTransactionRequests(bankId, accountId)."
-    response:
-      fields:
-        - name: transaction_requests
-          type: List<TransactionRequestSummary>
-        - name: start_date
-          type: DateTime
-        - name: details.to_counterparty.counterparty_id
-          type: String
-        - name: details.to_sepa.iban
-          type: String
-        - name: details.to_sandbox_tan.account_id
-          type: String
-  - id: obp_get_bank
-    endpoint: "GET /obp/v4.0.0/banks/{bankId}"
-    tag: Banks
-    description: "Resolve a beneficiary's bank display name for the subtitle. BanksRepository.bankName(routingAddress) when other_bank_routing_scheme == OBP."
-    response:
-      fields:
-        - name: id
-          type: String
-        - name: full_name
-          type: String
-        - name: short_name
-          type: String
+        message: "UNAUTHORIZED"
+      - code: 403
+        message: "OB.Resource.InvalidConsentStatus"

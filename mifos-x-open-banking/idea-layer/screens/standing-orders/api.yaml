@@ -2,80 +2,77 @@ sibling: api
 schema_version: "4.0"
 feature_id: standing-orders
 notes: >
-  Reconciled to shipped source 2026-06-11. OBP exposes ONLY POST-create for standing orders —
-  there is NO list/get/pause/resume/delete at any API version (live-verified 404). The list is
-  therefore DERIVED in StandingOrdersRepository.listRecurring(): it reads the account's
-  transaction history (TXN_TYPE=SO attribute, grouped by description into series), resolves
-  counterparty names (never the login username), and merges orders created on this device
-  (persisted in the local Room JSON cache). No GET endpoint exists to document.
+  Rebound to HSBC OBIE AISP v4.0 (2026-06-11). Unlike OBP (which had no list endpoint and
+  derived the list from transaction history), OBIE exposes a real READ endpoint:
+  get_account_standing_orders. This screen is READ-ONLY — it lists the standing orders set up
+  on the selected AccountId. Creating/editing a standing order is a PISP write handled by the
+  standing-order-create / standing-order-edit screens, NOT bound here. Reads require an
+  authorised account-access consent (ReadStandingOrdersBasic/Detail permission) and an
+  authorization-code scoped token; the AccountId comes from the prior get_accounts call.
 api:
-  - id: obp_create_standing_order
-    endpoint: "POST /obp/v4.0.0/banks/{bankId}/accounts/{accountId}/owner/standing-order"
+  - id: get_account_standing_orders
+    endpoint: "GET /obie/open-banking/v4.0/aisp/accounts/{AccountId}/standing-orders"
     tag: Standing-Orders
-    trigger: invoked_from_standing_order_create
+    trigger: on_mount
     note: >
-      The only real OBP call in this feature. Called by standing-order-create, not by the list
-      screen. Request body = CreateStandingOrderRequest; response = CreateStandingOrderResponse.
+      OBIE object OBReadStandingOrder6 (HTTP 200). Requires ReadStandingOrdersBasic/Detail and
+      an account-access-consent in AUTH status. Authorization-code token. CreditorAccount is
+      only populated under the Detail permission. Multiple standing orders may return per account.
     request:
-      dto: CreateStandingOrderRequest
-      fields:
-        - name: customer_id
-          type: String
-        - name: user_id
-          type: String
-        - name: counterparty_id
-          type: String
-        - name: amount
-          type: AmountOfMoney
-        - name: when
-          type: StandingOrderSchedule
-        - name: date_signed
-          type: String
-        - name: date_starts
-          type: String
-        - name: date_expires
-          type: "String?"
+      dto: none
+      fields: []
     response:
-      dto: CreateStandingOrderResponse
+      dto: OBReadStandingOrder6
       fields:
-        - name: standing_order_id
+        - name: Data.StandingOrder[].AccountId
           type: String
-        - name: bank_id
-          type: String
-        - name: account_id
-          type: String
-        - name: amount
-          type: AmountOfMoney
-        - name: when
-          type: StandingOrderSchedule
-        - name: date_starts
-          type: String
-        - name: date_expires
-          type: String
-        - name: active
-          type: Boolean
+        - name: Data.StandingOrder[].StandingOrderId
+          type: "String?"
+        - name: Data.StandingOrder[].Reference
+          type: "String?"
+        - name: Data.StandingOrder[].StandingOrderStatusCode
+          type: "String?"
+        - name: Data.StandingOrder[].Frequency
+          type: "String?"
+        - name: Data.StandingOrder[].FirstPaymentDateTime
+          type: "String?"
+        - name: Data.StandingOrder[].NextPaymentDateTime
+          type: "String?"
+        - name: Data.StandingOrder[].FirstPaymentAmount.Amount
+          type: "String?"
+        - name: Data.StandingOrder[].FirstPaymentAmount.Currency
+          type: "String?"
+        - name: Data.StandingOrder[].NextPaymentAmount.Amount
+          type: "String?"
+        - name: Data.StandingOrder[].NextPaymentAmount.Currency
+          type: "String?"
+        - name: Data.StandingOrder[].CreditorAccount.SchemeName
+          type: "String?"
+        - name: Data.StandingOrder[].CreditorAccount.Identification
+          type: "String?"
+        - name: Data.StandingOrder[].CreditorAccount.Name
+          type: "String?"
     errors:
       - code: 400
-        message: "INVALID_BANK_ID"
+        message: "OB.Field.Invalid"
       - code: 401
-        message: "USER_NOT_LOGGED_IN"
+        message: "UNAUTHORIZED"
       - code: 403
-        message: "INSUFFICIENT_AUTHORISATION"
-      - code: 404
-        message: "BANK_ACCOUNT_NOT_FOUND"
+        message: "OB.Resource.InvalidConsentStatus (e.g. missing ReadStandingOrders)"
+      - code: 429
+        message: "TOO_MANY_REQUESTS"
+      - code: 500
+        message: "OB.UnexpectedError"
 
-derived_reads:
-  - id: derive_standing_orders_from_history
-    source: "TransactionsRepository.listTransactionsWithAttributes(bankId, accountId)"
-    filter: "TXN_TYPE=SO"
-    grouping: "by description into recurring series"
-    output_dto: "List<StandingOrder>"
-    note: >
-      Replaces the non-existent GET-list endpoint. Status (ACTIVE/PAUSED/CANCELLED) is inferred
-      from payment cadence; created-on-device orders are merged from the local cache.
-
-deferred:
+consent_dependency:
   note: >
-    GET list / GET detail / POST pause / POST resume / DELETE were specified in the original
-    design but DO NOT EXIST on OBP. Dropped from the contract; the derived read above is the
-    real data source. Re-add only if OBP ships read/mutation endpoints.
+    Every data-resource GET requires an account-access-consent (create_consent) that the PSU has
+    authorised (Status AUTH) carrying ReadStandingOrdersBasic or ReadStandingOrdersDetail, plus an
+    authorization-code scoped token. The AccountId is obtained from get_accounts. See server/apis/ais.yaml.
+
+writes_elsewhere:
+  note: >
+    Creating a standing order is OBIE PISP (POST domestic-standing-order-consents +
+    POST domestic-standing-orders), surfaced by the standing-order-create / standing-order-edit
+    screens. This AISP list screen does NOT create, edit, pause, resume or delete — OBIE AISP is
+    read-only for standing orders.

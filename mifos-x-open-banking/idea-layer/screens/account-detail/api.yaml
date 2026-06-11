@@ -1,77 +1,83 @@
 sibling: api
 schema_version: "4.0"
 feature_id: account-detail
+consent_dependency: >
+  All reads require an authorised account-access-consent (Permissions incl. ReadAccountsDetail,
+  ReadBalances; ReadTransactionsDetail for the deferred transactions read) and an
+  authorization-code (account-scoped) token. AccountId comes from the prior get_accounts call.
 api:
-  - id: obp_get_account_detail
-    endpoint: "GET /obp/v4.0.0/banks/{bankId}/accounts/{accountId}/owner/account"
+  - id: get_account_details
+    endpoint: "GET /obie/open-banking/v4.0/aisp/accounts/{AccountId}"
     tag: Accounts
-    auth: DirectLogin
-    note: "Shipped accountDetail() owner-view endpoint (v4.0.0). bankId defaults to config.bankId when blank. Returns owners + account_attributes + routings + number + balance (the no-view /account path returns OBP-10404)."
+    auth: OAuth2-FAPI
+    note: "OBIE AISP get_account_details (OBReadAccount6). Single AccountId — supplies identity, scheme/identification (number/IBAN), nickname, account type, servicer. Replaces the OBP owner/account read. CE HSBCnet + Malta on v3.1 (+/ce)."
     params:
-      - name: bankId
-        type: path
-        value: "gh.29.uk"
-      - name: accountId
+      - name: AccountId
         type: path
     response:
       fields:
-        - name: account_id
+        - name: Data.Account[].AccountId
           type: String
-        - name: label
+        - name: Data.Account[].Status
           type: String
-        - name: product_code
+        - name: Data.Account[].Currency
           type: String
-        - name: account_type
+        - name: Data.Account[].AccountTypeCode
           type: String
-        - name: number
+        - name: Data.Account[].Nickname
           type: String
-        - name: iban
+        - name: Data.Account[].Account[].SchemeName
           type: String
-        - name: balance
-          type: object
-          children:
-            - name: currency
-              type: String
-            - name: amount
-              type: String
-        - name: account_routings
-          type: "List<AccountRouting>"
-          children:
-            - name: scheme
-              type: String
-            - name: address
-              type: String
-        - name: account_attributes
-          type: "List<AccountAttribute>"
-          children:
-            - name: name
-              type: String
-            - name: type
-              type: String
-            - name: value
-              type: String
-        - name: owners
-          type: "List<AccountOwner>"
-          children:
-            - name: display_name
-              type: String
+        - name: Data.Account[].Account[].Identification
+          type: String
+        - name: Data.Account[].Account[].Name
+          type: String
+        - name: Data.Account[].Servicer.Identification
+          type: String
     errors:
+      - code: 400
+        message: "OB.Field.Invalid (incl. non-existent AccountId)"
       - code: 401
-        message: "Unauthorized"
-      - code: 404
-        message: "Account not found"
+        message: "UNAUTHORIZED"
+      - code: 403
+        message: "OB.Resource.InvalidConsentStatus"
 
-  - id: resolve_bank_name
-    resolution: bank_name
-    via: BanksRepository.bankName(bankId)
-    note: "VM-side resolution of the owning bank display name; not a screen-owned endpoint."
+  - id: get_account_balances
+    endpoint: "GET /obie/open-banking/v4.0/aisp/accounts/{AccountId}/balances"
+    tag: Accounts
+    auth: OAuth2-FAPI
+    note: "OBIE AISP get_account_balances (OBReadBalance1) — balances for THIS AccountId; pick the InterimAvailable/ClosingBooked Type for the hero amount. Requires ReadBalances. Replaces the balance block the OBP owner/account read carried inline."
+    params:
+      - name: AccountId
+        type: path
+    response:
+      fields:
+        - name: Data.Balance[].AccountId
+          type: String
+        - name: Data.Balance[].CreditDebitIndicator
+          type: String
+        - name: Data.Balance[].Type
+          type: String
+        - name: Data.Balance[].DateTime
+          type: String
+        - name: Data.Balance[].Amount.Amount
+          type: String
+        - name: Data.Balance[].Amount.Currency
+          type: String
+    errors:
+      - code: 400
+        message: "OB.Field.Invalid"
+      - code: 401
+        message: "UNAUTHORIZED"
+      - code: 403
+        message: "OB.Resource.InvalidConsentStatus (e.g. missing ReadBalances)"
 
   - id: resolve_account_holder
     resolution: account_holder_name
-    via: CustomersRepository.accountHolderName(bankId, accountId)
-    note: "VM-side resolution of the real holder legal name (Owner customer-account link); owners[].display_name fallback. Never an OBP login username."
+    via: get_account_parties (GET /obie/open-banking/v4.0/aisp/accounts/{AccountId}/parties)
+    note: "VM-side resolution of the real holder legal name from OBIE Data.Party[].Name/.FullLegalName (requires ReadParty). Falls back to Data.Account[].Account[].Name. Never an obfuscated login username (counterparty rule)."
 
 deferred_apis:
-  - id: obp_get_account_transactions
-    endpoint: "GET /obp/v3.0.0/banks/{bankId}/accounts/{accountId}/owner/transactions"
-    reason: "Recent-transactions list removed from shipped account-detail; transaction history reached via the ACTIVITY 'Transaction history' row navigating to the transactions screen."
+  - id: get_account_transactions
+    endpoint: "GET /obie/open-banking/v4.0/aisp/accounts/{AccountId}/transactions"
+    reason: "Recent-transactions list removed from shipped account-detail; transaction history reached via the ACTIVITY 'Transaction history' row navigating to the transactions screen (OBIE OBReadTransaction6, requires ReadTransactionsDetail)."

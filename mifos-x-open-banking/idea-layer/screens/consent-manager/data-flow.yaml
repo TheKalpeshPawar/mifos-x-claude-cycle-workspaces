@@ -4,13 +4,15 @@ feature_id: consent-manager
 entries:
   - screen_id: consent-manager
     trigger: on_mount
+    event: LoadConsents
     endpoints:
-      - obp_my_consents
+      - get_account_access_consent
+      - get_payment_consent
     direction: read
     dtos:
-      - name: Consent
+      - name: ConsentItem
         role: response
-        api_id: obp_my_consents
+        api_id: get_account_access_consent
     produces_state: populated
     error_paths:
       - error_code: 401
@@ -20,17 +22,28 @@ entries:
 
   - screen_id: consent-manager
     trigger: on_interact
-    event: RevokeConsentConfirmed
+    event: RevokeConsent
     endpoints:
-      - obp_revoke_consent
+      - delete_account_access_consent
     direction: write
-    dtos:
-      - name: Consent
-        role: response
-        api_id: obp_revoke_consent
+    dtos: []
     produces_state: populated
     error_paths:
       - error_code: 401
         behavior: navigate_login
-      - error_code: 404
+      - error_code: 403
+        behavior: error_state
+
+  - screen_id: consent-manager
+    trigger: on_interact
+    event: DisconnectAll
+    endpoints:
+      - delete_account_access_consent
+    direction: write
+    dtos: []
+    produces_state: populated
+    error_paths:
+      - error_code: 401
+        behavior: navigate_login
+      - error_code: 403
         behavior: error_state

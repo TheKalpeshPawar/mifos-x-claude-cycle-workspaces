@@ -1,73 +1,81 @@
 # DTO Registry — mifos-x-open-banking
 
-> Auto-maintained by `/idea generate-dtos`. 66 DTOs registered.
-> Last run: 2026-05-30 — manual registration — added 5 new DTOs to resolve D2 unregistered refs (LobbyHours, DriveUpHours, BranchRouting, FaceImage, CreditRating) + remapped Address→PostalAddress and LatLng→GeoLocation in atm-locator/api.yaml + fixed D5 stale used_by on Account, Counterparty, Transaction, StandingOrderDetail.
+> Auto-maintained by `/idea generate-dtos`. 71 DTOs registered.
+> Last run: 2026-06-11 — MIGRATION OBP → HSBC. Full rebuild: the 68 OBP-shaped DTOs were replaced with
+> the OBIE UK Open Banking Read/Write v4.0 object model (sourced from `server/apis/*.yaml`).
+> Exact consumer counts + PII flags live in each `{Name}.yaml`; run `/idea generate-dtos --refresh-back-refs`
+> to recompute the Consumers column after the screens re-export.
 
-| Name | Version | Origin | Consumers | PII |
-|------|---------|--------|-----------|-----|
-| Account | 1.0.0 | project | 3 | - |
-| AccountApplication | 1.0.0 | project | 2 | - |
-| AccountRouting | 1.0.0 | project | 2 | - |
-| Agent | 1.0.0 | project | 1 | phone_number |
-| AtmLocation | 1.0.0 | project | 1 | - |
-| Branch | 1.0.0 | project | 1 | - |
-| BranchRouting | 1.0.0 | project | 1 | - |
-| CancelMandateResponse | 1.0.0 | project | 1 | - |
-| Card | 1.0.0 | project | 2 | bank_card_number, name_on_card |
-| CreditRating | 1.0.0 | project | 1 | - |
-| ChangePasswordRequest | 1.0.0 | project | 1 | current_password, new_password |
-| ChangePasswordResponse | 1.0.0 | project | 1 | - |
-| Consent | 1.0.0 | project | 1 | - |
-| Counterparty | 1.0.0 | project | 2 | name, other_account_routing_address |
-| Currency | 1.0.0 | project | 1 | - |
-| Customer | 1.0.0 | project | 4 | legal_name, mobile_phone_number, email, date_of_birth |
-| CustomerMessage | 1.0.0 | project | 1 | from_person |
-| DirectDebit | 1.0.0 | project | 1 | - |
-| DriveUpHours | 1.0.0 | project | 1 | - |
-| FaceImage | 1.0.0 | project | 1 | url |
-| FxRate | 1.0.0 | project | 2 | - |
-| GeoLocation | 1.0.0 | project | 1 | - |
-| IbanCheckResult | 1.0.0 | project | 1 | - |
-| KycDocument | 1.0.0 | project | 2 | number, date_of_birth |
-| LobbyHours | 1.0.0 | project | 1 | - |
-| MandateDetail | 1.0.0 | project | 1 | counterparty_name |
-| Meeting | 1.0.0 | project | 2 | - |
-| MeetingInvitee | 1.0.0 | project | 1 | - |
-| MoneyAmount | 1.0.0 | shared | 5 | - |
-| OidcToken | 1.0.0 | project | 1 | access_token, id_token, refresh_token |
-| PasswordResetConfirmRequest | 1.0.0 | project | 1 | token, new_password |
-| PasswordResetRequest | 1.1.0 | project | 1 | email |
-| PasswordResetResponse | 1.0.0 | project | 1 | - |
-| PersonalDataField | 1.0.0 | project | 2 | - |
-| PostalAddress | 1.0.0 | project | 2 | - |
-| Product | 1.0.0 | project | 1 | - |
-| SepaTransactionRequest | 1.0.0 | project | 2 | to_iban, to_name |
-| SignalChannel | 1.0.0 | project | 1 | - |
-| StandingOrder | 1.0.0 | project | 2 | to_iban, to_name |
-| StandingOrderDetail | 1.0.0 | project | 1 | beneficiary_name, beneficiary_iban |
-| StandingOrderExecution | 1.0.0 | project | 1 | - |
-| StandingOrderStatusResponse | 1.0.0 | project | 3 | - |
-| Transaction | 1.0.0 | project | 3 | - |
-| TransactionAccount | 1.1.0 | project | 1 | - |
-| TransactionComment | 1.0.0 | project | 2 | - |
-| TransactionCounterparty | 1.0.0 | project | 1 | holder_name |
-| TransactionDetails | 1.0.0 | project | 2 | - |
-| TransactionMetadata | 1.0.0 | project | 2 | - |
-| TransactionTag | 1.0.0 | project | 4 | - |
-| UserProfile | 1.1.0 | project | 3 | email, display_name |
-| AccountInfo | 1.0.0 | project | 1 | - |
-| AmountOfMoney | 1.0.0 | project | 1 | - |
-| CardReplacement | 1.0.0 | project | 1 | - |
-| Challenge | 1.0.0 | project | 2 | - |
-| Charge | 1.0.0 | project | 2 | - |
-| Comment | 1.0.0 | project | 1 | - |
-| ConsentRedirect | 1.0.0 | project | 1 | - |
-| CustomerAccountLink | 1.0.0 | project | 1 | - |
-| DirectDebitCounterparty | 1.0.0 | project | 2 | - |
-| Payment | 1.0.0 | project | 1 | - |
-| ProductDetails | 1.0.0 | project | 1 | - |
-| ProductMeta | 1.0.0 | project | 1 | - |
-| StandingOrderSchedule | 1.0.0 | project | 2 | - |
-| StandingOrderUpdateRequest | 1.0.0 | project | 1 | - |
-| Tag | 1.0.0 | project | 2 | - |
-| TagAuthorUser | 1.0.0 | project | 2 | display_name |
+| Name | Version | Origin | Group |
+|------|---------|--------|-------|
+| OBActiveOrHistoricCurrencyAndAmount | 1.0.0 | rest | shared |
+| OBAtm | 1.0.0 | rest | open-data |
+| OBBCAProduct | 1.0.0 | rest | open-data |
+| OBBranch | 1.0.0 | rest | open-data |
+| OBBranchAndFinancialInstitutionIdentification | 1.0.0 | rest | shared |
+| OBCashAccount6 | 1.0.0 | rest | shared |
+| OBClientRegistration1 | 1.0.0 | rest | auth/dcr |
+| OBClientRegistrationResponse1 | 1.0.0 | rest | auth/dcr |
+| OBDomestic2 | 1.0.0 | rest | shared (pisp) |
+| OBDomesticScheduled2 | 1.0.0 | rest | shared (pisp) |
+| OBDomesticStandingOrder3 | 1.0.0 | rest | shared (pisp) |
+| OBDomesticVRPConsentRequest | 1.0.0 | rest | vrp |
+| OBDomesticVRPConsentResponse | 1.0.0 | rest | vrp |
+| OBDomesticVRPControlParameters | 1.0.0 | rest | vrp |
+| OBDomesticVRPRequest | 1.0.0 | rest | vrp |
+| OBDomesticVRPResponse | 1.0.0 | rest | vrp |
+| OBEventPolling1 | 1.0.0 | rest | events |
+| OBEventPollingResponse1 | 1.0.0 | rest | events |
+| OBEventSubscription1 | 1.0.0 | rest | events |
+| OBEventSubscriptionResponse1 | 1.0.0 | rest | events |
+| OBExchangeRate2 | 1.0.0 | rest | shared (pisp-intl) |
+| OBFundsAvailableResult1 | 1.0.0 | rest | shared |
+| OBFundsConfirmation1 | 1.0.0 | rest | cbpii |
+| OBFundsConfirmationConsent1 | 1.0.0 | rest | cbpii |
+| OBFundsConfirmationConsentResponse1 | 1.0.0 | rest | cbpii |
+| OBFundsConfirmationResponse1 | 1.0.0 | rest | cbpii |
+| OBOpenDataResponse | 1.0.0 | rest | open-data |
+| OBPCAProduct | 1.0.0 | rest | open-data |
+| OBReadAccount6 | 1.0.0 | rest | ais |
+| OBReadBalance1 | 1.0.0 | rest | ais |
+| OBReadBeneficiary5 | 1.0.0 | rest | ais |
+| OBReadConsent1 | 1.0.0 | rest | ais |
+| OBReadConsentResponse1 | 1.0.0 | rest | ais |
+| OBReadDirectDebit2 | 1.0.0 | rest | ais |
+| OBReadParty3 | 1.0.0 | rest | ais |
+| OBReadProduct2 | 1.0.0 | rest | ais |
+| OBReadScheduledPayment3 | 1.0.0 | rest | ais |
+| OBReadStandingOrder6 | 1.0.0 | rest | ais |
+| OBReadStatement2 | 1.0.0 | rest | ais |
+| OBReadTransaction6 | 1.0.0 | rest | ais |
+| OBRisk1 | 1.0.0 | rest | shared (pisp) |
+| OBVRPFundsConfirmationResponse | 1.0.0 | rest | vrp |
+| OBWriteDomestic2 | 1.0.0 | rest | pisp-domestic |
+| OBWriteDomesticConsent4 | 1.0.0 | rest | pisp-domestic |
+| OBWriteDomesticConsentResponse5 | 1.0.0 | rest | pisp-domestic |
+| OBWriteDomesticResponse5 | 1.0.0 | rest | pisp-domestic |
+| OBWriteDomesticScheduled2 | 1.0.0 | rest | pisp-domestic-scheduled |
+| OBWriteDomesticScheduledConsent4 | 1.0.0 | rest | pisp-domestic-scheduled |
+| OBWriteDomesticScheduledConsentResponse5 | 1.0.0 | rest | pisp-domestic-scheduled |
+| OBWriteDomesticScheduledResponse5 | 1.0.0 | rest | pisp-domestic-scheduled |
+| OBWriteDomesticStandingOrder3 | 1.0.0 | rest | pisp-domestic-standing-order |
+| OBWriteDomesticStandingOrderConsent5 | 1.0.0 | rest | pisp-domestic-standing-order |
+| OBWriteDomesticStandingOrderConsentResponse6 | 1.0.0 | rest | pisp-domestic-standing-order |
+| OBWriteDomesticStandingOrderResponse6 | 1.0.0 | rest | pisp-domestic-standing-order |
+| OBWriteFile2 | 1.0.0 | rest | pisp-file |
+| OBWriteFileConsent3 | 1.0.0 | rest | pisp-file |
+| OBWriteFileConsentResponse4 | 1.0.0 | rest | pisp-file |
+| OBWriteFileResponse3 | 1.0.0 | rest | pisp-file |
+| OBWriteFundsConfirmationResponse1 | 1.0.0 | rest | pisp-domestic |
+| OBWriteInternational3 | 1.0.0 | rest | pisp-international |
+| OBWriteInternationalConsent5 | 1.0.0 | rest | pisp-international |
+| OBWriteInternationalConsentResponse6 | 1.0.0 | rest | pisp-international |
+| OBWriteInternationalResponse5 | 1.0.0 | rest | pisp-international |
+| OBWriteInternationalScheduled3 | 1.0.0 | rest | pisp-international-scheduled |
+| OBWriteInternationalScheduledConsent5 | 1.0.0 | rest | pisp-international-scheduled |
+| OBWriteInternationalScheduledConsentResponse6 | 1.0.0 | rest | pisp-international-scheduled |
+| OBWriteInternationalScheduledResponse6 | 1.0.0 | rest | pisp-international-scheduled |
+| OBWriteInternationalStandingOrder4 | 1.0.0 | rest | pisp-international-standing-order |
+| OBWriteInternationalStandingOrderConsent6 | 1.0.0 | rest | pisp-international-standing-order |
+| OBWriteInternationalStandingOrderConsentResponse7 | 1.0.0 | rest | pisp-international-standing-order |
+| OBWriteInternationalStandingOrderResponse7 | 1.0.0 | rest | pisp-international-standing-order |

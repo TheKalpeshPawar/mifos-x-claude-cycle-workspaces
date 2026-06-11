@@ -1,0 +1,349 @@
+schema_version: "4.0"
+api_group: pisp-international-scheduled
+name: "PISP International Scheduled Payment API"
+base_url: "https://secure.sandbox.ob.hsbc.co.uk"
+auth_scheme: OAuth2-FAPI
+api_version: v4.0
+generated_at: "2026-06-11"
+source: "HSBC UK/CE Open Banking sandbox (OBIE Read/Write v4.0) — International Scheduled Payment (PISP). Payments narrative sourced from T2 OBIE PISP v4.0 (HSBC Portal Payments returned HTTP 429); per-brand hosts in HSBC_Sandbox/docs/08-international-scheduled-payment.md. OAuth2 token/authorize endpoints (Get CC Token, Get Access Token, Initiate Consent Authorization) are documented in the auth group and referenced here only."
+endpoints:
+  - id: create_international_scheduled_payment_consent
+    method: POST
+    path: "/obie/open-banking/v4.0/pisp/international-scheduled-payment-consents"
+    description: "Stages an International Scheduled Payment consent — registers the PISP intent to initiate a one-off future-dated cross-border payment. The ASPSP returns a unique ConsentId with initial Status AWAU (awaiting PSU authorisation). Uses a client-credentials access token scoped 'payments'. UK Personal / UK Business / UK HSBCnet / firstdirect use v4.0 at this path; CE HSBCnet uses v3.1 at /ce/obie/open-banking/v3.1/pisp/international-scheduled-payment-consents."
+    auth_required: true
+    scopes: [payments]
+    request_schema:
+      - field: Data.Permission
+        type: String
+        required: true
+        validation: "Restricted to 'Create' (OBWriteInternationalScheduledConsent5)."
+      - field: Data.ReadRefundAccount
+        type: String
+        required: false
+        validation: "Yes|No — whether the refund account is to be returned."
+      - field: Data.Initiation.InstructionIdentification
+        type: String
+        required: true
+        validation: "1..1 point-to-point reference for the instruction."
+      - field: Data.Initiation.EndToEndIdentification
+        type: String
+        required: false
+        validation: "End-to-end reference carried unchanged through the chain."
+      - field: Data.Initiation.LocalInstrument
+        type: String
+        required: false
+        validation: "Settlement rail, e.g. UK.OBIE.SWIFT."
+      - field: Data.Initiation.RequestedExecutionDateTime
+        type: String
+        required: true
+        validation: "ISO 8601 future date-time for execution of the scheduled payment."
+      - field: Data.Initiation.InstructedAmount.Amount
+        type: String
+        required: true
+        validation: "Decimal string. Instructed amount regardless of DebtorAccount currency."
+      - field: Data.Initiation.InstructedAmount.Currency
+        type: String
+        required: true
+        validation: "ISO 4217 currency code."
+      - field: Data.Initiation.CurrencyOfTransfer
+        type: String
+        required: true
+        validation: "ISO 4217 — currency the funds will be transferred in."
+      - field: Data.Initiation.DestinationCountryCode
+        type: String
+        required: false
+        validation: "ISO 3166 country code of the destination."
+      - field: Data.Initiation.DebtorAccount.SchemeName
+        type: String
+        required: false
+        validation: "DebtorAccount is optional (the PISP may not know the PSU account)."
+      - field: Data.Initiation.DebtorAccount.Identification
+        type: String
+        required: false
+        validation: "Debtor account identification under the scheme."
+      - field: Data.Initiation.CreditorAccount.SchemeName
+        type: String
+        required: true
+        validation: "e.g. UK.OBIE.IBAN."
+      - field: Data.Initiation.CreditorAccount.Identification
+        type: String
+        required: true
+        validation: "Creditor account identification under the scheme."
+      - field: Data.Initiation.CreditorAccount.Name
+        type: String
+        required: true
+        validation: "Name of the creditor account holder."
+      - field: Data.Initiation.RemittanceInformation.Reference
+        type: String
+        required: false
+        validation: "Remittance reference for reconciliation."
+      - field: Data.Authorisation.AuthorisationType
+        type: String
+        required: false
+        validation: "e.g. Single."
+      - field: Data.Authorisation.CompletionDateTime
+        type: String
+        required: false
+        validation: "ISO 8601 — authorisation completion deadline."
+      - field: Data.SCASupportData.RequestedSCAExemptionType
+        type: String
+        required: false
+        validation: "Requested SCA exemption, e.g. BillPayment."
+      - field: Risk.PaymentContextCode
+        type: String
+        required: false
+        validation: "Payment context, e.g. EcommerceMerchantInitiatedPayment."
+      - field: Risk.MerchantCategoryCode
+        type: String
+        required: false
+        validation: "ISO merchant category code."
+    response_schema:
+      - field: Data.ConsentId
+        type: String
+        nullable: false
+        description: "Unique consent identifier (OBWriteInternationalScheduledConsentResponse6)."
+      - field: Data.Status
+        type: String
+        nullable: false
+        description: "Consent status. Initial AWAU; values AWAU|RJCT|AUTH|COND. v3.1 (CE HSBCnet) uses long-form AwaitingAuthorisation|Rejected|Authorised|Consumed."
+      - field: Data.StatusReason
+        type: String
+        nullable: true
+        description: "Reason associated with the consent status."
+      - field: Data.CreationDateTime
+        type: String
+        nullable: false
+        description: "ISO 8601 — when the consent resource was created."
+      - field: Data.StatusUpdateDateTime
+        type: String
+        nullable: false
+        description: "ISO 8601 — when the status was last updated."
+      - field: Data.ExpectedExecutionDateTime
+        type: String
+        nullable: true
+        description: "Expected execution date-time (may be present)."
+      - field: Data.ExpectedSettlementDateTime
+        type: String
+        nullable: true
+        description: "Expected settlement date-time (may be present)."
+      - field: Data.Initiation
+        type: Object
+        nullable: false
+        description: "Echo of the submitted Initiation block."
+    error_codes:
+      - code: 400
+        message: "OB.Field.Invalid"
+        retry: false
+      - code: 401
+        message: "UNAUTHORIZED"
+        retry: false
+      - code: 403
+        message: "OB.Resource.InvalidConsentStatus"
+        retry: false
+      - code: 429
+        message: "TOO_MANY_REQUESTS"
+        retry: true
+      - code: 500
+        message: "OB.UnexpectedError"
+        retry: true
+
+  - id: get_international_scheduled_payment_consent
+    method: GET
+    path: "/obie/open-banking/v4.0/pisp/international-scheduled-payment-consents/{ConsentId}"
+    description: "Optionally retrieves a previously staged International Scheduled Payment consent to check its status. CE HSBCnet uses v3.1 at /ce/obie/open-banking/v3.1/pisp/international-scheduled-payment-consents/{ConsentId}; all other brands use v4.0 at this path."
+    auth_required: true
+    scopes: [payments]
+    request_schema: []
+    response_schema:
+      - field: Data.ConsentId
+        type: String
+        nullable: false
+        description: "Unique consent identifier (OBWriteInternationalScheduledConsentResponse6)."
+      - field: Data.Status
+        type: String
+        nullable: false
+        description: "Consent status — AWAU|RJCT|AUTH|COND (v4.0) or AwaitingAuthorisation|Rejected|Authorised|Consumed (v3.1)."
+      - field: Data.StatusUpdateDateTime
+        type: String
+        nullable: false
+        description: "ISO 8601 — when the status was last updated."
+      - field: Data.CreationDateTime
+        type: String
+        nullable: false
+        description: "ISO 8601 — when the consent resource was created."
+      - field: Data.Initiation
+        type: Object
+        nullable: false
+        description: "Echo of the consent Initiation block."
+    error_codes:
+      - code: 400
+        message: "OB.Field.Invalid"
+        retry: false
+      - code: 401
+        message: "UNAUTHORIZED"
+        retry: false
+      - code: 403
+        message: "OB.Resource.InvalidConsentStatus"
+        retry: false
+      - code: 404
+        message: "OB.Resource.NotFound"
+        retry: false
+      - code: 429
+        message: "TOO_MANY_REQUESTS"
+        retry: true
+      - code: 500
+        message: "OB.UnexpectedError"
+        retry: true
+
+  - id: create_international_scheduled_payment
+    method: POST
+    path: "/obie/open-banking/v4.0/pisp/international-scheduled-payments"
+    description: "Submits the International Scheduled Payment for processing once the consent Status is AUTH. The Initiation and Risk sections must mirror those of the consent — a mismatch returns 400. Initial payment Status RCVD or RJCT. CE HSBCnet uses v3.1 at /ce/obie/open-banking/v3.1/pisp/international-scheduled-payments; all other brands use v4.0 at this path."
+    auth_required: true
+    scopes: [payments]
+    request_schema:
+      - field: Data.ConsentId
+        type: String
+        required: true
+        validation: "References the authorised consent (OBWriteInternationalScheduled3)."
+      - field: Data.Initiation.InstructionIdentification
+        type: String
+        required: true
+        validation: "Must mirror the consent Initiation."
+      - field: Data.Initiation.RequestedExecutionDateTime
+        type: String
+        required: true
+        validation: "ISO 8601 future execution date-time; must mirror the consent."
+      - field: Data.Initiation.InstructedAmount.Amount
+        type: String
+        required: true
+        validation: "Decimal string; must mirror the consent."
+      - field: Data.Initiation.InstructedAmount.Currency
+        type: String
+        required: true
+        validation: "ISO 4217; must mirror the consent."
+      - field: Data.Initiation.CurrencyOfTransfer
+        type: String
+        required: true
+        validation: "ISO 4217 transfer currency; must mirror the consent."
+      - field: Data.Initiation.CreditorAccount.SchemeName
+        type: String
+        required: true
+        validation: "e.g. UK.OBIE.IBAN; must mirror the consent."
+      - field: Data.Initiation.CreditorAccount.Identification
+        type: String
+        required: true
+        validation: "Creditor account identification; must mirror the consent."
+      - field: Data.Initiation.CreditorAccount.Name
+        type: String
+        required: true
+        validation: "Creditor account name; must mirror the consent."
+      - field: Risk.PaymentContextCode
+        type: String
+        required: false
+        validation: "Risk block must mirror the consent."
+    response_schema:
+      - field: Data.InternationalScheduledPaymentId
+        type: String
+        nullable: false
+        description: "Unique scheduled-payment identifier (OBWriteInternationalScheduledResponse6)."
+      - field: Data.ConsentId
+        type: String
+        nullable: false
+        description: "The consent this payment was initiated against."
+      - field: Data.Status
+        type: String
+        nullable: false
+        description: "Payment status. Initial RCVD or RJCT; values RCVD, CANC, PDNG, ACTC, PATC, ACCP, ACFC, ACSP, ACWC, ACSC, ACWP, ACCC, BLCK, RJCT."
+      - field: Data.CreationDateTime
+        type: String
+        nullable: false
+        description: "ISO 8601 — when the payment resource was created."
+      - field: Data.StatusUpdateDateTime
+        type: String
+        nullable: false
+        description: "ISO 8601 — when the status was last updated."
+      - field: Data.ExpectedExecutionDateTime
+        type: String
+        nullable: true
+        description: "Expected execution date-time."
+      - field: Data.ExpectedSettlementDateTime
+        type: String
+        nullable: true
+        description: "Expected settlement date-time."
+      - field: Data.Initiation
+        type: Object
+        nullable: false
+        description: "Echo of the submitted Initiation block."
+    error_codes:
+      - code: 400
+        message: "OB.Field.Invalid"
+        retry: false
+      - code: 401
+        message: "UNAUTHORIZED"
+        retry: false
+      - code: 403
+        message: "OB.Resource.InvalidConsentStatus"
+        retry: false
+      - code: 409
+        message: "OB.Resource.Conflict"
+        retry: false
+      - code: 429
+        message: "TOO_MANY_REQUESTS"
+        retry: true
+      - code: 500
+        message: "OB.UnexpectedError"
+        retry: true
+
+  - id: get_international_scheduled_payment
+    method: GET
+    path: "/obie/open-banking/v4.0/pisp/international-scheduled-payments/{InternationalScheduledPaymentId}"
+    description: "Retrieves a submitted International Scheduled Payment to check its status. CE HSBCnet uses v3.1 at /ce/obie/open-banking/v3.1/pisp/international-scheduled-payments/{InternationalScheduledPaymentId}; all other brands use v4.0 at this path."
+    auth_required: true
+    scopes: [payments]
+    request_schema: []
+    response_schema:
+      - field: Data.InternationalScheduledPaymentId
+        type: String
+        nullable: false
+        description: "Unique scheduled-payment identifier (OBWriteInternationalScheduledResponse6)."
+      - field: Data.ConsentId
+        type: String
+        nullable: false
+        description: "The consent this payment was initiated against."
+      - field: Data.Status
+        type: String
+        nullable: false
+        description: "Payment status — RCVD, CANC, PDNG, ACTC, PATC, ACCP, ACFC, ACSP, ACWC, ACSC, ACWP, ACCC, BLCK, RJCT."
+      - field: Data.StatusUpdateDateTime
+        type: String
+        nullable: false
+        description: "ISO 8601 — when the status was last updated."
+      - field: Data.CreationDateTime
+        type: String
+        nullable: false
+        description: "ISO 8601 — when the payment resource was created."
+      - field: Data.Initiation
+        type: Object
+        nullable: false
+        description: "Echo of the payment Initiation block."
+    error_codes:
+      - code: 400
+        message: "OB.Field.Invalid"
+        retry: false
+      - code: 401
+        message: "UNAUTHORIZED"
+        retry: false
+      - code: 403
+        message: "OB.Resource.InvalidConsentStatus"
+        retry: false
+      - code: 404
+        message: "OB.Resource.NotFound"
+        retry: false
+      - code: 429
+        message: "TOO_MANY_REQUESTS"
+        retry: true
+      - code: 500
+        message: "OB.UnexpectedError"
+        retry: true

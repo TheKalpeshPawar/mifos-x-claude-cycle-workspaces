@@ -1,5 +1,5 @@
 # PROJECT_CONFIG.yaml — Machine-readable project configuration (schema v2)
-# Last updated: 2026-05-25 (dual-persona rebuild — Consumer + Field Officer)
+# Last updated: 2026-06-11 (backend migrated OBP sandbox → HSBC UK/CE Open Banking sandbox)
 # Source: https://github.com/openMF/mifos-x-open-banking.git
 
 schema_version: 2
@@ -11,7 +11,7 @@ project:
   subtype: kmp-app
   status: idea-layer-complete        # idea-layer rebuilt 2026-05-25
   created: 2026-05-20
-  updated: 2026-05-25
+  updated: 2026-06-11
 
 # ─── Tech Stack ───────────────────────────────────────────────────────────────
 tech:
@@ -36,31 +36,67 @@ tech:
         bottom_nav: [Dashboard, Customers, Applications, Messages, More]
 
 # ─── Backend ─────────────────────────────────────────────────────────────────
-# Primary backend: Open Bank Project (OBP) API v7.0.0
+# Primary backend: HSBC UK/CE Open Banking sandbox — OBIE UK Open Banking
+# Read/Write Standard v4.0 (CE HSBCnet + Malta Personal on v3.1).
+# Migrated from the Open Bank Project (OBP) sandbox on 2026-06-11.
 # Secondary: Firebase (observability only — Crashlytics + Performance)
 #
 # IMPORTANT — EXTERNAL API CONSUMER, NO OWNED BACKEND:
 # This project OWNS NO backend and NO database. It is a pure KMP client that
-# CONSUMES the external OBP REST API. There is intentionally NO `server.backends`
-# block → RULE-IDEA-SERVER-DATA-001 (owned-DB checks: server/tables/, apis↔flows
-# 1:1) MUST SKIP entirely (rule Enforcement line 145 / Evaluation line 168).
-# The artifacts under idea-layer/server/apis/ + api_manifest.yaml are CLIENT
-# contracts for Ktorfit codegen — they are NOT owned-backend schema. Screens
-# declare `capabilities: [has_ui]` only; none declare `has_api` (no owned data layer).
+# CONSUMES the external HSBC Open Banking REST API. There is intentionally NO
+# `server.backends` block → RULE-IDEA-SERVER-DATA-001 (owned-DB checks:
+# server/tables/, apis↔flows 1:1) MUST SKIP entirely. The artifacts under
+# idea-layer/server/apis/ + api_manifest.yaml are CLIENT contracts for Ktorfit
+# codegen — they are NOT owned-backend schema. Screens declare
+# `capabilities: [has_ui]` only; none declare `has_api` (no owned data layer).
+#
+# AUTH MODEL (replaces OBP direct_login) — UK Open Banking FAPI 1.0 Advanced:
+#   • Transport: mutual TLS (mTLS) — QWAC transport cert + QSEAL signing cert.
+#   • Onboarding: Dynamic Client Registration (DCR) — POST /register with a signed
+#     SSA (software statement) → client credentials.
+#   • Authorization: OAuth2 — client_credentials grant stages a consent, then
+#     authorization_code + PKCE (S256) for PSU authorisation
+#     (create-consent → authorize → token → resource).
+#   • Message signing: detached JWS in the `x-jws-signature` header on write calls.
+#   • Per-brand hosts: 10 brands, each with a distinct mTLS + authorize host.
+#     Full reference + 625-endpoint catalogue at
+#     /home/kalpesh/OpenBankingProject/HSBC_Sandbox/docs/ (start: 00-HOW-TO-USE-THE-SANDBOX.md).
+#   • Credentials NEVER hardcoded (RULE-CREDS-LIFECYCLE-001): certs/keys/clientId live
+#     in gitignored local materials + .env.local, referenced by env-var name only.
 backend:
   owned: false                       # no backend/DB built or owned by this project
-  provider: rest                     # OBP REST API (external, not Supabase/Firebase data)
+  provider: rest                     # HSBC Open Banking REST API (external)
+  standard: obie-uk-open-banking     # OBIE Read/Write Standard (v4.0; v3.1 on CE HSBCnet + Malta)
+  default_brand: uk-personal         # 1 of 10 brands; per-brand hosts in HSBC_Sandbox/docs
+  auth:
+    protocol: oauth2
+    grants: [client_credentials, authorization_code]
+    security_profile: fapi-1.0-advanced
+    transport: mtls                  # QWAC transport cert + QSEAL signing cert
+    request_signing: jws-detached    # x-jws-signature header on write calls
+    client_registration: dcr         # POST /register with signed SSA
+    pkce: s256
+    consent_model: create-consent -> authorize -> token -> resource
+    # Materials — gitignored / .env.local, referenced by name (never values):
+    transport_cert_env: HSBC_OB_TRANSPORT_CERT
+    signing_cert_env: HSBC_OB_SIGNING_CERT
+    qseal_pubkey_env: HSBC_OB_QSEAL_PUBKEY
+    software_statement_env: HSBC_OB_SOFTWARE_STATEMENT
+    signing_kid_env: HSBC_OB_SIGNING_KID
+    client_id_env: HSBC_OB_CLIENT_ID
   environments:
-    local:
-      api_base_url: https://apisandbox.openbankproject.com
-      api_version: v7.0.0
-      auth_method: direct_login      # POST /obp/v4.0.0/banks/{bank}/direct_login
-      consumer_key_env: OBP_CONSUMER_KEY   # from .env.local — never hardcode
-    production:
-      api_base_url: https://api.openbankproject.com
-      api_version: v7.0.0
-      auth_method: direct_login
-      consumer_key_env: OBP_CONSUMER_KEY_PROD
+    local:                           # HSBC UK/CE sandbox (the dev target)
+      api_base_url: https://secure.sandbox.ob.hsbc.co.uk    # UK Personal — mTLS resource host
+      authorize_base_url: https://sandbox.ob.hsbc.co.uk     # UK Personal — OAuth authorize host
+      api_version: v4.0
+      brand: uk-personal
+      auth_method: oauth2_fapi
+    production:                      # HSBC production OB — requires real TPP enrolment + eIDAS certs
+      api_base_url: TBD              # not provisioned — do not invent
+      authorize_base_url: TBD
+      api_version: v4.0
+      brand: uk-personal
+      auth_method: oauth2_fapi
   observability:
     provider: firebase
     services: [crashlytics, performance]

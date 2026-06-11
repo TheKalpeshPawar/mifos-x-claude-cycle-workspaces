@@ -1,40 +1,66 @@
 sibling: api
 schema_version: "4.0"
 feature_id: direct-debit-detail
+consent_dependency: >
+  Reads require an authorised account-access-consent (Permissions incl. ReadDirectDebits) and an
+  authorization-code (account-scoped) token. AccountId comes from the prior get_accounts call.
 notes: >
-  Reconciled to shipped source 2026-06-11. OBP has NO direct-debit detail or cancel endpoint
-  at any version (the original GET v5.0.0 detail and DELETE cancel — and the stray Standing-Order
-  v7.0.0 entries the file previously carried — were all live-verified 404 and dropped). The detail
-  screen re-derives its mandate from TXN_TYPE=DD history and records cancellation locally; no
-  network call is unique to this screen.
-api: []
+  Rebound OBP -> HSBC OBIE AISP 2026-06-11. OBIE has NO single-direct-debit GET — the detail screen
+  is the selected Data.DirectDebit[] item drawn from the account's direct-debits list. OBIE also has
+  NO cancel-direct-debit endpoint: the OBP screen's cancel action (formerly local-only) is now marked
+  UNSUPPORTED on OBIE — direct debits are merchant-initiated and the consumer surface is view-only.
+api:
+  - id: get_direct_debits
+    endpoint: "GET /obie/open-banking/v4.0/aisp/accounts/{AccountId}/direct-debits"
+    tag: DirectDebits
+    auth: OAuth2-FAPI
+    note: "OBIE AISP get_account_direct_debits (OBReadDirectDebit2). Returns ALL direct debits on the account; the detail is the entry whose DirectDebitId matches the route mandateId (no per-mandate GET exists in OBIE). Requires ReadDirectDebits. Brand availability: CE HSBCnet, Kinetic, UK Business, UK HSBCnet, UK Personal, firstdirect (CE HSBCnet on v3.1 +/ce)."
+    params:
+      - name: AccountId
+        type: path
+    response:
+      fields:
+        - name: Data.DirectDebit[].AccountId
+          type: String
+        - name: Data.DirectDebit[].DirectDebitId
+          type: String
+        - name: Data.DirectDebit[].MandateIdentification
+          type: String
+        - name: Data.DirectDebit[].DirectDebitStatusCode
+          type: String
+        - name: Data.DirectDebit[].Name
+          type: String
+        - name: Data.DirectDebit[].PreviousPaymentDateTime
+          type: String
+        - name: Data.DirectDebit[].Frequency
+          type: String
+        - name: Data.DirectDebit[].PreviousPaymentAmount.Amount
+          type: String
+        - name: Data.DirectDebit[].PreviousPaymentAmount.Currency
+          type: String
+    errors:
+      - code: 400
+        message: "OB.Field.Invalid"
+      - code: 401
+        message: "UNAUTHORIZED"
+      - code: 403
+        message: "OB.Resource.InvalidConsentStatus (e.g. missing ReadDirectDebits)"
 
-derived_reads:
-  - id: direct_debit_detail_by_id
-    source: "DirectDebitsRepository.listMandates(bankId, accountId).firstOrNull { it.id == mandateId }"
-    note: >
-      Re-derives the account's mandates (same TXN_TYPE=DD derivation the list uses) and locates
-      this one by id. A mandateId that no longer resolves (already cancelled/expired before open)
-      renders the empty state.
-    output_dto: DirectDebitMandate
-  - id: linked_account_name
-    source: "AccountsRepository.accountDetail(bankId, accountId)"
-    note: >
-      Best-effort lookup of the funding account's display name (label, else type, else 'Account').
-      Resolution is non-blocking — a failure still renders the mandate with the fallback name.
-    output_dto: Account
+  - id: resolve_linked_account_name
+    resolution: linked_account_name
+    via: get_account_details (GET /obie/open-banking/v4.0/aisp/accounts/{AccountId})
+    note: "Best-effort funding-account display name from Data.Account[].Nickname / .Account[].Name. Non-blocking — failure still renders the mandate with the fallback name."
 
-local_mutations:
-  - id: cancel_direct_debit_local
-    source: "DirectDebitsRepository.cancel(accountId, mandateId)"
-    note: >
-      OBP has no cancel endpoint, so the confirm dialog records the cancellation LOCALLY (Room
-      JSON cache) and re-fetches the mandate — it flips to CANCELLED and the next-payment date
-      clears. Persists across restarts; never reaches the server.
+unsupported:
+  - id: cancel_direct_debit
+    reason: >
+      OBIE AISP has NO cancel-direct-debit endpoint (DirectDebits is a read-only data cluster).
+      The OBP screen's Cancel Mandate action (previously local-only) has no server equivalent on
+      OBIE. The cancel CTA + confirm dialog should be hidden or disabled; direct debits are
+      merchant-initiated and cancellation is out of band (via the merchant / the bank channel).
 
 deferred:
   note: >
-    GET /direct-debit/{id} and DELETE /direct-debit/{id} were specified in the original design
-    but DO NOT EXIST on OBP. There is also no edit affordance — direct debits are merchant-initiated,
-    so the consumer surface is view + (local) cancel only. Re-add a server cancel only if OBP ships
-    a DELETE endpoint.
+    No GET single-direct-debit and no DELETE/cancel exist in OBIE AISP. Detail is the list-item
+    projection of get_direct_debits. Re-evaluate only if OBIE ships a per-mandate resource or a
+    write/cancel operation.

@@ -6,8 +6,72 @@ feature: payment-result
 flavor: consumer
 status: enriched
 
-# Stateless, args-driven success screen — rendered entirely from navigation
-# arguments passed by the confirm / SCA screens. No ViewModel, no network call.
-endpoints: []
+api:
+  - id: get_domestic_payment_status
+    endpoint: "GET /obie/open-banking/v4.0/pisp/domestic-payments/{DomesticPaymentId}"
+    tag: pisp-domestic
+    trigger: on_mount
+    description: >
+      Terminal result view. The bank authorise + callback has already completed and the
+      payment has been submitted (POST /obie/open-banking/v4.0/pisp/domestic-payments). This
+      screen polls the created domestic-payment resource by its DomesticPaymentId to surface
+      the settlement status. Client Credentials grant token (status reads do not need the
+      Authorization Code token). SCA happened at the bank during authorise — no SCA here.
+    request:
+      path_params:
+        - name: DomesticPaymentId
+          type: String
+          note: "Data.DomesticPaymentId returned by the preceding POST /pisp/domestic-payments submit."
+    response:
+      dto: OBWriteDomesticResponse5
+      fields:
+        - name: Data.DomesticPaymentId
+          type: String
+          note: "ASPSP-assigned payment resource id — surfaced as the shortened Transaction ID row."
+        - name: Data.ConsentId
+          type: String
+          note: "Identifier of the consent this payment was created from."
+        - name: Data.Status
+          type: String
+          note: >
+            ExternalPaymentTransactionStatus1Code. Terminal success when
+            AcceptedSettlementCompleted (ACSC) or AcceptedSettlementInProcess (ACSP);
+            failure when Rejected (RJCT). Drives the status pill + success/failure view.
+        - name: Data.StatusUpdateDateTime
+          type: String
+          note: "ISODateTime of the last status update — surfaced as the posted time."
+        - name: Data.CreationDateTime
+          type: String
+        - name: Data.Charges
+          type: Array
+          note: "Optional Charges[] — summed for the Charge row."
+        - name: Data.Initiation.InstructedAmount.Amount
+          type: String
+          note: "Decimal string — the amount paid."
+        - name: Data.Initiation.InstructedAmount.Currency
+          type: String
+          note: "ISO 4217 currency code."
+        - name: Data.Initiation.CreditorAccount.Name
+          type: String
+          note: >
+            Creditor (beneficiary) account name. COUNTERPARTY rule still applies — never render a
+            raw name that is just the PSU's own login; prefer a resolved holder name.
+    errors:
+      - code: 400
+        message: "OB.Field.Invalid"
+      - code: 401
+        message: "UNAUTHORIZED"
+      - code: 404
+        message: "OB.Resource.NotFound"
+      - code: 429
+        message: "TOO_MANY_REQUESTS"
+      - code: 500
+        message: "OB.UnexpectedError"
 
-note: "PaymentResultScreen is a stateless composable. The booked transaction's amount, beneficiary, source label, transaction id, charge and status are all carried in as nav args. No OBP API is invoked here."
+note: >
+  PaymentResultScreen is the terminal result view reached after the OBIE PISP flow
+  (consent → bank authorise → callback → submit POST /pisp/domestic-payments). It is opened with
+  the DomesticPaymentId from the submit response and reads GET /pisp/domestic-payments/{DomesticPaymentId}
+  to confirm Data.Status (AcceptedSettlementInProcess / AcceptedSettlementCompleted / Rejected).
+  The amount, beneficiary and source label may still arrive as nav args for an instant first paint
+  while the status read resolves. SCA was performed at the bank during authorise.

@@ -1,0 +1,311 @@
+schema_version: "4.0"
+api_group: pisp-international
+name: "PISP International Payment API"
+base_url: "https://secure.sandbox.ob.hsbc.co.uk"
+auth_scheme: OAuth2-FAPI
+api_version: v4.0
+generated_at: "2026-06-11"
+source: "HSBC UK/CE Open Banking sandbox (OBIE Read/Write v4.0); UK Personal v4.0 canonical paths, CE HSBCnet on v3.1 (/ce prefix); PISP payment narrative + response schemas from T2 OBIE PISP v4.0 (HSBC portal unreachable — 429); generic OAuth2 token/authorize endpoints live in the auth group. Per-brand hosts in HSBC_Sandbox/docs/07-international-payment.md"
+endpoints:
+  - id: create_international_payment_consent
+    method: POST
+    path: "/obie/open-banking/v4.0/pisp/international-payment-consents"
+    description: "Create an international-payment-consent capturing a single cross-border / cross-currency payment instruction (CurrencyOfTransfer, InstructedAmount, creditor) prior to authorisation; bank returns a ConsentId in AwaitingAuthorisation. CE HSBCnet uses v3.1 at /ce/obie/open-banking/v3.1/pisp/international-payment-consents."
+    auth_required: true
+    scopes: [payments]
+    request_schema:
+      - field: Data.Initiation.InstructionIdentification
+        type: String
+        required: true
+        validation: "TPP-assigned instruction identifier."
+      - field: Data.Initiation.EndToEndIdentification
+        type: String
+        required: true
+        validation: "End-to-end identifier carried unchanged through the chain."
+      - field: Data.Initiation.CurrencyOfTransfer
+        type: String
+        required: true
+        validation: "ISO 4217 cross-border currency of transfer, e.g. USD."
+      - field: Data.Initiation.InstructedAmount.Amount
+        type: String
+        required: true
+        validation: "Decimal string."
+      - field: Data.Initiation.InstructedAmount.Currency
+        type: String
+        required: true
+        validation: "ISO 4217 currency code of the instructed amount."
+      - field: Data.Initiation.CreditorAccount.SchemeName
+        type: String
+        required: true
+        validation: "Account scheme, e.g. UK.OBIE.SortCodeAccountNumber."
+      - field: Data.Initiation.CreditorAccount.Identification
+        type: String
+        required: true
+        validation: "Account identification per scheme."
+      - field: Data.Initiation.CreditorAccount.Name
+        type: String
+        required: true
+        validation: "Creditor account name."
+      - field: Risk.PaymentContextCode
+        type: String
+        required: true
+        validation: "Payment context classification, e.g. EcommerceMerchantInitiatedPayment."
+    response_schema:
+      - field: Data.ConsentId
+        type: String
+        nullable: false
+        description: "Unique consent identifier (OBWriteInternationalConsentResponse)."
+      - field: Data.Status
+        type: String
+        nullable: false
+        description: "Consent status, e.g. AwaitingAuthorisation."
+      - field: Data.CreationDateTime
+        type: String
+        nullable: false
+        description: "ISO 8601 consent creation datetime."
+      - field: Data.Initiation
+        type: Object
+        nullable: false
+        description: "Echoed international-payment initiation block."
+      - field: Data.ExchangeRateInformation
+        type: Object
+        nullable: true
+        description: "Optional OBExchangeRate block — quoted/applied rate, unit currency, rate type, contract identification, expiry."
+      - field: Links
+        type: Object
+        nullable: true
+        description: "OBIE Links block."
+      - field: Meta
+        type: Object
+        nullable: true
+        description: "OBIE Meta block."
+    error_codes:
+      - code: 400
+        message: "OB.Field.Invalid"
+        retry: false
+      - code: 401
+        message: "UNAUTHORIZED"
+        retry: false
+      - code: 403
+        message: "OB.Resource.InvalidConsentStatus"
+        retry: false
+      - code: 429
+        message: "TOO_MANY_REQUESTS"
+        retry: true
+      - code: 500
+        message: "OB.UnexpectedError"
+        retry: true
+
+  - id: get_international_payment_consent_funds_confirmation
+    method: GET
+    path: "/obie/open-banking/v4.0/pisp/international-payment-consents/{ConsentId}/funds-confirmation"
+    description: "Optional PISP funds-confirmation check against the international-payment consent — confirm the debtor account has funds before authorisation. CE HSBCnet uses v3.1 at /ce/obie/open-banking/v3.1/pisp/international-payment-consents/{ConsentId}/funds-confirmation."
+    auth_required: true
+    scopes: [payments]
+    request_schema: []
+    response_schema:
+      - field: Data.FundsAvailableResult.FundsAvailable
+        type: Boolean
+        nullable: false
+        description: "Whether funds are available for the consent (OBWriteFundsConfirmationResponse)."
+      - field: Data.FundsAvailableResult.FundsAvailableDateTime
+        type: String
+        nullable: false
+        description: "ISO 8601 datetime the funds-availability check was performed."
+    note: "Documented gap: the exact international-payment funds-confirmation response object for this HSBC sub-resource was not separately captured (per-field schema sourced only at the OBIE PISP funds-confirmation level); T1 confirms the endpoint exists, fields above are the OBIE-level shape."
+    error_codes:
+      - code: 400
+        message: "OB.Field.Invalid"
+        retry: false
+      - code: 401
+        message: "UNAUTHORIZED"
+        retry: false
+      - code: 403
+        message: "OB.Resource.InvalidConsentStatus"
+        retry: false
+      - code: 404
+        message: "OB.Resource.NotFound"
+        retry: false
+      - code: 429
+        message: "TOO_MANY_REQUESTS"
+        retry: true
+      - code: 500
+        message: "OB.UnexpectedError"
+        retry: true
+
+  - id: get_international_payment_consent
+    method: GET
+    path: "/obie/open-banking/v4.0/pisp/international-payment-consents/{ConsentId}"
+    description: "Retrieve the current status of a previously created international-payment consent; confirm Authorised before submitting the payment. CE HSBCnet uses v3.1 at /ce/obie/open-banking/v3.1/pisp/international-payment-consents/{ConsentId}."
+    auth_required: true
+    scopes: [payments]
+    request_schema: []
+    response_schema:
+      - field: Data.ConsentId
+        type: String
+        nullable: false
+        description: "Consent identifier."
+      - field: Data.Status
+        type: String
+        nullable: false
+        description: "Consent status, e.g. Authorised or Rejected."
+      - field: Data.StatusUpdateDateTime
+        type: String
+        nullable: false
+        description: "ISO 8601 datetime of the last status change."
+      - field: Data.Initiation
+        type: Object
+        nullable: false
+        description: "Echoed international-payment initiation block."
+      - field: Data.ExchangeRateInformation
+        type: Object
+        nullable: true
+        description: "Optional OBExchangeRate block."
+    error_codes:
+      - code: 400
+        message: "OB.Field.Invalid"
+        retry: false
+      - code: 401
+        message: "UNAUTHORIZED"
+        retry: false
+      - code: 403
+        message: "OB.Resource.InvalidConsentStatus"
+        retry: false
+      - code: 404
+        message: "OB.Resource.NotFound"
+        retry: false
+      - code: 429
+        message: "TOO_MANY_REQUESTS"
+        retry: true
+      - code: 500
+        message: "OB.UnexpectedError"
+        retry: true
+
+  - id: create_international_payment
+    method: POST
+    path: "/obie/open-banking/v4.0/pisp/international-payments"
+    description: "Submit the authorised international payment referencing the authorised ConsentId; Data.Initiation must match the consent's initiation or the ASPSP rejects it. CE HSBCnet uses v3.1 at /ce/obie/open-banking/v3.1/pisp/international-payments."
+    auth_required: true
+    scopes: [payments]
+    request_schema:
+      - field: Data.ConsentId
+        type: String
+        required: true
+        validation: "Must equal the authorised consent ConsentId."
+      - field: Data.Initiation.InstructionIdentification
+        type: String
+        required: true
+        validation: "Must match the consent's initiation."
+      - field: Data.Initiation.EndToEndIdentification
+        type: String
+        required: true
+        validation: "Must match the consent's initiation."
+      - field: Data.Initiation.CurrencyOfTransfer
+        type: String
+        required: true
+        validation: "ISO 4217 cross-border currency, matching the consent."
+      - field: Data.Initiation.InstructedAmount.Amount
+        type: String
+        required: true
+        validation: "Decimal string matching the consent."
+      - field: Data.Initiation.InstructedAmount.Currency
+        type: String
+        required: true
+        validation: "ISO 4217 currency code matching the consent."
+      - field: Data.Initiation.CreditorAccount.SchemeName
+        type: String
+        required: true
+        validation: "Account scheme matching the consent."
+      - field: Data.Initiation.CreditorAccount.Identification
+        type: String
+        required: true
+        validation: "Account identification matching the consent."
+      - field: Data.Initiation.CreditorAccount.Name
+        type: String
+        required: true
+        validation: "Creditor account name matching the consent."
+      - field: Risk.PaymentContextCode
+        type: String
+        required: true
+        validation: "Payment context classification matching the consent."
+    response_schema:
+      - field: Data.InternationalPaymentId
+        type: String
+        nullable: false
+        description: "Unique international-payment resource identifier."
+      - field: Data.ConsentId
+        type: String
+        nullable: false
+        description: "Referenced consent identifier."
+      - field: Data.Status
+        type: String
+        nullable: false
+        description: "Payment status, e.g. InitiationPending, InitiationCompleted or Pending."
+      - field: Data.CreationDateTime
+        type: String
+        nullable: false
+        description: "ISO 8601 creation datetime."
+      - field: Data.Initiation
+        type: Object
+        nullable: false
+        description: "Echoed international-payment initiation block."
+      - field: Data.ExchangeRateInformation
+        type: Object
+        nullable: true
+        description: "Optional OBExchangeRate block."
+    error_codes:
+      - code: 400
+        message: "OB.Field.Invalid"
+        retry: false
+      - code: 401
+        message: "UNAUTHORIZED"
+        retry: false
+      - code: 403
+        message: "OB.Resource.InvalidConsentStatus"
+        retry: false
+      - code: 429
+        message: "TOO_MANY_REQUESTS"
+        retry: true
+      - code: 500
+        message: "OB.UnexpectedError"
+        retry: true
+
+  - id: get_international_payment
+    method: GET
+    path: "/obie/open-banking/v4.0/pisp/international-payments/{InternationalPaymentId}"
+    description: "Poll the status of a submitted international payment; the OBIE payment-details view exposes richer status history. CE HSBCnet uses v3.1 at /ce/obie/open-banking/v3.1/pisp/international-payments/{InternationalPaymentId}."
+    auth_required: true
+    scopes: [payments]
+    request_schema: []
+    response_schema:
+      - field: Data.InternationalPaymentId
+        type: String
+        nullable: false
+        description: "International-payment resource identifier."
+      - field: Data.Status
+        type: String
+        nullable: false
+        description: "Current payment status."
+      - field: Data.StatusUpdateDateTime
+        type: String
+        nullable: false
+        description: "ISO 8601 datetime of the last status change."
+    error_codes:
+      - code: 400
+        message: "OB.Field.Invalid"
+        retry: false
+      - code: 401
+        message: "UNAUTHORIZED"
+        retry: false
+      - code: 403
+        message: "OB.Resource.InvalidConsentStatus"
+        retry: false
+      - code: 404
+        message: "OB.Resource.NotFound"
+        retry: false
+      - code: 429
+        message: "TOO_MANY_REQUESTS"
+        retry: true
+      - code: 500
+        message: "OB.UnexpectedError"
+        retry: true

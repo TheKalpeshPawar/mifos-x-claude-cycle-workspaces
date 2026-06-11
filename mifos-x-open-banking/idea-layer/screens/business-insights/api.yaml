@@ -2,37 +2,85 @@ sibling: api
 schema_version: "4.0"
 feature_id: business-insights
 api:
-  - id: obp_account_detail
-    endpoint: "GET /obp/v5.1.0/my/banks/{bank_id}/accounts/{account_id}/account"
-    tag: Accounts
-    description: "Per-account detail fetch — carries product_code (CURRENT/SAVINGS/BUSINESS/WALLET) used for PFM scope classification; the list endpoint returns product_code null"
+  - id: get_accounts
+    endpoint: "GET /obie/open-banking/v4.0/aisp/accounts"
+    tag: AISP
+    description: "The authorised account list — drives the account picker and per-account context (Currency, Nickname). Cash-flow scope is restricted client-side by Data.Account[].AccountCategory (Business) / AccountTypeCode, since OBIE has no PFM-scope flag. Requires an authorised account-access consent + authorization-code token (OBIE OBReadAccount6)."
+    consent: "Requires an authorised account-access consent (Status AUTH), plus a scoped authorization-code token."
     response:
       fields:
-        - name: label
+        - name: Data.Account[].AccountId
           type: String
-        - name: product_code
+        - name: Data.Account[].Currency
           type: String
-        - name: balance
-          type: AmountOfMoney
+        - name: Data.Account[].AccountCategory
+          type: String
+        - name: Data.Account[].AccountTypeCode
+          type: String
+        - name: Data.Account[].Nickname
+          type: String
     errors:
       - code: 401
-        message: "USER_NOT_LOGGED_IN"
-      - code: 404
-        message: "ACCOUNT_NOT_FOUND"
-  - id: obp_transactions_list
-    endpoint: "GET /obp/v6.0.0/my/accounts/{account_id}/transactions"
-    tag: Transactions
-    description: "Fetch the selected business account's transactions for cash-flow analysis — sandbox caps at 50 newest and ignores date params; all period filtering and categorisation run client-side"
+        message: "UNAUTHORIZED"
+      - code: 403
+        message: "OB.Resource.InvalidConsentStatus"
+  - id: get_balances
+    endpoint: "GET /obie/open-banking/v4.0/aisp/accounts/{AccountId}/balances"
+    tag: AISP
+    description: "Current balance context for the in-scope account (e.g. InterimAvailable). Requires ReadBalances + authorization-code token (OBIE OBReadBalance1)."
+    consent: "Requires an authorised account-access consent (Status AUTH) carrying ReadBalances, plus a scoped authorization-code token."
     response:
       fields:
-        - name: transactions
-          type: "List<Transaction>"
-        - name: details
-          type: TransactionDetails
-        - name: value
-          type: AmountOfMoney
+        - name: Data.Balance[].AccountId
+          type: String
+        - name: Data.Balance[].Amount.Amount
+          type: String
+        - name: Data.Balance[].Amount.Currency
+          type: String
+        - name: Data.Balance[].CreditDebitIndicator
+          type: String
+        - name: Data.Balance[].Type
+          type: String
     errors:
       - code: 401
-        message: "USER_NOT_LOGGED_IN"
-      - code: 404
-        message: "ACCOUNT_NOT_FOUND"
+        message: "UNAUTHORIZED"
+      - code: 403
+        message: "OB.Resource.InvalidConsentStatus"
+  - id: get_transactions
+    endpoint: "GET /obie/open-banking/v4.0/aisp/accounts/{AccountId}/transactions"
+    tag: AISP
+    description: "Transactions for the in-scope account over a date window (fromBookingDateTime/toBookingDateTime query params, UTC ISO 8601). The cash-flow framing (Money In / Money Out / Net), expense category breakdown, trends, and top counterparties are all DERIVED CLIENT-SIDE from this list — OBIE has no insights/analytics endpoint. Requires ReadTransactionsDetail + authorization-code token (OBIE OBReadTransaction6)."
+    consent: "Requires an authorised account-access consent (Status AUTH) carrying a ReadTransactions* permission, plus a scoped authorization-code token."
+    request:
+      fields:
+        - name: fromBookingDateTime
+          type: String
+          example: "2026-06-01T00:00:00Z"
+        - name: toBookingDateTime
+          type: String
+          example: "2026-06-30T23:59:59Z"
+    response:
+      fields:
+        - name: Data.Transaction[].TransactionId
+          type: String
+        - name: Data.Transaction[].Amount.Amount
+          type: String
+        - name: Data.Transaction[].Amount.Currency
+          type: String
+        - name: Data.Transaction[].CreditDebitIndicator
+          type: String
+        - name: Data.Transaction[].BookingDateTime
+          type: String
+        - name: Data.Transaction[].TransactionInformation
+          type: String
+        - name: Data.Transaction[].MerchantDetails.MerchantName
+          type: String
+        - name: Data.Transaction[].CreditorAccount.Identification
+          type: String
+        - name: Data.Transaction[].DebtorAccount.Identification
+          type: String
+    errors:
+      - code: 401
+        message: "UNAUTHORIZED"
+      - code: 403
+        message: "OB.Resource.InvalidConsentStatus"

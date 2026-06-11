@@ -1,133 +1,165 @@
 # Features — Mifos X Open Banking
 
-All features organized by flavor and OBP API integration points.
-Updated 2026-05-29 — added standing-order-edit.
-Updated 2026-06-11 — added send-money-amount, sca-challenge, payment-result, standing-order-create (source-drift write-back).
+All features organized by capability and HSBC UK/CE Open Banking (OBIE Read/Write v4.0) integration points.
+Updated 2026-06-11 — MIGRATION OBP → HSBC: consumer Open Banking TPP (AISP + PISP). Removed the
+field-officer persona and OBP-only surfaces (login, cards, fx-rates, in-app SCA); added the consent /
+authorise handoff screens and the VRP / CoF / Open Data / Events / International-payment capabilities.
+
+The app is a single-persona consumer product. It owns no backend — every feature consumes the external
+HSBC Open Banking REST API over mTLS, gated by consent + redirect-based PSU authorisation (SCA at the bank).
 
 ---
 
-## Consumer Persona Features
+## Consent & Authorisation Features
 
-### Core Banking (11 features)
+> NEW capability cluster (vs OBP). Replaces OBP's in-app DirectLogin + password screens. The user
+> authenticates at HSBC during a redirect; no username, password, or SCA code is ever entered in-app.
 
-| Feature | Screen | OBP API Endpoint | Description |
+| Feature | Screen | API Group | Description |
 |---|---|---|---|
-| **splash** | Splash | — | App startup animation, branding |
-| **login** | Login | `POST /v4.0.0/banks/{bank}/direct_login` | DirectLogin authentication |
-| **home** | Home | Accounts, Transactions | Account overview, balance, recent transactions |
-| **accounts** | Accounts, Account Detail | `GET /v3.0.0/banks/{bank}/accounts` | List and view account details |
-| **transactions** | Transactions, Transaction Detail | `GET /accounts/{account_id}/transactions` | View transaction history, filtering |
-| **send-money** | Send Money, Send Confirm | `POST /accounts/{account_id}/transaction-request-types/SEPA` | Initiate payments (SEPA, ACH) |
-| **beneficiaries** | Beneficiaries | `GET /banks/{bank}/counterparties` | Manage payee list |
-| **cards** | Cards, Card Detail | `GET /accounts/{account_id}/cards` | View card details, transactions |
-| **standing-orders** | Standing Orders | `GET /accounts/{account_id}/standing-orders` | Create & manage recurring payments |
-| **standing-order-edit** | Standing Order Edit | `PUT /accounts/{accountId}/standing-order/{id}` | Edit amount, frequency, start/end date for existing standing order |
-
-### Enhancement Features (4 features)
-
-| Feature | Screen | OBP API Endpoint | Description |
-|---|---|---|---|
-| **fx-rates** | FX Rates | `GET /banks/{bank}/fx` | Live currency rates, conversion calculator |
-| **atm-locator** | ATM Finder | `GET /banks/{bank}/atms` | Map-based ATM finder |
-| **notifications** | — | Firebase Cloud Messaging | Transaction alerts, KYC status updates |
-| **profile** | Profile, Settings | — | User preferences, security settings |
+| **splash** | splash | — | Consent/token gate — routes to onboarding or Home |
+| **consent-intro** | consent-intro | — | Explain data sharing, start "Connect your HSBC account" |
+| **consent-request** | consent-request | AISP | Pick permissions, `POST /aisp/account-access-consents` (status AWAU) |
+| **bank-authorize-handoff** | bank-authorize-handoff | auth | Build signed authorise request, redirect to HSBC (`GET /oauth2/authorize`, PKCE S256) |
+| **auth-callback** | auth-callback | auth | Deep-link return → `POST /oauth2/token` → confirm consent AUTH |
+| **consent-declined** | consent-declined | — | PSU declined / callback error recovery |
+| **consent-expired** | consent-expired | AISP | Re-consent when prior consent EXPD/RJCT/revoked |
+| **consent-manager** | consent-manager | events, AISP | View and revoke active data-sharing consents |
 
 ---
 
-## Field Officer Persona Features
+## Account Information (AISP) Features
 
-### Core Agent Banking (7 features)
+> Read-only. Every read requires a prior AUTH-status account-access-consent + a consent-scoped token.
 
-| Feature | Screen | OBP API Endpoint | Description |
+| Feature | Screen | API Group | Description |
 |---|---|---|---|
-| **fo-dashboard** | FO Dashboard | `GET /customers`, Consolidated | Agent's active customer list, pending applications |
-| **customer-search** | Customer Search | `GET /banks/{bank}/customers` | Find customers by name, email, ID |
-| **customer-detail** | Customer Detail, Customer Profile | `GET /customers/{customer_id}` | View customer demographics, accounts, status |
-| **onboarding** | Onboarding, Corporate Onboarding | `POST /customers` | Collect customer info, create account requests |
-| **kyc** | KYC Review | `GET /customers/{customer_id}/kyc_documents`, `PUT` | Upload, verify KYC documents |
-| **account-applications** | Account Applications, Application Detail | `GET /banks/{bank}/account-applications` | Manage new account requests |
-| **customer-messages** | Customer Messages | `GET /customers/{customer_id}/messages` | Thread-based customer messaging |
-
-### Enhancement Features (2 features)
-
-| Feature | Screen | OBP API Endpoint | Description |
-|---|---|---|---|
-| **meetings** | Meetings | `POST /customers/{customer_id}/meetings` | Schedule & track customer meetings |
-| **corporate-customers** | Corporate Onboarding, Customer Detail | `GET /customers/{customer_id}/corporate_location` | Manage corporate customer structures |
+| **home** | home | AISP | Connected-account overview, balances, recent transactions |
+| **accounts** | accounts | AISP | `GET /aisp/accounts` — authorised account list |
+| **account-detail** | account-detail | AISP | `GET /aisp/accounts/{AccountId}` + balances |
+| **transactions** | transactions | AISP | `GET /aisp/transactions` — history, date filter, search |
+| **transaction-detail** | transaction-detail | AISP | Single transaction receipt + metadata |
+| **transaction-tags** | transaction-tags | AISP | Tag/categorize transactions for personal tracking (local PFM) |
+| **beneficiaries** | beneficiaries | AISP | `GET /aisp/beneficiaries` — read-only payees (no add/edit/delete under OB) |
+| **standing-orders** | standing-orders, standing-order-detail | AISP | `GET /aisp/standing-orders` — read-only schedules |
+| **direct-debits** | direct-debits, direct-debit-detail | AISP | `GET /aisp/direct-debits` — read-only mandates |
+| **products** | products | AISP, Open Data | Product reference + comparison |
+| **pfm-dashboard** | pfm-dashboard, pfm-settings | AISP | Spending insights, budgets, category breakdown |
+| **business-insights** | business-insights | AISP | Business cashflow insights |
 
 ---
 
-## Shared Features (4 features)
+## Payments (PISP) Features
 
-| Feature | Screen | OBP API Endpoint | Description |
+> Each payment runs consent → authorise (SCA at bank) → submit → status. International + scheduled +
+> standing-order + file/bulk are NEW vs OBP.
+
+| Feature | Screen | API Group | Description |
 |---|---|---|---|
-| **splash** | Splash | — | Startup animation (shared) |
-| **login** | Login | `POST /v4.0.0/banks/{bank}/direct_login` | DirectLogin (shared) |
-| **profile** | Profile | — | User info editing, flavor-independent |
-| **settings** | Settings, More | — | App theme, language, notifications |
+| **send-money** | send-money | PISP | Pick payee/account + payment kind (domestic / scheduled / standing-order / international) |
+| **send-money-amount** | send-money-amount | PISP, CBPII | Amount entry + Confirmation-of-Funds check against source balance |
+| **send-money-confirm** | send-money-confirm | PISP | Review → `POST /pisp/domestic-payment-consents` (AWAU) |
+| **payment-authorize-handoff** | payment-authorize-handoff | auth | Build signed authorise request, redirect to HSBC (SCA at bank) |
+| **payment-result** | payment-result | PISP | `POST /pisp/domestic-payments` → poll status → terminal |
+| **payment-declined** | payment-declined | PISP | PSU declined / consent RJCT recovery |
+| **standing-order-create** | standing-order-create | PISP | Author a domestic standing order (`POST /pisp/domestic-standing-order-consents`) |
+| **standing-order-edit** | standing-order-edit | PISP | Edit amount/frequency/start-end of a standing order |
 
 ---
 
-## Complete Screen List (50 Screens)
+## Advanced Capabilities (NEW vs OBP)
 
-> Updated 2026-06-11 — registered send-money-amount, sca-challenge, payment-result (send-money), and standing-order-create (standing-orders) from source-drift write-back. Count of 50 also reflects pfm-settings + business-insights added in the PFM v2 epic (tracked in EXPORT_MATRIX.yaml).
+| Capability | Screens | API Group | Description |
+|---|---|---|---|
+| **Variable Recurring Payments (VRP)** | — (step-D candidate) | VRP/PISP | Recurring / sweeping payments under a single VRP consent |
+| **Confirmation of Funds (CoF)** | send-money-amount | CBPII | Pre-payment funds-available check |
+| **International payments** | send-money | PISP | Cross-currency payment with ExchangeRateInformation |
+| **File / bulk payment** | — (step-D candidate) | PISP | ISO 20022 pain.001 batch upload |
+| **Open Data** | atm-locator, products | Open Data | Unauthenticated ATM/branch locator + product comparison |
+| **Event Notification** | notifications, consent-manager | events | Real-time consent-revoked + payment status events |
 
-### Consumer Screens (26)
+---
 
-1. **home** — `consumer`
-2. **accounts** — `consumer`
-3. **account-detail** — `consumer`
-4. **transactions** — `consumer`
-5. **transaction-detail** — `consumer`
-6. **transaction-tags** — `consumer`
-7. **send-money** — `consumer`
-8. **send-money-amount** — `consumer`
-9. **send-money-confirm** — `consumer`
-10. **sca-challenge** — `consumer`
-11. **payment-result** — `consumer`
-12. **beneficiaries** — `consumer`
-13. **cards** — `consumer`
-14. **card-detail** — `consumer`
-15. **standing-orders** — `consumer`
-16. **standing-order-create** — `consumer`
-17. **standing-order-detail** — `consumer`
-18. **standing-order-edit** — `consumer`
-19. **direct-debits** — `consumer`
-20. **direct-debit-detail** — `consumer`
-21. **atm-locator** — `consumer`
-22. **fx-rates** — `consumer`
-23. **consent-manager** — `consumer`
-24. **notifications** — `consumer`
-25. **pfm-dashboard** — `consumer`
-26. **products** — `consumer`
+## App & Discovery Features
 
-### Field Officer Screens (12)
+| Feature | Screen | API Group | Description |
+|---|---|---|---|
+| **atm-locator** | atm-locator | Open Data | `GET /atms`, `GET /branches` — geolocation finder (unauthenticated) |
+| **notifications** | notifications | events | In-app event feed (consent-revoked, payment status) |
+| **profile** | profile | — | User-visible app profile |
+| **settings** | settings | — | App theme, language, notification toggles |
+| **about** | about | — | App info, version, legal links, open-source licenses |
 
-1. **fo-dashboard** — `fieldOfficer`
-2. **customer-search** — `fieldOfficer`
-3. **customer-detail** — `fieldOfficer`
-4. **customer-profile** — `fieldOfficer`
-5. **customer-onboarding** — `fieldOfficer`
-6. **corporate-onboarding** — `fieldOfficer`
-7. **kyc-review** — `fieldOfficer`
-8. **account-applications** — `fieldOfficer`
-9. **application-detail** — `fieldOfficer`
-10. **customer-messages** — `fieldOfficer`
-11. **meetings** — `fieldOfficer`
-12. **agent-registration** — `fieldOfficer`
+---
 
-### Shared Screens (10)
+## Complete Screen List (39 Screens)
 
-1. **splash** — both
-2. **login** — both
-3. **forgot-password** — both
-4. **change-password** — both
-5. **profile** — both
-6. **settings** — both
-7. **about** — both
-8. **terms-of-service** — both
-9. **privacy-policy** — both
-10. **licenses** — both
+Single consumer persona — no flavor split. Every screen is `has_ui` only; none owns an API/data layer
+(external API consumer — see PROJECT_CONFIG.yaml `backend.owned: false`).
+
+### Consent & Authorisation (7)
+
+1. **splash**
+2. **consent-intro**
+3. **consent-request**
+4. **bank-authorize-handoff**
+5. **auth-callback**
+6. **consent-declined**
+7. **consent-expired**
+
+### Account Information (15)
+
+8. **home**
+9. **accounts**
+10. **account-detail**
+11. **transactions**
+12. **transaction-detail**
+13. **transaction-tags**
+14. **beneficiaries**
+15. **standing-orders**
+16. **standing-order-detail**
+17. **direct-debits**
+18. **direct-debit-detail**
+19. **products**
+20. **pfm-dashboard**
+21. **pfm-settings**
+22. **business-insights**
+
+### Payments (8)
+
+23. **send-money**
+24. **send-money-amount**
+25. **send-money-confirm**
+26. **payment-authorize-handoff**
+27. **payment-result**
+28. **payment-declined**
+29. **standing-order-create**
+30. **standing-order-edit**
+
+### Discovery, Consents & App (9)
+
+31. **atm-locator**
+32. **consent-manager**
+33. **notifications**
+34. **profile**
+35. **settings**
+36. **about**
+37. **terms-of-service**
+38. **privacy-policy**
+39. **licenses**
+
+---
+
+## Removed in the HSBC migration (19 screens)
+
+The OBP-era screens below have no HSBC Open Banking equivalent and were deleted:
+
+- **Auth/password (OBP DirectLogin):** login, forgot-password, change-password, sca-challenge
+  (replaced by the redirect consent/authorise handoff — SCA happens at the bank).
+- **No HSBC API surface (AISP is read-only consumer data):** cards, card-detail, fx-rates.
+- **Field-officer / agent banking (HSBC OB is consumer PSD2 — no officer surface):** fo-dashboard,
+  customer-search, customer-detail, customer-profile, customer-onboarding, corporate-onboarding,
+  kyc-review, account-applications, application-detail, agent-registration, customer-messages, meetings.
 
 ---
 
@@ -142,31 +174,32 @@ All features start at quality score **50/100** (scaffold). Progression:
 
 ---
 
-## OBP API Coverage
+## HSBC Open Banking API Coverage (14 groups, 85 endpoints)
 
-| API Tag | Consumer | Field Officer | Endpoints |
+| API Group | OBIE Role | Endpoints | Consumer Use |
 |---|---|---|---|
-| Accounts | ✓ | ✓ | 89 |
-| Transactions | ✓ | ✓ | 33 |
-| TransactionRequests | ✓ | — | 14 |
-| Cards | ✓ | — | 18 |
-| Counterparties | ✓ | — | 39 |
-| ATM | ✓ | — | 12 |
-| Branch | — | ✓ | 11 |
-| FX | ✓ | — | 6 |
-| Customers | — | ✓ | 89 |
-| KYC | — | ✓ | 15 |
-| Customer-Messages | — | ✓ | 11 |
-| Meetings | — | ✓ | 8 |
-| Standing-Orders | ✓ | — | 8 |
-| Consolidated | ✓ | ✓ | 6 |
+| Authentication & Onboarding | security | 3 | DCR, OAuth2 token, PSU authorise redirect |
+| Account Information (AISP) | aisp | 18 | accounts, balances, transactions, beneficiaries, standing orders, direct debits, scheduled payments, party, products, statements |
+| Confirmation of Funds (CBPII) | cbpii | 4 | pre-payment funds check |
+| Variable Recurring Payments (VRP) | pisp | 6 | recurring / sweeping payments |
+| Domestic Payment | pisp | 4 | single immediate payment |
+| Domestic Scheduled Payment | pisp | 3 | future-dated payment |
+| Domestic Standing Order | pisp | 3 | recurring schedule |
+| International Payment | pisp | 4 | cross-currency payment |
+| International Scheduled Payment | pisp | 3 | future-dated international |
+| International Standing Order | pisp | 3 | recurring international |
+| File Payment / bulk | pisp | 5 | ISO 20022 batch payment |
+| Multi-Bill Payment | pisp (HSBC-specific) | 2 | UK Business bulk bill pay |
+| Event Notification | events | 4 | consent-revoked + status events |
+| Open Data | opendata | 6 | unauthenticated ATM/branch + product reference |
 
 ---
 
 ## Notes
 
-- All features use **KMP Product Flavors** to enable/disable screens per flavor
-- **DirectLogin** is the sole authentication method (no OAuth complexity in MVP)
-- **Navigation** is flavor-aware: Consumer bottom-nav ≠ Field Officer bottom-nav
-- **Shared layers:** DTOs, domain models, API client, local storage schema — all KMP
-- **State management:** Store5 repositories + ViewModels per feature
+- **Consent-gated:** account data is unreadable without an AUTH-status account-access-consent; every
+  payment needs its own payment-consent + a fresh authorise redirect (one payment = one authorisation).
+- **No in-app credentials:** the PSU authenticates and completes SCA at HSBC during the redirect.
+- **External API consumer:** no owned backend/DB; `idea-layer/server/` holds Ktorfit client contracts.
+- **Shared layers:** DTOs (OBIE shapes), domain models, mTLS-aware API client, token/consent cache — all KMP.
+- **State management:** Store5 repositories + ViewModels per feature.

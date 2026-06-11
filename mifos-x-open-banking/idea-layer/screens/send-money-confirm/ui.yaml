@@ -629,46 +629,46 @@ state_model:
   nav_args:
     type: PaymentDraft
     fields:
-      - { name: fromBankId, type: String }
-      - { name: fromAccountId, type: String }
+      - { name: fromAccountId, type: "String (Data.Initiation.DebtorAccount.Identification)" }
+      - { name: fromAccountScheme, type: "String (Data.Initiation.DebtorAccount.SchemeName, e.g. UK.OBIE.IBAN)" }
       - { name: fromLabel, type: String }
-      - { name: amount, type: String }
-      - { name: currency, type: String }
-      - { name: counterpartyId, type: String }
-      - { name: beneficiaryName, type: String }
-      - { name: beneficiaryBank, type: String }
-      - { name: iban, type: String }
-      - { name: reference, type: String }
-      - { name: paymentType, type: PaymentType, default: SEPA }
+      - { name: amount, type: "String (Data.Initiation.InstructedAmount.Amount)" }
+      - { name: currency, type: "String (Data.Initiation.InstructedAmount.Currency, ISO 4217)" }
+      - { name: beneficiaryId, type: "String (Data.Beneficiary[].BeneficiaryId)" }
+      - { name: beneficiaryName, type: "String (Data.Initiation.CreditorAccount.Name)" }
+      - { name: creditorScheme, type: "String (Data.Initiation.CreditorAccount.SchemeName)" }
+      - { name: creditorIdentification, type: "String (Data.Initiation.CreditorAccount.Identification)" }
+      - { name: reference, type: "String (Data.Initiation.RemittanceInformation.Reference)" }
+      - { name: paymentContextCode, type: "String (Risk.PaymentContextCode)", default: TransferToThirdParty }
       - { name: conversionNote, type: "String?", default: "null" }
-      - { name: useSandboxTan, type: Boolean, default: "false" }
-      - { name: toBankId, type: String, default: "" }
-      - { name: toAccountId, type: String, default: "" }
+  consent_result:
+    type: OBWriteDomesticConsentResponse5
+    fields:
+      - { name: consentId, type: "String (Data.ConsentId)" }
+      - { name: status, type: "String (Data.Status, e.g. AWAU)" }
+      - { name: authorizeUrl, type: "String (Links — bank authorise URL, used by payment-authorize-handoff)" }
   errors:
     - field: global
-      code: INSUFFICIENT
-      message: "Insufficient funds in your account."
+      code: OB.Field.Invalid
+      message: "The bank rejected the payment details. Check the amount and recipient, then try again."
     - field: global
-      code: LIMIT
-      message: "This payment exceeds your daily transfer limit."
+      code: OB.Resource.InvalidConsentStatus
+      message: "This payment can't be set up right now. Please try again."
     - field: global
-      code: "40003"
-      message: "Payment currency must match the source account currency."
+      code: UNAUTHORIZED
+      message: "Your session has expired. Sign in again to continue."
     - field: global
       code: GENERIC
-      message: "Payment could not be processed. Please try again."
+      message: "Payment could not be set up. Please try again."
   methods:
-    - name: submit
-      signature: "submit(draft: PaymentDraft, onCompleted: (TransactionRequest) -> Unit, onChallengeRequired: (ScaChallengeArgs) -> Unit)"
+    - name: confirm
+      signature: "confirm(draft: PaymentDraft, onConsentCreated: (OBWriteDomesticConsentResponse5) -> Unit)"
     - name: reset
       signature: "reset()"
   callbacks:
-    - name: onCompleted
-      signature: "(TransactionRequest) -> Unit"
-      consumer: payment-result
-    - name: onChallengeRequired
-      signature: "(ScaChallengeArgs) -> Unit"
-      consumer: sca-challenge
+    - name: onConsentCreated
+      signature: "(OBWriteDomesticConsentResponse5) -> Unit"
+      consumer: payment-authorize-handoff
     - name: onEdit
       signature: "() -> Unit"
       consumer: send-money-amount
@@ -771,5 +771,4 @@ dependencies:
   tier: feature
   features:
     - send-money-amount
-    - sca-challenge
     - payment-result

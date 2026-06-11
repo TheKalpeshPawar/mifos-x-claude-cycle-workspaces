@@ -226,8 +226,8 @@ components:
     a11y:
       label: "Current tags on this transaction"
       role: list
-    api:
-      endpoint_id: obp_transaction_tags_get
+    local_store:
+      operation_id: local_tags_get
       binds: tags
     component_states:
       loading:
@@ -488,9 +488,9 @@ components:
       label_source: visible_label
     keyboard:
       focusable: true
-    api:
-      endpoint_id: obp_transaction_comment_add
-      binds: noteText
+    local_store:
+      operation_id: local_note_set
+      binds: note
     component_states:
       loading:
         type: skeleton  # fix REG-001: shimmer → skeleton (registered)
@@ -561,9 +561,9 @@ components:
       role: button
     keyboard:
       focusable: true
-    api:
-      endpoint_id: obp_transaction_image_add
-      binds: attachedImages
+    unsupported:
+      capability: receipt_image_upload
+      reason: "OBIE has no transaction-image API and no device upload host — 'coming soon' placeholder. No local store op (mirrors api.yaml#/unsupported)."
     component_states:
       loading:
         type: skeleton  # fix REG-001: shimmer → skeleton (registered)
@@ -719,7 +719,7 @@ states:
     motion:
       shimmer_duration: short4
       reduced_motion_fallback: static_placeholder
-    description: "Fetching existing tags, notes and images for the transaction from OBP API"
+    description: "Loading the transaction (AIS) and its on-device tags and note from the local enrichment store"
     layout:
       visible_components:
         - transaction_header_card
@@ -880,7 +880,7 @@ states:
       assert_save_button_enabled: true
 
   error:
-    description: "OBP API call failed — show inline error with retry option"
+    description: "Transaction lookup (AIS) failed — show inline error with retry option; local tag/note reads are offline"
     layout:
       visible_components:
         - transaction_header_card
@@ -901,7 +901,7 @@ state_model:
   view_model: TransactionTagsViewModel
   # Shipped: a single StateFlow<ScreenState<TransactionTagsContent>> plus two side StateFlows.
   # No flat TransactionTagsUiState / attachedImages was built — the receipt/image feature is a
-  # deferred 'coming soon' placeholder (no consumer of obp_transaction_image_add).
+  # deferred 'coming soon' placeholder (unsupported under OBIE, no local store op).
   screen_state: "ScreenState<TransactionTagsContent>"
   state_wrapper: ScreenState
   # ScreenState.NoNetwork / Unauthenticated / Empty all render the shipped error/retry card.
@@ -920,13 +920,13 @@ state_model:
       type: String
     - name: tags
       type: "List<TagChip>"
-      note: "TagChip(id, value); tap removes immediately (DELETE)"
+      note: "TagChip(id, value); tap removes immediately via local_tag_remove (on-device store)"
     - name: tagInput
       type: String
       default: '""'
     - name: note
-      type: String
-      note: "the newest comment's value; saved on Save via replaceNote"
+      type: "String?"
+      note: "single canonical note for the transaction; loaded via local_note_get, saved on Save via local_note_set (on-device store)"
     - name: isSaving
       type: Boolean
       default: "false"
@@ -955,28 +955,28 @@ state_model:
   errors:
     - field: global
       code: LOAD_FAILED
-      message: "Unable to load transaction metadata. Please try again."
-      note: "metadata/getTransaction failure → ScreenState.Error (error/retry card); covers no_network + unauthenticated"
+      message: "Unable to load this transaction. Please try again."
+      note: "transaction lookup (AIS) failure → ScreenState.Error (error/retry card); covers no_network + unauthenticated. Local tag/note reads from TransactionEnrichmentStore do not hit the network."
     - field: save_tag
       code: TAG_ADD_FAILED
       message: "Could not add tag. Please try again."
-      note: "notice snackbar, not a state"
+      note: "notice snackbar, not a state; local store write failure"
     - field: remove_tag
       code: TAG_REMOVE_FAILED
       message: "Could not remove tag. Please try again."
-      note: "notice snackbar"
+      note: "notice snackbar; local store write failure"
     - field: save_note
       code: NOTE_SAVE_FAILED
       message: "Could not save note. Please try again."
-      note: "notice snackbar; isSaving reset to false, stays on screen"
+      note: "notice snackbar; isSaving reset to false, stays on screen; local store write failure"
   methods:
-    - "load() — getTransaction + metadata + counterparty resolve → ScreenState.Content(withSuggestions())"
+    - "load() — getTransaction (AIS) + local_tags_get + local_note_get + counterparty resolve → ScreenState.Content(withSuggestions())"
     - "onRetry() — re-run load()"
     - "onTagInputChanged(text) / onNoteChanged(text)"
-    - "onAddTag() — normalize + empty/duplicate guard → immediate POST"
-    - "onSuggestionClick(value) — one-tap add of a pre-normalized suggestion"
-    - "onRemoveTag(tagId) — immediate DELETE"
-    - "onSave() — replaceNote(note) → saved=true (auto-pop)"
+    - "onAddTag() — normalize + empty/duplicate guard → local_tag_add (immediate)"
+    - "onSuggestionClick(value) — one-tap local_tag_add of a pre-normalized suggestion"
+    - "onRemoveTag(tagId) — local_tag_remove (immediate)"
+    - "onSave() — local_note_set(note) → saved=true (auto-pop)"
     - "onNoticeConsumed()"
   actions:
     # Shipped action surface only. Receipt/image (pick_image_from_gallery, open_camera) and
@@ -990,121 +990,41 @@ state_model:
     - retry_load
     - navigate_back
   di:
-    - TransactionMetadataRepository
+    - TransactionEnrichmentStore
     - TransactionsRepository
     - CounterpartyNameResolver
 
-# Note: the per-screen api contract lives in the sibling api.yaml (reconciled to the 6 shipped
-# metadata endpoints + the deferred image-add). The block below mirrors it for spec readers.
-api:
-  - id: obp_transaction_tags_get
-    endpoint: "GET /obp/v1.2.1/banks/{bankId}/accounts/{accountId}/owner/transactions/{transactionId}/metadata/tags"
-    tag: Transaction-Metadata
-    response:
-      fields:
-        - name: tags
-          type: "List<TransactionTag>"
-        - name: id
-          type: String
-        - name: value
-          type: String
-        - name: date
-          type: String
-        - name: user
-          type: User
-    errors:
-      - code: 401
-        message: "USER_NOT_LOGGED_IN"
-      - code: 403
-        message: "INSUFFICIENT_AUTHORISATION"
-      - code: 404
-        message: "TRANSACTION_NOT_FOUND"
-  - id: obp_transaction_tag_add
-    endpoint: "POST /obp/v1.2.1/banks/{bankId}/accounts/{accountId}/owner/transactions/{transactionId}/metadata/tags"
-    tag: Transaction-Metadata
-    request:
-      fields:
-        - name: value
-          type: String
-          example: "#groceries"
-    response:
-      fields:
-        - name: id
-          type: String
-        - name: value
-          type: String
-        - name: date
-          type: String
-    errors:
-      - code: 400
-        message: "INVALID_TAG_VALUE"
-      - code: 401
-        message: "USER_NOT_LOGGED_IN"
-  - id: obp_transaction_tag_delete
-    endpoint: "DELETE /obp/v1.2.1/banks/{bankId}/accounts/{accountId}/owner/transactions/{transactionId}/metadata/tags/{tagId}"
-    tag: Transaction-Metadata
-    response:
-      fields:
-        - name: result
-          type: String
-          example: "Success"
-    errors:
-      - code: 401
-        message: "USER_NOT_LOGGED_IN"
-      - code: 404
-        message: "TAG_NOT_FOUND"
-  # listComments backs both the metadata snapshot (note = newest comment) and replaceNote.
-  - id: obp_transaction_comment_get
-    endpoint: "GET /obp/v1.2.1/banks/{bankId}/accounts/{accountId}/owner/transactions/{transactionId}/metadata/comments"
-    tag: Transaction-Metadata
-    response:
-      fields:
-        - name: comments
-          type: "List<TransactionComment>"
-    errors:
-      - code: 401
-        message: "USER_NOT_LOGGED_IN"
-      - code: 404
-        message: "TRANSACTION_NOT_FOUND"
-  - id: obp_transaction_comment_add
-    endpoint: "POST /obp/v1.2.1/banks/{bankId}/accounts/{accountId}/owner/transactions/{transactionId}/metadata/comments"
-    tag: Transaction-Metadata
-    request:
-      fields:
-        - name: value
-          type: String
-          example: "Weekly shop — bought extra for bank holiday"
-    response:
-      fields:
-        - name: id
-          type: String
-        - name: value
-          type: String
-        - name: date
-          type: String
-    errors:
-      - code: 400
-        message: "INVALID_COMMENT_VALUE"
-      - code: 401
-        message: "USER_NOT_LOGGED_IN"
-  # replaceNote deletes every existing comment before posting the new note (canonical single note).
-  - id: obp_transaction_comment_delete
-    endpoint: "DELETE /obp/v1.2.1/banks/{bankId}/accounts/{accountId}/owner/transactions/{transactionId}/metadata/comments/{commentId}"
-    tag: Transaction-Metadata
-    response:
-      fields:
-        - name: result
-          type: String
-          example: "Success"
-    errors:
-      - code: 401
-        message: "USER_NOT_LOGGED_IN"
-      - code: 404
-        message: "COMMENT_NOT_FOUND"
-  # DEFERRED — not consumed. Receipt/image upload UI is a 'coming soon' placeholder (the device
-  # has nowhere to host an upload; OBP image-add only stores a URL). Kept for when hosting lands.
-  - id: obp_transaction_image_add
-    deferred: true
+# MIGRATION OBP -> HSBC (2026-06-11): the per-screen contract lives in the sibling api.yaml, which
+# is now api: [] + a local_store block. HSBC Open Banking (OBIE AIS) exposes NO transaction-metadata
+# API, so tags and notes are a LOCAL on-device feature keyed by OBIE Data.Transaction[].TransactionId.
+# No network endpoints. The local_store block below mirrors api.yaml for spec readers.
+api: []
+
+local_store:
+  rationale: "OBIE Account Information is read-only; transaction enrichment (tags/notes) is client-owned, stored on-device."
+  key: "Data.Transaction[].TransactionId (OBIE) + AccountId scope"
+  store: TransactionEnrichmentStore
+  operations:
+    - id: local_tags_get
+      kind: read
+      returns: "List<String> tags for the transaction"
+    - id: local_tag_add
+      kind: write
+      params: [transactionId, tag]
+    - id: local_tag_remove
+      kind: write
+      params: [transactionId, tag]
+    - id: local_note_get
+      kind: read
+      returns: "String? note (single canonical note per transaction)"
+    - id: local_note_set
+      kind: write
+      params: [transactionId, note]
+      note: "Replaces the existing note (canonical single value), mirroring the old replaceNote semantics locally."
+
+unsupported:
+  - capability: receipt_image_upload
+    reason: "OBIE has no transaction-image API and OBP /metadata/images had no real device upload host; receipt feature is out of scope under Open Banking — 'coming soon' placeholder."
 
 dependencies:
   tier: feature
@@ -1121,7 +1041,7 @@ navigation:
     description: "Back arrow — return to transaction detail without saving"
   - action: save_metadata
     target: transaction-detail
-    description: "Save the note (replaceNote) then auto-pop back to transaction detail via the saved StateFlow"
+    description: "Save the note (local_note_set) then auto-pop back to transaction detail via the saved StateFlow"
   - action: navigate_to_transaction_detail
     target: transaction-detail
     description: "Tap transaction header card — navigate to transaction detail"

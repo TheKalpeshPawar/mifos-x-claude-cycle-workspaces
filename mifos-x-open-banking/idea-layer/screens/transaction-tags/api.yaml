@@ -1,146 +1,42 @@
 sibling: api
 schema_version: "4.0"
 feature_id: transaction-tags
-api:
-  - id: obp_transaction_tags_get
-    endpoint: "GET /obp/v1.2.1/banks/{bankId}/accounts/{accountId}/owner/transactions/{transactionId}/metadata/tags"
-    tag: Transaction-Metadata
-    response:
-      fields:
-        - name: tags
-          type: "List<TransactionTag>"
-        - name: id
-          type: String
-        - name: value
-          type: String
-        - name: date
-          type: String
-        - name: user
-          type: TagAuthorUser
-    errors:
-      - code: 401
-        message: "USER_NOT_LOGGED_IN"
-      - code: 403
-        message: "INSUFFICIENT_AUTHORISATION"
-      - code: 404
-        message: "TRANSACTION_NOT_FOUND"
-  - id: obp_transaction_tag_add
-    endpoint: "POST /obp/v1.2.1/banks/{bankId}/accounts/{accountId}/owner/transactions/{transactionId}/metadata/tags"
-    tag: Transaction-Metadata
-    request:
-      fields:
-        - name: value
-          type: String
-          example: "#groceries"
-    response:
-      fields:
-        - name: id
-          type: String
-        - name: value
-          type: String
-        - name: date
-          type: String
-    errors:
-      - code: 400
-        message: "INVALID_TAG_VALUE"
-      - code: 401
-        message: "USER_NOT_LOGGED_IN"
-  - id: obp_transaction_tag_delete
-    endpoint: "DELETE /obp/v1.2.1/banks/{bankId}/accounts/{accountId}/owner/transactions/{transactionId}/metadata/tags/{tagId}"
-    tag: Transaction-Metadata
-    response:
-      fields:
-        - name: result
-          type: String
-          example: "Success"
-    errors:
-      - code: 401
-        message: "USER_NOT_LOGGED_IN"
-      - code: 404
-        message: "TAG_NOT_FOUND"
-  # The note is modelled as the newest comment. listComments backs both the metadata snapshot
-  # (note = newest comment by date) and replaceNote's delete-existing-then-post sequence.
-  - id: obp_transaction_comment_get
-    endpoint: "GET /obp/v1.2.1/banks/{bankId}/accounts/{accountId}/owner/transactions/{transactionId}/metadata/comments"
-    tag: Transaction-Metadata
-    response:
-      fields:
-        - name: comments
-          type: "List<TransactionComment>"
-          children:
-            - name: id
-              type: String
-            - name: value
-              type: String
-            - name: date
-              type: String
-    errors:
-      - code: 401
-        message: "USER_NOT_LOGGED_IN"
-      - code: 404
-        message: "TRANSACTION_NOT_FOUND"
-  - id: obp_transaction_comment_add
-    endpoint: "POST /obp/v1.2.1/banks/{bankId}/accounts/{accountId}/owner/transactions/{transactionId}/metadata/comments"
-    tag: Transaction-Metadata
-    request:
-      fields:
-        - name: value
-          type: String
-          example: "Weekly shop — bought extra for bank holiday"
-    response:
-      fields:
-        - name: id
-          type: String
-        - name: value
-          type: String
-        - name: date
-          type: String
-    errors:
-      - code: 400
-        message: "INVALID_COMMENT_VALUE"
-      - code: 401
-        message: "USER_NOT_LOGGED_IN"
-  # replaceNote deletes every existing comment before posting the new note, so the note stays
-  # canonical (newest single comment) rather than an append-only pile. DELETE returns an empty body.
-  - id: obp_transaction_comment_delete
-    endpoint: "DELETE /obp/v1.2.1/banks/{bankId}/accounts/{accountId}/owner/transactions/{transactionId}/metadata/comments/{commentId}"
-    tag: Transaction-Metadata
-    response:
-      fields:
-        - name: result
-          type: String
-          example: "Success"
-    errors:
-      - code: 401
-        message: "USER_NOT_LOGGED_IN"
-      - code: 404
-        message: "COMMENT_NOT_FOUND"
-  # DEFERRED — not consumed by shipped code. The receipt/image upload UI is a 'coming soon'
-  # placeholder: OBP image-add stores a URL, but the device has nowhere to host an upload.
-  # Keep the spec entry for when receipt hosting lands; no client/repository method exists today.
-  - id: obp_transaction_image_add
-    deferred: true
-    endpoint: "POST /obp/v1.2.1/banks/{bankId}/accounts/{accountId}/owner/transactions/{transactionId}/metadata/images"
-    tag: Transaction-Metadata
-    request:
-      fields:
-        - name: label
-          type: String
-          example: "Whole Foods receipt 23-May-2026"
-        - name: URL
-          type: String
-    response:
-      fields:
-        - name: id
-          type: String
-        - name: label
-          type: String
-        - name: URL
-          type: String
-        - name: date
-          type: String
-    errors:
-      - code: 400
-        message: "INVALID_IMAGE_URL"
-      - code: 401
-        message: "USER_NOT_LOGGED_IN"
+# MIGRATION OBP -> HSBC (2026-06-11): HSBC Open Banking (OBIE AIS) exposes NO transaction-metadata
+# API — there is no endpoint to read/write tags, notes/comments, or receipt images against a
+# transaction. Under OBP these were /metadata/{tags,comments,images}. Under Open Banking, transaction
+# tagging + notes are a LOCAL personal-finance feature: stored in the on-device store and keyed by the
+# OBIE Data.Transaction[].TransactionId. No network calls.
+api: []
+
+local_store:
+  rationale: "OBIE Account Information is read-only; transaction enrichment (tags/notes) is client-owned."
+  key: "Data.Transaction[].TransactionId (OBIE) + AccountId scope"
+  operations:
+    - id: local_tags_get
+      kind: read
+      store: TransactionEnrichmentStore
+      returns: "List<String> tags for the transaction"
+    - id: local_tag_add
+      kind: write
+      store: TransactionEnrichmentStore
+      params: [transactionId, tag]
+    - id: local_tag_remove
+      kind: write
+      store: TransactionEnrichmentStore
+      params: [transactionId, tag]
+    - id: local_note_get
+      kind: read
+      store: TransactionEnrichmentStore
+      returns: "String? note (single canonical note per transaction)"
+    - id: local_note_set
+      kind: write
+      store: TransactionEnrichmentStore
+      params: [transactionId, note]
+      note: "Replaces the existing note (canonical single value), mirroring the old replaceNote semantics locally."
+
+unsupported:
+  - capability: receipt_image_upload
+    reason: "OBP /metadata/images had no real device-hosted upload path and OBIE has no equivalent; the receipt/image feature is out of scope under Open Banking. Was already a 'coming soon' placeholder."
+
+dependencies:
+  reads_transaction_from: "ais group (the transaction itself comes from GET /aisp/transactions; this screen only adds local enrichment)"

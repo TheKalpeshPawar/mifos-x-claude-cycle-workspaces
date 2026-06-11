@@ -1,17 +1,18 @@
-# flows/consumer-banking.yaml — Consumer persona full navigation flow
-# Generated 2026-05-25 by /idea sync STEP 4f
-# Covers 26 screens (22 consumer-flavor + 4 shared-flavor)
-# Updated 2026-05-28 by /idea setup-flows — added direct-debit-detail, change-password, about
-# Updated 2026-05-30 by /idea sync — removed consumer-home (orphan duplicate of home, zero inbound nav); grouped standing-order-edit
-# Updated 2026-06-11 by /idea sync — registered pfm-settings + business-insights into the consumer roster (PFM v2 epic)
-# Updated 2026-06-11 by /idea sync — registered send-money-amount, sca-challenge, payment-result, standing-order-create (source-drift write-back); wired send-money + standing-orders flow edges
+# flows/consumer-banking.yaml — Consumer Open Banking navigation (HSBC OBIE)
+# Rewritten 2026-06-11 — MIGRATION OBP → HSBC. Consent-gated: this flow is only reachable AFTER an
+# authorised account-access consent (see account-access-consent.yaml). All data screens read AIS resources
+# scoped to that consent. Payment journey lives in payment-initiation.yaml.
+# REMOVED vs OBP: cards, card-detail (no card API), fx-rates (no FX-rates API), change-password (no in-app
+# credentials). Beneficiaries is READ-ONLY (AISP beneficiaries cannot be created/edited via Open Banking).
 
 schema_version: "1.0"
 id: consumer-banking
-name: "Consumer Banking Flow"
-description: "Personal banking for end users — accounts, payments, cards, PFM, notifications"
+name: "Consumer Open Banking Flow"
+description: "Personal banking over HSBC Open Banking AIS — accounts, balances, transactions, standing orders, direct debits, PFM insights, product reference data, ATM/branch locator, and consent management. Entered only after the account-access consent is authorised."
 created_at: "2026-05-25"
+updated_at: "2026-06-11"
 status: active
+gated_by: account-access-consent          # consumer-banking is unreachable without an AUTH-status AIS consent
 
 entry_screen: home
 screens:
@@ -21,114 +22,66 @@ screens:
   - transactions
   - transaction-detail
   - transaction-tags
-  - send-money
-  - send-money-amount
-  - send-money-confirm
-  - sca-challenge
-  - payment-result
-  - beneficiaries
-  - cards
-  - card-detail
+  - send-money            # entry into payment-initiation sub-flow
+  - beneficiaries         # READ-ONLY (AIS)
   - standing-orders
   - standing-order-create
   - standing-order-detail
   - standing-order-edit
-  - atm-locator
-  - fx-rates
-  - notifications
   - direct-debits
+  - direct-debit-detail
+  - atm-locator
+  - notifications
   - pfm-dashboard
   - pfm-settings
   - business-insights
   - products
   - consent-manager
-  - direct-debit-detail
-  - change-password
   - about
   - profile
   - settings
 
 connections:
   - { from: home, to: accounts, type: push, label: "View Accounts" }
-  - { from: home, to: send-money, type: push, label: "Send Money" }
+  - { from: home, to: send-money, type: push, label: "Pay (→ payment-initiation)" }
   - { from: home, to: transactions, type: push, label: "View Transactions" }
-  - { from: home, to: beneficiaries, type: push, label: "Manage Beneficiaries" }
-  - { from: home, to: cards, type: push, label: "View Cards" }
+  - { from: home, to: beneficiaries, type: push, label: "View Beneficiaries (read-only)" }
   - { from: home, to: standing-orders, type: push, label: "Standing Orders" }
-  - { from: home, to: atm-locator, type: push, label: "ATM Finder" }
-  - { from: home, to: fx-rates, type: push, label: "FX Rates" }
-  - { from: home, to: notifications, type: push, label: "Notifications" }
+  - { from: home, to: direct-debits, type: push, label: "Direct Debits" }
+  - { from: home, to: atm-locator, type: push, label: "ATM / Branch Finder (Open Data)" }
+  - { from: home, to: notifications, type: push, label: "Notifications (event-notification)" }
   - { from: home, to: pfm-dashboard, type: push, label: "Spending Insights" }
-  - { from: home, to: profile, type: tab, label: "Profile (bottom nav More)" }
-  - { from: home, to: settings, type: tab, label: "Settings (bottom nav More)" }
+  - { from: home, to: products, type: push, label: "Compare Products (Open Data)" }
+  - { from: home, to: profile, type: tab, label: "Profile (More)" }
+  - { from: home, to: settings, type: tab, label: "Settings (More)" }
   - { from: accounts, to: account-detail, type: push, label: "Account selected" }
   - { from: account-detail, to: transactions, type: push, label: "View transactions" }
-  - { from: account-detail, to: send-money, type: push, label: "Send money from account" }
+  - { from: account-detail, to: send-money, type: push, label: "Pay from this account" }
+  - { from: account-detail, to: standing-orders, type: push, label: "Standing orders on account" }
+  - { from: account-detail, to: direct-debits, type: push, label: "Direct debits on account" }
   - { from: transactions, to: transaction-detail, type: push, label: "Transaction selected" }
-  - { from: transaction-detail, to: transaction-tags, type: sheet, label: "Add tag/note" }
-  - { from: send-money, to: send-money-amount, type: push, label: "Enter amount" }
-  - { from: send-money-amount, to: send-money-confirm, type: push, label: "Review payment" }
-  - { from: send-money-confirm, to: payment-result, type: replace, label: "Payment success" }
-  - { from: send-money-confirm, to: sca-challenge, type: push, label: "SCA required (above threshold)" }
-  - { from: sca-challenge, to: payment-result, type: replace, label: "Code verified — payment success" }
-  - { from: send-money-confirm, to: send-money-amount, type: pop, label: "Edit payment" }
-  - { from: payment-result, to: transaction-detail, type: push, label: "View transaction" }
-  - { from: payment-result, to: home, type: replace, label: "Done" }
-  - { from: beneficiaries, to: send-money, type: push, label: "Pay beneficiary" }
-  - { from: cards, to: card-detail, type: push, label: "Card selected" }
-  - { from: cards, to: transaction-detail, type: push, label: "Recent transaction" }
-  - { from: card-detail, to: transactions, type: push, label: "Card transactions" }
-  - { from: fx-rates, to: send-money, type: push, label: "Convert currency" }
-  - { from: standing-orders, to: standing-order-create, type: push, label: "Create standing order" }
-  - { from: standing-order-create, to: standing-orders, type: pop, label: "Back / created (on success)" }
+  - { from: transaction-detail, to: transaction-tags, type: sheet, label: "Add tag/note (local PFM)" }
+  - { from: beneficiaries, to: send-money, type: push, label: "Pay beneficiary (→ payment-initiation)" }
+  - { from: standing-orders, to: standing-order-create, type: push, label: "Create standing order (→ PISP authorise)" }
   - { from: standing-orders, to: standing-order-detail, type: push, label: "Standing order selected" }
-  - { from: standing-order-detail, to: standing-orders, type: pop, label: "Back to list / after cancel" }
   - { from: standing-order-detail, to: standing-order-edit, type: push, label: "Edit standing order" }
-  - { from: standing-order-edit, to: standing-order-detail, type: pop, label: "Save / cancel edit" }
+  - { from: standing-order-edit, to: standing-order-detail, type: pop, label: "Save / cancel" }
+  - { from: standing-order-detail, to: standing-orders, type: pop, label: "Back to list" }
   - { from: direct-debits, to: direct-debit-detail, type: push, label: "Direct debit selected" }
-  - { from: direct-debits, to: accounts, type: push, label: "Linked account" }
   - { from: direct-debit-detail, to: direct-debits, type: pop, label: "Back to list" }
-  - { from: direct-debit-detail, to: accounts, type: push, label: "Linked account" }
-  - { from: pfm-dashboard, to: accounts, type: push, label: "Account detail" }
   - { from: pfm-dashboard, to: transactions, type: push, label: "Category transactions" }
-  - { from: products, to: accounts, type: push, label: "Open product" }
-  - { from: consent-manager, to: settings, type: pop, label: "Back to Settings" }
-  - { from: settings, to: consent-manager, type: push, label: "Data & Consent" }
-  - { from: settings, to: change-password, type: push, label: "Change password" }
+  - { from: pfm-dashboard, to: pfm-settings, type: push, label: "PFM settings" }
+  - { from: pfm-dashboard, to: business-insights, type: push, label: "Cash-flow insights" }
+  - { from: products, to: accounts, type: push, label: "Linked account" }
+  - { from: settings, to: consent-manager, type: push, label: "Data sharing & consents" }
   - { from: settings, to: about, type: push, label: "About" }
-  - { from: change-password, to: profile, type: pop, label: "Back to profile" }
-  - { from: profile, to: login, type: replace, label: "Logout" }
+  - { from: consent-manager, to: settings, type: pop, label: "Back to Settings" }
+  - { from: consent-manager, to: consent-intro, type: replace, label: "Disconnect — revoke all consents (DELETE account-access-consents) → re-onboard" }
+  - { from: profile, to: consent-manager, type: push, label: "Manage data sharing" }
+  - { from: profile, to: consent-intro, type: replace, label: "Disconnect HSBC (revoke consent + clear token)" }
 
-# ─── JIRA TICKET IDs (created 2026-05-28 by /flow-to-tickets-jira consumer-banking) ──
-ticket_ids:
-  roadmap_epic: "MXOBA-19"
-  impl_epic: "MXOBA-20"
-  stories:
-    home: "MXOBA-21"
-    accounts: "MXOBA-22"
-    account-detail: "MXOBA-23"
-    transactions: "MXOBA-24"
-    transaction-detail: "MXOBA-25"
-    send-money: "MXOBA-26"
-    send-money-confirm: "MXOBA-27"
-    beneficiaries: "MXOBA-28"
-    cards: "MXOBA-29"
-    card-detail: "MXOBA-30"
-    standing-orders: "MXOBA-31"
-    direct-debits: "MXOBA-32"
-    direct-debit-detail: "MXOBA-33"
-    atm-locator: "MXOBA-34"
-    fx-rates: "MXOBA-35"
-    consent-manager: "MXOBA-36"
-    notifications: "MXOBA-37"
-    pfm-dashboard: "MXOBA-38"
-    products: "MXOBA-39"
-    transaction-tags: "MXOBA-40"
-    change-password: "MXOBA-41"
-    profile: "MXOBA-42"
-    settings: "MXOBA-43"
-    about: "MXOBA-44"
-  jira_project: "MXOBA"
-  jira_site: "mifosforge.jira.com"
-  created_at: "2026-05-28T00:00:00Z"
-  version_note: "fixVersions not set — MANAGE_VERSIONS permission not granted; duedates set per milestone schedule"
+obie_context:
+  reads: "All list/detail screens read AIS resources (GET /aisp/*) scoped to the authorised account-access consent."
+  no_logout_password: "There is no password logout. 'Disconnect' revokes the OBIE consent (DELETE account-access-consents) and clears the local token, returning to consent onboarding."
+  open_data: "atm-locator + products read unauthenticated Open Data (GET /branches | /atms | /personal-current-accounts | /business-current-accounts)."
+  events: "notifications surfaces event-notification polling (e.g. UK.OBIE.Consent-Authorization-Revoked)."

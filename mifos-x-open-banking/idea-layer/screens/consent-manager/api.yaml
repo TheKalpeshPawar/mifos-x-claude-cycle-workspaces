@@ -1,54 +1,132 @@
 sibling: api
 schema_version: "4.0"
 feature_id: consent-manager
+consent:
+  required: true
+  type: account-access-consent
+  token: client-credentials
+  note: "Consent management reads and revokes the PSU's own account-access-consents (and payment consents) by ConsentId, using a client-credentials token scoped accounts. Each card surfaces the granted Permissions[] clusters, Status (AWAU|AUTH|RJCT|CANC|EXPD), CreationDateTime and ExpirationDateTime. Revoke deletes the consent resource (HTTP 204) — the ASPSP cancels the linked authorization-code token. 'Disconnect (revoke all)' deletes every active consent and returns the PSU to consent-intro."
 api:
-  - id: obp_my_consents
-    endpoint: "GET /obp/v4.0.0/consumers/{consumerId}/consents"
-    tag: Consent
-    description: "List all PSD2 consents granted by the consumer user"
+  - id: get_account_access_consent
+    endpoint: "GET /obie/open-banking/v4.0/aisp/account-access-consents/{ConsentId}"
+    tag: AccountInformation
+    auth: OAuth2-FAPI
+    consent_required: true
+    description: "Retrieve one account-access-consent to surface its Permissions[], Status, CreationDateTime and ExpirationDateTime on the consent card. Called per ConsentId the PSU holds. Uses a client-credentials token. OBIE object OBReadConsentResponse1 (HTTP 200)."
+    params:
+      - name: ConsentId
+        type: path
+    request:
+      headers:
+        Authorization: "Bearer {cc_access_token}"
+        x-fapi-financial-id: "{fapi_financial_id}"
     response:
       fields:
-        - name: consents
-          type: "List<Consent>"
-        - name: consent_id
+        - name: Data.ConsentId
           type: String
-        - name: status
+        - name: Data.Status
           type: String
-          note: "INITIATED | ACCEPTED | REVOKED | EXPIRED"
-        - name: created_at
+          note: "OBInternalConsentStatus1Code: AWAU | AUTH | RJCT | CANC | EXPD. AUTH renders ACTIVE; EXPD renders EXPIRED."
+        - name: Data.StatusReason
+          type: Array
+        - name: Data.CreationDateTime
           type: String
-          note: "ISO-8601 UTC timestamp"
-        - name: valid_until
+          note: "ISODateTime the consent was created — the granted date."
+        - name: Data.StatusUpdateDateTime
           type: String
-          note: "ISO-8601 UTC expiry timestamp"
-        - name: consumer_id
+        - name: Data.Permissions
+          type: Array
+          note: "Consented data clusters (e.g. ReadAccountsDetail, ReadBalances, ReadTransactionsDetail) — rendered as the scope chips."
+        - name: Data.ExpirationDateTime
           type: String
-        - name: redirects
-          type: "List<ConsentRedirect>"
-        - name: json_web_token
-          type: String
+          note: "Consent expiry; open-ended if absent."
     errors:
+      - code: 400
+        name: OB_FIELD_INVALID
+        ui_message: "We couldn't load your connected apps. Please try again."
       - code: 401
-        message: "USER_NOT_LOGGED_IN"
+        name: UNAUTHORIZED
+        ui_message: "Please sign in again to manage your connected apps."
       - code: 403
-        message: "INSUFFICIENT_AUTHORISATION"
+        name: OB_INVALID_CONSENT_STATUS
+        ui_message: "This connection is no longer valid."
+      - code: 429
+        name: TOO_MANY_REQUESTS
+        ui_message: "Too many attempts. Please wait a moment and try again."
+      - code: 500
+        name: OB_UNEXPECTED_ERROR
+        ui_message: "Something went wrong on our end. Please try again in a moment."
 
-  - id: obp_revoke_consent
-    endpoint: "DELETE /obp/v4.0.0/consumers/{consumerId}/consents/{consentId}"
-    tag: Consent
-    description: "Revoke a specific PSD2 consent by ID"
-    path_params:
-      - name: consentId
-        type: String
+  - id: get_payment_consent
+    endpoint: "GET /obie/open-banking/v4.0/pisp/domestic-payment-consents/{ConsentId}"
+    tag: PaymentInitiation
+    auth: OAuth2-FAPI
+    consent_required: true
+    description: "Retrieve a domestic-payment-consent the PSU authorised, so payment connections appear alongside account-access ones in the list. Surfaces Status, InstructedAmount and CreationDateTime. Uses a client-credentials token. OBIE object OBWriteDomesticConsentResponse5 (HTTP 200)."
+    params:
+      - name: ConsentId
+        type: path
+    request:
+      headers:
+        Authorization: "Bearer {pis_cc_access_token}"
+        x-fapi-financial-id: "{fapi_financial_id}"
     response:
       fields:
-        - name: consent_id
+        - name: Data.ConsentId
           type: String
-        - name: status
+        - name: Data.Status
           type: String
-          note: "REVOKED"
+          note: "Payment-consent status (e.g. AwaitingAuthorisation | Authorised | Rejected | Consumed)."
+        - name: Data.CreationDateTime
+          type: String
+        - name: Data.Initiation.InstructedAmount.Amount
+          type: String
+        - name: Data.Initiation.InstructedAmount.Currency
+          type: String
+        - name: Data.Initiation.CreditorAccount.Name
+          type: String
     errors:
+      - code: 400
+        name: OB_FIELD_INVALID
+        ui_message: "We couldn't load this payment connection. Please try again."
       - code: 401
-        message: "USER_NOT_LOGGED_IN"
-      - code: 404
-        message: "CONSENT_NOT_FOUND"
+        name: UNAUTHORIZED
+        ui_message: "Please sign in again."
+      - code: 403
+        name: OB_INVALID_CONSENT_STATUS
+        ui_message: "This payment connection is no longer valid."
+      - code: 500
+        name: OB_UNEXPECTED_ERROR
+        ui_message: "Something went wrong on our end. Please try again in a moment."
+
+  - id: delete_account_access_consent
+    endpoint: "DELETE /obie/open-banking/v4.0/aisp/account-access-consents/{ConsentId}"
+    tag: AccountInformation
+    auth: OAuth2-FAPI
+    consent_required: true
+    description: "Revoke an account-access-consent — the AISP deletes the resource as soon as the PSU revokes. The ASPSP cancels the linked token so the app loses access immediately. Uses a client-credentials token. Returns HTTP 204 No Content. 'Disconnect (revoke all)' calls this for every active ConsentId."
+    params:
+      - name: ConsentId
+        type: path
+    request:
+      headers:
+        Authorization: "Bearer {cc_access_token}"
+        x-fapi-financial-id: "{fapi_financial_id}"
+    response:
+      fields: []
+    errors:
+      - code: 400
+        name: OB_FIELD_INVALID
+        ui_message: "We couldn't revoke access. Please try again."
+      - code: 401
+        name: UNAUTHORIZED
+        ui_message: "Please sign in again to revoke access."
+      - code: 403
+        name: OB_INVALID_CONSENT_STATUS
+        ui_message: "This connection has already ended."
+      - code: 429
+        name: TOO_MANY_REQUESTS
+        ui_message: "Too many attempts. Please wait a moment and try again."
+      - code: 500
+        name: OB_UNEXPECTED_ERROR
+        ui_message: "Could not revoke access. Please try again."

@@ -1,106 +1,56 @@
-# flows/app-main.yaml — Entry point / persona router
-# Updated 2026-05-25 by /idea sync STEP 4f
-# Routes to consumer-banking.yaml or field-officer.yaml based on login role
+# flows/app-main.yaml — Entry / OBIE onboarding router (HSBC Open Banking)
+# Rewritten 2026-06-11 — MIGRATION OBP → HSBC. Consumer-only TPP; consent-driven entry.
+# Removed: field-officer persona router, DirectLogin, forgot-password.
 
 schema_version: "1.0"
 id: app-main
-name: "App Entry & Persona Router"
-description: "Bootstrap flow — Splash → Login → routes to Consumer Home or Field Officer Dashboard based on user role"
+name: "App Entry & Consent Router"
+description: "Bootstrap — Splash checks for a valid, authorised account-access consent + token. No consent → consent onboarding (the OBIE DCR + PSU authorise-redirect journey). Valid consent → Home. Expired/revoked → re-consent. There is NO in-app password screen: the PSU authenticates at HSBC during the authorise redirect (SCA at the bank)."
 created_at: "2026-05-22"
-updated_at: "2026-05-28"
+updated_at: "2026-06-11"
 status: active
 
 entry_screen: splash
 screens:
   - splash
-  - login
-  - forgot-password
-  - profile
-  - settings
-  # Shared legal screens
+  - consent-intro
+  - consent-expired
   - terms-of-service
   - privacy-policy
   - licenses
 
 connections:
-  - from: splash
-    to: login
-    type: replace
-    label: "unauthenticated"
-  - from: splash
-    to: home
-    type: replace
-    label: "consumer session restored"
-  - from: splash
-    to: fo-dashboard
-    type: replace
-    label: "field officer session restored"
-  - from: login
-    to: home
-    type: replace
-    label: "consumer login success"
-  - from: login
-    to: fo-dashboard
-    type: replace
-    label: "field officer login success"
-  - from: login
-    to: forgot-password
-    type: push
-    label: "Forgot password"
-  - from: forgot-password
-    to: login
-    type: pop
-    label: "Back to login"
-  - from: profile
-    to: login
-    type: replace
-    label: "logout"
-  # Legal screens (accessible from About)
-  - from: about
-    to: terms-of-service
-    type: push
-    label: "Terms of Service"
-  - from: about
-    to: privacy-policy
-    type: push
-    label: "Privacy Policy"
-  - from: about
-    to: licenses
-    type: push
-    label: "Open Source Licenses"
-  - from: terms-of-service
-    to: about
-    type: pop
-    label: "Back to About"
-  - from: privacy-policy
-    to: about
-    type: pop
-    label: "Back to About"
-  - from: licenses
-    to: about
-    type: pop
-    label: "Back to About"
+  - { from: splash, to: consent-intro, type: replace, label: "no valid account-access consent (first run / disconnected)" }
+  - { from: splash, to: home, type: replace, label: "valid authorised consent + token restored" }
+  - { from: splash, to: consent-expired, type: replace, label: "consent expired or revoked → re-consent" }
+  - { from: consent-intro, to: terms-of-service, type: push, label: "Terms" }
+  - { from: consent-intro, to: privacy-policy, type: push, label: "Privacy" }
+  - { from: about, to: terms-of-service, type: push, label: "Terms of Service" }
+  - { from: about, to: privacy-policy, type: push, label: "Privacy Policy" }
+  - { from: about, to: licenses, type: push, label: "Open Source Licenses" }
+  - { from: terms-of-service, to: about, type: pop, label: "Back to About" }
+  - { from: privacy-policy, to: about, type: pop, label: "Back to About" }
+  - { from: licenses, to: about, type: pop, label: "Back to About" }
 
 sub_flows:
+  - id: account-access-consent
+    file: "flows/account-access-consent.yaml"
+    entry: consent-intro
   - id: consumer-banking
     file: "flows/consumer-banking.yaml"
-    persona: consumer
     entry: home
-  - id: field-officer
-    file: "flows/field-officer.yaml"
-    persona: fieldOfficer
-    entry: fo-dashboard
+  - id: payment-initiation
+    file: "flows/payment-initiation.yaml"
+    entry: send-money
 
 bottom_nav:
   consumer:
     - { label: Home, target: home, icon: home }
     - { label: Accounts, target: accounts, icon: account_balance }
     - { label: Pay, target: send-money, icon: send }
-    - { label: Cards, target: cards, icon: credit_card }
+    - { label: Insights, target: pfm-dashboard, icon: insights }
     - { label: More, target: more, icon: more_horiz }
-  fieldOfficer:
-    - { label: Dashboard, target: fo-dashboard, icon: dashboard }
-    - { label: Customers, target: customer-search, icon: people }
-    - { label: Applications, target: account-applications, icon: assignment }
-    - { label: Meetings, target: meetings, icon: calendar_today }
-    - { label: More, target: more, icon: more_horiz }
+
+# field-officer persona REMOVED (migration 2026-06-11) — HSBC Open Banking is consumer PSD2;
+# no officer/agent concept. The field-officer sub-flow + cluster are deprecated separately.
+# Bottom nav 'Cards' tab REMOVED — HSBC Open Banking exposes no card-management API.

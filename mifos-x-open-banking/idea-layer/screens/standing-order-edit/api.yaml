@@ -1,66 +1,163 @@
 sibling: api
 schema_version: "4.0"
 feature_id: standing-order-edit
+consent_dependency: >
+  Writes require an authorised domestic-standing-order-consent and an authorization-code
+  (payments-scoped) token. Each call carries mutual TLS + a detached x-jws-signature +
+  x-fapi-financial-id (FAPI write rules).
+notes: >
+  Rebound OBP -> HSBC OBIE PISP 2026-06-11. LIMITATION: OBIE has NO update-standing-order endpoint.
+  An OBIE standing order is immutable once submitted. "Editing" is therefore modelled as a
+  CREATE-REPLACEMENT flow: create a new domestic-standing-order-consent carrying the edited
+  instruction -> PSU authorises (redirect) -> submit the new domestic-standing-order. The original
+  standing order is NOT mutated in place; the user (or the bank channel) must separately stop the
+  old one — OBIE AISP exposes standing orders read-only and PISP has no cancel/revoke-standing-order
+  operation, so old-order revocation is OUT OF BAND (note it on the screen). The beneficiary, which
+  the OBP screen treated as immutable, can now change too since this is a brand-new instruction.
 api:
-  - id: obp_update_standing_order
-    endpoint: "PUT /obp/v4.0.0/banks/{bank_id}/accounts/{account_id}/owner/standing-order/{standing_order_id}"
-    tag: Standing-Orders
-    auth_required: true
-    auth_scheme: DirectLogin
+  - id: create_domestic_standing_order_consent
+    endpoint: "POST /obie/open-banking/v4.0/pisp/domestic-standing-order-consents"
+    tag: StandingOrders
+    auth: OAuth2-FAPI
     trigger: on_save_clicked
-    description: "Update the mutable fields of an existing standing order. Beneficiary and currency are immutable after creation."
+    description: "Step 1 of the create-replacement edit: register a new standing-order consent with the edited frequency / amount / first-payment date / creditor. Bank returns a ConsentId in AwaitingAuthorisation. CE HSBCnet on v3.1 (+/ce)."
     request:
-      dto: StandingOrderUpdateRequest
+      dto: OBWriteDomesticStandingOrderConsent
       fields:
-        - name: amount_value
+        - name: Data.Permission
           type: String
-          required: true
-        - name: amount_currency
+          note: "Fixed value Create"
+        - name: Data.Initiation.Frequency
           type: String
-          required: true
-        - name: when.frequency
+          note: "OBIE schedule code, e.g. IntrvlWkDay:01:05 — derived from the edited DAILY/WEEKLY/MONTHLY/YEARLY picker"
+        - name: Data.Initiation.Reference
           type: String
-          required: true
-          enum: [DAILY, WEEKLY, MONTHLY, YEARLY]
-        - name: when.start_date
+        - name: Data.Initiation.FirstPaymentDateTime
           type: String
-          required: true
-          format: "YYYY-MM-DD"
-        - name: when.final_date
-          type: "String?"
-          required: false
-          format: "YYYY-MM-DD"
+          note: "ISO 8601 — the edited start date"
+        - name: Data.Initiation.FirstPaymentAmount.Amount
+          type: String
+          note: "decimal string — the edited amount"
+        - name: Data.Initiation.FirstPaymentAmount.Currency
+          type: String
+        - name: Data.Initiation.CreditorAccount.SchemeName
+          type: String
+        - name: Data.Initiation.CreditorAccount.Identification
+          type: String
+        - name: Data.Initiation.CreditorAccount.Name
+          type: String
+        - name: Risk
+          type: Object
+          note: "OBRisk block, may be empty {}"
     response:
-      dto: StandingOrderDetail
+      dto: OBWriteDomesticStandingOrderConsentResponse
       fields:
-        - name: id
+        - name: Data.ConsentId
           type: String
-        - name: bank_id
+        - name: Data.Status
           type: String
-        - name: account_id
+          note: "AwaitingAuthorisation initially"
+        - name: Data.CreationDateTime
           type: String
-        - name: counterparty.name
-          type: String
-        - name: amount_value
-          type: String
-        - name: amount_currency
-          type: String
-        - name: when.frequency
-          type: String
-        - name: when.start_date
-          type: String
-        - name: when.final_date
-          type: "String?"
-        - name: active
-          type: Boolean
+        - name: Data.Initiation
+          type: Object
     errors:
       - code: 400
-        message: "INVALID_STANDING_ORDER_VALUES"
+        message: "OB.Field.Invalid"
       - code: 401
-        message: "USER_NOT_LOGGED_IN"
+        message: "UNAUTHORIZED"
       - code: 403
-        message: "INSUFFICIENT_AUTHORISATION"
+        message: "OB.Resource.InvalidConsentStatus"
+
+  - id: get_domestic_standing_order_consent
+    endpoint: "GET /obie/open-banking/v4.0/pisp/domestic-standing-order-consents/{ConsentId}"
+    tag: StandingOrders
+    auth: OAuth2-FAPI
+    trigger: after_authorisation_redirect
+    description: "Step 2: poll the consent after the PSU authorisation redirect; confirm Status == Authorised (or Rejected) before submitting."
+    params:
+      - name: ConsentId
+        type: path
+    response:
+      dto: OBWriteDomesticStandingOrderConsentResponse
+      fields:
+        - name: Data.ConsentId
+          type: String
+        - name: Data.Status
+          type: String
+          note: "Authorised | Rejected"
+        - name: Data.StatusUpdateDateTime
+          type: String
+        - name: Data.Initiation
+          type: Object
+    errors:
+      - code: 401
+        message: "UNAUTHORIZED"
+      - code: 403
+        message: "OB.Resource.InvalidConsentStatus"
       - code: 404
-        message: "STANDING_ORDER_NOT_FOUND"
-      - code: 409
-        message: "STANDING_ORDER_ALREADY_CANCELLED"
+        message: "OB.Resource.NotFound"
+
+  - id: create_domestic_standing_order
+    endpoint: "POST /obie/open-banking/v4.0/pisp/domestic-standing-orders"
+    tag: StandingOrders
+    auth: OAuth2-FAPI
+    trigger: on_consent_authorised
+    description: "Step 3: submit the authorised replacement standing order referencing the authorised ConsentId. Data.Initiation MUST match the consent's initiation exactly or the ASPSP rejects it."
+    request:
+      dto: OBWriteDomesticStandingOrder
+      fields:
+        - name: Data.ConsentId
+          type: String
+          note: "must equal the authorised consent ConsentId"
+        - name: Data.Initiation.Frequency
+          type: String
+        - name: Data.Initiation.Reference
+          type: String
+        - name: Data.Initiation.FirstPaymentDateTime
+          type: String
+        - name: Data.Initiation.FirstPaymentAmount.Amount
+          type: String
+        - name: Data.Initiation.FirstPaymentAmount.Currency
+          type: String
+        - name: Data.Initiation.CreditorAccount.SchemeName
+          type: String
+        - name: Data.Initiation.CreditorAccount.Identification
+          type: String
+        - name: Data.Initiation.CreditorAccount.Name
+          type: String
+        - name: Risk
+          type: Object
+    response:
+      dto: OBWriteDomesticStandingOrderResponse
+      fields:
+        - name: Data.DomesticStandingOrderId
+          type: String
+        - name: Data.ConsentId
+          type: String
+        - name: Data.Status
+          type: String
+          note: "InitiationPending | InitiationCompleted"
+        - name: Data.CreationDateTime
+          type: String
+        - name: Data.Initiation
+          type: Object
+    errors:
+      - code: 400
+        message: "OB.Field.Invalid"
+      - code: 401
+        message: "UNAUTHORIZED"
+      - code: 403
+        message: "OB.Resource.InvalidConsentStatus"
+
+unsupported:
+  - id: update_standing_order
+    reason: >
+      OBIE PISP has NO update-standing-order endpoint and an OBIE standing order is immutable after
+      submission. The OBP PUT .../standing-order/{id} in-place update has no equivalent — replaced by
+      the create-replacement consent->authorise->submit flow above.
+  - id: revoke_old_standing_order
+    reason: >
+      OBIE has no cancel/revoke-domestic-standing-order operation; AISP standing-orders is read-only.
+      Stopping the superseded standing order is OUT OF BAND (merchant / bank channel). Surface this
+      as a note on the screen so the PSU does not end up with two active orders.

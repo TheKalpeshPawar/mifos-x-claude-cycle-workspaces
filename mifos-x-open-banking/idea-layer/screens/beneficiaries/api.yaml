@@ -1,144 +1,109 @@
 sibling: api
 schema_version: "4.0"
 feature_id: beneficiaries
-# Contract verified against live OBP sandbox 2026-06-03 (bank ac.bank.uk, account
-# ac.checking.001, view owner). Field names + types reflect the real response, not the
-# earlier draft (which had a non-existent `id` field).
+# Rebound OBP -> HSBC OBIE on 2026-06-11. READ-ONLY beneficiaries: OBIE AIS exposes the
+# beneficiary list (OBReadBeneficiary5) but has NO create-beneficiary endpoint, so the
+# previously-deferred Add path stays removed/unsupported. All reads require an authorised
+# account-access consent (ReadBeneficiariesBasic/Detail + ReadAccountsBasic + ReadTransactions*)
+# and an Authorization-Code-scoped token (mutual TLS + x-fapi-financial-id on every call).
+# Contract source of truth: server/apis/ais.yaml.
 api:
-  - id: obp_get_counterparties
-    endpoint: "GET /obp/v4.0.0/banks/{bankId}/accounts/{accountId}/{viewId}/counterparties"
-    tag: Counterparties
-    description: "List the explicit counterparties (payees / beneficiaries) for an account. viewId is owner."
+  - id: get_account_beneficiaries
+    endpoint: "GET /obie/open-banking/v4.0/aisp/accounts/{AccountId}/beneficiaries"
+    tag: Beneficiaries
+    description: "List the beneficiaries (payees) linked to a specific AccountId. OBIE OBReadBeneficiary5; requires ReadBeneficiariesBasic/Detail and an authorised account-access consent. READ-ONLY — there is no OBIE create-beneficiary endpoint."
     response:
       fields:
-        - name: counterparties
-          type: List<Counterparty>
-        - name: counterparty_id
+        - name: Data.Beneficiary
+          type: "Array<OBBeneficiary5>"
+        - name: Data.Beneficiary[].BeneficiaryId
           type: String
-        - name: name
+        - name: Data.Beneficiary[].AccountId
           type: String
-        - name: description
+        - name: Data.Beneficiary[].BeneficiaryType
           type: String
-        - name: currency
+        - name: Data.Beneficiary[].Reference
           type: String
-        - name: this_bank_id
+        - name: Data.Beneficiary[].CreditorAccount.SchemeName
           type: String
-        - name: this_account_id
+        - name: Data.Beneficiary[].CreditorAccount.Identification
           type: String
-        - name: this_view_id
+        - name: Data.Beneficiary[].CreditorAccount.Name
           type: String
-        - name: other_bank_routing_scheme
-          type: String
-        - name: other_bank_routing_address
-          type: String
-        - name: other_branch_routing_scheme
-          type: String
-        - name: other_branch_routing_address
-          type: String
-        - name: other_account_routing_scheme
-          type: String
-        - name: other_account_routing_address
-          type: String
-        - name: other_account_secondary_routing_scheme
-          type: String
-        - name: other_account_secondary_routing_address
-          type: String
-        - name: is_beneficiary
-          type: Boolean
-        - name: created_by_user_id
-          type: String
-        - name: bespoke
-          type: List<Bespoke>
     errors:
+      - code: 400
+        message: "OB.Field.Invalid"
       - code: 401
-        message: "OBP-20001: User not logged in"
-      - code: 404
-        message: "OBP-30018: Bank Account not found"
-      - code: 404
-        message: "OBP-30005: View not found for Account"
+        message: "UNAUTHORIZED"
+      - code: 403
+        message: "OB.Resource.InvalidConsentStatus (e.g. missing ReadBeneficiaries permission)"
+      - code: 429
+        message: "TOO_MANY_REQUESTS"
 
-  # Last-payment metadata source — TransactionsRepository.listTransactions(bankId, accountId).
-  # The screen joins the transaction description to each counterparty name to derive the
-  # last-payment amount/date/recency. Verified shipped 2026-06-11.
-  - id: obp_get_account_transactions
-    endpoint: "GET /obp/v3.0.0/my/banks/{bankId}/accounts/{accountId}/transactions"
-    tag: Transaction
-    description: "Owner transactions for the selected account; used only to derive last-payment per beneficiary."
+  # Account list source — drives the account selector and the per-account scoping of the whole
+  # screen. OBIE accounts call after consent authorisation; first call after consent returns
+  # the authorised AccountId(s).
+  - id: get_accounts
+    endpoint: "GET /obie/open-banking/v4.0/aisp/accounts"
+    tag: Accounts
+    description: "The PSU's authorised accounts; populates the account selector and picks the default account. OBIE OBReadAccount6."
     response:
       fields:
-        - name: transactions
-          type: List<Transaction>
-    errors:
-      - code: 401
-        message: "OBP-20001: User not logged in"
-
-  # Account list source — AccountsRepository.myAccounts(). Drives the AccountSelector and
-  # the per-account scoping of the whole screen. Verified shipped 2026-06-11.
-  - id: obp_get_my_accounts
-    endpoint: "GET /obp/v3.0.0/my/accounts"
-    tag: Account
-    description: "The user's accounts; populates the AccountSelector and picks the default account."
-    response:
-      fields:
-        - name: accounts
-          type: List<Account>
-        - name: id
+        - name: Data.Account
+          type: "Array<OBAccount6>"
+        - name: Data.Account[].AccountId
           type: String
-        - name: bank_id
+        - name: Data.Account[].Nickname
           type: String
-        - name: label
+        - name: Data.Account[].Account[].SchemeName
+          type: String
+        - name: Data.Account[].Account[].Identification
+          type: String
+        - name: Data.Account[].Account[].Name
           type: String
     errors:
       - code: 401
-        message: "OBP-20001: User not logged in"
+        message: "UNAUTHORIZED"
+      - code: 403
+        message: "OB.Resource.InvalidConsentStatus"
 
-  # DEFERRED — Add Beneficiary never shipped. No create path exists in the UI, so this
-  # endpoint is NOT called by this screen. Retained as a deferred reference for a future
-  # Add-Beneficiary flow (verified shipped 2026-06-11).
-  - id: obp_create_counterparty
+  # Last-payment metadata source — the screen joins transaction descriptions / creditor
+  # identifiers to each beneficiary to derive last-payment amount/date/recency.
+  - id: get_account_transactions
+    endpoint: "GET /obie/open-banking/v4.0/aisp/accounts/{AccountId}/transactions"
+    tag: Transactions
+    description: "Transactions for the selected account; used only to derive last-payment per beneficiary (join on CreditorAccount.Identification / TransactionInformation). OBIE OBReadTransaction6."
+    response:
+      fields:
+        - name: Data.Transaction
+          type: "Array<OBTransaction6>"
+        - name: Data.Transaction[].Amount.Amount
+          type: String
+        - name: Data.Transaction[].Amount.Currency
+          type: String
+        - name: Data.Transaction[].BookingDateTime
+          type: String
+        - name: Data.Transaction[].TransactionInformation
+          type: String
+        - name: Data.Transaction[].CreditorAccount.Identification
+          type: String
+    errors:
+      - code: 401
+        message: "UNAUTHORIZED"
+      - code: 403
+        message: "OB.Resource.InvalidConsentStatus"
+
+  # UNSUPPORTED on OBIE — there is NO create-beneficiary endpoint in OBIE AIS. The Add
+  # Beneficiary path never shipped under OBP and stays removed: OBIE cannot create a
+  # beneficiary at all, so no create endpoint can be wired here.
+  - id: create_beneficiary
     deferred: true
-    deferred_reason: "Add Beneficiary FAB + create sheet never shipped — no UI write path. Endpoint exists but is unused by this screen."
-    endpoint: "POST /obp/v4.0.0/banks/{bankId}/accounts/{accountId}/{viewId}/counterparties"
-    tag: Counterparties
-    description: "Create an explicit counterparty (Add Beneficiary). viewId is owner. NOT wired."
-    request:
-      fields:
-        - name: name
-          type: String
-        - name: other_account_routing_scheme
-          type: String
-        - name: other_account_routing_address
-          type: String
-        - name: is_beneficiary
-          type: Boolean
-    response:
-      fields:
-        - name: counterparty_id
-          type: String
-    errors:
-      - code: 400
-        message: "OBP-10001: Incorrect json format"
-      - code: 400
-        message: "OBP-30014: Counterparty already exists"
-
-  - id: obp_get_bank
-    endpoint: "GET /obp/v4.0.0/banks/{bankId}"
-    tag: Bank
-    description: "Resolve a bank id to its display name. Used to turn other_bank_routing_address (when scheme is OBP) into a human bank name."
-    response:
-      fields:
-        - name: id
-          type: String
-        - name: short_name
-          type: String
-        - name: full_name
-          type: String
-        - name: logo
-          type: String
-    errors:
-      - code: 404
-        message: "OBP-30001: Bank not found"
+    deferred_reason: "OBIE AIS has NO create-beneficiary endpoint (read-only beneficiary resource). The Add Beneficiary path was already deferred under OBP and remains unsupported — there is no HSBC equivalent to bind."
+    unsupported: true
+    endpoint: "N/A — no OBIE create-beneficiary endpoint exists"
+    tag: Beneficiaries
+    description: "Create a beneficiary. NOT SUPPORTED by OBIE AIS — read-only resource. Retained only as an explicit gap marker."
 
 # Cross-feature dependency: last-payment amount/date + recency are derived from the
-# account's owner transactions (GET /obp/v3.0.0/my/banks/{bankId}/accounts/{accountId}/transactions),
-# owned by the transactions screen, by joining transaction description to counterparty name.
+# account's transactions (get_account_transactions), by joining transaction creditor
+# identifier / description to the beneficiary's CreditorAccount.Identification / Name.

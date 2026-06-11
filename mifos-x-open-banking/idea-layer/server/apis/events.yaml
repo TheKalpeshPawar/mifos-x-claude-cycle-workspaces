@@ -1,0 +1,203 @@
+schema_version: "4.0"
+api_group: events
+name: "Event Notification API"
+base_url: "https://secure.sandbox.ob.hsbc.co.uk"
+auth_scheme: OAuth2-FAPI
+api_version: v4.0
+generated_at: "2026-06-11"
+source: "HSBC UK/CE Open Banking sandbox (OBIE Read/Write v4.0). Schemas from T3 HSBC OpenAPI event-notification-4.0.yaml + docs/12-events.md (richest source). Subscriptions/polling use a client-credentials token scoped accounts | payments | fundsconfirmations; OAuth2 token/authorize endpoints live in the auth group and the bundled AISP helper calls (account-access-consents, accounts, revoke-consent) belong to their own groups — referenced here, not repeated. HSBC restricts the allowed event type to UK.OBIE.Consent-Authorization-Revoked, supports short polling only (returnImmediately=true), and exposes no callback-urls endpoint in this sandbox slice (callback-urls is a documented OBIE Events resource but is absent from both the inventory and event-notification-4.0.yaml — gap)."
+endpoints:
+  - id: create_event_subscription
+    method: POST
+    path: "/obie/open-banking/v4.0/event-subscriptions"
+    description: "TPP asks an ASPSP to create a new event-subscription resource. HSBC's allowed event type is UK.OBIE.Consent-Authorization-Revoked; if the subscription already exists the same error code is returned. Authorization and x-jws-signature are required. Same v4.0 path across Kinetic, M&S Bank, UK Business, UK HSBCnet, UK Personal and firstdirect."
+    auth_required: true
+    scopes: [accounts]
+    request_schema:
+      - field: Data.Version
+        type: String
+        required: true
+        validation: "1-10 chars, e.g. 4.0 (OBEventSubscription1)."
+      - field: Data.EventTypes
+        type: Array
+        required: true
+        validation: "Allowed value at HSBC: UK.OBIE.Consent-Authorization-Revoked."
+    response_schema:
+      - field: Data.EventSubscriptionId
+        type: String
+        nullable: false
+        description: "Unique subscription identifier, 1-40 chars (OBEventSubscriptionResponse1)."
+      - field: Data.Version
+        type: String
+        nullable: false
+        description: "Subscription version."
+      - field: Data.EventTypes
+        type: Array
+        nullable: true
+        description: "Registered event types."
+      - field: Links.Self
+        type: String
+        nullable: true
+        description: "Self link to the created resource."
+      - field: Meta
+        type: Object
+        nullable: true
+        description: "Response metadata."
+    note: "201 Event Subscription Created; response carries x-fapi-interaction-id and x-jws-signature headers (T3 HSBC OpenAPI event-notification-4.0.yaml)."
+    error_codes:
+      - code: 400
+        message: "OB.Field.Invalid"
+        retry: false
+      - code: 401
+        message: "UNAUTHORIZED"
+        retry: false
+      - code: 403
+        message: "OB.Resource.AccessDenied"
+        retry: false
+      - code: 409
+        message: "OB.Resource.AlreadyExists"
+        retry: false
+      - code: 415
+        message: "UNSUPPORTED_MEDIA_TYPE"
+        retry: false
+      - code: 429
+        message: "TOO_MANY_REQUESTS"
+        retry: true
+      - code: 500
+        message: "OB.UnexpectedError"
+        retry: true
+  - id: get_event_subscriptions
+    method: GET
+    path: "/obie/open-banking/v4.0/event-subscriptions"
+    description: "TPP asks an ASPSP to retrieve its event-subscription resource(s). No x-jws-signature on the request. Same v4.0 path across Kinetic, M&S Bank, UK Business, UK HSBCnet, UK Personal and firstdirect."
+    auth_required: true
+    scopes: [accounts]
+    request_schema: []
+    response_schema:
+      - field: Data.EventSubscription[].EventSubscriptionId
+        type: String
+        nullable: false
+        description: "Unique subscription identifier (OBEventSubscriptionsResponse1)."
+      - field: Data.EventSubscription[].Version
+        type: String
+        nullable: false
+        description: "Subscription version."
+      - field: Data.EventSubscription[].EventTypes
+        type: Array
+        nullable: true
+        description: "Registered event types for this subscription."
+      - field: Links
+        type: Object
+        nullable: true
+        description: "Pagination/self links."
+      - field: Meta
+        type: Object
+        nullable: true
+        description: "Response metadata."
+    note: "200 Event Subscription Read (T3 HSBC OpenAPI event-notification-4.0.yaml)."
+    error_codes:
+      - code: 400
+        message: "OB.Field.Invalid"
+        retry: false
+      - code: 401
+        message: "UNAUTHORIZED"
+        retry: false
+      - code: 403
+        message: "OB.Resource.AccessDenied"
+        retry: false
+      - code: 404
+        message: "OB.Resource.NotFound"
+        retry: false
+      - code: 429
+        message: "TOO_MANY_REQUESTS"
+        retry: true
+      - code: 500
+        message: "OB.UnexpectedError"
+        retry: true
+  - id: delete_event_subscription
+    method: DELETE
+    path: "/obie/open-banking/v4.0/event-subscriptions/{EventSubscriptionId}"
+    description: "TPP asks an ASPSP to delete an event-subscription resource. EventSubscriptionId path parameter uniquely identifies the resource as assigned by the ASPSP. Same v4.0 path across Kinetic, M&S Bank, UK Business, UK HSBCnet, UK Personal and firstdirect."
+    auth_required: true
+    scopes: [accounts]
+    request_schema:
+      - field: EventSubscriptionId
+        type: String
+        required: true
+        validation: "Path parameter; ASPSP-assigned unique resource identifier."
+    response_schema: []
+    note: "204 Event Subscription Deleted — no body; returns x-fapi-interaction-id header (T3 HSBC OpenAPI event-notification-4.0.yaml)."
+    error_codes:
+      - code: 400
+        message: "OB.Field.Invalid"
+        retry: false
+      - code: 401
+        message: "UNAUTHORIZED"
+        retry: false
+      - code: 403
+        message: "OB.Resource.AccessDenied"
+        retry: false
+      - code: 404
+        message: "OB.Resource.NotFound"
+        retry: false
+      - code: 429
+        message: "TOO_MANY_REQUESTS"
+        retry: true
+      - code: 500
+        message: "OB.UnexpectedError"
+        retry: true
+  - id: poll_events
+    method: POST
+    path: "/obie/open-banking/v4.0/events"
+    description: "TPP polls for, acknowledges and receives event notifications (operationId CreateEvents). Short polling only — returnImmediately should always be true. No x-jws-signature required on the poll request. Same v4.0 path across Kinetic, M&S Bank, UK Business, UK HSBCnet, UK Personal and firstdirect."
+    auth_required: true
+    scopes: [accounts]
+    request_schema:
+      - field: maxEvents
+        type: Integer
+        required: true
+        validation: "Integer 0-10; 0 means return no events even if available (OBEventPolling1)."
+      - field: returnImmediately
+        type: Boolean
+        required: false
+        validation: "Should always be true — only short polling is supported."
+      - field: ack
+        type: Array
+        required: false
+        validation: "Array of jti values positively acknowledged."
+      - field: setErrs
+        type: Object
+        required: false
+        validation: "Negative acknowledgements, each with err + description."
+    response_schema:
+      - field: moreAvailable
+        type: Boolean
+        nullable: false
+        description: "True when more unacknowledged notifications are available (OBEventPollingResponse1)."
+      - field: sets
+        type: Object
+        nullable: false
+        description: "Keys are the jti of each event notification; values are the SET as a signed-JWT string in OBEventNotification2 format. Empty object when none outstanding."
+    note: "200 Read awaiting events / 201 Events Created (T3 HSBC OpenAPI event-notification-4.0.yaml)."
+    error_codes:
+      - code: 400
+        message: "OB.Field.Invalid"
+        retry: false
+      - code: 401
+        message: "UNAUTHORIZED"
+        retry: false
+      - code: 403
+        message: "OB.Resource.AccessDenied"
+        retry: false
+      - code: 404
+        message: "OB.Resource.NotFound"
+        retry: false
+      - code: 415
+        message: "UNSUPPORTED_MEDIA_TYPE"
+        retry: false
+      - code: 429
+        message: "TOO_MANY_REQUESTS"
+        retry: true
+      - code: 500
+        message: "OB.UnexpectedError"
+        retry: true

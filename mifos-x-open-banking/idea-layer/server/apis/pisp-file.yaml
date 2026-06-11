@@ -1,0 +1,318 @@
+schema_version: "4.0"
+api_group: pisp-file
+name: "File Payment (PISP) API"
+base_url: "https://secure.sandbox.ob.business.hsbc.co.uk"
+auth_scheme: OAuth2-FAPI
+api_version: v4.0
+generated_at: "2026-06-11"
+source: "HSBC UK/CE Open Banking sandbox (OBIE Read/Write v4.0; CE HSBCnet pinned to v3.1). Bulk/batch payment initiation: a PISP stages a file-payment-consent, uploads an ISO 20022 pain.001 payment file, redirects the PSU to authorise, then submits the file-payment. Offered on CE HSBCnet (v3.1, /ce/ prefix, pain.001.001.03), UK Business (v4.0), UK HSBCnet (v4.0, pain.001.001.08). OAuth2 token/authorize endpoints (Get CC Token, Get Access Token, Initiate Consent Authorization) belong to the auth group and are referenced here only. Canonical paths shown are UK Business v4.0. Paths/methods/bodies/brands from inventory/by-category/file-payment.json (T1); semantics + response schemas from docs/10-file-payment.md (T2 OBIE PISP v4.0; portal unreachable)."
+endpoints:
+  - id: create_file_payment_consent
+    method: POST
+    path: "/obie/open-banking/v4.0/pisp/file-payment-consents"
+    description: "Stages a new file-payment-consent; PISP sends file metadata (FileType/FileHash/ControlSum), ASPSP returns a unique ConsentId with default status AWUP (awaiting upload). Uses the Client Credentials grant. CE HSBCnet uses v3.1 at /ce/obie/open-banking/v3.1/pisp/file-payment-consents."
+    auth_required: true
+    scopes: [payments]
+    request_schema:
+      - field: Data.Initiation.FileType
+        type: String
+        required: true
+        validation: "Payment file type identifier, e.g. UK.OBIE.pain.001.001.08 (UK v4.0) or pain.001.001.03 (CE HSBCnet v3.1). OBWriteFileConsent3.Data.Initiation.FileType (1..1)."
+      - field: Data.Initiation.FileHash
+        type: String
+        required: true
+        validation: "Base64 SHA256 hash of the file to be uploaded, Max44Text. Must match the uploaded file's contents (1..1)."
+      - field: Data.Initiation.ControlSum
+        type: String
+        required: false
+        validation: "Decimal string. Total of all individual amounts contained in the group (0..1)."
+    response_schema:
+      - field: Data.ConsentId
+        type: String
+        nullable: false
+        description: "Unique consent identifier (OBWriteFileConsentResponse4)."
+      - field: Data.Status
+        type: String
+        nullable: false
+        description: "Consent status: AWUP, AWAU, AUTH, RJCT, or COND."
+      - field: Data.StatusReason
+        type: String
+        nullable: true
+        description: "Reason for the current status."
+      - field: Data.CreationDateTime
+        type: String
+        nullable: false
+        description: "Date-time the consent resource was created (ISO 8601)."
+      - field: Data.StatusUpdateDateTime
+        type: String
+        nullable: false
+        description: "Date-time the consent status was last updated (ISO 8601)."
+      - field: Data.CutOffDateTime
+        type: String
+        nullable: true
+        description: "Cut-off date-time for the file payment."
+      - field: Data.Initiation.FileType
+        type: String
+        nullable: false
+        description: "Echoes the requested file type."
+      - field: Data.Initiation.FileHash
+        type: String
+        nullable: false
+        description: "Echoes the requested file hash."
+      - field: Data.Initiation.ControlSum
+        type: String
+        nullable: true
+        description: "Echoes the requested control sum."
+      - field: Data.Charges[].Amount.Amount
+        type: String
+        nullable: true
+        description: "Charge amount applicable to the consent."
+    error_codes:
+      - code: 400
+        message: "OB.Field.Invalid"
+        retry: false
+      - code: 401
+        message: "UNAUTHORIZED"
+        retry: false
+      - code: 403
+        message: "OB.Resource.InvalidConsentStatus"
+        retry: false
+      - code: 429
+        message: "TOO_MANY_REQUESTS"
+        retry: true
+      - code: 500
+        message: "OB.UnexpectedError"
+        retry: true
+  - id: upload_consent_file
+    method: POST
+    path: "/obie/open-banking/v4.0/pisp/file-payment-consents/{ConsentId}/file"
+    description: "Uploads the ISO 20022 payment file against the staged consent before the PSU authorisation redirect; ASPSP confirms the file hash matches the FileHash metadata, then consent status moves to AWAU. File structure must match FileType. CE HSBCnet v3.1 uses pain.001.001.03; UK v4.0 uses pain.001.001.08."
+    auth_required: true
+    scopes: [payments]
+    request_schema:
+      - field: body
+        type: String
+        required: true
+        validation: "ISO 20022 XML credit-transfer initiation file (pain.001). Sent as the raw HTTP request body; Content-Type describes the file. CE HSBCnet v3.1 = urn:iso:std:iso:20022:tech:xsd:pain.001.001.03; UK v4.0 = pain.001.001.08. The captured CE sample carries 4 transactions across 3 PmtInf groups (incl. a SEPA/EUR group); FileType/FileHash/ControlSum in Create Consent must match this file."
+    response_schema: []
+    note: "Documented gap (T2): file upload responds with status only, no response object (NA in OBIE). Consent status moves to AWAU."
+    error_codes:
+      - code: 400
+        message: "OB.Field.Invalid"
+        retry: false
+      - code: 401
+        message: "UNAUTHORIZED"
+        retry: false
+      - code: 403
+        message: "OB.Resource.InvalidConsentStatus"
+        retry: false
+      - code: 429
+        message: "TOO_MANY_REQUESTS"
+        retry: true
+      - code: 500
+        message: "OB.UnexpectedError"
+        retry: true
+  - id: download_consent_file
+    method: GET
+    path: "/obie/open-banking/v4.0/pisp/file-payment-consents/{ConsentId}/file"
+    description: "Downloads the file previously uploaded against a file-payment-consent; the file is returned in the HTTP response body. Captured for UK Business v4.0 only in the inventory slice."
+    auth_required: true
+    scopes: [payments]
+    request_schema: []
+    response_schema:
+      - field: body
+        type: String
+        nullable: false
+        description: "The previously uploaded payment file (OBIE response object File); Content-Type header describes the file."
+    error_codes:
+      - code: 400
+        message: "OB.Field.Invalid"
+        retry: false
+      - code: 401
+        message: "UNAUTHORIZED"
+        retry: false
+      - code: 403
+        message: "OB.Resource.InvalidConsentStatus"
+        retry: false
+      - code: 429
+        message: "TOO_MANY_REQUESTS"
+        retry: true
+      - code: 500
+        message: "OB.UnexpectedError"
+        retry: true
+  - id: get_file_payment_consent
+    method: GET
+    path: "/obie/open-banking/v4.0/pisp/file-payment-consents/{ConsentId}"
+    description: "Retrieves the file-payment-consent resource to poll its status (AWUP/AWAU/AUTH/RJCT/COND). Uses the Client Credentials grant. CE HSBCnet uses v3.1 at /ce/obie/open-banking/v3.1/pisp/file-payment-consents/{ConsentId}."
+    auth_required: true
+    scopes: [payments]
+    request_schema: []
+    response_schema:
+      - field: Data.ConsentId
+        type: String
+        nullable: false
+        description: "Unique consent identifier (OBWriteFileConsentResponse4 — same schema as Create Consent response)."
+      - field: Data.Status
+        type: String
+        nullable: false
+        description: "Consent status: AWUP, AWAU, AUTH, RJCT, or COND."
+      - field: Data.StatusReason
+        type: String
+        nullable: true
+        description: "Reason for the current status."
+      - field: Data.CreationDateTime
+        type: String
+        nullable: false
+        description: "Date-time the consent resource was created (ISO 8601)."
+      - field: Data.StatusUpdateDateTime
+        type: String
+        nullable: false
+        description: "Date-time the consent status was last updated (ISO 8601)."
+      - field: Data.Initiation.FileType
+        type: String
+        nullable: false
+        description: "File type declared on the consent."
+      - field: Data.Initiation.FileHash
+        type: String
+        nullable: false
+        description: "File hash declared on the consent."
+      - field: Data.Initiation.ControlSum
+        type: String
+        nullable: true
+        description: "Control sum declared on the consent."
+    error_codes:
+      - code: 400
+        message: "OB.Field.Invalid"
+        retry: false
+      - code: 401
+        message: "UNAUTHORIZED"
+        retry: false
+      - code: 403
+        message: "OB.Resource.InvalidConsentStatus"
+        retry: false
+      - code: 429
+        message: "TOO_MANY_REQUESTS"
+        retry: true
+      - code: 500
+        message: "OB.UnexpectedError"
+        retry: true
+  - id: create_file_payment
+    method: POST
+    path: "/obie/open-banking/v4.0/pisp/file-payments"
+    description: "After the consent is authorised, submits the file-payment for processing using the Authorization Code grant; ASPSP returns a FilePaymentId with initial status RCVD or RJCT. CE HSBCnet uses v3.1 at /ce/obie/open-banking/v3.1/pisp/file-payments."
+    auth_required: true
+    scopes: [payments]
+    request_schema:
+      - field: Data.ConsentId
+        type: String
+        required: true
+        validation: "References the authorised file-payment-consent. OBWriteFile2.Data.ConsentId (1..1)."
+      - field: Data.Initiation.FileType
+        type: String
+        required: true
+        validation: "Must match the corresponding consent's Initiation.FileType."
+      - field: Data.Initiation.FileHash
+        type: String
+        required: true
+        validation: "Must match the corresponding consent's Initiation.FileHash."
+      - field: Data.Initiation.ControlSum
+        type: String
+        required: false
+        validation: "Decimal string. Must match the corresponding consent's Initiation.ControlSum."
+    response_schema:
+      - field: Data.FilePaymentId
+        type: String
+        nullable: false
+        description: "Unique file-payment identifier (OBWriteFileResponse3)."
+      - field: Data.ConsentId
+        type: String
+        nullable: false
+        description: "The consent this payment was created against."
+      - field: Data.Status
+        type: String
+        nullable: false
+        description: "Initial payment status: RCVD or RJCT."
+      - field: Data.CreationDateTime
+        type: String
+        nullable: false
+        description: "Date-time the file-payment resource was created (ISO 8601)."
+      - field: Data.StatusUpdateDateTime
+        type: String
+        nullable: false
+        description: "Date-time the status was last updated (ISO 8601)."
+      - field: Data.Initiation.FileType
+        type: String
+        nullable: false
+        description: "Echoes the initiation file type."
+      - field: Data.Charges[].Amount.Amount
+        type: String
+        nullable: true
+        description: "Charge amount applicable to the file payment."
+      - field: Data.MultiAuthorisation.Status
+        type: String
+        nullable: true
+        description: "Multi-authorisation status, present only when multi-auth applies."
+    error_codes:
+      - code: 400
+        message: "OB.Field.Invalid"
+        retry: false
+      - code: 401
+        message: "UNAUTHORIZED"
+        retry: false
+      - code: 403
+        message: "OB.Resource.InvalidConsentStatus"
+        retry: false
+      - code: 429
+        message: "TOO_MANY_REQUESTS"
+        retry: true
+      - code: 500
+        message: "OB.UnexpectedError"
+        retry: true
+  - id: get_file_payment_status
+    method: GET
+    path: "/obie/open-banking/v4.0/pisp/file-payments/{FilePaymentId}"
+    description: "Retrieves the file-payment resource to poll its status. Uses the Client Credentials grant. CE HSBCnet uses v3.1 at /ce/obie/open-banking/v3.1/pisp/file-payments/{FilePaymentId}."
+    auth_required: true
+    scopes: [payments]
+    request_schema: []
+    response_schema:
+      - field: Data.FilePaymentId
+        type: String
+        nullable: false
+        description: "Unique file-payment identifier (OBWriteFileResponse3 — same schema as Payment Initiation response)."
+      - field: Data.ConsentId
+        type: String
+        nullable: false
+        description: "The consent this payment was created against."
+      - field: Data.Status
+        type: String
+        nullable: false
+        description: "Current payment status."
+      - field: Data.CreationDateTime
+        type: String
+        nullable: false
+        description: "Date-time the file-payment resource was created (ISO 8601)."
+      - field: Data.StatusUpdateDateTime
+        type: String
+        nullable: false
+        description: "Date-time the status was last updated (ISO 8601)."
+      - field: Data.Charges[].Amount.Amount
+        type: String
+        nullable: true
+        description: "Charge amount applicable to the file payment."
+    error_codes:
+      - code: 400
+        message: "OB.Field.Invalid"
+        retry: false
+      - code: 401
+        message: "UNAUTHORIZED"
+        retry: false
+      - code: 403
+        message: "OB.Resource.InvalidConsentStatus"
+        retry: false
+      - code: 429
+        message: "TOO_MANY_REQUESTS"
+        retry: true
+      - code: 500
+        message: "OB.UnexpectedError"
+        retry: true

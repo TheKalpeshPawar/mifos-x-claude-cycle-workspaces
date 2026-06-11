@@ -1,25 +1,184 @@
 sibling: api
 schema_version: "4.0"
 feature_id: notifications
+consent:
+  required: true
+  type: event-subscription
+  token: client-credentials
+  note: "Event notifications use a client-credentials token scoped accounts. HSBC restricts the allowed event type to UK.OBIE.Consent-Authorization-Revoked and supports short polling only (returnImmediately=true). KYC/onboarding/payment-received notification types from the prior OBP design have no OBIE equivalent in this consumer Open Banking slice — the surfaced events are consent-lifecycle SETs delivered as signed-JWT notifications in the poll response."
 api:
-  - id: obp_signal_channels
-    endpoint: "GET /obp/v6.0.0/signal/channels"
-    tag: Signal
-    description: "List real-time push notification channels (FCM)"
+  - id: poll_events
+    endpoint: "POST /obie/open-banking/v4.0/events"
+    tag: Events
+    auth: OAuth2-FAPI
+    description: "Poll for, acknowledge and receive event notifications (CreateEvents). Short polling only — returnImmediately is always true. The notification list is built from the SETs returned here, each a signed-JWT in OBEventNotification2 format keyed by its jti. OBIE objects OBEventPolling1 (request) / OBEventPollingResponse1 (HTTP 200/201)."
+    request:
+      content_type: "application/json"
+      headers:
+        Authorization: "Bearer {cc_access_token}"
+        x-fapi-financial-id: "{fapi_financial_id}"
+      body:
+        maxEvents: 10
+        returnImmediately: true
+        ack: []
     response:
       fields:
-        - name: channels
-          type: "List<SignalChannel>"
-        - name: channel_id
+        - name: moreAvailable
+          type: Boolean
+          note: "True when more unacknowledged notifications are available."
+        - name: sets
+          type: Object
+          note: "Keys are the jti of each event notification; values are the SET as a signed-JWT (OBEventNotification2). Empty object when none outstanding. Decoded fields below."
+        - name: events.iss
           type: String
-        - name: name
+          note: "Issuer of the SET (the ASPSP)."
+        - name: events.iat
+          type: Integer
+          note: "Issued-at epoch seconds — drives the notification timestamp."
+        - name: events.jti
           type: String
-        - name: description
+          note: "Unique SET id; positively acknowledged via ack[]."
+        - name: events.sub
           type: String
-        - name: created_at
+          note: "Subject — the affected resource (e.g. the account-access-consent URL)."
+        - name: events.events
+          type: Object
+          note: "Map keyed by event type; HSBC: UK.OBIE.Consent-Authorization-Revoked."
+    errors:
+      - code: 400
+        name: OB_FIELD_INVALID
+        ui_message: "We couldn't refresh your notifications. Please try again."
+      - code: 401
+        name: UNAUTHORIZED
+        ui_message: "Please sign in again to see your notifications."
+      - code: 403
+        name: OB_RESOURCE_ACCESS_DENIED
+        ui_message: "You don't have access to these notifications."
+      - code: 415
+        name: UNSUPPORTED_MEDIA_TYPE
+        ui_message: "Something went wrong on our end. Please try again in a moment."
+      - code: 429
+        name: TOO_MANY_REQUESTS
+        ui_message: "Too many attempts. Please wait a moment and try again."
+      - code: 500
+        name: OB_UNEXPECTED_ERROR
+        ui_message: "Something went wrong on our end. Please try again in a moment."
+
+  - id: create_event_subscription
+    endpoint: "POST /obie/open-banking/v4.0/event-subscriptions"
+    tag: Events
+    auth: OAuth2-FAPI
+    description: "Create the event-subscription resource so the ASPSP starts queuing notifications for polling. HSBC's only allowed EventType is UK.OBIE.Consent-Authorization-Revoked; a duplicate returns OB.Resource.AlreadyExists. Authorization and x-jws-signature required. OBIE objects OBEventSubscription1 (request) / OBEventSubscriptionResponse1 (HTTP 201)."
+    request:
+      content_type: "application/json"
+      headers:
+        Authorization: "Bearer {cc_access_token}"
+        x-jws-signature: "{detached_jws}"
+        x-fapi-financial-id: "{fapi_financial_id}"
+      body:
+        Data:
+          Version: "4.0"
+          EventTypes:
+            - UK.OBIE.Consent-Authorization-Revoked
+    response:
+      fields:
+        - name: Data.EventSubscriptionId
+          type: String
+          note: "Unique subscription identifier, 1-40 chars."
+        - name: Data.Version
+          type: String
+        - name: Data.EventTypes
+          type: Array
+          note: "Registered event types."
+        - name: Links.Self
           type: String
     errors:
+      - code: 400
+        name: OB_FIELD_INVALID
+        ui_message: "We couldn't enable notifications. Please try again."
       - code: 401
-        message: "USER_NOT_LOGGED_IN"
+        name: UNAUTHORIZED
+        ui_message: "Please sign in again to enable notifications."
       - code: 403
-        message: "INSUFFICIENT_AUTHORISATION"
+        name: OB_RESOURCE_ACCESS_DENIED
+        ui_message: "You don't have access to enable notifications."
+      - code: 409
+        name: OB_RESOURCE_ALREADY_EXISTS
+        ui_message: "Notifications are already enabled."
+      - code: 429
+        name: TOO_MANY_REQUESTS
+        ui_message: "Too many attempts. Please wait a moment and try again."
+      - code: 500
+        name: OB_UNEXPECTED_ERROR
+        ui_message: "Something went wrong on our end. Please try again in a moment."
+
+  - id: get_event_subscriptions
+    endpoint: "GET /obie/open-banking/v4.0/event-subscriptions"
+    tag: Events
+    auth: OAuth2-FAPI
+    description: "Retrieve the existing event-subscription resource(s) to check whether notifications are already enabled before creating one. No x-jws-signature on the request. OBIE object OBEventSubscriptionsResponse1 (HTTP 200)."
+    request:
+      headers:
+        Authorization: "Bearer {cc_access_token}"
+        x-fapi-financial-id: "{fapi_financial_id}"
+    response:
+      fields:
+        - name: Data.EventSubscription[].EventSubscriptionId
+          type: String
+        - name: Data.EventSubscription[].Version
+          type: String
+        - name: Data.EventSubscription[].EventTypes
+          type: Array
+    errors:
+      - code: 400
+        name: OB_FIELD_INVALID
+        ui_message: "We couldn't check your notification settings. Please try again."
+      - code: 401
+        name: UNAUTHORIZED
+        ui_message: "Please sign in again."
+      - code: 403
+        name: OB_RESOURCE_ACCESS_DENIED
+        ui_message: "You don't have access to these notification settings."
+      - code: 404
+        name: OB_RESOURCE_NOT_FOUND
+        ui_message: "No notification subscription found."
+      - code: 429
+        name: TOO_MANY_REQUESTS
+        ui_message: "Too many attempts. Please wait a moment and try again."
+      - code: 500
+        name: OB_UNEXPECTED_ERROR
+        ui_message: "Something went wrong on our end. Please try again in a moment."
+
+  - id: delete_event_subscription
+    endpoint: "DELETE /obie/open-banking/v4.0/event-subscriptions/{EventSubscriptionId}"
+    tag: Events
+    auth: OAuth2-FAPI
+    description: "Delete the event-subscription resource to stop notification delivery (notification settings opt-out). EventSubscriptionId path parameter is the ASPSP-assigned resource id. Returns HTTP 204 with no body."
+    params:
+      - name: EventSubscriptionId
+        type: path
+    request:
+      headers:
+        Authorization: "Bearer {cc_access_token}"
+        x-fapi-financial-id: "{fapi_financial_id}"
+    response:
+      fields: []
+    errors:
+      - code: 400
+        name: OB_FIELD_INVALID
+        ui_message: "We couldn't update your notification settings. Please try again."
+      - code: 401
+        name: UNAUTHORIZED
+        ui_message: "Please sign in again."
+      - code: 403
+        name: OB_RESOURCE_ACCESS_DENIED
+        ui_message: "You don't have access to change these settings."
+      - code: 404
+        name: OB_RESOURCE_NOT_FOUND
+        ui_message: "No notification subscription found."
+      - code: 429
+        name: TOO_MANY_REQUESTS
+        ui_message: "Too many attempts. Please wait a moment and try again."
+      - code: 500
+        name: OB_UNEXPECTED_ERROR
+        ui_message: "Something went wrong on our end. Please try again in a moment."

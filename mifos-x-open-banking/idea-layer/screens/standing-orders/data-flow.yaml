@@ -3,20 +3,48 @@ schema_version: "4.0"
 feature_id: standing-orders
 entries:
   - screen_id: standing-orders
-    trigger: on_interact
-    event: CreateOrderClicked
+    trigger: on_mount
+    event: LoadStandingOrders
     endpoints:
-      - obp_create_standing_order
-    direction: write
+      - get_account_standing_orders
+    direction: read
     dtos:
-      - name: StandingOrder
+      - name: OBReadStandingOrder6
         role: response
-        api_id: obp_create_standing_order
+        api_id: get_account_standing_orders
     produces_state: content
     error_paths:
-      - error_code: 400
-        behavior: error_state
       - error_code: 401
         behavior: navigate_login
+      - error_code: 403
+        behavior: error_state
       - error_code: 500
         behavior: error_state
+
+  - screen_id: standing-orders
+    trigger: on_interact
+    event: RetryLoad
+    endpoints:
+      - get_account_standing_orders
+    direction: read
+    dtos:
+      - name: OBReadStandingOrder6
+        role: response
+        api_id: get_account_standing_orders
+    produces_state: content
+    error_paths:
+      - error_code: 401
+        behavior: navigate_login
+      - error_code: 403
+        behavior: error_state
+      - error_code: 500
+        behavior: error_state
+
+  - screen_id: standing-orders
+    trigger: on_interact
+    event: CreateOrderClicked
+    endpoints: []
+    direction: none
+    dtos: []
+    produces_state: content
+    notes: "Navigates to standing-order-create (OBIE PISP write) — no AISP call made from this screen."

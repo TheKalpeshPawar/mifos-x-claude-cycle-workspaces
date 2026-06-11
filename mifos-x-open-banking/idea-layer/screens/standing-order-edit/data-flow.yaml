@@ -6,15 +6,23 @@ entries:
     trigger: on_interact
     event: OnSave
     endpoints:
-      - obp_update_standing_order
+      - create_domestic_standing_order_consent
+      - get_domestic_standing_order_consent
+      - create_domestic_standing_order
     direction: write
     dtos:
-      - name: StandingOrderUpdateRequest
+      - name: OBWriteDomesticStandingOrderConsent
         role: request
-        api_id: obp_update_standing_order
-      - name: StandingOrderDetail
+        api_id: create_domestic_standing_order_consent
+      - name: OBWriteDomesticStandingOrderConsentResponse
         role: response
-        api_id: obp_update_standing_order
+        api_id: create_domestic_standing_order_consent
+      - name: OBWriteDomesticStandingOrder
+        role: request
+        api_id: create_domestic_standing_order
+      - name: OBWriteDomesticStandingOrderResponse
+        role: response
+        api_id: create_domestic_standing_order
     produces_state: loading
     success_state: content
     error_paths:
@@ -26,9 +34,10 @@ entries:
         behavior: error_state
       - error_code: 404
         behavior: error_state
-      - error_code: 409
-        behavior: error_state
-    notes: "PUT save; on 2xx pop back to standing-order-detail (which reloads), on 4xx show inline error banner"
+    notes: >
+      OBIE has no update-standing-order — save is create-replacement: POST consent ->
+      PSU authorisation redirect -> GET consent (confirm Authorised) -> POST domestic-standing-order.
+      On success pop back to standing-order-detail (which reloads). The old order is stopped out of band.
 
   - screen_id: standing-order-edit
     trigger: on_interact

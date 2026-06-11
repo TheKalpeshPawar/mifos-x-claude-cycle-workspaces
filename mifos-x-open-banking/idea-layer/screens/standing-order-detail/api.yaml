@@ -2,27 +2,103 @@ sibling: api
 schema_version: "4.0"
 feature_id: standing-order-detail
 notes: >
-  Reconciled to shipped source 2026-06-11. OBP has NO standing-order detail/pause/resume/delete
-  endpoints at any version (live-verified 404). The original GET detail, POST pause, POST resume
-  and DELETE entries were dropped. Detail data is sourced entirely from derived/created order
-  state — no network call is unique to this screen.
-api: []
-
-derived_reads:
-  - id: standing_order_detail_by_series
-    source: "StandingOrdersRepository.detail(bankId, accountId, standingOrderId)"
+  Rebound to HSBC OBIE AISP v4.0 (2026-06-11). OBIE has NO per-item standing-order detail endpoint
+  (there is no GET /standing-orders/{StandingOrderId}); detail is sourced by calling the list
+  endpoint get_account_standing_orders and locating the row by StandingOrderId. READ-ONLY:
+  pause/resume/cancel are NOT supported by OBIE AISP (no such endpoints) — those actions are
+  surfaced as unsupported. Recent executions are derived from the account transactions resource
+  (get_account_transactions) filtered to this standing order. All reads require an authorised
+  account-access consent (ReadStandingOrders + ReadTransactions) and an authorization-code token.
+api:
+  - id: get_account_standing_orders
+    endpoint: "GET /obie/open-banking/v4.0/aisp/accounts/{AccountId}/standing-orders"
+    tag: Standing-Orders
+    trigger: on_mount
     note: >
-      Finds the order by series id within the derived/created set (the same TXN_TYPE=SO
-      derivation the list uses), then builds StandingOrderDetail. Unknown id → failure → error state.
-    output_dto: StandingOrderDetail
-  - id: standing_order_executions
-    source: "deriveExecutions(transactions, standingOrderId)"
-    filter: "TXN_TYPE=SO transactions of the series, newest first, capped at 5"
-    output_dto: "List<StandingOrderExecution>"
-    note: "Each StandingOrderExecution carries transactionId for drill-down into transaction-detail."
+      OBIE object OBReadStandingOrder6 (HTTP 200). No per-item GET exists — the detail screen
+      reads the list and selects Data.StandingOrder[] where StandingOrderId == route standingOrderId.
+      A standingOrderId that no longer resolves renders the error/empty state. Requires
+      ReadStandingOrdersBasic/Detail. Authorization-code token.
+    request:
+      dto: none
+      fields: []
+    response:
+      dto: OBReadStandingOrder6
+      fields:
+        - name: Data.StandingOrder[].AccountId
+          type: String
+        - name: Data.StandingOrder[].StandingOrderId
+          type: "String?"
+        - name: Data.StandingOrder[].Reference
+          type: "String?"
+        - name: Data.StandingOrder[].StandingOrderStatusCode
+          type: "String?"
+        - name: Data.StandingOrder[].Frequency
+          type: "String?"
+        - name: Data.StandingOrder[].FirstPaymentDateTime
+          type: "String?"
+        - name: Data.StandingOrder[].NextPaymentDateTime
+          type: "String?"
+        - name: Data.StandingOrder[].NextPaymentAmount.Amount
+          type: "String?"
+        - name: Data.StandingOrder[].NextPaymentAmount.Currency
+          type: "String?"
+        - name: Data.StandingOrder[].CreditorAccount.Identification
+          type: "String?"
+        - name: Data.StandingOrder[].CreditorAccount.Name
+          type: "String?"
+    errors:
+      - code: 400
+        message: "OB.Field.Invalid"
+      - code: 401
+        message: "UNAUTHORIZED"
+      - code: 403
+        message: "OB.Resource.InvalidConsentStatus"
+      - code: 429
+        message: "TOO_MANY_REQUESTS"
+      - code: 500
+        message: "OB.UnexpectedError"
+  - id: get_account_transactions
+    endpoint: "GET /obie/open-banking/v4.0/aisp/accounts/{AccountId}/transactions"
+    tag: Transactions
+    trigger: on_mount
+    note: >
+      OBIE object OBReadTransaction6 (HTTP 200). Used to build the Recent Executions list — the
+      account's transactions filtered to this standing order (newest first, capped at 5). Each row
+      carries Data.Transaction[].TransactionId for drill-down into transaction-detail. Requires
+      ReadTransactionsBasic/Detail. Authorization-code token.
+    request:
+      dto: none
+      fields: []
+    response:
+      dto: OBReadTransaction6
+      fields:
+        - name: Data.Transaction[].TransactionId
+          type: "String?"
+        - name: Data.Transaction[].BookingDateTime
+          type: String
+        - name: Data.Transaction[].Amount.Amount
+          type: String
+        - name: Data.Transaction[].Amount.Currency
+          type: String
+    errors:
+      - code: 401
+        message: "UNAUTHORIZED"
+      - code: 403
+        message: "OB.Resource.InvalidConsentStatus"
+      - code: 429
+        message: "TOO_MANY_REQUESTS"
+      - code: 500
+        message: "OB.UnexpectedError"
 
-deferred:
+consent_dependency:
   note: >
-    GET /standing-orders/{id}, POST .../pause, POST .../resume and DELETE .../{id} were specified
-    in the original design but DO NOT EXIST on OBP. Pause/Resume and Cancel are surfaced as
-    "coming soon" snackbars; there is no delete dialog. Re-add only if OBP ships these endpoints.
+    Detail + executions require an authorised account-access-consent (Status AUTH) with
+    ReadStandingOrders and ReadTransactions permissions, plus an authorization-code scoped token.
+    See server/apis/ais.yaml.
+
+unsupported_actions:
+  note: >
+    OBIE AISP provides NO pause, resume or cancel endpoint for standing orders (it is read-only;
+    mutations are PISP). The Pause/Resume and Cancel buttons therefore have no API binding — they
+    surface "coming soon"/unsupported. Editing is the standing-order-edit (PISP) screen, not here.

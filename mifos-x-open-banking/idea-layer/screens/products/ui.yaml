@@ -420,57 +420,66 @@ state_model:
     - BanksRepository
 
 api:
-  # SHIPPED endpoint — ProductsApi @GET("v3.0.0/banks/{bankId}/products"); fetched once per
-  # bank in parallel (awaitAll) at load. category/family are null on the sandbox, so the
-  # audience split (scopeOf) and the badge (categoryOf) are both derived client-side from
-  # code + name. The earlier spec's v5.0.0 + category enum did NOT ship (corrected 2026-06-11).
-  - id: obp_products
-    endpoint: "GET /obp/v3.0.0/banks/{bankId}/products"
+  # REBOUND to HSBC OBIE Open Data — UNAUTHENTICATED product reference data (no token, no
+  # consent, no my/accounts). The Personal/Business audience tabs map 1:1 onto the two Open
+  # Data product endpoints: Personal -> personal-current-accounts (PCA), Business ->
+  # business-current-accounts (BCA). Catalogue is per-Brand (data[].Brand[]); the bank
+  # selector is now a brand selector keyed on data[].Brand[].BrandName. The product card's
+  # category badge is still derived client-side (Open Data carries no category enum either).
+  - id: opendata_personal_current_accounts
+    endpoint: "GET /open-banking/opendata/v2.4.0/personal-current-accounts"
     tag: Product
-    description: "List a bank's published products. Per-bank, fetched in parallel once per session."
-    trigger: "on load (per bank the user holds an account at) / onRetry — ProductsRepository.listProducts(bankId)"
+    auth_required: false
+    description: "Personal Current Account reference data per brand — meta + data[].Brand[].PCA[] envelope. Backs the Personal tab."
+    trigger: "on load / onRetry / onScopeSelected(PERSONAL) — ProductsRepository.personalCurrentAccounts()"
     response:
-      wrapper: products
-      dto: Product
+      wrapper: data
+      dto: OpenDataPca
       fields:
-        - name: products
-          type: "List<Product>"
-        - name: code
+        - name: data[].Brand[].BrandName
           type: String
-        - name: name
+        - name: data[].Brand[].PCA[].Identification
           type: String
-        - name: description
+        - name: data[].Brand[].PCA[].ProductName
           type: String
-        - name: category
+        - name: data[].Brand[].PCA[].Segment
           type: String
-        - name: family
-          type: String
-        - name: super_family
-          type: String
-        - name: more_info_url
-          type: String
+        - name: data[].Brand[].PCA[].CoreProduct
+          type: Object
     errors:
-      - code: 401
-        message: "USER_NOT_LOGGED_IN"
-      - code: 404
-        message: "BANK_NOT_FOUND"
-  # Account list source — AccountsRepository.myAccounts(); the set of banks the user holds an
-  # account at IS the set of catalogues offered. Resolved to display names via BanksRepository.
-  - id: obp_get_my_accounts
-    endpoint: "GET /obp/v3.0.0/my/accounts"
-    tag: Account
-    description: "The user's accounts; the distinct bankIds drive which bank catalogues are shown."
-    trigger: "on load — AccountsRepository.myAccounts"
+      - code: 400
+        message: "Bad Request"
+      - code: 429
+        message: "TOO_MANY_REQUESTS"
+      - code: 500
+        message: "Internal Server Error"
+  - id: opendata_business_current_accounts
+    endpoint: "GET /open-banking/opendata/v2.4.0/business-current-accounts"
+    tag: Product
+    auth_required: false
+    description: "Business Current Account reference data per brand — meta + data[].Brand[].BCA[] envelope. Backs the Business tab."
+    trigger: "on load / onScopeSelected(BUSINESS) — ProductsRepository.businessCurrentAccounts()"
     response:
+      wrapper: data
+      dto: OpenDataBca
       fields:
-        - name: accounts
-          type: List<Account>
-        - name: bank_id
+        - name: data[].Brand[].BrandName
           type: String
+        - name: data[].Brand[].BCA[].Identification
+          type: String
+        - name: data[].Brand[].BCA[].CoreProduct
+          type: Object
+    errors:
+      - code: 400
+        message: "Bad Request"
+      - code: 429
+        message: "TOO_MANY_REQUESTS"
+      - code: 500
+        message: "Internal Server Error"
   # DEFERRED — product search never shipped. No search_products UI path exists on this screen.
   - id: search_products
     deferred: true
-    deferred_reason: "Product search was never wired — the top-bar search action was removed. No search endpoint is called by this screen (verified shipped 2026-06-11)."
+    deferred_reason: "Product search was never wired — the top-bar search action was removed. Open Data exposes no product-search endpoint."
 
 dependencies:
   tier: feature

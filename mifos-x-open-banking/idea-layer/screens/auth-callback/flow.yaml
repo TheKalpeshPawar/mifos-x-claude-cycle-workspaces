@@ -1,0 +1,35 @@
+sibling: flow
+schema_version: "4.0"
+feature_id: auth-callback
+flow_ids:
+  - account-access-consent
+  - payment-initiation
+navigates_to:
+  - home
+  - payment-result
+  - consent-declined
+  - payment-declined
+flow_logic:
+  - from: bank-authorize-handoff
+    to: auth-callback
+    type: external_redirect
+    label: "PSU authenticates + completes SCA at HSBC → deep-link returns code"
+  - from: auth-callback
+    to: home
+    type: replace
+    label: "AIS — code → access token; consent AUTH → enter app"
+  - from: auth-callback
+    to: payment-result
+    type: replace
+    label: "PAYMENT — code → token; submit domestic-payment; poll status → terminal"
+  - from: auth-callback
+    to: consent-declined
+    type: replace
+    label: "AIS — callback error / PSU declined"
+  - from: auth-callback
+    to: payment-declined
+    type: replace
+    label: "PAYMENT — callback error / PSU declined / consent RJCT"
+journey_ids:
+  - consumer-account-access-consent
+  - consumer-payment-initiation

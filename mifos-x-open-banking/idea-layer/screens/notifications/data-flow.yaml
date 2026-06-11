@@ -6,12 +6,12 @@ entries:
   - screen_id: notifications
     trigger: on_mount
     endpoints:
-      - obp_signal_channels
+      - poll_events
     direction: read
     dtos:
-      - name: SignalChannel
+      - name: EventNotification
         role: response
-        api_id: obp_signal_channels
+        api_id: poll_events
     produces_state: populated
     error_paths:
       - error_code: "401"
@@ -22,13 +22,29 @@ entries:
   - screen_id: notifications
     trigger: on_interact
     event: MarkAllReadClicked
-    endpoints: []
+    endpoints:
+      - poll_events
     direction: write
     dtos: []
     produces_state: populated
     error_paths:
       - error_code: LOAD_FAILED
         behavior: show_error_state_with_retry
+
+  - screen_id: notifications
+    trigger: on_interact
+    event: NotificationSettingsOpened
+    endpoints:
+      - get_event_subscriptions
+      - create_event_subscription
+      - delete_event_subscription
+    direction: read
+    dtos:
+      - name: EventSubscription
+        role: response
+        api_id: get_event_subscriptions
+    produces_state: populated
+    error_paths: []
 
   - screen_id: notifications
     trigger: on_interact

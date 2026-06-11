@@ -1,0 +1,455 @@
+id: payment-authorize-handoff
+name: "Securing Payment"
+feature: payment-authorize-handoff
+flavor: consumer
+status: draft
+quality_score: 0
+contract_version: "1.1.0"
+capabilities:
+  - has_ui
+  - has_api
+status_history:
+  - to: draft
+    at: "2026-06-11"
+    by: "/idea add (OBIE PISP migration)"
+    note: "New screen for the HSBC Open Banking PISP payment journey. Full-screen takeover shown after the user confirms a payment on send-money-confirm. The app has already POSTed /pisp/domestic-payment-consents (ConsentId, Status AWAU) and built the signed authorise request (intent_id = payment ConsentId); this screen holds the user while it hands off to HSBC. SCA is performed AT HSBC during the authorise redirect — the obsolete in-app sca-challenge one-time-code screen is REMOVED under OBIE. On external_redirect the system browser opens GET /oauth2/authorize; the deep-link org.mifos.openbanking://oauth/callback returns to auth-callback."
+
+screens:
+  - id: payment-authorize-handoff
+    name: "Securing Payment"
+    viewmodel: "PaymentAuthorizeHandoffViewModel"
+    archetype: form
+    shell:
+      top_bar: false
+      bottom_nav: false
+
+archetype: form
+
+components:
+  - type: stack
+    id: handoff_root
+    variant: column
+    style:
+      background: "#F9FAEF"
+      padding: spacing.lg
+      align: center
+      justify: center
+    children:
+      - handoff_bank_icon
+      - handoff_title
+      - handoff_message
+      - handoff_summary_card
+      - handoff_spinner
+      - handoff_assurance
+      - handoff_error_icon
+      - handoff_error_title
+      - handoff_error_message
+      - handoff_cancel_button
+
+  - type: icon
+    id: handoff_bank_icon
+    content: "account_balance"
+    variant: default
+    style:
+      color: "#4C662B"
+      size: "80dp"
+      alignment: center
+    a11y:
+      role: image
+      label: "HSBC"
+    test_context:
+      purpose: "Bank icon at the top of the authorise handoff takeover, signalling the redirect to HSBC"
+      interaction_type: display
+      data_driven: false
+
+  - type: text
+    id: handoff_title
+    content: "Redirecting to HSBC to authorise your payment"
+    variant: headline_small
+    style:
+      typography: "Outfit/headline_small"
+      color: "#1A1C16"
+      alignment: center
+      padding_top: spacing.md
+    a11y:
+      role: heading
+      level: 1
+      label: "Redirecting to HSBC to authorise your payment"
+    test_context:
+      purpose: "Primary takeover heading telling the user they are being handed off to HSBC to authorise"
+      interaction_type: display
+      data_driven: false
+
+  - type: text
+    id: handoff_message
+    content: "You'll approve and verify with HSBC. We never see your banking password."
+    variant: body_medium
+    style:
+      typography: "Outfit/body_medium"
+      color: "#44483D"
+      alignment: center
+      padding_top: spacing.xs
+      padding_bottom: spacing.md
+    a11y:
+      role: text
+      label: "You'll approve and verify with HSBC. We never see your banking password."
+    test_context:
+      purpose: "Supporting copy explaining that strong customer authentication happens at HSBC, not in-app"
+      interaction_type: display
+      data_driven: false
+
+  - type: card
+    id: handoff_summary_card
+    variant: filled
+    style:
+      background: "#FFFFFF"
+      border_radius: "16dp"
+      border_color: "#CDEDA3"
+      border_width: 1
+      padding: spacing.md
+      margin_top: spacing.sm
+      margin_bottom: spacing.lg
+      width: "match_parent"
+    children:
+      - handoff_amount_value
+      - handoff_payee_value
+      - handoff_securing_label
+    a11y:
+      role: group
+      label: "Payment being secured"
+    test_context:
+      purpose: "Summary card echoing the amount and payee of the payment that is being secured during the handoff"
+      interaction_type: display
+      data_driven: true
+
+  - type: text
+    id: handoff_amount_value
+    content: "£500.00"
+    variant: display_small
+    style:
+      typography: "Outfit/display_small"
+      color: "#4C662B"
+      font_weight: 700
+      alignment: center
+      padding_bottom: spacing.xs
+    a11y:
+      role: text
+      label: "Amount: five hundred pounds"
+    test_context:
+      purpose: "Amount of the payment being authorised, carried in from the confirmed PaymentDraft"
+      interaction_type: display
+      data_driven: true
+
+  - type: text
+    id: handoff_payee_value
+    content: "To John Smith — Barclays Bank UK"
+    variant: body_large
+    style:
+      typography: "Outfit/body_large"
+      color: "#1A1C16"
+      alignment: center
+    a11y:
+      role: text
+      label: "To John Smith at Barclays Bank UK"
+    test_context:
+      purpose: "Payee line of the payment being secured during the HSBC handoff"
+      interaction_type: display
+      data_driven: true
+
+  - type: text
+    id: handoff_securing_label
+    content: "Securing this payment with HSBC Open Banking"
+    variant: body_small
+    style:
+      typography: "Outfit/body_small"
+      color: "#44483D"
+      alignment: center
+      padding_top: spacing.sm
+    a11y:
+      role: text
+      label: "Securing this payment with HSBC Open Banking"
+    test_context:
+      purpose: "Reassurance line under the amount/payee while the consent is created and the authorise URL is built"
+      interaction_type: display
+      data_driven: false
+
+  - type: loading_indicator
+    id: handoff_spinner
+    variant: circular_indeterminate
+    style:
+      color: "#4C662B"
+      size: "32dp"
+      alignment: center
+    a11y:
+      role: progressbar
+      label: "Securing payment"
+    test_context:
+      purpose: "Indeterminate spinner shown while the consent is staged and the signed authorise request is prepared"
+      interaction_type: display
+      data_driven: false
+
+  - type: text
+    id: handoff_assurance
+    content: "Don't close the app — your browser will open in a moment."
+    variant: body_small
+    style:
+      typography: "Outfit/body_small"
+      color: "#44483D"
+      alignment: center
+      padding_top: spacing.md
+    a11y:
+      role: text
+      label: "Don't close the app — your browser will open in a moment."
+    test_context:
+      purpose: "Hint asking the user to stay in the app while the external authorise browser is launched"
+      interaction_type: display
+      data_driven: false
+
+  - type: icon
+    id: handoff_error_icon
+    content: "error_outline"
+    variant: default
+    style:
+      color: "#BA1A1A"
+      size: "64dp"
+      alignment: center
+    a11y:
+      role: image
+      label: "Could not start authorisation"
+    test_context:
+      purpose: "Error glyph shown when consent creation or authorise-URL building fails before the redirect"
+      interaction_type: display
+      data_driven: false
+
+  - type: text
+    id: handoff_error_title
+    content: "Couldn't start authorisation"
+    variant: title_medium
+    style:
+      typography: "Outfit/title_medium"
+      color: "#1A1C16"
+      font_weight: 700
+      alignment: center
+      padding_top: spacing.md
+    a11y:
+      role: heading
+      level: 2
+      label: "Couldn't start authorisation"
+    test_context:
+      purpose: "Error heading shown when the consent POST or authorise request build fails"
+      interaction_type: display
+      data_driven: false
+
+  - type: text
+    id: handoff_error_message
+    content: "We couldn't reach HSBC to secure your payment. Your account hasn't been charged. Please try again."
+    variant: body_medium
+    style:
+      typography: "Outfit/body_medium"
+      color: "#44483D"
+      alignment: center
+      padding_top: spacing.xs
+      padding_bottom: spacing.md
+    a11y:
+      role: alert
+      label: "We couldn't reach HSBC to secure your payment. Your account hasn't been charged. Please try again."
+    test_context:
+      purpose: "Error body explaining the pre-redirect failure and reassuring no charge was made"
+      interaction_type: display
+      data_driven: true
+
+  - type: button
+    id: handoff_cancel_button
+    label: "Cancel"
+    variant: outlined
+    supported_states: [idle, hover, focus_visible, pressed, disabled]
+    style:
+      border_color: "#4C662B"
+      typography: "Outfit/label_large"
+      color: "#4C662B"
+      border_radius: "12dp"
+      padding: spacing.md
+      width: "match_parent"
+    on_click:
+      action: navigate
+      target: send-money-confirm
+    a11y:
+      role: button
+      label: "Cancel and return to payment review"
+    keyboard:
+      focusable: true
+    test_context:
+      purpose: "Lets the user abandon the handoff (or retry from the error state) by returning to send-money-confirm"
+      interaction_type: navigate
+      data_driven: false
+
+responsive:
+  mobile_only: true
+  baseline_width: 390
+
+states:
+  initial_state: loading
+  loading:
+    layout: { type: column, padding: spacing.lg, align: center, justify: center }
+    visible_components: [handoff_bank_icon, handoff_title, handoff_message, handoff_summary_card, handoff_amount_value, handoff_payee_value, handoff_securing_label, handoff_spinner, handoff_assurance]
+    note: "Default takeover — Bank icon + 'Redirecting to HSBC to authorise your payment' + amount/payee summary + spinner. Behind it the app has POSTed /pisp/domestic-payment-consents (ConsentId, Status AWAU) and is building the signed authorise request."
+  redirecting:
+    layout: { type: column, padding: spacing.lg, align: center, justify: center }
+    visible_components: [handoff_bank_icon, handoff_title, handoff_message, handoff_summary_card, handoff_amount_value, handoff_payee_value, handoff_securing_label, handoff_spinner, handoff_assurance]
+    note: "Authorise URL ready — the system browser is opening GET /oauth2/authorize (intent_id = payment ConsentId; PKCE + signed request object). external_redirect to HSBC; SCA happens AT the bank. Deep-link org.mifos.openbanking://oauth/callback returns to auth-callback."
+  error:
+    layout: { type: column, padding: spacing.lg, align: center, justify: center }
+    visible_components: [handoff_error_icon, handoff_error_title, handoff_error_message, handoff_cancel_button]
+    note: "Pre-redirect failure — consent POST returned an error (OB.Field.Invalid / UNAUTHORIZED / OB.UnexpectedError) or the authorise request could not be built. No charge was made; the user returns to send-money-confirm to retry."
+
+state_model:
+  PaymentAuthorizeHandoffViewModel:
+    screen_state: HandoffUiState
+    ui_state_type: HandoffUiState
+    state:
+      - field: amount
+        type: String
+        default: "\"\""
+      - field: currency
+        type: String
+        default: "\"\""
+      - field: payeeName
+        type: String
+        default: "\"\""
+      - field: payeeBank
+        type: String
+        default: "\"\""
+      - field: consentId
+        type: "String?"
+        default: "null"
+        note: "Data.ConsentId returned by create_domestic_payment_consent; becomes the authorise intent_id."
+      - field: authorizePhase
+        type: "AuthorizePhase"
+        default: "AuthorizePhase.STAGING"
+        note: "enum AuthorizePhase { STAGING, REDIRECTING, FAILED } — STAGING posts the consent, REDIRECTING launches the external authorise browser, FAILED shows the pre-redirect error. PKCE code_verifier / CSRF state / signed request object live inside ObpAuthRepository, NOT in UI state."
+      - field: errorMessage
+        type: "String?"
+        default: "null"
+    derived:
+      - field: isReadyToRedirect
+        type: Boolean
+        note: "computed get(): consentId != null && authorizePhase == AuthorizePhase.REDIRECTING"
+    errors: [OB_FIELD_INVALID, UNAUTHORIZED, INVALID_CONSENT_STATUS, TOO_MANY_REQUESTS, UNKNOWN]
+    events:
+      - "HandoffEvent.LaunchAuthorize(authorizeUrl: String)"
+      - HandoffEvent.NavigateToCallback
+      - HandoffEvent.NavigateBackToConfirm
+    actions:
+      - HandoffAction.StageConsentClicked
+      - "HandoffAction.Internal.ConsentCreated(consentId: String, authorizeUrl: String)"
+      - "HandoffAction.Internal.ConsentFailed(error: String)"
+      - HandoffAction.CancelClicked
+    di: [ObpAuthRepository, PaymentsRepository]
+    base: "template.core.base.ui.viewmodel.BaseViewModel<HandoffUiState, HandoffEvent, HandoffAction>"
+    nav_args:
+      type: PaymentDraft
+      note: "Carries the confirmed PaymentDraft (amount, currency, payeeName, payeeBank, Initiation fields) forward from send-money-confirm so the consent Initiation byte-matches the later /domestic-payments submit."
+    note: "Handoff is REACTIVE: on mount PaymentsRepository stages the consent (Status AWAU) via ObpAuthRepository, which builds the PKCE + signed request authorise URL (intent_id = ConsentId) and emits LaunchAuthorize. SCA is NEVER collected in-app — it happens at HSBC during the external authorise redirect. The deep-link callback drives navigation to auth-callback; this screen only emits LaunchAuthorize + NavigateToCallback + NavigateBackToConfirm."
+
+navigation:
+  - id: nav_to_auth_callback
+    target: auth-callback
+    trigger: external_redirect_return
+    note: "Primary outbound transition — the deep-link org.mifos.openbanking://oauth/callback returns the authorization code and the app replaces this takeover with auth-callback (one-shot HandoffEvent.NavigateToCallback). The redirect itself is external_redirect (system browser), not an in-app navigate."
+  - id: nav_back_to_confirm
+    target: send-money-confirm
+    trigger: cancel_or_error
+    on_click:
+      action: navigate
+      target: send-money-confirm
+    note: "Cancel or a pre-redirect error pops back to send-money-confirm to retry."
+
+api:
+  - id: create_domestic_payment_consent
+    endpoint: "POST /obie/open-banking/v4.0/pisp/domestic-payment-consents"
+    api_group: pisp-domestic
+    tag: PISP
+    trigger: on_handoff_mount
+    description: "Stages the domestic-payment-consent before the authorise redirect. ASPSP returns Data.ConsentId with default Data.Status AWAU (awaiting PSU authorisation). Client Credentials grant. The Initiation block here MUST byte-match the later create_domestic_payment submit. CE HSBCnet: POST /ce/obie/open-banking/v3.1/pisp/domestic-payment-consents."
+    request:
+      fields:
+        - name: Data.Initiation.InstructionIdentification
+          type: String
+        - name: Data.Initiation.InstructedAmount.Amount
+          type: String
+        - name: Data.Initiation.InstructedAmount.Currency
+          type: String
+        - name: Data.Initiation.CreditorAccount.SchemeName
+          type: String
+        - name: Data.Initiation.CreditorAccount.Identification
+          type: String
+        - name: Data.Initiation.CreditorAccount.Name
+          type: String
+        - name: Data.Initiation.RemittanceInformation.Reference
+          type: String
+        - name: Risk.PaymentContextCode
+          type: String
+          example: "TransferToThirdParty"
+    response:
+      fields:
+        - name: Data.ConsentId
+          type: String
+          stored_as: payment_consent_id
+        - name: Data.Status
+          type: String
+          example: "AWAU"
+        - name: Data.CreationDateTime
+          type: String
+    errors:
+      - code: 400
+        name: OB_FIELD_INVALID
+        ui_message: "We couldn't reach HSBC to secure your payment. Your account hasn't been charged. Please try again."
+      - code: 401
+        name: UNAUTHORIZED
+        ui_message: "We couldn't authorise this payment session. Please sign in again and retry."
+      - code: 429
+        name: TOO_MANY_REQUESTS
+        ui_message: "HSBC is busy right now. Please wait a moment and try again."
+      - code: 500
+        name: OB_UNEXPECTED_ERROR
+        ui_message: "Something went wrong securing your payment. Your account hasn't been charged. Please try again."
+
+  - id: oauth2_authorize
+    endpoint: "GET https://sandbox.ob.hsbc.co.uk/oauth2/authorize"
+    api_group: pisp-domestic
+    tag: Authorization
+    trigger: on_consent_created
+    description: "Opens the system browser for the OBIE authorise redirect. authorization_code + PKCE with a signed request object; openbanking_intent_id = the payment ConsentId. PSU authenticates AND completes SCA at HSBC — no in-app code entry. On success HSBC redirects to the registered deep-link with code + state; on PSU decline / consent RJCT it returns an error."
+    request:
+      params:
+        response_type: "code id_token"
+        client_id: "{client_id}"
+        redirect_uri: "org.mifos.openbanking://oauth/callback"
+        scope: "openid payments"
+        state: "{csrf_state}"
+        request: "{signed_request_object}"
+        code_challenge: "{pkce_code_challenge}"
+        code_challenge_method: "S256"
+    response:
+      redirect_params:
+        - name: code
+          type: String
+        - name: id_token
+          type: String
+        - name: state
+          type: String
+        - name: error
+          type: String
+          note: "Present instead of code when the PSU declines or the consent is RJCT at the bank — drives navigation to payment-declined via auth-callback."
+    errors:
+      - code: 302
+        name: PSU_DECLINED
+        ui_message: "You didn't approve this payment at HSBC. No money has left your account."
+
+dependencies:
+  tier: feature
+  features:
+    - send-money-confirm
+    - obp-auth
+    - payment-result
+    - payment-declined

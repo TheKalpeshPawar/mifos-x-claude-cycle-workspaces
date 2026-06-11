@@ -385,14 +385,19 @@ state_model:
     fields:
       - name: id
         type: String
+        source: "Data.Beneficiary[].BeneficiaryId"
       - name: name
         type: String
+        source: "Data.Beneficiary[].CreditorAccount.Name (counterparty rule: prefer resolved holder name; never render the PSU's own login)"
       - name: bankName
         type: String
+        source: "derived from Data.Beneficiary[].CreditorAccount.SchemeName / Identification (e.g. sort code -> bank)"
       - name: accountIdentifier
         type: String
+        source: "Data.Beneficiary[].CreditorAccount.Identification (masked IBAN / account number)"
       - name: lastPayment
         type: "LastPayment?"
+        source: "derived from get_account_transactions (CreditorAccount.Identification / TransactionInformation join)"
       - name: initials
         type: String
         derived: "first two name initials, else '?'"
@@ -423,65 +428,74 @@ state_model:
     - UserPreferencesRepository
 
 api:
-  # Counterparty list — PaymentsRepository.listBeneficiaries(bankId, accountId), filtered to
-  # is_beneficiary. viewId is owner.
-  - id: obp_get_counterparties
-    endpoint: "GET /obp/v4.0.0/banks/{bankId}/accounts/{accountId}/{viewId}/counterparties"
-    tag: Counterparties
-    trigger: "on load / onAccountSelected — PaymentsRepository.listBeneficiaries"
+  # Beneficiary list — OBIE OBReadBeneficiary5, filtered/displayed READ-ONLY. Requires
+  # ReadBeneficiariesBasic/Detail on an authorised account-access consent.
+  - id: get_account_beneficiaries
+    endpoint: "GET /obie/open-banking/v4.0/aisp/accounts/{AccountId}/beneficiaries"
+    tag: Beneficiaries
+    trigger: "on load / onAccountSelected — list beneficiaries for the selected AccountId"
     response:
       fields:
-        - name: counterparties
-          type: List<Counterparty>
-        - name: counterparty_id
+        - name: Data.Beneficiary
+          type: "Array<OBBeneficiary5>"
+        - name: Data.Beneficiary[].BeneficiaryId
           type: String
-        - name: name
+        - name: Data.Beneficiary[].BeneficiaryType
           type: String
-        - name: other_bank_routing_scheme
+        - name: Data.Beneficiary[].Reference
           type: String
-        - name: other_bank_routing_address
+        - name: Data.Beneficiary[].CreditorAccount.SchemeName
           type: String
-        - name: other_account_routing_address
+        - name: Data.Beneficiary[].CreditorAccount.Identification
           type: String
-        - name: is_beneficiary
-          type: Boolean
+        - name: Data.Beneficiary[].CreditorAccount.Name
+          type: String
     errors:
       - code: 401
-        message: "OBP-20001: User not logged in"
-      - code: 404
-        message: "OBP-30018: Bank Account not found"
-  # Accounts list — AccountsRepository.myAccounts(); drives the AccountSelector + per-account scoping.
-  - id: obp_get_my_accounts
-    endpoint: "GET /obp/v3.0.0/my/accounts"
-    tag: Account
-    trigger: "on load — AccountsRepository.myAccounts"
+        message: "UNAUTHORIZED"
+      - code: 403
+        message: "OB.Resource.InvalidConsentStatus"
+  # Accounts list — drives the account selector + per-account scoping. OBIE OBReadAccount6.
+  - id: get_accounts
+    endpoint: "GET /obie/open-banking/v4.0/aisp/accounts"
+    tag: Accounts
+    trigger: "on load — authorised account list"
     response:
       fields:
-        - name: accounts
-          type: List<Account>
-        - name: id
+        - name: Data.Account
+          type: "Array<OBAccount6>"
+        - name: Data.Account[].AccountId
           type: String
-        - name: bank_id
+        - name: Data.Account[].Nickname
           type: String
-        - name: label
+        - name: Data.Account[].Account[].Identification
           type: String
-  # Transactions — TransactionsRepository.listTransactions(bankId, accountId); last-payment
-  # amount/date/recency derived by joining transaction description to counterparty name.
-  - id: obp_get_account_transactions
-    endpoint: "GET /obp/v3.0.0/my/banks/{bankId}/accounts/{accountId}/transactions"
-    tag: Transaction
-    trigger: "on loadForAccount — TransactionsRepository.listTransactions (last-payment join)"
+        - name: Data.Account[].Account[].Name
+          type: String
+  # Transactions — last-payment amount/date/recency derived by joining
+  # CreditorAccount.Identification / TransactionInformation to the beneficiary.
+  - id: get_account_transactions
+    endpoint: "GET /obie/open-banking/v4.0/aisp/accounts/{AccountId}/transactions"
+    tag: Transactions
+    trigger: "on loadForAccount — last-payment join"
     response:
       fields:
-        - name: transactions
-          type: List<Transaction>
-  # DEFERRED — Add Beneficiary never shipped. There is no create path in the UI, so
-  # POST counterparties is unused by this screen (verified shipped 2026-06-11).
-  - id: obp_create_counterparty
+        - name: Data.Transaction
+          type: "Array<OBTransaction6>"
+        - name: Data.Transaction[].Amount.Amount
+          type: String
+        - name: Data.Transaction[].BookingDateTime
+          type: String
+        - name: Data.Transaction[].CreditorAccount.Identification
+          type: String
+  # UNSUPPORTED — OBIE AIS has NO create-beneficiary endpoint (read-only resource). The Add
+  # path was already deferred under OBP and stays removed; there is no HSBC create to bind.
+  - id: create_beneficiary
     deferred: true
-    deferred_reason: "Add Beneficiary FAB + create sheet never shipped — no UI write path. Endpoint exists but is not called by this screen."
-    endpoint: "POST /obp/v4.0.0/banks/{bankId}/accounts/{accountId}/{viewId}/counterparties"
-    tag: Counterparties
+    unsupported: true
+    deferred_reason: "OBIE AIS has no create-beneficiary endpoint — read-only beneficiary resource. No HSBC equivalent to wire."
+    endpoint: "N/A — no OBIE create-beneficiary endpoint exists"
+    tag: Beneficiaries
 
 dependencies:
   tier: feature

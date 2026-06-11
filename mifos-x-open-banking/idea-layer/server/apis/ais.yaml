@@ -1,0 +1,1062 @@
+schema_version: "4.0"
+api_group: ais
+name: "Account Information (AISP) API"
+base_url: "https://secure.sandbox.ob.hsbc.co.uk"
+auth_scheme: OAuth2-FAPI
+api_version: v4.0
+generated_at: "2026-06-11"
+source: "HSBC UK/CE Open Banking sandbox — paths/methods/brands T1 (inventory/by-category/account-information-sharing.json, 22 distinct endpoints); semantics + response objects T2 OBIE AISP v4.0 resources + T3 HSBC OpenAPI _downloads/portal/openapi/account-info-4.0-dbb.yaml (PREFERRED for field-level schemas) and docs/01-account-information-sharing.md. Paths are UK Personal v4.0 (canonical). Brand variance (noted per-endpoint, NOT duplicated): CE HSBCnet + Malta Personal run AIS on v3.1; CE HSBCnet + CE MiVision add a /ce path prefix; all other brands on v4.0. The 4 generic OAuth2 endpoints present in this inventory slice (Get CC Token, Get Access Token, Refresh Access Token, Initiate Consent Authorization — shared v1.1 /oauth2/token + /oauth2/authorize) are EXCLUDED here and live in the auth group; consent management here (POST/GET/DELETE account-access-consents) uses a Client Credentials token, all data-resource GETs use an Authorization Code token. Scope: accounts. CROSS-CUTTING (from auth group): mutual TLS on every call; detached-JWS x-jws-signature applies to write requests; x-fapi-financial-id header on every call. Most reads return data 200; an account with no matching resources returns 200 with an empty array (a non-existent AccountId returns 400, not 404)."
+endpoints:
+  - id: create_consent
+    method: POST
+    path: "/obie/open-banking/v4.0/aisp/account-access-consents"
+    description: "Register an account-access-consent: the data-cluster Permissions, optional expiry and transaction window the PSU will authorise. ASPSP returns a ConsentId with initial Status AWAU (awaiting authorisation). Uses a client-credentials token. CE HSBCnet + Malta use /[ce/]obie/open-banking/v3.1/aisp/account-access-consents. OBIE objects: OBReadConsent1 (request) / OBReadConsentResponse1 (HTTP 201)."
+    auth_required: true
+    scopes: [accounts]
+    request_schema:
+      - field: Data.Permissions
+        type: Array
+        required: true
+        validation: "1..n. Consented data clusters, enum incl. ReadAccountsBasic, ReadAccountsDetail, ReadBalances, ReadBeneficiariesBasic/Detail, ReadDirectDebits, ReadPAN, ReadParty, ReadProducts, ReadScheduledPaymentsBasic/Detail, ReadStandingOrdersBasic/Detail, ReadTransactionsBasic/Credits/Debits/Detail."
+      - field: Data.ExpirationDateTime
+        type: String
+        required: false
+        validation: "0..1 ISODateTime. Consent is open-ended if absent."
+      - field: Data.TransactionFromDateTime
+        type: String
+        required: false
+        validation: "0..1 ISODateTime. Start of the consented transaction query window."
+      - field: Data.TransactionToDateTime
+        type: String
+        required: false
+        validation: "0..1 ISODateTime. End of the consented transaction query window."
+      - field: Risk
+        type: Object
+        required: true
+        validation: "1..1 OBRisk2. No fields identified for the Risk section in AIS — sent as empty object {}."
+    response_schema:
+      - field: Data.ConsentId
+        type: String
+        nullable: false
+        description: "Unique consent id, Max128Text (OBReadConsentResponse1)."
+      - field: Data.Status
+        type: String
+        nullable: false
+        description: "OBInternalConsentStatus1Code. Initial AWAU; enum AWAU|AUTH|RJCT|CANC|EXPD."
+      - field: Data.StatusReason
+        type: Array
+        nullable: true
+        description: "Optional status-reason entries (StatusReasonCode, StatusReasonDescription)."
+      - field: Data.CreationDateTime
+        type: String
+        nullable: false
+        description: "ISODateTime the consent resource was created."
+      - field: Data.StatusUpdateDateTime
+        type: String
+        nullable: false
+        description: "ISODateTime of the last status update."
+      - field: Data.Permissions
+        type: Array
+        nullable: false
+        description: "Echo of the consented permission clusters."
+      - field: Data.ExpirationDateTime
+        type: String
+        nullable: true
+        description: "Echo of requested expiry; open-ended if absent."
+    error_codes:
+      - code: 400
+        message: "OB.Field.Invalid"
+        retry: false
+      - code: 401
+        message: "UNAUTHORIZED"
+        retry: false
+      - code: 403
+        message: "OB.Resource.InvalidConsentStatus"
+        retry: false
+      - code: 429
+        message: "TOO_MANY_REQUESTS"
+        retry: true
+      - code: 500
+        message: "OB.UnexpectedError"
+        retry: true
+  - id: get_consent_status
+    method: GET
+    path: "/obie/open-banking/v4.0/aisp/account-access-consents/{ConsentId}"
+    description: "Retrieve an account-access-consent to check its status (e.g. AUTH after PSU authorisation). Uses a client-credentials token. CE HSBCnet + Malta use the v3.1 (+ /ce) path. OBIE object: OBReadConsentResponse1."
+    auth_required: true
+    scopes: [accounts]
+    request_schema: []
+    response_schema:
+      - field: Data.ConsentId
+        type: String
+        nullable: false
+        description: "The consent id (path param ConsentId)."
+      - field: Data.Status
+        type: String
+        nullable: false
+        description: "OBInternalConsentStatus1Code: RJCT | AWAU | AUTH | CANC (PSU cancelled / token revoked) | EXPD (passed expiry)."
+      - field: Data.StatusReason
+        type: Array
+        nullable: true
+        description: "Optional status-reason entries."
+      - field: Data.CreationDateTime
+        type: String
+        nullable: false
+        description: "ISODateTime the consent was created."
+      - field: Data.StatusUpdateDateTime
+        type: String
+        nullable: false
+        description: "ISODateTime of the last status update."
+      - field: Data.Permissions
+        type: Array
+        nullable: false
+        description: "Consented permission clusters."
+    error_codes:
+      - code: 400
+        message: "OB.Field.Invalid"
+        retry: false
+      - code: 401
+        message: "UNAUTHORIZED"
+        retry: false
+      - code: 403
+        message: "OB.Resource.InvalidConsentStatus"
+        retry: false
+      - code: 429
+        message: "TOO_MANY_REQUESTS"
+        retry: true
+      - code: 500
+        message: "OB.UnexpectedError"
+        retry: true
+  - id: delete_consent
+    method: DELETE
+    path: "/obie/open-banking/v4.0/aisp/account-access-consents/{ConsentId}"
+    description: "Delete the account-access-consent resource when the PSU revokes consent (AISP must delete it as soon as practical). Uses a client-credentials token. CE HSBCnet + Malta use the v3.1 (+ /ce) path. Returns HTTP 204 with no body."
+    auth_required: true
+    scopes: [accounts]
+    request_schema: []
+    response_schema: []
+    note: "No response object by design — DELETE returns HTTP 204 No Content (OBIE: 'Response Object: NA'). Not a documented gap."
+    error_codes:
+      - code: 400
+        message: "OB.Field.Invalid"
+        retry: false
+      - code: 401
+        message: "UNAUTHORIZED"
+        retry: false
+      - code: 403
+        message: "OB.Resource.InvalidConsentStatus"
+        retry: false
+      - code: 429
+        message: "TOO_MANY_REQUESTS"
+        retry: true
+      - code: 500
+        message: "OB.UnexpectedError"
+        retry: true
+  - id: get_accounts
+    method: GET
+    path: "/obie/open-banking/v4.0/aisp/accounts"
+    description: "First call after consent authorisation — returns the full list of AccountId(s) the PSU authorised, used for all per-account resource calls. Uses an authorization-code token. Supports pagination. CE HSBCnet + Malta use the v3.1 (+ /ce) path. OBIE object: OBReadAccount6 (HTTP 200)."
+    auth_required: true
+    scopes: [accounts]
+    request_schema: []
+    response_schema:
+      - field: Data.Account[].AccountId
+        type: String
+        nullable: false
+        description: "Unique account identifier (OBAccount6 / AccountId)."
+      - field: Data.Account[].Status
+        type: String
+        nullable: true
+        description: "OBAccountStatus1Code: Enabled | Disabled | Deleted | Pending | ProForma."
+      - field: Data.Account[].StatusUpdateDateTime
+        type: String
+        nullable: true
+        description: "ISODateTime of the last status change."
+      - field: Data.Account[].Currency
+        type: String
+        nullable: true
+        description: "ISO 4217 currency (optional for switched accounts)."
+      - field: Data.Account[].AccountCategory
+        type: String
+        nullable: true
+        description: "OBInternalAccountType1Code (Business | Personal)."
+      - field: Data.Account[].AccountTypeCode
+        type: String
+        nullable: true
+        description: "OBExternalCashAccountType1Code (e.g. CurrentAccount, Savings)."
+      - field: Data.Account[].Nickname
+        type: String
+        nullable: true
+        description: "PSU-assigned nickname."
+      - field: Data.Account[].Description
+        type: String
+        nullable: true
+        description: "Account description."
+      - field: Data.Account[].OpeningDate
+        type: String
+        nullable: true
+        description: "Account opening date."
+      - field: Data.Account[].Account[].SchemeName
+        type: String
+        nullable: false
+        description: "OBInternalAccountIdentification4Code (e.g. UK.OBIE.SortCodeAccountNumber, UK.OBIE.IBAN)."
+      - field: Data.Account[].Account[].Identification
+        type: String
+        nullable: false
+        description: "The account number/identifier."
+      - field: Data.Account[].Account[].Name
+        type: String
+        nullable: true
+        description: "Account name as shown to the PSU."
+      - field: Data.Account[].Account[].SecondaryIdentification
+        type: String
+        nullable: true
+        description: "e.g. building-society roll number."
+      - field: Data.Account[].Servicer.SchemeName
+        type: String
+        nullable: true
+        description: "Servicing institution scheme (OBBranchAndFinancialInstitutionIdentification5)."
+      - field: Data.Account[].Servicer.Identification
+        type: String
+        nullable: true
+        description: "Servicing institution identification (e.g. sort code / BIC)."
+      - field: Links.Self
+        type: String
+        nullable: true
+        description: "Self link; Links also carries First/Prev/Next/Last for pagination."
+      - field: Meta.TotalPages
+        type: Integer
+        nullable: true
+        description: "Total page count (pagination Meta)."
+    error_codes:
+      - code: 400
+        message: "OB.Field.Invalid"
+        retry: false
+      - code: 401
+        message: "UNAUTHORIZED"
+        retry: false
+      - code: 403
+        message: "OB.Resource.InvalidConsentStatus"
+        retry: false
+      - code: 406
+        message: "OB.Header.Invalid (unacceptable Accept media type)"
+        retry: false
+      - code: 429
+        message: "TOO_MANY_REQUESTS"
+        retry: true
+      - code: 500
+        message: "OB.UnexpectedError"
+        retry: true
+  - id: get_account_details
+    method: GET
+    path: "/obie/open-banking/v4.0/aisp/accounts/{AccountId}"
+    description: "Retrieve account information for a single AccountId. Uses an authorization-code token. Offered by all 10 brands (CE HSBCnet + Malta v3.1 + /ce). OBIE object: OBReadAccount6 (HTTP 200)."
+    auth_required: true
+    scopes: [accounts]
+    request_schema: []
+    response_schema:
+      - field: Data.Account[].AccountId
+        type: String
+        nullable: false
+        description: "Unique account identifier (OBAccount6)."
+      - field: Data.Account[].Status
+        type: String
+        nullable: true
+        description: "OBAccountStatus1Code."
+      - field: Data.Account[].Currency
+        type: String
+        nullable: true
+        description: "ISO 4217 currency."
+      - field: Data.Account[].AccountTypeCode
+        type: String
+        nullable: true
+        description: "OBExternalCashAccountType1Code."
+      - field: Data.Account[].Nickname
+        type: String
+        nullable: true
+        description: "PSU-assigned nickname."
+      - field: Data.Account[].Account[].SchemeName
+        type: String
+        nullable: false
+        description: "OBInternalAccountIdentification4Code."
+      - field: Data.Account[].Account[].Identification
+        type: String
+        nullable: false
+        description: "The account number/identifier."
+      - field: Data.Account[].Account[].Name
+        type: String
+        nullable: true
+        description: "Account name."
+      - field: Data.Account[].Servicer.Identification
+        type: String
+        nullable: true
+        description: "Servicing institution identification."
+    error_codes:
+      - code: 400
+        message: "OB.Field.Invalid (incl. non-existent AccountId)"
+        retry: false
+      - code: 401
+        message: "UNAUTHORIZED"
+        retry: false
+      - code: 403
+        message: "OB.Resource.InvalidConsentStatus"
+        retry: false
+      - code: 429
+        message: "TOO_MANY_REQUESTS"
+        retry: true
+      - code: 500
+        message: "OB.UnexpectedError"
+        retry: true
+  - id: get_account_balances
+    method: GET
+    path: "/obie/open-banking/v4.0/aisp/accounts/{AccountId}/balances"
+    description: "Retrieve balance information for a specific AccountId; multiple balances may return (one per Type). Requires ReadBalances. Authorization-code token. All 10 brands (CE HSBCnet + Malta v3.1 + /ce). OBIE object: OBReadBalance1 (HTTP 200)."
+    auth_required: true
+    scopes: [accounts]
+    request_schema: []
+    response_schema:
+      - field: Data.Balance[].AccountId
+        type: String
+        nullable: false
+        description: "Account the balance belongs to."
+      - field: Data.Balance[].CreditDebitIndicator
+        type: String
+        nullable: false
+        description: "OBInternalCreditDebitCode: Credit | Debit."
+      - field: Data.Balance[].Type
+        type: String
+        nullable: false
+        description: "ExternalBalanceType1Code (e.g. InterimAvailable, ClosingBooked)."
+      - field: Data.Balance[].DateTime
+        type: String
+        nullable: false
+        description: "ISO 8601 date-time of the balance (with timezone)."
+      - field: Data.Balance[].Amount.Amount
+        type: String
+        nullable: false
+        description: "Balance amount (decimal string)."
+      - field: Data.Balance[].Amount.Currency
+        type: String
+        nullable: false
+        description: "ISO 4217 currency."
+      - field: Data.Balance[].CreditLine[].Included
+        type: Boolean
+        nullable: true
+        description: "Whether the credit line is included in the balance."
+      - field: Data.Balance[].CreditLine[].Type
+        type: String
+        nullable: true
+        description: "OBInternalLimitType1Code (e.g. Available, Credit)."
+      - field: Data.Balance[].CreditLine[].Amount.Amount
+        type: String
+        nullable: true
+        description: "Credit-line amount."
+      - field: Data.Balance[].CreditLine[].Amount.Currency
+        type: String
+        nullable: true
+        description: "Credit-line currency."
+    error_codes:
+      - code: 400
+        message: "OB.Field.Invalid"
+        retry: false
+      - code: 401
+        message: "UNAUTHORIZED"
+        retry: false
+      - code: 403
+        message: "OB.Resource.InvalidConsentStatus (e.g. missing ReadBalances)"
+        retry: false
+      - code: 429
+        message: "TOO_MANY_REQUESTS"
+        retry: true
+      - code: 500
+        message: "OB.UnexpectedError"
+        retry: true
+  - id: get_account_transactions
+    method: GET
+    path: "/obie/open-banking/v4.0/aisp/accounts/{AccountId}/transactions"
+    description: "Retrieve transactions for a specific AccountId. Detail varies by permission (ReadTransactionsBasic/Detail/Credits/Debits). Query filters fromBookingDateTime/toBookingDateTime (UTC ISO 8601; timezone component ignored by the ASPSP); BookingDateTime drives pagination. Authorization-code token. All 10 brands (CE HSBCnet + Malta v3.1 + /ce). OBIE object: OBReadTransaction6 (HTTP 200)."
+    auth_required: true
+    scopes: [accounts]
+    request_schema:
+      - field: fromBookingDateTime
+        type: String
+        required: false
+        validation: "Query param. UTC ISO 8601 date-time lower bound."
+      - field: toBookingDateTime
+        type: String
+        required: false
+        validation: "Query param. UTC ISO 8601 date-time upper bound."
+    response_schema:
+      - field: Data.Transaction[].AccountId
+        type: String
+        nullable: false
+        description: "Account the transaction belongs to (OBTransaction6)."
+      - field: Data.Transaction[].TransactionId
+        type: String
+        nullable: true
+        description: "Unique transaction identifier."
+      - field: Data.Transaction[].TransactionReference
+        type: String
+        nullable: true
+        description: "Reference for the transaction."
+      - field: Data.Transaction[].CreditDebitIndicator
+        type: String
+        nullable: false
+        description: "OBInternalCreditDebitCode: Credit | Debit."
+      - field: Data.Transaction[].Status
+        type: String
+        nullable: false
+        description: "ExternalEntryStatus1Code: Booked | Pending."
+      - field: Data.Transaction[].BookingDateTime
+        type: String
+        nullable: false
+        description: "ISO 8601 date-time the entry was booked."
+      - field: Data.Transaction[].ValueDateTime
+        type: String
+        nullable: true
+        description: "ISO 8601 value date-time."
+      - field: Data.Transaction[].TransactionInformation
+        type: String
+        nullable: true
+        description: "Free-text description of the transaction."
+      - field: Data.Transaction[].Amount.Amount
+        type: String
+        nullable: false
+        description: "Transaction amount (decimal string)."
+      - field: Data.Transaction[].Amount.Currency
+        type: String
+        nullable: false
+        description: "ISO 4217 currency."
+      - field: Data.Transaction[].BankTransactionCode.Code
+        type: String
+        nullable: true
+        description: "OBBankTransactionCodeStructure1 — ISO 20022 domain code."
+      - field: Data.Transaction[].MerchantDetails.MerchantName
+        type: String
+        nullable: true
+        description: "Merchant name (OBMerchantDetails1)."
+      - field: Data.Transaction[].Balance.Amount.Amount
+        type: String
+        nullable: true
+        description: "Running balance after the entry (OBTransactionCashBalance)."
+      - field: Data.Transaction[].CreditorAccount.Identification
+        type: String
+        nullable: true
+        description: "Creditor account identifier (OBCashAccount6)."
+      - field: Data.Transaction[].DebtorAccount.Identification
+        type: String
+        nullable: true
+        description: "Debtor account identifier (OBCashAccount6)."
+      - field: Links.Next
+        type: String
+        nullable: true
+        description: "Pagination next-page link."
+    error_codes:
+      - code: 400
+        message: "OB.Field.Invalid"
+        retry: false
+      - code: 401
+        message: "UNAUTHORIZED"
+        retry: false
+      - code: 403
+        message: "OB.Resource.InvalidConsentStatus"
+        retry: false
+      - code: 429
+        message: "TOO_MANY_REQUESTS"
+        retry: true
+      - code: 500
+        message: "OB.UnexpectedError"
+        retry: true
+  - id: get_account_beneficiaries
+    method: GET
+    path: "/obie/open-banking/v4.0/aisp/accounts/{AccountId}/beneficiaries"
+    description: "Retrieve beneficiaries linked to a specific AccountId (may include Trusted Beneficiaries per BeneficiaryType). Requires ReadBeneficiariesBasic/Detail. Authorization-code token. Brand availability (T1): CE HSBCnet, Kinetic, Malta Personal, UK Business, UK HSBCnet, UK Personal, firstdirect — NOT offered by CE MiVision, M&S Bank, UK MiVision. CE HSBCnet + Malta use v3.1 (+ /ce for CE HSBCnet). OBIE object: OBReadBeneficiary5 (HTTP 200)."
+    auth_required: true
+    scopes: [accounts]
+    request_schema: []
+    response_schema:
+      - field: Data.Beneficiary[].AccountId
+        type: String
+        nullable: true
+        description: "Account the beneficiary is linked to (OBBeneficiary5)."
+      - field: Data.Beneficiary[].BeneficiaryId
+        type: String
+        nullable: true
+        description: "Unique beneficiary identifier."
+      - field: Data.Beneficiary[].BeneficiaryType
+        type: String
+        nullable: true
+        description: "Trusted | Ordinary."
+      - field: Data.Beneficiary[].Reference
+        type: String
+        nullable: true
+        description: "Beneficiary reference."
+      - field: Data.Beneficiary[].CreditorAccount.SchemeName
+        type: String
+        nullable: true
+        description: "Beneficiary account scheme name."
+      - field: Data.Beneficiary[].CreditorAccount.Identification
+        type: String
+        nullable: true
+        description: "Beneficiary account identifier."
+      - field: Data.Beneficiary[].CreditorAccount.Name
+        type: String
+        nullable: true
+        description: "Beneficiary account name."
+    error_codes:
+      - code: 400
+        message: "OB.Field.Invalid"
+        retry: false
+      - code: 401
+        message: "UNAUTHORIZED"
+        retry: false
+      - code: 403
+        message: "OB.Resource.InvalidConsentStatus"
+        retry: false
+      - code: 429
+        message: "TOO_MANY_REQUESTS"
+        retry: true
+      - code: 500
+        message: "OB.UnexpectedError"
+        retry: true
+  - id: get_account_direct_debits
+    method: GET
+    path: "/obie/open-banking/v4.0/aisp/accounts/{AccountId}/direct-debits"
+    description: "Retrieve direct debits set up on a specific AccountId. Requires ReadDirectDebits. Authorization-code token. Brand availability (T1): CE HSBCnet, Kinetic, UK Business, UK HSBCnet, UK Personal, firstdirect. CE HSBCnet uses v3.1 + /ce. OBIE object: OBReadDirectDebit2 (HTTP 200)."
+    auth_required: true
+    scopes: [accounts]
+    request_schema: []
+    response_schema:
+      - field: Data.DirectDebit[].AccountId
+        type: String
+        nullable: false
+        description: "Account the direct debit is on."
+      - field: Data.DirectDebit[].DirectDebitId
+        type: String
+        nullable: true
+        description: "Unique direct-debit identifier."
+      - field: Data.DirectDebit[].DirectDebitStatusCode
+        type: String
+        nullable: true
+        description: "ExternalMandateStatus1Code (e.g. Active, Inactive)."
+      - field: Data.DirectDebit[].Name
+        type: String
+        nullable: false
+        description: "Name of the direct-debit originator."
+      - field: Data.DirectDebit[].PreviousPaymentDateTime
+        type: String
+        nullable: true
+        description: "ISODateTime of the previous payment."
+      - field: Data.DirectDebit[].Frequency
+        type: String
+        nullable: true
+        description: "UK.OBIE.Monthly | Weekly | Annual | etc."
+      - field: Data.DirectDebit[].PreviousPaymentAmount.Amount
+        type: String
+        nullable: true
+        description: "Amount of the previous payment."
+      - field: Data.DirectDebit[].PreviousPaymentAmount.Currency
+        type: String
+        nullable: true
+        description: "Currency of the previous payment."
+    error_codes:
+      - code: 400
+        message: "OB.Field.Invalid"
+        retry: false
+      - code: 401
+        message: "UNAUTHORIZED"
+        retry: false
+      - code: 403
+        message: "OB.Resource.InvalidConsentStatus"
+        retry: false
+      - code: 429
+        message: "TOO_MANY_REQUESTS"
+        retry: true
+      - code: 500
+        message: "OB.UnexpectedError"
+        retry: true
+  - id: get_account_standing_orders
+    method: GET
+    path: "/obie/open-banking/v4.0/aisp/accounts/{AccountId}/standing-orders"
+    description: "Retrieve standing orders set up on a specific AccountId. Requires ReadStandingOrdersBasic/Detail. Authorization-code token. Brand availability (T1): CE HSBCnet, Kinetic, Malta Personal, UK Business, UK HSBCnet, UK Personal, firstdirect. CE HSBCnet + Malta use v3.1 (+ /ce for CE HSBCnet). OBIE object: OBReadStandingOrder6 (HTTP 200)."
+    auth_required: true
+    scopes: [accounts]
+    request_schema: []
+    response_schema:
+      - field: Data.StandingOrder[].AccountId
+        type: String
+        nullable: false
+        description: "Account the standing order is on (OBStandingOrder6)."
+      - field: Data.StandingOrder[].StandingOrderId
+        type: String
+        nullable: true
+        description: "Unique standing-order identifier."
+      - field: Data.StandingOrder[].Reference
+        type: String
+        nullable: true
+        description: "Standing-order reference."
+      - field: Data.StandingOrder[].NextPaymentDateTime
+        type: String
+        nullable: true
+        description: "ISODateTime of the next payment."
+      - field: Data.StandingOrder[].StandingOrderStatusCode
+        type: String
+        nullable: true
+        description: "ExternalMandateStatus1Code."
+      - field: Data.StandingOrder[].NextPaymentAmount.Amount
+        type: String
+        nullable: true
+        description: "Amount of the next payment."
+      - field: Data.StandingOrder[].NextPaymentAmount.Currency
+        type: String
+        nullable: true
+        description: "Currency of the next payment."
+      - field: Data.StandingOrder[].CreditorAccount.Identification
+        type: String
+        nullable: true
+        description: "Creditor account identifier (Detail permission)."
+    error_codes:
+      - code: 400
+        message: "OB.Field.Invalid"
+        retry: false
+      - code: 401
+        message: "UNAUTHORIZED"
+        retry: false
+      - code: 403
+        message: "OB.Resource.InvalidConsentStatus"
+        retry: false
+      - code: 429
+        message: "TOO_MANY_REQUESTS"
+        retry: true
+      - code: 500
+        message: "OB.UnexpectedError"
+        retry: true
+  - id: get_account_scheduled_payments
+    method: GET
+    path: "/obie/open-banking/v4.0/aisp/accounts/{AccountId}/scheduled-payments"
+    description: "Retrieve scheduled (one-off future-dated) payments on a specific AccountId. Detail varies by ReadScheduledPaymentsBasic/Detail (CreditorAccount/CreditorAgent only with Detail). Authorization-code token. Brand availability (T1): CE HSBCnet, Kinetic, Malta Personal, UK Business, UK HSBCnet, UK Personal, firstdirect. CE HSBCnet + Malta use v3.1 (+ /ce for CE HSBCnet). OBIE object: OBReadScheduledPayment3 (HTTP 200)."
+    auth_required: true
+    scopes: [accounts]
+    request_schema: []
+    response_schema:
+      - field: Data.ScheduledPayment[].AccountId
+        type: String
+        nullable: false
+        description: "Account the scheduled payment is on (OBScheduledPayment3)."
+      - field: Data.ScheduledPayment[].ScheduledPaymentId
+        type: String
+        nullable: true
+        description: "Unique scheduled-payment identifier."
+      - field: Data.ScheduledPayment[].ScheduledPaymentDateTime
+        type: String
+        nullable: false
+        description: "ISODateTime the payment is scheduled for."
+      - field: Data.ScheduledPayment[].ScheduledType
+        type: String
+        nullable: false
+        description: "OBInternalScheduleType1Code (Arrival | Execution)."
+      - field: Data.ScheduledPayment[].Reference
+        type: String
+        nullable: true
+        description: "Payment reference."
+      - field: Data.ScheduledPayment[].InstructedAmount.Amount
+        type: String
+        nullable: false
+        description: "Instructed amount."
+      - field: Data.ScheduledPayment[].InstructedAmount.Currency
+        type: String
+        nullable: false
+        description: "Instructed currency."
+      - field: Data.ScheduledPayment[].CreditorAccount.Identification
+        type: String
+        nullable: true
+        description: "Creditor account identifier (Detail permission)."
+    error_codes:
+      - code: 400
+        message: "OB.Field.Invalid"
+        retry: false
+      - code: 401
+        message: "UNAUTHORIZED"
+        retry: false
+      - code: 403
+        message: "OB.Resource.InvalidConsentStatus"
+        retry: false
+      - code: 429
+        message: "TOO_MANY_REQUESTS"
+        retry: true
+      - code: 500
+        message: "OB.UnexpectedError"
+        retry: true
+  - id: get_account_product
+    method: GET
+    path: "/obie/open-banking/v4.0/aisp/accounts/{AccountId}/product"
+    description: "Retrieve product details (pricing, fees, interest rates, features) for a specific AccountId. An account has a single product; detailed info available for BCA/PCA products. Requires ReadProducts. Authorization-code token. Brand availability (T1): CE HSBCnet, Kinetic, M&S Bank, Malta Personal, UK Business, UK HSBCnet, UK Personal, firstdirect. CE HSBCnet + Malta use v3.1 (+ /ce for CE HSBCnet). OBIE object: OBReadProduct2 (HTTP 200)."
+    auth_required: true
+    scopes: [accounts]
+    request_schema: []
+    response_schema:
+      - field: Data.Product[].AccountId
+        type: String
+        nullable: false
+        description: "Account the product is associated with."
+      - field: Data.Product[].ProductId
+        type: String
+        nullable: true
+        description: "Institution-internal product identifier."
+      - field: Data.Product[].ProductName
+        type: String
+        nullable: true
+        description: "Customer-facing marketing product name."
+      - field: Data.Product[].ProductType
+        type: String
+        nullable: false
+        description: "OBInternalProductType1Code (e.g. PersonalCurrentAccount, BusinessCurrentAccount)."
+      - field: Data.Product[].SecondaryProductId
+        type: String
+        nullable: true
+        description: "Secondary product identifier."
+      - field: Data.Product[].MarketingStateId
+        type: String
+        nullable: true
+        description: "Product Marketing State identifier."
+      - field: Data.Product[].OtherProductType.Name
+        type: String
+        nullable: true
+        description: "Long name for an Other product type."
+      - field: Data.Product[].OtherProductType.Description
+        type: String
+        nullable: true
+        description: "Description of an Other product type."
+    error_codes:
+      - code: 400
+        message: "OB.Field.Invalid"
+        retry: false
+      - code: 401
+        message: "UNAUTHORIZED"
+        retry: false
+      - code: 403
+        message: "OB.Resource.InvalidConsentStatus"
+        retry: false
+      - code: 429
+        message: "TOO_MANY_REQUESTS"
+        retry: true
+      - code: 500
+        message: "OB.UnexpectedError"
+        retry: true
+  - id: get_account_parties
+    method: GET
+    path: "/obie/open-banking/v4.0/aisp/accounts/{AccountId}/parties"
+    description: "Retrieve details of the account owner(s)/holder(s) and operator(s) for a specific AccountId. Requires ReadParty. Authorization-code token. Brand availability (T1): CE HSBCnet, Kinetic, M&S Bank, Malta Personal, UK Business, UK HSBCnet, UK Personal, firstdirect. CE HSBCnet + Malta use v3.1 (+ /ce for CE HSBCnet). OBIE object: OBReadParty3 (array of OBParty2; HTTP 200)."
+    auth_required: true
+    scopes: [accounts]
+    request_schema: []
+    response_schema:
+      - field: Data.Party[].PartyId
+        type: String
+        nullable: true
+        description: "Unique party identifier (OBParty2)."
+      - field: Data.Party[].PartyType
+        type: String
+        nullable: true
+        description: "Sole | Joint | Delegate etc."
+      - field: Data.Party[].Name
+        type: String
+        nullable: true
+        description: "Party name."
+      - field: Data.Party[].FullLegalName
+        type: String
+        nullable: true
+        description: "Full legal name."
+      - field: Data.Party[].EmailAddress
+        type: String
+        nullable: true
+        description: "Party email address."
+      - field: Data.Party[].Address[].AddressLine
+        type: Array
+        nullable: true
+        description: "Postal address lines."
+    error_codes:
+      - code: 400
+        message: "OB.Field.Invalid"
+        retry: false
+      - code: 401
+        message: "UNAUTHORIZED"
+        retry: false
+      - code: 403
+        message: "OB.Resource.InvalidConsentStatus"
+        retry: false
+      - code: 429
+        message: "TOO_MANY_REQUESTS"
+        retry: true
+      - code: 500
+        message: "OB.UnexpectedError"
+        retry: true
+  - id: get_account_party
+    method: GET
+    path: "/obie/open-banking/v4.0/aisp/accounts/{AccountId}/party"
+    description: "Retrieve the single account owner/holder for a specific AccountId (the business, or the PSU who authorised a joint account). Requires ReadParty. Authorization-code token. Brand availability (T1): M&S Bank, Malta Personal, UK Business, UK Personal, firstdirect. Malta uses v3.1. OBIE object: OBReadParty2 (single OBParty2; HTTP 200)."
+    auth_required: true
+    scopes: [accounts]
+    request_schema: []
+    response_schema:
+      - field: Data.Party.PartyId
+        type: String
+        nullable: true
+        description: "Unique party identifier (OBParty2)."
+      - field: Data.Party.PartyType
+        type: String
+        nullable: true
+        description: "Sole | Joint | Delegate etc."
+      - field: Data.Party.Name
+        type: String
+        nullable: true
+        description: "Party name."
+      - field: Data.Party.FullLegalName
+        type: String
+        nullable: true
+        description: "Full legal name."
+      - field: Data.Party.EmailAddress
+        type: String
+        nullable: true
+        description: "Party email address."
+      - field: Data.Party.Address[].AddressLine
+        type: Array
+        nullable: true
+        description: "Postal address lines."
+    error_codes:
+      - code: 400
+        message: "OB.Field.Invalid"
+        retry: false
+      - code: 401
+        message: "UNAUTHORIZED"
+        retry: false
+      - code: 403
+        message: "OB.Resource.InvalidConsentStatus"
+        retry: false
+      - code: 429
+        message: "TOO_MANY_REQUESTS"
+        retry: true
+      - code: 500
+        message: "OB.UnexpectedError"
+        retry: true
+  - id: get_account_statements
+    method: GET
+    path: "/obie/open-banking/v4.0/aisp/accounts/{AccountId}/statements"
+    description: "Retrieve statements for a specific AccountId. Detail varies by ReadStatementsBasic/Detail; supports fromStatementDateTime/toStatementDateTime filtering. Authorization-code token. v4.0 only. Brand availability (T1): CE MiVision, Kinetic, M&S Bank, UK Business, UK MiVision, UK Personal, firstdirect. CE MiVision uses /ce. OBIE object: OBReadStatement2 (HTTP 200)."
+    auth_required: true
+    scopes: [accounts]
+    request_schema:
+      - field: fromStatementDateTime
+        type: String
+        required: false
+        validation: "Query param. UTC ISO 8601 date-time lower bound."
+      - field: toStatementDateTime
+        type: String
+        required: false
+        validation: "Query param. UTC ISO 8601 date-time upper bound."
+    response_schema:
+      - field: Data.Statement[].AccountId
+        type: String
+        nullable: false
+        description: "Account the statement is for (OBStatement2)."
+      - field: Data.Statement[].StatementId
+        type: String
+        nullable: true
+        description: "Unique statement identifier."
+      - field: Data.Statement[].StatementReference
+        type: String
+        nullable: true
+        description: "Statement reference."
+      - field: Data.Statement[].Type
+        type: String
+        nullable: false
+        description: "OBInternalStatementType1Code (RegularPeriodic | AccountClosure etc.)."
+      - field: Data.Statement[].StartDateTime
+        type: String
+        nullable: false
+        description: "Statement period start."
+      - field: Data.Statement[].EndDateTime
+        type: String
+        nullable: false
+        description: "Statement period end."
+      - field: Data.Statement[].CreationDateTime
+        type: String
+        nullable: false
+        description: "Statement creation date-time."
+    error_codes:
+      - code: 400
+        message: "OB.Field.Invalid"
+        retry: false
+      - code: 401
+        message: "UNAUTHORIZED"
+        retry: false
+      - code: 403
+        message: "OB.Resource.InvalidConsentStatus"
+        retry: false
+      - code: 429
+        message: "TOO_MANY_REQUESTS"
+        retry: true
+      - code: 500
+        message: "OB.UnexpectedError"
+        retry: true
+  - id: get_account_statement_details
+    method: GET
+    path: "/obie/open-banking/v4.0/aisp/accounts/{AccountId}/statements/{StatementId}"
+    description: "Retrieve the statement resource for a specific StatementId within an AccountId. Authorization-code token. v4.0 only. Brand availability (T1): CE MiVision, Kinetic, M&S Bank, UK Business, UK MiVision, UK Personal, firstdirect. CE MiVision uses /ce. OBIE object: OBReadStatement2 (HTTP 200)."
+    auth_required: true
+    scopes: [accounts]
+    request_schema: []
+    response_schema:
+      - field: Data.Statement[].AccountId
+        type: String
+        nullable: false
+        description: "Account the statement is for (OBStatement2)."
+      - field: Data.Statement[].StatementId
+        type: String
+        nullable: true
+        description: "The requested StatementId."
+      - field: Data.Statement[].Type
+        type: String
+        nullable: false
+        description: "OBInternalStatementType1Code."
+      - field: Data.Statement[].StartDateTime
+        type: String
+        nullable: false
+        description: "Statement period start."
+      - field: Data.Statement[].EndDateTime
+        type: String
+        nullable: false
+        description: "Statement period end."
+      - field: Data.Statement[].CreationDateTime
+        type: String
+        nullable: false
+        description: "Statement creation date-time."
+      - field: Data.Statement[].StatementAmount[].Amount.Amount
+        type: String
+        nullable: true
+        description: "A statement amount value (e.g. closing balance / interest)."
+    error_codes:
+      - code: 400
+        message: "OB.Field.Invalid (incl. non-existent StatementId)"
+        retry: false
+      - code: 401
+        message: "UNAUTHORIZED"
+        retry: false
+      - code: 403
+        message: "OB.Resource.InvalidConsentStatus"
+        retry: false
+      - code: 429
+        message: "TOO_MANY_REQUESTS"
+        retry: true
+      - code: 500
+        message: "OB.UnexpectedError"
+        retry: true
+  - id: get_account_statement_transactions
+    method: GET
+    path: "/obie/open-banking/v4.0/aisp/accounts/{AccountId}/statements/{StatementId}/transactions"
+    description: "Retrieve the transactions that appear on the selected statement; the returned data model is the transactions resource. Authorization-code token. v4.0 only. Brand availability (T1): CE MiVision, Kinetic, M&S Bank, UK Business, UK MiVision, UK Personal, firstdirect. CE MiVision uses /ce. OBIE object: OBReadTransaction6 (HTTP 200)."
+    auth_required: true
+    scopes: [accounts]
+    request_schema: []
+    response_schema:
+      - field: Data.Transaction[].AccountId
+        type: String
+        nullable: false
+        description: "Account the transaction belongs to (OBTransaction6)."
+      - field: Data.Transaction[].TransactionId
+        type: String
+        nullable: true
+        description: "Unique transaction identifier."
+      - field: Data.Transaction[].CreditDebitIndicator
+        type: String
+        nullable: false
+        description: "Credit | Debit."
+      - field: Data.Transaction[].Status
+        type: String
+        nullable: false
+        description: "Booked | Pending."
+      - field: Data.Transaction[].BookingDateTime
+        type: String
+        nullable: false
+        description: "ISO 8601 booking date-time."
+      - field: Data.Transaction[].Amount.Amount
+        type: String
+        nullable: false
+        description: "Transaction amount."
+      - field: Data.Transaction[].Amount.Currency
+        type: String
+        nullable: false
+        description: "ISO 4217 currency."
+      - field: Data.Transaction[].TransactionInformation
+        type: String
+        nullable: true
+        description: "Free-text description."
+    error_codes:
+      - code: 400
+        message: "OB.Field.Invalid"
+        retry: false
+      - code: 401
+        message: "UNAUTHORIZED"
+        retry: false
+      - code: 403
+        message: "OB.Resource.InvalidConsentStatus"
+        retry: false
+      - code: 429
+        message: "TOO_MANY_REQUESTS"
+        retry: true
+      - code: 500
+        message: "OB.UnexpectedError"
+        retry: true
+  - id: get_account_offers
+    method: GET
+    path: "/obie/open-banking/v4.0/aisp/accounts/{AccountId}/offers"
+    description: "Retrieve the offers available for a specific AccountId. Requires ReadOffers. Authorization-code token. v4.0 only. Brand availability (T1): M&S Bank ONLY. OBIE object: OBReadOffer1 (HTTP 200)."
+    auth_required: true
+    scopes: [accounts]
+    request_schema: []
+    response_schema:
+      - field: Data.Offer[].AccountId
+        type: String
+        nullable: false
+        description: "Account the offer applies to (OBReadOffer1, sourced from T2 OBIE AISP v4.0 Offers.html)."
+      - field: Data.Offer[].OfferId
+        type: String
+        nullable: true
+        description: "Unique offer identifier."
+      - field: Data.Offer[].OfferType
+        type: String
+        nullable: true
+        description: "BalanceTransfer | Overdraft | LoanFacility | etc."
+      - field: Data.Offer[].Description
+        type: String
+        nullable: true
+        description: "Offer description."
+      - field: Data.Offer[].Amount.Amount
+        type: String
+        nullable: true
+        description: "Offer amount."
+      - field: Data.Offer[].StartDateTime
+        type: String
+        nullable: true
+        description: "Offer start date-time."
+      - field: Data.Offer[].EndDateTime
+        type: String
+        nullable: true
+        description: "Offer end date-time."
+    note: "Field-level schema sourced from T2 OBIE AISP v4.0 (Offers.html) NOT the HSBC OpenAPI — account-info-4.0-dbb.yaml has NO offers path (PORTAL GAP). T1 confirms the endpoint exists for M&S Bank only."
+    error_codes:
+      - code: 400
+        message: "OB.Field.Invalid"
+        retry: false
+      - code: 401
+        message: "UNAUTHORIZED"
+        retry: false
+      - code: 403
+        message: "OB.Resource.InvalidConsentStatus"
+        retry: false
+      - code: 429
+        message: "TOO_MANY_REQUESTS"
+        retry: true
+      - code: 500
+        message: "OB.UnexpectedError"
+        retry: true

@@ -684,44 +684,44 @@ state_model:
       default: "ScreenState.Loading"
   content_type:
     name: DirectDebitDetailContent
-    note: "Display-ready label strings + the cancel-dialog flag. No typed enums."
+    note: "Display-ready label strings projected from one OBIE Data.DirectDebit[] item. No typed enums."
     fields:
-      - { name: merchantName, type: String }
-      - { name: statusLabel, type: String }
-      - { name: isActive, type: Boolean }
-      - { name: amountLabel, type: String }
-      - { name: frequencyLabel, type: String }
-      - { name: nextPaymentLabel, type: String, note: "em dash when cancelled/underivable" }
-      - { name: linkedAccountName, type: String, note: "best-effort; 'Account' fallback" }
-      - { name: linkedAccountMasked, type: String }
-      - { name: mandateReference, type: String, note: "em dash when blank" }
-      - { name: startDateLabel, type: String, note: "em dash when underivable" }
-      - { name: recentPayments, type: "List<DirectDebitPaymentRow>" }
-      - { name: cancelDialogVisible, type: Boolean }
+      - { name: merchantName, type: String, note: "Data.DirectDebit[].Name (originator name)" }
+      - { name: statusLabel, type: String, note: "from Data.DirectDebit[].DirectDebitStatusCode (ExternalMandateStatus1Code: Active/Inactive)" }
+      - { name: isActive, type: Boolean, note: "DirectDebitStatusCode == Active" }
+      - { name: amountLabel, type: String, note: "from Data.DirectDebit[].PreviousPaymentAmount.Amount (String) + .Currency; OBIE exposes the PREVIOUS payment amount, not a next/fixed amount" }
+      - { name: frequencyLabel, type: String, note: "title-cased Data.DirectDebit[].Frequency (UK.OBIE.Monthly/Weekly/Annual...)" }
+      - { name: previousPaymentLabel, type: String, note: "from Data.DirectDebit[].PreviousPaymentDateTime; em dash when absent. OBIE carries no next-payment date for direct debits" }
+      - { name: linkedAccountName, type: String, note: "best-effort from get_account_details Data.Account[].Nickname/.Account[].Name; 'Account' fallback" }
+      - { name: linkedAccountMasked, type: String, note: "last 4 of Data.DirectDebit[].AccountId" }
+      - { name: mandateReference, type: String, note: "Data.DirectDebit[].MandateIdentification; em dash when blank" }
+      - { name: recentPayments, type: "List<DirectDebitPaymentRow>", note: "OBIE returns only the single PreviousPaymentDateTime/Amount per mandate — at most one row" }
+      - { name: cancelDialogVisible, type: Boolean, note: "DEAD on OBIE — cancel unsupported (no OBIE cancel endpoint); retained only to avoid component churn, the cancel CTA is hidden" }
   supporting_types:
     - name: DirectDebitPaymentRow
       fields:
         - { name: dateLabel, type: String }
         - { name: amountLabel, type: String }
   model_type:
-    name: DirectDebitMandate
-    note: "Derived from TXN_TYPE=DD history; located by mandateId via listMandates().firstOrNull. Cancelled = locally recorded."
+    name: OBReadDirectDebit2
+    note: "The selected Data.DirectDebit[] item located by DirectDebitId == mandateId from get_direct_debits (no per-mandate GET in OBIE)."
   methods:
     - onRetry
-    - onCancelRequested
-    - onCancelDismissed
-    - onCancelConfirmed
+  unsupported_methods:
+    - { name: onCancelRequested, reason: "OBIE has no cancel-direct-debit endpoint" }
+    - { name: onCancelDismissed, reason: "cancel flow unsupported on OBIE" }
+    - { name: onCancelConfirmed, reason: "OBIE has no cancel-direct-debit endpoint" }
   di:
     - DirectDebitsRepository
     - AccountsRepository
 
 api:
   note: >
-    NONE of the originally specified direct-debit detail endpoints exist on OBP (GET detail /
-    DELETE cancel — all live-verified 404). They are dropped. The mandate is RE-DERIVED via
-    DirectDebitsRepository.listMandates(bankId, accountId).firstOrNull { it.id == mandateId };
-    the linked account name is resolved best-effort via AccountsRepository.accountDetail();
-    cancel is LOCAL-ONLY. See api.yaml.
+    Rebound to OBIE AISP. The detail is the selected Data.DirectDebit[] item from get_direct_debits
+    (GET /aisp/accounts/{AccountId}/direct-debits) located by DirectDebitId == mandateId — OBIE has
+    NO single-direct-debit GET. The linked account name is resolved best-effort via get_account_details.
+    CANCEL IS UNSUPPORTED: OBIE has no cancel-direct-debit endpoint, so the Cancel Mandate CTA + confirm
+    dialog have no server backing and should be hidden/disabled. See api.yaml.
 
 navigation:
   - id: nav_back

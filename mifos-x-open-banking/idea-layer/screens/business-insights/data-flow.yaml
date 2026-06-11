@@ -5,82 +5,116 @@ entries:
   - screen_id: business-insights
     trigger: on_mount
     endpoints:
-      - obp_account_detail
+      - get_accounts
     direction: read
     dtos:
-      - name: Account
+      - name: OBReadAccount6
         role: response
-        api_id: obp_account_detail
+        api_id: get_accounts
     produces_state: loading
-    notes: "Per-account detail fetch resolves product_code; only BUSINESS-classified accounts enter the picker. List endpoint returns product_code null, so detail fetch is mandatory."
+    notes: "Resolves the authorised account list; Business scope is filtered client-side by Data.Account[].AccountCategory / AccountTypeCode (OBIE has no PFM-scope flag). Requires an authorised account-access consent (Status AUTH) + authorization-code token."
     error_paths:
       - error_code: 401
         behavior: navigate_login
-      - error_code: 404
+      - error_code: 403
         behavior: error_state
 
   - screen_id: business-insights
     trigger: on_mount
     endpoints:
-      - obp_transactions_list
+      - get_balances
     direction: read
     dtos:
-      - name: Transaction
+      - name: OBReadBalance1
         role: response
-        api_id: obp_transactions_list
-    produces_state: populated
-    notes: "Transactions for the in-scope BUSINESS account; sandbox caps at 50 newest and ignores date params, so period filtering and 8-category taxonomy categorisation run client-side. Income credits are categorised but excluded from the expenses-only donut. Zero transactions in period -> no_activity; no BUSINESS account -> empty."
+        api_id: get_balances
+    produces_state: loading
+    notes: "Balance context (Data.Balance[].Amount.Amount / .Currency) for the in-scope account. Requires ReadBalances."
     error_paths:
       - error_code: 401
         behavior: navigate_login
-      - error_code: 404
+      - error_code: 403
+        behavior: error_state
+
+  - screen_id: business-insights
+    trigger: on_mount
+    endpoints:
+      - get_transactions
+    direction: read
+    dtos:
+      - name: OBReadTransaction6
+        role: response
+        api_id: get_transactions
+    produces_state: populated
+    notes: >-
+      Transactions for the in-scope account over the period window
+      (fromBookingDateTime/toBookingDateTime). Cash-flow (Money In / Money Out / Net via
+      Data.Transaction[].CreditDebitIndicator + Amount.Amount), the 8-category expense
+      taxonomy, trends, and top counterparties are ALL DERIVED CLIENT-SIDE — OBIE has no
+      insights/categorisation endpoint. Income credits are categorised but excluded from the
+      expenses-only donut. Counterparty names follow MerchantDetails.MerchantName ->
+      resolved Creditor/Debtor holder -> TransactionInformation (never a raw login).
+      Zero transactions in window -> no_activity; no Business-scoped account -> empty.
+    error_paths:
+      - error_code: 401
+        behavior: navigate_login
+      - error_code: 403
         behavior: error_state
 
   - screen_id: business-insights
     trigger: on_interact
     event: SelectAccount
     endpoints:
-      - obp_transactions_list
+      - get_balances
+      - get_transactions
     direction: read
     dtos:
-      - name: Transaction
+      - name: OBReadBalance1
         role: response
-        api_id: obp_transactions_list
+        api_id: get_balances
+      - name: OBReadTransaction6
+        role: response
+        api_id: get_transactions
     produces_state: loading
-    notes: "open_account_picker selects a different BUSINESS account; re-runs cash-flow and categorisation for the new account."
+    notes: "open_account_picker selects a different account; re-reads balances + transactions and re-derives cash-flow and categorisation client-side for the new AccountId."
     error_paths:
       - error_code: 401
         behavior: navigate_login
-      - error_code: 404
+      - error_code: 403
         behavior: error_state
 
   - screen_id: business-insights
     trigger: on_interact
     event: SelectPeriod
-    endpoints: []
+    endpoints:
+      - get_transactions
     direction: read
-    dtos: []
+    dtos:
+      - name: OBReadTransaction6
+        role: response
+        api_id: get_transactions
     produces_state: populated
-    notes: "Period chip / custom range change re-filters already-fetched transactions client-side; no network call (sandbox ignores date params)."
+    notes: "Period chip / custom range change re-issues get_transactions with new fromBookingDateTime/toBookingDateTime (or re-slices the cached list client-side within the consented window); cash-flow + categories are re-derived client-side."
 
   - screen_id: business-insights
     trigger: on_interact
     event: RetryLoad
     endpoints:
-      - obp_account_detail
-      - obp_transactions_list
+      - get_accounts
+      - get_balances
+      - get_transactions
     direction: read
     dtos:
-      - name: Account
+      - name: OBReadAccount6
         role: response
-        api_id: obp_account_detail
-      - name: Transaction
+        api_id: get_accounts
+      - name: OBReadTransaction6
         role: response
-        api_id: obp_transactions_list
+        api_id: get_transactions
     produces_state: loading
     notes: "retry_load re-attempts the failed insights load from the error state."
     error_paths:
       - error_code: 401
         behavior: navigate_login
-      - error_code: 404
+      - error_code: 403
         behavior: error_state

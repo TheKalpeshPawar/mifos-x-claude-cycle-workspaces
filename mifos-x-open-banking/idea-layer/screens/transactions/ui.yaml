@@ -81,9 +81,9 @@ shell:
       icon: send
       target: send-money
     - id: nav_cards
-      label: Cards
-      icon: credit_card
-      target: cards
+      label: Insights
+      icon: insights
+      target: pfm-dashboard
     - id: nav_more
       label: More
       icon: more_horiz
@@ -1242,7 +1242,7 @@ state_model:
     - name: PendingPayment
       kind: data_class
       fields: [id, description, amount, currency, date]
-      note: "An initiated-but-unbooked transaction-request (above the SCA threshold, awaiting confirmation)"
+      note: "An OBIE Data.Transaction[] with Status == Pending (id = TransactionId, description = MerchantName/TransactionInformation, amount/currency = Amount.Amount/Amount.Currency String, date = BookingDateTime). OBIE returns booked + pending rows in the SAME transactions resource (no separate transaction-requests endpoint), so pending is derived client-side by Status == Pending and shown muted above the booked groups."
     - name: TransactionDayGroup
       kind: data_class
       fields: [date, transactions]
@@ -1277,130 +1277,99 @@ state_model:
       params: [start, end]
     - name: onLoadMore
   data_flow:
-    note: "load() fetches listTransactionsWithAttributes (booked, v6 attributes) + listTransactionRequests (pending, filtered isPending) + accountDetail (currency); resolves counterparty names via CounterpartyNameResolver.resolve + placeholderHolder. Filtering, search, date-range and paging are all client-side because the sandbox caps the window at the 50 newest transactions and ignores limit/offset/date params."
+    note: "load() fetches ais_get_transactions for the authorised AccountId (OBIE Data.Transaction[], OBReadTransaction6) and splits it client-side: Status == Pending → pending section (muted, excluded from monthly totals), Status == Booked → date groups; account currency comes from the per-account context. Counterparty names resolved via CounterpartyNameResolver (resolved holder name → MerchantDetails.MerchantName → TransactionInformation). fromBookingDateTime/toBookingDateTime can bound the window server-side, but OBIE has NO free-text search param so search runs client-side over the fetched Data.Transaction[]; type filter (CreditDebitIndicator) and paging also run client-side."
   di:
     - TransactionsRepository
-    - PaymentsRepository
     - AccountsRepository
     - CounterpartyNameResolver
 
 # Counterparty display — HARD RULE (workspaces/mifos-x/CLAUDE.md):
-# other_account.holder.name is the OBP login-username placeholder for self-transfers and
-# unresolved merchants and must NEVER be rendered directly. The row title and search-match
-# text both go through counterpartyDisplayName(txn, counterpartyNames, counterpartyPlaceholder)
-# whose precedence is: resolved destination account holder name → real non-placeholder holder
-# → transaction description. counterpartyNames is built by CounterpartyNameResolver.resolve()
-# (mirror-join of self-transfers across the user's own accounts), placeholder = the login
-# username from the profile. The static merchant names in the rows above are demo content only.
+# A raw OBIE CreditorAccount.Identification (or a placeholder name that is just the PSU's own
+# login) must NEVER be rendered as a counterparty name. The row title and search-match text both
+# go through counterpartyDisplayName(txn, counterpartyNames, counterpartyPlaceholder) whose OBIE
+# precedence is: resolved destination account holder name → MerchantDetails.MerchantName →
+# Data.Transaction[].TransactionInformation. counterpartyNames is built by
+# CounterpartyNameResolver.resolve() (mirror-join of self-transfers across the user's own
+# accounts). The static merchant names in the rows above are demo content only.
 
 api:
-  # Booked rows — the shipped list call. v6.0.0 returns transaction_attributes inline (TXN_TYPE
-  # → category badge) so no N+1 attribute fetch. The v3.0.0 sibling endpoint still exists in the
-  # client but is used only by CounterpartyNameResolver's mirror-join, not by this screen's load.
-  # Sandbox ignores limit/offset/from_date/to_date/type/sort_direction — kept here for contract
-  # completeness but filtering/paging run client-side.
-  - id: obp_list_transactions_with_attributes
-    endpoint: "GET /obp/v6.0.0/banks/{bankId}/accounts/{accountId}/owner/transactions"
-    tag: Transactions
-    auth: DirectLogin
+  # OBIE AISP transactions for a single authorised AccountId (OBReadTransaction6). The shipped
+  # list call. CreditDebitIndicator drives the Debit/Credit filter; BookingDateTime drives the
+  # date grouping. fromBookingDateTime/toBookingDateTime bound the booking window server-side, but
+  # OBIE has NO free-text search param so the merchant/amount search runs client-side over the
+  # fetched Data.Transaction[]. Requires an authorised account-access-consent (Status AUTH) + an
+  # authorization-code token. Counterparty rule: resolve a real holder name → MerchantName →
+  # TransactionInformation; never render CreditorAccount.Identification raw.
+  - id: ais_get_transactions
+    endpoint: "GET /obie/open-banking/v4.0/aisp/accounts/{AccountId}/transactions"
+    tag: AISP-Transactions
+    auth: OAuth2-FAPI
     params:
-      - name: bankId
+      - name: AccountId
         type: path
-      - name: accountId
-        type: path
-      - name: limit
+      - name: fromBookingDateTime
         type: query
         optional: true
-        note: "ignored by sandbox"
-      - name: offset
+        note: "UTC ISO 8601 lower bound on BookingDateTime"
+      - name: toBookingDateTime
         type: query
         optional: true
-        note: "ignored by sandbox"
+        note: "UTC ISO 8601 upper bound on BookingDateTime"
     response:
       fields:
-        - name: transactions
-          type: "List<Transaction>"
+        - name: Data.Transaction
+          type: "Array<OBTransaction6>"
           children:
-            - name: id
+            - name: AccountId
               type: String
-            - name: this_account
-              type: object
-            - name: other_account
+            - name: TransactionId
+              type: String
+            - name: CreditDebitIndicator
+              type: String
+              note: "Credit | Debit"
+            - name: Status
+              type: String
+              note: "Booked | Pending"
+            - name: BookingDateTime
+              type: String
+            - name: TransactionInformation
+              type: String
+            - name: Amount
               type: object
               children:
-                - name: id
+                - name: Amount
                   type: String
-                - name: holder
-                  type: object
-            - name: details
+                - name: Currency
+                  type: String
+            - name: MerchantDetails
               type: object
               children:
-                - name: type
+                - name: MerchantName
                   type: String
-                - name: description
+            - name: CreditorAccount
+              type: object
+              children:
+                - name: Identification
                   type: String
-                - name: posted
+            - name: DebtorAccount
+              type: object
+              children:
+                - name: Identification
                   type: String
-                - name: completed
-                  type: String
-                - name: value
-                  type: object
-                  children:
-                    - name: currency
-                      type: String
-                    - name: amount
-                      type: String
-            - name: transaction_attributes
-              type: "List<TransactionAttribute>"
-              note: "TXN_TYPE drives the category badge"
+        - name: Links.Next
+          type: String
+          note: "Pagination next-page link"
     errors:
+      - code: 400
+        message: "OB.Field.Invalid"
       - code: 401
-        message: "Unauthorized"
-      - code: 404
-        message: "Account not found"
+        message: "UNAUTHORIZED"
+      - code: 403
+        message: "OB.Resource.InvalidConsentStatus"
+      - code: 429
+        message: "TOO_MANY_REQUESTS"
       - code: 500
-        message: "OBP server error"
-
-  # Pending payments — transaction-requests still INITIATED (no booked transaction). Filtered
-  # client-side to isPending. Same endpoint backs the pending detail load path.
-  - id: obp_list_transaction_requests
-    endpoint: "GET /obp/v4.0.0/banks/{bankId}/accounts/{accountId}/owner/transaction-requests"
-    tag: Transaction-Requests
-    auth: DirectLogin
-    params:
-      - name: bankId
-        type: path
-      - name: accountId
-        type: path
-    response:
-      fields:
-        - name: transaction_requests
-          type: "List<TransactionRequestSummary>"
-          children:
-            - name: id
-              type: String
-            - name: status
-              type: String
-              note: "INITIATED → isPending"
-            - name: start_date
-              type: String
-            - name: details
-              type: object
-              children:
-                - name: description
-                  type: String
-                - name: value
-                  type: object
-                  children:
-                    - name: currency
-                      type: String
-                    - name: amount
-                      type: String
-    errors:
-      - code: 401
-        message: "Unauthorized"
-      - code: 404
-        message: "Account not found"
+        message: "OB.UnexpectedError"
 
 dependencies:
   tier: feature

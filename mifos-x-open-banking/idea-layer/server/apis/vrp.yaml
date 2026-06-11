@@ -1,0 +1,451 @@
+schema_version: "4.0"
+api_group: vrp
+name: "Variable Recurring Payments API"
+base_url: "https://secure.sandbox.ob.hsbc.co.uk"
+auth_scheme: OAuth2-FAPI
+api_version: v4.0
+generated_at: "2026-06-11"
+source: "HSBC UK/CE Open Banking sandbox (OBIE Read/Write v4.0); VRP semantics/responses from T2 OBIE VRP v4.0 (HSBC portal UNREACHABLE 429). OAuth2 token/authorize endpoints live in the auth group and are referenced, not repeated here."
+endpoints:
+  - id: create_domestic_vrp_consent
+    method: POST
+    path: "/obie/open-banking/v4.0/pisp/domestic-vrp-consents"
+    description: "PISP stages a long-lived VRP consent (control parameters + initiation). ASPSP returns a unique ConsentId with initial Status AWAU; invalid parameters return 400 and no resource is created. Client Credentials grant; signed request + signed response; idempotency key required. Same v4.0 path across Kinetic, UK Business, UK Personal and firstdirect."
+    auth_required: true
+    scopes: [payments]
+    request_schema:
+      - field: Data.ReadRefundAccount
+        type: String
+        required: false
+        validation: "Yes | No. When Yes the response may include a Refund account."
+      - field: Data.ControlParameters.MaximumIndividualAmount.Amount
+        type: String
+        required: true
+        validation: "Decimal string; per-payment cap. OBDomesticVRPControlParameters (1..1)."
+      - field: Data.ControlParameters.MaximumIndividualAmount.Currency
+        type: String
+        required: true
+        validation: "ISO 4217 currency code."
+      - field: Data.ControlParameters.PeriodicLimits[].PeriodType
+        type: String
+        required: false
+        validation: "Day | Week | Fortnight | Month | Half-year | Year. PeriodicLimits is 1..*."
+      - field: Data.ControlParameters.PeriodicLimits[].PeriodAlignment
+        type: String
+        required: false
+        validation: "Consent | Calendar."
+      - field: Data.ControlParameters.PeriodicLimits[].Amount
+        type: String
+        required: false
+        validation: "Decimal string; periodic cap amount."
+      - field: Data.ControlParameters.PeriodicLimits[].Currency
+        type: String
+        required: false
+        validation: "ISO 4217 currency code."
+      - field: Data.ControlParameters.VRPType
+        type: Array
+        required: true
+        validation: "Namespaced enum, e.g. UK.OBIE.VRPType.Sweeping (1..*)."
+      - field: Data.ControlParameters.PSUAuthenticationMethods
+        type: Array
+        required: true
+        validation: "1..*; e.g. UK.OBIE.SCANotRequired (payments may be made without PSU present, sweeping)."
+      - field: Data.ControlParameters.PSUInteractionTypes
+        type: Array
+        required: false
+        validation: "e.g. InSession."
+      - field: Data.Initiation.DebtorAccount.SchemeName
+        type: String
+        required: false
+        validation: "e.g. UK.OBIE.SortCodeAccountNumber."
+      - field: Data.Initiation.DebtorAccount.Identification
+        type: String
+        required: false
+        validation: "Debtor account identification."
+      - field: Data.Initiation.CreditorAccount.SchemeName
+        type: String
+        required: true
+        validation: "e.g. UK.OBIE.SortCodeAccountNumber."
+      - field: Data.Initiation.CreditorAccount.Identification
+        type: String
+        required: true
+        validation: "Creditor account identification."
+      - field: Data.Initiation.CreditorAccount.Name
+        type: String
+        required: false
+        validation: "Creditor account name."
+      - field: Data.Initiation.RemittanceInformation.Unstructured
+        type: Array
+        required: false
+        validation: "Free-text remittance information."
+      - field: Risk.PaymentContextCode
+        type: String
+        required: false
+        validation: "OBRisk1; mandatory Risk block (1..1). e.g. PispPayee."
+      - field: Risk.MerchantCategoryCode
+        type: String
+        required: false
+        validation: "Merchant category code."
+      - field: Risk.PaymentPurposeCode
+        type: String
+        required: false
+        validation: "ISO payment purpose code, e.g. INTP."
+    response_schema:
+      - field: Data.ConsentId
+        type: String
+        nullable: false
+        description: "Unique consent identifier assigned by the ASPSP (OBDomesticVRPConsentResponse)."
+      - field: Data.Status
+        type: String
+        nullable: false
+        description: "Consent status enum: AWAU, RJCT, AUTH, CANC, EXPD. Initial value AWAU."
+      - field: Data.StatusUpdateDateTime
+        type: String
+        nullable: true
+        description: "Timestamp of the last status change."
+      - field: Data.CreationDateTime
+        type: String
+        nullable: false
+        description: "Consent creation timestamp."
+      - field: Data.ControlParameters
+        type: Object
+        nullable: false
+        description: "Echo of the limits set on the consent."
+      - field: Data.Initiation
+        type: Object
+        nullable: false
+        description: "Echo of the immutable per-payment parameters."
+      - field: Risk
+        type: Object
+        nullable: false
+        description: "OBRisk1 risk block."
+    error_codes:
+      - code: 400
+        message: "OB.Field.Invalid"
+        retry: false
+      - code: 401
+        message: "UNAUTHORIZED"
+        retry: false
+      - code: 403
+        message: "OB.Resource.InvalidConsentStatus"
+        retry: false
+      - code: 429
+        message: "TOO_MANY_REQUESTS"
+        retry: true
+      - code: 500
+        message: "OB.UnexpectedError"
+        retry: true
+  - id: get_domestic_vrp_consent
+    method: GET
+    path: "/obie/open-banking/v4.0/pisp/domestic-vrp-consents/{ConsentId}"
+    description: "Retrieve a VRP consent the PISP created to check its status at any time. Client Credentials grant; signed response. Same v4.0 path across Kinetic, UK Business, UK Personal and firstdirect."
+    auth_required: true
+    scopes: [payments]
+    request_schema: []
+    response_schema:
+      - field: Data.ConsentId
+        type: String
+        nullable: false
+        description: "Unique consent identifier (OBDomesticVRPConsentResponse)."
+      - field: Data.Status
+        type: String
+        nullable: false
+        description: "Consent status enum: AWAU, RJCT, AUTH, CANC, EXPD."
+      - field: Data.StatusUpdateDateTime
+        type: String
+        nullable: true
+        description: "Timestamp of the last status change."
+      - field: Data.CreationDateTime
+        type: String
+        nullable: false
+        description: "Consent creation timestamp."
+      - field: Data.ControlParameters
+        type: Object
+        nullable: false
+        description: "Limits set on the consent."
+      - field: Data.Initiation
+        type: Object
+        nullable: false
+        description: "Immutable per-payment parameters."
+      - field: Data.DebtorAccount
+        type: Object
+        nullable: true
+        description: "Present after PSU account selection."
+      - field: Risk
+        type: Object
+        nullable: false
+        description: "OBRisk1 risk block."
+    error_codes:
+      - code: 400
+        message: "OB.Field.Invalid"
+        retry: false
+      - code: 401
+        message: "UNAUTHORIZED"
+        retry: false
+      - code: 403
+        message: "OB.Resource.InvalidConsentStatus"
+        retry: false
+      - code: 404
+        message: "OB.Resource.NotFound"
+        retry: false
+      - code: 429
+        message: "TOO_MANY_REQUESTS"
+        retry: true
+      - code: 500
+        message: "OB.UnexpectedError"
+        retry: true
+  - id: delete_domestic_vrp_consent
+    method: DELETE
+    path: "/obie/open-banking/v4.0/pisp/domestic-vrp-consents/{ConsentId}"
+    description: "PISP deletes/revokes a VRP consent it created; the ASPSP must cease future payment orders and funds confirmations under the consent. No request body, no message signing, no idempotency key; response object is None. Same v4.0 path across Kinetic, UK Business, UK Personal and firstdirect."
+    auth_required: true
+    scopes: [payments]
+    request_schema: []
+    response_schema: []
+    note: "204/200 with no body — OBIE response object None (T2 OBIE VRP v4.0 domestic-vrp-consents.html Endpoints table)."
+    error_codes:
+      - code: 400
+        message: "OB.Field.Invalid"
+        retry: false
+      - code: 401
+        message: "UNAUTHORIZED"
+        retry: false
+      - code: 403
+        message: "OB.Resource.InvalidConsentStatus"
+        retry: false
+      - code: 404
+        message: "OB.Resource.NotFound"
+        retry: false
+      - code: 429
+        message: "TOO_MANY_REQUESTS"
+        retry: true
+      - code: 500
+        message: "OB.UnexpectedError"
+        retry: true
+  - id: create_vrp_funds_confirmation
+    method: POST
+    path: "/obie/open-banking/v4.0/pisp/domestic-vrp-consents/{ConsentId}/funds-confirmation"
+    description: "PISP asks the ASPSP to confirm funds on the DebtorAccount associated with the VRP consent. Only valid when consent Status is AUTH; any other status returns 400 with U009 (UK.OBIE.Resource.InvalidConsentStatus). Authorization Code grant; signed request + signed response; idempotency key required. Same v4.0 path across Kinetic, UK Business, UK Personal and firstdirect."
+    auth_required: true
+    scopes: [payments]
+    request_schema:
+      - field: Data.ConsentId
+        type: String
+        required: true
+        validation: "Identifies the consent (OBVRPFundsConfirmationRequest)."
+      - field: Data.InstructedAmount.Amount
+        type: String
+        required: true
+        validation: "Decimal string; amount to confirm."
+      - field: Data.InstructedAmount.Currency
+        type: String
+        required: true
+        validation: "ISO 4217 currency code."
+      - field: Data.Reference
+        type: String
+        required: false
+        validation: "Must match the consent reference."
+    response_schema:
+      - field: Data.FundsConfirmationId
+        type: String
+        nullable: false
+        description: "Unique funds-confirmation identifier (OBVRPFundsConfirmationResponse)."
+      - field: Data.ConsentId
+        type: String
+        nullable: false
+        description: "Consent the confirmation relates to."
+      - field: Data.CreationDateTime
+        type: String
+        nullable: false
+        description: "Confirmation creation timestamp."
+      - field: Data.FundsAvailableResult.FundsAvailable
+        type: String
+        nullable: false
+        description: "Available | NotAvailable."
+      - field: Data.FundsAvailableResult.FundsAvailableDateTime
+        type: String
+        nullable: true
+        description: "Time the funds-availability check was performed."
+      - field: Data.InstructedAmount
+        type: Object
+        nullable: false
+        description: "Echo of the requested amount."
+    error_codes:
+      - code: 400
+        message: "OB.Resource.InvalidConsentStatus"
+        retry: false
+      - code: 401
+        message: "UNAUTHORIZED"
+        retry: false
+      - code: 403
+        message: "OB.Resource.InvalidConsentStatus"
+        retry: false
+      - code: 429
+        message: "TOO_MANY_REQUESTS"
+        retry: true
+      - code: 500
+        message: "OB.UnexpectedError"
+        retry: true
+  - id: create_domestic_vrp
+    method: POST
+    path: "/obie/open-banking/v4.0/pisp/domestic-vrps"
+    description: "Once the consent is AUTH, the PISP submits a domestic-vrps payment order for immediate processing. Initiation/Risk must match the consent and the payment must adhere to the consent ControlParameters; a breach returns U014 with the offending control parameter in the error Field. Authorization Code grant; signed request + signed response; idempotency key required. Same v4.0 path across Kinetic, UK Business, UK Personal and firstdirect."
+    auth_required: true
+    scopes: [payments]
+    request_schema:
+      - field: Data.ConsentId
+        type: String
+        required: true
+        validation: "Links to the authorised consent (OBDomesticVRPRequest)."
+      - field: Data.VRPType
+        type: String
+        required: true
+        validation: "Restates the VRP type used, e.g. UK.OBIE.VRPType.Sweeping."
+      - field: Data.PSUAuthenticationMethod
+        type: String
+        required: true
+        validation: "Restates the authentication method, e.g. UK.OBIE.SCANotRequired."
+      - field: Data.Initiation.CreditorAccount.SchemeName
+        type: String
+        required: true
+        validation: "Must match the consent Initiation."
+      - field: Data.Initiation.CreditorAccount.Identification
+        type: String
+        required: true
+        validation: "Must match the consent Initiation."
+      - field: Data.Instruction.InstructionIdentification
+        type: String
+        required: true
+        validation: "Per-payment instruction identifier (OBDomesticVRPInstruction)."
+      - field: Data.Instruction.EndToEndIdentification
+        type: String
+        required: true
+        validation: "End-to-end identifier."
+      - field: Data.Instruction.InstructedAmount.Amount
+        type: String
+        required: true
+        validation: "Decimal string; this payment's amount (must satisfy ControlParameters)."
+      - field: Data.Instruction.InstructedAmount.Currency
+        type: String
+        required: true
+        validation: "ISO 4217 currency code."
+      - field: Data.Instruction.CreditorAccount.SchemeName
+        type: String
+        required: true
+        validation: "Creditor account scheme."
+      - field: Data.Instruction.CreditorAccount.Identification
+        type: String
+        required: true
+        validation: "Creditor account identification."
+      - field: Data.Instruction.LocalInstrument
+        type: String
+        required: false
+        validation: "e.g. UK.OBIE.BalanceTransfer."
+      - field: Risk.PaymentContextCode
+        type: String
+        required: false
+        validation: "OBRisk1; must match the consent risk block."
+    response_schema:
+      - field: Data.DomesticVRPId
+        type: String
+        nullable: false
+        description: "Unique payment-order identifier (OBDomesticVRPResponse)."
+      - field: Data.ConsentId
+        type: String
+        nullable: false
+        description: "Consent the payment was made under."
+      - field: Data.CreationDateTime
+        type: String
+        nullable: false
+        description: "Payment-order creation timestamp."
+      - field: Data.Status
+        type: String
+        nullable: false
+        description: "Created order status: RCVD, PDNG, ACTC or RJCT."
+      - field: Data.StatusUpdateDateTime
+        type: String
+        nullable: true
+        description: "Timestamp of the last status change."
+      - field: Data.ExpectedExecutionDateTime
+        type: String
+        nullable: true
+        description: "Expected execution time."
+      - field: Data.Charges
+        type: Array
+        nullable: true
+        description: "Charges applied to the payment order."
+      - field: Data.Refund
+        type: Object
+        nullable: true
+        description: "Refund account, present when consent ReadRefundAccount=Yes."
+    error_codes:
+      - code: 400
+        message: "OB.Rules.FailsControlParameters"
+        retry: false
+      - code: 401
+        message: "UNAUTHORIZED"
+        retry: false
+      - code: 403
+        message: "OB.Resource.InvalidConsentStatus"
+        retry: false
+      - code: 429
+        message: "TOO_MANY_REQUESTS"
+        retry: true
+      - code: 500
+        message: "OB.UnexpectedError"
+        retry: true
+  - id: get_domestic_vrp
+    method: GET
+    path: "/obie/open-banking/v4.0/pisp/domestic-vrps/{DomesticVRPId}"
+    description: "Retrieve a created domestic-vrps payment order to check its status. Client Credentials grant; signed response. Same v4.0 path across Kinetic, UK Business, UK Personal and firstdirect."
+    auth_required: true
+    scopes: [payments]
+    request_schema: []
+    response_schema:
+      - field: Data.DomesticVRPId
+        type: String
+        nullable: false
+        description: "Unique payment-order identifier (OBDomesticVRPResponse)."
+      - field: Data.ConsentId
+        type: String
+        nullable: false
+        description: "Consent the payment was made under."
+      - field: Data.CreationDateTime
+        type: String
+        nullable: false
+        description: "Payment-order creation timestamp."
+      - field: Data.Status
+        type: String
+        nullable: false
+        description: "ExternalPaymentTransactionStatus1Code: RCVD, PDNG, ACTC, ACCP, ACFC, ACSP, ACWC, ACSC, ACWP, ACCC, BLCK, RJCT."
+      - field: Data.StatusUpdateDateTime
+        type: String
+        nullable: true
+        description: "Timestamp of the last status change."
+      - field: Data.ExpectedExecutionDateTime
+        type: String
+        nullable: true
+        description: "Expected execution time."
+      - field: Data.Charges
+        type: Array
+        nullable: true
+        description: "Charges applied to the payment order."
+    error_codes:
+      - code: 400
+        message: "OB.Field.Invalid"
+        retry: false
+      - code: 401
+        message: "UNAUTHORIZED"
+        retry: false
+      - code: 403
+        message: "OB.Resource.InvalidConsentStatus"
+        retry: false
+      - code: 404
+        message: "OB.Resource.NotFound"
+        retry: false
+      - code: 429
+        message: "TOO_MANY_REQUESTS"
+        retry: true
+      - code: 500
+        message: "OB.UnexpectedError"
+        retry: true

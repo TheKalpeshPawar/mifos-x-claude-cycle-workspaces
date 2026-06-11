@@ -462,9 +462,9 @@ components:
           tag: detail_div_4
 
       # Shipped: label is "To" when isDebit else "From"; value is content.counterpartyName
-      # (NOT a separate beneficiary name); secondary line = content.toDetail and is only
-      # populated for pending payments (SEPA iban / counterparty id / sandbox-tan accountId) —
-      # booked transactions have toDetail = "" so no secondary line renders.
+      # (NOT a separate beneficiary name); secondary line = content.toDetail = the OBIE
+      # CreditorAccount.Identification (creditor account id) when populated — blank otherwise, so
+      # no secondary line renders. The identification is never used as the counterparty name.
       - type: stack
         id: detail_to_row
         style:
@@ -755,51 +755,45 @@ state_model:
       type: Boolean
     - name: statusLabel
       type: String
-      note: "'Completed' (booked) or 'Awaiting confirmation' (pending)"
+      note: "Status == Booked → 'Completed' (check_circle); Status == Pending → 'Awaiting confirmation' (schedule, muted)"
     - name: counterpartyName
       type: String
-      note: "counterpartyDisplayName(...).ifBlank{'Payment'} — never the raw login-username holder"
+      note: "counterpartyDisplayName(...).ifBlank{'Payment'} — resolved holder name → MerchantDetails.MerchantName → TransactionInformation; never raw CreditorAccount.Identification"
     - name: category
       type: String
-      note: "categoryLabel(txn) for booked; 'Pending' for pending"
+      note: "categoryLabel from BankTransactionCode.Code / TransactionInformation; 'Pending' when Status == Pending"
     - name: dateTime
       type: String
-      note: "formatDateTime — '25 May 2026, 14:32'"
+      note: "formatDateTime(BookingDateTime) — '25 May 2026, 14:32'"
     - name: reference
       type: String
-      note: "txId for booked; request id for pending"
+      note: "TransactionId (TransactionReference fallback)"
     - name: typeLabel
       type: String
-      note: "typeLabel(details.type) — see type_label_map"
+      note: "typeLabel from BankTransactionCode.Code + CreditDebitIndicator — see type_label_map"
     - name: fromAccountLabel
       type: String
+      note: "DebtorAccount.Name / this account label"
     - name: fromAccountTail
       type: String
-      note: "'...' + last 4 of the account id"
+      note: "'...' + last 4 of DebtorAccount.Identification"
     - name: toDetail
       type: String
-      note: "pending only (SEPA iban / counterparty id / sandbox-tan accountId); '' for booked"
+      note: "CreditorAccount.Identification (creditor account id) when populated; '' otherwise — the secondary To-account line, never the counterparty name"
     - name: narrative
       type: String
-      note: "metadata.narrative for booked; '' for pending"
+      note: "TransactionInformation (OBIE has no separate transaction-note resource)"
   load_modes:
-    booked:
+    detail:
       trigger: "transactionId.isNotBlank()"
-      source: "TransactionsRepository.getTransaction(bankId, accountId, transactionId)"
-    pending:
-      trigger: "requestId.isNotBlank()"
-      source: "PaymentsRepository.listTransactionRequests(bankId, accountId) → first { it.id == requestId }"
-      note: "No per-request OBP read endpoint, so the request is found in the account's list."
+      source: "TransactionsRepository.getTransactions(AccountId) → first { it.TransactionId == transactionId }"
+      note: "OBIE has NO single-transaction-by-id GET — the detail is the selected Data.Transaction[] item from the AIS transactions resource (reused from the list or re-fetched). Booked vs pending is the same item's Status field (Booked | Pending), not a separate endpoint."
     empty:
-      trigger: "both blank"
+      trigger: "transactionId blank OR no Data.Transaction[] with that TransactionId"
       result: "ScreenState.Empty"
   type_label_map:
-    SEPA: "SEPA Credit Transfer"
-    SANDBOX_TAN: "Transfer"
-    COUNTERPARTY: "Counterparty Transfer"
-    DIRECT_DEBIT: "Direct Debit"
-    STANDING_ORDER: "Standing Order"
-    default: "type or 'Payment'"
+    note: "typeLabel derived from BankTransactionCode.Code (ISO 20022 domain/family) with CreditDebitIndicator; falls back to TransactionInformation then 'Payment'."
+    default: "BankTransactionCode.Code-derived label, else TransactionInformation, else 'Payment'"
   errors:
     - id: not_found
       message: "We could not load this transaction. It may have been removed or there may be a connection issue."
@@ -824,112 +818,90 @@ state_model:
 # other_account.holder.name (OBP login-username placeholder) is never shown.
 
 api:
-  # Booked path — single-transaction read. v3.0.0; no attributes inline, so category falls back
-  # to the detail type when the row was opened without a TXN_TYPE.
-  - id: obp_get_transaction_detail
-    endpoint: "GET /obp/v3.0.0/banks/{bankId}/accounts/{accountId}/owner/transactions/{transactionId}/transaction"
-    tag: Transactions
-    auth: DirectLogin
-    used_for: booked
+  # OBIE returns NO single-transaction-by-id GET. Detail is the selected Data.Transaction[] item
+  # (OBReadTransaction6) from the AIS transactions resource, matched by TransactionId — reused
+  # from the list screen's already-fetched data or re-fetched and selected. category falls back
+  # to BankTransactionCode.Code / TransactionInformation. Status == Pending → 'Awaiting
+  # confirmation'. Counterparty: resolved holder name → MerchantDetails.MerchantName →
+  # TransactionInformation; CreditorAccount/DebtorAccount.Identification only for the secondary
+  # account line, never as the counterparty name.
+  - id: ais_get_transactions
+    endpoint: "GET /obie/open-banking/v4.0/aisp/accounts/{AccountId}/transactions"
+    tag: AISP-Transactions
+    auth: OAuth2-FAPI
+    used_for: "detail (select by TransactionId)"
     params:
-      - name: bankId
+      - name: AccountId
         type: path
-      - name: accountId
-        type: path
-      - name: transactionId
-        type: path
+      - name: fromBookingDateTime
+        type: query
+        optional: true
+      - name: toBookingDateTime
+        type: query
+        optional: true
     response:
       fields:
-        - name: id
-          type: String
-        - name: this_account
-          type: object
-        - name: other_account
-          type: object
+        - name: Data.Transaction
+          type: "Array<OBTransaction6>"
           children:
-            - name: id
+            - name: AccountId
               type: String
-            - name: holder
-              type: object
-        - name: details
-          type: object
-          children:
-            - name: type
+            - name: TransactionId
               type: String
-            - name: description
+            - name: CreditDebitIndicator
               type: String
-            - name: posted
+              note: "Credit | Debit"
+            - name: Status
               type: String
-            - name: completed
+              note: "Booked | Pending"
+            - name: BookingDateTime
               type: String
-            - name: value
+            - name: TransactionInformation
+              type: String
+            - name: Amount
               type: object
               children:
-                - name: currency
+                - name: Amount
                   type: String
-                - name: amount
+                - name: Currency
                   type: String
-        - name: metadata
-          type: object
-          children:
-            - name: narrative
-              type: "String?"
+            - name: MerchantDetails
+              type: object
+              children:
+                - name: MerchantName
+                  type: String
+            - name: BankTransactionCode
+              type: object
+              children:
+                - name: Code
+                  type: String
+            - name: CreditorAccount
+              type: object
+              children:
+                - name: SchemeName
+                  type: String
+                - name: Identification
+                  type: String
+                - name: Name
+                  type: String
+            - name: DebtorAccount
+              type: object
+              children:
+                - name: SchemeName
+                  type: String
+                - name: Identification
+                  type: String
     errors:
+      - code: 400
+        message: "OB.Field.Invalid"
       - code: 401
-        message: "Unauthorized — DirectLogin token missing or expired"
-      - code: 404
-        message: "Transaction not found"
+        message: "UNAUTHORIZED"
+      - code: 403
+        message: "OB.Resource.InvalidConsentStatus"
+      - code: 429
+        message: "TOO_MANY_REQUESTS"
       - code: 500
-        message: "OBP server error"
-
-  # Pending path — no per-request read endpoint exists, so the request is located in the
-  # account's transaction-request list by requestId.
-  - id: obp_list_transaction_requests
-    endpoint: "GET /obp/v4.0.0/banks/{bankId}/accounts/{accountId}/owner/transaction-requests"
-    tag: Transaction-Requests
-    auth: DirectLogin
-    used_for: pending
-    params:
-      - name: bankId
-        type: path
-      - name: accountId
-        type: path
-    response:
-      fields:
-        - name: transaction_requests
-          type: "List<TransactionRequestSummary>"
-          children:
-            - name: id
-              type: String
-            - name: type
-              type: String
-            - name: status
-              type: String
-            - name: start_date
-              type: String
-            - name: details
-              type: object
-              children:
-                - name: description
-                  type: String
-                - name: to_sepa
-                  type: "object?"
-                - name: to_counterparty
-                  type: "object?"
-                - name: to_sandbox_tan
-                  type: "object?"
-                - name: value
-                  type: object
-                  children:
-                    - name: currency
-                      type: String
-                    - name: amount
-                      type: String
-    errors:
-      - code: 401
-        message: "Unauthorized"
-      - code: 404
-        message: "Account not found"
+        message: "OB.UnexpectedError"
 
 dependencies:
   tier: feature

@@ -156,22 +156,22 @@ state_model:
         notes: "True while reading the persisted base currency and the account currency set."
       - name: currencyOptions
         type: "List<String>"
-        notes: "Distinct currencies across the user's personal accounts (e.g. EUR, GBP). Drives the radio rows."
+        notes: "Distinct Data.Account[].Currency values across the PSU's authorised accounts (e.g. EUR, GBP). Drives the radio rows."
       - name: selectedCurrency
         type: String
-        notes: "Currently persisted pfm_base_currency value; seeded from the default account's currency when never set."
+        notes: "Currently persisted base-currency preference (local; OBIE has no preferences endpoint); seeded from the default account's Data.Account[].Currency when never set."
       - name: isSaving
         type: Boolean
-        notes: "True while a POST to persist the new base currency is in flight."
+        notes: "True while persisting the new base currency to the local preference store is in flight."
       - name: loadError
         type: "String?"
         notes: "Non-null when the initial load failed → error state."
     intents:
       - name: Load
-        notes: "Fired on screen entry; reads obp_personal_data_fields (pfm_base_currency) + the account currency set."
+        notes: "Fired on screen entry; reads the local base-currency preference + derives the currency option set from get_accounts (Data.Account[].Currency). get_party supplies the account-holder name for the header."
       - name: SelectBaseCurrency
         payload: currency
-        notes: "User taps a radio row (on_click action select_base_currency); persists immediately."
+        notes: "User taps a radio row (on_click action select_base_currency); persists immediately to the local preference store."
       - name: RetryLoad
         notes: "Retry after a failed initial load (error-state retry_action)."
     transitions:
@@ -186,13 +186,13 @@ state_model:
       - on: SelectBaseCurrency
         from: populated
         to: populated
-        notes: "Optimistic selection; appends a new pfm_base_currency row (append-only, newest wins). On success shows snackbar_on_save; on failure reverts selectedCurrency and shows snackbar_on_save_error."
+        notes: "Optimistic selection; writes the base-currency preference to the local store (OBIE has no preferences endpoint). On success shows snackbar_on_save; on failure reverts selectedCurrency and shows snackbar_on_save_error."
       - on: RetryLoad
         from: error
         to: loading
   effects:
     - name: PersistBaseCurrency
-      api: obp_personal_data_field_create
-      notes: "Append-only write of name=pfm_base_currency, value=selectedCurrency. Reads keep the newest row."
+      api: local_base_currency_pref
+      notes: "Writes name=pfm_base_currency, value=selectedCurrency to the local preference store. OBIE Account Information has no preferences endpoint, so this is client-side only."
     - name: ShowSaveSnackbar
       notes: "Confirms the new base currency and that the unified spending insights dashboard now re-denominates into it."

@@ -8,7 +8,7 @@ Functional requirements mirror `idea-layer/idea-plan.yaml` §9 (the approved req
 
 | ID | Description |
 |---|---|
-| FR-001 | User authenticates via OBP DirectLogin (username + password + consumer key) to obtain a session token. |
+| FR-001 | User authenticates via HSBC Open Banking OAuth2 (FAPI 1.0 Advanced): client onboards via Dynamic Client Registration, then consent → PSU authorisation (authorization_code + PKCE, mTLS, detached JWS) → access token. Replaces OBP DirectLogin (migration 2026-06-11). |
 | FR-002 | User can request a password reset link sent to their registered email. |
 | FR-003 | Authenticated user can change password with current-password verification. |
 
@@ -59,6 +59,12 @@ Functional requirements mirror `idea-layer/idea-plan.yaml` §9 (the approved req
 | FR-026 | Consumer can tag and categorize transactions for personal tracking. |
 
 ### Field Officer
+
+> ⚠️ **OBSOLETE — pending removal (HSBC migration 2026-06-11).** HSBC Open Banking is consumer PSD2;
+> it exposes no field-officer / agent-onboarding / KYC / customer-management surface. FR-030–FR-040
+> have **no HSBC API backing** and are slated for deletion via `/idea feature-deprecate` (the FO screen
+> cluster) + the vision pivot (B2B agent banking → consumer Open Banking). Retained here only until
+> that step runs.
 
 | ID | Description |
 |---|---|

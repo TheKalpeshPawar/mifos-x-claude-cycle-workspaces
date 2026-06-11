@@ -299,168 +299,6 @@ components:
     test_context:
       tag: unread_dot_payment_james
 
-  # ── Notification 2: KYC verification approved (UNREAD, security) ─────────
-  - type: box
-    id: notification_kyc_approved
-    label: "KYC verification approved"
-    content: "KYC verification approved"
-    category: security
-    read_state: unread
-    style:
-      background: "#CDEDA3"
-      corner_radius: 16
-      padding_horizontal: 16
-      padding_vertical: 14
-      margin_horizontal: 20
-      margin_bottom: 8
-      border_color: "#CDEDA3"
-      border_width: 1
-    on_click:
-      action: open_notification
-      target: kyc-review
-    a11y:
-      label: "Unread security notification: KYC verification approved. Your identity has been verified. 1 hour ago."
-      role: button
-    keyboard:
-      focusable: true
-    test_context:
-      tag: notification_kyc_approved
-      assert_read_state: unread
-      assert_category: security
-
-  - type: stack
-    id: kyc_approved_row
-    label: "KYC approved notification row"
-    style:
-      orientation: horizontal
-      spacing: 12
-      align: flex_start
-    on_click:
-      action: dismiss
-      target: ""
-    a11y:
-      label: ""
-      role: row
-    test_context:
-      tag: kyc_approved_row
-
-  - type: box
-    id: kyc_approved_icon_bg
-    label: "KYC approved icon background"
-    content: ""
-    style:
-      background: "#4C662B"
-      corner_radius: 22
-      width: 44
-      height: 44
-      align_items: center
-      justify_content: center
-    on_click:
-      action: dismiss
-      target: ""
-    a11y:
-      label: ""
-      role: none
-    test_context:
-      tag: kyc_approved_icon_bg
-
-  - type: icon
-    id: kyc_approved_icon
-    label: "Identity verified"
-    supported_states: [idle, hover, focus_visible, pressed, disabled]
-    style:
-      icon_name: verified_user
-      size: 22
-      color: "#FFFFFF"
-    on_click:
-      action: dismiss
-      target: ""
-    a11y:
-      label: ""
-      role: none
-    test_context:
-      tag: kyc_approved_icon
-
-  - type: stack
-    id: kyc_approved_text_col
-    label: "KYC approved text"
-    style:
-      orientation: vertical
-      flex: 1
-    on_click:
-      action: dismiss
-      target: ""
-    a11y:
-      label: ""
-      role: group
-    test_context:
-      tag: kyc_approved_text_col
-
-  - type: text
-    id: kyc_approved_title
-    label: "KYC verification approved"
-    content: "KYC verification approved"
-    style:
-      typography: "Outfit/body_medium"
-      color: "#1A1C16"
-      font_weight: semibold
-    a11y:
-      label: "Notification title: KYC verification approved"
-      role: text
-    test_context:
-      tag: kyc_approved_title
-      assert_text: "KYC verification approved"
-
-  - type: text
-    id: kyc_approved_message
-    label: "Your identity has been verified. You now have full access to all account features."
-    content: "Your identity has been verified. You now have full access to all account features."
-    style:
-      typography: "Outfit/body_small"
-      color: "#44483D"
-      padding_top: spacing.xs
-      padding_bottom: spacing.xs
-    a11y:
-      label: "KYC verification approved message"
-      role: text
-    test_context:
-      tag: kyc_approved_message
-      assert_text: "Your identity has been verified. You now have full access to all account features."
-
-  - type: text
-    id: kyc_approved_time
-    label: "1 hr ago"
-    content: "1 hr ago"
-    style:
-      typography: "Outfit/label_small"
-      color: "#44483D"
-    a11y:
-      label: "Received 1 hour ago"
-      role: text
-    test_context:
-      tag: kyc_approved_time
-      assert_text: "1 hr ago"
-
-  - type: box
-    id: unread_dot_kyc
-    label: "Unread indicator"
-    content: ""
-    style:
-      background: "#4C662B"
-      corner_radius: 5
-      width: 10
-      height: 10
-      align_self: flex_start
-      margin_top: 4
-    on_click:
-      action: dismiss
-      target: ""
-    a11y:
-      label: "Unread notification"
-      role: status
-    test_context:
-      tag: unread_dot_kyc
-
   # ── Section divider: Earlier ─────────────────────────────────────────────────
   - type: text
     id: section_earlier_label
@@ -806,16 +644,6 @@ states:
         - payment_james_message
         - payment_james_time
         - unread_dot_payment_james
-        # Unread: KYC approved
-        - notification_kyc_approved
-        - kyc_approved_row
-        - kyc_approved_icon_bg
-        - kyc_approved_icon
-        - kyc_approved_text_col
-        - kyc_approved_title
-        - kyc_approved_message
-        - kyc_approved_time
-        - unread_dot_kyc
         - section_earlier_label
         # Read: Netflix mandate
         - notification_netflix_mandate
@@ -890,30 +718,73 @@ state_model:
     - open_notification_settings
   di:
     - NotificationRepository
-    - SignalRepository
+    - EventNotificationRepository
 
 api:
-  - id: obp_signal_channels
-    endpoint: "GET /obp/v6.0.0/signal/channels"
-    tag: Signal
-    description: "List real-time push notification channels (FCM)"
+  - id: poll_events
+    endpoint: "POST /obie/open-banking/v4.0/events"
+    tag: Events
+    description: "Poll for event notifications; the list is built from the returned SETs (signed-JWT, OBEventNotification2) keyed by jti. Short polling only."
     response:
       fields:
-        - name: channels
-          type: "List<SignalChannel>"
-        - name: channel_id
+        - name: moreAvailable
+          type: Boolean
+        - name: sets
+          type: Object
+        - name: events.jti
           type: String
-        - name: name
+        - name: events.iat
+          type: Integer
+        - name: events.sub
           type: String
-        - name: description
-          type: String
-        - name: created_at
-          type: String
+        - name: events.events
+          type: Object
     errors:
       - code: 401
-        message: "USER_NOT_LOGGED_IN"
+        message: "UNAUTHORIZED"
       - code: 403
-        message: "INSUFFICIENT_AUTHORISATION"
+        message: "OB.Resource.AccessDenied"
+  - id: get_event_subscriptions
+    endpoint: "GET /obie/open-banking/v4.0/event-subscriptions"
+    tag: Events
+    description: "Check whether the notification subscription is enabled (UK.OBIE.Consent-Authorization-Revoked)."
+    response:
+      fields:
+        - name: Data.EventSubscription[].EventSubscriptionId
+          type: String
+        - name: Data.EventSubscription[].EventTypes
+          type: Array
+    errors:
+      - code: 401
+        message: "UNAUTHORIZED"
+      - code: 404
+        message: "OB.Resource.NotFound"
+  - id: create_event_subscription
+    endpoint: "POST /obie/open-banking/v4.0/event-subscriptions"
+    tag: Events
+    description: "Enable notifications by creating the event-subscription (notification settings)."
+    response:
+      fields:
+        - name: Data.EventSubscriptionId
+          type: String
+        - name: Data.EventTypes
+          type: Array
+    errors:
+      - code: 401
+        message: "UNAUTHORIZED"
+      - code: 409
+        message: "OB.Resource.AlreadyExists"
+  - id: delete_event_subscription
+    endpoint: "DELETE /obie/open-banking/v4.0/event-subscriptions/{EventSubscriptionId}"
+    tag: Events
+    description: "Disable notifications by deleting the event-subscription (notification settings opt-out)."
+    response:
+      fields: []
+    errors:
+      - code: 401
+        message: "UNAUTHORIZED"
+      - code: 404
+        message: "OB.Resource.NotFound"
 
 dependencies:
   tier: feature
@@ -921,17 +792,12 @@ dependencies:
     - transactions
     - accounts
     - transaction-detail
-    - kyc-review
 
 navigation:
   - action: open_notification
     target: transaction-detail
     description: "Navigate to transaction detail for payment-category notifications"
     category: payment
-  - action: open_notification
-    target: kyc-review
-    description: "Navigate to KYC review screen for security/identity notifications (cross-persona deep link)"
-    category: security
   - action: open_notification
     target: accounts
     description: "Navigate to accounts for system notifications (mandates, direct debits)"

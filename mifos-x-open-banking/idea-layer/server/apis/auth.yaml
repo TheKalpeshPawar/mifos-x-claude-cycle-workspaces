@@ -1,232 +1,326 @@
 schema_version: "4.0"
 api_group: auth
-name: "Authentication API"
-base_url: "https://apisandbox.openbankproject.com/obp"
-auth_scheme: DirectLogin
-generated_at: "2026-06-02"
-
+name: "FAPI / OAuth2 / DCR (Shared Auth) API"
+base_url: "https://secure.sandbox.ob.hsbc.co.uk"
+auth_scheme: OAuth2-FAPI
+api_version: v1.1
+generated_at: "2026-06-11"
+source: "HSBC UK/CE Open Banking sandbox — cross-cutting FAPI 1.0 Advanced auth group: Dynamic Client Registration (T3 HSBC DCR API v3.2.1, openapi/dcr-uk.yaml) + the shared OAuth2 token/authorize endpoints (T1 inventory; T2 OBIE Read/Write Data API Profile; docs/00-HOW-TO-USE-THE-SANDBOX.md §4-§6, _downloads/obie/obie-security-fapi.md). This is the shared auth group referenced by every resource group (ais, cbpii, pisp-*, vrp, events): those groups do NOT repeat the token/authorize/register calls. The token endpoint is one path (/obie/open-banking/v1.1/oauth2/token) reused across three grant_types (client_credentials, authorization_code, refresh_token) — modelled here as three distinct endpoints because each plays a distinct role in the consent lifecycle. CROSS-CUTTING SECURITY (applies to ALL calls in ALL groups): mutual TLS (TLS 1.2 mTLS) on every secure.sandbox.ob.* host; client authentication via private_key_jwt client-assertion (PS256) or tls_client_auth; and detached-JWS request signing in the x-jws-signature header (PS256, JOSE crit claims http://openbanking.org.uk/{iat,iss,tan}) on write requests — an unsigned-but-required body returns 400. DCR is on the UK-brands host path /mock/obie/open-banking/v3.2/oauth2 (base https://sandbox.ob.hsbc.co.uk); the oauth2 token host is the per-brand secure.sandbox.ob.* mTLS host and the authorize host is the per-brand sandbox.ob.* host (no secure. prefix). CE HSBCnet / CE MiVision use a /ce path prefix; CE HSBCnet and Malta run consent paths on v3.1 while oauth2 stays v1.1. All credential VALUES (client_id, kid, PKCS8 key, crit_issuer) are gitignored secrets — referenced by name only."
 endpoints:
-
-  - id: direct_login
+  - id: register_client
     method: POST
-    path: "/v6.0.0/my/logins/direct"
-    description: "Exchange DirectLogin credentials for a session token. Credentials are passed via Authorization header in the format: DirectLogin username='{username}', password='{password}', consumer_key='{consumer_key}'. Source moved this from v4.0.0/banks/{bank_id}/direct_login to the consumer-scoped v6.0.0/my/logins/direct path."
-    auth_required: false
+    path: "/mock/obie/open-banking/v3.2/oauth2/register"
+    description: "Dynamic Client Registration (DCR API v3.2.1). The TPP submits a signed Software Statement Assertion + client metadata to obtain an HSBC-issued client_id, required before any token/data call. Secured by mutual TLS; Content-Type application/jose (the body is a PS256-signed JWS compact serialization of the registration claims, NOT raw JSON). Base host https://sandbox.ob.hsbc.co.uk for UK brands. Companion endpoints GET /register/{ClientId} and PUT /register/{ClientId} (both require a client_credentials Bearer token) read/update the client. OBIE/RFC 7591 aligned. T3 openapi/dcr-uk.yaml + docs/00 §4."
+    auth_required: true
     request_schema:
-      - field: username
+      - field: iss
         type: String
         required: true
-        validation: "Non-empty string. The OBP registered username."
-      - field: password
+        validation: "Unique TPP identifier, Base62 GUID. pattern ^[0-9a-zA-Z]{1,22}$, maxLength 22."
+      - field: iat
+        type: Integer
+        required: true
+        validation: "Issued-at, seconds since 1970-01-01T00:00:00Z (UTC); present or future."
+      - field: exp
+        type: Integer
+        required: true
+        validation: "Expiry, seconds since epoch (UTC); per docs/00 ≤30 min ahead of iat."
+      - field: aud
         type: String
         required: true
-        validation: "Non-empty string. The OBP account password."
-      - field: consumer_key
+        validation: "Audience = the ASPSP unique id (issuer from the brand .well-known). Base62 GUID, pattern ^[0-9a-zA-Z]{1,18}$, maxLength 18."
+      - field: jti
         type: String
         required: true
-        validation: "Non-empty string. OBP consumer key obtained at app registration."
-    response_schema:
-      - field: token
-        type: String
-        nullable: false
-        description: "Session token to be sent as DirectLogin token in subsequent request Authorization headers."
-    error_codes:
-      - code: 400
-        message: "INVALID_CREDENTIALS"
-        retry: false
-      - code: 401
-        message: "USER_NOT_LOGGED_IN"
-        retry: false
-      - code: 500
-        message: "OBP_SERVER_ERROR"
-        retry: true
-
-  - id: oidc_authorize
-    method: GET
-    path: "/v4.0.0/oauth2/authorize"
-    description: "OIDC authorization code flow (alternative to DirectLogin). Opens system browser with PKCE parameters for OAuth sign-in. Redirects back to app via org.mifos.openbanking://oauth/callback with authorization code."
-    auth_required: false
-    request_schema:
-      - field: response_type
+        validation: "JWT unique id, UUID v4 (36 chars)."
+      - field: redirect_uris
+        type: Array
+        required: true
+        validation: "Array of URI (each maxLength 256). One MUST exactly match the redirect_uri sent in every authorize request."
+      - field: token_endpoint_auth_method
         type: String
         required: true
-        validation: "Must be 'code'."
-      - field: client_id
-        type: String
+        validation: "enum: private_key_jwt | tls_client_auth."
+      - field: grant_types
+        type: Array
         required: true
-        validation: "OBP consumer_key registered for this application."
-      - field: redirect_uri
-        type: String
-        required: true
-        validation: "Must match registered redirect URI: org.mifos.openbanking://oauth/callback"
+        validation: "minItems 1; item enum: client_credentials | authorization_code | refresh_token."
+      - field: response_types
+        type: Array
+        required: false
+        validation: "item enum: 'code id_token' (Hybrid flow)."
       - field: scope
         type: String
         required: true
-        validation: "Space-separated OIDC scopes. Minimum: 'openid profile email'."
-      - field: state
+        validation: "Space-separated scope list (e.g. 'openid accounts'), maxLength 256. AIS=openid accounts; PIS=openid payments; CoF=openid fundsconfirmations."
+      - field: software_statement
         type: String
         required: true
-        validation: "CSRF state token — random UUID, verified on callback."
-      - field: code_challenge
+        validation: "The SSA — a signed JWT asserting TPP metadata (software_id, software_roles, org_id), issued by the OBIE Directory (prod) or DevHub (sandbox)."
+      - field: software_id
+        type: String
+        required: false
+        validation: "TPP-assigned stable software id. pattern ^[0-9a-zA-Z]{1,22}$."
+      - field: application_type
         type: String
         required: true
-        validation: "PKCE code challenge — base64url(SHA256(code_verifier))."
-      - field: code_challenge_method
+        validation: "enum: web | native (default web)."
+      - field: id_token_signed_response_alg
         type: String
         required: true
-        validation: "Must be 'S256'."
+        validation: "SupportedAlgorithms enum: PS256 only."
+      - field: request_object_signing_alg
+        type: String
+        required: true
+        validation: "SupportedAlgorithms enum: PS256 only."
+      - field: token_endpoint_auth_signing_alg
+        type: String
+        required: true
+        validation: "SupportedAlgorithms enum: PS256 only."
+      - field: tls_client_auth_subject_dn
+        type: String
+        required: false
+        validation: "RFC4514 subject DN; mandatory when token_endpoint_auth_method=tls_client_auth. maxLength 128."
+      - field: jwks_uri
+        type: String
+        required: false
+        validation: "URI to the OBIE keystore, maxLength 256."
     response_schema:
-      - field: code
+      - field: client_id
         type: String
         nullable: false
-        description: "Authorization code returned as query param on redirect. Single-use, short-lived."
-      - field: state
+        description: "OAuth 2.0 client identifier issued by HSBC, maxLength 36 (RegistrationResponse, HTTP 201)."
+      - field: client_id_issued_at
+        type: Integer
+        nullable: true
+        description: "Time the client_id was issued, seconds since epoch (UTC)."
+      - field: grant_types
+        type: Array
+        nullable: false
+        description: "Granted OAuth grant types (client_credentials | authorization_code | refresh_token)."
+      - field: response_types
+        type: Array
+        nullable: true
+        description: "Granted response_type values ('code id_token')."
+      - field: redirect_uris
+        type: Array
+        nullable: true
+        description: "Registered redirect URIs."
+      - field: token_endpoint_auth_method
         type: String
         nullable: false
-        description: "Echo of the state param — verify matches the original value to prevent CSRF."
+        description: "private_key_jwt | tls_client_auth."
+      - field: scope
+        type: String
+        nullable: true
+        description: "Granted scope list."
+      - field: software_statement
+        type: String
+        nullable: true
+        description: "Echoed SSA JWT."
+      - field: application_type
+        type: String
+        nullable: true
+        description: "web | native."
+      - field: token_endpoint_auth_signing_alg
+        type: String
+        nullable: false
+        description: "PS256."
     error_codes:
-      - code: 302
-        message: "OAUTH_CANCELLED"
-        retry: false
       - code: 400
-        message: "INVALID_REQUEST"
+        message: "invalid_client_metadata | invalid_redirect_uri | invalid_software_statement | unapproved_software_statement (RegistrationError)"
         retry: false
       - code: 401
-        message: "USER_NOT_LOGGED_IN"
+        message: "UNAUTHORIZED (unknown/invalid Client or invalid access token on GET/PUT /register/{ClientId})"
         retry: false
-      - code: 500
-        message: "OBP_SERVER_ERROR"
-        retry: true
-
-  - id: oidc_token_exchange
+      - code: 403
+        message: "FORBIDDEN (no permission to read/update/delete the Client)"
+        retry: false
+  - id: get_cc_token
     method: POST
-    path: "/v4.0.0/oauth2/token"
-    description: "Exchange OIDC authorization code for access_token, id_token, and refresh_token. Uses PKCE code_verifier. Content-Type must be application/x-www-form-urlencoded."
-    auth_required: false
+    path: "/obie/open-banking/v1.1/oauth2/token"
+    description: "Get a client-credentials access token (grant_type=client_credentials). TPP-only context used to STAGE a consent/intent and to poll consent status before the PSU authorises. Form-encoded request (no JSON body); authenticated with a PS256 client-assertion JWT (private_key_jwt) over mTLS. CE HSBCnet/CE MiVision use /ce/obie/open-banking/v1.1/oauth2/token. Same path as get_access_token and refresh_access_token — distinguished only by grant_type. docs/00 §6 step 1; docs/01 step 1."
+    auth_required: true
     request_schema:
       - field: grant_type
         type: String
         required: true
-        validation: "Must be 'authorization_code'."
-      - field: code
+        validation: "Form field, fixed value 'client_credentials'."
+      - field: scope
         type: String
         required: true
-        validation: "The authorization code received on OAuth callback. Single-use."
-      - field: redirect_uri
+        validation: "Form field, e.g. 'accounts' | 'payments' | 'fundsconfirmations'."
+      - field: client_assertion_type
         type: String
         required: true
-        validation: "Must match the redirect_uri used in the authorization request."
+        validation: "Form field, fixed 'urn:ietf:params:oauth:client-assertion-type:jwt-bearer'."
+      - field: client_assertion
+        type: String
+        required: true
+        validation: "PS256 JWT signed with the TPP private key; JOSE {alg:PS256, kid}; payload {jti, iss:clientId, sub:clientId, aud:<token endpoint>, exp:iat+1200}."
+    response_schema: []
+    note: "DOCUMENTED GAP — the OAuth2 token response body (access_token, token_type, expires_in, scope) is not captured in T1/T2/T3 sources (docs/01 marks it '@POST/token_client_credentials_response placeholder only; NOT IN SOURCES'). Per OBIE the response is a standard OAuth2 token JSON; fields not enumerated to avoid invention. Lifetimes surface via expires_in. T1 confirms the endpoint returns HTTP 200."
+    error_codes:
+      - code: 400
+        message: "invalid_request | invalid_grant | invalid_scope (OAuth2 error JSON)"
+        retry: false
+      - code: 401
+        message: "invalid_client (client-assertion / mTLS auth failed)"
+        retry: false
+      - code: 429
+        message: "TOO_MANY_REQUESTS"
+        retry: true
+      - code: 500
+        message: "OB.UnexpectedError"
+        retry: true
+  - id: initiate_consent_authorization
+    method: GET
+    path: "/obie/open-banking/v1.1/oauth2/authorize"
+    description: "PSU authorisation redirect (FAPI Hybrid flow). Runs on the per-brand AUTHORIZE host (sandbox.ob.*, NO secure. prefix) — e.g. sandbox.ob.hsbc.co.uk. Carries a signed request-object JWT embedding openbanking_intent_id=ConsentId; response_type='code id_token'; PKCE is sent as code_challenge + code_challenge_method=S256. PSU logs in and selects/authorises accounts at the ASPSP, then is redirected to redirect_uri with code + id_token (+ state). CE brands use /ce/obie/open-banking/v1.1/oauth2/authorize. docs/00 §6 steps 3-4; docs/01 step 3."
+    auth_required: false
+    request_schema:
       - field: client_id
         type: String
         required: true
-        validation: "OBP consumer_key."
-      - field: code_verifier
+        validation: "Query param. The HSBC-issued Client ID."
+      - field: response_type
         type: String
         required: true
-        validation: "PKCE code verifier — the random string from which code_challenge was derived."
+        validation: "Query param. 'code id_token' (Hybrid)."
+      - field: scope
+        type: String
+        required: true
+        validation: "Query param. e.g. 'openid accounts'."
+      - field: redirect_uri
+        type: String
+        required: true
+        validation: "Query param. MUST exactly match one registered redirect_uri (DCR)."
+      - field: state
+        type: String
+        required: true
+        validation: "Query param. Client-generated anti-CSRF value (RFC6749). Sandbox placeholder 'dummy-state'."
+      - field: nonce
+        type: String
+        required: true
+        validation: "Query param. Client-generated anti-replay value (OIDC). Sandbox placeholder 'dummy-nonce'."
+      - field: request
+        type: String
+        required: true
+        validation: "Query param. Signed Request Object (PS256 JWT) embedding the ConsentId, redirect_uri, nonce, state, scope."
+      - field: code_challenge
+        type: String
+        required: false
+        validation: "Query param. PKCE challenge (S256-hashed verifier)."
+      - field: code_challenge_method
+        type: String
+        required: false
+        validation: "Query param. PKCE method, value 'S256'."
     response_schema:
-      - field: access_token
+      - field: code
         type: String
         nullable: false
-        description: "Bearer access token for OBP API calls. Store securely."
+        description: "Authorization Code on the redirect query string (~30s lifetime); exchanged at get_access_token. Returned via HTTP 302 Location to redirect_uri."
       - field: id_token
         type: String
         nullable: false
-        description: "JWT signed with RS256 containing sub, name, email, email_verified claims."
-      - field: refresh_token
+        description: "Hybrid-flow ID token returned alongside code; carries openbanking.org.uk refresh_token_expires_at and PSU/consent binding claims."
+      - field: state
         type: String
         nullable: false
-        description: "Token for silent re-authentication after access_token expires."
-      - field: token_type
+        description: "Echo of the request state value (anti-CSRF check)."
+      - field: scope
         type: String
-        nullable: false
-        description: "Always 'Bearer'."
-      - field: expires_in
-        type: Int
-        nullable: false
-        description: "Lifetime of access_token in seconds (typically 3600)."
+        nullable: true
+        description: "Granted scope echoed on the redirect."
     error_codes:
-      - code: 400
-        message: "INVALID_REQUEST"
+      - code: 302
+        message: "Redirect with error / error_description (OBExternalStatusReason1Code) on the query string when authorisation fails"
         retry: false
       - code: 400
-        message: "INVALID_GRANT"
+        message: "OB.Field.Invalid (malformed authorize request / bad request object)"
         retry: false
       - code: 401
         message: "UNAUTHORIZED"
         retry: false
-      - code: 500
-        message: "OBP_SERVER_ERROR"
-        retry: true
-
-  - id: oidc_token_refresh
+  - id: get_access_token
     method: POST
-    path: "/v4.0.0/oauth2/token"
-    description: "Refresh expired access_token using stored refresh_token for silent re-authentication. Content-Type must be application/x-www-form-urlencoded."
-    auth_required: false
+    path: "/obie/open-banking/v1.1/oauth2/token"
+    description: "Exchange the Authorization Code for a PSU-bound access token (grant_type=authorization_code). Form-encoded (code, redirect_uri, client_assertion); returns the access token (+ refresh token) used for all resource GETs/POSTs. Same path as get_cc_token / refresh_access_token; CE brands use /ce/.... docs/00 §6 step 5; docs/01 step 4."
+    auth_required: true
     request_schema:
       - field: grant_type
         type: String
         required: true
-        validation: "Must be 'refresh_token'."
-      - field: refresh_token
+        validation: "Form field, fixed 'authorization_code'."
+      - field: code
         type: String
         required: true
-        validation: "The refresh_token stored from the previous token exchange."
-      - field: client_id
+        validation: "Form field. The Authorization Code from the redirect."
+      - field: redirect_uri
         type: String
         required: true
-        validation: "OBP consumer_key."
-    response_schema:
-      - field: access_token
+        validation: "Form field. MUST match the redirect_uri used in the authorize request."
+      - field: code_verifier
         type: String
-        nullable: false
-        description: "New access token replacing the expired one."
-      - field: refresh_token
+        required: false
+        validation: "Form field. PKCE verifier matching the S256 code_challenge."
+      - field: client_assertion_type
         type: String
-        nullable: false
-        description: "Rotated refresh token — update stored value."
-      - field: expires_in
-        type: Int
-        nullable: false
-        description: "Lifetime of the new access_token in seconds."
+        required: true
+        validation: "Form field, fixed 'urn:ietf:params:oauth:client-assertion-type:jwt-bearer'."
+      - field: client_assertion
+        type: String
+        required: true
+        validation: "PS256 client-assertion JWT (as in get_cc_token)."
+    response_schema: []
+    note: "DOCUMENTED GAP — the authorization_code token response body (access_token, token_type, expires_in, refresh_token, id_token, scope) is not captured in T1/T2/T3 (docs/01 marks it '@POST/token_authorization_code_response placeholder; NOT IN SOURCES'). Standard OAuth2 token JSON per OBIE; fields not invented. T1 confirms HTTP 200."
     error_codes:
       - code: 400
-        message: "INVALID_GRANT"
+        message: "invalid_grant (expired/used code) | invalid_request"
         retry: false
       - code: 401
-        message: "USER_NOT_LOGGED_IN"
+        message: "invalid_client"
         retry: false
-      - code: 500
-        message: "OBP_SERVER_ERROR"
+      - code: 429
+        message: "TOO_MANY_REQUESTS"
         retry: true
-
-  - id: oidc_token_revoke
+      - code: 500
+        message: "OB.UnexpectedError"
+        retry: true
+  - id: refresh_access_token
     method: POST
-    path: "/v4.0.0/oauth2/revoke"
-    description: "Revoke session tokens on logout. Invalidates both access_token and refresh_token. Content-Type must be application/x-www-form-urlencoded."
+    path: "/obie/open-banking/v1.1/oauth2/token"
+    description: "Obtain a new access token when the current one expires (grant_type=refresh_token). Form-encoded (refresh_token, client_assertion). Same path as get_cc_token / get_access_token; CE brands use /ce/.... Refresh-token expiry surfaces via the id_token claim http://openbanking.org.uk/refresh_token_expires_at and is aligned to the consent end-date. docs/00 §6 step 7; docs/01 step 7."
     auth_required: true
     request_schema:
-      - field: token
+      - field: grant_type
         type: String
         required: true
-        validation: "The access_token or refresh_token to revoke."
-      - field: client_id
+        validation: "Form field, fixed 'refresh_token'."
+      - field: refresh_token
         type: String
         required: true
-        validation: "OBP consumer_key."
-    response_schema:
-      - field: message
+        validation: "Form field. The refresh token issued at get_access_token."
+      - field: client_assertion_type
         type: String
-        nullable: false
-        description: "Confirmation message — 'Token revoked successfully'."
+        required: true
+        validation: "Form field, fixed 'urn:ietf:params:oauth:client-assertion-type:jwt-bearer'."
+      - field: client_assertion
+        type: String
+        required: true
+        validation: "PS256 client-assertion JWT (as in get_cc_token)."
+    response_schema: []
+    note: "DOCUMENTED GAP — the refresh_token token response body (access_token, token_type, expires_in, optional rotated refresh_token) is not captured in T1/T2/T3 (docs/01 marks it '@POST/request_access_token_refresh_response placeholder; NOT IN SOURCES'). Standard OAuth2 token JSON per OBIE; fields not invented. T1 confirms HTTP 200."
     error_codes:
       - code: 400
-        message: "INVALID_REQUEST"
+        message: "invalid_grant (expired/revoked refresh token) | invalid_request"
         retry: false
       - code: 401
-        message: "USER_NOT_LOGGED_IN"
+        message: "invalid_client"
         retry: false
+      - code: 429
+        message: "TOO_MANY_REQUESTS"
+        retry: true
       - code: 500
-        message: "OBP_SERVER_ERROR"
+        message: "OB.UnexpectedError"
         retry: true

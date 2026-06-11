@@ -237,7 +237,7 @@ components:
       focusable: true
     test_context:
       tag: mandate_cancel_icon
-      purpose: "Inline cancel icon shown ONLY on active mandates; opens the cancel confirmation dialog"
+      purpose: "Inline cancel icon (OBP legacy). UNSUPPORTED under OBIE — no cancel-direct-debit endpoint. Retained in layout but the action has no API binding; the mandate is view-only."
       interaction_type: action
       data_driven: true
 
@@ -309,7 +309,7 @@ components:
       shortcuts: [Escape]
     test_context:
       tag: cancel_confirm_dialog
-      purpose: "Destructive-action guard. Body: '{merchant} ({reference}) will stop collecting payments. This cannot be undone.' Confirm records the cancellation LOCALLY (Room cache) — no server DELETE — then reprojects the list."
+      purpose: "Destructive-action guard (OBP legacy). UNSUPPORTED under OBIE — no cancel-direct-debit endpoint. Retained in layout but has no API binding; mandates are view-only."
       interaction_type: action
       data_driven: true
 
@@ -471,15 +471,25 @@ state_model:
     - name: uiState
       type: "StateFlow<ScreenState<DirectDebitsContent>>"
       default: "ScreenState.Loading"
+      obie_field_map:
+        note: >
+          Each DirectDebitRow is built from an OBIE Data.DirectDebit[] entry
+          (get_account_direct_debits). Surfaced OBIE shapes:
+          id ← Data.DirectDebit[].DirectDebitId (String)
+          mandateReference ← Data.DirectDebit[].MandateIdentification (String)
+          merchantName ← Data.DirectDebit[].Name (String, originator name)
+          statusLabel/isActive ← Data.DirectDebit[].DirectDebitStatusCode (String, ExternalMandateStatus1Code: Active/Inactive)
+          amountLabel ← Data.DirectDebit[].PreviousPaymentAmount.Amount (String) + .PreviousPaymentAmount.Currency (String)
+          nextCollectionLabel ← derived from Data.DirectDebit[].PreviousPaymentDateTime + Frequency (OBIE exposes no NextPaymentDateTime for DDs)
   content_type:
     name: DirectDebitsContent
     fields:
       - { name: mandates, type: "List<DirectDebitRow>" }
       - { name: activeCount, type: Int }
-      - { name: cancelDialogFor, type: "DirectDebitRow?" }
+      - { name: cancelDialogFor, type: "DirectDebitRow?", note: "OBP legacy; cancel UNSUPPORTED under OBIE — no API binding" }
   model_type:
     name: DirectDebitMandate
-    note: "Derived from TXN_TYPE=DD history. Status ACTIVE/CANCELLED (cancelled = locally recorded)."
+    note: "Built from OBIE Data.DirectDebit[] (get_account_direct_debits, OBReadDirectDebit2). Status from DirectDebitStatusCode. Cancel is UNSUPPORTED — OBIE has no cancel-direct-debit endpoint."
   supporting_types:
     - name: DirectDebitRow
       fields:
@@ -502,10 +512,17 @@ state_model:
     - UserPreferencesRepository
 
 api:
+  - endpoint: "GET /obie/open-banking/v4.0/aisp/accounts/{AccountId}/direct-debits"
+    id: get_account_direct_debits
+    note: >
+      HSBC OBIE AISP read endpoint (OBReadDirectDebit2). Lists the direct-debit mandates on the
+      selected AccountId — READ-ONLY. Requires an authorised account-access consent with
+      ReadDirectDebits permission. See api.yaml.
+    tag: Direct-Debits
   note: >
-    GET does not exist on OBP — mandates are DERIVED from TXN_TYPE=DD history via
-    DirectDebitsRepository.listMandates(). Cancel is LOCAL-ONLY (Room cache); there is no
-    server DELETE. See api.yaml.
+    Cancel is UNSUPPORTED under OBIE — there is no cancel-direct-debit endpoint (no OBIE DELETE,
+    no DD mutation). The OBP build's local-only cancel has no OBIE binding; the cancel icon +
+    confirm dialog are retained in layout but marked unsupported. See api.yaml#unsupported_actions.
 
 dependencies:
   tier: feature

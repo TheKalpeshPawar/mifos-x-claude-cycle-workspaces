@@ -392,7 +392,7 @@ components:
     test_context:
       tag: soc_submit_button
       assert_text: "Create standing order"
-      purpose: "Validates then POSTs the OBP create endpoint (onSubmit). Disabled while submitting (label 'Creating…'). On success a toast fires and the screen navigates back to the list."
+      purpose: "Validates then POSTs the OBIE domestic-standing-order-consent (create_domestic_standing_order_consent → ConsentId, Status AWAU). Disabled while submitting (label 'Creating…'). On success the screen hands off to payment-authorize-handoff (consent → bank authorise → callback → submit POST /pisp/domestic-standing-orders). SCA happens at the bank."
       interaction_type: action
       data_driven: true
 
@@ -449,7 +449,7 @@ states:
       - soc_recurrence_hint
       - soc_end_date_field
       - soc_submit_button
-    note: "form.submitting — submit button disabled with label 'Creating…' while the POST is in flight."
+    note: "form.submitting — submit button disabled with label 'Creating…' while the consent POST (create_domestic_standing_order_consent) is in flight."
   error:
     layout: { type: column, scroll: vertical, padding_horizontal: 16 }
     visible_components:
@@ -467,7 +467,7 @@ states:
   created:
     layout: { type: column }
     visible_components: []
-    note: "form.created flips true after a successful POST → a 'Standing order created' toast fires and the screen navigates back to standing-orders. No standalone success surface."
+    note: "form.created flips true after a successful consent POST (Status AWAU) → the screen navigates to payment-authorize-handoff carrying the ConsentId for consent → bank authorise → callback → submit (POST /pisp/domestic-standing-orders). No standalone success surface here."
 
 state_model:
   view_model: CreateStandingOrderViewModel
@@ -488,13 +488,14 @@ state_model:
       - { name: payees, type: "List<Counterparty>", default: "emptyList()" }
       - { name: selectedPayeeId, type: String, default: "\"\"" }
       - { name: amount, type: String, default: "\"\"" }
-      - { name: currency, type: String, default: "\"EUR\"" }
+      - { name: currency, type: String, default: "\"GBP\"", note: "source account currency; maps to Data.Initiation.RecurringPaymentAmount.Currency (GBP rail)" }
       - { name: frequency, type: String, default: "\"MONTHLY\"" }
       - { name: startDate, type: "LocalDate?", default: "null" }
       - { name: endDate, type: "LocalDate?", default: "null" }
       - { name: submitting, type: Boolean, default: "false" }
       - { name: error, type: "String?", default: "null" }
-      - { name: created, type: Boolean, default: "false", note: "true after a successful POST → navigate back" }
+      - { name: consentId, type: String, default: "\"\"", note: "Data.ConsentId from the consent POST — passed to payment-authorize-handoff" }
+      - { name: created, type: Boolean, default: "false", note: "true after a successful consent POST (Status AWAU) → navigate to payment-authorize-handoff" }
   constants:
     - { name: STANDING_ORDER_FREQUENCIES, value: "[DAILY, WEEKLY, BI-WEEKLY, MONTHLY, YEARLY]" }
   validation:
@@ -519,13 +520,21 @@ state_model:
     - CustomersRepository
 
 api:
-  - endpoint: "POST /obp/v4.0.0/banks/{bankId}/accounts/{accountId}/owner/standing-order"
+  - id: create_domestic_standing_order_consent
+    endpoint: "POST /obie/open-banking/v4.0/pisp/domestic-standing-order-consents"
     note: >
-      The ONLY OBP standing-order endpoint (no GET/PUT/DELETE/pause/resume at any version).
-      Body = CreateStandingOrderRequest{customer_id, user_id, counterparty_id, amount,
-      when (StandingOrderSchedule{frequency}), date_signed, date_starts, date_expires?}.
-      See api.yaml.
-    tag: Standing-Orders
+      Submit step (onSubmit). Stages the recurring instruction and returns a ConsentId with Status
+      AwaitingAuthorisation (AWAU). Body = OBWriteDomesticStandingOrderConsent: Data.Permission=Create,
+      Data.Initiation{Frequency, FirstPaymentDateTime, RecurringPaymentAmount, FirstPaymentAmount,
+      CreditorAccount}, Risk. See api.yaml.
+    tag: pisp-domestic-standing-order
+  - id: create_domestic_standing_order
+    endpoint: "POST /obie/open-banking/v4.0/pisp/domestic-standing-orders"
+    note: >
+      Submit step performed by payment-authorize-handoff AFTER bank authorise + callback (not by this
+      screen's button). References the authorised ConsentId; Data.Initiation must match the consent.
+      SCA at the bank. See api.yaml.
+    tag: pisp-domestic-standing-order
 
 dependencies:
   tier: feature

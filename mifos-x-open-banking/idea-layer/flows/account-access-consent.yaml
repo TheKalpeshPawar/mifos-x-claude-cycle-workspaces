@@ -1,0 +1,41 @@
+# flows/account-access-consent.yaml — OBIE AIS consent + PSU authorisation (HSBC Open Banking)
+# Created 2026-06-11 — MIGRATION OBP → HSBC. The consent-grant journey that gates ALL account data.
+# This is the architectural heart of the migration: it replaces OBP's in-app DirectLogin with the
+# OBIE redirect-based consent model (the app is a TPP; the PSU authenticates at HSBC, not in-app).
+
+schema_version: "1.0"
+id: account-access-consent
+name: "Account Access Consent & Authorisation"
+description: "The OBIE account-information consent journey. The app (a registered TPP via Dynamic Client Registration) asks the PSU which account data to share, creates an account-access-consent (status AWAU), then hands the PSU off to HSBC's authorise endpoint to authenticate + approve (SCA happens at the bank). HSBC returns to the app via deep-link; the app exchanges the authorisation code for an access token scoped to the consent (status AUTH). Only then is account data readable."
+created_at: "2026-06-11"
+status: active
+
+entry_screen: consent-intro
+screens:
+  - consent-intro
+  - consent-request
+  - bank-authorize-handoff
+  - auth-callback
+  - consent-declined
+  - consent-expired
+
+connections:
+  - { from: consent-intro, to: consent-request, type: push, label: "Connect your HSBC account" }
+  - { from: consent-request, to: bank-authorize-handoff, type: push, label: "Grant — POST account-access-consents (AWAU) + build signed authorise request" }
+  - { from: consent-request, to: consent-intro, type: pop, label: "Back" }
+  - { from: bank-authorize-handoff, to: auth-callback, type: external_redirect, label: "PSU authenticates + authorises at HSBC (SCA at the bank) → deep-link returns code" }
+  - { from: auth-callback, to: home, type: replace, label: "code → access token; consent AUTH → enter app" }
+  - { from: auth-callback, to: consent-declined, type: replace, label: "callback carries error / PSU declined" }
+  - { from: consent-declined, to: consent-request, type: pop, label: "Try again" }
+  - { from: consent-expired, to: consent-request, type: replace, label: "Re-grant access (prior consent EXPD/RJCT/revoked)" }
+
+obie_context:
+  consent_endpoint: "POST /obie/open-banking/v4.0/aisp/account-access-consents → ConsentId, Status AWAU"
+  authorize: "GET /obie/open-banking/v1.1/oauth2/authorize — authorization_code + PKCE S256, signed request object, intent_id = ConsentId. EXTERNAL to the app (browser/CCT)."
+  callback: "deep-link org.mifos.openbanking://oauth/callback → POST /oauth2/token (grant_type=authorization_code, mTLS) → access + refresh token"
+  poll_status: "GET /aisp/account-access-consents/{ConsentId} → expect Status AUTH before reading resources"
+  permission_clusters: [ReadAccountsDetail, ReadBalances, ReadTransactionsDetail, ReadBeneficiariesDetail, ReadStandingOrdersDetail, ReadDirectDebits, ReadScheduledPaymentsDetail, ReadParty, ReadProducts, ReadStatementsDetail]
+  invariants:
+    - "No username/password is entered in-app — authentication + SCA happen at HSBC during the redirect."
+    - "Every AIS read requires a prior AUTH-status consent + a consent-scoped access token."
+    - "mTLS on every call; detached x-jws-signature on writes; x-fapi-* headers throughout."

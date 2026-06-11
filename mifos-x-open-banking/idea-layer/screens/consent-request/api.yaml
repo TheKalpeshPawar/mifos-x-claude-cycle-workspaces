@@ -1,0 +1,61 @@
+sibling: api
+schema_version: "4.0"
+feature_id: consent-request
+api:
+  - id: create_account_access_consent
+    endpoint: "POST /obie/open-banking/v4.0/aisp/account-access-consents"
+    tag: AccountInformation
+    trigger: on_grant_clicked
+    description: "Register an account-access-consent with the PSU-selected Permissions[]. Uses a client-credentials token. Returns ConsentId + Status AWAU (awaiting authorisation). The ConsentId becomes the openbanking_intent_id for the authorise redirect. OBIE objects OBReadConsent1 (request) / OBReadConsentResponse1 (HTTP 201). CE HSBCnet + Malta use the v3.1 (+ /ce) path."
+    request:
+      content_type: "application/json"
+      headers:
+        Authorization: "Bearer {cc_access_token}"
+        x-fapi-financial-id: "{fapi_financial_id}"
+      body:
+        Data:
+          Permissions:
+            - ReadAccountsDetail
+            - ReadBalances
+            - ReadTransactionsDetail
+            - ReadStandingOrdersDetail
+            - ReadDirectDebits
+            - ReadBeneficiariesDetail
+            - ReadParty
+            - ReadProducts
+          ExpirationDateTime: "{optional_expiry_iso}"
+        Risk: {}
+    response:
+      fields:
+        - name: Data.ConsentId
+          type: String
+          stored_as: consent_id
+        - name: Data.Status
+          type: String
+          note: "Initial AWAU; enum AWAU|AUTH|RJCT|CANC|EXPD."
+        - name: Data.CreationDateTime
+          type: String
+        - name: Data.StatusUpdateDateTime
+          type: String
+        - name: Data.Permissions
+          type: Array
+          note: "Echo of the requested permission clusters."
+        - name: Data.ExpirationDateTime
+          type: String
+          note: "Echo of requested expiry; open-ended if absent."
+    errors:
+      - code: 400
+        name: OB_FIELD_INVALID
+        ui_message: "We couldn't start your connection. Please check your network and try again."
+      - code: 401
+        name: UNAUTHORIZED
+        ui_message: "We couldn't authorise this connection. Please try again."
+      - code: 403
+        name: OB_INVALID_CONSENT_STATUS
+        ui_message: "This connection is no longer valid. Please start again."
+      - code: 429
+        name: TOO_MANY_REQUESTS
+        ui_message: "Too many attempts. Please wait a moment and try again."
+      - code: 500
+        name: OB_UNEXPECTED_ERROR
+        ui_message: "Something went wrong on our end. Please try again in a moment."

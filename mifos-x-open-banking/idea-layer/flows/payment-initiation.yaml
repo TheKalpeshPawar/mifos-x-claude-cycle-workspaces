@@ -1,0 +1,48 @@
+# flows/payment-initiation.yaml — OBIE PISP payment journey (HSBC Open Banking)
+# Created 2026-06-11 — MIGRATION OBP → HSBC. Re-architects send-money to the OBIE redirect model.
+# KEY MOULD-FIX: OBP did Strong Customer Authentication via an in-app one-time-code screen (sca-challenge).
+# Under OBIE, SCA is performed AT HSBC during the authorise redirect — there is NO in-app code entry.
+# The in-app sca-challenge screen is therefore REMOVED; a bank-authorise handoff + deep-link callback replace it.
+
+schema_version: "1.0"
+id: payment-initiation
+name: "Payment Initiation Flow (PISP)"
+description: "Single immediate domestic/international payment over HSBC Open Banking PISP. The PSU builds the payment, the app runs a Confirmation-of-Funds check, creates a payment-consent (status AWAU), and hands off to HSBC to authorise (PSU authenticates + completes SCA at the bank). On deep-link return the app submits the payment and polls its status to a terminal result."
+created_at: "2026-06-11"
+status: active
+gated_by: account-access-consent
+
+entry_screen: send-money
+screens:
+  - send-money
+  - send-money-amount
+  - send-money-confirm
+  - payment-authorize-handoff
+  - auth-callback
+  - payment-result
+  - payment-declined
+
+connections:
+  - { from: send-money, to: send-money-amount, type: push, label: "Select payee/account → enter amount" }
+  - { from: send-money-amount, to: send-money-confirm, type: push, label: "Funds check OK (CoF) → review" }
+  - { from: send-money-amount, to: send-money, type: pop, label: "Back" }
+  - { from: send-money-confirm, to: payment-authorize-handoff, type: push, label: "Confirm — POST domestic-payment-consents (AWAU) + build signed authorise request" }
+  - { from: send-money-confirm, to: send-money-amount, type: pop, label: "Edit payment" }
+  - { from: payment-authorize-handoff, to: auth-callback, type: external_redirect, label: "PSU authenticates + completes SCA at HSBC → deep-link returns code" }
+  - { from: auth-callback, to: payment-result, type: replace, label: "code → token; POST domestic-payments; poll status → terminal" }
+  - { from: auth-callback, to: payment-declined, type: replace, label: "callback error / PSU declined / consent RJCT" }
+  - { from: payment-result, to: transaction-detail, type: push, label: "View transaction" }
+  - { from: payment-result, to: home, type: replace, label: "Done" }
+  - { from: payment-declined, to: send-money-confirm, type: pop, label: "Try again" }
+
+obie_context:
+  funds_check: "POST /cbpii/funds-confirmations (or PISP consent funds-confirmation) before authorise — surfaced on send-money-amount."
+  consent_endpoint: "POST /obie/open-banking/v4.0/pisp/domestic-payment-consents → ConsentId, Status AWAU (international + scheduled + standing-order variants resolve to their own consent endpoint)."
+  authorize: "GET /oauth2/authorize — authorization_code + PKCE, signed request object, intent_id = payment ConsentId. EXTERNAL; SCA at the bank."
+  callback: "deep-link org.mifos.openbanking://oauth/callback → POST /oauth2/token → access token"
+  submit: "POST /obie/open-banking/v4.0/pisp/domestic-payments (ConsentId + Risk) → DomesticPaymentId"
+  poll_status: "GET /pisp/domestic-payments/{DomesticPaymentId} → Status AcceptedSettlementInProcess/Completed | Rejected"
+  invariants:
+    - "One payment = one consent = one authorise redirect. SCA is never collected in-app."
+    - "The Initiation block sent to /domestic-payments MUST byte-match the authorised consent's Initiation."
+  removed_screen: "sca-challenge (in-app OTP) — obsolete under OBIE; SCA moved to the bank authorise step."

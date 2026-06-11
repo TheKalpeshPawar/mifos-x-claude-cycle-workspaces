@@ -2,101 +2,56 @@ sibling: api
 schema_version: "4.0"
 feature_id: send-money-confirm
 api:
-  - id: obp_create_sepa_transfer
-    endpoint: "POST /obp/v4.0.0/banks/{bankId}/accounts/{accountId}/owner/transaction-request-types/SEPA/transaction-requests"
-    tag: TransactionRequests
-    description: "Rail 1 — SEPA by recipient IBAN. PaymentsRepository.sendSepaPayment. Falls back to COUNTERPARTY on OBP-30012/30074."
+  - id: create_domestic_payment_consent
+    endpoint: "POST /obie/open-banking/v4.0/pisp/domestic-payment-consents"
+    tag: PISP
+    description: "On Confirm — stages a domestic-payment-consent with the reviewed Initiation (InstructedAmount, CreditorAccount, RemittanceInformation) + Risk. Client Credentials token (scope payments). ASPSP returns Data.ConsentId with default Data.Status AWAU (awaiting PSU authorisation). CONSENT-FIRST ORDERING: this screen creates the consent ONLY; it does NOT submit the payment. The actual payment POST happens later (in payment-authorize-handoff / after the bank authorise + callback), gated on the consent reaching Status AUTH. SCA is performed AT THE BANK, not in-app. OBIE object OBWriteDomesticConsent4 / OBWriteDomesticConsentResponse5."
     request:
       fields:
-        - name: to.iban
+        - name: Data.Initiation.InstructionIdentification
           type: String
-        - name: value.currency
+        - name: Data.Initiation.EndToEndIdentification
           type: String
-        - name: value.amount
+        - name: Data.Initiation.InstructedAmount.Amount
           type: String
-        - name: description
+        - name: Data.Initiation.InstructedAmount.Currency
+          type: String
+        - name: Data.Initiation.DebtorAccount.SchemeName
+          type: String
+        - name: Data.Initiation.DebtorAccount.Identification
+          type: String
+        - name: Data.Initiation.CreditorAccount.SchemeName
+          type: String
+        - name: Data.Initiation.CreditorAccount.Identification
+          type: String
+        - name: Data.Initiation.CreditorAccount.Name
+          type: String
+        - name: Data.Initiation.RemittanceInformation.Reference
+          type: String
+        - name: Risk.PaymentContextCode
           type: String
     response:
       fields:
-        - name: id
+        - name: Data.ConsentId
           type: String
-        - name: type
+        - name: Data.Status
           type: String
-        - name: status
+        - name: Data.CreationDateTime
           type: String
-        - name: challenge
-          type: Challenge
-        - name: charge
-          type: Charge
-        - name: transaction_ids
-          type: List<String>
+        - name: Data.StatusUpdateDateTime
+          type: String
+        - name: Data.Initiation
+          type: Object
+        - name: Risk
+          type: Object
+        - name: Links
+          type: Object
     errors:
-      - code: 404
-        message: "OBP-30012 / OBP-30074 — falls back to COUNTERPARTY"
-      - code: 422
-        message: "INSUFFICIENT_FUNDS"
-  - id: obp_create_counterparty_transfer
-    endpoint: "POST /obp/v4.0.0/banks/{bankId}/accounts/{accountId}/owner/transaction-request-types/COUNTERPARTY/transaction-requests"
-    tag: TransactionRequests
-    description: "Rail 2 — pay a counterparty by id. PaymentsRepository.sendToCounterparty. Domestic / International + SEPA fallback."
-    request:
-      fields:
-        - name: to.counterparty_id
-          type: String
-        - name: value.currency
-          type: String
-        - name: value.amount
-          type: String
-        - name: description
-          type: String
-    response:
-      fields:
-        - name: id
-          type: String
-        - name: status
-          type: String
-        - name: challenge
-          type: Challenge
-        - name: charge
-          type: Charge
-        - name: transaction_ids
-          type: List<String>
-    errors:
-      - code: 422
-        message: "OBP-40003 currency mismatch / LIMIT / INSUFFICIENT_FUNDS"
-  - id: obp_create_sandbox_tan_transfer
-    endpoint: "POST /obp/v2.1.0/banks/{bankId}/accounts/{accountId}/owner/transaction-request-types/SANDBOX_TAN/transaction-requests"
-    tag: TransactionRequests
-    description: "Rail 3 — sandbox-only internal transfer to an OBP-hosted account. PaymentsRepository.sendToSandboxTan. Self-answerable SCA."
-    request:
-      fields:
-        - name: to.bank_id
-          type: String
-        - name: to.account_id
-          type: String
-        - name: value.currency
-          type: String
-        - name: value.amount
-          type: String
-        - name: description
-          type: String
-    response:
-      fields:
-        - name: id
-          type: String
-        - name: status
-          type: String
-        - name: challenge
-          type: Challenge
-  - id: obp_get_transaction_request
-    endpoint: "GET /obp/v4.0.0/banks/{bankId}/accounts/{accountId}/owner/transaction-requests/{requestId}"
-    tag: TransactionRequests
-    description: "Re-fetch an INITIATED request to populate challenge.id (the create response does not inline the SCA challenge). Internal to PaymentsRepository.enrichChallenge."
-    response:
-      fields:
-        - name: id
-          type: String
-        - name: status
-          type: String
-        - name: challenge
-          type: Challenge
+      - code: 400
+        message: "OB.Field.Invalid"
+      - code: 401
+        message: "UNAUTHORIZED"
+      - code: 403
+        message: "OB.Resource.InvalidConsentStatus"
+      - code: 500
+        message: "OB.UnexpectedError"

@@ -1,0 +1,252 @@
+schema_version: "4.0"
+api_group: cbpii
+name: "Confirmation of Funds (CBPII) API"
+base_url: "https://secure.sandbox.ob.hsbc.co.uk"
+auth_scheme: OAuth2-FAPI
+api_version: v4.0
+generated_at: "2026-06-11"
+source: "HSBC UK/CE Open Banking sandbox — paths/methods/brands T1 (inventory/by-category/confirmation-of-funds.json); semantics/schemas T2 OBIE CBPII v4.0 (no HSBC develop.hsbc.com portal capture for Confirmation of Funds). 9 brands offer CBPII (Malta Personal does NOT). CE HSBCnet uses v3.1 + a /ce path prefix; CE MiVision uses v4.0 + /ce; all other brands use v4.0. Generic OAuth2 endpoints (Get CC Token, Get Access Token, Refresh Access Token, Initiate Consent Authorization — shared v1.1 /oauth2/token + /oauth2/authorize) belong to the auth group and are excluded here. Grant types: consent management (POST/GET/DELETE funds-confirmation-consents) uses Client Credentials; POST funds-confirmations uses Authorization Code. Scope: fundsconfirmations. Message signing: No. Idempotency key: No."
+endpoints:
+  - id: create_funds_confirmation_consent
+    method: POST
+    path: "/obie/open-banking/v4.0/cbpii/funds-confirmation-consents"
+    description: "CBPII registers a long-lived funds-confirmation-consent (DebtorAccount + optional expiry); the ASPSP returns a unique ConsentId with initial Status AWAU. Uses a client-credentials token. CE HSBCnet uses /ce/obie/open-banking/v3.1/cbpii/funds-confirmation-consents; CE MiVision uses /ce/obie/open-banking/v4.0/.... OBIE object: OBFundsConfirmationConsent1 (request) / OBFundsConfirmationConsentResponse1 (response)."
+    auth_required: true
+    scopes: [fundsconfirmations]
+    request_schema:
+      - field: Data.ExpirationDateTime
+        type: String
+        required: false
+        validation: "ISODateTime. Open-ended consent if absent (0..1)."
+      - field: Data.DebtorAccount.SchemeName
+        type: String
+        required: true
+        validation: "OBInternalAccountIdentification4Code, e.g. UK.OBIE.IBAN (1..1)."
+      - field: Data.DebtorAccount.Identification
+        type: String
+        required: true
+        validation: "Max256Text — account identifier funds are confirmed against (1..1)."
+      - field: Data.DebtorAccount.Name
+        type: String
+        required: false
+        validation: "Max350Text (0..1)."
+      - field: Data.DebtorAccount.SecondaryIdentification
+        type: String
+        required: false
+        validation: "Max34Text — e.g. building-society roll number (0..1)."
+      - field: Data.DebtorAccount.Proxy
+        type: Object
+        required: false
+        validation: "OBProxy1 (0..1)."
+    response_schema:
+      - field: Data.ConsentId
+        type: String
+        nullable: false
+        description: "Unique funds-confirmation-consent id, Max128Text (OBFundsConfirmationConsentResponse1)."
+      - field: Data.CreationDateTime
+        type: String
+        nullable: false
+        description: "ISODateTime the consent resource was created."
+      - field: Data.Status
+        type: String
+        nullable: false
+        description: "OBInternalConsentStatus1Code. Initial value AWAU; enum AWAU|RJCT|AUTH|CANC|EXPD."
+      - field: Data.StatusReason
+        type: Array
+        nullable: true
+        description: "Optional status-reason entries (StatusReasonCode, StatusReasonDescription)."
+      - field: Data.StatusUpdateDateTime
+        type: String
+        nullable: false
+        description: "ISODateTime of the last status update."
+      - field: Data.ExpirationDateTime
+        type: String
+        nullable: true
+        description: "Echo of requested expiry; open-ended if absent."
+      - field: Data.DebtorAccount.SchemeName
+        type: String
+        nullable: false
+        description: "Echoed account scheme name (OBCashAccountDebtor4)."
+      - field: Data.DebtorAccount.Identification
+        type: String
+        nullable: false
+        description: "Echoed account identification (may be masked by the ASPSP)."
+      - field: Data.DebtorAccount.Name
+        type: String
+        nullable: true
+        description: "Echoed account name."
+      - field: Links.Self
+        type: String
+        nullable: true
+        description: "Self link to the created consent resource."
+    error_codes:
+      - code: 400
+        message: "OB.Field.Invalid"
+        retry: false
+      - code: 401
+        message: "UNAUTHORIZED"
+        retry: false
+      - code: 403
+        message: "OB.Resource.InvalidConsentStatus"
+        retry: false
+      - code: 429
+        message: "TOO_MANY_REQUESTS"
+        retry: true
+      - code: 500
+        message: "OB.UnexpectedError"
+        retry: true
+  - id: get_funds_confirmation_consent
+    method: GET
+    path: "/obie/open-banking/v4.0/cbpii/funds-confirmation-consents/{ConsentId}"
+    description: "CBPII optionally retrieves a funds-confirmation-consent it created to check its status (e.g. AUTH after the PSU agrees). Uses a client-credentials token; the ASPSP may mask the account Identification/PAN. CE HSBCnet uses /ce/obie/open-banking/v3.1/...; CE MiVision uses /ce/obie/open-banking/v4.0/.... OBIE object: OBFundsConfirmationConsentResponse1."
+    auth_required: true
+    scopes: [fundsconfirmations]
+    request_schema: []
+    response_schema:
+      - field: Data.ConsentId
+        type: String
+        nullable: false
+        description: "Funds-confirmation-consent id, Max128Text."
+      - field: Data.Status
+        type: String
+        nullable: false
+        description: "OBInternalConsentStatus1Code: AWAU (awaiting agreement) | RJCT | AUTH | CANC | EXPD."
+      - field: Data.CreationDateTime
+        type: String
+        nullable: false
+        description: "ISODateTime the consent was created."
+      - field: Data.StatusUpdateDateTime
+        type: String
+        nullable: false
+        description: "ISODateTime of the last status update."
+      - field: Data.ExpirationDateTime
+        type: String
+        nullable: true
+        description: "Consent expiry; open-ended if absent."
+      - field: Data.DebtorAccount.SchemeName
+        type: String
+        nullable: false
+        description: "Account scheme name."
+      - field: Data.DebtorAccount.Identification
+        type: String
+        nullable: false
+        description: "Account identification (may be masked by the ASPSP)."
+    error_codes:
+      - code: 400
+        message: "OB.Field.Invalid"
+        retry: false
+      - code: 401
+        message: "UNAUTHORIZED"
+        retry: false
+      - code: 403
+        message: "OB.Resource.InvalidConsentStatus"
+        retry: false
+      - code: 404
+        message: "OB.Resource.NotFound"
+        retry: false
+      - code: 429
+        message: "TOO_MANY_REQUESTS"
+        retry: true
+      - code: 500
+        message: "OB.UnexpectedError"
+        retry: true
+  - id: delete_funds_confirmation_consent
+    method: DELETE
+    path: "/obie/open-banking/v4.0/cbpii/funds-confirmation-consents/{ConsentId}"
+    description: "If the PSU revokes consent to confirm funds, the CBPII must delete the funds-confirmation-consent resource as soon as practically possible. Returns HTTP 204 No Content (Response Object: NA). CE HSBCnet uses /ce/obie/open-banking/v3.1/...; CE MiVision uses /ce/obie/open-banking/v4.0/...."
+    auth_required: true
+    scopes: [fundsconfirmations]
+    request_schema: []
+    response_schema: []
+    note: "HTTP 204 No Content on success — no response object per OBIE CBPII v4.0 funds-confirmation-consent.html endpoints table."
+    error_codes:
+      - code: 400
+        message: "OB.Field.Invalid"
+        retry: false
+      - code: 401
+        message: "UNAUTHORIZED"
+        retry: false
+      - code: 403
+        message: "OB.Resource.InvalidConsentStatus"
+        retry: false
+      - code: 404
+        message: "OB.Resource.NotFound"
+        retry: false
+      - code: 429
+        message: "TOO_MANY_REQUESTS"
+        retry: true
+      - code: 500
+        message: "OB.UnexpectedError"
+        retry: true
+  - id: create_funds_confirmation
+    method: POST
+    path: "/obie/open-banking/v4.0/cbpii/funds-confirmations"
+    description: "CBPII confirms whether funds are available in the payment account; the ASPSP returns a unique FundsConfirmationId and a FundsAvailable boolean. Requires an authorization-code-grant token, must specify the ConsentId in the payload, and the InstructedAmount must be in the currency of the underlying account (otherwise the ASPSP rejects). CE HSBCnet uses /ce/obie/open-banking/v3.1/cbpii/funds-confirmations; CE MiVision uses /ce/obie/open-banking/v4.0/.... OBIE object: OBFundsConfirmation1 (request) / OBFundsConfirmationResponse1 (response)."
+    auth_required: true
+    scopes: [fundsconfirmations]
+    request_schema:
+      - field: Data.ConsentId
+        type: String
+        required: true
+        validation: "Max128Text — must match the funds-confirmation-consent (1..1)."
+      - field: Data.Reference
+        type: String
+        required: true
+        validation: "Max35Text — CBPII's unique reference for the check (1..1)."
+      - field: Data.InstructedAmount.Amount
+        type: String
+        required: true
+        validation: "Decimal string, pattern ^\\d{1,13}$|^\\d{1,13}\\.\\d{1,5}$ (1..1)."
+      - field: Data.InstructedAmount.Currency
+        type: String
+        required: true
+        validation: "ISO 4217, pattern ^[A-Z]{3,3}$; must match the account currency (1..1)."
+    response_schema:
+      - field: Data.FundsConfirmationId
+        type: String
+        nullable: false
+        description: "Unique funds-confirmation resource id, Max40Text (OBFundsConfirmationResponse1)."
+      - field: Data.FundsAvailable
+        type: Boolean
+        nullable: false
+        description: "Result of the funds-availability check."
+      - field: Data.ConsentId
+        type: String
+        nullable: false
+        description: "Echoed funds-confirmation-consent id."
+      - field: Data.CreationDateTime
+        type: String
+        nullable: false
+        description: "ISODateTime the funds-confirmation was created."
+      - field: Data.Reference
+        type: String
+        nullable: false
+        description: "Echoed CBPII reference."
+      - field: Data.InstructedAmount.Amount
+        type: String
+        nullable: false
+        description: "Echoed instructed amount."
+      - field: Data.InstructedAmount.Currency
+        type: String
+        nullable: false
+        description: "Echoed instructed currency."
+      - field: Links.Self
+        type: String
+        nullable: true
+        description: "Self link to the funds-confirmation resource."
+    error_codes:
+      - code: 400
+        message: "OB.Field.Invalid"
+        retry: false
+      - code: 401
+        message: "UNAUTHORIZED"
+        retry: false
+      - code: 403
+        message: "OB.Resource.InvalidConsentStatus"
+        retry: false
+      - code: 429
+        message: "TOO_MANY_REQUESTS"
+        retry: true
+      - code: 500
+        message: "OB.UnexpectedError"
+        retry: true

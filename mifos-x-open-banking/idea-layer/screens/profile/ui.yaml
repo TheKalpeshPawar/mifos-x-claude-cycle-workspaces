@@ -412,33 +412,37 @@ navigation:
     note: "No imperative navigation. onLogout() flips UserDataRepository.setIsAuthenticated(false); RootNavViewModel observes the session and routes back to the auth graph. change-password is NOT reachable — its button is rendered disabled."
 
 api:
-  - id: obp_get_user_profile
-    endpoint: "GET /obp/v4.0.0/users/current"
-    tag: UserProfile
+  - id: get_party
+    endpoint: "GET /obie/open-banking/v4.0/aisp/party"
+    tag: AISP-Party
     trigger: on_screen_load
-    description: "Shipped ProfileApi.getCurrentUser — the only endpoint consumed by Profile. phone is NOT in the response."
+    description: "OBIE account-holder party (the PSU) for the authorised account-access consent. Requires ReadParty + an AUTH-status consent + scoped token. CE HSBCnet + Malta use /ce/.../v3.1."
     response:
       fields:
-        - name: user_id
+        - name: Data.Party.PartyId
           type: String
-        - name: username
+        - name: Data.Party.Name
           type: String
-        - name: email
+        - name: Data.Party.FullLegalName
+          type: String
+        - name: Data.Party.EmailAddress
+          type: String
+        - name: Data.Party.Phone
           type: String
     errors:
       - code: 401
-        name: AUTH_ERROR
-        ui_message: "Could not load your profile"
+        name: UNAUTHORIZED
+        ui_message: "Could not load your profile — reconnect your HSBC account."
+      - code: 403
+        name: OB_RESOURCE_INVALID_CONSENT
+        ui_message: "Your data-sharing consent doesn't include profile details."
       - code: 500
-        name: NETWORK_ERROR
+        name: OB_UNEXPECTED_ERROR
         ui_message: "Could not load your profile"
 
-  - id: obp_update_user_profile
-    endpoint: "PUT /obp/v4.0.0/users/current"
-    tag: UserProfile
-    trigger: deferred
-    status: deferred
-    description: "ProfileApi.updateCurrentUser exists but is NOT consumed — Profile is read-only and never calls it. Listed for contract completeness only."
+unsupported:
+  - capability: update_profile
+    reason: "OBIE Open Banking is read-only for account-holder data — a TPP cannot update the PSU's name/email/phone. The OBP PUT /users/current is removed."
 
 dependencies:
   tier: feature

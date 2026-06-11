@@ -1,160 +1,145 @@
 sibling: api
 schema_version: "4.0"
 feature_id: pfm-dashboard
-# Reconciled to shipped PFM v2 source on 2026-06-11 (code = truth). Beyond the budget
-# personal-data-fields + transactions list, the shipped multi-account PFM also calls two
-# endpoints that were missing from this spec: the OBP FX rate endpoint (FxConverter,
-# session-cached, per-transaction conversion into the base currency) and the per-account
-# owner-view detail fetch (PfmAccountsService, to resolve product_code for personal-vs-
-# business classification — the /my/accounts list nulls product_code).
+# Rebound OBP -> HSBC OBIE on 2026-06-11. Contract source of truth: server/apis/ais.yaml.
+# DERIVATION NOTE: OBIE AIS has NO spending-insights / PFM endpoint. ALL insights on this
+# screen (category breakdown, summary spent/received/net, top merchants, budget meter) are
+# DERIVED CLIENT-SIDE from get_account_transactions over the selected period+scope, with
+# accounts + balances read for totals/classification. Two former OBP dependencies have NO
+# OBIE banking equivalent and become LOCAL-ONLY state: PFM budgets and the base currency
+# (previously stored as OBP personal-data-fields) are app-local preferences, NOT a banking
+# resource. OBIE AIS also has NO FX-rate endpoint, so multi-currency aggregation must use a
+# non-OBIE rate source or be presented per-currency. All OBIE reads require an authorised
+# account-access consent (ReadAccountsBasic/Detail, ReadBalances, ReadTransactions*) + an
+# Authorization-Code-scoped token (mutual TLS + x-fapi-financial-id on every call).
 api:
-  - id: obp_personal_data_fields
-    endpoint: "GET /obp/v6.0.0/my/personal-data-fields"
-    tag: User
-    description: "Read PFM budgets stored as personal data fields (convention: pfm_budget_<categoryId>)"
+  - id: get_accounts
+    endpoint: "GET /obie/open-banking/v4.0/aisp/accounts"
+    tag: Accounts
+    description: "Authorised account list — the PFM scope spans all PERSONAL accounts. OBIE OBReadAccount6. AccountCategory (Personal | Business) classifies personal-vs-business scope; Currency drives the base-currency seed."
     response:
       fields:
-        - name: personal_data_fields
-          type: "List<PersonalDataField>"
-        - name: name
+        - name: Data.Account
+          type: "Array<OBAccount6>"
+        - name: Data.Account[].AccountId
           type: String
-        - name: value
+        - name: Data.Account[].Currency
+          type: String
+        - name: Data.Account[].AccountCategory
+          type: String
+        - name: Data.Account[].AccountTypeCode
+          type: String
+        - name: Data.Account[].Nickname
+          type: String
+        - name: Data.Account[].Account[].Identification
+          type: String
+        - name: Data.Account[].Account[].Name
           type: String
     errors:
       - code: 401
-        message: "USER_NOT_LOGGED_IN"
+        message: "UNAUTHORIZED"
       - code: 403
-        message: "INSUFFICIENT_AUTHORISATION"
-  - id: obp_personal_data_field_create
-    endpoint: "POST /obp/v6.0.0/my/personal-data-fields"
-    tag: User
-    description: "Create/update budget entry"
-    request:
-      fields:
-        - name: name
-          type: String
-          example: "pfm_budget_food_dining"
-        - name: value
-          type: String
-          example: "350"
+        message: "OB.Resource.InvalidConsentStatus"
+  - id: get_account_details
+    endpoint: "GET /obie/open-banking/v4.0/aisp/accounts/{AccountId}"
+    tag: Accounts
+    description: "Per-account detail — AccountCategory/AccountTypeCode + Currency confirm personal-vs-business classification per account. OBIE OBReadAccount6. Replaces the OBP owner-view detail fetch (OBIE list already carries AccountCategory; detail is a per-account refinement)."
     response:
       fields:
-        - name: name
+        - name: Data.Account[].AccountId
           type: String
-        - name: value
+        - name: Data.Account[].Currency
+          type: String
+        - name: Data.Account[].AccountTypeCode
+          type: String
+        - name: Data.Account[].Nickname
           type: String
     errors:
-      - code: 400
-        message: "INVALID_FIELD_NAME"
       - code: 401
-        message: "USER_NOT_LOGGED_IN"
-  - id: obp_transactions_list
-    endpoint: "GET /obp/v6.0.0/my/accounts/{account_id}/transactions"
+        message: "UNAUTHORIZED"
+      - code: 404
+        message: "OB.Field.Invalid (incl. non-existent AccountId)"
+  - id: get_account_balances
+    endpoint: "GET /obie/open-banking/v4.0/aisp/accounts/{AccountId}/balances"
+    tag: Accounts
+    description: "Per-account balance — read for scope totals. OBIE OBReadBalance1; amount is Data.Balance[].Amount.Amount (decimal String) + Data.Balance[].Amount.Currency, with Data.Balance[].Type (e.g. InterimAvailable) + CreditDebitIndicator."
+    response:
+      fields:
+        - name: Data.Balance[].AccountId
+          type: String
+        - name: Data.Balance[].Amount.Amount
+          type: String
+        - name: Data.Balance[].Amount.Currency
+          type: String
+        - name: Data.Balance[].CreditDebitIndicator
+          type: String
+        - name: Data.Balance[].Type
+          type: String
+    errors:
+      - code: 401
+        message: "UNAUTHORIZED"
+      - code: 403
+        message: "OB.Resource.InvalidConsentStatus (e.g. missing ReadBalances)"
+  - id: get_account_transactions
+    endpoint: "GET /obie/open-banking/v4.0/aisp/accounts/{AccountId}/transactions"
     tag: Transactions
-    description: "Fetch transactions for PFM analysis — filtered by date range for selected period"
+    description: "Source for ALL derived insights — fetched per personal account and aggregated client-side. OBIE OBReadTransaction6. Categorisation runs over Data.Transaction[].MerchantDetails.MerchantName / TransactionInformation / BankTransactionCode.Code; amounts are Data.Transaction[].Amount.Amount (String) + .Currency with CreditDebitIndicator (Credit | Debit). Filter window via fromBookingDateTime/toBookingDateTime query params; BookingDateTime drives pagination. There is NO OBIE spending-insights endpoint — the dashboard is a client-side projection."
     request:
       params:
-        - name: from_date
+        - name: fromBookingDateTime
           type: String
           example: "2026-05-01T00:00:00Z"
-        - name: to_date
+        - name: toBookingDateTime
           type: String
           example: "2026-05-31T23:59:59Z"
-        - name: limit
-          type: Int
-          example: 500
     response:
       fields:
-        - name: transactions
-          type: "List<Transaction>"
-        - name: transaction_id
+        - name: Data.Transaction
+          type: "Array<OBTransaction6>"
+        - name: Data.Transaction[].TransactionId
           type: String
-        - name: this_account
-          type: AccountInfo
-        - name: details
-          type: TransactionDetails
-        - name: value
-          type: AmountOfMoney
+        - name: Data.Transaction[].CreditDebitIndicator
+          type: String
+        - name: Data.Transaction[].BookingDateTime
+          type: String
+        - name: Data.Transaction[].TransactionInformation
+          type: String
+        - name: Data.Transaction[].Amount.Amount
+          type: String
+        - name: Data.Transaction[].Amount.Currency
+          type: String
+        - name: Data.Transaction[].BankTransactionCode.Code
+          type: String
+        - name: Data.Transaction[].MerchantDetails.MerchantName
+          type: String
+        - name: Data.Transaction[].CreditorAccount.Identification
+          type: String
+        - name: Data.Transaction[].DebtorAccount.Identification
+          type: String
     errors:
       - code: 400
-        message: "INVALID_DATE_FORMAT"
+        message: "OB.Field.Invalid"
       - code: 401
-        message: "USER_NOT_LOGGED_IN"
-      - code: 404
-        message: "ACCOUNT_NOT_FOUND"
-  - id: obp_fx_rate
-    endpoint: "GET /obp/v3.0.0/banks/{bankId}/fx/{fromCurrencyCode}/{toCurrencyCode}"
-    tag: FX
-    auth: DirectLogin
-    description: "Live FX rate per currency pair — FxConverter resolves per-transaction amounts into the user's base currency when aggregating across multi-currency personal accounts. Session-cached per (bankId, from, to). Used by PFM v2 (pfm-multi-account-budget-strategy)."
-    request:
-      params:
-        - name: bankId
-          type: String
-          example: "obp.bank.x"
-        - name: fromCurrencyCode
-          type: String
-          example: "EUR"
-        - name: toCurrencyCode
-          type: String
-          example: "GBP"
-    response:
-      fields:
-        - name: bank_id
-          type: String
-        - name: from_currency_code
-          type: String
-        - name: to_currency_code
-          type: String
-        - name: conversion_value
-          type: Double
-        - name: inverse_conversion_value
-          type: Double
-        - name: effective_date
-          type: String
-    errors:
-      - code: 401
-        message: "USER_NOT_LOGGED_IN"
-      - code: 404
-        message: "FX_CURRENCY_NOT_FOUND — pair unsupported by the bank; FxConverter degrades to a 1:1 passthrough and surfaces the FX-unavailable notice"
-  - id: obp_account_detail_owner
-    endpoint: "GET /obp/v4.0.0/banks/{bankId}/accounts/{accountId}/owner/account"
-    tag: Accounts
-    auth: DirectLogin
-    description: "Owner-view detail for one account — PfmAccountsService fetches this per account (in parallel, session-cached) to resolve product_code, which the /my/accounts list endpoint returns null. product_code drives personal (CURRENT/WALLET/SAVINGS) vs business classification; a failed detail fetch degrades to the base list account."
-    request:
-      params:
-        - name: bankId
-          type: String
-          example: "obp.bank.x"
-        - name: accountId
-          type: String
-          example: "8ca8a7e4-6d02-40e3-a129-0b2bf89de9f1"
-    response:
-      fields:
-        - name: id
-          type: String
-        - name: bank_id
-          type: String
-        - name: label
-          type: String
-        - name: product_code
-          type: String
-        - name: account_type
-          type: String
-        - name: balance
-          type: object
-          children:
-            - name: currency
-              type: String
-            - name: amount
-              type: String
-        - name: owners
-          type: "List<AccountOwner>"
-        - name: account_attributes
-          type: "List<AccountAttribute>"
-    errors:
-      - code: 401
-        message: "USER_NOT_LOGGED_IN"
-      - code: 404
-        message: "ACCOUNT_NOT_FOUND"
+        message: "UNAUTHORIZED"
+      - code: 403
+        message: "OB.Resource.InvalidConsentStatus"
+
+# LOCAL-ONLY preferences (NO OBIE equivalent). Budgets (pfm_budget_<categoryId>) and the
+# base currency (pfm_base_currency) were OBP personal-data-fields; OBIE AIS has no equivalent
+# user-data store, so these persist as app-local preferences (e.g. on-device settings store).
+# They are NOT banking resources and are NOT fetched from HSBC.
+local_state:
+  - id: pfm_budgets_local
+    store: app_local_preferences
+    description: "PFM budgets, keyed pfm_budget_<categoryId> (overall, food-dining, transport, entertainment, bills, shopping). No OBIE equivalent — read/written locally, newest-wins semantics preserved client-side."
+  - id: pfm_base_currency_local
+    store: app_local_preferences
+    description: "User base currency for multi-account aggregation; seeded from the default personal account's Currency (get_accounts) when unset. No OBIE equivalent."
+
+# GAP — NO OBIE FX endpoint. OBP's /banks/{bank}/fx had no OBIE counterpart in AIS. Cross-
+# currency aggregation must either use a non-OBIE FX source or present spending per currency.
+gaps:
+  - id: fx_rate
+    former_endpoint: "GET /obp/.../banks/{bankId}/fx/{from}/{to}"
+    status: no_obie_equivalent
+    description: "OBIE AIS exposes no FX-rate resource. FxConverter must source rates externally (non-OBIE) or the dashboard falls back to per-currency presentation / 1:1 passthrough with an FX-unavailable notice."

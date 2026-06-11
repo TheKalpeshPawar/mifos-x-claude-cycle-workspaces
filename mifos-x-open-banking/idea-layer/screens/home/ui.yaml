@@ -86,9 +86,9 @@ shell:
       icon: send
       target: send-money
     - id: nav_cards
-      label: Cards
-      icon: credit_card
-      target: cards
+      label: Insights
+      icon: insights
+      target: pfm-dashboard
     - id: nav_more
       label: More
       icon: more_horiz
@@ -274,7 +274,7 @@ components:
     test_context:
       tag: services_section_title
 
-  # Shipped grid: row 1 Standing Orders / Business / Products; row 2 FX Rates /
+  # Shipped grid: row 1 Standing Orders / Business / Products; row 2
   # Find ATM (only when showFindAtm) / Insights. Each tile = bordered surfaceContainer
   # card with a primary-tinted icon over a centered label.
   - type: stack
@@ -392,43 +392,6 @@ components:
           - type: text
             id: service_products_label
             content: "Products"
-            style:
-              typography: "Outfit/label_medium"
-              color: "#44483D"
-              padding_top: 8
-
-      - type: card
-        id: service_fx_rates
-        supported_states: [idle, hover, focus_visible, pressed]
-        style:
-          surface: surface_container
-          border_color: "#C5C8BA"
-          border_width: 1
-          border_radius: 12
-          height: 88
-          padding: 12
-          flex: 1
-        on_click:
-          action: navigate
-          target: fx-rates
-        a11y:
-          role: button
-          label: "FX Rates"
-        keyboard:
-          focusable: true
-        test_context:
-          tag: service_fx_rates
-          assert_clickable: true
-        children:
-          - type: icon
-            id: service_fx_rates_icon
-            content: "currency_exchange"
-            style:
-              size: 28
-              color: "#4C662B"
-          - type: text
-            id: service_fx_rates_label
-            content: "FX Rates"
             style:
               typography: "Outfit/label_medium"
               color: "#44483D"
@@ -622,11 +585,33 @@ state_model:
   content_model: HomeContent
   content_fields:
     - name: greetingName
-      type: String                            # primary account owner displayName (blank → "there")
+      type: String                            # from Data.Account[].Account[].Name on the primary account (blank → "there")
     - name: primaryAccount
-      type: "Account?"                         # persisted default → checking-first → first
+      type: "ObieAccount?"                     # one Data.Account[] element; persisted default → checking-first → first
+      obie_shape:
+        account_id: "Data.Account[].AccountId"           # String
+        account_type: "Data.Account[].AccountTypeCode"   # String
+        nickname: "Data.Account[].Nickname"              # String
+        scheme_name: "Data.Account[].Account[].SchemeName"     # String
+        identification: "Data.Account[].Account[].Identification"  # String
+        name: "Data.Account[].Account[].Name"            # String
+    - name: primaryBalanceAmount
+      type: String                            # Data.Balance[].Amount.Amount (decimal string)
+    - name: primaryBalanceCurrency
+      type: String                            # Data.Balance[].Amount.Currency (ISO 4217)
+    - name: recentTransactions
+      type: "List<ObieTransaction>"           # from get_transactions on the primary AccountId
+      default: "emptyList()"
+      obie_shape:
+        transaction_id: "Data.Transaction[].TransactionId"          # String
+        credit_debit: "Data.Transaction[].CreditDebitIndicator"     # String (Credit|Debit)
+        booking_datetime: "Data.Transaction[].BookingDateTime"      # String (ISO 8601)
+        information: "Data.Transaction[].TransactionInformation"    # String
+        amount: "Data.Transaction[].Amount.Amount"                  # String
+        currency: "Data.Transaction[].Amount.Currency"             # String
+        merchant_name: "Data.Transaction[].MerchantDetails.MerchantName"  # String (counterparty display source)
     - name: accounts
-      type: "List<Account>"
+      type: "List<ObieAccount>"               # Data.Account[] from get_accounts
       default: "emptyList()"
     - name: totalAccountCount
       type: Int
@@ -646,14 +631,15 @@ state_model:
       param: "account: Account"
       desc: "Persists UserData.defaultAccountId via UserPreferencesRepository"
   derivation:
-    primary_account: "default-id match → first checking-type → first"
-    greeting_name: "primaryAccount.owners.firstOrNull().displayName"
+    primary_account: "default-id match (Data.Account[].AccountId) → first checking-type (AccountTypeCode CurrentAccount) → first"
+    greeting_name: "primaryAccount Data.Account[].Account[].Name"
+    primary_balance: "Data.Balance[] for primaryAccount.AccountId, Type=InterimAvailable → Amount.Amount + Amount.Currency"
+    counterparty_display: "per transaction: MerchantDetails.MerchantName → TransactionInformation (never a raw CreditorAccount login)"
   nav_callbacks:                               # HomeScreen lambdas (homeGraph wiring)
     - onAccounts
     - onStandingOrders
     - onBusinessInsights
     - onProducts
-    - onFxRates
     - onFindAtm
     - onInsights
   flags:
@@ -661,49 +647,103 @@ state_model:
       type: Boolean
       default: "true"                          # gates the Find ATM tile
   di:
-    - AccountsRepository                        # accountsStream — Store5 cache-then-network, /my/accounts
+    - AisRepository                             # get_accounts + get_balances + get_transactions (OBIE AIS, consent-scoped)
+    - ConsentRepository                         # resolves the authorised account-access-consent + authorization-code token
     - UserPreferencesRepository                 # default-account preference (multiplatform-settings)
 
-# Shipped Home calls ONLY the cross-bank accounts stream. The per-bank accounts and
-# home-transactions endpoints below the live one are retained as deferred references.
+# HSBC OBIE AIS. Home reads require an authorised account-access-consent (AUTH) plus a
+# scoped authorization-code token (scope accounts). Endpoint ids mirror screens/home/api.yaml.
+consent:
+  required: true
+  type: account-access-consent
+  permissions: [ReadAccountsBasic, ReadAccountsDetail, ReadBalances, ReadTransactionsBasic, ReadTransactionsDetail]
+  token: authorization-code
 api:
-  - id: obp_my_accounts_cross_bank
-    endpoint: "GET /obp/v3.0.0/my/accounts"
+  - id: get_accounts
+    endpoint: "GET /obie/open-banking/v4.0/aisp/accounts"
     tag: Accounts
-    auth: DirectLogin
-    description: "Cross-bank account aggregation — the ONLY endpoint the shipped Home consumes (via AccountsRepository.accountsStream, offline-first Store5)."
+    auth: OAuth2-FAPI
+    consent_required: true
+    description: "Authorised AccountId list — feeds the hero default-account pick and the account count. OBIE OBReadAccount6."
     response:
       fields:
-        - name: id
+        - name: Data.Account[].AccountId
           type: String
-        - name: bank_id
+        - name: Data.Account[].Currency
           type: String
-        - name: label
+        - name: Data.Account[].AccountTypeCode
           type: String
-        - name: account_type
+        - name: Data.Account[].Nickname
           type: String
-        - name: balance
-          type: object
-          children:
-            - name: currency
-              type: String
-            - name: amount
-              type: String
-        - name: account_routings
-          type: "List<AccountRouting>"
-        - name: owners
-          type: "List<AccountOwner>"
+        - name: Data.Account[].Account[].SchemeName
+          type: String
+        - name: Data.Account[].Account[].Identification
+          type: String
+        - name: Data.Account[].Account[].Name
+          type: String
     errors:
       - code: 401
-        message: "Unauthorized — DirectLogin token missing or expired"
+        message: "UNAUTHORIZED — token missing or expired"
+      - code: 403
+        message: "OB.Resource.InvalidConsentStatus — consent not AUTH"
       - code: 500
-        message: "OBP server error"
+        message: "OB.UnexpectedError"
 
-  - id: obp_get_home_transactions
-    deferred: true
-    endpoint: "GET /obp/v3.0.0/banks/{bankId}/accounts/{accountId}/owner/transactions"
+  - id: get_balances
+    endpoint: "GET /obie/open-banking/v4.0/aisp/accounts/{AccountId}/balances"
+    tag: Balances
+    auth: OAuth2-FAPI
+    consent_required: true
+    description: "Available Balance for the hero default account. Requires ReadBalances. OBIE OBReadBalance1; Home surfaces the InterimAvailable Type."
+    response:
+      fields:
+        - name: Data.Balance[].AccountId
+          type: String
+        - name: Data.Balance[].Type
+          type: String
+        - name: Data.Balance[].CreditDebitIndicator
+          type: String
+        - name: Data.Balance[].Amount.Amount
+          type: String
+        - name: Data.Balance[].Amount.Currency
+          type: String
+    errors:
+      - code: 401
+        message: "UNAUTHORIZED"
+      - code: 403
+        message: "OB.Resource.InvalidConsentStatus — missing ReadBalances"
+      - code: 500
+        message: "OB.UnexpectedError"
+
+  - id: get_transactions
+    endpoint: "GET /obie/open-banking/v4.0/aisp/accounts/{AccountId}/transactions"
     tag: Transactions
-    description: "DEFERRED — UNUSED in shipped Home. The recent-transactions list was never built on Home; transactions live on the Transactions tab. Kept for traceability only."
+    auth: OAuth2-FAPI
+    consent_required: true
+    description: "Recent transactions for the hero default account. Requires ReadTransactionsBasic/Detail. OBIE OBReadTransaction6. Counterparty rule: prefer MerchantDetails.MerchantName then TransactionInformation; never render a raw CreditorAccount login."
+    response:
+      fields:
+        - name: Data.Transaction[].TransactionId
+          type: String
+        - name: Data.Transaction[].CreditDebitIndicator
+          type: String
+        - name: Data.Transaction[].BookingDateTime
+          type: String
+        - name: Data.Transaction[].TransactionInformation
+          type: String
+        - name: Data.Transaction[].Amount.Amount
+          type: String
+        - name: Data.Transaction[].Amount.Currency
+          type: String
+        - name: Data.Transaction[].MerchantDetails.MerchantName
+          type: String
+    errors:
+      - code: 401
+        message: "UNAUTHORIZED"
+      - code: 403
+        message: "OB.Resource.InvalidConsentStatus"
+      - code: 500
+        message: "OB.UnexpectedError"
 
 dependencies:
   tier: feature
@@ -712,7 +752,6 @@ dependencies:
     - standing-orders
     - business-insights
     - products
-    - fx-rates
     - atm-locator
     - pfm-dashboard
     - send-money

@@ -1,50 +1,113 @@
 sibling: api
 schema_version: "4.0"
 feature_id: home
-# Reconciled to shipped HomeViewModel.kt on 2026-06-11: Home consumes ONLY the cross-bank
-# /my/accounts stream (via AccountsRepository). The per-bank accounts endpoint and the
-# home-transactions endpoint were never wired — retained below as deferred references.
+consent:
+  required: true
+  type: account-access-consent
+  permissions: [ReadAccountsBasic, ReadAccountsDetail, ReadBalances, ReadTransactionsBasic, ReadTransactionsDetail]
+  token: authorization-code
+  note: "All Home reads require an authorised account-access-consent (Status AUTH) plus a scoped authorization-code access token (scope accounts). The consent itself is registered/checked with a client-credentials token; data GETs below use the authorization-code token."
 api:
-  - id: obp_my_accounts_cross_bank
-    endpoint: "GET /obp/v3.0.0/my/accounts"
+  - id: get_accounts
+    endpoint: "GET /obie/open-banking/v4.0/aisp/accounts"
     tag: Accounts
-    auth: DirectLogin
-    description: "Cross-bank account aggregation — the ONLY endpoint shipped Home calls (AccountsRepository.accountsStream, offline-first Store5 cache-then-network)."
+    auth: OAuth2-FAPI
+    description: "List the AccountId(s) the PSU authorised — feeds the hero default-account selection and the account count. Authorization-code token, scope accounts. OBIE object OBReadAccount6."
+    consent_required: true
     response:
       fields:
-        - name: id
+        - name: Data.Account[].AccountId
           type: String
-        - name: bank_id
+        - name: Data.Account[].Currency
           type: String
-        - name: label
+        - name: Data.Account[].AccountTypeCode
           type: String
-        - name: account_type
+        - name: Data.Account[].Nickname
           type: String
-        - name: balance
-          type: object
-          children:
-            - name: currency
-              type: String
-            - name: amount
-              type: String
-        - name: account_routings
-          type: "List<AccountRouting>"
-        - name: owners
-          type: "List<AccountOwner>"
+        - name: Data.Account[].Account[].SchemeName
+          type: String
+        - name: Data.Account[].Account[].Identification
+          type: String
+        - name: Data.Account[].Account[].Name
+          type: String
     errors:
+      - code: 400
+        message: "OB.Field.Invalid"
       - code: 401
-        message: "Unauthorized — DirectLogin token missing or expired"
+        message: "UNAUTHORIZED — token missing/expired"
+      - code: 403
+        message: "OB.Resource.InvalidConsentStatus — consent not AUTH"
       - code: 500
-        message: "OBP server error"
+        message: "OB.UnexpectedError"
 
-  - id: obp_get_home_accounts
-    deferred: true
-    endpoint: "GET /obp/v3.0.0/banks/{bankId}/accounts"
-    tag: Accounts
-    description: "DEFERRED — per-bank accounts endpoint NOT used by shipped Home (it reads cross-bank /my/accounts instead). Kept for traceability."
+  - id: get_balances
+    endpoint: "GET /obie/open-banking/v4.0/aisp/accounts/{AccountId}/balances"
+    tag: Balances
+    auth: OAuth2-FAPI
+    description: "Available balance for the hero default account (Available Balance). Requires ReadBalances. Authorization-code token. OBIE object OBReadBalance1; multiple balances may return, one per Type — Home surfaces InterimAvailable."
+    consent_required: true
+    params:
+      - name: AccountId
+        type: path
+    response:
+      fields:
+        - name: Data.Balance[].AccountId
+          type: String
+        - name: Data.Balance[].Type
+          type: String
+        - name: Data.Balance[].CreditDebitIndicator
+          type: String
+        - name: Data.Balance[].Amount.Amount
+          type: String
+        - name: Data.Balance[].Amount.Currency
+          type: String
+    errors:
+      - code: 400
+        message: "OB.Field.Invalid"
+      - code: 401
+        message: "UNAUTHORIZED"
+      - code: 403
+        message: "OB.Resource.InvalidConsentStatus — missing ReadBalances"
+      - code: 500
+        message: "OB.UnexpectedError"
 
-  - id: obp_get_home_transactions
-    deferred: true
-    endpoint: "GET /obp/v3.0.0/banks/{bankId}/accounts/{accountId}/owner/transactions"
+  - id: get_transactions
+    endpoint: "GET /obie/open-banking/v4.0/aisp/accounts/{AccountId}/transactions"
     tag: Transactions
-    description: "DEFERRED — UNUSED in shipped Home. The recent-transactions list was never built on Home."
+    auth: OAuth2-FAPI
+    description: "Recent transactions for the hero default account. Requires ReadTransactionsBasic/Detail. Authorization-code token. Supports fromBookingDateTime/toBookingDateTime; BookingDateTime drives pagination. OBIE object OBReadTransaction6. Counterparty display follows the project counterparty rule — never render a raw CreditorAccount login; prefer MerchantDetails.MerchantName then TransactionInformation."
+    consent_required: true
+    params:
+      - name: AccountId
+        type: path
+      - name: fromBookingDateTime
+        type: query
+      - name: toBookingDateTime
+        type: query
+    response:
+      fields:
+        - name: Data.Transaction[].TransactionId
+          type: String
+        - name: Data.Transaction[].CreditDebitIndicator
+          type: String
+        - name: Data.Transaction[].Status
+          type: String
+        - name: Data.Transaction[].BookingDateTime
+          type: String
+        - name: Data.Transaction[].TransactionInformation
+          type: String
+        - name: Data.Transaction[].Amount.Amount
+          type: String
+        - name: Data.Transaction[].Amount.Currency
+          type: String
+        - name: Data.Transaction[].MerchantDetails.MerchantName
+          type: String
+    errors:
+      - code: 400
+        message: "OB.Field.Invalid"
+      - code: 401
+        message: "UNAUTHORIZED"
+      - code: 403
+        message: "OB.Resource.InvalidConsentStatus"
+      - code: 500
+        message: "OB.UnexpectedError"

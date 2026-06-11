@@ -58,9 +58,9 @@ shell:
       icon: send
       target: send-money
     - id: nav_cards
-      label: Cards
-      icon: credit_card
-      target: cards
+      label: Insights
+      icon: insights
+      target: pfm-dashboard
     - id: nav_more
       label: More
       icon: more_horiz
@@ -731,29 +731,31 @@ state_model:
       type: String
     - name: balanceDisplay
       type: String
-      note: "formatted, sign-preserving money string"
+      note: "formatted, sign-preserving money string from Data.Balance[].Amount.Amount (String) signed by .CreditDebitIndicator; Type=InterimAvailable/ClosingBooked picked"
     - name: currency
       type: String
+      note: "Data.Balance[].Amount.Currency (else Data.Account[].Currency)"
     - name: holder
       type: String
-      note: "resolved account-holder name (CustomersRepository.accountHolderName, owner displayName fallback); never an OBP login username"
+      note: "resolved account-holder name from get_account_parties Data.Party[].Name/.FullLegalName, Data.Account[].Account[].Name fallback; never an obfuscated login username"
     - name: accountNumber
       type: String
+      note: "Data.Account[].Account[].Identification where SchemeName=UK.OBIE.SortCodeAccountNumber"
     - name: ibanRaw
       type: String
-      note: "un-spaced IBAN, the value copied to clipboard"
+      note: "un-spaced IBAN from Data.Account[].Account[].Identification where SchemeName=UK.OBIE.IBAN; the value copied to clipboard"
     - name: ibanDisplay
       type: String
       note: "IBAN grouped into 4-char blocks for display"
     - name: bankName
       type: String
-      note: "resolved via BanksRepository.bankName(account.bankId)"
+      note: "servicing institution from Data.Account[].Servicer.Identification (sort code / BIC); no separate banks read"
     - name: productLabel
       type: String
-      note: "humanized account_type/product_code"
+      note: "humanized Data.Account[].AccountTypeCode / Nickname"
     - name: "attributes"
       type: "List<AttributeRow>"
-      note: "derived from account.account_attributes; DOUBLE-typed values money-formatted"
+      note: "plan/fee rows; OBIE account detail carries no account_attributes equivalent — populated only if a get_account_product (ReadProducts) read is wired, else empty"
     - name: hasPlanSection
       type: Boolean
       computed: true
@@ -765,12 +767,12 @@ state_model:
           type: String
         - name: value
           type: String
-  dto: org.mifosx.openbanking.core.model.obp.Account
+  dto: org.mifosx.openbanking.core.model.obie.OBReadAccount6
   data_source:
     pattern: suspend-load
-    note: "load(bankId, accountId) calls accountsRepository.accountDetail(bankId, accountId); then resolves bankName (BanksRepository) and holder (CustomersRepository). No transactions are loaded. Projects only fields OBP returns."
+    note: "load(accountId) calls accountsRepository.accountDetails(accountId) (get_account_details) and accountsRepository.balances(accountId) (get_account_balances), then resolves holder via get_account_parties. All reads need an authorised account-access-consent + authorization-code token. No transactions are loaded. Projects only fields OBIE returns."
   events:
-    - "load(bankId: String, accountId: String)"
+    - "load(accountId: String)"
     - onRetry
     - "onCopy(value: String, what: String)"
     - onViewTransactions
@@ -783,79 +785,75 @@ state_model:
     - "copy-to-clipboard via LocalClipboardManager, confirmed with a transient snackbar (\"<what> copied\"); no persisted ibanCopied/bicCopied flags"
   di:
     - AccountsRepository
-    - BanksRepository
-    - CustomersRepository
 
 api:
-  - endpoint: "GET /obp/v4.0.0/banks/{bankId}/accounts/{accountId}/owner/account"
+  - id: get_account_details
+    endpoint: "GET /obie/open-banking/v4.0/aisp/accounts/{AccountId}"
     tag: Accounts
-    auth: DirectLogin
-    note: "Shipped accountDetail() owner-view endpoint (v4.0.0); the no-view /account path returns OBP-10404, so owner view is fixed in the path. Returns owners, account_attributes, routings, number, balance. bankId defaults to config.bankId when blank."
+    auth: OAuth2-FAPI
+    note: "OBIE AISP get_account_details (OBReadAccount6). Supplies identity, scheme/Identification (account number / IBAN via SchemeName), nickname, account type, servicer. Requires an authorised account-access-consent (ReadAccountsDetail) + authorization-code token; AccountId from the prior get_accounts call. Replaces the OBP owner/account read."
     params:
-      - name: bankId
-        type: path
-        value: "gh.29.uk"
-      - name: accountId
+      - name: AccountId
         type: path
     response:
       fields:
-        - name: account_id
+        - name: Data.Account[].AccountId
           type: String
-        - name: label
+        - name: Data.Account[].Status
           type: String
-        - name: product_code
+        - name: Data.Account[].Currency
           type: String
-        - name: account_type
+        - name: Data.Account[].AccountTypeCode
           type: String
-        - name: number
+        - name: Data.Account[].Nickname
           type: String
-        - name: iban
+        - name: Data.Account[].Account[].SchemeName
           type: String
-        - name: balance
-          type: object
-          children:
-            - name: currency
-              type: String
-            - name: amount
-              type: String
-        - name: account_routings
-          type: "List<AccountRouting>"
-          children:
-            - name: scheme
-              type: String
-            - name: address
-              type: String
-        - name: account_attributes
-          type: "List<AccountAttribute>"
-          children:
-            - name: name
-              type: String
-            - name: type
-              type: String
-            - name: value
-              type: String
-        - name: owners
-          type: "List<AccountOwner>"
-          children:
-            - name: display_name
-              type: String
+        - name: Data.Account[].Account[].Identification
+          type: String
+        - name: Data.Account[].Account[].Name
+          type: String
+        - name: Data.Account[].Servicer.Identification
+          type: String
+    errors:
+      - code: 400
+        message: "OB.Field.Invalid (incl. non-existent AccountId)"
+      - code: 401
+        message: "UNAUTHORIZED"
+      - code: 403
+        message: "OB.Resource.InvalidConsentStatus"
+
+  - id: get_account_balances
+    endpoint: "GET /obie/open-banking/v4.0/aisp/accounts/{AccountId}/balances"
+    tag: Accounts
+    auth: OAuth2-FAPI
+    note: "OBIE AISP get_account_balances (OBReadBalance1) — balances for THIS AccountId; the hero amount is the InterimAvailable/ClosingBooked Type. Requires ReadBalances. Replaces the inline balance block the OBP owner/account read returned."
+    params:
+      - name: AccountId
+        type: path
+    response:
+      fields:
+        - name: Data.Balance[].Type
+          type: String
+        - name: Data.Balance[].CreditDebitIndicator
+          type: String
+        - name: Data.Balance[].Amount.Amount
+          type: String
+        - name: Data.Balance[].Amount.Currency
+          type: String
     errors:
       - code: 401
-        message: "Unauthorized"
-      - code: 404
-        message: "Account not found"
-
-  - resolution: bank_name
-    via: BanksRepository.bankName(bankId)
-    note: "Resolves owning bank display name; backed by the banks list/detail read. Not a screen-owned endpoint — VM-side resolution call."
+        message: "UNAUTHORIZED"
+      - code: 403
+        message: "OB.Resource.InvalidConsentStatus (e.g. missing ReadBalances)"
 
   - resolution: account_holder_name
-    via: CustomersRepository.accountHolderName(bankId, accountId)
-    note: "Resolves the real holder legal name (Owner customer-account link); falls back to owners[].display_name. Never renders an OBP login username. VM-side resolution call."
+    via: get_account_parties (GET /obie/open-banking/v4.0/aisp/accounts/{AccountId}/parties)
+    note: "Resolves the real holder legal name from OBIE Data.Party[].Name/.FullLegalName (requires ReadParty); falls back to Data.Account[].Account[].Name. Never renders an obfuscated login username. VM-side resolution call."
 
 deferred_apis:
-  - endpoint: "GET /obp/v3.0.0/banks/{bankId}/accounts/{accountId}/owner/transactions"
-    reason: "Recent-transactions list was removed from the shipped screen; account-detail no longer loads transactions. Transaction history is reached via the ACTIVITY 'Transaction history' row navigating to the transactions screen."
+  - endpoint: "GET /obie/open-banking/v4.0/aisp/accounts/{AccountId}/transactions"
+    reason: "Recent-transactions list was removed from the shipped screen; account-detail no longer loads transactions. Transaction history is reached via the ACTIVITY 'Transaction history' row navigating to the transactions screen (OBIE OBReadTransaction6, requires ReadTransactionsDetail)."
 
 dependencies:
   tier: feature

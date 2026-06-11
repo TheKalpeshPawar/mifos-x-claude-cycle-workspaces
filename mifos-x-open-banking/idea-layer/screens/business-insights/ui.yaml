@@ -345,6 +345,8 @@ states:
 
 # MVI state model — documents the shipped feature/business-insights ViewModel (8 VM tests green).
 # Additive metadata: mirrors implemented behavior, introduces no component or contract change.
+# Rebound to HSBC OBIE AIS — cash-flow, categories, trends, and counterparties are all derived
+# client-side from the get_transactions list (OBIE has no insights/analytics endpoint).
 state_model:
   pattern: MVI
   initial_state: loading
@@ -354,46 +356,46 @@ state_model:
         type: "Enum<loading|populated|empty|no_activity|error>"
         description: "Drives which of the 5 declared states renders."
       - name: selectedAccount
-        type: "BusinessAccount?"
-        description: "BUSINESS-classified account in scope; null until first detail fetch resolves product_code."
+        type: "OBAccount6?"
+        description: "Account in scope (Data.Account[]); null until get_accounts resolves the authorised list. Business scope is filtered client-side by Data.Account[].AccountCategory / AccountTypeCode."
       - name: businessAccounts
-        type: "List<BusinessAccount>"
-        description: "Accounts whose product_code resolved to BUSINESS via per-account detail fetch."
+        type: "List<OBAccount6>"
+        description: "Authorised accounts (get_accounts) filtered client-side to Business AccountCategory / AccountTypeCode — OBIE has no PFM-scope flag."
       - name: selectedPeriod
         type: "Period"
-        description: "Reporting period (preset chip or custom range); all filtering is client-side."
+        description: "Reporting period; maps to get_transactions fromBookingDateTime/toBookingDateTime. Within-window re-slicing is client-side."
       - name: moneyIn
-        type: AmountOfMoney
-        description: "Sum of credits in the period (cash-flow framing)."
+        type: "OBActiveOrHistoricCurrencyAndAmount"
+        description: "Client-side sum of Data.Transaction[].Amount.Amount where CreditDebitIndicator=Credit (cash-flow framing; DERIVED — no OBIE endpoint)."
       - name: moneyOut
-        type: AmountOfMoney
-        description: "Sum of debits in the period (cash-flow framing)."
+        type: "OBActiveOrHistoricCurrencyAndAmount"
+        description: "Client-side sum of Data.Transaction[].Amount.Amount where CreditDebitIndicator=Debit (DERIVED)."
       - name: net
-        type: AmountOfMoney
-        description: "moneyIn minus moneyOut."
+        type: "OBActiveOrHistoricCurrencyAndAmount"
+        description: "moneyIn minus moneyOut (DERIVED client-side)."
       - name: expenseCategories
         type: "List<CategoryBreakdown>"
-        description: "Debit totals over the 8-category business taxonomy (Payroll & Contractors, Tax, Rent & Facilities, Software & Subscriptions, Insurance, Treasury & Transfers, Income, Other). Income is computed but EXCLUDED from the donut, which is expenses-only."
+        description: "Client-side debit totals over the 8-category business taxonomy (Payroll & Contractors, Tax, Rent & Facilities, Software & Subscriptions, Insurance, Treasury & Transfers, Income, Other), categorised from Data.Transaction[].TransactionInformation / MerchantDetails.MerchantName / BankTransactionCode. Income is computed but EXCLUDED from the donut, which is expenses-only. DERIVED — OBIE has no categorisation endpoint."
       - name: topCounterparties
         type: "List<Counterparty>"
-        description: "Aggregated by resolved counterparty display name (never the OBP login username)."
+        description: "Client-side aggregation by resolved counterparty display name: precedence MerchantDetails.MerchantName over resolved Creditor/Debtor account holder over TransactionInformation — never a raw login username (counterparty rule). DERIVED."
   intents:
     - name: LoadInsights
       from_states: [loading, error]
       to_states: [populated, empty, no_activity, error]
-      api: [obp_account_detail, obp_transactions_list]
-      description: "Resolve BUSINESS accounts via detail fetch, then fetch + categorise transactions for the selected account and period."
+      api: [get_accounts, get_balances, get_transactions]
+      description: "Resolve the authorised account list (get_accounts), filter to Business scope client-side, read balance context (get_balances), then fetch transactions over the period window (get_transactions fromBookingDateTime/toBookingDateTime) and derive cash-flow + categories + counterparties client-side."
     - name: SelectAccount
       from_states: [populated, no_activity]
       to_states: [loading]
       action: open_account_picker
-      description: "Switch the in-scope BUSINESS account; re-runs categorisation for the new account."
+      description: "Switch the in-scope account; re-runs get_transactions + client-side derivation for the new AccountId."
     - name: SelectPeriod
       from_states: [populated, no_activity]
       to_states: [loading]
       action: state_change
       target: selected_period
-      description: "Change reporting period (preset or custom range); re-filters cached transactions client-side."
+      description: "Change reporting period; re-issues get_transactions with new fromBookingDateTime/toBookingDateTime (or re-slices the cached list client-side within the consented window)."
     - name: Retry
       from_states: [error]
       to_states: [loading]
@@ -402,16 +404,16 @@ state_model:
   state_transitions:
     - from: loading
       to: populated
-      when: "BUSINESS account in scope AND ≥1 transaction in period"
+      when: "Account in scope AND ≥1 transaction in the period window"
     - from: loading
       to: no_activity
-      when: "BUSINESS account in scope AND zero transactions in period"
+      when: "Account in scope AND zero transactions in the period window"
     - from: loading
       to: empty
-      when: "No BUSINESS-classified account connected to the profile"
+      when: "No Business-scoped account in the authorised account list"
     - from: loading
       to: error
-      when: "obp_account_detail or obp_transactions_list fails (401/404/network)"
+      when: "get_accounts, get_balances or get_transactions fails (401/403/network)"
 
 # Per-component runtime states for the data-driven surfaces (donut + category rows + counterparties).
 # Mirrors how the shipped composables render loading/error/empty without altering the component tree.

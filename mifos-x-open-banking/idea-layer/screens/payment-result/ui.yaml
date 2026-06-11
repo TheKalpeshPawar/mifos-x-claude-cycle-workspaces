@@ -243,7 +243,7 @@ responsive:
 states:
   initial_state: content
   content:
-    note: "Stateless screen — rendered directly from nav args. The hero summary line shows '{currencySymbol(currency)}{amount} to {beneficiaryName}' (falls back to 'beneficiary' when blank); status_pill shows the uppercased status (defaults to COMPLETED); charge_row shows '{chargeCurrency|currency}{chargeAmount|0.00}'; transaction_id_row shows the shortened transactionId (first 13 chars + ellipsis, or '—' when blank)."
+    note: "Rendered from nav args for instant paint, then reconciled with the GET /pisp/domestic-payments/{DomesticPaymentId} read (Data.Status). The hero summary line shows '{currencySymbol(currency)}{amount} to {beneficiaryName}' (falls back to 'beneficiary' when blank), sourced from Data.Initiation.InstructedAmount; status_pill shows the mapped Data.Status (AcceptedSettlementInProcess/AcceptedSettlementCompleted → 'COMPLETED', Rejected → 'FAILED'); charge_row shows '{chargeCurrency|currency}{chargeAmount|0.00}' summed from Data.Charges; transaction_id_row shows the shortened Data.DomesticPaymentId (first 13 chars + ellipsis, or '—' when blank)."
     layout:
       visible_components:
         - hero_card
@@ -261,18 +261,27 @@ states:
         - done_button
 
 state_model:
-  view_model: null
-  note: "No ViewModel — PaymentResultScreen is a stateless composable driven entirely by navigation arguments. No StateFlow, no async load, no DI."
+  view_model: PaymentResultViewModel
+  note: >
+    Terminal result view for the OBIE PISP flow. Opened with the DomesticPaymentId from the
+    submit response (POST /pisp/domestic-payments) plus instant-paint nav args, then reads
+    GET /pisp/domestic-payments/{DomesticPaymentId} on mount to confirm settlement status.
+    SCA already happened at the bank during authorise — none here.
   nav_params:
-    - { name: amount, type: String }
-    - { name: currency, type: String }
-    - { name: beneficiaryName, type: String }
-    - { name: fromLabel, type: String }
-    - { name: transactionId, type: String }
-    - { name: chargeAmount, type: String }
-    - { name: chargeCurrency, type: String }
-    - { name: status, type: String }
+    - { name: domesticPaymentId, type: String, note: "Data.DomesticPaymentId from the submit POST — drives the status read." }
+    - { name: amount, type: String, note: "Data.Initiation.InstructedAmount.Amount (instant-paint arg, also confirmed by the read)." }
+    - { name: currency, type: String, note: "Data.Initiation.InstructedAmount.Currency (ISO 4217)." }
+    - { name: beneficiaryName, type: String, note: "Resolved holder name for Data.Initiation.CreditorAccount.Name (counterparty rule applies)." }
+    - { name: fromLabel, type: String, note: "Debtor (source) account label — local, not in the OBIE payment response." }
+  status_read:
+    - { name: domesticPaymentId, type: String, source: "Data.DomesticPaymentId" }
+    - { name: consentId, type: String, source: "Data.ConsentId" }
+    - { name: status, type: String, source: "Data.Status", note: "ExternalPaymentTransactionStatus1Code — AcceptedSettlementInProcess (ACSP) / AcceptedSettlementCompleted (ACSC) success; Rejected (RJCT) failure." }
+    - { name: statusUpdateDateTime, type: String, source: "Data.StatusUpdateDateTime", note: "Posted time." }
+    - { name: chargeAmount, type: String, source: "Data.Charges[].Amount.Amount", note: "Summed charges; '0.00' when Charges absent." }
+    - { name: chargeCurrency, type: String, source: "Data.Charges[].Amount.Currency" }
   actions:
+    - load_status
     - navigate
   callbacks:
     - name: onViewTransaction
@@ -281,15 +290,24 @@ state_model:
     - name: onDone
       signature: "() -> Unit"
       consumer: send-money
-  di: []
+  di:
+    - PaymentsRepository
 
 api:
-  endpoints: []
-  note: "Stateless display screen — all data arrives via nav args. No OBP API calls."
+  - id: get_domestic_payment_status
+    endpoint: "GET /obie/open-banking/v4.0/pisp/domestic-payments/{DomesticPaymentId}"
+    tag: pisp-domestic
+    trigger: on_mount
+    note: >
+      Reads the submitted payment resource by DomesticPaymentId to confirm Data.Status
+      (AcceptedSettlementInProcess / AcceptedSettlementCompleted → success view; Rejected →
+      failure view). Surfaces Data.DomesticPaymentId (Transaction ID row),
+      Data.Initiation.InstructedAmount.Amount/.Currency (summary), Data.StatusUpdateDateTime
+      (posted time) and summed Data.Charges (Charge row). Client Credentials grant; SCA at the
+      bank during authorise. See api.yaml.
 
 dependencies:
   tier: feature
   features:
     - send-money-confirm
-    - sca-challenge
     - transaction-detail

@@ -1,0 +1,388 @@
+id: consent-expired
+name: "Reconnect Your Account"
+feature: consent-expired
+flavor: consumer
+status: draft
+quality_score: 0
+contract_version: "1.1.0"
+capabilities:
+  - has_ui
+  - has_api
+tags: [FR-OBIE-CONSENT]
+status_history:
+  - to: draft
+    at: "2026-06-11"
+    by: "/idea add (OBIE migration)"
+    note: "Terminal renewal screen for the OBIE account-access-consent journey. Shown when a previously-authorised consent has expired or been revoked (consent Status EXPD, or RJCT/CANC after revocation). Reachable from splash on cold start when the stored ConsentId resolves to a non-AUTH status, and from consent-manager on revoke. Explains that access needs renewing with a 'Reconnect' CTA back to consent-request. Carries has_api because it may call GET /aisp/account-access-consents/{ConsentId} to confirm the current status before deciding which copy to show."
+
+screens:
+  - id: consent-expired
+    name: "Reconnect Your Account"
+    viewmodel: "ConsentExpiredViewModel"
+    archetype: error
+    shell:
+      top_bar: false
+      bottom_nav: false
+
+archetype: error
+
+components:
+  - type: stack
+    id: expired_root
+    variant: column
+    style:
+      background: "#F9FAEF"
+      padding: spacing.lg
+      alignment: center
+    children:
+      - expired_hero_icon
+      - expired_title
+      - expired_subtitle
+      - expired_info_card
+      - expired_status_note
+      - expired_reconnect_button
+      - expired_dismiss_button
+
+  - type: icon
+    id: expired_hero_icon
+    content: "schedule"
+    variant: default
+    style:
+      color: "#386663"
+      size: "72dp"
+      alignment: center
+      padding_bottom: spacing.md
+    a11y:
+      role: image
+      label: "Your account connection has expired"
+    test_context:
+      purpose: "Large clock/schedule icon signalling the consent has lapsed"
+      interaction_type: display
+      data_driven: false
+
+  - type: text
+    id: expired_title
+    content: "Time to reconnect"
+    variant: headline_medium
+    style:
+      typography: "Outfit/headline_medium"
+      color: "#1A1C16"
+      font_weight: 700
+      alignment: center
+      padding_bottom: spacing.xs
+    a11y:
+      role: heading
+      level: 1
+      label: "Time to reconnect"
+    test_context:
+      purpose: "Primary headline telling the PSU their consent needs renewing"
+      interaction_type: display
+      data_driven: false
+
+  - type: text
+    id: expired_subtitle
+    content: "Your permission to access your HSBC account data has expired. Banks ask you to renew this regularly to keep your data secure. Reconnect to pick up where you left off."
+    variant: body_medium
+    style:
+      typography: "Outfit/body_medium"
+      color: "#44483D"
+      alignment: center
+      padding_bottom: spacing.lg
+    a11y:
+      role: text
+      label: "Your permission to access your HSBC account data has expired. Banks ask you to renew this regularly to keep your data secure. Reconnect to pick up where you left off."
+    test_context:
+      purpose: "Body copy explaining why consent expires and that renewing restores access"
+      interaction_type: display
+      data_driven: false
+
+  - type: card
+    id: expired_info_card
+    variant: filled
+    style:
+      background: "#FFFFFF"
+      border_radius: "16dp"
+      padding: spacing.lg
+      margin_bottom: spacing.md
+      width: "match_parent"
+    children:
+      - expired_info_heading
+      - expired_info_point_one
+      - expired_info_point_two
+    a11y:
+      role: group
+      label: "What reconnecting means"
+    test_context:
+      purpose: "White card reassuring the PSU about what happens when they reconnect"
+      interaction_type: display
+      data_driven: false
+
+  - type: text
+    id: expired_info_heading
+    content: "When you reconnect:"
+    variant: title_small
+    style:
+      typography: "Outfit/title_small"
+      color: "#1A1C16"
+      font_weight: 700
+      padding_bottom: spacing.sm
+    a11y:
+      role: heading
+      level: 2
+      label: "When you reconnect"
+    test_context:
+      purpose: "Heading for the reassurance list inside the white card"
+      interaction_type: display
+      data_driven: false
+
+  - type: text
+    id: expired_info_point_one
+    content: "You'll approve access again at HSBC — your saved preferences stay put"
+    variant: body_medium
+    style:
+      typography: "Outfit/body_medium"
+      color: "#44483D"
+      padding_bottom: spacing.xs
+    a11y:
+      role: text
+      label: "You'll approve access again at HSBC — your saved preferences stay put"
+    test_context:
+      purpose: "First reassurance — re-authorisation at the bank, local settings preserved"
+      interaction_type: display
+      data_driven: false
+
+  - type: text
+    id: expired_info_point_two
+    content: "Your accounts and transaction history reload automatically once it's done"
+    variant: body_medium
+    style:
+      typography: "Outfit/body_medium"
+      color: "#44483D"
+    a11y:
+      role: text
+      label: "Your accounts and transaction history reload automatically once it's done"
+    test_context:
+      purpose: "Second reassurance — data reloads after re-consent"
+      interaction_type: display
+      data_driven: false
+
+  - type: text
+    id: expired_status_note
+    content: "Reference: consent expired (EXPD)"
+    variant: body_small
+    style:
+      typography: "Outfit/body_small"
+      color: "#44483D"
+      alignment: center
+      padding_bottom: spacing.lg
+    visible_when: "uiState == Content"
+    a11y:
+      role: text
+      label: "Technical reference: consent expired"
+    test_context:
+      purpose: "Muted technical reference line showing the resolved consent status (EXPD, or revoked → RJCT/CANC) confirmed by the status check"
+      interaction_type: display
+      data_driven: true
+
+  - type: card
+    id: expired_check_banner
+    variant: filled
+    style:
+      background: "#CDEDA3"
+      border_radius: "8dp"
+      padding: spacing.md
+      margin_bottom: spacing.md
+      width: "match_parent"
+    visible_when: "uiState == Loading"
+    children:
+      - expired_check_spinner
+      - expired_check_message
+    a11y:
+      role: status
+      label: "Checking your connection status"
+    test_context:
+      purpose: "Inline status banner shown while the consent status check is in flight"
+      interaction_type: display
+      data_driven: false
+
+  - type: loading_indicator
+    id: expired_check_spinner
+    variant: circular_indeterminate
+    style:
+      color: "#4C662B"
+      size: "20dp"
+    a11y:
+      role: progressbar
+      label: "Checking connection status"
+    test_context:
+      purpose: "Spinner inside the status-check banner"
+      interaction_type: display
+      data_driven: false
+
+  - type: text
+    id: expired_check_message
+    content: "Checking your connection status…"
+    variant: body_small
+    style:
+      typography: "Outfit/body_small"
+      color: "#1A1C16"
+      padding_start: spacing.sm
+    a11y:
+      role: text
+      label: "Checking your connection status"
+    test_context:
+      purpose: "Message paired with the status-check spinner"
+      interaction_type: display
+      data_driven: false
+
+  - type: button
+    id: expired_reconnect_button
+    label: "Reconnect"
+    variant: filled
+    supported_states: [idle, hover, focus_visible, pressed, disabled]
+    style:
+      background: "#4C662B"
+      typography: "Outfit/label_large"
+      color: "#FFFFFF"
+      border_radius: "8dp"
+      padding: spacing.md
+      width: "match_parent"
+    on_click:
+      action: navigate
+      target: consent-request
+    loading_when: "uiState == Loading"
+    a11y:
+      role: button
+      label: "Reconnect — renew access to your HSBC account"
+    keyboard:
+      focusable: true
+    test_context:
+      purpose: "Primary CTA — restarts the consent journey to renew access via consent-request"
+      interaction_type: navigate
+      data_driven: false
+
+  - type: button
+    id: expired_dismiss_button
+    label: "Not now"
+    variant: text
+    supported_states: [idle, hover, focus_visible, pressed]
+    style:
+      typography: "Outfit/label_large"
+      color: "#386663"
+      padding: spacing.md
+      width: "match_parent"
+    on_click:
+      action: navigate
+      target: consent-intro
+    a11y:
+      role: button
+      label: "Not now — return to the connect-your-account intro"
+    keyboard:
+      focusable: true
+    test_context:
+      purpose: "Secondary CTA — dismisses the renewal prompt back to consent-intro"
+      interaction_type: navigate
+      data_driven: false
+
+responsive:
+  mobile_only: true
+  baseline_width: 390
+
+states:
+  initial_state: loading
+  loading:
+    layout: { type: column, padding: spacing.lg, align: center }
+    visible_components: [expired_hero_icon, expired_title, expired_subtitle, expired_info_card, expired_check_banner, expired_reconnect_button, expired_dismiss_button]
+    note: "On mount, optionally calls GET /aisp/account-access-consents/{ConsentId} to confirm the current status before showing the reference line; the status-check banner is visible and the Reconnect button shows a spinner."
+  content:
+    layout: { type: column, padding: spacing.lg, align: center }
+    visible_components: [expired_hero_icon, expired_title, expired_subtitle, expired_info_card, expired_status_note, expired_reconnect_button, expired_dismiss_button]
+    note: "Status confirmed EXPD (or revoked → RJCT/CANC) — the reference line is shown and the Reconnect CTA is active."
+  error:
+    layout: { type: column, padding: spacing.lg, align: center }
+    visible_components: [expired_hero_icon, expired_title, expired_subtitle, expired_info_card, expired_reconnect_button, expired_dismiss_button]
+    note: "The status check itself failed (network/HSBC unavailable) — the reference line is hidden and the screen falls back to the generic renewal copy so the PSU can still reconnect."
+
+state_model:
+  ConsentExpiredViewModel:
+    screen_state: ConsentExpiredUiState
+    pattern: MVI
+    state:
+      - field: consentStatus
+        type: "ConsentStatus"
+        default: "ConsentStatus.EXPD"
+        note: "enum ConsentStatus { AWAU, AUTH, RJCT, CANC, EXPD } — confirmed via the status check. EXPD (expired) or RJCT/CANC (revoked) reach this screen."
+      - field: isChecking
+        type: Boolean
+        default: "true"
+        note: "true while GET /aisp/account-access-consents/{ConsentId} is in flight"
+      - field: checkFailed
+        type: Boolean
+        default: "false"
+      - field: consentId
+        type: "String?"
+        default: "null"
+        note: "stored ConsentId of the lapsed consent, supplied as a nav arg from splash / consent-manager"
+    events:
+      - "ConsentExpiredEvent.NavigateToConsentRequest"
+      - "ConsentExpiredEvent.NavigateToConsentIntro"
+    actions:
+      - "ConsentExpiredAction.Internal.StatusChecked(status: ConsentStatus)"
+      - "ConsentExpiredAction.Internal.StatusCheckFailed"
+      - ConsentExpiredAction.ReconnectClicked
+      - ConsentExpiredAction.DismissClicked
+    di: [ConsentRepository]
+    base: "template.core.base.ui.viewmodel.BaseViewModel<ConsentExpiredUiState, ConsentExpiredEvent, ConsentExpiredAction>"
+    note: "On init, when a consentId is present, calls ConsentRepository.getConsentStatus(consentId) (GET /aisp/account-access-consents/{ConsentId}); StatusChecked drives content, StatusCheckFailed drives error. ReconnectClicked clears the stale local consent record and emits NavigateToConsentRequest; DismissClicked emits NavigateToConsentIntro."
+
+navigation:
+  - id: nav_to_consent_request
+    target: consent-request
+    trigger: reconnect_click
+    on_click:
+      action: navigate
+      target: consent-request
+    note: "Primary outbound nav — renews access (mirrors connection consent-expired → consent-request in account-access-consent.yaml)."
+  - id: nav_to_consent_intro
+    target: consent-intro
+    trigger: dismiss_click
+    on_click:
+      action: navigate
+      target: consent-intro
+    note: "Secondary outbound nav — dismisses the renewal prompt back to the journey entry screen."
+
+api:
+  - id: obie_get_consent_status
+    endpoint: "GET /obie/open-banking/v4.0/aisp/account-access-consents/{ConsentId}"
+    tag: Consent
+    trigger: on_mount
+    description: "Confirms the current status of the stored consent before rendering. Expects a non-AUTH status here — EXPD (expired) or RJCT/CANC (revoked). If it unexpectedly returns AUTH the caller routes back to home instead."
+    request:
+      headers:
+        Authorization: "Bearer {access_token}"
+        x-fapi-interaction-id: "{uuid}"
+    response:
+      fields:
+        - name: ConsentId
+          type: String
+        - name: Status
+          type: String
+          note: "OBIE consent Status enum — AWAU | AUTH | RJCT | CANC | EXPD"
+        - name: StatusUpdateDateTime
+          type: String
+        - name: ExpirationDateTime
+          type: String
+    errors:
+      - code: 400
+        name: CONSENT_STATUS_CHECK_FAILED
+        ui_message: "We couldn't check your connection. You can still reconnect."
+      - code: 404
+        name: CONSENT_NOT_FOUND
+        ui_message: "Your previous connection is no longer available. Please reconnect."
+      - code: 401
+        name: UNAUTHORIZED
+        ui_message: "Your session has ended. Please reconnect to continue."
+
+dependencies:
+  tier: feature
+  features: [shared-core, obie-consent]

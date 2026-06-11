@@ -326,17 +326,18 @@ state_model:
   ui_state_type: "ScreenState<SendMoneyContent>"
   content_type: SendMoneyContent
   content_fields:
-    - { name: accounts, type: List<Account> }
-    - { name: selectedAccount, type: Account }
-    - { name: beneficiaries, type: List<Counterparty> }
-    - { name: recentBeneficiaries, type: List<Counterparty> }
-    - { name: selectedBeneficiary, type: "Counterparty?" }
-    - { name: amount, type: String }
-    - { name: currency, type: String }
+    - { name: accounts, type: "List<OBAccount6>" }
+    - { name: selectedAccount, type: OBAccount6 }
+    - { name: beneficiaries, type: "List<OBBeneficiary5>" }
+    - { name: recentBeneficiaries, type: "List<OBBeneficiary5>" }
+    - { name: selectedBeneficiary, type: "OBBeneficiary5?" }
+    - { name: amount, type: "String (Data.InstructedAmount.Amount)" }
+    - { name: currency, type: "String (Data.InstructedAmount.Currency, ISO 4217)" }
     - { name: reference, type: String }
     - { name: query, type: String }
     - { name: paymentType, type: PaymentType }
     - { name: railAssessments, type: "Map<PaymentType, RailAssessment>" }
+    - { name: fundsAvailable, type: "Boolean? (Data.FundsAvailable)" }
     - { name: amountError, type: "String?" }
     - { name: beneficiaryError, type: "String?" }
     - { name: formError, type: "String?" }
@@ -344,6 +345,23 @@ state_model:
     - { name: useSandboxTan, type: Boolean }
     - { name: sandboxBlockReason, type: "String?" }
     - { name: continueEnabled, type: Boolean, derived: true }
+  state_field_types:
+    - name: balance
+      type: "Data.Balance[].Amount.Amount (String) + Data.Balance[].Amount.Currency (String); Type InterimAvailable"
+    - name: account.id
+      type: "Data.Account[].AccountId (String)"
+    - name: account.currency
+      type: "Data.Account[].Currency (String)"
+    - name: beneficiary.id
+      type: "Data.Beneficiary[].BeneficiaryId (String)"
+    - name: beneficiary.name
+      type: "Data.Beneficiary[].CreditorAccount.Name (String)"
+    - name: beneficiary.identification
+      type: "Data.Beneficiary[].CreditorAccount.Identification (String)"
+    - name: beneficiary.scheme
+      type: "Data.Beneficiary[].CreditorAccount.SchemeName (String)"
+    - name: fundsAvailable
+      type: "Data.FundsAvailable (Boolean) from CBPII; or Data.FundsAvailableResult.FundsAvailable (Boolean) from the PISP domestic-payment-consent funds-confirmation"
   internal_form_state:
     type: FormState
     fields: [accountId, amount, currency, beneficiaryId, reference, query, paymentType, amountError, beneficiaryError, formError, submitting]
@@ -387,53 +405,49 @@ state_model:
     - "isSandbox (named qualifier)"
 
 api:
-  - endpoint: "GET /obp/v3.0.0/banks/{bankId}/accounts"
-    tag: Accounts
-    description: "AccountsRepository.myAccounts() — the From Account picker."
+  - endpoint: "GET /obie/open-banking/v4.0/aisp/accounts"
+    tag: AISP
+    description: "The From Account picker. Requires an authorised account-access-consent (Status AUTH) + an authorization-code token (scope accounts)."
     response:
       fields:
-        - { name: accounts, type: List<Account> }
-        - { name: id, type: String }
-        - { name: label, type: String }
-        - { name: balance, type: MoneyAmount }
-        - { name: currency, type: String }
-  - endpoint: "GET /obp/v4.0.0/banks/{bankId}/accounts/{accountId}/account"
-    tag: Accounts
-    description: "AccountsRepository.accountDetail() — resolves the selected account's currency for the amount prefix and SEPA classification."
+        - { name: Data.Account[].AccountId, type: String }
+        - { name: Data.Account[].Nickname, type: String }
+        - { name: Data.Account[].Currency, type: String }
+        - { name: Data.Account[].Account[].Identification, type: String }
+  - endpoint: "GET /obie/open-banking/v4.0/aisp/accounts/{AccountId}/balances"
+    tag: AISP
+    description: "Live balance for the selected source account — drives the amount-affordability hint and the amount-entry currency prefix. Requires ReadBalances. Prefer Type InterimAvailable."
     response:
       fields:
-        - { name: balance.currency, type: String }
-  - endpoint: "GET /obp/v4.0.0/banks/{bankId}/accounts/{accountId}/owner/counterparties"
-    tag: Counterparties
-    description: "PaymentsRepository.listBeneficiaries(bankId, accountId) — beneficiary list for the selected account (reloads on account switch)."
+        - { name: Data.Balance[].Amount.Amount, type: String }
+        - { name: Data.Balance[].Amount.Currency, type: String }
+        - { name: Data.Balance[].Type, type: String }
+  - endpoint: "GET /obie/open-banking/v4.0/aisp/accounts/{AccountId}/beneficiaries"
+    tag: AISP
+    description: "Beneficiary list for the selected account (reloads on account switch). Requires ReadBeneficiariesBasic/Detail. CreditorAccount.SchemeName drives rail classification."
     response:
       fields:
-        - { name: counterparties, type: List<Counterparty> }
-        - { name: counterparty_id, type: String }
-        - { name: name, type: String }
-        - { name: other_account_routing_scheme, type: String }
-        - { name: other_account_routing_address, type: String }
-        - { name: other_account_secondary_routing_scheme, type: String }
-        - { name: other_account_secondary_routing_address, type: String }
-        - { name: other_bank_routing_scheme, type: String }
-        - { name: other_bank_routing_address, type: String }
-  - endpoint: "GET /obp/v3.1.0/banks/{bankId}/accounts/{accountId}/owner/funds-available"
-    tag: Account
-    description: "PaymentsRepository.fundsAvailable() — live pre-flight funds check on Continue. Maps answer == 'yes' to true."
+        - { name: Data.Beneficiary[].BeneficiaryId, type: String }
+        - { name: Data.Beneficiary[].CreditorAccount.Name, type: String }
+        - { name: Data.Beneficiary[].CreditorAccount.SchemeName, type: String }
+        - { name: Data.Beneficiary[].CreditorAccount.Identification, type: String }
+  - endpoint: "POST /obie/open-banking/v4.0/cbpii/funds-confirmations"
+    tag: CBPII
+    description: "Confirmation-of-Funds check on Continue — confirms the entered amount is available on the source account against a funds-confirmation-consent. Requires an authorization-code token (scope fundsconfirmations) + a ConsentId in the payload; InstructedAmount.Currency must equal the account currency. Surfaces Data.FundsAvailable. ALTERNATIVE when a domestic-payment-consent (Status AUTH) already exists: GET /obie/open-banking/v4.0/pisp/domestic-payment-consents/{ConsentId}/funds-confirmation → Data.FundsAvailableResult.FundsAvailable."
     request:
-      params:
-        - { name: amount, type: String }
-        - { name: currency, type: String }
+      fields:
+        - { name: Data.ConsentId, type: String }
+        - { name: Data.Reference, type: String }
+        - { name: Data.InstructedAmount.Amount, type: String }
+        - { name: Data.InstructedAmount.Currency, type: String }
     response:
       fields:
-        - { name: answer, type: String, note: "'yes' or 'no'" }
-  - endpoint: "GET /obp/v4.0.0/banks/{bankId}"
-    tag: Banks
-    description: "BanksRepository.bank(bankId) — source + destination bank country for PaymentRailClassifier rail eligibility."
-    response:
-      fields:
-        - { name: id, type: String }
-        - { name: country_code, type: String }
+        - { name: Data.FundsConfirmationId, type: String }
+        - { name: Data.FundsAvailable, type: Boolean }
+        - { name: Data.ConsentId, type: String }
+    errors:
+      - code: 403
+        message: "OB.Resource.InvalidConsentStatus"
 
 dependencies:
   tier: feature

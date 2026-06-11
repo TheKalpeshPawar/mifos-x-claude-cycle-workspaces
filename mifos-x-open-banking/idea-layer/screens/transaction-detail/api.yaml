@@ -1,109 +1,101 @@
 sibling: api
 schema_version: "4.0"
 feature_id: transaction-detail
+consent_dependency: "Reads require an authorised account-access-consent (Status AUTH) + an authorization-code token scoped to accounts (ReadTransactionsDetail for full fields). mutual TLS + x-fapi-financial-id header on every call."
 api:
-  # Booked path — single-transaction read (v3.0.0, no attributes inline).
-  - id: obp_get_transaction_detail
-    endpoint: "GET /obp/v3.0.0/banks/{bankId}/accounts/{accountId}/owner/transactions/{transactionId}/transaction"
-    tag: Transactions
-    auth: DirectLogin
-    used_for: booked
+  # OBIE returns NO single-transaction-by-id GET endpoint. Transaction detail is the selected
+  # Data.Transaction[] item from the AIS transactions resource (the same OBReadTransaction6 the
+  # list screen fetches) — found by TransactionId. The screen either reuses the already-fetched
+  # list item or re-fetches the account's transactions and selects by TransactionId. Counterparty
+  # rule: resolved holder name → MerchantDetails.MerchantName → TransactionInformation; never
+  # render CreditorAccount.Identification raw.
+  - id: ais_get_transactions
+    endpoint: "GET /obie/open-banking/v4.0/aisp/accounts/{AccountId}/transactions"
+    tag: AISP-Transactions
+    auth: OAuth2-FAPI
+    used_for: "detail (select Data.Transaction[] by TransactionId)"
     params:
-      - name: bankId
+      - name: AccountId
         type: path
-      - name: accountId
-        type: path
-      - name: transactionId
-        type: path
+      - name: fromBookingDateTime
+        type: query
+        optional: true
+        note: "UTC ISO 8601 lower bound on BookingDateTime"
+      - name: toBookingDateTime
+        type: query
+        optional: true
+        note: "UTC ISO 8601 upper bound on BookingDateTime"
     response:
       fields:
-        - name: id
-          type: String
-        - name: this_account
-          type: object
-        - name: other_account
-          type: object
+        - name: Data.Transaction
+          type: "Array<OBTransaction6>"
           children:
-            - name: id
+            - name: AccountId
               type: String
-            - name: holder
-              type: object
-        - name: details
-          type: object
-          children:
-            - name: type
+            - name: TransactionId
               type: String
-            - name: description
+              note: "The selected transaction is matched on this"
+            - name: TransactionReference
               type: String
-            - name: posted
+            - name: CreditDebitIndicator
               type: String
-            - name: completed
+              note: "Credit | Debit — drives sign/colour and the To/From label"
+            - name: Status
               type: String
-            - name: value
+              note: "Booked | Pending — Pending drives the 'Awaiting confirmation' status label"
+            - name: BookingDateTime
+              type: String
+              note: "ISO 8601 — formatted as '25 May 2026, 14:32'"
+            - name: ValueDateTime
+              type: String
+            - name: TransactionInformation
+              type: String
+              note: "Free-text description; counterparty/narrative fallback"
+            - name: Amount
               type: object
               children:
-                - name: currency
+                - name: Amount
                   type: String
-                - name: amount
+                - name: Currency
                   type: String
-        - name: metadata
-          type: object
-          children:
-            - name: narrative
-              type: "String?"
+            - name: MerchantDetails
+              type: object
+              children:
+                - name: MerchantName
+                  type: String
+                  note: "Counterparty display name (preferred over raw account identification)"
+            - name: BankTransactionCode
+              type: object
+              children:
+                - name: Code
+                  type: String
+                  note: "ISO 20022 domain code — maps to the Transaction Type label"
+            - name: CreditorAccount
+              type: object
+              children:
+                - name: SchemeName
+                  type: String
+                - name: Identification
+                  type: String
+                  note: "Creditor account id — the To-account secondary line; never rendered as the counterparty name"
+                - name: Name
+                  type: String
+            - name: DebtorAccount
+              type: object
+              children:
+                - name: SchemeName
+                  type: String
+                - name: Identification
+                  type: String
+                  note: "Debtor account id — the From-account secondary line"
     errors:
+      - code: 400
+        message: "OB.Field.Invalid"
       - code: 401
-        message: "Unauthorized — DirectLogin token missing or expired"
-      - code: 404
-        message: "Transaction not found"
+        message: "UNAUTHORIZED"
+      - code: 403
+        message: "OB.Resource.InvalidConsentStatus"
+      - code: 429
+        message: "TOO_MANY_REQUESTS"
       - code: 500
-        message: "OBP server error"
-
-  # Pending path — the request is found in the account's transaction-request list by requestId
-  # (no per-request OBP read endpoint).
-  - id: obp_list_transaction_requests
-    endpoint: "GET /obp/v4.0.0/banks/{bankId}/accounts/{accountId}/owner/transaction-requests"
-    tag: Transaction-Requests
-    auth: DirectLogin
-    used_for: pending
-    params:
-      - name: bankId
-        type: path
-      - name: accountId
-        type: path
-    response:
-      fields:
-        - name: transaction_requests
-          type: "List<TransactionRequestSummary>"
-          children:
-            - name: id
-              type: String
-            - name: type
-              type: String
-            - name: status
-              type: String
-            - name: start_date
-              type: String
-            - name: details
-              type: object
-              children:
-                - name: description
-                  type: String
-                - name: to_sepa
-                  type: "object?"
-                - name: to_counterparty
-                  type: "object?"
-                - name: to_sandbox_tan
-                  type: "object?"
-                - name: value
-                  type: object
-                  children:
-                    - name: currency
-                      type: String
-                    - name: amount
-                      type: String
-    errors:
-      - code: 401
-        message: "Unauthorized"
-      - code: 404
-        message: "Account not found"
+        message: "OB.UnexpectedError"

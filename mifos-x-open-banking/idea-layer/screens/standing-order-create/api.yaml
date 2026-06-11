@@ -2,84 +2,151 @@ sibling: api
 schema_version: "4.0"
 feature_id: standing-order-create
 notes: >
-  Authored from shipped source 2026-06-11. POST-create is the ONLY OBP standing-order endpoint
-  (no GET/PUT/DELETE/pause/resume at any version, live-verified). This screen is the sole caller
-  of it in the app. The created order is then recorded in the local Room JSON cache so it appears
-  immediately in the derived list (the server cannot return it).
+  Rebound to HSBC OBIE PISP Domestic Standing Order v4.0 (server/apis/pisp-domestic-standing-order.yaml).
+  Creation is a two-step consent flow: this screen POSTs a domestic-standing-order-consent (Status
+  AwaitingAuthorisation / AWAU) capturing the recurring instruction, then hands off to
+  payment-authorize-handoff for consent → bank authorise → callback → submit
+  (POST /pisp/domestic-standing-orders). SCA is performed at the bank during authorise, not in-app.
+  The created order may still be recorded in the local Room JSON cache so it appears immediately in
+  the derived list, but the GET endpoints below let the list/detail be read from the bank.
 api:
-  - id: obp_create_standing_order
-    endpoint: "POST /obp/v4.0.0/banks/{bankId}/accounts/{accountId}/owner/standing-order"
-    tag: Standing-Orders
+  - id: create_domestic_standing_order_consent
+    endpoint: "POST /obie/open-banking/v4.0/pisp/domestic-standing-order-consents"
+    tag: pisp-domestic-standing-order
     trigger: onSubmit
-    description: "Create a new standing order for the source account, paying an existing counterparty."
+    description: >
+      Stage the PSU's recurring standing-order instruction. The ASPSP returns a ConsentId with
+      Status AwaitingAuthorisation (AWAU). Client Credentials grant. After this the screen navigates
+      to payment-authorize-handoff to complete authorisation and submit.
     request:
-      dto: CreateStandingOrderRequest
+      dto: OBWriteDomesticStandingOrderConsent
       fields:
-        - name: customer_id
+        - name: Data.Permission
           type: String
-          note: "current user's customer record at the source account's bank"
-        - name: user_id
+          note: "Fixed value Create."
+        - name: Data.Initiation.Frequency
           type: String
-          note: "current user's OBP user id"
-        - name: counterparty_id
+          note: >
+            OBIE schedule code in OBMandateRelatedInformation1, e.g. IntrvlMnthDay:01:05 (monthly),
+            IntrvlWkDay:01:05 (weekly), EvryDay (daily). Mapped from the chip selection
+            DAILY/WEEKLY/BI-WEEKLY/MONTHLY/YEARLY + the chosen first-payment weekday/day-of-month.
+        - name: Data.Initiation.Reference
           type: String
-          note: "selected payee (beneficiary of the source account)"
-        - name: amount
-          type: AmountOfMoney
-          note: "{currency: source account currency, amount: validated > 0}"
-        - name: when
-          type: StandingOrderSchedule
-          note: "{frequency: DAILY|WEEKLY|BI-WEEKLY|MONTHLY|YEARLY, detail: FIRST_DAY}"
-        - name: date_signed
+          note: "Optional payment reference."
+        - name: Data.Initiation.NumberOfPayments
           type: String
-          note: "today at T00:00:00Z"
-        - name: date_starts
+          note: "Optional total payment count (derived from an end date when set)."
+        - name: Data.Initiation.FirstPaymentDateTime
           type: String
-          note: "chosen first-payment date at T00:00:00Z (recurrence anchor)"
-        - name: date_expires
-          type: "String?"
-          note: "optional end date at T00:00:00Z; null = pay until cancelled"
+          note: "ISO 8601 datetime of the first payment — the recurrence anchor (chosen start date at T00:00:00Z)."
+        - name: Data.Initiation.RecurringPaymentAmount.Amount
+          type: String
+          note: "Decimal string > 0 — the per-occurrence amount entered in the form."
+        - name: Data.Initiation.RecurringPaymentAmount.Currency
+          type: String
+          note: "ISO 4217 currency code (source account currency)."
+        - name: Data.Initiation.FirstPaymentAmount.Amount
+          type: String
+          note: "Decimal string — first payment amount (defaults to the recurring amount)."
+        - name: Data.Initiation.FirstPaymentAmount.Currency
+          type: String
+          note: "ISO 4217 currency code."
+        - name: Data.Initiation.CreditorAccount.SchemeName
+          type: String
+          note: "Account scheme, e.g. UK.OBIE.SortCodeAccountNumber or UK.OBIE.IBAN (from the selected payee)."
+        - name: Data.Initiation.CreditorAccount.Identification
+          type: String
+          note: "Creditor account identification (selected payee)."
+        - name: Data.Initiation.CreditorAccount.Name
+          type: String
+          note: "Creditor account name (selected payee)."
+        - name: Risk
+          type: Object
+          note: "OBRisk block (may be empty {})."
     response:
-      dto: CreateStandingOrderResponse
+      dto: OBWriteDomesticStandingOrderConsentResponse
       fields:
-        - name: standing_order_id
+        - name: Data.ConsentId
           type: String
-        - name: bank_id
+          note: "Unique consent id — carried to payment-authorize-handoff to drive authorise + submit."
+        - name: Data.Status
           type: String
-        - name: account_id
+          note: "AwaitingAuthorisation (AWAU) on creation."
+        - name: Data.CreationDateTime
           type: String
-        - name: counterparty_id
-          type: String
-        - name: amount
-          type: AmountOfMoney
-        - name: when
-          type: StandingOrderSchedule
-        - name: date_starts
-          type: String
-        - name: date_expires
-          type: String
-        - name: active
-          type: Boolean
+        - name: Data.Initiation
+          type: Object
+          note: "Echoed standing-order initiation block."
     errors:
       - code: 400
-        message: "INVALID_BANK_ID"
+        message: "OB.Field.Invalid"
       - code: 401
-        message: "USER_NOT_LOGGED_IN"
+        message: "UNAUTHORIZED"
       - code: 403
-        message: "INSUFFICIENT_AUTHORISATION"
-      - code: 404
-        message: "BANK_ACCOUNT_NOT_FOUND"
+        message: "OB.Resource.InvalidConsentStatus"
+      - code: 429
+        message: "TOO_MANY_REQUESTS"
+      - code: 500
+        message: "OB.UnexpectedError"
+
+  - id: create_domestic_standing_order
+    endpoint: "POST /obie/open-banking/v4.0/pisp/domestic-standing-orders"
+    tag: pisp-domestic-standing-order
+    trigger: post_authorize_callback
+    description: >
+      Submit the authorised standing order referencing the now-Authorised ConsentId. Invoked by
+      payment-authorize-handoff after the bank authorise + callback, NOT directly by this screen's
+      submit button. Data.Initiation must match the consent exactly. Authorization Code grant.
+    request:
+      dto: OBWriteDomesticStandingOrder
+      fields:
+        - name: Data.ConsentId
+          type: String
+          note: "Must equal the authorised consent ConsentId."
+        - name: Data.Initiation
+          type: Object
+          note: "Must match the consent's initiation (Frequency, FirstPaymentDateTime, RecurringPaymentAmount, CreditorAccount)."
+        - name: Risk
+          type: Object
+          note: "OBRisk block matching the consent."
+    response:
+      dto: OBWriteDomesticStandingOrderResponse
+      fields:
+        - name: Data.DomesticStandingOrderId
+          type: String
+          note: "Unique standing-order resource id."
+        - name: Data.ConsentId
+          type: String
+        - name: Data.Status
+          type: String
+          note: "e.g. InitiationPending or InitiationCompleted."
+        - name: Data.CreationDateTime
+          type: String
+        - name: Data.Initiation
+          type: Object
+    errors:
+      - code: 400
+        message: "OB.Field.Invalid"
+      - code: 401
+        message: "UNAUTHORIZED"
+      - code: 403
+        message: "OB.Resource.InvalidConsentStatus"
+      - code: 429
+        message: "TOO_MANY_REQUESTS"
+      - code: 500
+        message: "OB.UnexpectedError"
 
 local_writes:
   - id: persist_created_standing_order
     source: "StandingOrdersRepository.create(...) → persistCreated(accountId, order)"
     note: >
-      After a successful POST the created StandingOrder is appended to the per-account
-      'standing-orders-created:{accountId}' entry in the Room JSON cache, so it shows in the
-      derived list immediately (the server exposes no GET to read it back).
+      After a successful submit (POST /pisp/domestic-standing-orders) the created standing order may
+      be appended to the per-account 'standing-orders-created:{accountId}' entry in the Room JSON
+      cache so it shows in the derived list immediately, alongside reads from
+      GET /pisp/domestic-standing-orders/{DomesticStandingOrderId}.
 
-deferred:
+handoff:
   note: >
-    No GET/PUT/DELETE/pause/resume endpoints exist for standing orders on OBP — editing
-    (standing-order-edit, PUT) is unimplemented, and there is no server cancel. This screen is
-    create-only.
+    This screen owns only the consent-create step (POST domestic-standing-order-consents → AWAU).
+    It then navigates to payment-authorize-handoff, which orchestrates consent → bank authorise →
+    callback → submit (POST domestic-standing-orders). SCA happens at the bank.

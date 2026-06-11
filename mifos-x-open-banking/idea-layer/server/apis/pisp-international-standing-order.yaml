@@ -1,0 +1,301 @@
+schema_version: "4.0"
+api_group: pisp-international-standing-order
+name: "PISP International Standing Order API"
+base_url: "https://secure.sandbox.ob.hsbc.co.uk"
+auth_scheme: OAuth2-FAPI
+api_version: v4.0
+generated_at: "2026-06-11"
+source: "HSBC UK/CE Open Banking sandbox (OBIE Read/Write v4.0) — International Standing Order (PISP). Payments narrative sourced from T2 OBIE PISP v4.0 (HSBC Portal Payments returned HTTP 429); per-brand hosts in HSBC_Sandbox/docs/09-international-standing-order.md. Offered by CE HSBCnet (v3.1), UK HSBCnet, UK Personal, firstdirect (v4.0); UK Business does not offer this category. OAuth2 token/authorize endpoints (Get CC Token, Get Access Token, Initiate Consent Authorization) are documented in the auth group and referenced here only."
+endpoints:
+  - id: create_international_standing_order_consent
+    method: POST
+    path: "/obie/open-banking/v4.0/pisp/international-standing-order-consents"
+    description: "Stages an International Standing Order consent — registers the PISP intent to initiate a recurring cross-border payment instruction defined by a Frequency, FirstPaymentDateTime and optional NumberOfPayments. The ASPSP returns a unique ConsentId with initial Status AWAU. Uses a client-credentials access token scoped 'payments'. CE HSBCnet uses v3.1 at /ce/obie/open-banking/v3.1/pisp/international-standing-order-consents; UK HSBCnet / UK Personal / firstdirect use v4.0 at this path (UK Business does not offer this category)."
+    auth_required: true
+    scopes: [payments]
+    request_schema:
+      - field: Data.Permission
+        type: String
+        required: true
+        validation: "Restricted to 'Create' (OBWriteInternationalStandingOrderConsent6)."
+      - field: Data.Initiation.CurrencyOfTransfer
+        type: String
+        required: true
+        validation: "1..1 ISO 4217 — the transfer currency, different from the debtor account currency."
+      - field: Data.Initiation.InstructedAmount.Amount
+        type: String
+        required: true
+        validation: "Decimal string. Amount of each recurring payment."
+      - field: Data.Initiation.InstructedAmount.Currency
+        type: String
+        required: true
+        validation: "ISO 4217 currency code."
+      - field: Data.Initiation.Frequency
+        type: String
+        required: true
+        validation: "1..1 regularity pattern, e.g. IntrvlWkDay:IntervalInWeeks:DayInWeek; also EvryDay, EvryWorkgDay, IntrvlDay:NoOfDay, WkInMnthDay, IntrvlMnthDay, QtrDay. v3.1 carries Frequency flat under Initiation (OBInternationalStandingOrder3 shape, as in the representative body); v4.0 wraps the schedule under OBMandateRelatedInformation1 (T2 OBIE PISP v4.0 payment-initiation profile)."
+      - field: Data.Initiation.Reference
+        type: String
+        required: false
+        validation: "Reference for the standing order."
+      - field: Data.Initiation.NumberOfPayments
+        type: String
+        required: false
+        validation: "0..1 — count of payments in the sequence. Flat under Initiation in v3.1; under OBMandateRelatedInformation1 in v4.0."
+      - field: Data.Initiation.FirstPaymentDateTime
+        type: String
+        required: true
+        validation: "1..1 ISO 8601 — date of the first payment. Flat under Initiation in v3.1; under OBMandateRelatedInformation1 in v4.0."
+      - field: Data.Initiation.CreditorAccount.SchemeName
+        type: String
+        required: true
+        validation: "e.g. UK.OBIE.IBAN."
+      - field: Data.Initiation.CreditorAccount.Identification
+        type: String
+        required: true
+        validation: "Creditor account identification under the scheme."
+      - field: Data.Initiation.CreditorAccount.Name
+        type: String
+        required: true
+        validation: "Name of the creditor account holder."
+      - field: Risk
+        type: Object
+        required: true
+        validation: "Risk block (empty object {} in the representative body)."
+    response_schema:
+      - field: Data.ConsentId
+        type: String
+        nullable: false
+        description: "Unique consent identifier (OBWriteInternationalStandingOrderConsentResponse7)."
+      - field: Data.Status
+        type: String
+        nullable: false
+        description: "Consent status. Initial AWAU; values AWAU|RJCT|AUTH|COND (v4.0). v3.1 (CE HSBCnet) uses long-form AwaitingAuthorisation|Rejected|Authorised|Consumed (no Revoked status)."
+      - field: Data.StatusReason
+        type: String
+        nullable: true
+        description: "Reason associated with the consent status."
+      - field: Data.CreationDateTime
+        type: String
+        nullable: false
+        description: "ISO 8601 — when the consent resource was created."
+      - field: Data.StatusUpdateDateTime
+        type: String
+        nullable: false
+        description: "ISO 8601 — when the status was last updated."
+      - field: Data.Initiation
+        type: Object
+        nullable: false
+        description: "Echo of the submitted Initiation block (flat schedule fields in v3.1; OBMandateRelatedInformation1 wrapper in v4.0)."
+    error_codes:
+      - code: 400
+        message: "OB.Field.Invalid"
+        retry: false
+      - code: 401
+        message: "UNAUTHORIZED"
+        retry: false
+      - code: 403
+        message: "OB.Resource.InvalidConsentStatus"
+        retry: false
+      - code: 429
+        message: "TOO_MANY_REQUESTS"
+        retry: true
+      - code: 500
+        message: "OB.UnexpectedError"
+        retry: true
+
+  - id: get_international_standing_order_consent
+    method: GET
+    path: "/obie/open-banking/v4.0/pisp/international-standing-order-consents/{ConsentId}"
+    description: "Optionally retrieves a previously staged International Standing Order consent to check its status. CE HSBCnet uses v3.1 at /ce/obie/open-banking/v3.1/pisp/international-standing-order-consents/{ConsentId}; UK HSBCnet / UK Personal / firstdirect use v4.0 at this path."
+    auth_required: true
+    scopes: [payments]
+    request_schema: []
+    response_schema:
+      - field: Data.ConsentId
+        type: String
+        nullable: false
+        description: "Unique consent identifier (OBWriteInternationalStandingOrderConsentResponse7)."
+      - field: Data.Status
+        type: String
+        nullable: false
+        description: "Consent status — AWAU|RJCT|AUTH|COND (v4.0) or AwaitingAuthorisation|Rejected|Authorised|Consumed (v3.1)."
+      - field: Data.StatusUpdateDateTime
+        type: String
+        nullable: false
+        description: "ISO 8601 — when the status was last updated."
+      - field: Data.CreationDateTime
+        type: String
+        nullable: false
+        description: "ISO 8601 — when the consent resource was created."
+      - field: Data.Initiation
+        type: Object
+        nullable: false
+        description: "Echo of the consent Initiation block."
+    error_codes:
+      - code: 400
+        message: "OB.Field.Invalid"
+        retry: false
+      - code: 401
+        message: "UNAUTHORIZED"
+        retry: false
+      - code: 403
+        message: "OB.Resource.InvalidConsentStatus"
+        retry: false
+      - code: 404
+        message: "OB.Resource.NotFound"
+        retry: false
+      - code: 429
+        message: "TOO_MANY_REQUESTS"
+        retry: true
+      - code: 500
+        message: "OB.UnexpectedError"
+        retry: true
+
+  - id: create_international_standing_order
+    method: POST
+    path: "/obie/open-banking/v4.0/pisp/international-standing-orders"
+    description: "Submits the International Standing Order for processing once the consent Status is AUTH. The Initiation and Risk sections must mirror those of the consent — a mismatch returns 400. Initial Status RCVD or RJCT. CE HSBCnet uses v3.1 at /ce/obie/open-banking/v3.1/pisp/international-standing-orders; UK HSBCnet / UK Personal / firstdirect use v4.0 at this path."
+    auth_required: true
+    scopes: [payments]
+    request_schema:
+      - field: Data.ConsentId
+        type: String
+        required: true
+        validation: "References the authorised consent (OBWriteInternationalStandingOrder4)."
+      - field: Data.Initiation.CurrencyOfTransfer
+        type: String
+        required: true
+        validation: "ISO 4217 transfer currency; must mirror the consent."
+      - field: Data.Initiation.InstructedAmount.Amount
+        type: String
+        required: true
+        validation: "Decimal string; must mirror the consent."
+      - field: Data.Initiation.InstructedAmount.Currency
+        type: String
+        required: true
+        validation: "ISO 4217; must mirror the consent."
+      - field: Data.Initiation.Frequency
+        type: String
+        required: true
+        validation: "Recurrence pattern; must mirror the consent. v3.1 flat under Initiation; v4.0 under OBMandateRelatedInformation1."
+      - field: Data.Initiation.NumberOfPayments
+        type: String
+        required: false
+        validation: "Count of payments; must mirror the consent. v3.1 flat; v4.0 under OBMandateRelatedInformation1."
+      - field: Data.Initiation.FirstPaymentDateTime
+        type: String
+        required: true
+        validation: "ISO 8601 first-payment date; must mirror the consent. v3.1 flat; v4.0 under OBMandateRelatedInformation1."
+      - field: Data.Initiation.CreditorAccount.SchemeName
+        type: String
+        required: true
+        validation: "e.g. UK.OBIE.IBAN; must mirror the consent."
+      - field: Data.Initiation.CreditorAccount.Identification
+        type: String
+        required: true
+        validation: "Creditor account identification; must mirror the consent."
+      - field: Data.Initiation.CreditorAccount.Name
+        type: String
+        required: true
+        validation: "Creditor account name; must mirror the consent."
+      - field: Risk
+        type: Object
+        required: true
+        validation: "Risk block; must mirror the consent (empty object {} in the representative body)."
+    response_schema:
+      - field: Data.InternationalStandingOrderId
+        type: String
+        nullable: false
+        description: "Unique standing-order identifier (OBWriteInternationalStandingOrderResponse7)."
+      - field: Data.ConsentId
+        type: String
+        nullable: false
+        description: "The consent this standing order was initiated against."
+      - field: Data.Status
+        type: String
+        nullable: false
+        description: "Standing-order status. Initial RCVD or RJCT; values RCVD, CANC, ACTC, PATC, PDNG, INFA, INCO, RJCT."
+      - field: Data.CreationDateTime
+        type: String
+        nullable: false
+        description: "ISO 8601 — when the resource was created."
+      - field: Data.StatusUpdateDateTime
+        type: String
+        nullable: false
+        description: "ISO 8601 — when the status was last updated."
+      - field: Data.Initiation
+        type: Object
+        nullable: false
+        description: "Echo of the submitted Initiation block."
+    error_codes:
+      - code: 400
+        message: "OB.Field.Invalid"
+        retry: false
+      - code: 401
+        message: "UNAUTHORIZED"
+        retry: false
+      - code: 403
+        message: "OB.Resource.InvalidConsentStatus"
+        retry: false
+      - code: 409
+        message: "OB.Resource.Conflict"
+        retry: false
+      - code: 429
+        message: "TOO_MANY_REQUESTS"
+        retry: true
+      - code: 500
+        message: "OB.UnexpectedError"
+        retry: true
+
+  - id: get_international_standing_order
+    method: GET
+    path: "/obie/open-banking/v4.0/pisp/international-standing-orders/{InternationalStandingOrderPaymentId}"
+    description: "Retrieves a submitted International Standing Order to check its status. CE HSBCnet uses v3.1 at /ce/obie/open-banking/v3.1/pisp/international-standing-orders/{InternationalStandingOrderPaymentId}; UK HSBCnet / UK Personal / firstdirect use v4.0 at this path."
+    auth_required: true
+    scopes: [payments]
+    request_schema: []
+    response_schema:
+      - field: Data.InternationalStandingOrderId
+        type: String
+        nullable: false
+        description: "Unique standing-order identifier (OBWriteInternationalStandingOrderResponse7)."
+      - field: Data.ConsentId
+        type: String
+        nullable: false
+        description: "The consent this standing order was initiated against."
+      - field: Data.Status
+        type: String
+        nullable: false
+        description: "Standing-order status — RCVD, CANC, ACTC, PATC, PDNG, INFA, INCO, RJCT."
+      - field: Data.StatusUpdateDateTime
+        type: String
+        nullable: false
+        description: "ISO 8601 — when the status was last updated."
+      - field: Data.CreationDateTime
+        type: String
+        nullable: false
+        description: "ISO 8601 — when the resource was created."
+      - field: Data.Initiation
+        type: Object
+        nullable: false
+        description: "Echo of the Initiation block."
+    error_codes:
+      - code: 400
+        message: "OB.Field.Invalid"
+        retry: false
+      - code: 401
+        message: "UNAUTHORIZED"
+        retry: false
+      - code: 403
+        message: "OB.Resource.InvalidConsentStatus"
+        retry: false
+      - code: 404
+        message: "OB.Resource.NotFound"
+        retry: false
+      - code: 429
+        message: "TOO_MANY_REQUESTS"
+        retry: true
+      - code: 500
+        message: "OB.UnexpectedError"
+        retry: true

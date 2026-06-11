@@ -1,0 +1,321 @@
+id: bank-authorize-handoff
+name: "Redirecting to HSBC"
+feature: account-access-consent
+flavor: consumer
+status: draft
+quality_score: 0
+contract_version: "1.1.0"
+capabilities:
+  - has_ui
+  - has_api
+tags: [FR-OBIE-AUTH-HANDOFF]
+status_history:
+  - status: draft
+    at: "2026-06-11"
+    by: "/idea-add (manual draft authoring)"
+    note: "Full-screen takeover authored for the OBIE redirect handoff. Shown while the app stages the account-access-consent (or payment-consent), builds the signed authorise request object, and opens the system browser / Custom Tab to HSBC. The PSU authenticates + completes SCA at HSBC, not in-app. Modelled on login/ui.yaml's oauth_redirecting takeover state. Awaiting /idea-enrich."
+
+screens:
+  - id: bank-authorize-handoff
+    name: "Redirecting to HSBC"
+    viewmodel: "BankAuthorizeHandoffViewModel"
+
+archetype: status
+
+components:
+  - type: stack
+    id: handoff_root
+    variant: column
+    style:
+      background: "#F9FAEF"
+      padding: spacing.lg
+      align: center
+      justify: center
+    children:
+      - handoff_bank_icon
+      - handoff_title
+      - handoff_message
+      - handoff_spinner
+      - handoff_security_note
+      - handoff_error_card
+      - handoff_retry_button
+      - handoff_cancel_link
+
+  - type: icon
+    id: handoff_bank_icon
+    content: "account_balance"
+    variant: default
+    style:
+      color: "#4C662B"
+      size: "80dp"
+      alignment: center
+    a11y:
+      role: image
+      label: "HSBC"
+    test_context:
+      purpose: "Bank icon shown at the top of the full-screen authorise handoff takeover"
+      interaction_type: display
+      data_driven: false
+
+  - type: text
+    id: handoff_title
+    content: "Redirecting you to HSBC"
+    variant: headline_small
+    style:
+      typography: "Outfit/headline_small"
+      color: "#1A1C16"
+      alignment: center
+      padding_top: spacing.lg
+    a11y:
+      role: heading
+      level: 1
+      label: "Redirecting you to HSBC"
+    test_context:
+      purpose: "Primary heading of the redirect handoff takeover"
+      interaction_type: display
+      data_driven: false
+
+  - type: text
+    id: handoff_message
+    content: "You'll sign in securely at HSBC to authorise access. Your username and password are never entered here."
+    variant: body_medium
+    style:
+      typography: "Outfit/body_medium"
+      color: "#44483D"
+      alignment: center
+      padding_top: spacing.sm
+    a11y:
+      role: text
+      label: "You will sign in securely at HSBC to authorise access. Your credentials are never entered in this app."
+    test_context:
+      purpose: "Explains that authentication and SCA happen at HSBC, not in the app"
+      interaction_type: display
+      data_driven: false
+
+  - type: loading_indicator
+    id: handoff_spinner
+    variant: circular_indeterminate
+    style:
+      color: "#4C662B"
+      size: "32dp"
+      alignment: center
+      padding_top: spacing.lg
+    a11y:
+      role: progressbar
+      label: "Preparing secure redirect"
+    test_context:
+      purpose: "Indeterminate spinner shown while the signed authorise request is built and the browser opens"
+      interaction_type: display
+      data_driven: false
+
+  - type: text
+    id: handoff_security_note
+    content: "Encrypted connection · You can return here anytime"
+    variant: body_small
+    style:
+      typography: "Outfit/body_small"
+      color: "#74796D"
+      alignment: center
+      padding_top: spacing.md
+    a11y:
+      role: text
+      label: "Encrypted connection. You can return to this app at any time."
+    test_context:
+      purpose: "Reassurance caption beneath the spinner"
+      interaction_type: display
+      data_driven: false
+
+  - type: card
+    id: handoff_error_card
+    variant: filled
+    style:
+      background: "#FFDAD6"
+      border_radius: "8dp"
+      padding: spacing.md
+      margin_top: spacing.lg
+    visible_when: "uiState == Error"
+    children:
+      - handoff_error_icon
+      - handoff_error_message
+
+  - type: icon
+    id: handoff_error_icon
+    content: "error"
+    variant: default
+    style:
+      color: "#BA1A1A"
+      size: "20dp"
+    a11y:
+      role: image
+      label: "Error"
+    test_context:
+      purpose: "Error icon in the failure card when the authorise request cannot be built or the browser cannot be opened"
+      interaction_type: display
+      data_driven: false
+
+  - type: text
+    id: handoff_error_message
+    content: "We couldn't open HSBC's secure sign-in. Please check your connection and try again."
+    variant: body_small
+    style:
+      typography: "Outfit/body_small"
+      color: "#410002"
+      padding_start: spacing.sm
+    a11y:
+      role: alert
+      label: "Redirect error message"
+    test_context:
+      purpose: "Error copy shown when consent staging or authorise-request building fails"
+      interaction_type: display
+      data_driven: true
+
+  - type: button
+    id: handoff_retry_button
+    label: "Try again"
+    variant: filled
+    supported_states: [idle, hover, focus_visible, pressed, disabled]
+    style:
+      background: "#4C662B"
+      typography: "Outfit/label_large"
+      color: "#FFFFFF"
+      border_radius: "8dp"
+      padding: spacing.md
+      margin_top: spacing.lg
+      width: "match_parent"
+    visible_when: "uiState == Error"
+    on_click:
+      action: retry
+      target: bank-authorize-handoff
+    a11y:
+      role: button
+      label: "Retry the secure redirect to HSBC"
+    keyboard:
+      focusable: true
+    test_context:
+      purpose: "Re-stages the consent and re-opens the HSBC authorise redirect after a failure"
+      interaction_type: action
+      data_driven: false
+
+  - type: button
+    id: handoff_cancel_link
+    label: "Cancel"
+    variant: text
+    supported_states: [idle, hover, focus_visible, pressed, disabled]
+    style:
+      typography: "Outfit/label_large"
+      color: "#386663"
+      alignment: center
+      min_height: 44
+      padding_vertical: spacing.sm
+    on_click:
+      action: navigate
+      target: consent-request
+    a11y:
+      role: button
+      label: "Cancel and return to the consent request"
+    keyboard:
+      focusable: true
+    test_context:
+      purpose: "Aborts the handoff and returns to the consent request screen"
+      interaction_type: navigate
+      data_driven: false
+
+responsive:
+  mobile_only: true
+  baseline_width: 390
+
+states:
+  initial_state: redirecting
+  redirecting:
+    layout: { type: column, padding: spacing.lg, align: center, justify: center }
+    visible_components: [handoff_bank_icon, handoff_title, handoff_message, handoff_spinner, handoff_security_note]
+    note: "Full-screen takeover. App stages the consent (POST account-access-consents / domestic-payment-consents → AWAU), builds the signed authorise request object (intent_id = ConsentId, PKCE S256), then opens the system browser / Custom Tab to HSBC's authorize endpoint. The external redirect happens at the end of this state; on return the app navigates to auth-callback."
+  loading:
+    layout: { type: column, padding: spacing.lg, align: center, justify: center }
+    visible_components: [handoff_bank_icon, handoff_title, handoff_message, handoff_spinner, handoff_security_note]
+    note: "Canonical loading alias — same composition as redirecting."
+  error:
+    layout: { type: column, padding: spacing.lg, align: center, justify: center }
+    visible_components: [handoff_bank_icon, handoff_title, handoff_error_card, handoff_retry_button, handoff_cancel_link]
+    note: "Consent staging or authorise-request building failed (network / 400 OB.Field.Invalid / signing error). Offers retry or cancel back to consent-request."
+
+state_model:
+  BankAuthorizeHandoffViewModel:
+    screen_state: BankAuthorizeHandoffUiState
+    state:
+      - field: phase
+        type: "HandoffPhase"
+        default: "HandoffPhase.STAGING"
+        note: "enum HandoffPhase { STAGING, BUILDING_REQUEST, OPENING_BROWSER, REDIRECTED, ERROR } — drives the full-screen takeover. PKCE code_verifier / CSRF state / consentId live inside ObpAuthRepository, NOT in UI state."
+      - field: consentContext
+        type: "ConsentContext"
+        default: "ConsentContext.AIS"
+        note: "enum ConsentContext { AIS, PAYMENT } — passed through to auth-callback so the callback can route to home vs payment-result. Resolved from the originating flow."
+      - field: errorMessage
+        type: "String?"
+        default: "null"
+      - field: isError
+        type: Boolean
+        default: "false"
+    errors: [BAD_REQUEST, REQUEST_TIMEOUT, SIGNING_FAILED, BROWSER_UNAVAILABLE, UNKNOWN]
+    events:
+      - "BankAuthorizeHandoffEvent.LaunchAuthorize(authorizeUrl: String)"
+      - BankAuthorizeHandoffEvent.NavigateToConsentRequest
+    actions:
+      - BankAuthorizeHandoffAction.RetryClicked
+      - BankAuthorizeHandoffAction.CancelClicked
+      - "BankAuthorizeHandoffAction.Internal.ConsentStaged(consentId: String)"
+      - "BankAuthorizeHandoffAction.Internal.AuthorizeRequestBuilt(authorizeUrl: String)"
+      - "BankAuthorizeHandoffAction.Internal.StagingFailed(error)"
+    di: [ObpAuthRepository, OidcCallbackBus]
+    base: "template.core.base.ui.viewmodel.BaseViewModel<BankAuthorizeHandoffUiState, BankAuthorizeHandoffEvent, BankAuthorizeHandoffAction>"
+    note: "On entry the ViewModel asks ObpAuthRepository to stage the consent and build the signed authorise request, then emits LaunchAuthorize(authorizeUrl) as a one-shot event. The host opens the URL in a Custom Tab. The browser return is a deep-link handled by auth-callback — this screen does not navigate to home/payment-result itself."
+
+navigation:
+  - id: nav_to_auth_callback
+    target: auth-callback
+    trigger: external_redirect_return
+    note: "The PSU authenticates + completes SCA at HSBC, then HSBC redirects to org.mifos.openbanking://oauth/callback. The deep-link is received by auth-callback, NOT this screen. This is an external_redirect edge, not an imperative navigate."
+  - id: nav_to_consent_request
+    target: consent-request
+    trigger: cancel_click
+    on_click:
+      action: navigate
+      target: consent-request
+
+api:
+  - id: obie_authorize_redirect
+    endpoint: "GET https://sandbox.ob.hsbc.co.uk/obie/open-banking/v1.1/oauth2/authorize"
+    tag: Authentication
+    trigger: on_handoff_entered
+    description: "PSU authorisation redirect (FAPI Hybrid). EXTERNAL to the app — opened in the system browser / Custom Tab. Carries a signed request-object JWT embedding openbanking_intent_id = ConsentId, response_type 'code id_token', PKCE code_challenge + code_challenge_method S256. PSU authenticates + completes SCA at HSBC, then is redirected to redirect_uri with code + id_token + state."
+    request:
+      params:
+        response_type: "code id_token"
+        client_id: "{hsbc_client_id}"
+        redirect_uri: "org.mifos.openbanking://oauth/callback"
+        scope: "openid accounts"
+        state: "{csrf_state}"
+        nonce: "{oidc_nonce}"
+        request: "{signed_request_object_jwt}"
+        code_challenge: "{pkce_code_challenge}"
+        code_challenge_method: "S256"
+    response:
+      redirect_params:
+        - name: code
+          type: String
+        - name: id_token
+          type: String
+        - name: state
+          type: String
+    errors:
+      - code: 302
+        name: AUTHORIZATION_FAILED
+        ui_message: "We couldn't open HSBC's secure sign-in. Please check your connection and try again."
+      - code: 400
+        name: OB_FIELD_INVALID
+        ui_message: "Something went wrong preparing your secure sign-in. Please try again."
+
+dependencies:
+  tier: feature
+  features: [shared-core, obp-auth, account-access-consent]

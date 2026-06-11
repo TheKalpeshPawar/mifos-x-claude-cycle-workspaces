@@ -484,18 +484,27 @@ state_model:
       - field: amount
         type: BigDecimal
         default: "BigDecimal.ZERO"
+        note: "serialized to Data.Initiation.FirstPaymentAmount.Amount (String) on the replacement consent"
       - field: currency
         type: String
         default: "\"GBP\""
+        note: "Data.Initiation.FirstPaymentAmount.Currency"
       - field: frequency
         type: StandingOrderFrequency
         default: "StandingOrderFrequency.MONTHLY"
+        note: "mapped to the OBIE Data.Initiation.Frequency schedule code (e.g. IntrvlWkDay:01:05)"
       - field: startDate
         type: LocalDate
         default: "LocalDate.now()"
+        note: "Data.Initiation.FirstPaymentDateTime (ISO 8601)"
       - field: endDate
         type: "LocalDate?"
         default: "null"
+        note: "no direct OBIE field — encode via Data.Initiation.NumberOfPayments or FinalPaymentDateTime if a bounded schedule is needed; ongoing when null"
+      - field: replacementConsentId
+        type: "String?"
+        default: "null"
+        note: "ConsentId from create_domestic_standing_order_consent; gates the authorise-redirect then create_domestic_standing_order submit"
       - field: amountError
         type: "String?"
         default: "null"
@@ -516,12 +525,15 @@ state_model:
         message: "Start date can't be in the past."
       - id: save_failed
         message: "Couldn't save your changes. Check the amount and try again."
-      - id: already_cancelled
-        message: "This standing order has been cancelled and can no longer be edited."
+        note: "OB.Field.Invalid (400) on the replacement consent or order submit"
+      - id: consent_not_authorised
+        message: "We couldn't confirm your authorisation. Please try again."
+        note: "consent Status came back Rejected / not Authorised (OB.Resource.InvalidConsentStatus, 403)"
       - id: network_error
         message: "Network unavailable. Please check your connection."
       - id: not_logged_in
         message: "Your session expired. Please sign in again."
+        note: "UNAUTHORIZED (401)"
     events:
       - OnAmountChange
       - OnCurrencySelect
@@ -547,6 +559,7 @@ state_model:
       - name: validateForm
       - name: saveStandingOrder
         triggers: [OnSave]
+        note: "Create-replacement flow: create_domestic_standing_order_consent -> launch authorisation redirect -> get_domestic_standing_order_consent (confirm Authorised) -> create_domestic_standing_order. OBIE has no in-place update; the old order is not mutated and is stopped out of band."
       - name: cancelEdit
         triggers: [OnCancel]
     di:
@@ -554,54 +567,79 @@ state_model:
       - AccountRepository
 
 api:
-  - id: obp_update_standing_order
-    endpoint: "PUT /obp/v4.0.0/banks/{bank_id}/accounts/{account_id}/owner/standing-order/{standing_order_id}"
-    tag: Standing-Orders
-    auth_required: true
-    auth_scheme: DirectLogin
+  note: >
+    Rebound to OBIE PISP. OBIE has NO update-standing-order endpoint — a standing order is immutable
+    once submitted. Save is a CREATE-REPLACEMENT flow: create_domestic_standing_order_consent (with the
+    edited instruction) -> PSU authorises (redirect) -> get_domestic_standing_order_consent confirms
+    Authorised -> create_domestic_standing_order submits it. The old order is NOT mutated in place;
+    revoking it is out of band (no OBIE cancel-standing-order). Because this is a brand-new instruction,
+    the beneficiary is no longer technically immutable, though the UI may still keep it locked. See api.yaml.
+  - id: create_domestic_standing_order_consent
+    endpoint: "POST /obie/open-banking/v4.0/pisp/domestic-standing-order-consents"
+    tag: StandingOrders
+    auth: OAuth2-FAPI
     trigger: on_save_clicked
-    description: "Update the mutable fields (amount, frequency, start/final date) of an existing standing order. Beneficiary and currency are immutable after creation."
+    description: "Step 1: register a new standing-order consent carrying the edited frequency / amount / first-payment date / creditor. Returns ConsentId in AwaitingAuthorisation."
     request:
-      dto: StandingOrderUpdateRequest
+      dto: OBWriteDomesticStandingOrderConsent
       fields:
-        - name: amount_value
+        - name: Data.Initiation.Frequency
           type: String
-        - name: amount_currency
+        - name: Data.Initiation.FirstPaymentDateTime
           type: String
-        - name: when.frequency
+        - name: Data.Initiation.FirstPaymentAmount.Amount
           type: String
-        - name: when.start_date
+        - name: Data.Initiation.FirstPaymentAmount.Currency
           type: String
-        - name: when.final_date
-          type: "String?"
+        - name: Data.Initiation.CreditorAccount.Identification
+          type: String
+        - name: Data.Initiation.CreditorAccount.Name
+          type: String
     response:
-      dto: StandingOrderDetail
+      dto: OBWriteDomesticStandingOrderConsentResponse
       fields:
-        - name: id
+        - name: Data.ConsentId
           type: String
-        - name: amount_value
+        - name: Data.Status
           type: String
-        - name: amount_currency
+  - id: get_domestic_standing_order_consent
+    endpoint: "GET /obie/open-banking/v4.0/pisp/domestic-standing-order-consents/{ConsentId}"
+    tag: StandingOrders
+    auth: OAuth2-FAPI
+    trigger: after_authorisation_redirect
+    description: "Step 2: confirm Data.Status == Authorised before submitting."
+    response:
+      fields:
+        - name: Data.ConsentId
           type: String
-        - name: frequency
+        - name: Data.Status
           type: String
-        - name: start_date
+  - id: create_domestic_standing_order
+    endpoint: "POST /obie/open-banking/v4.0/pisp/domestic-standing-orders"
+    tag: StandingOrders
+    auth: OAuth2-FAPI
+    trigger: on_consent_authorised
+    description: "Step 3: submit the authorised replacement referencing the ConsentId; Data.Initiation must match the consent."
+    response:
+      dto: OBWriteDomesticStandingOrderResponse
+      fields:
+        - name: Data.DomesticStandingOrderId
           type: String
-        - name: final_date
-          type: "String?"
-        - name: status
+        - name: Data.Status
           type: String
     errors:
       - code: 400
-        message: "INVALID_STANDING_ORDER_VALUES"
+        message: "OB.Field.Invalid"
       - code: 401
-        message: "USER_NOT_LOGGED_IN"
+        message: "UNAUTHORIZED"
       - code: 403
-        message: "INSUFFICIENT_AUTHORISATION"
-      - code: 404
-        message: "STANDING_ORDER_NOT_FOUND"
-      - code: 409
-        message: "STANDING_ORDER_ALREADY_CANCELLED"
+        message: "OB.Resource.InvalidConsentStatus"
+
+unsupported_api:
+  - id: update_standing_order
+    reason: "OBIE has no in-place update-standing-order endpoint; replaced by the create-replacement consent flow above."
+  - id: revoke_old_standing_order
+    reason: "OBIE has no cancel/revoke-standing-order operation; stopping the superseded order is out of band (merchant / bank channel)."
 
 navigation:
   - id: nav_back

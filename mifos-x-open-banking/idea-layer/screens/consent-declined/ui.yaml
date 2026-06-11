@@ -1,0 +1,318 @@
+id: consent-declined
+name: "Access Not Granted"
+feature: consent-declined
+flavor: consumer
+status: draft
+quality_score: 0
+contract_version: "1.1.0"
+capabilities:
+  - has_ui
+tags: [FR-OBIE-CONSENT]
+status_history:
+  - to: draft
+    at: "2026-06-11"
+    by: "/idea add (OBIE migration)"
+    note: "Terminal error for the OBIE account-access-consent journey. Reached from auth-callback when the deep-link callback carries an error param, or when the PSU declines/cancels authorisation at HSBC (consent Status RJCT or CANC). Friendly explanation, a short list of why it can happen, and a 'Try again' CTA back to consent-request. Mostly UI — no live API call; the error reason arrives as a nav arg from the callback handler."
+
+screens:
+  - id: consent-declined
+    name: "Access Not Granted"
+    viewmodel: "ConsentDeclinedViewModel"
+    archetype: error
+    shell:
+      top_bar: false
+      bottom_nav: false
+
+archetype: error
+
+components:
+  - type: stack
+    id: declined_root
+    variant: column
+    style:
+      background: "#F9FAEF"
+      padding: spacing.lg
+      alignment: center
+    children:
+      - declined_hero_icon
+      - declined_title
+      - declined_subtitle
+      - declined_reasons_card
+      - declined_status_note
+      - declined_retry_button
+      - declined_cancel_button
+
+  - type: icon
+    id: declined_hero_icon
+    content: "block"
+    variant: default
+    style:
+      color: "#BA1A1A"
+      size: "72dp"
+      alignment: center
+      padding_bottom: spacing.md
+    a11y:
+      role: image
+      label: "Access was not granted"
+    test_context:
+      purpose: "Large blocked/cancel icon at the top of the terminal declined screen"
+      interaction_type: display
+      data_driven: false
+
+  - type: text
+    id: declined_title
+    content: "Access wasn't granted"
+    variant: headline_medium
+    style:
+      typography: "Outfit/headline_medium"
+      color: "#1A1C16"
+      font_weight: 700
+      alignment: center
+      padding_bottom: spacing.xs
+    a11y:
+      role: heading
+      level: 1
+      label: "Access wasn't granted"
+    test_context:
+      purpose: "Primary headline explaining the PSU did not approve account access at HSBC"
+      interaction_type: display
+      data_driven: false
+
+  - type: text
+    id: declined_subtitle
+    content: "You didn't finish granting access at HSBC, so we couldn't connect your account. No data was shared and nothing was changed."
+    variant: body_medium
+    style:
+      typography: "Outfit/body_medium"
+      color: "#44483D"
+      alignment: center
+      padding_bottom: spacing.lg
+    a11y:
+      role: text
+      label: "You didn't finish granting access at HSBC, so we couldn't connect your account. No data was shared and nothing was changed."
+    test_context:
+      purpose: "Reassuring body copy clarifying no account data was shared"
+      interaction_type: display
+      data_driven: false
+
+  - type: card
+    id: declined_reasons_card
+    variant: filled
+    style:
+      background: "#FFFFFF"
+      border_radius: "16dp"
+      padding: spacing.lg
+      margin_bottom: spacing.md
+      width: "match_parent"
+    children:
+      - declined_reasons_heading
+      - declined_reason_one
+      - declined_reason_two
+      - declined_reason_three
+    a11y:
+      role: group
+      label: "Why this can happen"
+    test_context:
+      purpose: "White card listing the common reasons authorisation was declined"
+      interaction_type: display
+      data_driven: false
+
+  - type: text
+    id: declined_reasons_heading
+    content: "This can happen if:"
+    variant: title_small
+    style:
+      typography: "Outfit/title_small"
+      color: "#1A1C16"
+      font_weight: 700
+      padding_bottom: spacing.sm
+    a11y:
+      role: heading
+      level: 2
+      label: "This can happen if"
+    test_context:
+      purpose: "Heading for the reasons list inside the white card"
+      interaction_type: display
+      data_driven: false
+
+  - type: text
+    id: declined_reason_one
+    content: "You chose 'Cancel' or 'Deny' on the HSBC approval screen"
+    variant: body_medium
+    style:
+      typography: "Outfit/body_medium"
+      color: "#44483D"
+      padding_bottom: spacing.xs
+    a11y:
+      role: text
+      label: "You chose Cancel or Deny on the HSBC approval screen"
+    test_context:
+      purpose: "First reason — PSU declined at the bank"
+      interaction_type: display
+      data_driven: false
+
+  - type: text
+    id: declined_reason_two
+    content: "The approval timed out before it was confirmed"
+    variant: body_medium
+    style:
+      typography: "Outfit/body_medium"
+      color: "#44483D"
+      padding_bottom: spacing.xs
+    a11y:
+      role: text
+      label: "The approval timed out before it was confirmed"
+    test_context:
+      purpose: "Second reason — authorisation timeout at the bank"
+      interaction_type: display
+      data_driven: false
+
+  - type: text
+    id: declined_reason_three
+    content: "HSBC couldn't verify your identity during sign-in"
+    variant: body_medium
+    style:
+      typography: "Outfit/body_medium"
+      color: "#44483D"
+    a11y:
+      role: text
+      label: "HSBC couldn't verify your identity during sign-in"
+    test_context:
+      purpose: "Third reason — SCA/identity verification failed at the bank"
+      interaction_type: display
+      data_driven: false
+
+  - type: text
+    id: declined_status_note
+    content: "Reference: consent declined (RJCT)"
+    variant: body_small
+    style:
+      typography: "Outfit/body_small"
+      color: "#44483D"
+      alignment: center
+      padding_bottom: spacing.lg
+    visible_when: "uiState == Error"
+    a11y:
+      role: text
+      label: "Technical reference: consent declined"
+    test_context:
+      purpose: "Muted technical reference line showing the resolved consent status (RJCT or CANC) and any callback error code"
+      interaction_type: display
+      data_driven: true
+
+  - type: button
+    id: declined_retry_button
+    label: "Try again"
+    variant: filled
+    supported_states: [idle, hover, focus_visible, pressed, disabled]
+    style:
+      background: "#4C662B"
+      typography: "Outfit/label_large"
+      color: "#FFFFFF"
+      border_radius: "8dp"
+      padding: spacing.md
+      width: "match_parent"
+    on_click:
+      action: navigate
+      target: consent-request
+    a11y:
+      role: button
+      label: "Try again — restart the HSBC account connection"
+    keyboard:
+      focusable: true
+    test_context:
+      purpose: "Primary CTA — restarts the consent journey by returning to consent-request"
+      interaction_type: navigate
+      data_driven: false
+
+  - type: button
+    id: declined_cancel_button
+    label: "Maybe later"
+    variant: text
+    supported_states: [idle, hover, focus_visible, pressed]
+    style:
+      typography: "Outfit/label_large"
+      color: "#386663"
+      padding: spacing.md
+      width: "match_parent"
+    on_click:
+      action: navigate
+      target: consent-intro
+    a11y:
+      role: button
+      label: "Maybe later — return to the connect-your-account intro"
+    keyboard:
+      focusable: true
+    test_context:
+      purpose: "Secondary CTA — abandons the attempt and returns to consent-intro"
+      interaction_type: navigate
+      data_driven: false
+
+responsive:
+  mobile_only: true
+  baseline_width: 390
+
+states:
+  initial_state: content
+  content:
+    layout: { type: column, padding: spacing.lg, align: center }
+    visible_components: [declined_hero_icon, declined_title, declined_subtitle, declined_reasons_card, declined_retry_button, declined_cancel_button]
+    note: "Default terminal view when the PSU simply declined or cancelled — no callback error code, so the technical reference line is hidden."
+  error:
+    layout: { type: column, padding: spacing.lg, align: center }
+    visible_components: [declined_hero_icon, declined_title, declined_subtitle, declined_reasons_card, declined_status_note, declined_retry_button, declined_cancel_button]
+    note: "Shown when the deep-link callback carried an explicit error param or the resolved consent Status is RJCT/CANC — declined_status_note surfaces the reference code."
+  idle:
+    layout: { type: column, padding: spacing.lg, align: center }
+    visible_components: [declined_hero_icon, declined_title, declined_subtitle, declined_reasons_card, declined_retry_button, declined_cancel_button]
+    note: "Alias of content — the screen has no async load; it renders immediately from the callback nav args."
+
+state_model:
+  ConsentDeclinedViewModel:
+    screen_state: ConsentDeclinedUiState
+    pattern: MVI
+    state:
+      - field: consentStatus
+        type: "ConsentStatus"
+        default: "ConsentStatus.RJCT"
+        note: "enum ConsentStatus { AWAU, AUTH, RJCT, CANC, EXPD } — resolved from the callback. Only RJCT or CANC reach this screen."
+      - field: callbackError
+        type: "String?"
+        default: "null"
+        note: "OAuth error param from the deep-link callback (e.g. access_denied, login_required) when present"
+      - field: hasErrorCode
+        type: Boolean
+        default: "false"
+    events:
+      - "ConsentDeclinedEvent.NavigateToConsentRequest"
+      - "ConsentDeclinedEvent.NavigateToConsentIntro"
+    actions:
+      - ConsentDeclinedAction.RetryClicked
+      - ConsentDeclinedAction.DismissClicked
+    di: [ConsentRepository]
+    base: "template.core.base.ui.viewmodel.BaseViewModel<ConsentDeclinedUiState, ConsentDeclinedEvent, ConsentDeclinedAction>"
+    note: "Stateless apart from the inbound nav args — no network call. RetryClicked emits NavigateToConsentRequest; DismissClicked emits NavigateToConsentIntro. The ConsentRepository dependency is only used to clear the stale RJCT/CANC consent record locally before retry."
+
+navigation:
+  - id: nav_to_consent_request
+    target: consent-request
+    trigger: retry_click
+    on_click:
+      action: navigate
+      target: consent-request
+    note: "Primary outbound nav — restarts the consent journey (mirrors connection consent-declined → consent-request in account-access-consent.yaml)."
+  - id: nav_to_consent_intro
+    target: consent-intro
+    trigger: dismiss_click
+    on_click:
+      action: navigate
+      target: consent-intro
+    note: "Secondary outbound nav — abandons the attempt back to the journey entry screen."
+
+api:
+  endpoints: []
+  note: "No live OBIE call from this terminal screen — the declined outcome is delivered via nav args from the auth-callback handler (the callback error param or the consent Status RJCT/CANC resolved during the token exchange / GET /aisp/account-access-consents/{ConsentId} step). Retry re-enters consent-request which re-issues POST /aisp/account-access-consents."
+
+dependencies:
+  tier: feature
+  features: [shared-core, obie-consent]

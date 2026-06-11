@@ -672,6 +672,19 @@ state_model:
   content_type:
     name: StandingOrderDetailContent
     note: "Display-ready label strings only — no typed enums, no dialog/action-in-progress flags."
+    obie_field_map:
+      note: >
+        Built from the matched OBIE Data.StandingOrder[] entry (get_account_standing_orders) plus
+        derived executions from get_account_transactions:
+        statusLabel ← Data.StandingOrder[].StandingOrderStatusCode (String, ExternalMandateStatus1Code)
+        recipientName ← Data.StandingOrder[].CreditorAccount.Name (Detail permission; counterparty rule applies)
+        recipientAccount ← Data.StandingOrder[].CreditorAccount.Identification (String, masked)
+        amount ← Data.StandingOrder[].NextPaymentAmount.Amount (String); currency ← .NextPaymentAmount.Currency (String)
+        frequencyLabel ← Data.StandingOrder[].Frequency (String)
+        startedOn ← Data.StandingOrder[].FirstPaymentDateTime (String, ISODateTime)
+        nextPayment ← Data.StandingOrder[].NextPaymentDateTime (String, ISODateTime)
+        finalDate ← not exposed by OBIE — always 'Ongoing'
+        executions[] ← Data.Transaction[].BookingDateTime + .Amount.Amount/.Amount.Currency, keyed by .TransactionId
     fields:
       - { name: name, type: String }
       - { name: statusLabel, type: String }
@@ -701,12 +714,21 @@ state_model:
     - StandingOrdersRepository
 
 api:
+  - endpoint: "GET /obie/open-banking/v4.0/aisp/accounts/{AccountId}/standing-orders"
+    id: get_account_standing_orders
+    note: >
+      HSBC OBIE AISP. No per-item GET exists — detail reads the list (OBReadStandingOrder6) and
+      selects Data.StandingOrder[] where StandingOrderId == route standingOrderId. READ-ONLY.
+    tag: Standing-Orders
+  - endpoint: "GET /obie/open-banking/v4.0/aisp/accounts/{AccountId}/transactions"
+    id: get_account_transactions
+    note: >
+      OBIE OBReadTransaction6. Builds Recent Executions (this order's transactions, newest first,
+      capped at 5); each row drills into transaction-detail via Data.Transaction[].TransactionId.
+    tag: Transactions
   note: >
-    NONE of the originally specified standing-order detail endpoints exist on OBP
-    (GET detail / POST pause / POST resume / DELETE — all live-verified 404). They are
-    dropped. Detail is sourced via StandingOrdersRepository.detail() (find order by series
-    id in the derived/created set) and executions via deriveExecutions over TXN_TYPE=SO history.
-    See api.yaml.
+    Pause/Resume and Cancel are NOT supported by OBIE AISP (no such endpoints — mutations are
+    PISP), so those buttons surface "coming soon"/unsupported with no API binding. See api.yaml.
 
 navigation:
   - id: nav_back

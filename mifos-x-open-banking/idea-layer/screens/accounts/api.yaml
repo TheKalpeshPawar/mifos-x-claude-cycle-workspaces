@@ -1,48 +1,78 @@
 sibling: api
 schema_version: "4.0"
 feature_id: accounts
+consent:
+  required: true
+  type: account-access-consent
+  permissions: [ReadAccountsBasic, ReadAccountsDetail, ReadBalances]
+  token: authorization-code
+  note: "The accounts list + per-account balances require an authorised account-access-consent (Status AUTH) and a scoped authorization-code token (scope accounts). get_balances is called per AccountId returned by get_accounts."
 api:
-  - id: obp_get_accounts
-    endpoint: "GET /obp/v3.0.0/banks/{bankId}/accounts"
+  - id: get_accounts
+    endpoint: "GET /obie/open-banking/v4.0/aisp/accounts"
     tag: Accounts
-    auth: DirectLogin
-    note: "Cross-bank list read is /obp/v3.0.0/my/accounts (listAccounts/myAccounts); accountsStream feeds the screen. Account DTO is a superset."
-    params:
-      - name: bankId
-        type: path
-        value: "gh.29.uk"
+    auth: OAuth2-FAPI
+    consent_required: true
+    description: "Full list of authorised AccountId(s) with identification/scheme/nickname/type — drives the account cards and bank grouping. Supports pagination (Links/Meta). OBIE object OBReadAccount6."
     response:
       fields:
-        - name: id
+        - name: Data.Account[].AccountId
           type: String
-        - name: label
+        - name: Data.Account[].Currency
           type: String
-        - name: account_type
+        - name: Data.Account[].AccountCategory
           type: String
-        - name: bank_id
+        - name: Data.Account[].AccountTypeCode
           type: String
-        - name: number
+        - name: Data.Account[].Nickname
           type: String
-        - name: iban
+        - name: Data.Account[].Account[].SchemeName
           type: String
-        - name: balance
-          type: object
-          children:
-            - name: currency
-              type: String
-            - name: amount
-              type: String
-        - name: account_routings
-          type: "List<AccountRouting>"
-          children:
-            - name: scheme
-              type: String
-            - name: address
-              type: String
+        - name: Data.Account[].Account[].Identification
+          type: String
+        - name: Data.Account[].Account[].Name
+          type: String
+        - name: Data.Account[].Servicer.Identification
+          type: String
+        - name: Meta.TotalPages
+          type: Integer
     errors:
+      - code: 400
+        message: "OB.Field.Invalid"
       - code: 401
-        message: "Unauthorized — DirectLogin token missing or expired"
-      - code: 404
-        message: "Bank not found"
+        message: "UNAUTHORIZED — token missing or expired"
+      - code: 403
+        message: "OB.Resource.InvalidConsentStatus — consent not AUTH"
       - code: 500
-        message: "OBP server error"
+        message: "OB.UnexpectedError"
+
+  - id: get_balances
+    endpoint: "GET /obie/open-banking/v4.0/aisp/accounts/{AccountId}/balances"
+    tag: Balances
+    auth: OAuth2-FAPI
+    consent_required: true
+    description: "Balance for each AccountId — surfaced as the per-card balance amount. Requires ReadBalances. Called per AccountId from get_accounts. OBIE object OBReadBalance1; the card surfaces the InterimAvailable Type."
+    params:
+      - name: AccountId
+        type: path
+    response:
+      fields:
+        - name: Data.Balance[].AccountId
+          type: String
+        - name: Data.Balance[].Type
+          type: String
+        - name: Data.Balance[].CreditDebitIndicator
+          type: String
+        - name: Data.Balance[].Amount.Amount
+          type: String
+        - name: Data.Balance[].Amount.Currency
+          type: String
+    errors:
+      - code: 400
+        message: "OB.Field.Invalid"
+      - code: 401
+        message: "UNAUTHORIZED"
+      - code: 403
+        message: "OB.Resource.InvalidConsentStatus — missing ReadBalances"
+      - code: 500
+        message: "OB.UnexpectedError"

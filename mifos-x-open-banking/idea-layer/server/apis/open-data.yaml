@@ -1,0 +1,395 @@
+schema_version: "4.0"
+api_group: open-data
+name: "Open Data API"
+base_url: "https://<brand-open-data-host>/open-banking/opendata/v2.4.0"
+auth_scheme: none
+api_version: v2.4.0
+generated_at: "2026-06-11"
+source: "[NOT IN POSTMAN + PORTAL UNREACHABLE — T2 OBIE Open Data v2.4.0; HSBC-specific base URL/availability not confirmed]. Open Data is not part of the consent-based Postman collection and the HSBC developer portal returned 429, so HSBC-specific Open Data hostnames and per-brand availability are NOT confirmed from a primary HSBC source. base_url is the OBIE Open Data standard pattern (per-brand host not invented). All endpoints are unauthenticated GET requests — no OAuth2 token, no /authorize, no TPP role or registration. Common response envelope: top-level meta (LastUpdated, TotalResults, Agreement, License, TermsOfUse) + data[].Brand[] (each Brand has BrandName + the product/resource array). Media type application/prs.openbanking.opendata.v2.x+json."
+endpoints:
+  - id: get_branches
+    method: GET
+    path: "/branches"
+    description: "Branch Locator — return all branches per brand for a banking group. A branch may be Physical or Mobile; geolocation is the recommended primary locator. (T2 OBIE Open Data v2.4.0 branchlocator/branch-locator.html)."
+    auth_required: false
+    request_schema: []
+    response_schema:
+      - field: meta.LastUpdated
+        type: String
+        nullable: false
+        description: "ISODateTime the dataset was last updated."
+      - field: meta.TotalResults
+        type: Integer
+        nullable: false
+        description: "Total number of results in the response."
+      - field: data[].Brand[].BrandName
+        type: String
+        nullable: false
+        description: "Brand name owning the branches."
+      - field: data[].Brand[].Branch[].Identification
+        type: String
+        nullable: false
+        description: "Unique branch identifier."
+      - field: data[].Brand[].Branch[].SequenceNumber
+        type: String
+        nullable: true
+        description: "00 = main branch; 01..n = sub/mobile branch."
+      - field: data[].Brand[].Branch[].Name
+        type: String
+        nullable: true
+        description: "Branch name."
+      - field: data[].Brand[].Branch[].Type
+        type: String
+        nullable: false
+        description: "Physical | Mobile."
+      - field: data[].Brand[].Branch[].CustomerSegment
+        type: Array
+        nullable: true
+        description: "Customer segments served by the branch."
+      - field: data[].Brand[].Branch[].Accessibility
+        type: Array
+        nullable: true
+        description: "Accessibility provisions at the branch."
+      - field: data[].Brand[].Branch[].OtherServiceAndFacility
+        type: Array
+        nullable: true
+        description: "Other services/facilities (Code, Name)."
+      - field: data[].Brand[].Branch[].Availability.StandardAvailability.Day
+        type: Array
+        nullable: true
+        description: "Per-day opening hours (Name, OpeningHours[] with OpeningTime/ClosingTime) plus non-standard/seasonal availability."
+      - field: data[].Brand[].Branch[].ContactInfo
+        type: Array
+        nullable: true
+        description: "Contact entries (ContactType, ContactContent)."
+      - field: data[].Brand[].Branch[].PostalAddress
+        type: Object
+        nullable: false
+        description: "AddressLine[], TownName, CountrySubDivision[], Country, PostCode, GeoLocation.GeographicCoordinates.Latitude/Longitude."
+    error_codes:
+      - code: 400
+        message: "Bad Request"
+        retry: false
+      - code: 429
+        message: "TOO_MANY_REQUESTS"
+        retry: true
+      - code: 500
+        message: "Internal Server Error"
+        retry: true
+  - id: get_atms
+    method: GET
+    path: "/atms"
+    description: "ATM Locator — return all ATMs per brand for a banking group, with services, accessibility, supported languages, location, base currency and minimum withdrawable amount. (T2 OBIE Open Data v2.4.0 atmlocator/atm-locator.html)."
+    auth_required: false
+    request_schema: []
+    response_schema:
+      - field: meta.LastUpdated
+        type: String
+        nullable: false
+        description: "ISODateTime the dataset was last updated."
+      - field: meta.TotalResults
+        type: Integer
+        nullable: false
+        description: "Total number of results in the response."
+      - field: data[].Brand[].BrandName
+        type: String
+        nullable: false
+        description: "Brand name owning the ATMs."
+      - field: data[].Brand[].ATM[].Identification
+        type: String
+        nullable: false
+        description: "Unique ATM identifier."
+      - field: data[].Brand[].ATM[].SupportedLanguages
+        type: Array
+        nullable: true
+        description: "ISO 639-1 language codes supported."
+      - field: data[].Brand[].ATM[].ATMServices
+        type: Array
+        nullable: true
+        description: "e.g. CashWithdrawal, PINChange, Balance, MiniStatement."
+      - field: data[].Brand[].ATM[].OtherATMServices
+        type: Array
+        nullable: true
+        description: "Proprietary service codes."
+      - field: data[].Brand[].ATM[].Accessibility
+        type: Array
+        nullable: true
+        description: "Accessibility provisions (+ OtherAccessibility[])."
+      - field: data[].Brand[].ATM[].SupportedCurrencies
+        type: Array
+        nullable: true
+        description: "Currently restricted to GBP."
+      - field: data[].Brand[].ATM[].MinimumPossibleAmount
+        type: String
+        nullable: true
+        description: "Minimum withdrawable amount (distinct from minimum denomination)."
+      - field: data[].Brand[].ATM[].Branch.Identification
+        type: String
+        nullable: true
+        description: "Parent branch link."
+      - field: data[].Brand[].ATM[].Location.PostalAddress
+        type: Object
+        nullable: false
+        description: "StreetName, TownName, Country, PostCode, GeoLocation.GeographicCoordinates.Latitude/Longitude; plus Location.Site.Name."
+    error_codes:
+      - code: 400
+        message: "Bad Request"
+        retry: false
+      - code: 429
+        message: "TOO_MANY_REQUESTS"
+        retry: true
+      - code: 500
+        message: "Internal Server Error"
+        retry: true
+  - id: get_personal_current_accounts
+    method: GET
+    path: "/personal-current-accounts"
+    description: "Personal Current Account (PCA) reference data — on-sale (and optionally back-book) PCA products: core product details, marketing states, credit-interest tiers, overdraft pricing, fees/charges, eligibility and benefits packages. (T2 OBIE Open Data v2.4.0 pca/personal-current-account.html)."
+    auth_required: false
+    request_schema: []
+    response_schema:
+      - field: meta.LastUpdated
+        type: String
+        nullable: false
+        description: "ISODateTime the dataset was last updated."
+      - field: meta.TotalResults
+        type: Integer
+        nullable: false
+        description: "Total number of results in the response."
+      - field: data[].Brand[].BrandName
+        type: String
+        nullable: false
+        description: "Brand name owning the PCA products."
+      - field: data[].Brand[].PCA[].ProductName
+        type: String
+        nullable: true
+        description: "Marketing/product name (Name)."
+      - field: data[].Brand[].PCA[].Identification
+        type: String
+        nullable: false
+        description: "Unique product identifier."
+      - field: data[].Brand[].PCA[].Segment
+        type: String
+        nullable: true
+        description: "e.g. basic | regular | premium."
+      - field: data[].Brand[].PCA[].OnSaleIndicator
+        type: String
+        nullable: true
+        description: "1 = on-sale; 0 = back-book."
+      - field: data[].Brand[].PCA[].MarketingState
+        type: Array
+        nullable: true
+        description: "Identification, PredecessorID, MarketingState (Promotional|Regular), FirstMarketedDate, LastMarketedDate, StateTenureLength/Period."
+      - field: data[].Brand[].PCA[].CoreProduct
+        type: Object
+        nullable: true
+        description: "Product URL, T&Cs URL, sales/servicing access channels, MonthlyMaximumCharge."
+      - field: data[].Brand[].PCA[].Overdraft
+        type: Object
+        nullable: true
+        description: "Tiered/whole-amount overdraft rates, buffer, RepresentativeAPR (added in v2.4.0)."
+      - field: data[].Brand[].PCA[].CreditInterest
+        type: Object
+        nullable: true
+        description: "Credit-interest tiers/rates."
+      - field: data[].Brand[].PCA[].Eligibility
+        type: Object
+        nullable: true
+        description: "Eligibility criteria."
+      - field: data[].Brand[].PCA[].OtherFeesCharges
+        type: Array
+        nullable: true
+        description: "Other fees and charges; plus features/benefits packages."
+    error_codes:
+      - code: 400
+        message: "Bad Request"
+        retry: false
+      - code: 429
+        message: "TOO_MANY_REQUESTS"
+        retry: true
+      - code: 500
+        message: "Internal Server Error"
+        retry: true
+  - id: get_business_current_accounts
+    method: GET
+    path: "/business-current-accounts"
+    description: "Business Current Account (BCA) reference data — startup/switching incentives, core fixed/variable product details, business overdraft fees, introductory offers, credit-interest rates, eligibility restrictions, benefits packages, tariffs and other fees/charges (incl. back-book). (T2 OBIE Open Data v2.4.0 bca/business-current-account.html)."
+    auth_required: false
+    request_schema: []
+    response_schema:
+      - field: meta.LastUpdated
+        type: String
+        nullable: false
+        description: "ISODateTime the dataset was last updated."
+      - field: meta.TotalResults
+        type: Integer
+        nullable: false
+        description: "Total number of results in the response."
+      - field: data[].Brand[].BrandName
+        type: String
+        nullable: false
+        description: "Brand name, e.g. HSBC UK."
+      - field: data[].Brand[].BCA[].Identification
+        type: String
+        nullable: false
+        description: "Unique product identifier."
+      - field: data[].Brand[].BCA[].MarketingState
+        type: Array
+        nullable: true
+        description: "Marketing-state sequencing (Promotional|Regular)."
+      - field: data[].Brand[].BCA[].CoreProduct
+        type: Object
+        nullable: true
+        description: "Core fixed/variable product details, channels, charges."
+      - field: data[].Brand[].BCA[].Overdraft
+        type: Object
+        nullable: true
+        description: "Business overdraft/tariff fee blocks."
+      - field: data[].Brand[].BCA[].CreditInterest
+        type: Object
+        nullable: true
+        description: "Credit-interest rates."
+      - field: data[].Brand[].BCA[].Eligibility
+        type: Object
+        nullable: true
+        description: "Eligibility restrictions."
+      - field: data[].Brand[].BCA[].OtherFeesCharges
+        type: Array
+        nullable: true
+        description: "Introductory offers, benefits, and other fees/charges."
+    error_codes:
+      - code: 400
+        message: "Bad Request"
+        retry: false
+      - code: 429
+        message: "TOO_MANY_REQUESTS"
+        retry: true
+      - code: 500
+        message: "Internal Server Error"
+        retry: true
+  - id: get_unsecured_sme_loans
+    method: GET
+    path: "/unsecured-sme-loans"
+    description: "SME Unsecured Loan reference data — fixed/variable core product details, whole and tiered APR with arrangement fees, early-payment/early-repayment terms, eligibility, and other fees/charges. (T2 OBIE Open Data v2.4.0 smeloan/sme-loan.html)."
+    auth_required: false
+    request_schema: []
+    response_schema:
+      - field: meta.LastUpdated
+        type: String
+        nullable: false
+        description: "ISODateTime the dataset was last updated."
+      - field: meta.TotalResults
+        type: Integer
+        nullable: false
+        description: "Total number of results in the response."
+      - field: data[].Brand[].BrandName
+        type: String
+        nullable: false
+        description: "Brand name owning the SME loan products."
+      - field: data[].Brand[].Loan[].ProductName
+        type: String
+        nullable: true
+        description: "Loan product/marketing name (Name)."
+      - field: data[].Brand[].Loan[].Identification
+        type: String
+        nullable: false
+        description: "Unique product identifier."
+      - field: data[].Brand[].Loan[].Segment
+        type: String
+        nullable: true
+        description: "Product segment."
+      - field: data[].Brand[].Loan[].MarketingState
+        type: Array
+        nullable: true
+        description: "Promotional/Regular marketing-state sequencing."
+      - field: data[].Brand[].Loan[].CoreProduct
+        type: Object
+        nullable: true
+        description: "Product/T&Cs URLs, sales/servicing channels, MonthlyCharge."
+      - field: data[].Brand[].Loan[].LoanInterest
+        type: Object
+        nullable: true
+        description: "Representative APR, regular/promotional rates."
+      - field: data[].Brand[].Loan[].LoanRepayment
+        type: Object
+        nullable: true
+        description: "Early-repayment charges, overpayments, arrangement/legal/late-payment fees."
+      - field: data[].Brand[].Loan[].Eligibility
+        type: Object
+        nullable: true
+        description: "Residency, trading history."
+      - field: data[].Brand[].Loan[].OtherFeesCharges
+        type: Array
+        nullable: true
+        description: "Features/benefits and other fees and charges."
+    error_codes:
+      - code: 400
+        message: "Bad Request"
+        retry: false
+      - code: 429
+        message: "TOO_MANY_REQUESTS"
+        retry: true
+      - code: 500
+        message: "Internal Server Error"
+        retry: true
+  - id: get_commercial_credit_cards
+    method: GET
+    path: "/commercial-credit-cards"
+    description: "SME Commercial Credit Card (CCC) reference data — fixed/variable core product details, credit limits, interest-free purchase days, card scheme, contactless capability, account fees, representative APR, repayment/minimum-payment and allocation rules, eligibility, and features/benefits. (T2 OBIE Open Data v2.4.0 smeccc/sme-commercial-credit-card.html)."
+    auth_required: false
+    request_schema: []
+    response_schema:
+      - field: meta.LastUpdated
+        type: String
+        nullable: false
+        description: "ISODateTime the dataset was last updated."
+      - field: meta.TotalResults
+        type: Integer
+        nullable: false
+        description: "Total number of results in the response."
+      - field: data[].Brand[].BrandName
+        type: String
+        nullable: false
+        description: "Brand name, e.g. HSBC."
+      - field: data[].Brand[].CCC[].Name
+        type: String
+        nullable: true
+        description: "Card product name."
+      - field: data[].Brand[].CCC[].Identification
+        type: String
+        nullable: false
+        description: "Unique product identifier."
+      - field: data[].Brand[].CCC[].Segment
+        type: Array
+        nullable: true
+        description: "Currently only General."
+      - field: data[].Brand[].CCC[].MarketingState
+        type: Array
+        nullable: true
+        description: "Promotional/Regular balance-transfer & purchase-rate sequencing."
+      - field: data[].Brand[].CCC[].CoreProduct
+        type: Object
+        nullable: true
+        description: "Product/T&Cs URLs, min/max credit limits, interest-free days, channels, CardScheme, contactless indicator, account-service-fee + frequency, representative APR."
+      - field: data[].Brand[].CCC[].Repayment
+        type: Object
+        nullable: true
+        description: "MinBalanceRepaymentRate/MinBalanceRepaymentAmount, repayment allocation across balance buckets, non-repayment fee charges."
+      - field: data[].Brand[].CCC[].Eligibility
+        type: Object
+        nullable: true
+        description: "Business + business-owner criteria."
+      - field: data[].Brand[].CCC[].OtherFeesCharges
+        type: Array
+        nullable: true
+        description: "Features/benefits and other fees and charges."
+    error_codes:
+      - code: 400
+        message: "Bad Request"
+        retry: false
+      - code: 429
+        message: "TOO_MANY_REQUESTS"
+        retry: true
+      - code: 500
+        message: "Internal Server Error"
+        retry: true

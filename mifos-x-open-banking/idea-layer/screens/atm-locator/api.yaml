@@ -2,34 +2,34 @@ sibling: api
 schema_version: "4.0"
 feature_id: atm-locator
 api:
-  - id: obp_get_atms
-    endpoint: "GET /obp/v3.0.0/banks/{bankId}/atms"
+  - id: opendata_get_atms
+    endpoint: "GET /open-banking/opendata/v2.4.0/atms"
     tag: ATM
-    note: "Shipped AtmApi.listAtms(bankId) — path-only, no query params. Called once per bank the user holds an account at (AtmRepository.atmsForBanks), results flattened and de-duplicated by id; nearest-first sort and great-circle distance are computed on-device in AtmLocatorViewModel."
+    auth_required: false
+    note: "OBIE Open Data ATM Locator (server/apis/open-data.yaml#get_atms). Unauthenticated — no OAuth2 token, no account-access consent, no scope. Returns every ATM per brand for the banking group; the response is a meta + data[].Brand[] envelope. ATMs are flattened across data[].Brand[].ATM[] and de-duplicated by Identification client-side; nearest-first sort and great-circle distance are computed on-device in AtmLocatorViewModel from ATM[].Location.PostalAddress.GeoLocation.GeographicCoordinates."
     response:
       fields:
-        - id: String
-        - bank_id: String
-        - name: String
-        - address: PostalAddress
-        - location: GeoLocation
-        - more_info: String
-        - is_accessible: String
-        - has_deposit_capability: String
-        - monday: OpeningHours
-        - tuesday: OpeningHours
-        - wednesday: OpeningHours
-        - thursday: OpeningHours
-        - friday: OpeningHours
-        - saturday: OpeningHours
-        - sunday: OpeningHours
+        - meta.LastUpdated: String
+        - meta.TotalResults: Integer
+        - data[].Brand[].BrandName: String
+        - data[].Brand[].ATM[].Identification: String
+        - data[].Brand[].ATM[].SupportedLanguages: Array
+        - data[].Brand[].ATM[].ATMServices: Array
+        - data[].Brand[].ATM[].Accessibility: Array
+        - data[].Brand[].ATM[].SupportedCurrencies: Array
+        - data[].Brand[].ATM[].MinimumPossibleAmount: String
+        - data[].Brand[].ATM[].Branch.Identification: String
+        - data[].Brand[].ATM[].Location.PostalAddress: Object
+        - data[].Brand[].ATM[].Location.PostalAddress.GeoLocation.GeographicCoordinates.Latitude: String
+        - data[].Brand[].ATM[].Location.PostalAddress.GeoLocation.GeographicCoordinates.Longitude: String
     errors:
-      - 401: "Unauthorized — missing or invalid token"
-      - 404: "Bank not found"
+      - 400: "Bad Request"
+      - 429: "TOO_MANY_REQUESTS — retryable"
       - 500: "Internal server error"
 
-  - id: obp_get_branches
-    endpoint: "GET /obp/v3.0.0/banks/{bankId}/branches"
+  - id: opendata_get_branches
+    endpoint: "GET /open-banking/opendata/v2.4.0/branches"
     tag: Branch
     status: deferred
-    note: "DEFERRED — UNUSED by shipped code. The locator feature is ATM-only; no BranchesApi or BranchRepository exists. Retained as a deferred marker only; not consumed anywhere. Lat/long query params dropped — the shipped ATM endpoint takes no query params either."
+    auth_required: false
+    note: "DEFERRED — UNUSED by shipped code. The locator feature is ATM-only; no BranchesApi or BranchRepository exists. OBIE Open Data Branch Locator (server/apis/open-data.yaml#get_branches); unauthenticated. Retained as a deferred marker only; data[].Brand[].Branch[] (Identification, Type Physical|Mobile, PostalAddress.GeoLocation) is the OBIE shape it would return if wired."

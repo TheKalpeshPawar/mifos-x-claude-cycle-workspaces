@@ -289,13 +289,28 @@ state_model:
   content_type: SendMoneyHubContent
   content_fields:
     - name: accounts
-      type: List<Account>
+      type: "List<OBAccount6>"
     - name: selectedAccountId
       type: String
     - name: recentRecipients
       type: List<HubRecipient>
     - name: allBeneficiaries
       type: List<HubRecipient>
+  state_field_types:
+    - name: account.id
+      type: "Data.Account[].AccountId (String)"
+    - name: account.label
+      type: "Data.Account[].Nickname (String, fallback Account[].Name)"
+    - name: account.identification
+      type: "Data.Account[].Account[].Identification (String)"
+    - name: beneficiary.id
+      type: "Data.Beneficiary[].BeneficiaryId (String)"
+    - name: beneficiary.name
+      type: "Data.Beneficiary[].CreditorAccount.Name (String)"
+    - name: beneficiary.identification
+      type: "Data.Beneficiary[].CreditorAccount.Identification (String)"
+    - name: beneficiary.scheme
+      type: "Data.Beneficiary[].CreditorAccount.SchemeName (String)"
   states:
     - Loading
     - Content
@@ -331,69 +346,48 @@ state_model:
     - UserPreferencesRepository
 
 api:
-  - endpoint: "GET /obp/v3.0.0/banks/{bankId}/accounts"
-    tag: Accounts
-    description: "List the user's accounts to populate the FROM ACCOUNT selector; default account from UserPreferencesRepository."
+  - endpoint: "GET /obie/open-banking/v4.0/aisp/accounts"
+    tag: AISP
+    description: "List the PSU's authorised accounts to populate the FROM ACCOUNT selector. Requires an authorised account-access-consent (Status AUTH) + an authorization-code token (scope accounts)."
     response:
       fields:
-        - name: accounts
-          type: List<Account>
-        - name: id
+        - name: Data.Account[].AccountId
           type: String
-        - name: label
+        - name: Data.Account[].Nickname
           type: String
-        - name: balance
-          type: MoneyAmount
-  - endpoint: "GET /obp/v4.0.0/banks/{bankId}/accounts/{accountId}/owner/counterparties"
-    tag: Counterparties
-    description: "Selected account's beneficiaries (filtered is_beneficiary). Used to build recent recipients + all beneficiaries lists. viewId fixed to owner in the shipped path."
+        - name: Data.Account[].Currency
+          type: String
+        - name: Data.Account[].Account[].Identification
+          type: String
+  - endpoint: "GET /obie/open-banking/v4.0/aisp/accounts/{AccountId}/balances"
+    tag: AISP
+    description: "Available balance for the selected source account, shown in the FROM ACCOUNT row. Requires ReadBalances on the account-access-consent. Prefer Type InterimAvailable."
     response:
       fields:
-        - name: counterparties
-          type: List<Counterparty>
-        - name: counterparty_id
+        - name: Data.Balance[].Amount.Amount
           type: String
-        - name: name
+        - name: Data.Balance[].Amount.Currency
           type: String
-        - name: other_account_routing_scheme
+        - name: Data.Balance[].Type
           type: String
-        - name: other_account_routing_address
+  - endpoint: "GET /obie/open-banking/v4.0/aisp/accounts/{AccountId}/beneficiaries"
+    tag: AISP
+    description: "Saved beneficiaries linked to the selected account — builds the recent recipients + all beneficiaries lists. Requires ReadBeneficiariesBasic/Detail on the account-access-consent. The 'SEPA · BankName ·· last4' subtitle is derived from CreditorAccount.SchemeName + Identification (no separate bank-directory lookup under OBIE). 'Recent recipients' is a client-side ordering — OBIE AIS has no payee-recency timeline."
+    response:
+      fields:
+        - name: Data.Beneficiary[].BeneficiaryId
           type: String
-        - name: other_bank_routing_scheme
+        - name: Data.Beneficiary[].CreditorAccount.Name
           type: String
-        - name: other_bank_routing_address
+        - name: Data.Beneficiary[].CreditorAccount.SchemeName
+          type: String
+        - name: Data.Beneficiary[].CreditorAccount.Identification
           type: String
     errors:
       - code: 401
-        message: "OBP-20001: User not logged in"
-      - code: 404
-        message: "OBP-30018: Bank Account not found"
-  - endpoint: "GET /obp/v4.0.0/banks/{bankId}/accounts/{accountId}/owner/transaction-requests"
-    tag: TransactionRequests
-    description: "Past transaction-requests for the account — the authoritative record of which counterparty/IBAN/sandbox-account was paid and when. Recent-recipients recency is derived from this (OBP transactions do not reliably identify the payee)."
-    response:
-      fields:
-        - name: transaction_requests
-          type: List<TransactionRequestSummary>
-        - name: start_date
-          type: DateTime
-        - name: details.to_counterparty.counterparty_id
-          type: String
-        - name: details.to_sepa.iban
-          type: String
-        - name: details.to_sandbox_tan.account_id
-          type: String
-  - endpoint: "GET /obp/v4.0.0/banks/{bankId}"
-    tag: Banks
-    description: "Bank directory entry (cached) used to resolve each beneficiary's bank display name (BanksRepository.bankName) for the 'SEPA · BankName ·· last4' subtitle when the routing scheme is OBP."
-    response:
-      fields:
-        - name: full_name
-          type: String
-        - name: bank_routings
-          type: List<AccountRouting>
-        - name: attributes
-          type: List<BankAttribute>
+        message: "UNAUTHORIZED"
+      - code: 403
+        message: "OB.Resource.InvalidConsentStatus"
 
 dependencies:
   tier: feature
