@@ -3,61 +3,90 @@
 
 schema_version: "1.0"
 run:
-  at: "2026-06-11T01:57:27Z"
+  at: "2026-06-11T02:37:14Z"
   args: ""
   scope: full
-  note: "PFM v2 screen reconciliation — created missing flow.yaml siblings + propagated 3 screens into roster artifacts. Workspace-only; no framework files touched."
+  note: "Post-rebase re-validation. Idea-layer already in sync + committed (workspace 2ebbeee5). All steps pass or skip; no source changes this run. Server-data checks ignored (backend.owned=false)."
 steps:
   - n: 0
     name: "init"
     status: complete
-    at: "2026-06-11T01:57:27Z"
+    at: "2026-06-11T02:37:14Z"
   - n: "0A"
     name: "design_read drift check"
     status: complete
-    at: "2026-06-11T01:57:27Z"
-    result: "design_read block present in idea-plan.yaml (DR1-DR5 pass) — continue"
+    at: "2026-06-11T02:37:14Z"
+    result: "design_read block present in idea-plan.yaml (DR1-DR5 pass)"
+  - n: "0.TRAIN"
+    name: "training context + master-gen gate"
+    status: complete
+    at: "2026-06-11T02:37:14Z"
+    result: "TRAINING_MASTER.yaml present (6299 bytes) — generation skipped"
   - n: 1
     name: "verify (structural)"
     status: complete
-    at: "2026-06-11T01:57:27Z"
-    result: "sibling + component audits; only structural gap was 2 missing flow.yaml"
+    at: "2026-06-11T02:37:14Z"
+    result: "sibling 46/46; all 7 artifact groups present; render-auditor + server-data checks skipped"
   - n: "1.S"
     name: "sibling-completeness"
     status: complete
-    at: "2026-06-11T01:57:27Z"
-    result: "HALT cleared — created flow.yaml for business-insights + pfm-settings; 46/46 complete"
+    at: "2026-06-11T02:37:14Z"
+    result: "46/46 — every screen has ui.yaml + flow.yaml"
+  - n: "2.9"
+    name: "manifest-rebuild"
+    status: complete
+    at: "2026-06-11T02:37:14Z"
   - n: "2.FD"
     name: "deferred-reconcile"
     status: skipped
-    at: "2026-06-11T01:57:27Z"
-    result: "no _deferred/ dirs and no FD failures — nothing to reconcile"
+    at: "2026-06-11T02:37:14Z"
+    result: "no _deferred/ dirs"
   - n: "3.0"
     name: "enrichment-matrix"
     status: skipped
-    at: "2026-06-11T01:57:27Z"
-    result: "auditor test-renderer.js --full-audit broken (retired screens/renderers dep, RULE-PROTO-RENDER-LLM-001); all 46 screens already approved — no enrichment due"
+    at: "2026-06-11T02:37:14Z"
+    result: "test-renderer.js --full-audit broken (retired screens/renderers dep); all 46 approved — no enrichment due"
+  - n: "3.7"
+    name: "convergent-loop (RULE-IDEA-CONVERGENT-LOOP-001 — new this rebase)"
+    status: skipped
+    at: "2026-06-11T02:37:14Z"
+    result: "opt-in only — no --converge flag, idea-plan.yaml ship_gate.requires_converge not set"
   - n: 4
     name: "artifacts"
     status: complete
-    at: "2026-06-11T01:57:27Z"
-    result: >-
-      Gap-filled business-insights, pfm-settings, standing-order-edit into flows/consumer-banking.yaml,
-      APP_FLOW.mmd, server/api_manifest.yaml (pfm group), dashboard/DEV_STATUS.md (now 46 screens).
+    at: "2026-06-11T02:37:14Z"
+    result: "staleness-aware — artifacts fresh (committed 2ebbeee5); 0 regenerated"
+  - n: "4.DOCSET"
+    name: "doc-set regen (new this rebase)"
+    status: skipped
+    at: "2026-06-11T02:37:14Z"
+    result: "DOC_SET_STATE.yaml / IDEA_DOC_SET.yaml absent — not configured"
   - n: "4.VERIFY"
-    name: "artifacts (existence gate)"
+    name: "artifact existence gate"
     status: complete
-    at: "2026-06-11T01:57:27Z"
-    result: "core artifacts present; prototype/index.html intentionally absent (RULE-PROTO-RENDER-LLM-001 — preview HTML used instead)"
+    at: "2026-06-11T02:37:14Z"
+    result: "7 groups present (APP_FLOW.mmd, TAG_REGISTRY.yaml, DEV_STATUS.md, flows x3, api_manifest.yaml, apis x21); prototype/index.html N/A per RULE-PROTO-RENDER-LLM-001"
+  - n: "5.5"
+    name: "preview-render"
+    status: skipped
+    at: "2026-06-11T02:37:14Z"
+    result: "design.icon_library not declared in PROJECT_CONFIG"
+  - n: "S.RUNTIME"
+    name: "on-device reachability smoke (RULE-IDEA-RUNTIME-SMOKE-001 — new this rebase)"
+    status: skipped
+    at: "2026-06-11T02:37:14Z"
+    result: "opt-in only — no --runtime-smoke flag, idea-plan.yaml ship_gate.requires_smoke_run not set"
   - n: 5
     name: "complete"
     status: complete
-    at: "2026-06-11T01:57:27Z"
+    at: "2026-06-11T02:37:14Z"
 skipped:
   - step: "STEP 3 (enrich)"
-    reason: "all 46 screens already approved; enrichment-matrix auditor broken (framework bug, not fixable from workspace per user directive)"
+    reason: "all 46 screens approved; enrichment-matrix auditor broken (framework bug)"
+  - step: "STEP 3.7 convergent-loop / S.RUNTIME smoke / 4.DOCSET (new opt-in gates)"
+    reason: "not opted in (no flags, no ship_gate config, no doc-set state)"
   - step: "STEP 5.5 (render)"
-    reason: "design.icon_library not declared in PROJECT_CONFIG — render would fail (documented skip); 7 screens pending preview"
+    reason: "design.icon_library not declared"
 ignored_warnings:
-  - "STEP 3.0 test-renderer.js --full-audit framework drift (legacy renderers dep) — framework file, not touched per user directive"
-  - "Owned-backend checks (server/tables, apis↔flows 1:1) — backend.owned=false, external OBP consumer"
+  - "Server-data checks (api_manifest/apis/tables) — backend.owned=false, external OBP consumer (ignored per user directive)"
+  - "STEP 3.0 test-renderer.js --full-audit — framework bug (legacy renderers dep, unchanged by the 2026-06-11 rebase)"

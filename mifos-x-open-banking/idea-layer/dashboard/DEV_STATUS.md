@@ -7,10 +7,10 @@
 | Metric | Value |
 |--------|-------|
 | Total Features | 46 |
-| Approved | 45 (98%) |
-| Enriched | 1 (standing-order-edit) |
+| Approved | 46 (100%) |
+| Enriched | 0 |
 | Draft | 0 |
-| Exports Complete | 39/46 (7 pending export) |
+| Exports Complete | 42/46 (4 pending export) |
 | Preview HTML | 157 files (7 screens pending render) |
 | Flows | 3 (app-main, consumer-banking, field-officer) |
 | Component Types | 20 used, 20 registered |
@@ -29,7 +29,7 @@
 | 6 | application-detail | field-officer | approved | 95 | yes | yes | yes |
 | 7 | atm-locator | consumer | approved | 95 | yes | yes | yes |
 | 8 | beneficiaries | consumer | approved | 95 | yes | yes | yes |
-| 9 | business-insights | consumer | approved | 95 | no | no | yes |
+| 9 | business-insights | consumer | approved | 95 | yes | no | yes |
 | 10 | card-detail | consumer | approved | 95 | yes | yes | yes |
 | 11 | cards | consumer | approved | 95 | yes | yes | yes |
 | 12 | change-password | shared | approved | 93 | yes | yes | yes |
@@ -52,7 +52,7 @@
 | 29 | meetings | field-officer | approved | 95 | yes | yes | yes |
 | 30 | notifications | shared | approved | 95 | yes | yes | yes |
 | 31 | pfm-dashboard | consumer | approved | 95 | yes | yes | yes |
-| 32 | pfm-settings | consumer | approved | 95 | no | no | yes |
+| 32 | pfm-settings | consumer | approved | 95 | yes | no | yes |
 | 33 | privacy-policy | shared | approved | 92 | no | no | n/a |
 | 34 | products | consumer | approved | 95 | yes | yes | yes |
 | 35 | profile | consumer | approved | 95 | yes | yes | yes |
@@ -61,7 +61,7 @@
 | 38 | settings | shared | approved | 95 | yes | yes | n/a |
 | 39 | splash | shared | approved | 95 | yes | yes | n/a |
 | 40 | standing-order-detail | consumer | approved | 93 | no | no | yes |
-| 41 | standing-order-edit | consumer | enriched | 94 | no | no | yes |
+| 41 | standing-order-edit | consumer | approved | 94 | yes | no | yes |
 | 42 | standing-orders | consumer | approved | 95 | yes | yes | yes |
 | 43 | terms-of-service | shared | approved | 92 | no | no | n/a |
 | 44 | transaction-detail | consumer | approved | 95 | yes | yes | yes |
