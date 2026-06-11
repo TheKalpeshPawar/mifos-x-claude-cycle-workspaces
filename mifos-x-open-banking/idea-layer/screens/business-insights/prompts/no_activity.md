@@ -1,5 +1,5 @@
 ---
-ui_yaml_sha: 38a15c4cf7bc2c6f619ed8622965a7de0f0a6430f5f64b69de9858bc7369dd62
+ui_yaml_sha: 703dede95e22a6c8002180e4e78dc41fac4d66f5b6137b058715a4b52916a469
 design_md_hash: 71b53c295bf863d34057f16264caf37a11512e794d356b3bec219352550d05ec
 app_shell_hash: ad7a6b42b2ae10e63ef270f15d857bd44445d775e8d9b09313b31e6569df95b4
 design_read_hash: 1639ea0545fdbc1ba9ce1eef5369eae224a6f4f57f07f0639b699652daeb8558
@@ -24,7 +24,7 @@ craft_rules_version: v1.0.0
 
 # business-insights — no_activity state
 
-> Auto-generated from screens/business-insights/ui.yaml @ SHA e39523368e2b2b02
+> Auto-generated from screens/business-insights/ui.yaml @ SHA 4e5b286f65157c36
 > Stitch DesignSystem: 2005644667042354169
 > DO NOT redeclare colors / fonts / spacing — they live in DESIGN.md.
 

@@ -1,0 +1,43 @@
+sibling: data-flow
+schema_version: "4.0"
+feature_id: pfm-settings
+entries:
+  - screen_id: pfm-settings
+    trigger: on_mount
+    endpoints:
+      - obp_personal_data_fields
+    direction: read
+    dtos:
+      - name: PersonalDataField
+        role: response
+        api_id: obp_personal_data_fields
+    produces_state: populated
+    notes: >-
+      Reads the persisted pfm_base_currency field (append-only store, newest row wins).
+      When no row exists, the selection is seeded from the user's default account currency.
+    error_paths:
+      - error_code: 401
+        behavior: navigate_login
+      - error_code: 500
+        behavior: error_state
+
+  - screen_id: pfm-settings
+    trigger: on_interact
+    event: SelectBaseCurrency
+    endpoints:
+      - obp_personal_data_field_create
+    direction: write
+    dtos:
+      - name: PersonalDataField
+        role: request
+        api_id: obp_personal_data_field_create
+    produces_state: populated
+    notes: >-
+      Persists the chosen base currency by appending a new pfm_base_currency row
+      (name=pfm_base_currency, value=selected currency). Optimistic UI selection;
+      on success a confirmation snackbar appears, on failure the selection reverts.
+    error_paths:
+      - error_code: 400
+        behavior: revert_and_toast
+      - error_code: 401
+        behavior: navigate_login

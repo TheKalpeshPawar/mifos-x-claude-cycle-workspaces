@@ -1,0 +1,57 @@
+sibling: docs
+schema_version: "4.0"
+feature_id: business-insights
+name: Business Insights
+feature: business-insights
+flavor: consumer
+status: enriched
+quality_score: 95
+contract_version: "1.1.0"
+approved_at: "2026-06-07T13:10:00Z"
+approved_by: "user via /goal-implement-project pfm-multi-account-budget-strategy"
+capabilities:
+  - has_ui
+  - has_api
+summary: >-
+  Cash-flow personal-finance dashboard scoped to BUSINESS-classified accounts.
+  Frames a period as Money In / Money Out / Net, breaks expenses into an
+  8-category business taxonomy via an expenses-only donut, and surfaces top
+  counterparties. Authored as a write-back from the shipped
+  feature/business-insights module (PFM v2 epic, 8 VM tests green).
+behavior:
+  cash_flow_framing: "Money In (credits), Money Out (debits), Net = In - Out. Business accounts are tracked by cash flow, not budgets."
+  no_budgets: "By design — business accounts are independent books; no budget envelopes or progress bars."
+  taxonomy:
+    description: "Fixed 8-category business taxonomy applied client-side to debits."
+    categories:
+      - "Payroll & Contractors"
+      - "Tax"
+      - "Rent & Facilities"
+      - "Software & Subscriptions"
+      - "Insurance"
+      - "Treasury & Transfers"
+      - "Income"
+      - "Other"
+  income_filter: "Income absorbs credit keywords for categorisation but is EXCLUDED from the expenses-only donut and category rows."
+  account_scope: "Picker restricted to accounts whose OBP product_code resolves to BUSINESS via a per-account detail fetch (the list endpoint returns product_code null)."
+  period_selection: "Preset period chips plus a custom range; all period filtering runs client-side because the sandbox transactions endpoint caps at 50 newest and ignores date params."
+  counterparties: "Top counterparties aggregated by resolved display name — never the OBP login username (per workspace counterparty-naming hard rule)."
+states:
+  - loading
+  - populated
+  - empty
+  - no_activity
+  - error
+screens:
+  - id: business-insights
+    label: Business Insights
+    route: /business-insights
+    scroll: vertical
+dependencies:
+  tier: feature
+  features:
+    - accounts
+    - transactions
+data_sources:
+  - obp_account_detail
+  - obp_transactions_list

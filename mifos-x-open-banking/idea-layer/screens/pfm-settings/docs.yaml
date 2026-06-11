@@ -1,0 +1,38 @@
+sibling: docs
+schema_version: "4.0"
+feature_id: pfm-settings
+name: PFM Settings
+feature: pfm-settings
+flavor: consumer
+status: enriched
+quality_score: 96
+contract_version: "1.1.0"
+capabilities:
+  - has_ui
+  - has_api
+overview: >-
+  Lets the user pick the base currency for their unified spending insights. The radio
+  list offers the distinct currencies across the user's personal accounts. The selection
+  persists server-side as the append-only pfm_base_currency personal-data-field (newest
+  row wins on read) and, when never set, is seeded from the default account's currency.
+  The spending insights dashboard re-denominates every transaction into this currency
+  using live OBP /fx rates.
+screens:
+  - id: pfm-settings
+    name: PFM Settings
+    archetype: settings
+    route: /pfm-settings
+    scroll: vertical
+entry_points:
+  - from: pfm-dashboard
+    via: "tune top-bar action (open_pfm_settings → PfmSettingsRoute)"
+data:
+  storage_location: "Server-side OBP personal-data-field 'pfm_base_currency' (append-only; newest row per name wins on read)."
+  network_data_policy: "Reads obp_personal_data_fields on entry; writes obp_personal_data_field_create on select. The dashboard separately fetches obp_fx_rate to convert spending."
+  error_recovery: "Initial load failure → error state with retry. Save failure → selection reverts and a retry toast is shown."
+  cache_lifecycle: "No long-lived local cache; the persisted base currency is re-read on each entry. Default-account seeding only applies when no row exists yet."
+dependencies:
+  tier: feature
+  features:
+    - pfm-dashboard
+    - accounts

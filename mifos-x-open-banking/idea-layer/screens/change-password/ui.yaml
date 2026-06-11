@@ -3,7 +3,7 @@ name: "Change Password"
 feature: change-password
 flavor: shared
 status: enriched
-quality_score: 95
+quality_score: 96
 status_history:
   - from: approved
     to: enriched
@@ -11,6 +11,12 @@ status_history:
     by: "/idea enrich"
     quality_score: 95
     note: "Added archetype + states_handled to screens[] entry (Category 12 — viewmodel already present); verified component vocabulary (stack/text/card/input/divider/progress_bar/banner/button all in components.yaml); 7 states with layout blocks, full state_model, api response+errors, dependencies intact"
+  - from: enriched
+    to: enriched
+    at: "2026-06-11"
+    by: "/idea enrich"
+    quality_score: 96
+    note: "Added validation{} blocks to all 3 password inputs (required/min-length/complexity/match/server-side current-password check per RULE-IDEA-FORM-VALIDATION-001); corrected initial_state idle→content (submit-only form, no data-loading api); added required_fields[] to form-field + submit test_context; no structural/component/contract changes"
 contract_version: "1.1.0"
 approve_hash: "sha256:b2c3d4e5f6a7b8c9d0e1f2a3b4c5d6e7f8a9b0c1d2e3f4a5b6c7d8e9f0a1b2c3"
 approved_at: "2026-05-28T14:30:00Z"
@@ -130,6 +136,12 @@ components:
     on_click:
       action: focus_field
       target: chpw_current_password_input
+    validation:
+      required: true
+      required_message: "Enter your current password"
+      server_side:
+        check: current_password_match
+        error_message: "The current password you entered is incorrect. Please try again."
     a11y:
       role: textbox
       label: "Current password"
@@ -139,6 +151,7 @@ components:
       ime_action: next
     test_context:
       purpose: "Validates the user knows their existing password before allowing a change"
+      required_fields: [currentPassword]
       interaction_type: action
       data_driven: false
 
@@ -173,6 +186,18 @@ components:
     on_click:
       action: focus_field
       target: chpw_new_password_input
+    validation:
+      required: true
+      required_message: "Enter a new password"
+      min_length: 8
+      min_length_message: "Password must be at least 8 characters"
+      rules:
+        - id: complexity
+          requirement: uppercase_lowercase_number_special
+          message: "Password must be at least 8 characters with uppercase, lowercase, number, and special character."
+        - id: differs_from_current
+          requirement: not_equal_to_current_password
+          message: "New password must be different from your current password"
     a11y:
       role: textbox
       label: "New password"
@@ -182,6 +207,7 @@ components:
       ime_action: next
     test_context:
       purpose: "Input for the desired new password; triggers strength evaluation on each keystroke"
+      required_fields: [newPassword]
       interaction_type: action
       data_driven: false
 
@@ -260,6 +286,11 @@ components:
     on_click:
       action: focus_field
       target: chpw_confirm_password_input
+    validation:
+      required: true
+      required_message: "Re-enter your new password"
+      matches_field: chpw_new_password_input
+      match_message: "Passwords don't match"
     a11y:
       role: textbox
       label: "Confirm new password"
@@ -269,6 +300,7 @@ components:
       ime_action: done
     test_context:
       purpose: "Confirmation field; validated against new password on submit"
+      required_fields: [confirmPassword, newPassword]
       interaction_type: action
       data_driven: false
 
@@ -336,6 +368,7 @@ components:
       focusable: true
     test_context:
       purpose: "Triggers ChangePasswordViewModel.onSubmit(); disabled while submitting or on success"
+      required_fields: [currentPassword, newPassword, confirmPassword]
       interaction_type: action
       data_driven: false
 
@@ -344,7 +377,7 @@ responsive:
   baseline_width: 390
 
 states:
-  initial_state: idle
+  initial_state: content
   loading:
     layout: { type: column, padding: spacing.lg }
     visible_components:

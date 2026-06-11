@@ -1,9 +1,9 @@
 ---
-ui_yaml_sha: cc33f3fd8a231606a80547fce8bb4ae6c59038ad0c98c051674dcfca0bdadb02
+ui_yaml_sha: 9671a250ca4cacdcfeb3703137d6e76aa95cd9da0dc409c144a6ac6c99737442
 design_md_hash: 71b53c295bf863d34057f16264caf37a11512e794d356b3bec219352550d05ec
 app_shell_hash: ad7a6b42b2ae10e63ef270f15d857bd44445d775e8d9b09313b31e6569df95b4
 design_read_hash: 1639ea0545fdbc1ba9ce1eef5369eae224a6f4f57f07f0639b699652daeb8558
-content_hash: faf080b9e257deb2a84210b46dc0325cd9e8bfce242917fa270ba8e3e145d544
+content_hash: d09f3260aa922594c1550d3b43655b372f3b5a8bfffcfe9df45f2643544b3556
 
 design_read_aesthetic: taste-default
 design_read_dials: {variance: 4, motion: 3, density: 5}
@@ -24,7 +24,7 @@ craft_rules_version: v1.0.0
 
 # pfm-settings — error state
 
-> Auto-generated from screens/pfm-settings/ui.yaml @ SHA 97ac98d224522a1c
+> Auto-generated from screens/pfm-settings/ui.yaml @ SHA 747e40df67c2bd9c
 > Stitch DesignSystem: 2005644667042354169
 > DO NOT redeclare colors / fonts / spacing — they live in DESIGN.md.
 
@@ -39,7 +39,7 @@ craft_rules_version: v1.0.0
 
 ## Composition (top → bottom)
 1. **text** (#settings_section_label) — label: "Base currency section label", content: "BASE CURRENCY"
-2. **text** (#settings_section_help) — label: "Base currency explanation", content: "Spending across all personal accounts is converted into this currency."
+2. **text** (#settings_section_help) — label: "Base currency explanation", content: "Spending across all your personal accounts is converted into this currency on yo"
 3. **list_item** (#currency_option_eur) — label: "EUR option", content: "EUR"
 4. **list_item** (#currency_option_gbp) — label: "GBP option", content: "GBP"
 

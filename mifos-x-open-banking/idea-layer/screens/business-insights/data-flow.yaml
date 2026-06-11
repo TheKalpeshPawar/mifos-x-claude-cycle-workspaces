@@ -1,0 +1,86 @@
+sibling: data-flow
+schema_version: "4.0"
+feature_id: business-insights
+entries:
+  - screen_id: business-insights
+    trigger: on_mount
+    endpoints:
+      - obp_account_detail
+    direction: read
+    dtos:
+      - name: Account
+        role: response
+        api_id: obp_account_detail
+    produces_state: loading
+    notes: "Per-account detail fetch resolves product_code; only BUSINESS-classified accounts enter the picker. List endpoint returns product_code null, so detail fetch is mandatory."
+    error_paths:
+      - error_code: 401
+        behavior: navigate_login
+      - error_code: 404
+        behavior: error_state
+
+  - screen_id: business-insights
+    trigger: on_mount
+    endpoints:
+      - obp_transactions_list
+    direction: read
+    dtos:
+      - name: Transaction
+        role: response
+        api_id: obp_transactions_list
+    produces_state: populated
+    notes: "Transactions for the in-scope BUSINESS account; sandbox caps at 50 newest and ignores date params, so period filtering and 8-category taxonomy categorisation run client-side. Income credits are categorised but excluded from the expenses-only donut. Zero transactions in period -> no_activity; no BUSINESS account -> empty."
+    error_paths:
+      - error_code: 401
+        behavior: navigate_login
+      - error_code: 404
+        behavior: error_state
+
+  - screen_id: business-insights
+    trigger: on_interact
+    event: SelectAccount
+    endpoints:
+      - obp_transactions_list
+    direction: read
+    dtos:
+      - name: Transaction
+        role: response
+        api_id: obp_transactions_list
+    produces_state: loading
+    notes: "open_account_picker selects a different BUSINESS account; re-runs cash-flow and categorisation for the new account."
+    error_paths:
+      - error_code: 401
+        behavior: navigate_login
+      - error_code: 404
+        behavior: error_state
+
+  - screen_id: business-insights
+    trigger: on_interact
+    event: SelectPeriod
+    endpoints: []
+    direction: read
+    dtos: []
+    produces_state: populated
+    notes: "Period chip / custom range change re-filters already-fetched transactions client-side; no network call (sandbox ignores date params)."
+
+  - screen_id: business-insights
+    trigger: on_interact
+    event: RetryLoad
+    endpoints:
+      - obp_account_detail
+      - obp_transactions_list
+    direction: read
+    dtos:
+      - name: Account
+        role: response
+        api_id: obp_account_detail
+      - name: Transaction
+        role: response
+        api_id: obp_transactions_list
+    produces_state: loading
+    notes: "retry_load re-attempts the failed insights load from the error state."
+    error_paths:
+      - error_code: 401
+        behavior: navigate_login
+      - error_code: 404
+        behavior: error_state
