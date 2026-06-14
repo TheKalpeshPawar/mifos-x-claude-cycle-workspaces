@@ -1,120 +1,102 @@
 sibling: demo-data
 schema_version: "4.0"
 feature_id: standing-order-detail
-name: "Standing Order Detail"
-feature: standing-orders
-flavor: consumer
-status: approved
 
-dto_type: StandingOrderDetail
-dto_fields:
-  - field: standingOrderId
-    type: String
-  - field: beneficiaryName
-    type: String
-  - field: beneficiaryIban
-    type: String
-  - field: beneficiaryBankName
-    type: String
-  - field: amount
-    type: BigDecimal
-  - field: currency
-    type: String
-  - field: frequency
-    type: StandingOrderFrequency
-  - field: startDate
-    type: LocalDate
-  - field: nextPaymentDate
-    type: LocalDate
-  - field: finalDate
-    type: "LocalDate?"
-  - field: status
-    type: StandingOrderStatus
-  - field: executionHistory
-    type: List<StandingOrderExecution>
+# OBIE AISP v4.0 demo envelopes for the read-only standing-order detail screen.
+# OBIE has no per-item GET — detail is selected from the list (StandingOrderId
+# == route param, here so-003-james-whitfield). Recent Executions are derived
+# from the account transactions filtered to this standing order (newest first).
+# Account consistent with standing-orders list: acc-30000012345678 / Oliver Bennett.
+collections:
+  get_account_standing_orders:
+    dto: OBReadStandingOrder6
+    description: "200 OK — standing-order list; the detail screen selects so-003-james-whitfield (Monthly Rent)."
+    item:
+      Data:
+        StandingOrder:
+          - AccountId: "acc-30000012345678"
+            StandingOrderId: "so-003-james-whitfield"
+            Reference: "Monthly Rent"
+            StandingOrderStatusCode: "Active"
+            Frequency: "EvryMonth"
+            FirstPaymentDateTime: "2026-01-01T00:00:00+00:00"
+            NextPaymentDateTime: "2026-07-01T00:00:00+01:00"
+            NextPaymentAmount:
+              Amount: "1200.00"
+              Currency: "GBP"
+            CreditorAccount:
+              SchemeName: "UK.OBIE.SortCodeAccountNumber"
+              Identification: "20415587224190"
+              Name: "James Whitfield"
+      Links:
+        Self: "https://secure.sandbox.ob.hsbc.co.uk/obie/open-banking/v4.0/aisp/accounts/acc-30000012345678/standing-orders"
+      Meta:
+        TotalPages: 1
 
-demo_entries:
-  - id: so_rent_payment
-    standingOrderId: "SO-2026-0001"
-    beneficiaryName: "Landlord Holdings Ltd"
-    beneficiaryIban: "GB29NWBK60161331926819"
-    beneficiaryBankName: "NatWest Bank"
-    amount: "1200.00"
-    currency: "GBP"
-    frequency: "MONTHLY"
-    startDate: "2026-01-01"
-    nextPaymentDate: "2026-06-01"
-    finalDate: "2026-12-31"
-    status: "ACTIVE"
-    executionHistory:
-      - executionDate: "2026-05-01"
-        status: "COMPLETED"
-        amount: "1200.00"
-      - executionDate: "2026-04-01"
-        status: "COMPLETED"
-        amount: "1200.00"
-      - executionDate: "2026-03-01"
-        status: "COMPLETED"
-        amount: "1200.00"
-      - executionDate: "2026-02-01"
-        status: "FAILED"
-        failureReason: "INSUFFICIENT_FUNDS"
-        amount: "1200.00"
-      - executionDate: "2026-01-01"
-        status: "COMPLETED"
-        amount: "1200.00"
+  get_account_transactions:
+    dto: OBReadTransaction6
+    description: "200 OK — account transactions filtered to this standing order; the Recent Executions list (newest first, capped at 5)."
+    item:
+      Data:
+        Transaction:
+          - AccountId: "acc-30000012345678"
+            TransactionId: "txn-so003-20260601"
+            TransactionReference: "Monthly Rent"
+            CreditDebitIndicator: "Debit"
+            Status: "Booked"
+            BookingDateTime: "2026-06-01T06:00:12+01:00"
+            ValueDateTime: "2026-06-01T06:00:12+01:00"
+            TransactionInformation: "Standing order to James Whitfield"
+            Amount:
+              Amount: "1200.00"
+              Currency: "GBP"
+            CreditorAccount:
+              SchemeName: "UK.OBIE.SortCodeAccountNumber"
+              Identification: "20415587224190"
+              Name: "James Whitfield"
+          - AccountId: "acc-30000012345678"
+            TransactionId: "txn-so003-20260501"
+            TransactionReference: "Monthly Rent"
+            CreditDebitIndicator: "Debit"
+            Status: "Booked"
+            BookingDateTime: "2026-05-01T06:00:09+01:00"
+            ValueDateTime: "2026-05-01T06:00:09+01:00"
+            TransactionInformation: "Standing order to James Whitfield"
+            Amount:
+              Amount: "1200.00"
+              Currency: "GBP"
+            CreditorAccount:
+              SchemeName: "UK.OBIE.SortCodeAccountNumber"
+              Identification: "20415587224190"
+              Name: "James Whitfield"
+          - AccountId: "acc-30000012345678"
+            TransactionId: "txn-so003-20260401"
+            TransactionReference: "Monthly Rent"
+            CreditDebitIndicator: "Debit"
+            Status: "Booked"
+            BookingDateTime: "2026-04-01T06:00:15+01:00"
+            ValueDateTime: "2026-04-01T06:00:15+01:00"
+            TransactionInformation: "Standing order to James Whitfield"
+            Amount:
+              Amount: "1200.00"
+              Currency: "GBP"
+            CreditorAccount:
+              SchemeName: "UK.OBIE.SortCodeAccountNumber"
+              Identification: "20415587224190"
+              Name: "James Whitfield"
+      Links:
+        Self: "https://secure.sandbox.ob.hsbc.co.uk/obie/open-banking/v4.0/aisp/accounts/acc-30000012345678/transactions"
+      Meta:
+        TotalPages: 1
 
-  - id: so_netflix_subscription
-    standingOrderId: "SO-2026-0002"
-    beneficiaryName: "Netflix International B.V."
-    beneficiaryIban: "NL89ABNA0417164300"
-    beneficiaryBankName: "ABN AMRO"
-    amount: "15.99"
-    currency: "GBP"
-    frequency: "MONTHLY"
-    startDate: "2025-06-07"
-    nextPaymentDate: "2026-06-07"
-    finalDate: null
-    status: "ACTIVE"
-    executionHistory:
-      - executionDate: "2026-05-07"
-        status: "COMPLETED"
-        amount: "15.99"
-      - executionDate: "2026-04-07"
-        status: "COMPLETED"
-        amount: "15.99"
-      - executionDate: "2026-03-07"
-        status: "COMPLETED"
-        amount: "15.99"
-      - executionDate: "2026-02-07"
-        status: "COMPLETED"
-        amount: "15.99"
-      - executionDate: "2026-01-07"
-        status: "COMPLETED"
-        amount: "15.99"
-
-  - id: so_gym_membership
-    standingOrderId: "SO-2026-0003"
-    beneficiaryName: "PureGym Limited"
-    beneficiaryIban: "GB94BARC20714783608387"
-    beneficiaryBankName: "Barclays Bank"
-    amount: "45.00"
-    currency: "GBP"
-    frequency: "MONTHLY"
-    startDate: "2026-01-15"
-    nextPaymentDate: "2026-06-15"
-    finalDate: null
-    status: "PAUSED"
-    executionHistory:
-      - executionDate: "2026-04-15"
-        status: "COMPLETED"
-        amount: "45.00"
-      - executionDate: "2026-03-15"
-        status: "COMPLETED"
-        amount: "45.00"
-      - executionDate: "2026-02-15"
-        status: "COMPLETED"
-        amount: "45.00"
-      - executionDate: "2026-01-15"
-        status: "COMPLETED"
-        amount: "45.00"
+  # 403 OB.Resource.InvalidConsentStatus driving the error state.
+  get_account_standing_orders.error:
+    dto: OBErrorResponse1
+    description: "403 OBErrorResponse1 — account-access-consent not authorised or missing ReadStandingOrders/ReadTransactions."
+    item:
+      Code: "403 Forbidden"
+      Id: "err-so-detail-7d22a9"
+      Message: "Invalid consent status"
+      Errors:
+        - ErrorCode: "UK.OBIE.Resource.InvalidConsentStatus"
+          Message: "The account-access-consent is not in an authorised state for ReadStandingOrders/ReadTransactions."

@@ -1,53 +1,105 @@
 sibling: demo-data
 schema_version: "4.0"
 feature_id: accounts
-content:
-  GET_obp_v5_1_0_banks_bankId_accounts:
-    items:
-      - id: "acc-mwangi-kes-savings-001"
-        label: "KES Savings — Personal"
-        account_type: "SAVINGS"
-        balance:
-          currency: "KES"
-          amount: "142500.75"
-        account_routings:
-          - scheme: "IBAN"
-            address: "KE1900200001001000001"
-          - scheme: "AccountNumber"
-            address: "1100204857312"
 
-      - id: "acc-mwangi-kes-current-002"
-        label: "KES Current — Business"
-        account_type: "CURRENT"
-        balance:
-          currency: "KES"
-          amount: "875200.00"
-        account_routings:
-          - scheme: "IBAN"
-            address: "KE1900200001001000002"
-          - scheme: "AccountNumber"
-            address: "1100204857399"
+# OBIE AISP fixtures backing the accounts list screen.
+# get_accounts -> OBReadAccount6 (Data.Account[]); get_balances -> OBReadBalance1 (Data.Balance[]),
+# called per AccountId. Same James Whitfield persona + sort-code/account-number identification
+# (UK.OBIE.SortCodeAccountNumber, sortcode 30-00-00) reused across home/account-detail/transactions.
+collections:
+  get_accounts:
+    dto: OBReadAccount6
+    description: "200 OK — authorised AccountId list with scheme/identification/nickname/type for the account cards."
+    item:
+      Data:
+        Account:
+          - AccountId: "acc-jw-current-0001"
+            Status: "Enabled"
+            StatusUpdateDateTime: "2026-06-12T09:41:18.204Z"
+            Currency: "GBP"
+            AccountCategory: "Personal"
+            AccountTypeCode: "CurrentAccount"
+            Nickname: "Everyday Current"
+            Account:
+              - SchemeName: "UK.OBIE.SortCodeAccountNumber"
+                Identification: "30000012345678"
+                Name: "James Whitfield"
+            Servicer:
+              SchemeName: "UK.OBIE.BICFI"
+              Identification: "HBUKGB4B"
+          - AccountId: "acc-jw-savings-0002"
+            Status: "Enabled"
+            StatusUpdateDateTime: "2026-06-12T09:41:18.204Z"
+            Currency: "GBP"
+            AccountCategory: "Personal"
+            AccountTypeCode: "Savings"
+            Nickname: "Online Bonus Saver"
+            Account:
+              - SchemeName: "UK.OBIE.SortCodeAccountNumber"
+                Identification: "30000087654321"
+                Name: "James Whitfield"
+            Servicer:
+              SchemeName: "UK.OBIE.BICFI"
+              Identification: "HBUKGB4B"
+          - AccountId: "acc-jw-credit-0003"
+            Status: "Enabled"
+            StatusUpdateDateTime: "2026-06-12T09:41:18.204Z"
+            Currency: "GBP"
+            AccountCategory: "Personal"
+            AccountTypeCode: "CurrentAccount"
+            Nickname: "Premier Credit Card"
+            Account:
+              - SchemeName: "UK.OBIE.SortCodeAccountNumber"
+                Identification: "30000045612378"
+                Name: "James Whitfield"
+            Servicer:
+              SchemeName: "UK.OBIE.BICFI"
+              Identification: "HBUKGB4B"
+      Links:
+        Self: "https://secure.sandbox.ob.hsbc.co.uk/obie/open-banking/v4.0/aisp/accounts"
+      Meta:
+        TotalPages: 1
 
-      - id: "acc-mwangi-usd-savings-003"
-        label: "USD Savings — Foreign Currency"
-        account_type: "SAVINGS"
-        balance:
-          currency: "USD"
-          amount: "3840.50"
-        account_routings:
-          - scheme: "IBAN"
-            address: "KE1900200001001000003"
-          - scheme: "AccountNumber"
-            address: "1100204857411"
+  get_balances:
+    dto: OBReadBalance1
+    description: "200 OK — InterimAvailable balance per AccountId, surfaced as the card balance amount."
+    item:
+      Data:
+        Balance:
+          - AccountId: "acc-jw-current-0001"
+            CreditDebitIndicator: "Credit"
+            Type: "InterimAvailable"
+            DateTime: "2026-06-12T09:41:18.204Z"
+            Amount:
+              Amount: "2483.17"
+              Currency: "GBP"
+          - AccountId: "acc-jw-savings-0002"
+            CreditDebitIndicator: "Credit"
+            Type: "InterimAvailable"
+            DateTime: "2026-06-12T09:41:18.204Z"
+            Amount:
+              Amount: "15920.44"
+              Currency: "GBP"
+          - AccountId: "acc-jw-credit-0003"
+            CreditDebitIndicator: "Debit"
+            Type: "InterimAvailable"
+            DateTime: "2026-06-12T09:41:18.204Z"
+            Amount:
+              Amount: "742.65"
+              Currency: "GBP"
+      Links:
+        Self: "https://secure.sandbox.ob.hsbc.co.uk/obie/open-banking/v4.0/aisp/accounts/acc-jw-current-0001/balances"
+      Meta:
+        TotalPages: 1
 
-      - id: "acc-mwangi-mpesa-float-004"
-        label: "M-Pesa Float Account"
-        account_type: "MOBILE_WALLET"
-        balance:
-          currency: "KES"
-          amount: "12300.00"
-        account_routings:
-          - scheme: "PhoneNumber"
-            address: "+254712345678"
-          - scheme: "AccountNumber"
-            address: "MPESA-FLT-78901"
+  # OBErrorResponse1 envelope for the 403/500 error state (FilterChanged/AccountSelected are client-side).
+  error:
+    dto: OBErrorResponse1
+    description: "Representative 403 OBErrorResponse1 driving the error banner when consent is not AUTH."
+    item:
+      Code: "403 Forbidden"
+      Id: "7c40-err-1a92"
+      Message: "Invalid consent status"
+      Errors:
+        - ErrorCode: "UK.OBIE.Resource.InvalidConsentStatus"
+          Message: "The account-access-consent is not in the Authorised state."

@@ -1,50 +1,72 @@
 sibling: demo-data
 schema_version: "4.0"
 feature_id: beneficiaries
-content:
-  GET_obp_v4_0_0_banks_bankId_accounts_accountId_viewId_counterparties:
-    items:
-      - id: "cp-odhiambo-001"
-        name: "Sarah Odhiambo"
-        description: "Sister — Monthly Support"
-        other_bank_routing_address: "equity-bank-ke"
-        other_account_routing_address: "0110345678901"
-        other_account_routing_scheme: "AccountNumber"
-        is_beneficiary: true
-        created_by_user_id: "usr-mwangi-001"
 
-      - id: "cp-kamau-002"
-        name: "Peter Kamau Supplies Ltd"
-        description: "Hardware Supplier — Ngong Road"
-        other_bank_routing_address: "coop-bank-ke"
-        other_account_routing_address: "0110987654321"
-        other_account_routing_scheme: "AccountNumber"
-        is_beneficiary: true
-        created_by_user_id: "usr-mwangi-001"
+# Realistic OBReadBeneficiary5 returned by
+# GET /obie/open-banking/v4.0/aisp/accounts/{AccountId}/beneficiaries on the HSBC UK sandbox.
+# READ-ONLY payee list for the authorised account. Each beneficiary carries a CreditorAccount
+# (OBCashAccount6) with a UK sort-code+account-number Identification (14 digits: 6 sort code +
+# 8 account number). Mix of personal payees (Ordinary) and trusted utility/business payees.
+collections:
+  account_beneficiaries:
+    dto: OBReadBeneficiary5
+    description: "200 OK — beneficiaries linked to the authorised current account, each with a creditor account identification and reference."
+    item:
+      Data:
+        Beneficiary:
+          - AccountId: "acc-22289-0007"
+            BeneficiaryId: "bnf-7a31c9e0-1f44"
+            BeneficiaryType: "Trusted"
+            Reference: "Rent June 2026"
+            CreditorAccount:
+              SchemeName: "UK.OBIE.SortCodeAccountNumber"
+              Identification: "40047183920561"
+              Name: "Hannah Whitfield"
+          - AccountId: "acc-22289-0007"
+            BeneficiaryId: "bnf-3c08f1d2-4b77"
+            BeneficiaryType: "Ordinary"
+            Reference: "Family transfer"
+            CreditorAccount:
+              SchemeName: "UK.OBIE.SortCodeAccountNumber"
+              Identification: "20531174026893"
+              Name: "James O'Connor"
+          - AccountId: "acc-22289-0007"
+            BeneficiaryId: "bnf-9e52a7b4-6d10"
+            BeneficiaryType: "Ordinary"
+            Reference: "Shared bills"
+            CreditorAccount:
+              SchemeName: "UK.OBIE.SortCodeAccountNumber"
+              Identification: "60161948307215"
+              Name: "Priya Sharma"
+          - AccountId: "acc-22289-0007"
+            BeneficiaryId: "bnf-1d44b830-8a92"
+            BeneficiaryType: "Trusted"
+            Reference: "INV-20260418"
+            CreditorAccount:
+              SchemeName: "UK.OBIE.SortCodeAccountNumber"
+              Identification: "11270659184430"
+              Name: "Greenfield Joinery Ltd"
+              SecondaryIdentification: "0061"
+          - AccountId: "acc-22289-0007"
+            BeneficiaryId: "bnf-5b69c014-2f37"
+            BeneficiaryType: "Ordinary"
+            Reference: "Holiday fund"
+            CreditorAccount:
+              SchemeName: "UK.OBIE.SortCodeAccountNumber"
+              Identification: "30962471155028"
+              Name: "Daniel Okafor"
+      Links:
+        Self: "https://secure.sandbox.ob.hsbc.co.uk/obie/open-banking/v4.0/aisp/accounts/acc-22289-0007/beneficiaries"
+      Meta:
+        TotalPages: 1
 
-      - id: "cp-wanjiru-003"
-        name: "Grace Wanjiru"
-        description: "Business Partner — Kikuyu"
-        other_bank_routing_address: "ncba-ke"
-        other_account_routing_address: "0110112233445"
-        other_account_routing_scheme: "AccountNumber"
-        is_beneficiary: true
-        created_by_user_id: "usr-mwangi-001"
-
-      - id: "cp-kipchoge-004"
-        name: "David Kipchoge Farms"
-        description: "Rift Valley Farm Produce"
-        other_bank_routing_address: "kcb-ke"
-        other_account_routing_address: "1100556677889"
-        other_account_routing_scheme: "AccountNumber"
-        is_beneficiary: true
-        created_by_user_id: "usr-mwangi-001"
-
-      - id: "cp-nairobi-power-005"
-        name: "Kenya Power & Lighting"
-        description: "Electricity Bill — Meter 12345678"
-        other_bank_routing_address: "kcb-ke"
-        other_account_routing_address: "KPLC-BILL-PAY-001"
-        other_account_routing_scheme: "BillerCode"
-        is_beneficiary: true
-        created_by_user_id: "usr-mwangi-001"
+  # Error envelope (OBErrorResponse1) for the 400/403 error state declared in data-flow.yaml.
+  account_beneficiaries.error:
+    description: "Representative 403 OBErrorResponse1 — consent missing the ReadBeneficiaries permission."
+    item:
+      Code: "403 Forbidden"
+      Id: "be-err-4f21a8"
+      Message: "Forbidden"
+      Errors:
+        - ErrorCode: "UK.OBIE.Resource.InvalidConsentStatus"
+          Message: "The account-access consent does not grant ReadBeneficiariesDetail."

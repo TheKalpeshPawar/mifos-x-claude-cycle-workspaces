@@ -1,9 +1,9 @@
 ---
-ui_yaml_sha: 77ef7dbe843044a66b73b3c529d340294fe8b8804fa009b3a4c22aa5f5ddacab
-design_md_hash: 71b53c295bf863d34057f16264caf37a11512e794d356b3bec219352550d05ec
-app_shell_hash: ad7a6b42b2ae10e63ef270f15d857bd44445d775e8d9b09313b31e6569df95b4
-design_read_hash: 1639ea0545fdbc1ba9ce1eef5369eae224a6f4f57f07f0639b699652daeb8558
-content_hash: ccf66dd6c488294700cff03a1ea328fdd4f04df613c6dc14cec3e39bb3ad161e
+ui_yaml_sha: e4043bf6fd296afbfef36c3ea112ec197f8fa18c3c813cfce7f35e45182d8415
+design_md_hash: 2b17083785e7e532a1554540e628db54640dfab77857b6c90d802767add94ba2
+app_shell_hash: d2fe35b34f2ccfe703fcea97291ff9cb0453b148553d7b69b40f4cfa59d08766
+design_read_hash: 60a4c95f7619b31daccc130861a96508d0cacf2f29734f43c35036c1f0280375
+content_hash: cbd16a678a4e12672f3f5ae6d6420d2e8a6e5069cdf792324a85fb6a3623ac2e
 
 design_read_aesthetic: taste-default
 design_read_dials: {variance: 4, motion: 3, density: 5}
@@ -14,8 +14,8 @@ feature: consent-manager
 state: error
 state_visibility: error
 
-project_id: 'null'
-design_system_id: 'null'
+project_id: '17153754672098888646'
+design_system_id: '2005644667042354169'
 
 generated_by: stitch-prompt-build.ts v2.0.0
 prompt_template_version: stitch-per-state-v3.0.0
@@ -24,28 +24,98 @@ craft_rules_version: v1.0.0
 
 # consent-manager — error state
 
-> Auto-generated from screens/consent-manager/ui.yaml @ SHA a37968e783a766fd
-> Stitch DesignSystem: (pending DESIGN.md upload — run /idea-export-stitch sub-plan 02)
+> Auto-generated from screens/consent-manager/ui.yaml @ SHA 24df9e0f29afaa6c
+> Stitch DesignSystem: 2005644667042354169
 > DO NOT redeclare colors / fonts / spacing — they live in DESIGN.md.
 
 ↓↓↓ MOCKUP PROMPT
 
-Design the error state of the consent manager screen for **Mifos X Open Banking**, a professional open banking KMP super-app for consumer retail banking and field officer agent banking powered by Open Bank Project API v7.
+## Archetype: index_list
 
-Palette: primary #B2D188, on_primary #1F3701, primary_container #354E16, secondary #A0CFCB, error #FFB4AB, background #12140E, on_surface #E3E3D8, on_surface_variant #C5C8BA, surface_container #1E201A, surface_container_high #282A24, outline #8F9285, outline_variant #44483D, pending #E8A317.
+## Layout
+- type: scrollable_column
+- padding: default
+- alignment: start
 
-**Component 1 — App Bar** (64dp tall, full width): Title "Connected Apps" Outfit Medium 18sp #E3E3D8, leading back-arrow 24dp #B2D188, background #12140E.
+## Composition (top → bottom)
+1. **text** (#consent_title) — label: "Connected Apps", content: "Connected Apps"
+2. **text** (#consent_subtitle) — label: "Apps you've connected and the account data each can access. Revoke access at any", content: "Apps you've connected and the account data each can access. Revoke access at any"
+3. **box** (#consent_moneymanager) — label: "MoneyManager Pro consent card", content: "MoneyManager Pro consent card"
+4. **stack** (#moneymanager_header_row) — label: "MoneyManager Pro header row"
+5. **image** (#moneymanager_logo) — label: "MoneyManager Pro logo", content: "app_logo_moneymanager"
+6. **stack** (#moneymanager_info) — label: "MoneyManager Pro app info"
+7. **text** (#moneymanager_name) — label: "MoneyManager Pro", content: "MoneyManager Pro"
+8. **text** (#moneymanager_dates) — label: "Granted 1 Mar 2026 · Expires 1 Mar 2027", content: "Granted 1 Mar 2026 · Expires 1 Mar 2027"
+9. **box** (#moneymanager_active_badge) — label: "ACTIVE", content: "ACTIVE"
+10. **stack** (#moneymanager_scopes_row) — label: "MoneyManager Pro consent scopes"
+11. **box** (#moneymanager_scope_read_accounts) — label: "Account Details", content: "Account Details"
+12. **box** (#moneymanager_scope_view_transactions) — label: "Transactions", content: "Transactions"
+13. **box** (#moneymanager_scope_check_balances) — label: "Balances", content: "Balances"
+14. **button** (#moneymanager_revoke_button) — label: "Revoke Access"
+15. **box** (#consent_taxhelper) — label: "TaxHelper consent card", content: "TaxHelper consent card"
+16. **stack** (#taxhelper_header_row) — label: "TaxHelper header row"
+17. **image** (#taxhelper_logo) — label: "TaxHelper logo", content: "app_logo_taxhelper"
+18. **stack** (#taxhelper_info) — label: "TaxHelper app info"
+19. **text** (#taxhelper_name) — label: "TaxHelper", content: "TaxHelper"
+20. **text** (#taxhelper_dates) — label: "Granted 15 Jan 2026 · Expires 15 Jan 2027", content: "Granted 15 Jan 2026 · Expires 15 Jan 2027"
+21. **box** (#taxhelper_active_badge) — label: "ACTIVE", content: "ACTIVE"
+22. **stack** (#taxhelper_scopes_row) — label: "TaxHelper consent scopes"
+23. **box** (#taxhelper_scope_view_transactions) — label: "Transactions", content: "Transactions"
+24. **box** (#taxhelper_scope_read_accounts) — label: "Account Details", content: "Account Details"
+25. **button** (#taxhelper_revoke_button) — label: "Revoke Access"
+26. **box** (#consent_budgetwise) — label: "BudgetWise consent card", content: "BudgetWise consent card"
+27. **stack** (#budgetwise_header_row) — label: "BudgetWise header row"
+28. **image** (#budgetwise_logo) — label: "BudgetWise logo", content: "app_logo_budgetwise"
+29. **stack** (#budgetwise_info) — label: "BudgetWise app info"
+30. **text** (#budgetwise_name) — label: "BudgetWise", content: "BudgetWise"
+31. **text** (#budgetwise_dates) — label: "Granted 10 Oct 2025 · Expired 10 Apr 2026", content: "Granted 10 Oct 2025 · Expired 10 Apr 2026"
+32. **box** (#budgetwise_expired_badge) — label: "EXPIRED", content: "EXPIRED"
+33. **stack** (#budgetwise_scopes_row) — label: "BudgetWise consent scopes"
+34. **box** (#budgetwise_scope_check_balances) — label: "Balances", content: "Balances"
+35. **button** (#budgetwise_remove_button) — label: "Remove"
+36. **button** (#disconnect_all_button) — label: "Disconnect everything"
+37. **box** (#revoke_confirm_dialog) — label: "Revoke access confirmation dialog", content: "Revoke access confirmation dialog"
+38. **text** (#revoke_dialog_title) — label: "Revoke access?", content: "Revoke access?"
+39. **text** (#revoke_dialog_body) — label: "This will immediately remove this app's access to your account data. You can rec", content: "This will immediately remove this app's access to your account data. You can rec"
+40. **stack** (#revoke_dialog_actions) — label: "Revoke dialog action buttons"
+41. **button** (#revoke_dialog_cancel_button) — label: "Cancel"
+42. **button** (#revoke_dialog_confirm_button) — label: "Revoke"
+43. **image** (#empty_state_icon) — label: "No connected apps illustration", content: "ic_link_off"
+44. **text** (#empty_state_title) — label: "No apps connected", content: "No apps connected"
+45. **text** (#empty_state_body) — label: "Third-party apps you authorise will appear here. Visit your bank's app marketpla", content: "Third-party apps you authorise will appear here. Visit your bank's app marketpla"
 
-**Component 2 — Hero** (centered, top margin 64dp): 140dp square illustration of a broken connection symbol in neutral charcoal tones #44483D / #8F9285 on #12140E, no red alarm tones.
+## State-specific behavior
+- Show an error illustration, a short message, and a single Retry action. No content rails visible.
 
-**Component 3 — List Row** (centered, top margin 24dp, horizontal padding 48dp): Title "Couldn't load connected apps" Outfit SemiBold 20sp #E3E3D8 centered max 2 lines. Subtitle "Check your connection and try again. Your consent settings are safe." Outfit Regular 14sp #C5C8BA centered. error_state archetype.
+## Content source manifest
+- (no demo collections bound for this state)
 
-**Component 4 — Button** (full width minus 64dp insets, top margin 32dp): Filled button 48dp tall 24dp corner radius background #B2D188, leading refresh icon 20dp #1F3701, label "Retry" Outfit SemiBold 15sp #1F3701.
+## Components (vocabulary used in this prompt)
+- (no named components extracted — see composition)
 
-**Component 5 — Button** (centered, top margin 12dp): Text button label "Go back" Outfit Medium 14sp #8F9285, no background.
+## Shell (app-shell resolved for this state)
+- App-shell rules are defined per project; per-screen overrides are merged in.
+- Render MUST keep nav/bar elements consistent with the resolved shell — present or absent, never partial.
 
-Do not use em-dash anywhere in text. Do not make any headline more than 3 lines or any subtitle more than 25 words. Do not break the dark page theme between sections. Do not place light text on light buttons or dark text on dark buttons.
+## Tokens (design-tokens roles consumed)
+- Colors: primary / secondary / surface / on-surface / on-surface-variant / error (M3 standard roles).
+- Typography: body-large / title-large (M3 standard roles).
+- Spacing: gap.sm / gap.md / gap.lg.
+- ALL token references are by name from the uploaded design system — no hex literals, no inline size values.
 
-Centered layout on #12140E. The sage-green #B2D188 retry button keeps the error state calm and trustworthy, avoiding alarm tones that would unsettle users in a regulated financial context.
+## Self-Validation Checklist (MANDATORY)
+
+Before returning the rendered mockup, verify ALL of these are true. If any fails, FIX the output and re-render.
+
+- [ ] **Per-state shape:** the render shows ONLY this state ("error"). Do not blend multiple states into one mockup.
+- [ ] **Real content:** every text label, image, and data point reflects the content source manifest above — no numbered generic items, no filler text, no dummy text, no empty strings.
+- [ ] **Token fidelity:** colors come from the uploaded design system (primary/secondary/surface/etc.) by name; spacing comes from declared scale tokens. No invented hex codes, no invented size literals.
+- [ ] **Component vocabulary:** every component in the render maps to a named design-system component (Card, FAB, BottomBar, etc.) — no invented or off-system components.
+- [ ] **Archetype honored:** the layout follows the "index_list" archetype skeleton — composition order top → bottom matches the Composition section.
+- [ ] **App-shell parity:** if a bottom nav, top app bar, or FAB appears in the render, it matches the resolved shell from the app-shell config. Shell elements are either present-and-consistent OR absent — never partial.
+
+If any of these fail and the fix isn't clear → halt rendering and surface "Self-validation failed at: {checkpoint}."
+
+Return ONLY when all 6 checkpoints pass.
 
 ↑↑↑ MOCKUP PROMPT

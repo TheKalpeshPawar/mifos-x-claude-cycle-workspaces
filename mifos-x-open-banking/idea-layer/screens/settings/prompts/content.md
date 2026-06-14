@@ -1,9 +1,9 @@
 ---
-ui_yaml_sha: 7077f6e070d0a7f1125c62a5ea1cc4d67d31364ecad1feced39956a7353733f4
-design_md_hash: 71b53c295bf863d34057f16264caf37a11512e794d356b3bec219352550d05ec
-app_shell_hash: ad7a6b42b2ae10e63ef270f15d857bd44445d775e8d9b09313b31e6569df95b4
-design_read_hash: 1639ea0545fdbc1ba9ce1eef5369eae224a6f4f57f07f0639b699652daeb8558
-content_hash: 8fd9b20890bfa63b6cd0f3edeaeedcac7de4acf22ff321e23efc6e90f64723b0
+ui_yaml_sha: ae707f738eeb02e32825f7becefa1bb47fafdea1a5ac94109454ecc6fa260b88
+design_md_hash: 2b17083785e7e532a1554540e628db54640dfab77857b6c90d802767add94ba2
+app_shell_hash: d2fe35b34f2ccfe703fcea97291ff9cb0453b148553d7b69b40f4cfa59d08766
+design_read_hash: 60a4c95f7619b31daccc130861a96508d0cacf2f29734f43c35036c1f0280375
+content_hash: 2b57d79d1607238ebe385914e9e097964370f4930e447ee8a9a2e2e40446dd35
 
 design_read_aesthetic: taste-default
 design_read_dials: {variance: 4, motion: 3, density: 5}
@@ -14,8 +14,8 @@ feature: settings
 state: content
 state_visibility: content
 
-project_id: 'null'
-design_system_id: 'null'
+project_id: '17153754672098888646'
+design_system_id: '2005644667042354169'
 
 generated_by: stitch-prompt-build.ts v2.0.0
 prompt_template_version: stitch-per-state-v3.0.0
@@ -24,26 +24,110 @@ craft_rules_version: v1.0.0
 
 # settings — content state
 
-> Auto-generated from screens/settings/ui.yaml @ SHA 57cc58437ce99bc3
-> Stitch DesignSystem: (pending DESIGN.md upload — run /idea-export-stitch sub-plan 02)
+> Auto-generated from screens/settings/ui.yaml @ SHA 3094caf56fcb3dd0
+> Stitch DesignSystem: 2005644667042354169
 > DO NOT redeclare colors / fonts / spacing — they live in DESIGN.md.
 
 ↓↓↓ MOCKUP PROMPT
-Design the content state of the settings screen for **Mifos X Open Banking**, a Open Banking KMP super-app — consumer retail banking + field officer agent banking powered by Open Bank Project API v7, built with Compose Multiplatform across Android, iOS, Desktop, and Web.
 
-Palette: primary #B2D188, on_primary #1F3701, primary_container #354E16, on_primary_container #CDEDA3, secondary #A0CFCB, on_secondary #003735, secondary_container #1F4E4B, on_secondary_container #BCEBE7, background #12140E, on_background #E3E3D8, surface #12140E, on_surface #E3E3D8, surface_variant #44483D, on_surface_variant #C5C8BA, surface_container #1E201A, surface_container_high #282A24, outline #8F9285, outline_variant #44483D, error #FFB4AB, pending #E8A317, nav_active_indicator #354E16.
+## Archetype: settings
 
-**Component 1 — App Bar** (64dp tall, full width): Title "Settings" Outfit Medium 18sp #E3E3D8 centered. Background #12140E, zero elevation.
+## Layout
+- type: column
+- padding: spacing.lg
+- alignment: start
 
-**Component 2 — Card** (full width minus 32dp insets, top margin 24dp, 12dp corner radius, background #1E201A): Section header "Appearance" Outfit Medium 12sp #8F9285 uppercase with 16dp padding. settings archetype. Two List Rows separated by 1dp divider #44483D. Row 1: leading moon icon 20dp #B2D188, title "Dark Mode" Outfit Medium 14sp #E3E3D8, subtitle "Switch to a darker color scheme" Outfit Regular 12sp #8F9285, trailing toggle switch ON state track #354E16 thumb #B2D188. Row 2: leading globe icon 20dp #A0CFCB, title "Language" Outfit Medium 14sp #E3E3D8, subtitle "Choose your preferred display language" Outfit Regular 12sp #8F9285, trailing "English" Outfit Regular 13sp #C5C8BA + chevron 16dp #44483D.
+## Composition (top → bottom)
+1. **stack** (#settings_root)
+2. **card** (#settings_profile_header_card)
+3. **box** (#settings_profile_initials) — content: "M"
+4. **text** (#settings_profile_name) — content: "Mifos User"
+5. **text** (#settings_profile_email) — content: "user@example.com"
+6. **text** (#settings_appearance_header) — content: "Appearance"
+7. **card** (#settings_appearance_group)
+8. **stack** (#settings_theme_follow_system_row)
+9. **text** (#settings_theme_follow_system_label) — content: "Follow System"
+10. **input** (#settings_theme_follow_system_toggle) — label: "Follow System"
+11. **divider** (#settings_divider_theme_1)
+12. **stack** (#settings_theme_light_row)
+13. **text** (#settings_theme_light_label) — content: "Light Mode"
+14. **input** (#settings_theme_light_toggle) — label: "Light Mode"
+15. **divider** (#settings_divider_theme_2)
+16. **stack** (#settings_theme_dark_row)
+17. **text** (#settings_theme_dark_label) — content: "Dark Mode"
+18. **input** (#settings_theme_dark_toggle) — label: "Dark Mode"
+19. **divider** (#settings_divider_appearance)
+20. **stack** (#settings_language_row)
+21. **text** (#settings_language_label) — content: "Language"
+22. **input** (#settings_language_select) — label: "Language"
+23. **text** (#settings_security_header) — content: "Security"
+24. **card** (#settings_security_group)
+25. **stack** (#settings_biometric_row)
+26. **text** (#settings_biometric_label) — content: "Biometric Login"
+27. **input** (#settings_biometric_toggle) — label: "Biometric Login"
+28. **divider** (#settings_divider_security)
+29. **stack** (#settings_reset_password_row)
+30. **text** (#settings_reset_password_label) — content: "Reset Password"
+31. **icon** (#settings_reset_password_chevron) — content: "chevron_right"
+32. **dialog** (#settings_reset_password_dialog)
+33. **text** (#settings_reset_password_dialog_body) — content: "We'll email a password reset link to your registered address."
+34. **button** (#settings_reset_password_dialog_confirm) — label: "Send link"
+35. **button** (#settings_reset_password_dialog_cancel) — label: "Cancel"
+36. **dialog** (#settings_reset_message_dialog)
+37. **text** (#settings_reset_message_body) — content: "If your account is valid, a password reset link has been emailed to you."
+38. **button** (#settings_reset_message_ok) — label: "OK"
+39. **card** (#settings_data_consent_card)
+40. **icon** (#settings_data_consent_icon) — content: "shield"
+41. **text** (#settings_data_consent_label) — content: "Data & Consent"
+42. **text** (#settings_data_consent_subtitle) — content: "Review and revoke account access you've granted"
+43. **text** (#settings_about_header) — content: "About"
+44. **card** (#settings_about_about_card)
+45. **icon** (#settings_about_about_icon) — content: "info"
+46. **text** (#settings_about_about_label) — content: "About Mifos X Open Banking"
+47. **card** (#settings_about_terms_card)
+48. **icon** (#settings_about_terms_icon) — content: "article"
+49. **text** (#settings_about_terms_label) — content: "Terms of Service"
+50. **card** (#settings_about_privacy_card)
+51. **icon** (#settings_about_privacy_icon) — content: "privacy_tip"
+52. **text** (#settings_about_privacy_label) — content: "Privacy Policy"
+53. **card** (#settings_about_licenses_card)
+54. **icon** (#settings_about_licenses_icon) — content: "gavel"
+55. **text** (#settings_about_licenses_label) — content: "Open-source Licences"
+56. **button** (#settings_sign_out_button) — label: "Sign out"
+57. **text** (#settings_footer) — content: "Mifos X Open Banking  ·  v1.0.0"
 
-**Component 3 — Card** (full width minus 32dp insets, top margin 16dp, 12dp corner radius, background #1E201A): Section header "Notifications" Outfit Medium 12sp #8F9285 uppercase. Three List Rows with 1dp dividers #44483D. Row 1: bell icon 20dp #B2D188, "Push Notifications" title, "Receive alerts and updates from Mifos X" subtitle 12sp #8F9285, trailing toggle ON #354E16 #B2D188. Row 2: alert-circle icon 20dp #B2D188, "Transaction Alerts" title, "Notify me for every debit and credit activity" subtitle, trailing toggle ON. Row 3: megaphone icon 20dp #A0CFCB, "Marketing Updates" title, "Product news and promotions" subtitle, trailing toggle OFF track #44483D thumb #8F9285.
+## State-specific behavior
+- Fully populated with the real demo content listed below.
 
-**Component 4 — Card** (full width minus 32dp insets, top margin 16dp, 12dp corner radius, background #1E201A): Section header "Security" Outfit Medium 12sp #8F9285 uppercase. Three List Rows. Row 1: fingerprint icon 20dp #B2D188, "Biometric Login" title, "Use fingerprint or face ID to sign in faster" subtitle, toggle ON. Row 2: shield icon 20dp #A0CFCB, "Data and Consent" title, "Manage your data sharing consents" subtitle, trailing chevron 16dp #44483D. Row 3: lock icon 20dp #A0CFCB, "Change Password" title, "Update your account login password" subtitle, trailing chevron 16dp #44483D.
+## Content source manifest
+- (no demo collections bound for this state)
 
-**Component 5 — Card** (full width minus 32dp insets, top margin 16dp, 12dp corner radius, background #1E201A, bottom margin 32dp): Section header "About" Outfit Medium 12sp #8F9285 uppercase. Four List Rows. Row 1: info icon 20dp #A0CFCB, "About Mifos X Open Banking" Outfit Medium 14sp #E3E3D8, trailing chevron. Row 2: file-text icon 20dp #A0CFCB, "Terms of Service" Outfit Medium 14sp #E3E3D8, trailing chevron. Row 3: eye icon 20dp #A0CFCB, "Privacy Policy" Outfit Medium 14sp #E3E3D8, trailing chevron. Row 4: code icon 20dp #A0CFCB, "Open-source Licences" Outfit Medium 14sp #E3E3D8, trailing chevron. Below cards: "App Version" label Outfit Regular 13sp #8F9285 left-aligned, "v1.0.0" right-aligned same style #44483D, both on plain #12140E background.
+## Components (vocabulary used in this prompt)
+- (no named components extracted — see composition)
 
-Do not use em-dash anywhere in text. Do not make any headline more than 3 lines or any subtitle more than 25 words. Do not break the page theme between sections. Do not place light text on light buttons or dark text on dark buttons.
+## Shell (app-shell resolved for this state)
+- App-shell rules are defined per project; per-screen overrides are merged in.
+- Render MUST keep nav/bar elements consistent with the resolved shell — present or absent, never partial.
 
-Scrollable layout on #12140E with four grouped card sections. The earthy green #B2D188 on active toggle thumbs and biometric icon provides a clear visual signal of enabled features, keeping the layout minimal and restrained for this regulated open banking platform.
+## Tokens (design-tokens roles consumed)
+- Colors: primary / secondary / surface / on-surface / on-surface-variant / error (M3 standard roles).
+- Typography: body-large / title-large (M3 standard roles).
+- Spacing: gap.sm / gap.md / gap.lg.
+- ALL token references are by name from the uploaded design system — no hex literals, no inline size values.
+
+## Self-Validation Checklist (MANDATORY)
+
+Before returning the rendered mockup, verify ALL of these are true. If any fails, FIX the output and re-render.
+
+- [ ] **Per-state shape:** the render shows ONLY this state ("content"). Do not blend multiple states into one mockup.
+- [ ] **Real content:** every text label, image, and data point reflects the content source manifest above — no numbered generic items, no filler text, no dummy text, no empty strings.
+- [ ] **Token fidelity:** colors come from the uploaded design system (primary/secondary/surface/etc.) by name; spacing comes from declared scale tokens. No invented hex codes, no invented size literals.
+- [ ] **Component vocabulary:** every component in the render maps to a named design-system component (Card, FAB, BottomBar, etc.) — no invented or off-system components.
+- [ ] **Archetype honored:** the layout follows the "settings" archetype skeleton — composition order top → bottom matches the Composition section.
+- [ ] **App-shell parity:** if a bottom nav, top app bar, or FAB appears in the render, it matches the resolved shell from the app-shell config. Shell elements are either present-and-consistent OR absent — never partial.
+
+If any of these fail and the fix isn't clear → halt rendering and surface "Self-validation failed at: {checkpoint}."
+
+Return ONLY when all 6 checkpoints pass.
+
 ↑↑↑ MOCKUP PROMPT

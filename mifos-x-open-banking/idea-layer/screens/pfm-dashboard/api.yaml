@@ -14,13 +14,14 @@ feature_id: pfm-dashboard
 # Authorization-Code-scoped token (mutual TLS + x-fapi-financial-id on every call).
 api:
   - id: get_accounts
+    demo_source: demo-data.yaml#/collections/accounts
     endpoint: "GET /obie/open-banking/v4.0/aisp/accounts"
     tag: Accounts
     description: "Authorised account list — the PFM scope spans all PERSONAL accounts. OBIE OBReadAccount6. AccountCategory (Personal | Business) classifies personal-vs-business scope; Currency drives the base-currency seed."
     response:
       fields:
         - name: Data.Account
-          type: "Array<OBAccount6>"
+          type: "Array<OBReadAccount6>"
         - name: Data.Account[].AccountId
           type: String
         - name: Data.Account[].Currency
@@ -41,6 +42,7 @@ api:
       - code: 403
         message: "OB.Resource.InvalidConsentStatus"
   - id: get_account_details
+    demo_source: demo-data.yaml#/collections/accounts
     endpoint: "GET /obie/open-banking/v4.0/aisp/accounts/{AccountId}"
     tag: Accounts
     description: "Per-account detail — AccountCategory/AccountTypeCode + Currency confirm personal-vs-business classification per account. OBIE OBReadAccount6. Replaces the OBP owner-view detail fetch (OBIE list already carries AccountCategory; detail is a per-account refinement)."
@@ -60,6 +62,7 @@ api:
       - code: 404
         message: "OB.Field.Invalid (incl. non-existent AccountId)"
   - id: get_account_balances
+    demo_source: demo-data.yaml#/collections/balances
     endpoint: "GET /obie/open-banking/v4.0/aisp/accounts/{AccountId}/balances"
     tag: Accounts
     description: "Per-account balance — read for scope totals. OBIE OBReadBalance1; amount is Data.Balance[].Amount.Amount (decimal String) + Data.Balance[].Amount.Currency, with Data.Balance[].Type (e.g. InterimAvailable) + CreditDebitIndicator."
@@ -81,6 +84,7 @@ api:
       - code: 403
         message: "OB.Resource.InvalidConsentStatus (e.g. missing ReadBalances)"
   - id: get_account_transactions
+    demo_source: demo-data.yaml#/collections/transactions
     endpoint: "GET /obie/open-banking/v4.0/aisp/accounts/{AccountId}/transactions"
     tag: Transactions
     description: "Source for ALL derived insights — fetched per personal account and aggregated client-side. OBIE OBReadTransaction6. Categorisation runs over Data.Transaction[].MerchantDetails.MerchantName / TransactionInformation / BankTransactionCode.Code; amounts are Data.Transaction[].Amount.Amount (String) + .Currency with CreditDebitIndicator (Credit | Debit). Filter window via fromBookingDateTime/toBookingDateTime query params; BookingDateTime drives pagination. There is NO OBIE spending-insights endpoint — the dashboard is a client-side projection."
@@ -95,7 +99,7 @@ api:
     response:
       fields:
         - name: Data.Transaction
-          type: "Array<OBTransaction6>"
+          type: "Array<OBReadTransaction6>"
         - name: Data.Transaction[].TransactionId
           type: String
         - name: Data.Transaction[].CreditDebitIndicator

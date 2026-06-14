@@ -5,13 +5,19 @@ entries:
   - screen_id: pfm-dashboard
     trigger: on_mount
     endpoints:
-      - obp_personal_data_fields
+      - get_accounts
     direction: read
+    consent_required: true
     dtos:
-      - name: PersonalDataField
+      - name: OBReadAccount6
         role: response
-        api_id: obp_personal_data_fields
-    produces_state: populated
+        api_id: get_accounts
+    produces_state: loading
+    notes: >-
+      Resolves the authorised account list for the PFM scope. Personal accounts are
+      filtered client-side by Data.Account[].AccountCategory. OBIE has no
+      PFM-scope flag — all authorised accounts are returned and scoped client-side.
+      Requires an authorised account-access-consent (Status AUTH) + authorization-code token.
     error_paths:
       - error_code: 401
         behavior: navigate_login
@@ -21,13 +27,59 @@ entries:
   - screen_id: pfm-dashboard
     trigger: on_mount
     endpoints:
-      - obp_transactions_list
+      - get_account_balances
     direction: read
+    consent_required: true
     dtos:
-      - name: Transaction
+      - name: OBReadBalance1
         role: response
-        api_id: obp_transactions_list
+        api_id: get_account_balances
+    produces_state: loading
+    notes: "Per-account balance for scope totals. Requires ReadBalances."
+    error_paths:
+      - error_code: 401
+        behavior: navigate_login
+      - error_code: 403
+        behavior: error_state
+
+  - screen_id: pfm-dashboard
+    trigger: on_mount
+    endpoints:
+      - get_account_transactions
+    direction: read
+    consent_required: true
+    dtos:
+      - name: OBReadTransaction6
+        role: response
+        api_id: get_account_transactions
     produces_state: populated
+    notes: >-
+      Source for ALL derived insights. Fetched per personal account over the selected
+      period (fromBookingDateTime/toBookingDateTime) and aggregated client-side. Category
+      breakdown, cash-flow summary, top merchants, and budget meter are ALL derived
+      client-side — OBIE has no spending-insights endpoint. PFM budgets and base currency
+      are LOCAL-ONLY app preferences (not a banking resource). Requires ReadTransactions*.
+    error_paths:
+      - error_code: 400
+        behavior: error_state
+      - error_code: 401
+        behavior: navigate_login
+      - error_code: 403
+        behavior: error_state
+
+  - screen_id: pfm-dashboard
+    trigger: on_interact
+    event: PeriodSelected
+    endpoints:
+      - get_account_transactions
+    direction: read
+    consent_required: true
+    dtos:
+      - name: OBReadTransaction6
+        role: response
+        api_id: get_account_transactions
+    produces_state: populated
+    notes: "Period chip / custom range change re-issues transactions with new fromBookingDateTime/toBookingDateTime."
     error_paths:
       - error_code: 400
         behavior: error_state
@@ -36,17 +88,49 @@ entries:
 
   - screen_id: pfm-dashboard
     trigger: on_interact
-    event: PeriodSelected
+    event: AccountScopeChanged
     endpoints:
-      - obp_transactions_list
+      - get_account_balances
+      - get_account_transactions
     direction: read
+    consent_required: true
     dtos:
-      - name: Transaction
+      - name: OBReadBalance1
         role: response
-        api_id: obp_transactions_list
-    produces_state: populated
+        api_id: get_account_balances
+      - name: OBReadTransaction6
+        role: response
+        api_id: get_account_transactions
+    produces_state: loading
+    notes: "Scope switch re-reads balance + transactions for the selected account set and re-derives insights client-side."
     error_paths:
-      - error_code: 400
-        behavior: error_state
       - error_code: 401
         behavior: navigate_login
+      - error_code: 403
+        behavior: error_state
+
+  - screen_id: pfm-dashboard
+    trigger: on_interact
+    event: RetryLoad
+    endpoints:
+      - get_accounts
+      - get_account_balances
+      - get_account_transactions
+    direction: read
+    consent_required: true
+    dtos:
+      - name: OBReadAccount6
+        role: response
+        api_id: get_accounts
+      - name: OBReadBalance1
+        role: response
+        api_id: get_account_balances
+      - name: OBReadTransaction6
+        role: response
+        api_id: get_account_transactions
+    produces_state: loading
+    error_paths:
+      - error_code: 401
+        behavior: navigate_login
+      - error_code: 403
+        behavior: error_state

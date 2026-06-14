@@ -1,0 +1,130 @@
+sibling: demo-data
+schema_version: "4.0"
+feature_id: send-money-amount
+
+# OBIE AISP/CBPII v4.0 demo envelopes for the amount-entry screen:
+# the account list + live balance (affordability hint), the beneficiary list
+# (recipient autocomplete), and the Confirmation-of-Funds check on Continue.
+# Debtor account consistent with send-money: sort 30-00-00 / 30000012345678 / Oliver Bennett.
+collections:
+  get_accounts:
+    dto: OBReadAccount6
+    description: "200 OK — authorised accounts for the From Account picker."
+    item:
+      Data:
+        Account:
+          - AccountId: "acc-30000012345678"
+            Currency: "GBP"
+            AccountTypeCode: "CurrentAccount"
+            Nickname: "Everyday Current"
+            Account:
+              - SchemeName: "UK.OBIE.SortCodeAccountNumber"
+                Identification: "30000012345678"
+                Name: "Oliver Bennett"
+          - AccountId: "acc-30000098765432"
+            Currency: "GBP"
+            AccountTypeCode: "Savings"
+            Nickname: "Rainy Day Saver"
+            Account:
+              - SchemeName: "UK.OBIE.SortCodeAccountNumber"
+                Identification: "30000098765432"
+                Name: "Oliver Bennett"
+      Links:
+        Self: "https://secure.sandbox.ob.hsbc.co.uk/obie/open-banking/v4.0/aisp/accounts"
+      Meta:
+        TotalPages: 1
+
+  get_account_balances:
+    dto: OBReadBalance1
+    description: "200 OK — live InterimAvailable balance driving the affordability hint + amount-entry currency prefix."
+    item:
+      Data:
+        Balance:
+          - AccountId: "acc-30000012345678"
+            CreditDebitIndicator: "Credit"
+            Type: "InterimAvailable"
+            DateTime: "2026-06-12T08:55:03+01:00"
+            Amount:
+              Amount: "2483.57"
+              Currency: "GBP"
+      Links:
+        Self: "https://secure.sandbox.ob.hsbc.co.uk/obie/open-banking/v4.0/aisp/accounts/acc-30000012345678/balances"
+      Meta:
+        TotalPages: 1
+
+  get_account_beneficiaries:
+    dto: OBReadBeneficiary5
+    description: "200 OK — beneficiaries for recipient autocomplete; CreditorAccount.SchemeName drives rail classification."
+    item:
+      Data:
+        Beneficiary:
+          - AccountId: "acc-30000012345678"
+            BeneficiaryId: "ben-001-james-whitfield"
+            BeneficiaryType: "Trusted"
+            Reference: "Rent June"
+            CreditorAccount:
+              SchemeName: "UK.OBIE.SortCodeAccountNumber"
+              Identification: "20415587224190"
+              Name: "James Whitfield"
+          - AccountId: "acc-30000012345678"
+            BeneficiaryId: "ben-002-british-gas"
+            BeneficiaryType: "Ordinary"
+            Reference: "Gas and Electric"
+            CreditorAccount:
+              SchemeName: "UK.OBIE.SortCodeAccountNumber"
+              Identification: "60000412009988"
+              Name: "British Gas"
+          - AccountId: "acc-30000012345678"
+            BeneficiaryId: "ben-003-thames-water"
+            BeneficiaryType: "Ordinary"
+            Reference: "Water Account 88421"
+            CreditorAccount:
+              SchemeName: "UK.OBIE.SortCodeAccountNumber"
+              Identification: "40020755663210"
+              Name: "Thames Water"
+      Links:
+        Self: "https://secure.sandbox.ob.hsbc.co.uk/obie/open-banking/v4.0/aisp/accounts/acc-30000012345678/beneficiaries"
+      Meta:
+        TotalPages: 1
+
+  # Request body the app POSTs to /cbpii/funds-confirmations on Continue.
+  create_funds_confirmation_request:
+    dto: OBFundsConfirmation1
+    description: "Request body — confirmation-of-funds check for the entered amount against the funds-confirmation-consent."
+    item:
+      Data:
+        ConsentId: "cofc-7b41e2a9-5d10-49c8"
+        Reference: "SendMoney-CoF-88421"
+        InstructedAmount:
+          Amount: "150.00"
+          Currency: "GBP"
+
+  create_funds_confirmation:
+    dto: OBFundsConfirmationResponse1
+    description: "200 OK — funds available for the instructed amount; allows the PSU to proceed to confirm."
+    item:
+      Data:
+        FundsConfirmationId: "fc-9d2f7c01-aa34"
+        FundsAvailable: true
+        ConsentId: "cofc-7b41e2a9-5d10-49c8"
+        CreationDateTime: "2026-06-12T09:03:42+01:00"
+        Reference: "SendMoney-CoF-88421"
+        InstructedAmount:
+          Amount: "150.00"
+          Currency: "GBP"
+      Links:
+        Self: "https://secure.sandbox.ob.hsbc.co.uk/obie/open-banking/v4.0/cbpii/funds-confirmations/fc-9d2f7c01-aa34"
+      Meta:
+        TotalPages: 1
+
+  # 400 OB.Field.Invalid driving the validation-error state on Continue.
+  create_funds_confirmation.error:
+    dto: OBErrorResponse1
+    description: "400 OBErrorResponse1 — instructed-amount currency mismatch against the account currency."
+    item:
+      Code: "400 Bad Request"
+      Id: "err-cof-7f2a1b"
+      Message: "Invalid request"
+      Errors:
+        - ErrorCode: "UK.OBIE.Field.Invalid"
+          Message: "InstructedAmount.Currency must match the account currency (GBP)."

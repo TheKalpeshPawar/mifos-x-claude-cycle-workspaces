@@ -1,0 +1,76 @@
+sibling: data-flow
+schema_version: "4.0"
+feature_id: auth-callback
+entries:
+  - screen_id: auth-callback
+    trigger: on_deep_link_received
+    endpoints:
+      - obie_exchange_code
+    direction: write
+    consent_required: false
+    dtos:
+      - name: OBTokenResponse
+        role: response
+        api_id: obie_exchange_code
+    produces_state: loading
+    notes: >-
+      Deep-link handler (org.mifos.openbanking://oauth/callback). Receives authorization
+      code + state from the HSBC redirect. Exchanges code for PSU-bound access token via
+      POST /obie/open-banking/v1.1/oauth2/token (authorization_code grant, PKCE S256,
+      PS256 client-assertion, mTLS). Shared by AIS and PISP consent flows.
+    error_paths:
+      - error_code: 400
+        behavior: navigate_consent_declined
+      - error_code: 401
+        behavior: navigate_consent_declined
+      - error_code: 429
+        behavior: show_error_state
+      - error_code: 500
+        behavior: show_error_state
+
+  - screen_id: auth-callback
+    trigger: on_mount
+    event: AisConsentCheck
+    endpoints:
+      - obie_poll_consent_status
+    direction: read
+    consent_required: true
+    dtos:
+      - name: OBReadConsentResponse1
+        role: response
+        api_id: obie_poll_consent_status
+    produces_state: loading
+    notes: >-
+      AIS context only — polls GET /aisp/account-access-consents/{ConsentId} after
+      token exchange. Routes to home when Status=Authorised. Routes to consent-declined
+      when Status=Rejected/Cancelled. Status=Expired routes to consent-expired.
+    error_paths:
+      - error_code: 400
+        behavior: navigate_consent_declined
+      - error_code: 401
+        behavior: navigate_consent_declined
+
+  - screen_id: auth-callback
+    trigger: on_mount
+    event: PispPaymentSubmit
+    endpoints:
+      - obie_submit_domestic_payment
+    direction: write
+    consent_required: true
+    dtos:
+      - name: OBWriteDomesticResponse5
+        role: response
+        api_id: obie_submit_domestic_payment
+    produces_state: loading
+    notes: >-
+      PAYMENT context only — submits POST /pisp/domestic-payments after token exchange.
+      The ConsentId + Initiation block must byte-match the consent staged in
+      payment-authorize-handoff. Returns DomesticPaymentId; polled to terminal status
+      then routes to payment-result. Declined consent/RJCT routes to payment-declined.
+    error_paths:
+      - error_code: 400
+        behavior: navigate_payment_declined
+      - error_code: 403
+        behavior: navigate_payment_declined
+      - error_code: 500
+        behavior: show_error_state

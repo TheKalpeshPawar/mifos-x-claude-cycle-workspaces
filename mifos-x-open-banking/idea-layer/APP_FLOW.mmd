@@ -1,36 +1,46 @@
 %% APP_FLOW.mmd — mifos-x-open-banking full navigation graph
 %% Generated 2026-05-25 by /idea sync STEP 4a
-%% Updated 2026-05-28 by /idea sync — 43 screens (added terms-of-service, privacy-policy, licenses, standing-order-detail)
-%% Updated 2026-05-29 by /idea sync — nav-graph wiring: +Settings→ConsentManager, +Settings→ChangePassword, +FoDashboard→AgentRegistration, +FoDashboard→CorporateOnboarding
-%% Updated 2026-06-11 by /idea sync — added standing-order-edit, pfm-settings, business-insights (PFM v2 epic)
-%% Updated 2026-06-11 by /idea sync — added send-money-amount, sca-challenge, payment-result, standing-order-create (source-drift write-back)
-%% OBP Sandbox: https://apisandbox.openbankproject.com
+%% Rebuilt 2026-06-12 by /idea sync STEP 4a — MIGRATION OBP → HSBC reconcile (50→39 screens).
+%%   Removed: Login, Cards, CardDetail, FxRates, ScaChallenge, ChangePassword + the entire
+%%   12-screen Field Officer persona. Added the OBIE consent + redirect screens
+%%   (consent-intro/request/declined/expired, bank-authorize-handoff, auth-callback,
+%%   payment-authorize-handoff, payment-declined). Single consumer persona, consent-gated.
+%% Source of truth: flows/{app-main,account-access-consent,consumer-banking,payment-initiation}.yaml
+%% HSBC UK/CE Open Banking sandbox: https://secure.sandbox.ob.hsbc.co.uk
 
 flowchart TB
 
   %% ──────────── Entry ────────────
   Launch([App Launch]) --> Splash
 
-  subgraph shared_group ["Shared Screens"]
+  %% ──────────── Consent Onboarding (gates everything) ────────────
+  subgraph consent_group ["Account-Access Consent (OBIE AIS)"]
     direction TB
-    Splash[Splash\nbootstrap]
-    Login[Login\nDirectLogin / OIDC]
-    Profile[Profile]
-    Settings[Settings]
-    ChangePassword[Change\nPassword]
-    TermsOfService[Terms of\nService]
-    PrivacyPolicy[Privacy\nPolicy]
-    Licenses[Licenses]
+    Splash[Splash\nconsent + token check]
+    ConsentIntro[Consent Intro\nexplain data sharing]
+    ConsentRequest[Consent Request\npick permissions → AWAU]
+    BankAuthorizeHandoff[Bank Authorize\nHandoff → HSBC]
+    AuthCallback[Auth Callback\ncode → token → AUTH]
+    ConsentDeclined[Consent\nDeclined]
+    ConsentExpired[Consent\nExpired]
   end
 
-  Splash -->|consumer| Home
-  Splash -->|field officer| FoDashboard
-  Splash -->|unauthenticated| Login
-  Login -->|consumer| Home
-  Login -->|field officer| FoDashboard
+  Splash -->|no valid consent| ConsentIntro
+  Splash -->|valid AUTH consent + token| Home
+  Splash -->|consent EXPD/RJCT/revoked| ConsentExpired
+  ConsentIntro --> ConsentRequest
+  ConsentIntro -.->|terms| TermsOfService
+  ConsentIntro -.->|privacy| PrivacyPolicy
+  ConsentRequest -->|grant → POST account-access-consents| BankAuthorizeHandoff
+  ConsentRequest -->|back| ConsentIntro
+  BankAuthorizeHandoff -->|external redirect: PSU authenticates + SCA at HSBC| AuthCallback
+  AuthCallback -->|consent AUTH| Home
+  AuthCallback -->|callback error / declined| ConsentDeclined
+  ConsentDeclined -->|try again| ConsentRequest
+  ConsentExpired -->|re-grant| ConsentRequest
 
-  %% ──────────── Consumer Banking ────────────
-  subgraph consumer_group ["Consumer Persona"]
+  %% ──────────── Consumer Banking (AISP, read-only, consent-gated) ────────────
+  subgraph consumer_group ["Consumer Banking (AISP)"]
     direction TB
 
     subgraph core_banking ["Core Banking"]
@@ -39,31 +49,23 @@ flowchart TB
       AccountDetail[Account\nDetail]
       Transactions[Transactions]
       TransactionDetail[Transaction\nDetail]
-      SendMoney[Send Money]
-      SendMoneyAmount[Send Money\nAmount]
-      SendMoneyConfirm[Send Money\nConfirm]
-      ScaChallenge[SCA\nChallenge]
-      PaymentResult[Payment\nResult]
-      Beneficiaries[Beneficiaries]
-      Cards[Cards]
-      CardDetail[Card Detail]
+      TransactionTags[Transaction\nTags]
+      Beneficiaries[Beneficiaries\nread-only]
       StandingOrders[Standing\nOrders]
-      StandingOrderCreate[Create Standing\nOrder]
       StandingOrderDetail[Standing Order\nDetail]
       StandingOrderEdit[Standing Order\nEdit]
+      DirectDebits[Direct Debits]
+      DirectDebitDetail[Direct Debit\nDetail]
     end
 
-    subgraph enhancements ["Enhancement Features"]
-      AtmLocator[ATM Locator]
-      FxRates[FX Rates]
-      Notifications[Notifications]
-      DirectDebits[Direct Debits]
+    subgraph enhancements ["Insights & Discovery"]
+      AtmLocator[ATM / Branch\nLocator]
+      Notifications[Notifications\nevent feed]
       PfmDashboard[Spending\nInsights]
       PfmSettings[PFM\nSettings]
       BusinessInsights[Business\nInsights]
-      Products[Products]
-      ConsentManager[Connected Apps]
-      TransactionTags[Transaction\nTags]
+      Products[Products\nOpen Data]
+      ConsentManager[Consent\nManager]
     end
   end
 
@@ -72,127 +74,98 @@ flowchart TB
   Home --> SendMoney
   Home --> Transactions
   Home --> Beneficiaries
-  Home --> Cards
   Home --> StandingOrders
+  Home --> DirectDebits
   Home --> AtmLocator
-  Home --> FxRates
   Home --> Notifications
   Home --> PfmDashboard
+  Home --> Products
+  Home -.->|more| Profile
+  Home -.->|more| Settings
 
   Accounts --> AccountDetail
   AccountDetail --> Transactions
   AccountDetail --> SendMoney
+  AccountDetail --> StandingOrders
+  AccountDetail --> DirectDebits
 
   Transactions --> TransactionDetail
-  TransactionDetail --> TransactionTags
+  TransactionDetail -.->|tag/note| TransactionTags
 
-  SendMoney --> SendMoneyAmount
-  SendMoneyAmount --> SendMoneyConfirm
-  SendMoneyConfirm -->|success| PaymentResult
-  SendMoneyConfirm -->|SCA required| ScaChallenge
-  ScaChallenge -->|verified| PaymentResult
-  SendMoneyConfirm -->|edit| SendMoneyAmount
-  PaymentResult --> TransactionDetail
-  PaymentResult -->|done| Home
   Beneficiaries --> SendMoney
 
-  Cards --> CardDetail
-  CardDetail --> Transactions
-  Cards --> TransactionDetail
-
   StandingOrders --> StandingOrderCreate
-  StandingOrderCreate -->|back / created| StandingOrders
   StandingOrders --> StandingOrderDetail
-  StandingOrderDetail -->|back| StandingOrders
   StandingOrderDetail --> StandingOrderEdit
-  StandingOrderEdit -->|back| StandingOrderDetail
+  StandingOrderEdit -->|save / cancel| StandingOrderDetail
+  StandingOrderDetail -->|back| StandingOrders
 
-  FxRates --> SendMoney
-  DirectDebits --> Accounts
-  PfmDashboard --> Accounts
+  DirectDebits --> DirectDebitDetail
+  DirectDebitDetail -->|back| DirectDebits
+
   PfmDashboard --> Transactions
-  PfmDashboard -.->|settings| PfmSettings
-  ConsentManager --> Settings
+  PfmDashboard --> PfmSettings
+  PfmDashboard --> BusinessInsights
   Products --> Accounts
 
-  %% ──────────── Field Officer ────────────
-  subgraph fo_group ["Field Officer Persona"]
+  %% ──────────── Payments (PISP — consent → authorise → submit → status) ────────────
+  subgraph payment_group ["Payment Initiation (PISP)"]
     direction TB
-
-    subgraph fo_core ["Core Agent Banking"]
-      FoDashboard[FO Dashboard]
-      CustomerSearch[Customer Search]
-      CustomerDetail[Customer Detail]
-      CustomerProfile[Customer Profile]
-      CustomerOnboarding[Customer\nOnboarding]
-      CorporateOnboarding[Corporate\nOnboarding]
-      KycReview[KYC Review]
-      AccountApplications[Account\nApplications]
-      ApplicationDetail[Application\nDetail]
-      CustomerMessages[Customer\nMessages]
-      Meetings[Meetings]
-    end
-
-    subgraph fo_setup ["FO Setup"]
-      AgentRegistration[Agent\nRegistration]
-    end
+    SendMoney[Send Money\npick payee + kind]
+    SendMoneyAmount[Send Money\nAmount + CoF check]
+    SendMoneyConfirm[Send Money\nConfirm → AWAU]
+    PaymentAuthorizeHandoff[Payment Authorize\nHandoff → HSBC]
+    PaymentResult[Payment\nResult]
+    PaymentDeclined[Payment\nDeclined]
+    StandingOrderCreate[Create Standing\nOrder → PISP]
   end
 
-  %% FO navigation
-  FoDashboard --> CustomerSearch
-  FoDashboard --> AccountApplications
-  FoDashboard --> KycReview
-  FoDashboard --> Meetings
-  FoDashboard --> CorporateOnboarding
-  FoDashboard --> AgentRegistration
+  SendMoney --> SendMoneyAmount
+  SendMoneyAmount -->|funds OK| SendMoneyConfirm
+  SendMoneyAmount -->|back| SendMoney
+  SendMoneyConfirm -->|confirm → POST payment-consents| PaymentAuthorizeHandoff
+  SendMoneyConfirm -->|edit| SendMoneyAmount
+  PaymentAuthorizeHandoff -->|external redirect: SCA at HSBC| AuthCallback
+  AuthCallback -->|payment submitted + settled| PaymentResult
+  AuthCallback -->|payment declined / RJCT| PaymentDeclined
+  PaymentResult --> TransactionDetail
+  PaymentResult -->|done| Home
+  PaymentDeclined -->|try again| SendMoneyConfirm
+  StandingOrderCreate -->|back / created| StandingOrders
 
-  CustomerSearch --> CustomerDetail
-  CustomerSearch --> CustomerOnboarding
-  CustomerSearch --> CorporateOnboarding
+  %% ──────────── App / Profile / Legal ────────────
+  subgraph app_group ["App / Profile / Legal"]
+    direction TB
+    Profile[Profile]
+    Settings[Settings]
+    About[About]
+    TermsOfService[Terms of\nService]
+    PrivacyPolicy[Privacy\nPolicy]
+    Licenses[Licenses]
+  end
 
-  CustomerDetail --> CustomerProfile
-  CustomerDetail --> CustomerMessages
-  CustomerDetail --> KycReview
-  CustomerDetail --> AccountApplications
-
-  CustomerOnboarding --> KycReview
-  CorporateOnboarding --> AccountApplications
-
-  KycReview --> CustomerDetail
-  KycReview --> CustomerMessages
-
-  AccountApplications --> ApplicationDetail
-  AccountApplications --> CustomerOnboarding
-
-  ApplicationDetail --> CustomerDetail
-  ApplicationDetail --> CustomerMessages
-
-  AgentRegistration --> FoDashboard
-
-  %% Shared nav (accessible from both personas via bottom nav More)
-  Home -.->|more| Profile
-  Home -.->|more| Settings
-  FoDashboard -.->|more| Profile
-  FoDashboard -.->|more| Settings
-  Profile -->|logout| Login
-
-  %% Settings sub-navigation
   Settings --> ConsentManager
-  Settings --> ChangePassword
-  ChangePassword -->|back| Profile
+  Settings --> About
+  ConsentManager -->|back| Settings
+  ConsentManager -.->|disconnect — revoke all consents| ConsentIntro
+  Profile --> ConsentManager
+  Profile -.->|disconnect HSBC| ConsentIntro
+  About --> TermsOfService
+  About --> PrivacyPolicy
+  About --> Licenses
+  TermsOfService -->|back| About
+  PrivacyPolicy -->|back| About
+  Licenses -->|back| About
 
-  %% Legal screens (accessible from About / Settings)
-  Settings -.->|legal| TermsOfService
-  Settings -.->|legal| PrivacyPolicy
-  Settings -.->|legal| Licenses
+  %% ──────────── Styling ────────────
+  classDef consent fill:#4C662B,stroke:#354E16,color:#fff
+  classDef consumer fill:#386A20,stroke:#224B0C,color:#fff
+  classDef payment fill:#55624C,stroke:#3A4A34,color:#fff
+  classDef app fill:#5C5F52,stroke:#444735,color:#fff
+  classDef entry fill:#F9FAEF,stroke:#1A1C16,color:#1A1C16
 
-  %% Styling
-  classDef shared fill:#575899,stroke:#403CD8,color:#fff
-  classDef consumer fill:#1800B1,stroke:#403CD8,color:#fff
-  classDef fo fill:#5C0068,stroke:#403CD8,color:#fff
-  classDef entry fill:#FCF8FF,stroke:#1B1B24,color:#1B1B24
-
-  class Splash,Login,Profile,Settings,ChangePassword,TermsOfService,PrivacyPolicy,Licenses shared_style
-  class Home,Accounts,AccountDetail,Transactions,TransactionDetail,SendMoney,SendMoneyAmount,SendMoneyConfirm,ScaChallenge,PaymentResult,Beneficiaries,Cards,CardDetail,StandingOrders,StandingOrderCreate,StandingOrderDetail,StandingOrderEdit,AtmLocator,FxRates,Notifications,DirectDebits,PfmDashboard,PfmSettings,BusinessInsights,Products,ConsentManager,TransactionTags consumer_style
-  class FoDashboard,CustomerSearch,CustomerDetail,CustomerProfile,CustomerOnboarding,CorporateOnboarding,KycReview,AccountApplications,ApplicationDetail,CustomerMessages,Meetings,AgentRegistration fo_style
+  class Splash,ConsentIntro,ConsentRequest,BankAuthorizeHandoff,AuthCallback,ConsentDeclined,ConsentExpired consent
+  class Home,Accounts,AccountDetail,Transactions,TransactionDetail,TransactionTags,Beneficiaries,StandingOrders,StandingOrderDetail,StandingOrderEdit,DirectDebits,DirectDebitDetail,AtmLocator,Notifications,PfmDashboard,PfmSettings,BusinessInsights,Products,ConsentManager consumer
+  class SendMoney,SendMoneyAmount,SendMoneyConfirm,PaymentAuthorizeHandoff,PaymentResult,PaymentDeclined,StandingOrderCreate payment
+  class Profile,Settings,About,TermsOfService,PrivacyPolicy,Licenses app
   class Launch entry

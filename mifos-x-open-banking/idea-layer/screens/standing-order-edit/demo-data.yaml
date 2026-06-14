@@ -2,52 +2,135 @@ sibling: demo-data
 schema_version: "4.0"
 feature_id: standing-order-edit
 
-dto_type: StandingOrderUpdateRequest
-dto_fields:
-  - field: amount_value
-    type: String
-  - field: amount_currency
-    type: String
-  - field: when.frequency
-    type: String
-  - field: when.start_date
-    type: String
-  - field: when.final_date
-    type: "String?"
+# OBIE PISP v4.0 demo envelopes for the create-replacement edit flow.
+# OBIE has no update-standing-order endpoint: editing = new consent -> GET consent
+# (confirm Authorised) -> submit new domestic-standing-order. The original order is
+# stopped out of band. Editing the rent SO to James Whitfield: amount raised
+# GBP 1200.00 -> 1250.00, debtor acc-30000012345678 (sort 30-00-00 / Oliver Bennett).
+collections:
+  # Step 1 request body posted to /pisp/domestic-standing-order-consents on Save.
+  create_domestic_standing_order_consent_request:
+    dto: OBWriteDomesticStandingOrderConsent5
+    description: "Request body — new consent carrying the edited frequency / amount / first-payment / creditor."
+    item:
+      Data:
+        Permission: "Create"
+        Initiation:
+          Frequency: "IntrvlMnthDay:01:01"
+          Reference: "Monthly Rent"
+          FirstPaymentDateTime: "2026-07-01T00:00:00+01:00"
+          FirstPaymentAmount:
+            Amount: "1250.00"
+            Currency: "GBP"
+          CreditorAccount:
+            SchemeName: "UK.OBIE.SortCodeAccountNumber"
+            Identification: "20415587224190"
+            Name: "James Whitfield"
+      Risk: {}
 
-# Pre-fill values for the edit form, mirroring the so_rent_payment record
-# from standing-order-detail/demo-data.yaml (SO-2026-0001).
-content:
-  obp_update_standing_order:
-    request:
-      amount_value: "1200.00"
-      amount_currency: "GBP"
-      when:
-        frequency: "MONTHLY"
-        start_date: "2026-01-01"
-        final_date: null
-    response:
-      id: "SO-2026-0001"
-      bank_id: "mifos.uk.gb.01"
-      account_id: "acc-alex-gbp-current-001"
-      counterparty:
-        name: "Landlord Holdings Ltd"
-      amount_value: "1200.00"
-      amount_currency: "GBP"
-      when:
-        frequency: "MONTHLY"
-        start_date: "2026-01-01"
-        final_date: null
-      active: true
+  create_domestic_standing_order_consent:
+    dto: OBWriteDomesticStandingOrderConsentResponse6
+    description: "201 Created — edited standing-order-consent staged, ConsentId returned with Status AwaitingAuthorisation."
+    item:
+      Data:
+        ConsentId: "dsoc-edit-3a72f9c1-5e80"
+        Status: "AwaitingAuthorisation"
+        CreationDateTime: "2026-06-12T09:20:41+01:00"
+        Initiation:
+          Frequency: "IntrvlMnthDay:01:01"
+          Reference: "Monthly Rent"
+          FirstPaymentDateTime: "2026-07-01T00:00:00+01:00"
+          FirstPaymentAmount:
+            Amount: "1250.00"
+            Currency: "GBP"
+          CreditorAccount:
+            SchemeName: "UK.OBIE.SortCodeAccountNumber"
+            Identification: "20415587224190"
+            Name: "James Whitfield"
+      Links:
+        Self: "https://secure.sandbox.ob.hsbc.co.uk/obie/open-banking/v4.0/pisp/domestic-standing-order-consents/dsoc-edit-3a72f9c1-5e80"
+      Meta:
+        TotalPages: 1
 
-  prefill:
-    standingOrderId: "SO-2026-0001"
-    accountId: "acc-alex-gbp-current-001"
-    beneficiaryName: "Landlord Holdings Ltd"
-    beneficiaryIban: "GB29 NWBK 6016 1331 9268 19"
-    beneficiaryBankName: "NatWest Bank"
-    amount: "1200.00"
-    currency: "GBP"
-    frequency: "Monthly"
-    startDate: "1 Jan 2026"
-    endDate: "Ongoing — no end date"
+  # Step 2 — poll the consent after the PSU authorisation redirect (Status Authorised).
+  get_domestic_standing_order_consent:
+    dto: OBWriteDomesticStandingOrderConsentResponse6
+    description: "200 OK — consent polled after authorisation redirect; Status now Authorised, ready to submit."
+    item:
+      Data:
+        ConsentId: "dsoc-edit-3a72f9c1-5e80"
+        Status: "Authorised"
+        CreationDateTime: "2026-06-12T09:20:41+01:00"
+        StatusUpdateDateTime: "2026-06-12T09:22:18+01:00"
+        Initiation:
+          Frequency: "IntrvlMnthDay:01:01"
+          Reference: "Monthly Rent"
+          FirstPaymentDateTime: "2026-07-01T00:00:00+01:00"
+          FirstPaymentAmount:
+            Amount: "1250.00"
+            Currency: "GBP"
+          CreditorAccount:
+            SchemeName: "UK.OBIE.SortCodeAccountNumber"
+            Identification: "20415587224190"
+            Name: "James Whitfield"
+      Links:
+        Self: "https://secure.sandbox.ob.hsbc.co.uk/obie/open-banking/v4.0/pisp/domestic-standing-order-consents/dsoc-edit-3a72f9c1-5e80"
+      Meta:
+        TotalPages: 1
+
+  # Step 3 request body posted to /pisp/domestic-standing-orders.
+  create_domestic_standing_order_request:
+    dto: OBWriteDomesticStandingOrder3
+    description: "Request body — submits the replacement standing order; Initiation must match the authorised consent."
+    item:
+      Data:
+        ConsentId: "dsoc-edit-3a72f9c1-5e80"
+        Initiation:
+          Frequency: "IntrvlMnthDay:01:01"
+          Reference: "Monthly Rent"
+          FirstPaymentDateTime: "2026-07-01T00:00:00+01:00"
+          FirstPaymentAmount:
+            Amount: "1250.00"
+            Currency: "GBP"
+          CreditorAccount:
+            SchemeName: "UK.OBIE.SortCodeAccountNumber"
+            Identification: "20415587224190"
+            Name: "James Whitfield"
+      Risk: {}
+
+  create_domestic_standing_order:
+    dto: OBWriteDomesticStandingOrderResponse6
+    description: "201 Created — replacement standing order submitted, DomesticStandingOrderId returned with Status InitiationCompleted."
+    item:
+      Data:
+        DomesticStandingOrderId: "dso-edit-9b03d54a-71e6"
+        ConsentId: "dsoc-edit-3a72f9c1-5e80"
+        Status: "InitiationCompleted"
+        CreationDateTime: "2026-06-12T09:22:53+01:00"
+        Initiation:
+          Frequency: "IntrvlMnthDay:01:01"
+          Reference: "Monthly Rent"
+          FirstPaymentDateTime: "2026-07-01T00:00:00+01:00"
+          FirstPaymentAmount:
+            Amount: "1250.00"
+            Currency: "GBP"
+          CreditorAccount:
+            SchemeName: "UK.OBIE.SortCodeAccountNumber"
+            Identification: "20415587224190"
+            Name: "James Whitfield"
+      Links:
+        Self: "https://secure.sandbox.ob.hsbc.co.uk/obie/open-banking/v4.0/pisp/domestic-standing-orders/dso-edit-9b03d54a-71e6"
+      Meta:
+        TotalPages: 1
+
+  # 400 OB.Field.Invalid driving the error state on Save.
+  create_domestic_standing_order_consent.error:
+    dto: OBErrorResponse1
+    description: "400 OBErrorResponse1 — rejected edited consent (invalid frequency code)."
+    item:
+      Code: "400 Bad Request"
+      Id: "err-dsoc-edit-6c20af"
+      Message: "Invalid request"
+      Errors:
+        - ErrorCode: "UK.OBIE.Field.Invalid"
+          Message: "Initiation.Frequency is not a valid OBIE schedule code."

@@ -1,21 +1,76 @@
 sibling: demo-data
 schema_version: "4.0"
 feature_id: pfm-settings
-content:
-  obp_personal_data_fields:
-    items:
-      - name: "pfm_base_currency"
-        value: "EUR"
-      - name: "pfm_base_currency"
-        value: "GBP"
 
-  obp_personal_data_field_create:
-    items:
-      - name: "pfm_base_currency"
-        value: "EUR"
+# OBIE AIS data backing PFM settings. The accounts list yields the distinct base-currency
+# option set; the party read supplies the header holder name (resolved legal name, never a
+# raw login). The base currency itself is a LOCAL preference — OBIE has no preferences
+# endpoint — seeded from the default account's currency when never set.
+collections:
+  # GET /aisp/accounts — distinct Data.Account[].Currency drives the currency option set.
+  accounts:
+    dto: OBReadAccount6
+    description: "Authorised account list; distinct currencies drive the base-currency selector options."
+    item:
+      Data:
+        Account:
+          - AccountId: "acc-hsbc-0001"
+            Status: "Enabled"
+            Currency: "GBP"
+            AccountTypeCode: "CurrentAccount"
+            Nickname: "Everyday Current"
+            Account:
+              - SchemeName: "UK.OBIE.SortCodeAccountNumber"
+                Identification: "401276 71625498"
+                Name: "Mr J A Whitfield"
+          - AccountId: "acc-hsbc-0003"
+            Status: "Enabled"
+            Currency: "EUR"
+            AccountTypeCode: "CurrentAccount"
+            Nickname: "Euro Travel"
+            Account:
+              - SchemeName: "UK.OBIE.IBAN"
+                Identification: "GB29HBUK40127671625533"
+                Name: "Mr J A Whitfield"
+      Links: { Self: "https://secure.sandbox.ob.hsbc.co.uk/obie/open-banking/v4.0/aisp/accounts" }
+      Meta: { TotalPages: 1 }
 
-  obp_fx_rate:
-    items:
-      - conversion_value: 1.16278
-        inverse_conversion_value: 0.85999
-        effective_date: "2026-06-07"
+  # GET /aisp/accounts/{AccountId}/party — account-holder identity for the settings header.
+  party:
+    dto: OBReadParty3
+    description: "Account-holder party for the settings header — holder name resolved from FullLegalName, never a login."
+    item:
+      Data:
+        Party:
+          - PartyId: "party-hsbc-9f31"
+            PartyType: "Sole"
+            Name: "James Whitfield"
+            FullLegalName: "Mr James Andrew Whitfield"
+            EmailAddress: "j.whitfield@example.co.uk"
+      Links: { Self: "https://secure.sandbox.ob.hsbc.co.uk/obie/open-banking/v4.0/aisp/accounts/acc-hsbc-0001/party" }
+      Meta: { TotalPages: 1 }
+
+  # LOCAL preference read (no OBIE endpoint) — persisted base currency.
+  local_base_currency_pref:
+    description: "Persisted base-currency preference read from the local device store. Seeded from default account currency when absent."
+    item:
+      name: "pfm_base_currency"
+      value: "GBP"
+
+  # LOCAL preference write echo — confirms a SelectBaseCurrency persist.
+  local_base_currency_write:
+    description: "Echo of the optimistic write when the user selects a new base currency."
+    item:
+      name: "pfm_base_currency"
+      value: "EUR"
+
+  # OBErrorResponse1 — 403 InvalidConsentStatus for the settings load error state.
+  load_error:
+    description: "Representative 403 OBErrorResponse1 for an expired/revoked account-access consent on settings load."
+    item:
+      Code: "403 Forbidden"
+      Id: "pfm-settings-err-403-4a18"
+      Message: "Forbidden"
+      Errors:
+        - ErrorCode: "UK.OBIE.Resource.InvalidConsentStatus"
+          Message: "The account-access consent is no longer in an authorised state."

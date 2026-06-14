@@ -1,94 +1,70 @@
 sibling: demo-data
 schema_version: "4.0"
 feature_id: account-detail
-content:
-  GET_obp_v5_1_0_banks_bankId_accounts_accountId_owner_account:
-    items:
-      - id: "acc-mwangi-kes-savings-001"
-        label: "John Mwangi - KES Savings"
-        account_type: "SAVINGS"
-        balance:
-          currency: "KES"
-          amount: "142500.75"
-        account_routings:
-          - scheme: "IBAN"
-            address: "KE1900200001001000001"
-          - scheme: "AccountNumber"
-            address: "1100204857312"
 
-  GET_obp_v5_1_0_my_banks_bankId_accounts_accountId_transactions:
-    items:
-      - id: "txn-001-ke-2026-05-20"
-        details:
-          type: "TRANSFER_OUT"
-          description: "M-Pesa Transfer to 0722 345 678 - Rent Payment Westlands"
-          posted: "2026-05-20T14:22:00Z"
-          value:
-            currency: "KES"
-            amount: "-45000.00"
-        other_account:
-          holder:
-            name: "Grace Wanjiru"
-            is_alias: false
-          metadata:
-            public_alias: "GW-RENT"
+# OBIE AISP fixtures backing the account-detail screen for the current account.
+# get_account_details -> OBReadAccount6 (single Data.Account[] item by AccountId);
+# get_account_balances -> OBReadBalance1 (Data.Balance[] for THIS account, InterimAvailable hero
+# + ClosingBooked). Same James Whitfield persona / sort-code 30-00-00 as the accounts + home screens.
+collections:
+  get_account_details:
+    dto: OBReadAccount6
+    description: "200 OK — single AccountId identity (scheme/identification/nickname/type/servicer) for the current account."
+    item:
+      Data:
+        Account:
+          - AccountId: "acc-jw-current-0001"
+            Status: "Enabled"
+            StatusUpdateDateTime: "2026-06-12T09:41:18.204Z"
+            Currency: "GBP"
+            AccountCategory: "Personal"
+            AccountTypeCode: "CurrentAccount"
+            Nickname: "Everyday Current"
+            Account:
+              - SchemeName: "UK.OBIE.SortCodeAccountNumber"
+                Identification: "30000012345678"
+                Name: "James Whitfield"
+            Servicer:
+              SchemeName: "UK.OBIE.BICFI"
+              Identification: "HBUKGB4B"
+      Links:
+        Self: "https://secure.sandbox.ob.hsbc.co.uk/obie/open-banking/v4.0/aisp/accounts/acc-jw-current-0001"
+      Meta:
+        TotalPages: 1
 
-      - id: "txn-002-ke-2026-05-18"
-        details:
-          type: "CREDIT"
-          description: "Salary Credit - Safaricom PLC May 2026"
-          posted: "2026-05-18T08:00:00Z"
-          value:
-            currency: "KES"
-            amount: "185000.00"
-        other_account:
-          holder:
-            name: "Safaricom PLC Payroll"
-            is_alias: false
-          metadata:
-            public_alias: "SAFARICOM-PAYROLL"
+  get_account_balances:
+    dto: OBReadBalance1
+    description: "200 OK — balances for the current account; InterimAvailable drives the hero amount, ClosingBooked the secondary line."
+    item:
+      Data:
+        Balance:
+          - AccountId: "acc-jw-current-0001"
+            CreditDebitIndicator: "Credit"
+            Type: "InterimAvailable"
+            DateTime: "2026-06-12T09:41:18.204Z"
+            Amount:
+              Amount: "2483.17"
+              Currency: "GBP"
+          - AccountId: "acc-jw-current-0001"
+            CreditDebitIndicator: "Credit"
+            Type: "ClosingBooked"
+            DateTime: "2026-06-11T23:59:59.000Z"
+            Amount:
+              Amount: "2611.92"
+              Currency: "GBP"
+      Links:
+        Self: "https://secure.sandbox.ob.hsbc.co.uk/obie/open-banking/v4.0/aisp/accounts/acc-jw-current-0001/balances"
+      Meta:
+        TotalPages: 1
 
-      - id: "txn-003-ke-2026-05-16"
-        details:
-          type: "UTILITY_PAYMENT"
-          description: "Kenya Power & Lighting - Meter 12345678"
-          posted: "2026-05-16T11:35:00Z"
-          value:
-            currency: "KES"
-            amount: "-3200.00"
-        other_account:
-          holder:
-            name: "Kenya Power & Lighting Co."
-            is_alias: false
-          metadata:
-            public_alias: "KPLC-BILL"
-
-      - id: "txn-004-ke-2026-05-14"
-        details:
-          type: "ATM_WITHDRAWAL"
-          description: "ATM Withdrawal - KCB Westlands Branch"
-          posted: "2026-05-14T17:10:00Z"
-          value:
-            currency: "KES"
-            amount: "-20000.00"
-        other_account:
-          holder:
-            name: "KCB ATM WEST-004"
-            is_alias: true
-          metadata:
-            public_alias: "KCB-ATM"
-
-      - id: "txn-005-ke-2026-05-12"
-        details:
-          type: "TRANSFER_IN"
-          description: "Equity Bank Transfer - Peter Kamau Business Settlement"
-          posted: "2026-05-12T09:50:00Z"
-          value:
-            currency: "KES"
-            amount: "25000.00"
-        other_account:
-          holder:
-            name: "Peter Njoroge Kamau"
-            is_alias: false
-          metadata:
-            public_alias: "PK-BUSINESS"
+  # OBErrorResponse1 envelope for the 400/403 error state.
+  error:
+    dto: OBErrorResponse1
+    description: "Representative 400 OBErrorResponse1 driving the error banner (e.g. unknown AccountId)."
+    item:
+      Code: "400 Bad Request"
+      Id: "b318-err-44c1"
+      Message: "Invalid request"
+      Errors:
+        - ErrorCode: "UK.OBIE.Field.Invalid"
+          Message: "The supplied AccountId does not match an authorised account."

@@ -1,9 +1,9 @@
 ---
-ui_yaml_sha: 32104a29c04c671ed5b57d3bf8d3f614dc3c4a3c7f3991600922913889eb8f9c
-design_md_hash: 71b53c295bf863d34057f16264caf37a11512e794d356b3bec219352550d05ec
-app_shell_hash: ad7a6b42b2ae10e63ef270f15d857bd44445d775e8d9b09313b31e6569df95b4
-design_read_hash: 1639ea0545fdbc1ba9ce1eef5369eae224a6f4f57f07f0639b699652daeb8558
-content_hash: 0d8c9ff7a940e9df82e21d33cdadf771d5ed36f1e3c2137673b93fac7fd2cf27
+ui_yaml_sha: c914a33e7bebf707b3d60663987107732c5e4db0741f63e5759a4e30102e3c92
+design_md_hash: 2b17083785e7e532a1554540e628db54640dfab77857b6c90d802767add94ba2
+app_shell_hash: d2fe35b34f2ccfe703fcea97291ff9cb0453b148553d7b69b40f4cfa59d08766
+design_read_hash: 60a4c95f7619b31daccc130861a96508d0cacf2f29734f43c35036c1f0280375
+content_hash: 6ae166396180117722e81c8a627c7cc9a625edbdccd6cb0d0e3067319fbb50d8
 
 design_read_aesthetic: taste-default
 design_read_dials: {variance: 4, motion: 3, density: 5}
@@ -24,38 +24,97 @@ craft_rules_version: v1.0.0
 
 # accounts — content state
 
-> Auto-generated from screens/accounts/ui.yaml @ SHA 783643b36492e304
+> Auto-generated from screens/accounts/ui.yaml @ SHA 0dca46203acf2349
 > Stitch DesignSystem: 2005644667042354169
 > DO NOT redeclare colors / fonts / spacing — they live in DESIGN.md.
 
 ↓↓↓ MOCKUP PROMPT
 
-Design the content state of the My Accounts screen for **mifos-x-open-banking**, a Open Banking KMP super-app — consumer retail banking + field officer agent banking powered by Open Bank Project API v7, built with Compose Multiplatform across Android, iOS, Desktop, and Web.
+## Archetype: index_list
 
-Palette: background #12140E, surface #1E201A, surfaceHigh #282A24, onSurface #E3E3D8, primary #B2D188, onPrimary #1F3701, primaryContainer #354E16, onPrimaryContainer #CDEDA3, secondary #A0CFCB, onSecondary #003735, outline #8F9285, outlineVariant #44483D, onSurfaceVariant #C5C8BA, pending #E8A317, error #FFB4AB.
+## Layout
+- type: scrollable_column
+- padding: default
+- alignment: start
 
-**Component 1 — Top App Bar** (56dp tall, full width): Title "My Accounts" Outfit SemiBold 20sp #E3E3D8, left-aligned 16dp inset. Trailing help icon 24dp tinted #C5C8BA. Background #12140E, zero elevation.
+## Composition (top → bottom)
+1. **stack** (#accounts_header) — "accounts_header"
+   - **text** (#accounts_title) — content: "My Accounts"
+   - **icon** (#accounts_help_icon) — content: "help_outline"
+2. **text_field** (#accounts_search)
+3. **stack** (#bank_group_1_header) — "bank_group_1_header"
+   - **stack** (#bank_group_1_title_row) — "bank_group_1_title_row"
+      - **icon** (#bank_group_1_icon) — content: "account_balance"
+      - **stack** (#bank_group_1_title_col) — "bank_group_1_title_col"
+         - **text** (#bank_group_1_name) — content: "Mifos Bank UK"
+         - **text** (#bank_group_1_count) — content: "2 accounts"
+4. **box** (#account_card_1) — "account_card_1"
+   - **stack** (#acct1_header_row) — "acct1_header_row"
+      - **text** (#acct1_label) — content: "Primary Checking"
+      - **box** (#acct1_type_badge) — "acct1_type_badge"
+         - **text** (#acct1_type_label) — content: "CHECKING"
+   - **text** (#acct1_balance) — content: "£4,250.00"
+   - **stack** (#acct1_iban_row) — "acct1_iban_row"
+      - **icon** (#acct1_iban_icon) — content: "account_box"
+      - **text** (#acct1_iban) — content: "DE89 3704 0044 0532 0130 00"
+5. **box** (#account_card_2) — "account_card_2"
+   - **stack** (#acct2_header_row) — "acct2_header_row"
+      - **text** (#acct2_label) — content: "Holiday Savings"
+      - **box** (#acct2_type_badge) — "acct2_type_badge"
+         - **text** (#acct2_type_label) — content: "SAVINGS"
+   - **text** (#acct2_balance) — content: "£6,180.50"
+   - **stack** (#acct2_iban_row) — "acct2_iban_row"
+      - **icon** (#acct2_iban_icon) — content: "account_box"
+      - **text** (#acct2_iban) — content: "DE89 3704 0044 0532 0131 00"
+6. **stack** (#bank_group_2_header) — "bank_group_2_header"
+   - **stack** (#bank_group_2_title_row) — "bank_group_2_title_row"
+      - **icon** (#bank_group_2_icon) — content: "account_balance"
+      - **stack** (#bank_group_2_title_col) — "bank_group_2_title_col"
+         - **text** (#bank_group_2_name) — content: "Mifos Business UK"
+         - **text** (#bank_group_2_count) — content: "1 account"
+7. **box** (#account_card_3) — "account_card_3"
+   - **stack** (#acct3_header_row) — "acct3_header_row"
+      - **text** (#acct3_label) — content: "Business Current"
+      - **box** (#acct3_type_badge) — "acct3_type_badge"
+         - **text** (#acct3_type_label) — content: "BUSINESS"
+   - **text** (#acct3_balance) — content: "£2,050.00"
+   - **stack** (#acct3_iban_row) — "acct3_iban_row"
+      - **icon** (#acct3_iban_icon) — content: "account_box"
+      - **text** (#acct3_iban) — content: "DE89 3704 0044 0532 0132 00"
+8. **text** (#accounts_no_match_row) — content: "No accounts match your search."
 
-**Component 2 — Search Bar** (full width, 48dp tall, 16dp horizontal inset, top margin 12dp): Outlined pill field, corner radius 999dp, stroke 1dp #8F9285. Leading search icon 20dp #C5C8BA. Placeholder "Search by name, number or label" Outfit Regular 16sp #8F9285. Background #1E201A. No filter tabs, no chips.
+## State-specific behavior
+- Fully populated with the real demo content listed below.
 
-**Component 3 — Bank Group Header: Mifos Bank UK** (full width, 16dp insets, top margin 20dp): Row — bank icon 20dp #B2D188, column: "Mifos Bank UK" Outfit Medium 14sp #E3E3D8, "2 accounts" Outfit Regular 12sp #C5C8BA. Subtotal "£10,430.50" Outfit SemiBold 16sp #B2D188 right-aligned. 12dp vertical padding.
+## Content source manifest
+- (no demo collections bound for this state)
 
-**Component 4 — Account Card: Primary Checking** (80dp min-height, 12dp radius, margin-top 8dp): Background #282A24. Header row: "Primary Checking" Outfit Medium 16sp #E3E3D8 left; badge "CHECKING" 11sp #CDEDA3 on #354E16 pill right. Balance "£4,250.00" Outfit SemiBold 22sp #B2D188. IBAN row: account_box icon 16dp #8F9285, "DE89 3704 0044 0532 0130 00" 12sp #C5C8BA. 16dp padding. index_list archetype card.
+## Components (vocabulary used in this prompt)
+- (no named components extracted — see composition)
 
-**Component 5 — Account Card: Holiday Savings** (80dp min-height, 12dp radius, margin-top 8dp): Background #282A24. Header row: "Holiday Savings" Outfit Medium 16sp #E3E3D8 left; badge "SAVINGS" 11sp #CDEDA3 on #354E16 pill right. Balance "£6,180.50" Outfit SemiBold 22sp #B2D188. IBAN row: account_box icon 16dp #8F9285, "DE89 3704 0044 0532 0131 00" 12sp #C5C8BA. 16dp padding.
+## Shell (app-shell resolved for this state)
+- App-shell rules are defined per project; per-screen overrides are merged in.
+- Render MUST keep nav/bar elements consistent with the resolved shell — present or absent, never partial.
 
-**Component 6 — Bank Group Header: Mifos Business UK** (full width, 16dp insets, margin-top 20dp): Row — bank icon 20dp #B2D188, column: "Mifos Business UK" Outfit Medium 14sp #E3E3D8, "1 account" 12sp #C5C8BA. Subtotal "£2,050.00" Outfit SemiBold 16sp #B2D188 right-aligned. 12dp vertical padding.
+## Tokens (design-tokens roles consumed)
+- Colors: primary / secondary / surface / on-surface / on-surface-variant / error (M3 standard roles).
+- Typography: body-large / title-large (M3 standard roles).
+- Spacing: gap.sm / gap.md / gap.lg.
+- ALL token references are by name from the uploaded design system — no hex literals, no inline size values.
 
-**Component 7 — Account Card: Business Current** (80dp min-height, 12dp radius, margin-top 8dp): Background #282A24. Header row: "Business Current" Outfit Medium 16sp #E3E3D8 left; badge "BUSINESS" 11sp #CDEDA3 on #354E16 pill right. Balance "£2,050.00" Outfit SemiBold 22sp #B2D188. IBAN row: account_box icon 16dp #8F9285, "DE89 3704 0044 0532 0132 00" 12sp #C5C8BA. 16dp padding.
+## Self-Validation Checklist (MANDATORY)
 
-**Component 8 — Divider** (margin-top 20dp): 1dp horizontal rule #44483D, 16dp insets.
+Before returning the rendered mockup, verify ALL of these are true. If any fails, FIX the output and re-render.
 
-**Component 9 — Total Balance Footer** (56dp tall): Row — "Total across 3 accounts" Outfit Regular 14sp #C5C8BA left, "£12,480.50" Outfit Bold 18sp #E3E3D8 right. Background transparent.
+- [ ] **Per-state shape:** the render shows ONLY this state ("content"). Do not blend multiple states into one mockup.
+- [ ] **Real content:** every text label, image, and data point reflects the content source manifest above — no numbered generic items, no filler text, no dummy text, no empty strings.
+- [ ] **Token fidelity:** colors come from the uploaded design system (primary/secondary/surface/etc.) by name; spacing comes from declared scale tokens. No invented hex codes, no invented size literals.
+- [ ] **Component vocabulary:** every component in the render maps to a named design-system component (Card, FAB, BottomBar, etc.) — no invented or off-system components.
+- [ ] **Archetype honored:** the layout follows the "index_list" archetype skeleton — composition order top → bottom matches the Composition section.
+- [ ] **App-shell parity:** if a bottom nav, top app bar, or FAB appears in the render, it matches the resolved shell from the app-shell config. Shell elements are either present-and-consistent OR absent — never partial.
 
-**Component 10 — FAB: Add Account** (56dp circle, bottom-right 16dp inset): Background #B2D188, add icon 24dp #1F3701. Elevation shadow.
+If any of these fail and the fix isn't clear → halt rendering and surface "Self-validation failed at: {checkpoint}."
 
-DO NOT use em-dash anywhere in text. DO NOT make any headline more than 3 lines or any subtitle more than 25 words. DO NOT break the page theme between sections. DO NOT place light text on light buttons or dark text on dark buttons.
-
-Scrollable dark surface #12140E with a calm, refined feel. Earth-green primary #B2D188 on balances, subtotals, FAB, and IBAN icons signals financial stability; card lift from #12140E to #282A24 creates depth consistent with the taste-default dials.
+Return ONLY when all 6 checkpoints pass.
 
 ↑↑↑ MOCKUP PROMPT

@@ -1,15 +1,48 @@
 sibling: demo-data
 schema_version: "4.0"
 feature_id: profile
-content:
-  obp_get_user_profile:
-    item:
-      user_id: "usr-amina-wanjiru-ke-001"
-      email: "amina.wanjiru@gmail.com"
-      username: "amina.wanjiru"
 
-  obp_update_user_profile:
+# OBIE OBReadParty3 — the account-holder (PSU) returned by GET /aisp/party for the
+# authorised account-access consent (ReadParty cluster). HSBC UK sandbox. Read-only:
+# there is no update-party endpoint under Open Banking. Data.Party is an array of OBParty2.
+collections:
+  get_party_response:
+    dto: OBReadParty3
+    description: "200 OK — the authenticated PSU (sole account holder) for the connected HSBC UK account, with name, legal name, email and UK postal address."
     item:
-      user_id: "usr-amina-wanjiru-ke-001"
-      email: "amina.wanjiru@gmail.com"
-      phone_number: "+254722334455"
+      Data:
+        Party:
+          - PartyId: "party-hsbc-uk-7f31a02c"
+            PartyNumber: "PSU-44019283"
+            PartyType: "Sole"
+            Name: "James Whitfield"
+            FullLegalName: "James Edward Whitfield"
+            EmailAddress: "j.whitfield@example.co.uk"
+            Mobile: "+447700900412"
+            Address:
+              - AddressType: "Residential"
+                AddressLine:
+                  - "Flat 6, Pennington House"
+                  - "42 Calthorpe Road"
+                StreetName: "Calthorpe Road"
+                BuildingNumber: "42"
+                PostCode: "B15 1QY"
+                TownName: "Birmingham"
+                CountrySubDivision:
+                  - "West Midlands"
+                Country: "GB"
+      Links:
+        Self: "https://secure.sandbox.ob.hsbc.co.uk/obie/open-banking/v4.0/aisp/party"
+      Meta:
+        TotalPages: 1
+
+  # OBErrorResponse1 — drives the error state (403 consent doesn't include ReadParty).
+  get_party_error:
+    description: "Representative 403 OBErrorResponse1 — the account-access consent does not include the ReadParty permission."
+    item:
+      Code: "403 Forbidden"
+      Id: "prof-err-5a2d"
+      Message: "Forbidden"
+      Errors:
+        - ErrorCode: "UK.OBIE.Resource.InvalidConsentStatus"
+          Message: "Your data-sharing consent doesn't include profile details."

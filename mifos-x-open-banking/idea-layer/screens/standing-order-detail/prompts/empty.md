@@ -1,9 +1,9 @@
 ---
-ui_yaml_sha: a1448cadef7246768dbb0cfbf2db2a732fde45be45f4f072a644677b222e1f9f
-design_md_hash: 71b53c295bf863d34057f16264caf37a11512e794d356b3bec219352550d05ec
-app_shell_hash: ad7a6b42b2ae10e63ef270f15d857bd44445d775e8d9b09313b31e6569df95b4
-design_read_hash: 1639ea0545fdbc1ba9ce1eef5369eae224a6f4f57f07f0639b699652daeb8558
-content_hash: 1a952819884accb160c1e5f00048070f6a3e9457bb05200d869b83e39c347438
+ui_yaml_sha: c09fb6b7e523aa0f743a826db9c04ae127623f0116429593eabff09a11292fc7
+design_md_hash: 2b17083785e7e532a1554540e628db54640dfab77857b6c90d802767add94ba2
+app_shell_hash: d2fe35b34f2ccfe703fcea97291ff9cb0453b148553d7b69b40f4cfa59d08766
+design_read_hash: 60a4c95f7619b31daccc130861a96508d0cacf2f29734f43c35036c1f0280375
+content_hash: 6e1a557941ba399eafac00f96334c8c93503eca66bc2f2b9ea39b1d2b8016cd2
 
 design_read_aesthetic: taste-default
 design_read_dials: {variance: 4, motion: 3, density: 5}
@@ -14,8 +14,8 @@ feature: standing-order-detail
 state: empty
 state_visibility: empty
 
-project_id: 'null'
-design_system_id: 'null'
+project_id: '17153754672098888646'
+design_system_id: '2005644667042354169'
 
 generated_by: stitch-prompt-build.ts v2.0.0
 prompt_template_version: stitch-per-state-v3.0.0
@@ -24,26 +24,108 @@ craft_rules_version: v1.0.0
 
 # standing-order-detail — empty state
 
-> Auto-generated from screens/standing-order-detail/ui.yaml @ SHA 4ffb6ddb318e1b3f
-> Stitch DesignSystem: (pending DESIGN.md upload — run /idea-export-stitch sub-plan 02)
+> Auto-generated from screens/standing-order-detail/ui.yaml @ SHA 013d2c33fd2393fd
+> Stitch DesignSystem: 2005644667042354169
 > DO NOT redeclare colors / fonts / spacing — they live in DESIGN.md.
 
 ↓↓↓ MOCKUP PROMPT
-Design the empty state of the standing order detail screen for **Mifos X Open Banking**, a Open Banking KMP super-app — consumer retail banking + field officer agent banking powered by Open Bank Project API v7, built with Compose Multiplatform across Android, iOS, Desktop, and Web.
 
-Palette: primary #B2D188, on_primary #1F3701, primary_container #354E16, on_primary_container #CDEDA3, secondary #A0CFCB, on_secondary #003735, secondary_container #1F4E4B, on_secondary_container #BCEBE7, background #12140E, on_background #E3E3D8, surface #12140E, on_surface #E3E3D8, surface_variant #44483D, on_surface_variant #C5C8BA, surface_container #1E201A, surface_container_high #282A24, outline #8F9285, outline_variant #44483D, error #FFB4AB, pending #E8A317, nav_active_indicator #354E16.
+## Archetype: detail_screen
 
-**Component 1 — App Bar** (64dp tall, full width): Title "Standing Order Detail" Outfit Medium 18sp #E3E3D8 centered. Leading back-arrow 24dp tinted #B2D188. Background #12140E, zero elevation.
+## Layout
+- type: column
+- padding: spacing.xl
+- alignment: center
 
-**Component 2 — Hero** (centered, top margin 80dp): 120dp x 120dp illustration of a circular arrows icon with a disconnected link rendered in neutral tones #44483D / #8F9285 on #12140E. Conveys "no data found" without alarm. empty_state archetype.
+## Composition (top → bottom)
+1. **stack** (#sod_root)
+2. **card** (#sod_recipient_card)
+3. **text** (#sod_recipient_header) — content: "RECIPIENT"
+4. **stack** (#sod_recipient_name_row)
+5. **text** (#sod_recipient_name_label) — content: "Name"
+6. **text** (#sod_recipient_name_value) — content: "Landlord Holdings Ltd"
+7. **stack** (#sod_recipient_account_row)
+8. **text** (#sod_recipient_account_label) — content: "Account"
+9. **text** (#sod_recipient_account_value) — content: "····s001"
+10. **card** (#sod_schedule_card)
+11. **text** (#sod_schedule_header) — content: "SCHEDULE"
+12. **stack** (#sod_status_row)
+13. **text** (#sod_status_label) — content: "Status"
+14. **text** (#sod_status_value) — content: "Active"
+15. **stack** (#sod_frequency_row)
+16. **text** (#sod_frequency_label) — content: "Frequency"
+17. **text** (#sod_frequency_value) — content: "Monthly"
+18. **stack** (#sod_first_payment_row)
+19. **text** (#sod_first_payment_label) — content: "First Payment"
+20. **text** (#sod_first_payment_value) — content: "1 Jan 2026"
+21. **stack** (#sod_last_payment_row)
+22. **text** (#sod_last_payment_label) — content: "Last Payment"
+23. **text** (#sod_last_payment_value) — content: "1 May 2026"
+24. **stack** (#sod_next_payment_row)
+25. **text** (#sod_next_payment_label) — content: "Next Payment"
+26. **text** (#sod_next_payment_value) — content: "1 Jun 2026"
+27. **stack** (#sod_final_date_row)
+28. **text** (#sod_final_date_label) — content: "Final Date"
+29. **text** (#sod_final_date_value) — content: "Ongoing"
+30. **card** (#sod_amount_card)
+31. **text** (#sod_amount_header) — content: "PAYMENT AMOUNT"
+32. **stack** (#sod_amount_value_row)
+33. **text** (#sod_amount_value) — content: "£1,200.00"
+34. **badge** (#sod_currency_badge) — content: "GBP"
+35. **card** (#sod_history_card)
+36. **text** (#sod_history_header) — content: "RECENT EXECUTIONS"
+37. **list** (#sod_history_list)
+38. **list_item** (#sod_history_row)
+39. **text** (#sod_history_row_date) — content: "1 May 2026"
+40. **text** (#sod_history_row_status) — content: "Completed"
+41. **text** (#sod_history_row_amount) — content: "£1,200.00"
+42. **stack** (#sod_action_row)
+43. **button** (#sod_pause_resume_button) — label: "Pause"
+44. **button** (#sod_cancel_button) — label: "Cancel"
+45. **spacer** (#sod_bottom_spacer)
+46. **skeleton** (#sod_loading_skeleton)
+47. **stack** (#sod_error_state)
+48. **icon** (#sod_error_icon) — content: "cloud_off"
+49. **text** (#sod_error_title) — content: "Standing Order Not Found"
+50. **text** (#sod_error_message) — content: "We could not load this standing order. It may have been cancelled or there may b"
+51. **button** (#sod_retry_button) — label: "Retry"
+52. **stack** (#sod_empty_state)
+53. **icon** (#sod_empty_icon) — content: "cloud_off"
+54. **text** (#sod_empty_message) — content: "No details are available for this standing order."
+55. **button** (#sod_back_to_list_button) — label: "Go Back"
 
-**Component 3 — Text** (centered, top margin 32dp, horizontal padding 48dp): "No details are available for this standing order." Outfit SemiBold 20sp #E3E3D8 centered, max 2 lines.
+## State-specific behavior
+- Show an empty-state illustration, a friendly message, and one primary call-to-action button.
 
-**Component 4 — Text** (centered, top margin 8dp, horizontal padding 48dp): "This standing order may have been cancelled or the details could not be retrieved." Outfit Regular 14sp #8F9285 centered, line-height 20sp, max 25 words.
+## Content source manifest
+- (no demo collections bound for this state)
 
-**Component 5 — Button** (full width minus 64dp insets, top margin 32dp): Filled pill button 48dp tall, 999dp corner radius, background #B2D188, leading list icon 20dp #1F3701, label "Back to Standing Orders" Outfit SemiBold 15sp #1F3701 centered.
+## Components (vocabulary used in this prompt)
+- (no named components extracted — see composition)
 
-Do not use em-dash anywhere in text. Do not make any headline more than 3 lines or any subtitle more than 25 words. Do not break the page theme between sections. Do not place light text on light buttons or dark text on dark buttons.
+## Shell (app-shell resolved for this state)
+- App-shell rules are defined per project; per-screen overrides are merged in.
+- Render MUST keep nav/bar elements consistent with the resolved shell — present or absent, never partial.
 
-Centered layout with generous vertical breathing room on #12140E. The earthy green accent #B2D188 on the back button provides a clear recovery action, keeping the no-data state calm and composed within the trust-first open banking atmosphere.
+## Tokens (design-tokens roles consumed)
+- Colors: primary / secondary / surface / on-surface / on-surface-variant / error (M3 standard roles).
+- Typography: body-large / title-large (M3 standard roles).
+- Spacing: gap.sm / gap.md / gap.lg.
+- ALL token references are by name from the uploaded design system — no hex literals, no inline size values.
+
+## Self-Validation Checklist (MANDATORY)
+
+Before returning the rendered mockup, verify ALL of these are true. If any fails, FIX the output and re-render.
+
+- [ ] **Per-state shape:** the render shows ONLY this state ("empty"). Do not blend multiple states into one mockup.
+- [ ] **Real content:** every text label, image, and data point reflects the content source manifest above — no numbered generic items, no filler text, no dummy text, no empty strings.
+- [ ] **Token fidelity:** colors come from the uploaded design system (primary/secondary/surface/etc.) by name; spacing comes from declared scale tokens. No invented hex codes, no invented size literals.
+- [ ] **Component vocabulary:** every component in the render maps to a named design-system component (Card, FAB, BottomBar, etc.) — no invented or off-system components.
+- [ ] **Archetype honored:** the layout follows the "detail_screen" archetype skeleton — composition order top → bottom matches the Composition section.
+- [ ] **App-shell parity:** if a bottom nav, top app bar, or FAB appears in the render, it matches the resolved shell from the app-shell config. Shell elements are either present-and-consistent OR absent — never partial.
+
+If any of these fail and the fix isn't clear → halt rendering and surface "Self-validation failed at: {checkpoint}."
+
+Return ONLY when all 6 checkpoints pass.
+
 ↑↑↑ MOCKUP PROMPT

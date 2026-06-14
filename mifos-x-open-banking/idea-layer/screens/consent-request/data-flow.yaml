@@ -1,0 +1,55 @@
+sibling: data-flow
+schema_version: "4.0"
+feature_id: consent-request
+entries:
+  - screen_id: consent-request
+    trigger: on_interact
+    event: GrantClicked
+    endpoints:
+      - create_account_access_consent
+    direction: write
+    consent_required: false
+    dtos:
+      - name: OBReadConsent1
+        role: request
+        api_id: create_account_access_consent
+      - name: OBReadConsentResponse1
+        role: response
+        api_id: create_account_access_consent
+    produces_state: loading
+    notes: >-
+      PSU taps "Grant access". Stages the account-access-consent via POST /aisp/account-access-consents
+      with the PSU-selected Permissions[] (ReadAccountsDetail, ReadBalances, ReadTransactionsDetail,
+      ReadBeneficiariesDetail, ReadStandingOrdersDetail, ReadDirectDebits, ReadScheduledPaymentsDetail,
+      ReadParty, ReadProducts, ReadStatementsDetail). Uses a client-credentials Bearer token.
+      Returns ConsentId + Status AWAU. The ConsentId becomes the openbanking_intent_id for the
+      FAPI 1.0 Advanced authorise redirect in bank-authorize-handoff.
+    error_paths:
+      - error_code: 400
+        behavior: show_error_state
+      - error_code: 401
+        behavior: show_error_state
+      - error_code: 403
+        behavior: show_error_state
+      - error_code: 429
+        behavior: show_error_state
+      - error_code: 500
+        behavior: show_error_state
+
+  - screen_id: consent-request
+    trigger: on_interact
+    event: ManagePermissions
+    endpoints: []
+    direction: none
+    dtos: []
+    produces_state: content
+    notes: "Client-side permission selection toggle. No network call."
+
+  - screen_id: consent-request
+    trigger: on_interact
+    event: Cancel
+    endpoints: []
+    direction: none
+    dtos: []
+    produces_state: content
+    notes: "Back-navigates without creating a consent. No API call."

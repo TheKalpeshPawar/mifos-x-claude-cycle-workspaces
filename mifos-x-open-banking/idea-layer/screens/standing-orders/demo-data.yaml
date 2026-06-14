@@ -1,65 +1,99 @@
 sibling: demo-data
 schema_version: "4.0"
 feature_id: standing-orders
-content:
-  obp_standing_orders:
-    items:
-      - id: "so-ke-001"
-        bank_id: "ke.equity.bank"
-        account_id: "acc-equity-ke-001"
-        counterparty:
-          name: "Nairobi Water & Sewerage — utility bill"
-          other_bank_routing_address: "ke.kcb.bank"
-          other_account_routing_address: "KE61KCBA00004455667788"
-        amount_value: "3500.00"
-        amount_currency: "KES"
-        when:
-          frequency: "MONTHLY"
-          start_date: "2026-01-05"
-          final_date: "2027-01-05"
-        active: true
 
-      - id: "so-ke-002"
-        bank_id: "ke.equity.bank"
-        account_id: "acc-equity-ke-001"
-        counterparty:
-          name: "Safaricom Home Fibre — internet subscription"
-          other_bank_routing_address: "ke.cooperative.bank"
-          other_account_routing_address: "KE61COOP00002233445566"
-        amount_value: "6000.00"
-        amount_currency: "KES"
-        when:
-          frequency: "MONTHLY"
-          start_date: "2026-02-15"
-          final_date: "2027-02-15"
-        active: true
+# OBIE AISP v4.0 demo envelope for the read-only standing-orders list.
+# Data.StandingOrder[] are the standing orders set up on the persona's current
+# account (acc-30000012345678, sort 30-00-00 / 30000012345678 / Oliver Bennett).
+# CreditorAccount populated under the ReadStandingOrdersDetail permission.
+collections:
+  get_account_standing_orders:
+    dto: OBReadStandingOrder6
+    description: "200 OK — standing orders on the selected account (active + inactive), newest first."
+    item:
+      Data:
+        StandingOrder:
+          - AccountId: "acc-30000012345678"
+            StandingOrderId: "so-001-british-gas"
+            Reference: "Gas and Electric"
+            StandingOrderStatusCode: "Active"
+            Frequency: "EvryMonth"
+            FirstPaymentDateTime: "2026-01-05T00:00:00+00:00"
+            NextPaymentDateTime: "2026-07-05T00:00:00+01:00"
+            FirstPaymentAmount:
+              Amount: "92.00"
+              Currency: "GBP"
+            NextPaymentAmount:
+              Amount: "92.00"
+              Currency: "GBP"
+            CreditorAccount:
+              SchemeName: "UK.OBIE.SortCodeAccountNumber"
+              Identification: "60000412009988"
+              Name: "British Gas"
+          - AccountId: "acc-30000012345678"
+            StandingOrderId: "so-002-thames-water"
+            Reference: "Water Account 88421"
+            StandingOrderStatusCode: "Active"
+            Frequency: "EvryMonth"
+            FirstPaymentDateTime: "2026-02-15T00:00:00+00:00"
+            NextPaymentDateTime: "2026-07-15T00:00:00+01:00"
+            FirstPaymentAmount:
+              Amount: "38.50"
+              Currency: "GBP"
+            NextPaymentAmount:
+              Amount: "38.50"
+              Currency: "GBP"
+            CreditorAccount:
+              SchemeName: "UK.OBIE.SortCodeAccountNumber"
+              Identification: "40020755663210"
+              Name: "Thames Water"
+          - AccountId: "acc-30000012345678"
+            StandingOrderId: "so-003-james-whitfield"
+            Reference: "Monthly Rent"
+            StandingOrderStatusCode: "Active"
+            Frequency: "EvryMonth"
+            FirstPaymentDateTime: "2026-01-01T00:00:00+00:00"
+            NextPaymentDateTime: "2026-07-01T00:00:00+01:00"
+            FirstPaymentAmount:
+              Amount: "1200.00"
+              Currency: "GBP"
+            NextPaymentAmount:
+              Amount: "1200.00"
+              Currency: "GBP"
+            CreditorAccount:
+              SchemeName: "UK.OBIE.SortCodeAccountNumber"
+              Identification: "20415587224190"
+              Name: "James Whitfield"
+          - AccountId: "acc-30000012345678"
+            StandingOrderId: "so-004-vodafone-uk"
+            Reference: "Mobile 07700900421"
+            StandingOrderStatusCode: "Inactive"
+            Frequency: "EvryMonth"
+            FirstPaymentDateTime: "2025-09-20T00:00:00+01:00"
+            NextPaymentDateTime: "2026-06-20T00:00:00+01:00"
+            FirstPaymentAmount:
+              Amount: "24.00"
+              Currency: "GBP"
+            NextPaymentAmount:
+              Amount: "24.00"
+              Currency: "GBP"
+            CreditorAccount:
+              SchemeName: "UK.OBIE.SortCodeAccountNumber"
+              Identification: "08320198553471"
+              Name: "Vodafone UK"
+      Links:
+        Self: "https://secure.sandbox.ob.hsbc.co.uk/obie/open-banking/v4.0/aisp/accounts/acc-30000012345678/standing-orders"
+      Meta:
+        TotalPages: 1
 
-      - id: "so-ke-003"
-        bank_id: "ke.equity.bank"
-        account_id: "acc-equity-ke-001"
-        counterparty:
-          name: "Amani Apartments Westlands — rent"
-          other_bank_routing_address: "ke.absa.bank"
-          other_account_routing_address: "KE61ABSA00007788990011"
-        amount_value: "45000.00"
-        amount_currency: "KES"
-        when:
-          frequency: "MONTHLY"
-          start_date: "2026-01-01"
-          final_date: "2026-12-31"
-        active: true
-
-      - id: "so-ke-004"
-        bank_id: "ke.equity.bank"
-        account_id: "acc-equity-ke-001"
-        counterparty:
-          name: "NHIF — health insurance contribution"
-          other_bank_routing_address: "ke.kcb.bank"
-          other_account_routing_address: "KE61KCBA00001199228833"
-        amount_value: "1700.00"
-        amount_currency: "KES"
-        when:
-          frequency: "MONTHLY"
-          start_date: "2026-03-01"
-          final_date: "2027-03-01"
-        active: false
+  # 403 OB.Resource.InvalidConsentStatus driving the error state.
+  get_account_standing_orders.error:
+    dto: OBErrorResponse1
+    description: "403 OBErrorResponse1 — missing ReadStandingOrders on the account-access-consent."
+    item:
+      Code: "403 Forbidden"
+      Id: "err-so-list-4a18c2"
+      Message: "Invalid consent status"
+      Errors:
+        - ErrorCode: "UK.OBIE.Resource.InvalidConsentStatus"
+          Message: "The account-access-consent does not carry ReadStandingOrdersBasic or ReadStandingOrdersDetail."

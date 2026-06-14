@@ -1,70 +1,180 @@
 # TAG_REGISTRY.yaml — Tag taxonomy for mifos-x-open-banking
-# Generated 2026-05-22. Updated 2026-05-28 by /idea sync — added FR-001..FR-005, FR-018.
+# Generated 2026-05-22.
+# Rebuilt 2026-06-12 by /idea sync STEP 4c — MIGRATION OBP → HSBC reconcile:
+#   FR tags re-synced to idea-plan §9 (25 FRs); dropped OBP DirectLogin FR set; palette → earth-green M3.
 
 schema_version: "1.0"
 
-# ─── Feature tags (scaffolding only) ─────────────────────────────────────────
+# ─── Feature tags ────────────────────────────────────────────────────────────
 features:
-  - id: home
-    label: Home
-    color: "#1800B1"
-    description: Entry hub
-  - id: profile
-    label: Profile
-    color: "#5C0068"
-    description: User profile (stub)
-  - id: settings
-    label: Settings
-    color: "#575899"
-    description: App preferences (theme, language, notifications)
+  - id: consent
+    label: Consent & Authorisation
+    color: "#4C662B"
+    description: OBIE account-access consent + PSU authorisation (redirect, SCA at the bank)
+  - id: aisp
+    label: Account Information
+    color: "#386A20"
+    description: Read-only AISP — accounts, balances, transactions, beneficiaries, standing orders, direct debits
+  - id: pisp
+    label: Payments
+    color: "#55624C"
+    description: PISP — domestic, scheduled, standing-order, international payment initiation
+  - id: pfm
+    label: Personal Finance
+    color: "#386A20"
+    description: Spending insights, budgets, category breakdown, business cashflow
+  - id: discovery
+    label: Discovery & Notifications
+    color: "#5C5F52"
+    description: ATM/branch locator (Open Data), event-notification feed, consent manager
+  - id: app
+    label: App / Profile / Legal
+    color: "#5C5F52"
+    description: Profile, settings, about, terms, privacy, licenses
 
-# Template-residue features are intentionally NOT registered here.
-# When real features are added via /idea add, register them in this block.
-
-# ─── Functional requirement tags ─────────────────────────────────────────────
+# ─── Functional requirement tags (mirror idea-plan §9) ────────────────────────
 functional_requirements:
+  # Authentication & Consent (HSBC FAPI)
   - id: FR-001
-    label: "FR-001: OBP OAuth2/DirectLogin"
-    color: "#1800B1"
-    screens: [splash, login]
-    description: "Authentication via OBP DirectLogin and OAuth2/OIDC flows"
+    label: "FR-001: HSBC OAuth2/FAPI auth (DCR + consent + PSU authorise)"
+    color: "#4C662B"
+    screens: [bank-authorize-handoff]
+    description: "FAPI 1.0 Advanced — DCR, consent → PSU authorisation (auth-code + PKCE, mTLS, detached JWS) → token. No in-app password."
   - id: FR-002
-    label: "FR-002: Legal / Terms & Privacy"
-    color: "#575899"
-    screens: [terms-of-service, privacy-policy]
-    description: "Display of terms of service and privacy policy content"
+    label: "FR-002: Connect-account intro"
+    color: "#4C662B"
+    screens: [consent-intro]
+    description: "Intro screen explaining Open Banking data sharing; starts 'Connect your HSBC account'."
   - id: FR-003
-    label: "FR-003: Push Notifications"
-    color: "#EF6C00"
-    screens: [notifications, home]
-    description: "In-app notification centre and push alert handling"
+    label: "FR-003: Create account-access consent"
+    color: "#4C662B"
+    screens: [consent-request]
+    description: "Select data-sharing permissions; create account-access consent (status AWAU) before authorising."
   - id: FR-004
-    label: "FR-004: Open-Source Licenses"
-    color: "#558B2F"
-    screens: [licenses, about]
-    description: "Third-party open-source license disclosure"
+    label: "FR-004: Auth callback — code → token → AUTH"
+    color: "#4C662B"
+    screens: [auth-callback]
+    description: "Deep-link return exchanges code for consent-scoped token; confirms consent AUTH before reading data."
   - id: FR-005
-    label: "FR-005: User Profile & Settings"
-    color: "#5C0068"
-    screens: [profile, settings]
-    description: "User profile management, preferences, and account settings"
+    label: "FR-005: Re-consent on expiry/revoke"
+    color: "#4C662B"
+    screens: [consent-expired]
+    description: "Prior consent EXPD/RJCT/revoked routes the user to re-consent."
+  # Account Information (AISP, read-only)
+  - id: FR-010
+    label: "FR-010: Home dashboard"
+    color: "#386A20"
+    screens: [home]
+    description: "Account summary cards, recent transactions, quick-action shortcuts."
+  - id: FR-011
+    label: "FR-011: Accounts list"
+    color: "#386A20"
+    screens: [accounts]
+    description: "View all authorised accounts (current, savings) with balance and status."
+  - id: FR-012
+    label: "FR-012: Account detail"
+    color: "#386A20"
+    screens: [account-detail]
+    description: "Individual account details including balances and recent transactions."
+  - id: FR-013
+    label: "FR-013: Transaction history"
+    color: "#386A20"
+    screens: [transactions, transaction-detail]
+    description: "Browse transaction history with date-range filtering and text search."
+  - id: FR-015
+    label: "FR-015: Read-only beneficiaries"
+    color: "#386A20"
+    screens: [beneficiaries]
+    description: "View read-only beneficiaries from the AISP feed (add/edit/delete unsupported)."
   - id: FR-018
-    label: "FR-018: Standing Order Detail"
-    color: "#00838F"
-    screens: [standing-order-detail, standing-orders]
-    description: "View and manage standing order instructions for a consumer account"
+    label: "FR-018: Read-only standing orders"
+    color: "#386A20"
+    screens: [standing-orders, standing-order-detail]
+    description: "View read-only standing orders and open standing-order detail."
+  - id: FR-019
+    label: "FR-019: Read-only direct debits"
+    color: "#386A20"
+    screens: [direct-debits, direct-debit-detail]
+    description: "View active direct debit mandates and their detail (read-only under AISP)."
+  - id: FR-024
+    label: "FR-024: PFM spending insights"
+    color: "#386A20"
+    screens: [pfm-dashboard, pfm-settings]
+    description: "Spending insights, budget progress, category breakdowns over connected accounts."
+  - id: FR-025
+    label: "FR-025: Product reference"
+    color: "#386A20"
+    screens: [products]
+    description: "Browse product reference data and compare available banking products."
+  - id: FR-026
+    label: "FR-026: Transaction tags (local PFM)"
+    color: "#386A20"
+    screens: [transaction-tags]
+    description: "Tag and categorize transactions for personal tracking (local annotation)."
+  - id: FR-027
+    label: "FR-027: Business insights"
+    color: "#386A20"
+    screens: [business-insights]
+    description: "Business cashflow insights across connected accounts."
+  # Payments (PISP)
+  - id: FR-014
+    label: "FR-014: Initiate payment"
+    color: "#55624C"
+    screens: [send-money]
+    description: "Initiate a payment — pick payee/account + kind (domestic, scheduled, standing-order, international)."
+  - id: FR-041
+    label: "FR-041: Confirmation-of-Funds check"
+    color: "#55624C"
+    screens: [send-money-amount]
+    description: "Enter amount; run a CoF check against the source account balance before continuing."
+  - id: FR-043
+    label: "FR-043: Terminal payment result"
+    color: "#55624C"
+    screens: [payment-result, payment-declined]
+    description: "Terminal payment result (amount, payee, payment id) with links to transaction detail and home."
+  - id: FR-044
+    label: "FR-044: Author/edit standing order (PISP)"
+    color: "#55624C"
+    screens: [standing-order-create, standing-order-edit]
+    description: "Author and edit a domestic standing order via the PISP standing-order consent flow."
+  - id: FR-045
+    label: "FR-045: International payment"
+    color: "#55624C"
+    screens: [send-money]
+    description: "Initiate an international (cross-currency) payment with exchange-rate info before authorising."
+  - id: FR-046
+    label: "FR-046: Redirect SCA at the bank"
+    color: "#55624C"
+    screens: [payment-authorize-handoff, auth-callback]
+    description: "Payment authorisation via redirect handoff (SCA at the bank); submit only after consent authorised; never collect SCA in-app."
+  # Consent, Notifications & Discovery
+  - id: FR-020
+    label: "FR-020: ATM/branch locator (Open Data)"
+    color: "#5C5F52"
+    screens: [atm-locator]
+    description: "Find nearby ATMs and branches via unauthenticated Open Data geolocation."
+  - id: FR-022
+    label: "FR-022: Consent manager"
+    color: "#5C5F52"
+    screens: [consent-manager]
+    description: "Review and revoke active data-sharing consents granted to the app."
+  - id: FR-023
+    label: "FR-023: Event notifications"
+    color: "#5C5F52"
+    screens: [notifications]
+    description: "In-app event notifications (consent-revoked, payment status) via the Event Notification feed."
 
 # ─── Priority tags ───────────────────────────────────────────────────────────
 priority:
   - id: must
     label: Must
-    color: "#C62828"
+    color: "#BA1A1A"
   - id: should
     label: Should
     color: "#EF6C00"
   - id: could
     label: Could
-    color: "#558B2F"
+    color: "#386A20"
   - id: wont
     label: Won't (this release)
     color: "#616161"
@@ -88,20 +198,24 @@ maturity:
 architecture:
   - id: stream-first
     label: Stream-First
-    color: "#1800B1"
+    color: "#4C662B"
     description: BaseViewModel + ScreenDataStream + Store5
   - id: store5
     label: Store5
-    color: "#5C0068"
+    color: "#55624C"
   - id: koin
     label: Koin DI
     color: "#9C27B0"
   - id: ktorfit
-    label: Ktorfit
+    label: Ktorfit (mTLS)
     color: "#1976D2"
   - id: room
-    label: Room KMP
+    label: Room KMP (consent + token cache)
     color: "#00838F"
+  - id: fapi
+    label: FAPI 1.0 Advanced
+    color: "#354E16"
+    description: mTLS (QWAC+QSEAL) + OAuth2 + detached JWS + DCR
 
 # ─── Platform tags ───────────────────────────────────────────────────────────
 platforms:
@@ -132,3 +246,7 @@ concerns:
   - id: observability
     label: Observability
     color: "#D84315"
+  - id: consent-gated
+    label: Consent-gated
+    color: "#4C662B"
+    description: Screen reads AIS resources only after an AUTH-status account-access consent

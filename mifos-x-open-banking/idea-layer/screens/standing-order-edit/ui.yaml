@@ -7,7 +7,7 @@ feature: standing-orders
 flavor: consumer
 status: approved
 quality_score: 94
-contract_version: "1.1.0"
+contract_version: "2.0.0"
 capabilities:
   - has_ui
   - has_api
@@ -566,14 +566,14 @@ state_model:
       - StandingOrderRepository
       - AccountRepository
 
+# api note: Rebound to OBIE PISP. OBIE has NO update-standing-order endpoint — a standing order is
+# immutable once submitted. Save is a CREATE-REPLACEMENT flow: create_domestic_standing_order_consent
+# (with the edited instruction) -> PSU authorises (redirect) -> get_domestic_standing_order_consent
+# confirms Authorised -> create_domestic_standing_order submits it. The old order is NOT mutated in
+# place; revoking it is out of band (no OBIE cancel-standing-order). Because this is a brand-new
+# instruction, the beneficiary is no longer technically immutable, though the UI may still keep it
+# locked. See api.yaml.
 api:
-  note: >
-    Rebound to OBIE PISP. OBIE has NO update-standing-order endpoint — a standing order is immutable
-    once submitted. Save is a CREATE-REPLACEMENT flow: create_domestic_standing_order_consent (with the
-    edited instruction) -> PSU authorises (redirect) -> get_domestic_standing_order_consent confirms
-    Authorised -> create_domestic_standing_order submits it. The old order is NOT mutated in place;
-    revoking it is out of band (no OBIE cancel-standing-order). Because this is a brand-new instruction,
-    the beneficiary is no longer technically immutable, though the UI may still keep it locked. See api.yaml.
   - id: create_domestic_standing_order_consent
     endpoint: "POST /obie/open-banking/v4.0/pisp/domestic-standing-order-consents"
     tag: StandingOrders
@@ -581,7 +581,7 @@ api:
     trigger: on_save_clicked
     description: "Step 1: register a new standing-order consent carrying the edited frequency / amount / first-payment date / creditor. Returns ConsentId in AwaitingAuthorisation."
     request:
-      dto: OBWriteDomesticStandingOrderConsent
+      dto: OBWriteDomesticStandingOrderConsent5
       fields:
         - name: Data.Initiation.Frequency
           type: String
@@ -596,7 +596,7 @@ api:
         - name: Data.Initiation.CreditorAccount.Name
           type: String
     response:
-      dto: OBWriteDomesticStandingOrderConsentResponse
+      dto: OBWriteDomesticStandingOrderConsentResponse6
       fields:
         - name: Data.ConsentId
           type: String
@@ -621,7 +621,7 @@ api:
     trigger: on_consent_authorised
     description: "Step 3: submit the authorised replacement referencing the ConsentId; Data.Initiation must match the consent."
     response:
-      dto: OBWriteDomesticStandingOrderResponse
+      dto: OBWriteDomesticStandingOrderResponse6
       fields:
         - name: Data.DomesticStandingOrderId
           type: String

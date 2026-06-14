@@ -1,9 +1,9 @@
 ---
-ui_yaml_sha: a1448cadef7246768dbb0cfbf2db2a732fde45be45f4f072a644677b222e1f9f
-design_md_hash: 71b53c295bf863d34057f16264caf37a11512e794d356b3bec219352550d05ec
-app_shell_hash: ad7a6b42b2ae10e63ef270f15d857bd44445d775e8d9b09313b31e6569df95b4
-design_read_hash: 1639ea0545fdbc1ba9ce1eef5369eae224a6f4f57f07f0639b699652daeb8558
-content_hash: 4349e0a8c6137c24d3c497f064198859cd9ce440b5117b39a4c4447676447836
+ui_yaml_sha: c09fb6b7e523aa0f743a826db9c04ae127623f0116429593eabff09a11292fc7
+design_md_hash: 2b17083785e7e532a1554540e628db54640dfab77857b6c90d802767add94ba2
+app_shell_hash: d2fe35b34f2ccfe703fcea97291ff9cb0453b148553d7b69b40f4cfa59d08766
+design_read_hash: 60a4c95f7619b31daccc130861a96508d0cacf2f29734f43c35036c1f0280375
+content_hash: 2b78cfd03f2b1b32d9c15c5e3038d231e87fb71256c9cf12204e7c46759ae660
 
 design_read_aesthetic: taste-default
 design_read_dials: {variance: 4, motion: 3, density: 5}
@@ -14,8 +14,8 @@ feature: standing-order-detail
 state: loading
 state_visibility: loading
 
-project_id: 'null'
-design_system_id: 'null'
+project_id: '17153754672098888646'
+design_system_id: '2005644667042354169'
 
 generated_by: stitch-prompt-build.ts v2.0.0
 prompt_template_version: stitch-per-state-v3.0.0
@@ -24,31 +24,108 @@ craft_rules_version: v1.0.0
 
 # standing-order-detail — loading state
 
-> Auto-generated from screens/standing-order-detail/ui.yaml @ SHA 03b35bac920f8225
-> Stitch DesignSystem: (pending DESIGN.md upload — run /idea-export-stitch sub-plan 02)
+> Auto-generated from screens/standing-order-detail/ui.yaml @ SHA 6842a6e38edb7085
+> Stitch DesignSystem: 2005644667042354169
 > DO NOT redeclare colors / fonts / spacing — they live in DESIGN.md.
 
 ↓↓↓ MOCKUP PROMPT
-Design the loading state of the standing order detail screen for **Mifos X Open Banking**, a Open Banking KMP super-app — consumer retail banking + field officer agent banking powered by Open Bank Project API v7, built with Compose Multiplatform across Android, iOS, Desktop, and Web.
 
-Palette: primary #B2D188, on_primary #1F3701, primary_container #354E16, on_primary_container #CDEDA3, secondary #A0CFCB, on_secondary #003735, secondary_container #1F4E4B, on_secondary_container #BCEBE7, background #12140E, on_background #E3E3D8, surface #12140E, on_surface #E3E3D8, surface_variant #44483D, on_surface_variant #C5C8BA, surface_container #1E201A, surface_container_high #282A24, outline #8F9285, outline_variant #44483D, error #FFB4AB, pending #E8A317, nav_active_indicator #354E16.
+## Archetype: detail_screen
 
-**Component 1 — App Bar Shimmer** (64dp tall, full width): Shimmer rectangle 160dp wide x 20dp tall, centered. Shimmer base #1E201A, highlight #282A24, 1200ms sweep. Background #12140E. skeleton_screen archetype.
+## Layout
+- type: column
+- padding: default
+- alignment: start
 
-**Component 2 — Card Shimmer** (full width minus 32dp insets, top margin 24dp, 16dp corner radius, background #1E201A): Header card placeholder. Title shimmer 120dp wide x 22dp tall centered. Badge shimmer 60dp wide x 24dp tall below, 12dp corner radius. Total height approx 80dp.
+## Composition (top → bottom)
+1. **stack** (#sod_root)
+2. **card** (#sod_recipient_card)
+3. **text** (#sod_recipient_header) — content: "RECIPIENT"
+4. **stack** (#sod_recipient_name_row)
+5. **text** (#sod_recipient_name_label) — content: "Name"
+6. **text** (#sod_recipient_name_value) — content: "Landlord Holdings Ltd"
+7. **stack** (#sod_recipient_account_row)
+8. **text** (#sod_recipient_account_label) — content: "Account"
+9. **text** (#sod_recipient_account_value) — content: "····s001"
+10. **card** (#sod_schedule_card)
+11. **text** (#sod_schedule_header) — content: "SCHEDULE"
+12. **stack** (#sod_status_row)
+13. **text** (#sod_status_label) — content: "Status"
+14. **text** (#sod_status_value) — content: "Active"
+15. **stack** (#sod_frequency_row)
+16. **text** (#sod_frequency_label) — content: "Frequency"
+17. **text** (#sod_frequency_value) — content: "Monthly"
+18. **stack** (#sod_first_payment_row)
+19. **text** (#sod_first_payment_label) — content: "First Payment"
+20. **text** (#sod_first_payment_value) — content: "1 Jan 2026"
+21. **stack** (#sod_last_payment_row)
+22. **text** (#sod_last_payment_label) — content: "Last Payment"
+23. **text** (#sod_last_payment_value) — content: "1 May 2026"
+24. **stack** (#sod_next_payment_row)
+25. **text** (#sod_next_payment_label) — content: "Next Payment"
+26. **text** (#sod_next_payment_value) — content: "1 Jun 2026"
+27. **stack** (#sod_final_date_row)
+28. **text** (#sod_final_date_label) — content: "Final Date"
+29. **text** (#sod_final_date_value) — content: "Ongoing"
+30. **card** (#sod_amount_card)
+31. **text** (#sod_amount_header) — content: "PAYMENT AMOUNT"
+32. **stack** (#sod_amount_value_row)
+33. **text** (#sod_amount_value) — content: "£1,200.00"
+34. **badge** (#sod_currency_badge) — content: "GBP"
+35. **card** (#sod_history_card)
+36. **text** (#sod_history_header) — content: "RECENT EXECUTIONS"
+37. **list** (#sod_history_list)
+38. **list_item** (#sod_history_row)
+39. **text** (#sod_history_row_date) — content: "1 May 2026"
+40. **text** (#sod_history_row_status) — content: "Completed"
+41. **text** (#sod_history_row_amount) — content: "£1,200.00"
+42. **stack** (#sod_action_row)
+43. **button** (#sod_pause_resume_button) — label: "Pause"
+44. **button** (#sod_cancel_button) — label: "Cancel"
+45. **spacer** (#sod_bottom_spacer)
+46. **skeleton** (#sod_loading_skeleton)
+47. **stack** (#sod_error_state)
+48. **icon** (#sod_error_icon) — content: "cloud_off"
+49. **text** (#sod_error_title) — content: "Standing Order Not Found"
+50. **text** (#sod_error_message) — content: "We could not load this standing order. It may have been cancelled or there may b"
+51. **button** (#sod_retry_button) — label: "Retry"
+52. **stack** (#sod_empty_state)
+53. **icon** (#sod_empty_icon) — content: "cloud_off"
+54. **text** (#sod_empty_message) — content: "No details are available for this standing order."
+55. **button** (#sod_back_to_list_button) — label: "Go Back"
 
-**Component 3 — Card Shimmer** (full width minus 32dp insets, top margin 12dp, 16dp corner radius, background #1E201A): Beneficiary section. Header shimmer 72dp wide x 12dp tall. Three row shimmers 44dp tall each with 1dp divider #282A24 between. Each row: left label shimmer 60dp wide x 12dp, right value shimmer 120dp wide x 14dp.
+## State-specific behavior
+- Show shimmer/skeleton loaders matching the content layout block-for-block — no real text, no images. This is the screen's initial state.
 
-**Component 4 — Card Shimmer** (full width minus 32dp insets, top margin 12dp, 16dp corner radius, background #1E201A): Schedule section. Header shimmer 56dp wide x 12dp tall. Four row shimmers 44dp tall with dividers. Same row anatomy.
+## Content source manifest
+- (no demo collections bound for this state)
 
-**Component 5 — Card Shimmer** (full width minus 32dp insets, top margin 12dp, 16dp corner radius, background #1E201A): Amount section. Header shimmer. Amount row: large value shimmer 100dp wide x 28dp tall + small badge shimmer 40dp wide x 20dp.
+## Components (vocabulary used in this prompt)
+- (no named components extracted — see composition)
 
-**Component 6 — Card Shimmer** (full width minus 32dp insets, top margin 12dp, 16dp corner radius, background #1E201A): History section. Header shimmer. Five row shimmers 44dp tall each with dividers. Each row: date shimmer 80dp left, status shimmer 80dp center, amount shimmer 64dp right.
+## Shell (app-shell resolved for this state)
+- App-shell rules are defined per project; per-screen overrides are merged in.
+- Render MUST keep nav/bar elements consistent with the resolved shell — present or absent, never partial.
 
-**Component 7 — Button Row Shimmer** (full width minus 32dp insets, top margin 16dp, bottom 32dp): Two pill shimmers 48dp tall each, 999dp corner radius, first 60% width background #354E16, second 60% width background #1E201A, 12dp gap between.
+## Tokens (design-tokens roles consumed)
+- Colors: primary / secondary / surface / on-surface / on-surface-variant / error (M3 standard roles).
+- Typography: body-large / title-large (M3 standard roles).
+- Spacing: gap.sm / gap.md / gap.lg.
+- ALL token references are by name from the uploaded design system — no hex literals, no inline size values.
 
-Do not use em-dash anywhere in text. Do not make any headline more than 3 lines or any subtitle more than 25 words. Do not break the page theme between sections. Do not place light text on light buttons or dark text on dark buttons.
+## Self-Validation Checklist (MANDATORY)
 
-Scrollable layout on #12140E. Shimmer placeholders use #1E201A rest tone with #282A24 highlight at 1200ms cadence, creating a calm structured skeleton_screen matching the five grouped card sections of the content state, balanced and restrained for this regulated open banking aesthetic.
+Before returning the rendered mockup, verify ALL of these are true. If any fails, FIX the output and re-render.
+
+- [ ] **Per-state shape:** the render shows ONLY this state ("loading"). Do not blend multiple states into one mockup.
+- [ ] **Real content:** every text label, image, and data point reflects the content source manifest above — no numbered generic items, no filler text, no dummy text, no empty strings.
+- [ ] **Token fidelity:** colors come from the uploaded design system (primary/secondary/surface/etc.) by name; spacing comes from declared scale tokens. No invented hex codes, no invented size literals.
+- [ ] **Component vocabulary:** every component in the render maps to a named design-system component (Card, FAB, BottomBar, etc.) — no invented or off-system components.
+- [ ] **Archetype honored:** the layout follows the "detail_screen" archetype skeleton — composition order top → bottom matches the Composition section.
+- [ ] **App-shell parity:** if a bottom nav, top app bar, or FAB appears in the render, it matches the resolved shell from the app-shell config. Shell elements are either present-and-consistent OR absent — never partial.
+
+If any of these fail and the fix isn't clear → halt rendering and surface "Self-validation failed at: {checkpoint}."
+
+Return ONLY when all 6 checkpoints pass.
 
 ↑↑↑ MOCKUP PROMPT

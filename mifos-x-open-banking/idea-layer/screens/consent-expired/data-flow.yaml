@@ -1,0 +1,47 @@
+sibling: data-flow
+schema_version: "4.0"
+feature_id: consent-expired
+entries:
+  - screen_id: consent-expired
+    trigger: on_mount
+    endpoints:
+      - obie_get_consent_status
+    direction: read
+    consent_required: true
+    dtos:
+      - name: OBReadConsentResponse1
+        role: response
+        api_id: obie_get_consent_status
+    produces_state: content
+    notes: >-
+      Reads GET /aisp/account-access-consents/{ConsentId} to confirm the consent has
+      lapsed (Status EXPD). Status AUTH would mean the consent is still valid and the
+      caller should route back to home instead. Non-blocking — the screen renders with
+      the expired state even if the check fails.
+    error_paths:
+      - error_code: 400
+        behavior: show_error_state
+      - error_code: 401
+        behavior: show_error_state
+      - error_code: 404
+        behavior: show_error_state
+
+  - screen_id: consent-expired
+    trigger: on_interact
+    event: Reconnect
+    endpoints: []
+    direction: none
+    dtos: []
+    produces_state: content
+    notes: >-
+      Navigates to consent-request to start a fresh account-access-consent
+      (POST /aisp/account-access-consents). No API call from this screen.
+
+  - screen_id: consent-expired
+    trigger: on_interact
+    event: GoHome
+    endpoints: []
+    direction: none
+    dtos: []
+    produces_state: content
+    notes: "Navigates to app root. No API call."

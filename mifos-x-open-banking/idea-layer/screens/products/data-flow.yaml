@@ -5,15 +5,72 @@ entries:
   - screen_id: products
     trigger: on_mount
     endpoints:
-      - obp_products
+      - opendata_personal_current_accounts
+      - opendata_business_current_accounts
     direction: read
+    consent_required: false
     dtos:
-      - name: Product
+      - name: OpenDataPca
         role: response
-        api_id: obp_products
+        api_id: opendata_personal_current_accounts
+      - name: OpenDataBca
+        role: response
+        api_id: opendata_business_current_accounts
+    produces_state: content
+    notes: >-
+      UNAUTHENTICATED Open Data endpoints — no token, no consent. Loads Personal Current Account
+      (PCA) and Business Current Account (BCA) reference data on mount. Product catalogue
+      is per-brand (data[].Brand[]). The Personal/Business audience tab maps to the two Open Data
+      product endpoints. OBIE Open Data v2.4.0 (server/apis/open-data.yaml).
+    error_paths:
+      - error_code: 400
+        behavior: error_state
+      - error_code: 429
+        behavior: error_state
+      - error_code: 500
+        behavior: error_state
+
+  - screen_id: products
+    trigger: on_interact
+    event: ScopeSelected
+    endpoints:
+      - opendata_personal_current_accounts
+      - opendata_business_current_accounts
+    direction: read
+    consent_required: false
+    dtos:
+      - name: OpenDataPca
+        role: response
+        api_id: opendata_personal_current_accounts
+      - name: OpenDataBca
+        role: response
+        api_id: opendata_business_current_accounts
+    produces_state: content
+    notes: "Audience tab switch (Personal/Business). Re-fetches the relevant Open Data endpoint."
+    error_paths:
+      - error_code: 429
+        behavior: error_state
+      - error_code: 500
+        behavior: error_state
+
+  - screen_id: products
+    trigger: on_interact
+    event: RetryLoad
+    endpoints:
+      - opendata_personal_current_accounts
+      - opendata_business_current_accounts
+    direction: read
+    consent_required: false
+    dtos:
+      - name: OpenDataPca
+        role: response
+        api_id: opendata_personal_current_accounts
+      - name: OpenDataBca
+        role: response
+        api_id: opendata_business_current_accounts
     produces_state: content
     error_paths:
-      - error_code: 401
-        behavior: navigate_login
+      - error_code: 429
+        behavior: error_state
       - error_code: 500
         behavior: error_state

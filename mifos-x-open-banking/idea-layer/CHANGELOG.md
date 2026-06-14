@@ -2,6 +2,9 @@
 
 All notable changes to the idea-layer are documented here. Format inspired by [Keep a Changelog](https://keepachangelog.com/).
 
+### 2026-06-14 — exported OBIE consent + redirect screens
+- [idea-export] 2026-06-14 — claude — exported the 8 OBIE consent/redirect screens (consent-intro, consent-request, consent-declined, consent-expired, auth-callback, bank-authorize-handoff, payment-authorize-handoff, payment-declined) for the first time + re-exported stale business-insights. 9 features, all roundtrip PASS; consent/redirect screens advanced enriched→designed. consent-request per-state Stitch prompts skipped (form archetype overshoots the 8000-char STN2 budget by ~48 chars — SPEC/API/MOCKUP complete).
+
 ### 2026-05-30 — removed consumer-home
 
 Removed orphan duplicate screen consumer-home (zero inbound navigation, not in IDEA_MATRIX; canonical consumer dashboard `home` retained). Scrubbed catalog refs; repaired flood corruption in dtos/_index.yaml + server/api_manifest.yaml.

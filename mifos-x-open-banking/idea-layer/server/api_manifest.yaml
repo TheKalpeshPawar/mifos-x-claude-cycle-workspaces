@@ -1,16 +1,19 @@
 # server/api_manifest.yaml — HSBC UK/CE Open Banking API manifest for mifos-x-open-banking
 # Generated 2026-06-11 by /idea import-api — MIGRATION OBP → HSBC (replace-everything).
+# Bindings reconciled 2026-06-12 by /idea sync STEP 4g — removed deleted-screen refs
+#   (login, change-password, forgot-password, sca-challenge, cards, card-detail, fx-rates +
+#   the 12 field-officer screens); screens:[] groups are step-G new-capability candidates.
 # API: HSBC UK/CE Open Banking sandbox — OBIE Read/Write Standard v4.0 (v3.1 on CE HSBCnet + Malta).
 # Full reference + 625-endpoint catalogue: /home/kalpesh/OpenBankingProject/HSBC_Sandbox/docs/
 #
 # Source tiers (every contract traces to one): T1 deterministic (Postman inventory),
 # T2 OBIE v4.0 standard (cited), T3 HSBC OpenAPI/portal. Per-group spec_file holds full schemas.
 #
-# `screens:` per group = PROPOSED bindings (the import's suggested mapping). Screen api.yaml files
-# are NOT yet rebound — gap-analysis (next step) actions the per-screen rebinding + flags unbacked screens.
+# `screens:` per group = consumer screen bindings (39-screen roster). Groups with screens:[]
+# are integrated at the contract level but have no consumer screen yet (step-G candidates).
 
 schema_version: "1.0"
-generated_at: "2026-06-11"
+generated_at: "2026-06-12"
 standard: "obie-uk-open-banking"
 base_url: "https://secure.sandbox.ob.hsbc.co.uk"   # UK Personal mTLS resource host (default brand)
 authorize_base_url: "https://sandbox.ob.hsbc.co.uk"
@@ -27,7 +30,7 @@ api_groups:
     name: Authentication & Onboarding (FAPI / OAuth2 / DCR)
     obie_role: security
     spec_file: "server/apis/auth.yaml"
-    screens: [login, splash, profile, settings, change-password, forgot-password]
+    screens: [splash, consent-intro, consent-request, bank-authorize-handoff, auth-callback, consent-declined, consent-expired, payment-authorize-handoff]
     endpoints:
       - { method: POST, path: "/register", description: "Dynamic Client Registration — signed SSA → client credentials (T3 dcr-uk.yaml)" }
       - { method: POST, path: "/obie/open-banking/v1.1/oauth2/token", description: "Token endpoint — client_credentials | authorization_code | refresh_token grants" }
@@ -80,7 +83,7 @@ api_groups:
     name: Domestic Payment (PISP)
     obie_role: pisp
     spec_file: "server/apis/pisp-domestic.yaml"
-    screens: [send-money, send-money-amount, send-money-confirm, payment-result, sca-challenge]
+    screens: [send-money, send-money-amount, send-money-confirm, payment-authorize-handoff, payment-result, payment-declined]
     endpoints:
       - { method: POST, path: "/obie/open-banking/v4.0/pisp/domestic-payment-consents", description: "Create payment consent" }
       - { method: POST, path: "/obie/open-banking/v4.0/pisp/domestic-payment-consents/{ConsentId}/funds-confirmation", description: "Check funds" }
@@ -188,24 +191,16 @@ api_groups:
       - { method: GET, path: "/commercial-credit-cards", description: "SME credit-card reference" }
     note: "T2 OBIE Open Data v2.4.0 only (not in Postman, portal 429). HSBC-specific base URL/availability unconfirmed."
 
-# ─── Screens with NO HSBC API backing (flagged for gap-analysis) ──────────────
-# Consumer screens whose OBP backing has no HSBC Open Banking equivalent → modify or drop:
-unbacked_consumer_screens:
-  - cards            # HSBC Open Banking exposes no card-management API (AISP is read-only account data)
-  - card-detail
-  - fx-rates         # no standalone FX-rates API (FX exists only inside international-payment consents)
-  - beneficiaries    # AISP beneficiaries are READ-ONLY — add/edit/delete recipients not supported by OB
-# Field-officer screens — NO HSBC API (HSBC OB is consumer PSD2). Slated for /idea feature-deprecate (step 5):
-deprecated_field_officer_screens:
-  - fo-dashboard
-  - customer-search
-  - customer-detail
-  - customer-profile
-  - customer-onboarding
-  - corporate-onboarding
-  - kyc-review
-  - account-applications
-  - application-detail
-  - agent-registration
-  - customer-messages
-  - meetings
+# ─── OBIE groups integrated at the contract level with NO consumer screen yet ──
+# step-G new-capability candidates (goal track): each has a full spec_file + endpoints,
+# but no screen binding. /goal-analysis-project would decide whether to surface them.
+unbound_obie_groups:
+  - vrp                              # Variable Recurring Payments (recurring/sweeping)
+  - pisp-international-scheduled     # International Scheduled Payment
+  - pisp-international-standing-order # International Standing Order
+  - pisp-file                       # File Payment / bulk (ISO 20022 pain.001)
+  - pisp-multibill                  # Multi-Bill (HSBC-specific, UK Business)
+
+# Note: the OBP-era field-officer screens, cards, card-detail, and fx-rates were DELETED in the
+# OBP → HSBC migration (commit 8fbb3bdc) — no longer in the 39-screen roster, so not listed here.
+# beneficiaries remains in the roster but is READ-ONLY under AISP (add/edit/delete unsupported).

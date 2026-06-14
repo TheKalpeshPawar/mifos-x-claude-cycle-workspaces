@@ -1,98 +1,282 @@
 sibling: demo-data
 schema_version: "4.0"
 feature_id: pfm-dashboard
-content:
-  obp_personal_data_fields:
-    items:
-      - name: "pfm_budget_food_dining"
-        value: "18000"
-      - name: "pfm_budget_transport"
-        value: "8500"
-      - name: "pfm_budget_utilities"
-        value: "6000"
-      - name: "pfm_budget_shopping"
-        value: "12000"
-      - name: "pfm_budget_entertainment"
-        value: "5000"
 
-  obp_transactions_list:
-    items:
-      - transaction_id: "txn-pfm-001"
-        this_account:
-          id: "acc-equity-ke-001"
-          bank_id: "ke.equity.bank"
-        details:
-          type: "DEBIT"
-          description: "Carrefour Sarit Centre — groceries"
-          posted: "2026-05-20T11:22:00+03:00"
-          completed: "2026-05-20T11:22:05+03:00"
-          value:
-            currency: "KES"
-            amount: "-3420.00"
-          new_balance:
-            currency: "KES"
-            amount: "87430.50"
+# OBIE AIS data backing the PFM dashboard. The dashboard is a CLIENT-SIDE projection:
+# accounts + balances give scope totals; transactions over the period window are the
+# single source for every derived insight (category breakdown, cash-flow summary, top
+# merchants, budget meter). Amounts are GBP decimal strings; CreditDebitIndicator is
+# Credit | Debit; Status is Booked | Pending. May 2026 window used throughout so the
+# category totals below sum consistently with the transaction list.
+collections:
+  # GET /aisp/accounts — authorised personal accounts in PFM scope.
+  accounts:
+    dto: OBReadAccount6
+    description: "Authorised personal account list driving PFM scope + base-currency seed."
+    item:
+      Data:
+        Account:
+          - AccountId: "acc-hsbc-0001"
+            Status: "Enabled"
+            StatusUpdateDateTime: "2026-05-01T06:00:00.000Z"
+            Currency: "GBP"
+            AccountCategory: "Personal"
+            AccountTypeCode: "CurrentAccount"
+            Nickname: "Everyday Current"
+            Account:
+              - SchemeName: "UK.OBIE.SortCodeAccountNumber"
+                Identification: "401276 71625498"
+                Name: "Mr J A Whitfield"
+          - AccountId: "acc-hsbc-0002"
+            Status: "Enabled"
+            StatusUpdateDateTime: "2026-05-01T06:00:00.000Z"
+            Currency: "GBP"
+            AccountCategory: "Personal"
+            AccountTypeCode: "Savings"
+            Nickname: "Rainy Day Saver"
+            Account:
+              - SchemeName: "UK.OBIE.SortCodeAccountNumber"
+                Identification: "401276 71625511"
+                Name: "Mr J A Whitfield"
+      Links: { Self: "https://secure.sandbox.ob.hsbc.co.uk/obie/open-banking/v4.0/aisp/accounts" }
+      Meta: { TotalPages: 1 }
 
-      - transaction_id: "txn-pfm-002"
-        this_account:
-          id: "acc-equity-ke-001"
-          bank_id: "ke.equity.bank"
-        details:
-          type: "DEBIT"
-          description: "Uber Kenya — trip to CBD"
-          posted: "2026-05-21T08:05:00+03:00"
-          completed: "2026-05-21T08:05:12+03:00"
-          value:
-            currency: "KES"
-            amount: "-620.00"
-          new_balance:
-            currency: "KES"
-            amount: "86810.50"
+  # GET /aisp/accounts/{AccountId}/balances — InterimAvailable per account.
+  balances:
+    dto: OBReadBalance1
+    description: "Per-account available balances used for scope totals on the dashboard header."
+    item:
+      Data:
+        Balance:
+          - AccountId: "acc-hsbc-0001"
+            CreditDebitIndicator: "Credit"
+            Type: "InterimAvailable"
+            DateTime: "2026-05-31T23:59:59.000Z"
+            Amount: { Amount: "2375.80", Currency: "GBP" }
+          - AccountId: "acc-hsbc-0002"
+            CreditDebitIndicator: "Credit"
+            Type: "InterimAvailable"
+            DateTime: "2026-05-31T23:59:59.000Z"
+            Amount: { Amount: "8650.00", Currency: "GBP" }
+      Links: { Self: "https://secure.sandbox.ob.hsbc.co.uk/obie/open-banking/v4.0/aisp/accounts/acc-hsbc-0001/balances" }
+      Meta: { TotalPages: 1 }
 
-      - transaction_id: "txn-pfm-003"
-        this_account:
-          id: "acc-equity-ke-001"
-          bank_id: "ke.equity.bank"
-        details:
-          type: "CREDIT"
-          description: "Salary — April 2026 Bamburi Cement Ltd"
-          posted: "2026-05-01T08:00:00+03:00"
-          completed: "2026-05-01T08:00:30+03:00"
-          value:
-            currency: "KES"
-            amount: "95000.00"
-          new_balance:
-            currency: "KES"
-            amount: "97500.00"
+  # GET /aisp/accounts/{AccountId}/transactions — May 2026 window, Everyday Current account.
+  # This list is the floor for every derived insight. Expense category totals (see derived
+  # views below) sum from these Debit rows: Groceries 218.41; Utilities 184.50;
+  # Transport 96.30; Shopping 89.99; Dining 61.85; Subscriptions 22.98 = 673.43 spent.
+  # Single credit: Income 2650.00.
+  transactions:
+    dto: OBReadTransaction6
+    description: "May 2026 booked/pending transactions for the in-scope account — source for all client-side PFM insights."
+    item:
+      Data:
+        Transaction:
+          - AccountId: "acc-hsbc-0001"
+            TransactionId: "txn-2026-05-0001"
+            TransactionReference: "SALARY MAY"
+            CreditDebitIndicator: "Credit"
+            Status: "Booked"
+            BookingDateTime: "2026-05-28T00:05:00.000Z"
+            ValueDateTime: "2026-05-28T00:05:00.000Z"
+            TransactionInformation: "ACME LTD SALARY"
+            Amount: { Amount: "2650.00", Currency: "GBP" }
+            BankTransactionCode: { Code: "ReceivedCreditTransfer" }
+            MerchantDetails: { MerchantName: "Acme Ltd Payroll" }
+            Balance: { Amount: { Amount: "2650.00", Currency: "GBP" } }
+            CreditorAccount: { SchemeName: "UK.OBIE.SortCodeAccountNumber", Identification: "401276 71625498", Name: "Mr J A Whitfield" }
+          - AccountId: "acc-hsbc-0001"
+            TransactionId: "txn-2026-05-0002"
+            CreditDebitIndicator: "Debit"
+            Status: "Booked"
+            BookingDateTime: "2026-05-29T18:42:00.000Z"
+            TransactionInformation: "TESCO STORES 3402"
+            Amount: { Amount: "62.74", Currency: "GBP" }
+            BankTransactionCode: { Code: "Purchase" }
+            MerchantDetails: { MerchantName: "Tesco" }
+            Balance: { Amount: { Amount: "2587.26", Currency: "GBP" } }
+            DebtorAccount: { SchemeName: "UK.OBIE.SortCodeAccountNumber", Identification: "401276 71625498", Name: "Mr J A Whitfield" }
+          - AccountId: "acc-hsbc-0001"
+            TransactionId: "txn-2026-05-0003"
+            CreditDebitIndicator: "Debit"
+            Status: "Booked"
+            BookingDateTime: "2026-05-24T11:08:00.000Z"
+            TransactionInformation: "SAINSBURYS S/MKT"
+            Amount: { Amount: "84.18", Currency: "GBP" }
+            BankTransactionCode: { Code: "Purchase" }
+            MerchantDetails: { MerchantName: "Sainsbury's" }
+            Balance: { Amount: { Amount: "2671.44", Currency: "GBP" } }
+            DebtorAccount: { SchemeName: "UK.OBIE.SortCodeAccountNumber", Identification: "401276 71625498", Name: "Mr J A Whitfield" }
+          - AccountId: "acc-hsbc-0001"
+            TransactionId: "txn-2026-05-0004"
+            CreditDebitIndicator: "Debit"
+            Status: "Booked"
+            BookingDateTime: "2026-05-18T09:55:00.000Z"
+            TransactionInformation: "TESCO STORES 1188"
+            Amount: { Amount: "71.49", Currency: "GBP" }
+            BankTransactionCode: { Code: "Purchase" }
+            MerchantDetails: { MerchantName: "Tesco" }
+            Balance: { Amount: { Amount: "2755.62", Currency: "GBP" } }
+            DebtorAccount: { SchemeName: "UK.OBIE.SortCodeAccountNumber", Identification: "401276 71625498", Name: "Mr J A Whitfield" }
+          - AccountId: "acc-hsbc-0001"
+            TransactionId: "txn-2026-05-0005"
+            CreditDebitIndicator: "Debit"
+            Status: "Booked"
+            BookingDateTime: "2026-05-22T08:01:00.000Z"
+            TransactionInformation: "TFL TRAVEL CHARGE"
+            Amount: { Amount: "58.40", Currency: "GBP" }
+            BankTransactionCode: { Code: "Purchase" }
+            MerchantDetails: { MerchantName: "Transport for London" }
+            Balance: { Amount: { Amount: "2697.22", Currency: "GBP" } }
+            DebtorAccount: { SchemeName: "UK.OBIE.SortCodeAccountNumber", Identification: "401276 71625498", Name: "Mr J A Whitfield" }
+          - AccountId: "acc-hsbc-0001"
+            TransactionId: "txn-2026-05-0006"
+            CreditDebitIndicator: "Debit"
+            Status: "Booked"
+            BookingDateTime: "2026-05-10T07:33:00.000Z"
+            TransactionInformation: "TRAINLINE LONDON"
+            Amount: { Amount: "37.90", Currency: "GBP" }
+            BankTransactionCode: { Code: "Purchase" }
+            MerchantDetails: { MerchantName: "Trainline" }
+            Balance: { Amount: { Amount: "2735.12", Currency: "GBP" } }
+            DebtorAccount: { SchemeName: "UK.OBIE.SortCodeAccountNumber", Identification: "401276 71625498", Name: "Mr J A Whitfield" }
+          - AccountId: "acc-hsbc-0001"
+            TransactionId: "txn-2026-05-0007"
+            CreditDebitIndicator: "Debit"
+            Status: "Booked"
+            BookingDateTime: "2026-05-15T06:30:00.000Z"
+            TransactionInformation: "BRITISH GAS DD"
+            Amount: { Amount: "118.00", Currency: "GBP" }
+            BankTransactionCode: { Code: "DirectDebit" }
+            MerchantDetails: { MerchantName: "British Gas" }
+            Balance: { Amount: { Amount: "2617.12", Currency: "GBP" } }
+            DebtorAccount: { SchemeName: "UK.OBIE.SortCodeAccountNumber", Identification: "401276 71625498", Name: "Mr J A Whitfield" }
+          - AccountId: "acc-hsbc-0001"
+            TransactionId: "txn-2026-05-0008"
+            CreditDebitIndicator: "Debit"
+            Status: "Booked"
+            BookingDateTime: "2026-05-02T06:30:00.000Z"
+            TransactionInformation: "THAMES WATER DD"
+            Amount: { Amount: "66.50", Currency: "GBP" }
+            BankTransactionCode: { Code: "DirectDebit" }
+            MerchantDetails: { MerchantName: "Thames Water" }
+            Balance: { Amount: { Amount: "2550.62", Currency: "GBP" } }
+            DebtorAccount: { SchemeName: "UK.OBIE.SortCodeAccountNumber", Identification: "401276 71625498", Name: "Mr J A Whitfield" }
+          - AccountId: "acc-hsbc-0001"
+            TransactionId: "txn-2026-05-0009"
+            CreditDebitIndicator: "Debit"
+            Status: "Booked"
+            BookingDateTime: "2026-05-20T12:48:00.000Z"
+            TransactionInformation: "PRET A MANGER 218"
+            Amount: { Amount: "9.85", Currency: "GBP" }
+            BankTransactionCode: { Code: "Purchase" }
+            MerchantDetails: { MerchantName: "Pret A Manger" }
+            Balance: { Amount: { Amount: "2540.77", Currency: "GBP" } }
+            DebtorAccount: { SchemeName: "UK.OBIE.SortCodeAccountNumber", Identification: "401276 71625498", Name: "Mr J A Whitfield" }
+          - AccountId: "acc-hsbc-0001"
+            TransactionId: "txn-2026-05-0010"
+            CreditDebitIndicator: "Debit"
+            Status: "Booked"
+            BookingDateTime: "2026-05-26T19:20:00.000Z"
+            TransactionInformation: "NANDOS LONDON 44"
+            Amount: { Amount: "52.00", Currency: "GBP" }
+            BankTransactionCode: { Code: "Purchase" }
+            MerchantDetails: { MerchantName: "Nando's" }
+            Balance: { Amount: { Amount: "2488.77", Currency: "GBP" } }
+            DebtorAccount: { SchemeName: "UK.OBIE.SortCodeAccountNumber", Identification: "401276 71625498", Name: "Mr J A Whitfield" }
+          - AccountId: "acc-hsbc-0001"
+            TransactionId: "txn-2026-05-0011"
+            CreditDebitIndicator: "Debit"
+            Status: "Booked"
+            BookingDateTime: "2026-05-05T03:00:00.000Z"
+            TransactionInformation: "NETFLIX.COM"
+            Amount: { Amount: "12.99", Currency: "GBP" }
+            BankTransactionCode: { Code: "DirectDebit" }
+            MerchantDetails: { MerchantName: "Netflix" }
+            Balance: { Amount: { Amount: "2475.78", Currency: "GBP" } }
+            DebtorAccount: { SchemeName: "UK.OBIE.SortCodeAccountNumber", Identification: "401276 71625498", Name: "Mr J A Whitfield" }
+          - AccountId: "acc-hsbc-0001"
+            TransactionId: "txn-2026-05-0012"
+            CreditDebitIndicator: "Debit"
+            Status: "Booked"
+            BookingDateTime: "2026-05-08T03:00:00.000Z"
+            TransactionInformation: "SPOTIFY UK"
+            Amount: { Amount: "9.99", Currency: "GBP" }
+            BankTransactionCode: { Code: "DirectDebit" }
+            MerchantDetails: { MerchantName: "Spotify" }
+            Balance: { Amount: { Amount: "2465.79", Currency: "GBP" } }
+            DebtorAccount: { SchemeName: "UK.OBIE.SortCodeAccountNumber", Identification: "401276 71625498", Name: "Mr J A Whitfield" }
+          - AccountId: "acc-hsbc-0001"
+            TransactionId: "txn-2026-05-0013"
+            CreditDebitIndicator: "Debit"
+            Status: "Pending"
+            BookingDateTime: "2026-05-30T15:12:00.000Z"
+            TransactionInformation: "ARGOS RETAIL 902"
+            Amount: { Amount: "89.99", Currency: "GBP" }
+            BankTransactionCode: { Code: "Purchase" }
+            MerchantDetails: { MerchantName: "Argos" }
+            Balance: { Amount: { Amount: "2375.80", Currency: "GBP" } }
+            DebtorAccount: { SchemeName: "UK.OBIE.SortCodeAccountNumber", Identification: "401276 71625498", Name: "Mr J A Whitfield" }
+      Links: { Next: "https://secure.sandbox.ob.hsbc.co.uk/obie/open-banking/v4.0/aisp/accounts/acc-hsbc-0001/transactions?page=2" }
+      Meta: { TotalPages: 1 }
 
-      - transaction_id: "txn-pfm-004"
-        this_account:
-          id: "acc-equity-ke-001"
-          bank_id: "ke.equity.bank"
-        details:
-          type: "DEBIT"
-          description: "KPLC prepaid token — house electricity"
-          posted: "2026-05-12T16:40:00+03:00"
-          completed: "2026-05-12T16:40:08+03:00"
-          value:
-            currency: "KES"
-            amount: "-2000.00"
-          new_balance:
-            currency: "KES"
-            amount: "91200.00"
+  # DERIVED VIEW (client-side, no DTO) — category breakdown for the donut + legend.
+  # Totals sum from the transactions collection above for the May 2026 window.
+  spending_by_category:
+    description: "Client-side expense categorisation over the period — drives the category donut + legend. Derived from transactions; no OBIE endpoint."
+    item:
+      period_label: "May 2026"
+      base_currency: "GBP"
+      total_spent: "673.43"
+      categories:
+        - { category_id: "groceries", label: "Groceries", amount: "218.41", percent: 32.4, txn_count: 3 }
+        - { category_id: "utilities", label: "Utilities", amount: "184.50", percent: 27.4, txn_count: 2 }
+        - { category_id: "transport", label: "Transport", amount: "96.30", percent: 14.3, txn_count: 2 }
+        - { category_id: "shopping", label: "Shopping", amount: "89.99", percent: 13.4, txn_count: 1 }
+        - { category_id: "dining", label: "Dining", amount: "61.85", percent: 9.2, txn_count: 2 }
+        - { category_id: "subscriptions", label: "Subscriptions", amount: "22.98", percent: 3.4, txn_count: 2 }
 
-      - transaction_id: "txn-pfm-005"
-        this_account:
-          id: "acc-equity-ke-001"
-          bank_id: "ke.equity.bank"
-        details:
-          type: "DEBIT"
-          description: "Java House Westlands — coffee & lunch"
-          posted: "2026-05-22T13:10:00+03:00"
-          completed: "2026-05-22T13:10:15+03:00"
-          value:
-            currency: "KES"
-            amount: "-1850.00"
-          new_balance:
-            currency: "KES"
-            amount: "85960.50"
+  # DERIVED VIEW (client-side, no DTO) — cash-flow summary cards.
+  cashflow_summary:
+    description: "Money In / Money Out / Net for the period — derived from CreditDebitIndicator + Amount over transactions."
+    item:
+      period_label: "May 2026"
+      base_currency: "GBP"
+      money_in: "2650.00"
+      money_out: "673.43"
+      net: "1976.57"
+
+  # DERIVED VIEW (client-side, no DTO) — top merchants list (Tesco rows aggregated).
+  top_merchants:
+    description: "Highest-spend counterparties for the period — derived from MerchantDetails.MerchantName aggregation. Never a login username."
+    item:
+      period_label: "May 2026"
+      base_currency: "GBP"
+      merchants:
+        - { name: "Tesco", category_id: "groceries", amount: "134.23", txn_count: 2 }
+        - { name: "British Gas", category_id: "utilities", amount: "118.00", txn_count: 1 }
+        - { name: "Argos", category_id: "shopping", amount: "89.99", txn_count: 1 }
+        - { name: "Sainsbury's", category_id: "groceries", amount: "84.18", txn_count: 1 }
+        - { name: "Thames Water", category_id: "utilities", amount: "66.50", txn_count: 1 }
+
+  # LOCAL-ONLY preference (no OBIE equivalent) — budget meter inputs.
+  pfm_budgets_local:
+    description: "App-local PFM budgets keyed pfm_budget_<categoryId>. Newest-wins; not a banking resource."
+    item:
+      base_currency: "GBP"
+      budgets:
+        - { category_id: "overall", label: "Overall", limit: "1200.00", spent: "673.43", percent_used: 56.1 }
+        - { category_id: "groceries", label: "Groceries", limit: "300.00", spent: "218.41", percent_used: 72.8 }
+        - { category_id: "transport", label: "Transport", limit: "150.00", spent: "96.30", percent_used: 64.2 }
+        - { category_id: "dining", label: "Dining", limit: "120.00", spent: "61.85", percent_used: 51.5 }
+
+  # OBErrorResponse1 — 403 InvalidConsentStatus driving the error state.
+  load_error:
+    description: "Representative 403 OBErrorResponse1 for the dashboard error state (expired/revoked consent)."
+    item:
+      Code: "403 Forbidden"
+      Id: "pfm-err-403-7c21"
+      Message: "Forbidden"
+      Errors:
+        - ErrorCode: "UK.OBIE.Resource.InvalidConsentStatus"
+          Message: "The account-access consent is no longer in an authorised state."

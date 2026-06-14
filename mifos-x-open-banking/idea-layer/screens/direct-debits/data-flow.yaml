@@ -5,44 +5,49 @@ entries:
   - screen_id: direct-debits
     trigger: on_mount
     endpoints:
-      - obp_get_direct_debits
+      - get_account_direct_debits
     direction: read
+    consent_required: true
     dtos:
-      - name: DirectDebit
+      - name: OBReadDirectDebit2
         role: response
-        api_id: obp_get_direct_debits
-    produces_state: populated
+        api_id: get_account_direct_debits
+    produces_state: content
+    notes: >-
+      Reads GET /aisp/accounts/{AccountId}/direct-debits (OBIE AISP). READ-ONLY: OBIE has
+      no create or cancel direct-debit endpoint — direct debits are merchant-initiated.
+      Requires an authorised account-access-consent (ReadDirectDebits) + authorization-code token.
     error_paths:
+      - error_code: 400
+        behavior: error_state
       - error_code: 401
-        behavior: show_error_state
+        behavior: navigate_login
       - error_code: 403
-        behavior: show_error_state
-      - error_code: 404
-        behavior: show_error_state
+        behavior: error_state
+      - error_code: 429
+        behavior: error_state
+      - error_code: 500
+        behavior: error_state
 
   - screen_id: direct-debits
     trigger: on_interact
-    event: SetUpDirectDebitClicked
+    event: RetryLoad
     endpoints:
-      - obp_create_direct_debit
-    direction: write
+      - get_account_direct_debits
+    direction: read
+    consent_required: true
     dtos:
-      - name: DirectDebit
-        role: request
-        api_id: obp_create_direct_debit
-      - name: DirectDebit
+      - name: OBReadDirectDebit2
         role: response
-        api_id: obp_create_direct_debit
-    produces_state: populated
+        api_id: get_account_direct_debits
+    produces_state: content
     error_paths:
       - error_code: 400
-        behavior: show_create_failed_error
+        behavior: error_state
       - error_code: 401
-        behavior: show_error_state
+        behavior: navigate_login
       - error_code: 403
-        behavior: show_error_state
-      - error_code: 404
-        behavior: show_error_state
+        behavior: error_state
 
   - screen_id: direct-debits
     trigger: on_interact
@@ -50,7 +55,8 @@ entries:
     endpoints: []
     direction: none
     dtos: []
-    produces_state: populated
+    produces_state: content
+    notes: "Navigates to direct-debit-detail with the selected DirectDebitId. No API call."
 
   - screen_id: direct-debits
     trigger: on_interact
@@ -58,48 +64,8 @@ entries:
     endpoints: []
     direction: none
     dtos: []
-    produces_state: cancel_confirm
-
-  - screen_id: direct-debits
-    trigger: on_interact
-    event: CancelConfirmed
-    endpoints:
-      - obp_get_direct_debits
-    direction: read
-    dtos:
-      - name: DirectDebit
-        role: response
-        api_id: obp_get_direct_debits
-    produces_state: populated
-    error_paths:
-      - error_code: 401
-        behavior: show_error_state
-      - error_code: 403
-        behavior: show_error_state
-
-  - screen_id: direct-debits
-    trigger: on_interact
-    event: CancelDismissed
-    endpoints: []
-    direction: none
-    dtos: []
-    produces_state: populated
-
-  - screen_id: direct-debits
-    trigger: on_interact
-    event: RetryLoad
-    endpoints:
-      - obp_get_direct_debits
-    direction: read
-    dtos:
-      - name: DirectDebit
-        role: response
-        api_id: obp_get_direct_debits
-    produces_state: populated
-    error_paths:
-      - error_code: 401
-        behavior: show_error_state
-      - error_code: 403
-        behavior: show_error_state
-      - error_code: 404
-        behavior: show_error_state
+    produces_state: content
+    notes: >-
+      UNSUPPORTED on OBIE — no cancel-direct-debit endpoint exists in OBIE AISP.
+      Direct debits are merchant-initiated and cancellation is out of band.
+      The cancel affordance is hidden or surfaces an out-of-band guidance message.

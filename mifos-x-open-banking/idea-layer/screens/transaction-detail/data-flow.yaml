@@ -5,20 +5,56 @@ entries:
   - screen_id: transaction-detail
     trigger: on_mount
     endpoints:
-      - obp_get_transaction_detail
+      - ais_get_transactions
     direction: read
+    consent_required: true
     dtos:
-      - name: Transaction
+      - name: OBReadTransaction6
         role: response
-        api_id: obp_get_transaction_detail
-      - name: TransactionMetadata
+        api_id: ais_get_transactions
+    produces_state: content
+    notes: >-
+      OBIE has no single-transaction-by-id GET endpoint. Detail is the selected
+      Data.Transaction[] item from GET /aisp/accounts/{AccountId}/transactions, matched
+      by TransactionId. The screen either reuses the already-fetched list item (if cached)
+      or re-fetches. Counterparty rule: resolved holder name → MerchantDetails.MerchantName
+      → TransactionInformation; never render CreditorAccount.Identification raw.
+      Requires ReadTransactionsDetail + an authorised account-access-consent + auth-code token.
+    error_paths:
+      - error_code: 400
+        behavior: error_state
+      - error_code: 401
+        behavior: navigate_login
+      - error_code: 403
+        behavior: error_state
+      - error_code: 429
+        behavior: error_state
+      - error_code: 500
+        behavior: error_state
+
+  - screen_id: transaction-detail
+    trigger: on_interact
+    event: RetryLoad
+    endpoints:
+      - ais_get_transactions
+    direction: read
+    consent_required: true
+    dtos:
+      - name: OBReadTransaction6
         role: response
-        api_id: obp_get_transaction_detail
+        api_id: ais_get_transactions
     produces_state: content
     error_paths:
       - error_code: 401
         behavior: navigate_login
-      - error_code: 404
+      - error_code: 403
         behavior: error_state
-      - error_code: 500
-        behavior: error_state
+
+  - screen_id: transaction-detail
+    trigger: on_interact
+    event: ViewTagsClicked
+    endpoints: []
+    direction: none
+    dtos: []
+    produces_state: content
+    notes: "Navigates to transaction-tags. No API call."

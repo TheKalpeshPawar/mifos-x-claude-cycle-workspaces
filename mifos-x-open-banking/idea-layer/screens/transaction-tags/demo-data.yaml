@@ -1,49 +1,67 @@
 sibling: demo-data
 schema_version: "4.0"
 feature_id: transaction-tags
-content:
-  obp_transaction_tags_get:
-    items:
-      - id: "tag-ke-001"
-        value: "#groceries"
-        date: "2026-05-22T12:01:00+03:00"
-        user:
-          id: "usr-amina-wanjiru-ke-001"
-          username: "amina.wanjiru"
 
-      - id: "tag-ke-002"
-        value: "#transport"
-        date: "2026-05-22T12:02:00+03:00"
-        user:
-          id: "usr-amina-wanjiru-ke-001"
-          username: "amina.wanjiru"
-
-      - id: "tag-ke-003"
-        value: "#utilities"
-        date: "2026-05-24T18:00:00+03:00"
-        user:
-          id: "usr-amina-wanjiru-ke-001"
-          username: "amina.wanjiru"
-
-  obp_transaction_tag_add:
+# LOCAL-only feature. OBIE Account Information exposes NO transaction-metadata API — tags
+# and notes are owned by the on-device TransactionEnrichmentStore, keyed by the OBIE
+# Data.Transaction[].TransactionId + AccountId scope. No network calls. Receipt-image upload
+# is UNSUPPORTED under Open Banking. The transaction itself comes from the AIS group; this
+# screen only adds local enrichment. TransactionIds below match the pfm-dashboard demo list.
+collections:
+  # Local enrichment record loaded on mount for a given transaction.
+  enrichment:
+    description: "Local tags + canonical note for one transaction, read from TransactionEnrichmentStore on mount."
     item:
-      id: "tag-ke-004"
-      value: "#rent"
-      date: "2026-05-23T15:00:00+03:00"
+      transaction_id: "txn-2026-05-0002"
+      account_id: "acc-hsbc-0001"
+      merchant_name: "Tesco"
+      tags:
+        - "groceries"
+        - "household"
+        - "weekly-shop"
+      note: "Weekly grocery run — split with flatmate, owed half back."
 
-  obp_transaction_tag_delete:
+  # Echo of a TagAdded local write.
+  tag_added:
+    description: "Local store echo after appending a tag to a transaction. No network call."
     item:
-      result: "Success"
+      transaction_id: "txn-2026-05-0002"
+      tag: "reimbursable"
+      result: "ok"
 
-  obp_transaction_comment_add:
+  # Echo of a TagRemoved local write.
+  tag_removed:
+    description: "Local store echo after removing a tag from a transaction. No network call."
     item:
-      id: "cmt-ke-002"
-      value: "Paid via Equity mobile — confirmed by SMS KES 3,420"
-      date: "2026-05-22T12:10:00+03:00"
+      transaction_id: "txn-2026-05-0002"
+      tag: "household"
+      result: "ok"
 
-  obp_transaction_image_add:
+  # Echo of a NoteChanged local write (canonical single note, newest-wins).
+  note_set:
+    description: "Local store echo after replacing the canonical note for a transaction. No network call."
     item:
-      id: "img-ke-001"
-      label: "Carrefour receipt 22-May-2026"
-      URL: "https://receipts.equitybank.co.ke/2026/05/22/txn-ke-20260522-44001.jpg"
-      date: "2026-05-22T12:15:00+03:00"
+      transaction_id: "txn-2026-05-0002"
+      note: "Weekly grocery run — flatmate paid back £31.37 on 30 May."
+      result: "ok"
+
+  # Suggested tag chips offered in the UI (derived from prior local tags + merchant category).
+  suggested_tags:
+    description: "Tag suggestion chips offered to the user, drawn from existing local tags + the merchant category."
+    item:
+      suggestions:
+        - "groceries"
+        - "transport"
+        - "utilities"
+        - "dining"
+        - "subscriptions"
+        - "reimbursable"
+        - "business-expense"
+
+  # UNSUPPORTED capability surface — receipt image is out of scope under Open Banking.
+  receipt_image_unsupported:
+    description: "Receipt-image upload is unsupported under OBIE; the UI shows a disabled/coming-soon affordance only."
+    item:
+      capability: "receipt_image_upload"
+      supported: false
+      reason: "OBIE Account Information has no transaction-image endpoint; receipt upload is out of scope under Open Banking."

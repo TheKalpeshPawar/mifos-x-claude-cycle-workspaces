@@ -1,9 +1,9 @@
 ---
-ui_yaml_sha: de0c641bb5454eb6bb91af4ba18a416b141b46ce0b2cad2598e56a2732ce7577
-design_md_hash: 71b53c295bf863d34057f16264caf37a11512e794d356b3bec219352550d05ec
-app_shell_hash: ad7a6b42b2ae10e63ef270f15d857bd44445d775e8d9b09313b31e6569df95b4
-design_read_hash: 1639ea0545fdbc1ba9ce1eef5369eae224a6f4f57f07f0639b699652daeb8558
-content_hash: 992dad83b0655f65296200a49a8d71e92d10489e229e4ba21f56d1a384ce4098
+ui_yaml_sha: 02cef7b3f1d2276eb0ff9e4668bc9e0c2b727b19f7d8d2b7b1d03a7c51ba4bfd
+design_md_hash: 2b17083785e7e532a1554540e628db54640dfab77857b6c90d802767add94ba2
+app_shell_hash: d2fe35b34f2ccfe703fcea97291ff9cb0453b148553d7b69b40f4cfa59d08766
+design_read_hash: 60a4c95f7619b31daccc130861a96508d0cacf2f29734f43c35036c1f0280375
+content_hash: a8a7695de10dac4df69a5bd2f9c79617987e57fe3a96f68b6bd46c7906759419
 
 design_read_aesthetic: taste-default
 design_read_dials: {variance: 4, motion: 3, density: 5}
@@ -14,8 +14,8 @@ feature: profile
 state: error
 state_visibility: error
 
-project_id: 'null'
-design_system_id: 'null'
+project_id: '17153754672098888646'
+design_system_id: '2005644667042354169'
 
 generated_by: stitch-prompt-build.ts v2.0.0
 prompt_template_version: stitch-per-state-v3.0.0
@@ -24,30 +24,70 @@ craft_rules_version: v1.0.0
 
 # profile — error state
 
-> Auto-generated from screens/profile/ui.yaml @ SHA 301ee6d497f75fc4
-> Stitch DesignSystem: (pending DESIGN.md upload — run /idea-export-stitch sub-plan 02)
+> Auto-generated from screens/profile/ui.yaml @ SHA f6f44ded7b4e952f
+> Stitch DesignSystem: 2005644667042354169
 > DO NOT redeclare colors / fonts / spacing — they live in DESIGN.md.
 
 ↓↓↓ MOCKUP PROMPT
 
-Design the error state of the profile screen for **Mifos X Open Banking**, a professional open banking super-app for consumer retail banking and field officer workflows.
+## Archetype: profile
 
-Palette: primary #B2D188, on_primary #1F3701, primary_container #354E16, on_primary_container #CDEDA3, secondary #A0CFCB, on_secondary #003735, secondary_container #1F4E4B, background #12140E, on_surface #E3E3D8, surface_container #1E201A, surface_container_high #282A24, outline #8F9285, pending #E8A317.
+## Layout
+- type: column
+- padding: spacing.lg
+- alignment: start
 
-**Component 1 — App Bar** (64dp tall, full width): Title "My Profile" Outfit Medium 18sp #E3E3D8 centered. Leading back-arrow 24dp #B2D188. Background #12140E, 1dp bottom divider #44483D. error_state archetype.
+## Composition (top → bottom)
+1. **stack** (#profile_root)
+2. **stack** (#profile_avatar_section)
+3. **box** (#profile_avatar_initials) — content: "MS"
+4. **icon** (#profile_avatar_edit_icon) — content: "edit"
+5. **text** (#profile_display_name) — content: "Maria Santos"
+6. **stack** (#profile_form_section)
+7. **text** (#profile_section_header) — content: "Personal Information"
+8. **input** (#profile_full_name_field) — label: "Full Name"
+9. **input** (#profile_email_field) — label: "Email Address"
+10. **input** (#profile_phone_field) — label: "Phone Number"
+11. **button** (#profile_change_password_button) — label: "Change Password"
+12. **button** (#profile_logout_button) — label: "Log Out"
+13. **icon** (#profile_error_icon) — content: "error_outline"
+14. **text** (#profile_error_title) — content: "Could not load your profile"
+15. **text** (#profile_error_body) — content: "Check your connection and try again."
+16. **button** (#profile_error_retry_button) — label: "Retry"
+17. **loading_indicator** (#profile_loading_spinner)
 
-**Component 2 — Error Illustration** (centered, top margin 64dp, 160dp wide, 160dp tall): Broken profile outline or disconnected user icon in #44483D / #8F9285 on #12140E. No red. Neutral, calm tone.
+## State-specific behavior
+- Show an error illustration, a short message, and a single Retry action. No content rails visible.
 
-**Component 3 — Error Title** (centered, top margin 24dp, horizontal padding 32dp): "Couldn't load your profile" Outfit SemiBold 22sp #E3E3D8, centered, max 2 lines.
+## Content source manifest
+- (no demo collections bound for this state)
 
-**Component 4 — Error Subtext** (centered, top margin 8dp, horizontal padding 48dp): "Check your connection and try again. We will sync your data the moment you're back online." Outfit Regular 14sp #8F9285, line-height 20sp.
+## Components (vocabulary used in this prompt)
+- (no named components extracted — see composition)
 
-**Component 5 — Button** (full width minus 64dp insets, top margin 32dp): Filled pill Button 48dp tall, corner radius 999dp, background #B2D188, leading refresh icon 20dp #1F3701, label "Retry" Outfit SemiBold 16sp #1F3701.
+## Shell (app-shell resolved for this state)
+- App-shell rules are defined per project; per-screen overrides are merged in.
+- Render MUST keep nav/bar elements consistent with the resolved shell — present or absent, never partial.
 
-**Component 6 — Secondary Action** (centered, top margin 16dp): Text Button "Go back" Outfit Medium 14sp #8F9285.
+## Tokens (design-tokens roles consumed)
+- Colors: primary / secondary / surface / on-surface / on-surface-variant / error (M3 standard roles).
+- Typography: body-large / title-large (M3 standard roles).
+- Spacing: gap.sm / gap.md / gap.lg.
+- ALL token references are by name from the uploaded design system — no hex literals, no inline size values.
 
-Do not use em-dash anywhere in text. Do not make any headline more than 3 lines or any subtitle more than 25 words. Do not break the dark theme between sections. Do not place light text on light buttons or dark text on dark buttons.
+## Self-Validation Checklist (MANDATORY)
 
-The amber-calm #B2D188 Retry button in this error_state provides a warm, non-alarming primary action calibrated to the profile archetype, avoiding jarring the user who is trying to access their account identity.
+Before returning the rendered mockup, verify ALL of these are true. If any fails, FIX the output and re-render.
+
+- [ ] **Per-state shape:** the render shows ONLY this state ("error"). Do not blend multiple states into one mockup.
+- [ ] **Real content:** every text label, image, and data point reflects the content source manifest above — no numbered generic items, no filler text, no dummy text, no empty strings.
+- [ ] **Token fidelity:** colors come from the uploaded design system (primary/secondary/surface/etc.) by name; spacing comes from declared scale tokens. No invented hex codes, no invented size literals.
+- [ ] **Component vocabulary:** every component in the render maps to a named design-system component (Card, FAB, BottomBar, etc.) — no invented or off-system components.
+- [ ] **Archetype honored:** the layout follows the "profile" archetype skeleton — composition order top → bottom matches the Composition section.
+- [ ] **App-shell parity:** if a bottom nav, top app bar, or FAB appears in the render, it matches the resolved shell from the app-shell config. Shell elements are either present-and-consistent OR absent — never partial.
+
+If any of these fail and the fix isn't clear → halt rendering and surface "Self-validation failed at: {checkpoint}."
+
+Return ONLY when all 6 checkpoints pass.
 
 ↑↑↑ MOCKUP PROMPT

@@ -1,0 +1,89 @@
+sibling: data-flow
+schema_version: "4.0"
+feature_id: standing-order-create
+entries:
+  - screen_id: standing-order-create
+    trigger: on_interact
+    event: Submit
+    endpoints:
+      - create_domestic_standing_order_consent
+    direction: write
+    consent_required: false
+    dtos:
+      - name: OBWriteDomesticStandingOrderConsent5
+        role: request
+        api_id: create_domestic_standing_order_consent
+      - name: OBWriteDomesticStandingOrderConsentResponse6
+        role: response
+        api_id: create_domestic_standing_order_consent
+    produces_state: loading
+    notes: >-
+      PSU taps Submit. Stages the standing-order-consent via POST /pisp/domestic-standing-order-consents
+      capturing Frequency, RecurringPaymentAmount, FirstPaymentDateTime, CreditorAccount.
+      Client Credentials grant. Returns ConsentId with Status AWAU. On success, navigates to
+      payment-authorize-handoff which orchestrates consent → bank authorise → callback →
+      POST /pisp/domestic-standing-orders. SCA happens at HSBC.
+    error_paths:
+      - error_code: 400
+        behavior: show_validation_error
+      - error_code: 401
+        behavior: show_error_state
+      - error_code: 403
+        behavior: show_error_state
+      - error_code: 429
+        behavior: show_error_state
+      - error_code: 500
+        behavior: show_error_state
+
+  - screen_id: standing-order-create
+    trigger: on_interact
+    event: PostAuthorizeCallback
+    endpoints:
+      - create_domestic_standing_order
+    direction: write
+    consent_required: true
+    dtos:
+      - name: OBWriteDomesticStandingOrder3
+        role: request
+        api_id: create_domestic_standing_order
+      - name: OBWriteDomesticStandingOrderResponse6
+        role: response
+        api_id: create_domestic_standing_order
+    produces_state: loading
+    notes: >-
+      Invoked by payment-authorize-handoff after the bank authorise + callback succeeds.
+      POSTs POST /pisp/domestic-standing-orders referencing the now-Authorised ConsentId.
+      Data.Initiation must byte-match the consent. Returns DomesticStandingOrderId.
+      On success navigates back to standing-orders list.
+    invalidate_cache:
+      - screen: standing-orders
+        reason: "New standing order created — standing-orders list needs refresh."
+    error_paths:
+      - error_code: 400
+        behavior: show_error_state
+      - error_code: 401
+        behavior: navigate_login
+      - error_code: 403
+        behavior: show_error_state
+      - error_code: 429
+        behavior: show_error_state
+      - error_code: 500
+        behavior: show_error_state
+
+  - screen_id: standing-order-create
+    trigger: on_interact
+    event: FrequencyChanged
+    endpoints: []
+    direction: none
+    dtos: []
+    produces_state: content
+    notes: "Client-side frequency chip selection. No network call."
+
+  - screen_id: standing-order-create
+    trigger: on_interact
+    event: StartDateChanged
+    endpoints: []
+    direction: none
+    dtos: []
+    produces_state: content
+    notes: "Client-side date picker for first payment date. No network call."

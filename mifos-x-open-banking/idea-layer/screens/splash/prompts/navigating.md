@@ -1,8 +1,8 @@
 ---
-ui_yaml_sha: 76f663b3659278a5868d9743cef1baaf6a3fa81999a13b56be3e98f9fcd5e760
-design_md_hash: 71b53c295bf863d34057f16264caf37a11512e794d356b3bec219352550d05ec
-app_shell_hash: ad7a6b42b2ae10e63ef270f15d857bd44445d775e8d9b09313b31e6569df95b4
-design_read_hash: 1639ea0545fdbc1ba9ce1eef5369eae224a6f4f57f07f0639b699652daeb8558
+ui_yaml_sha: 1be769049b54335c0a76632d7b711ea05cdfb4c6ad232a34e199feb854cc959a
+design_md_hash: 2b17083785e7e532a1554540e628db54640dfab77857b6c90d802767add94ba2
+app_shell_hash: d2fe35b34f2ccfe703fcea97291ff9cb0453b148553d7b69b40f4cfa59d08766
+design_read_hash: 60a4c95f7619b31daccc130861a96508d0cacf2f29734f43c35036c1f0280375
 content_hash: 800a6a42aa6e6df0147a3db5ab3488f9686d1a6e04c75aeb5161354f853d753d
 
 design_read_aesthetic: taste-default
@@ -14,8 +14,8 @@ feature: splash
 state: navigating
 state_visibility: navigating
 
-project_id: 'null'
-design_system_id: 'null'
+project_id: '17153754672098888646'
+design_system_id: '2005644667042354169'
 
 generated_by: stitch-prompt-build.ts v2.0.0
 prompt_template_version: stitch-per-state-v3.0.0
@@ -24,28 +24,58 @@ craft_rules_version: v1.0.0
 
 # splash — navigating state
 
-> Auto-generated from screens/splash/ui.yaml @ SHA 2a2d2517c5eabf99
-> Stitch DesignSystem: (pending DESIGN.md upload — run /idea-export-stitch sub-plan 02)
+> Auto-generated from screens/splash/ui.yaml @ SHA 5a9068ded65cb1cf
+> Stitch DesignSystem: 2005644667042354169
 > DO NOT redeclare colors / fonts / spacing — they live in DESIGN.md.
 
 ↓↓↓ MOCKUP PROMPT
 
-Design the **navigating** state of the Splash screen for **mifos-x-open-banking**, a Open Banking KMP super-app - consumer retail banking + field officer agent banking powered by Open Bank Project API v7, built with Compose Multiplatform across Android, iOS, Desktop, and Web Material 3 balanced dark theme, 393×852dp (Pixel 5), Outfit font throughout.
+## Archetype: loading
 
-Palette: primary #B2D188, on_primary #1F3701, primary_container #354E16, on_primary_container #CDEDA3, secondary #A0CFCB, on_secondary #003735, secondary_container #1F4E4B, on_secondary_container #BCEBE7, tertiary #A0CFCB, on_tertiary #003735, tertiary_container #1F4E4B, on_tertiary_container #BCEBE7, error #FFB4AB, on_error #690005.
+## Layout
+- type: column
+- padding: spacing.lg
+- alignment: start
 
-**Component 1 - Stack** (full width minus 32dp insets): rendered per design system component spec. loading archetype.
+## Composition (top → bottom)
+1. **stack** (#splash_root)
+2. **image** (#splash_logo) — label: "Mifos X logo", content: "mifos_logo"
+3. **text** (#splash_app_name) — content: "Mifos X Open Banking"
+4. **text** (#splash_tagline) — content: "Banking for Everyone"
+5. **loading_indicator** (#splash_loading_indicator)
 
-**Component 2 - Image** (full width minus 32dp insets): rendered per design system component spec.
+## State-specific behavior
+- Custom state "Navigating" — render per the composition below.
 
-**Component 3 - Text** (full width minus 32dp insets): rendered per design system component spec.
+## Content source manifest
+- (no demo collections bound for this state)
 
-**Component 4 - Text** (full width minus 32dp insets): rendered per design system component spec.
+## Components (vocabulary used in this prompt)
+- (no named components extracted — see composition)
 
-**Component 5 - Loading Indicator** (full width minus 32dp insets): rendered per design system component spec.
+## Shell (app-shell resolved for this state)
+- App-shell rules are defined per project; per-screen overrides are merged in.
+- Render MUST keep nav/bar elements consistent with the resolved shell — present or absent, never partial.
 
-DO NOT use em-dash anywhere in text. DO NOT make any headline >3 lines or any subtitle >25 words. DO NOT break the page theme between sections. DO NOT place light text on light buttons or dark text on dark buttons.
+## Tokens (design-tokens roles consumed)
+- Colors: primary / secondary / surface / on-surface / on-surface-variant / error (M3 standard roles).
+- Typography: body-large / title-large (M3 standard roles).
+- Spacing: gap.sm / gap.md / gap.lg.
+- ALL token references are by name from the uploaded design system — no hex literals, no inline size values.
 
-Full scrollable layout on #B2D188. The #B2D188 accent creates a balanced and premium feel calibrated to the taste-default aesthetic.
+## Self-Validation Checklist (MANDATORY)
+
+Before returning the rendered mockup, verify ALL of these are true. If any fails, FIX the output and re-render.
+
+- [ ] **Per-state shape:** the render shows ONLY this state ("navigating"). Do not blend multiple states into one mockup.
+- [ ] **Real content:** every text label, image, and data point reflects the content source manifest above — no numbered generic items, no filler text, no dummy text, no empty strings.
+- [ ] **Token fidelity:** colors come from the uploaded design system (primary/secondary/surface/etc.) by name; spacing comes from declared scale tokens. No invented hex codes, no invented size literals.
+- [ ] **Component vocabulary:** every component in the render maps to a named design-system component (Card, FAB, BottomBar, etc.) — no invented or off-system components.
+- [ ] **Archetype honored:** the layout follows the "loading" archetype skeleton — composition order top → bottom matches the Composition section.
+- [ ] **App-shell parity:** if a bottom nav, top app bar, or FAB appears in the render, it matches the resolved shell from the app-shell config. Shell elements are either present-and-consistent OR absent — never partial.
+
+If any of these fail and the fix isn't clear → halt rendering and surface "Self-validation failed at: {checkpoint}."
+
+Return ONLY when all 6 checkpoints pass.
 
 ↑↑↑ MOCKUP PROMPT

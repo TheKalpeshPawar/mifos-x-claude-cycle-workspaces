@@ -1,72 +1,81 @@
 sibling: demo-data
 schema_version: "4.0"
 feature_id: direct-debits
-content:
-  obp_get_direct_debits:
-    items:
-      - direct_debit_id: "dd-ke-001-kplc"
-        bank_id: "ke.equity.001"
-        account_id: "acct-ke-001-savings"
-        counterparty_id: "cp-ke-kplc-001"
-        amount_value: "4500.00"
-        amount_currency: "KES"
-        start_date: "2026-01-01"
-        end_date: "2026-12-31"
-        active: true
-        to:
-          name: "Kenya Power & Lighting Co."
-          bank_routing:
-            scheme: "SORT"
-            address: "KCBL-001"
-          account_routing:
-            scheme: "ACCOUNT_NUMBER"
-            address: "1100023456"
-      - direct_debit_id: "dd-ke-002-nairobi-water"
-        bank_id: "ke.equity.001"
-        account_id: "acct-ke-001-savings"
-        counterparty_id: "cp-ke-nwsc-001"
-        amount_value: "1800.00"
-        amount_currency: "KES"
-        start_date: "2026-02-01"
-        end_date: "2027-01-31"
-        active: true
-        to:
-          name: "Nairobi City Water & Sewerage Co."
-          bank_routing:
-            scheme: "SORT"
-            address: "SCBL-002"
-          account_routing:
-            scheme: "ACCOUNT_NUMBER"
-            address: "9900345678"
-      - direct_debit_id: "dd-ke-003-safaricom"
-        bank_id: "ke.equity.001"
-        account_id: "acct-ke-001-savings"
-        counterparty_id: "cp-ke-safaricom-001"
-        amount_value: "2500.00"
-        amount_currency: "KES"
-        start_date: "2025-07-01"
-        end_date: "2026-06-30"
-        active: false
-        to:
-          name: "Safaricom PLC — Home Fibre"
-          bank_routing:
-            scheme: "SORT"
-            address: "EQBL-003"
-          account_routing:
-            scheme: "ACCOUNT_NUMBER"
-            address: "0110987654"
 
-  obp_create_direct_debit:
-    _template:
-      start_date: "2026-06-01"
-      end_date: "2027-05-31"
-      amount_value: "3000.00"
-      amount_currency: "KES"
-      to:
-        name: "NHIF — National Hospital Insurance Fund"
-        bank_routing:
-          scheme: "SORT"
-          address: "KCBL-005"
-        account_routing:
-          scheme: "ACCOUNT_NUMBER"
-          address: "5500112233"
+# Realistic OBReadDirectDebit2 returned by
+# GET /obie/open-banking/v4.0/aisp/accounts/{AccountId}/direct-debits on the HSBC UK sandbox.
+# READ-ONLY mandate list — OBIE has no create/cancel direct-debit endpoint (merchant-initiated).
+# Real-looking UK billers; DirectDebitStatusCode is ExternalMandateStatus1Code (Active/Inactive);
+# Frequency uses the UK.OBIE.* vocabulary; PreviousPaymentAmount is OBActiveOrHistoricCurrencyAndAmount.
+collections:
+  account_direct_debits:
+    dto: OBReadDirectDebit2
+    description: "200 OK — direct-debit mandates on the authorised current account, each with originator name, status, frequency and last payment."
+    item:
+      Data:
+        DirectDebit:
+          - AccountId: "acc-22289-0007"
+            DirectDebitId: "dd-1a90f7c3-0b21"
+            MandateIdentification: "BRGAS-7741920"
+            DirectDebitStatusCode: "Active"
+            Name: "British Gas"
+            PreviousPaymentDateTime: "2026-05-14T06:00:00+01:00"
+            Frequency: "UK.OBIE.Monthly"
+            PreviousPaymentAmount:
+              Amount: "78.50"
+              Currency: "GBP"
+          - AccountId: "acc-22289-0007"
+            DirectDebitId: "dd-4f22b8e1-9c07"
+            MandateIdentification: "TW-DD-30558142"
+            DirectDebitStatusCode: "Active"
+            Name: "Thames Water"
+            PreviousPaymentDateTime: "2026-05-02T06:00:00+01:00"
+            Frequency: "UK.OBIE.Monthly"
+            PreviousPaymentAmount:
+              Amount: "42.18"
+              Currency: "GBP"
+          - AccountId: "acc-22289-0007"
+            DirectDebitId: "dd-7c8013a6-2e44"
+            MandateIdentification: "SKY-DDI-88204517"
+            DirectDebitStatusCode: "Active"
+            Name: "Sky Subscriptions"
+            PreviousPaymentDateTime: "2026-05-20T06:00:00+01:00"
+            Frequency: "UK.OBIE.Monthly"
+            PreviousPaymentAmount:
+              Amount: "65.00"
+              Currency: "GBP"
+          - AccountId: "acc-22289-0007"
+            DirectDebitId: "dd-9b51c204-6f38"
+            MandateIdentification: "VF-UK-DD-1190773"
+            DirectDebitStatusCode: "Active"
+            Name: "Vodafone UK"
+            PreviousPaymentDateTime: "2026-05-08T06:00:00+01:00"
+            Frequency: "UK.OBIE.Monthly"
+            PreviousPaymentAmount:
+              Amount: "29.99"
+              Currency: "GBP"
+          - AccountId: "acc-22289-0007"
+            DirectDebitId: "dd-2d6e41f0-5a83"
+            MandateIdentification: "TVL-DD-44907263"
+            DirectDebitStatusCode: "Inactive"
+            Name: "TV Licensing"
+            PreviousPaymentDateTime: "2026-04-01T06:00:00+01:00"
+            Frequency: "UK.OBIE.Monthly"
+            PreviousPaymentAmount:
+              Amount: "13.25"
+              Currency: "GBP"
+      Links:
+        Self: "https://secure.sandbox.ob.hsbc.co.uk/obie/open-banking/v4.0/aisp/accounts/acc-22289-0007/direct-debits"
+      Meta:
+        TotalPages: 1
+
+  # Error envelope (OBErrorResponse1) for the 400/403/429/500 error states in data-flow.yaml.
+  account_direct_debits.error:
+    description: "Representative 403 OBErrorResponse1 — consent missing the ReadDirectDebits permission."
+    item:
+      Code: "403 Forbidden"
+      Id: "dd-err-7b3290"
+      Message: "Forbidden"
+      Errors:
+        - ErrorCode: "UK.OBIE.Resource.InvalidConsentStatus"
+          Message: "The account-access consent does not grant ReadDirectDebits."

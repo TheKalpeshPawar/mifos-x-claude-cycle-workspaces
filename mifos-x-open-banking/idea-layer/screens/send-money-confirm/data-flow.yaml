@@ -6,17 +6,39 @@ entries:
     trigger: on_interact
     event: ConfirmPayment
     endpoints:
-      - obp_confirm_sepa_transfer
+      - create_domestic_payment_consent
     direction: write
+    consent_required: false
     dtos:
-      - name: SepaTransactionRequest
+      - name: OBWriteDomesticConsent4
+        role: request
+        api_id: create_domestic_payment_consent
+      - name: OBWriteDomesticConsentResponse5
         role: response
-        api_id: obp_confirm_sepa_transfer
-    produces_state: success
+        api_id: create_domestic_payment_consent
+    produces_state: loading
+    notes: >-
+      CONSENT-FIRST ORDERING: this screen stages the domestic-payment-consent only
+      (POST /pisp/domestic-payment-consents). Does NOT submit the payment. The Initiation
+      block (InstructedAmount, CreditorAccount, RemittanceInformation, DebtorAccount) +
+      Risk block must byte-match the later payment submit. Client Credentials grant.
+      Returns ConsentId with Status AWAU. On success navigates to payment-authorize-handoff.
+      The actual POST /pisp/domestic-payments runs in auth-callback after SCA at HSBC.
     error_paths:
       - error_code: 400
-        behavior: error_state
+        behavior: show_error_state
       - error_code: 401
         behavior: navigate_login
+      - error_code: 403
+        behavior: show_error_state
       - error_code: 500
-        behavior: error_state
+        behavior: show_error_state
+
+  - screen_id: send-money-confirm
+    trigger: on_interact
+    event: EditPayment
+    endpoints: []
+    direction: none
+    dtos: []
+    produces_state: content
+    notes: "Back-navigates to send-money-amount. No API call."

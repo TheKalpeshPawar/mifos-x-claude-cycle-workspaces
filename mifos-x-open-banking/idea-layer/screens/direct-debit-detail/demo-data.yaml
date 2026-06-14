@@ -1,72 +1,48 @@
 sibling: demo-data
 schema_version: "4.0"
 feature_id: direct-debit-detail
-content:
-  obp_get_mandate_detail:
-    items:
-      - standing_order_id: "so-ke-001-netflix"
-        bank_id: "ke.equity.001"
-        account_id: "acct-ke-001-savings"
-        counterparty_name: "Netflix International B.V."
-        amount_value: "1700.00"
-        amount_currency: "KES"
-        frequency: "MONTHLY"
-        start_date: "2025-09-01"
-        next_payment_date: "2026-06-01"
-        status: "ACTIVE"
-        reference: "NFLX-STD-KE-2025-0901"
-        linked_account_name: "Atieno Savings Account"
-        linked_account_masked: "****4521"
-        recent_payments:
-          - payment_id: "pmt-nflx-202605"
-            date: "2026-05-01"
-            amount_value: "1700.00"
-            amount_currency: "KES"
-            status: "COMPLETED"
-          - payment_id: "pmt-nflx-202604"
-            date: "2026-04-01"
-            amount_value: "1700.00"
-            amount_currency: "KES"
-            status: "COMPLETED"
-          - payment_id: "pmt-nflx-202603"
-            date: "2026-03-01"
-            amount_value: "1700.00"
-            amount_currency: "KES"
-            status: "COMPLETED"
-      - standing_order_id: "so-ke-002-safaricom-fibre"
-        bank_id: "ke.equity.001"
-        account_id: "acct-ke-001-savings"
-        counterparty_name: "Safaricom PLC — Home Fibre"
-        amount_value: "3999.00"
-        amount_currency: "KES"
-        frequency: "MONTHLY"
-        start_date: "2025-03-15"
-        next_payment_date: "2026-06-15"
-        status: "ACTIVE"
-        reference: "SAFCOM-FIBRE-KE-2025-0315"
-        linked_account_name: "Atieno Savings Account"
-        linked_account_masked: "****4521"
-        recent_payments:
-          - payment_id: "pmt-safcom-202605"
-            date: "2026-05-15"
-            amount_value: "3999.00"
-            amount_currency: "KES"
-            status: "COMPLETED"
-          - payment_id: "pmt-safcom-202604"
-            date: "2026-04-15"
-            amount_value: "3999.00"
-            amount_currency: "KES"
-            status: "COMPLETED"
-          - payment_id: "pmt-safcom-202603"
-            date: "2026-03-15"
-            amount_value: "3500.00"
-            amount_currency: "KES"
-            status: "COMPLETED"
 
-  obp_cancel_mandate:
-    _success_response:
-      success: true
-      message: "Direct debit mandate cancelled successfully. No further payments will be collected."
-    _error_cancel_failed:
-      success: false
-      message: "Unable to cancel mandate. A payment is currently being processed. Try again after settlement."
+# OBIE has NO per-mandate GET — the detail screen is the single Data.DirectDebit[] item
+# (OBReadDirectDebit2) drawn from the account's direct-debits list whose DirectDebitId matches
+# the route mandateId. This fixture is that selected mandate (British Gas), shown as the single
+# item in the OBIE envelope. OBIE has no cancel endpoint, so cancel is view-only/unsupported.
+collections:
+  direct_debit_detail:
+    dto: OBReadDirectDebit2
+    description: "200 OK — the selected direct-debit mandate (DirectDebitId == route mandateId), projected from the account's direct-debits list."
+    item:
+      Data:
+        DirectDebit:
+          - AccountId: "acc-22289-0007"
+            DirectDebitId: "dd-1a90f7c3-0b21"
+            MandateIdentification: "BRGAS-7741920"
+            DirectDebitStatusCode: "Active"
+            Name: "British Gas"
+            PreviousPaymentDateTime: "2026-05-14T06:00:00+01:00"
+            Frequency: "UK.OBIE.Monthly"
+            PreviousPaymentAmount:
+              Amount: "78.50"
+              Currency: "GBP"
+      Links:
+        Self: "https://secure.sandbox.ob.hsbc.co.uk/obie/open-banking/v4.0/aisp/accounts/acc-22289-0007/direct-debits"
+      Meta:
+        TotalPages: 1
+
+  # Best-effort funding-account display name (resolve_linked_account_name). Non-blocking — the
+  # mandate still renders with its fallback name if this resolution fails.
+  linked_account_name:
+    description: "Resolved funding-account display values from get_account_details (Data.Account[].Nickname / .Account[].Name)."
+    item:
+      linked_account_name: "HSBC Advance Current Account"
+      linked_account_masked: "****0007"
+
+  # Empty-state path: no Data.DirectDebit[] item matches the route mandateId (400 not-found).
+  direct_debit_detail.error:
+    description: "Representative 400 OBErrorResponse1 — no mandate on the account matches the requested DirectDebitId."
+    item:
+      Code: "400 Bad Request"
+      Id: "ddd-err-1c8045"
+      Message: "Invalid request"
+      Errors:
+        - ErrorCode: "UK.OBIE.Field.Invalid"
+          Message: "No direct-debit mandate with the supplied DirectDebitId exists on this account."

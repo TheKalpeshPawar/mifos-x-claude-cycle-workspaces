@@ -1,9 +1,9 @@
 ---
-ui_yaml_sha: f40389aebb44c1ab7cf7d41e2c7831d6dfd06eb9cf01fcd11f6806ecc71dc804
-design_md_hash: 71b53c295bf863d34057f16264caf37a11512e794d356b3bec219352550d05ec
-app_shell_hash: ad7a6b42b2ae10e63ef270f15d857bd44445d775e8d9b09313b31e6569df95b4
-design_read_hash: 1639ea0545fdbc1ba9ce1eef5369eae224a6f4f57f07f0639b699652daeb8558
-content_hash: c6b2145e55a87fdc3607f7de02fbe2b85a0cc0fc7fb48adebbb9b7f1cefc3e91
+ui_yaml_sha: e0400d768f304708fffa1073e707806d5e2deeb8c26a3dce5ad65d688d92d99a
+design_md_hash: 2b17083785e7e532a1554540e628db54640dfab77857b6c90d802767add94ba2
+app_shell_hash: d2fe35b34f2ccfe703fcea97291ff9cb0453b148553d7b69b40f4cfa59d08766
+design_read_hash: 60a4c95f7619b31daccc130861a96508d0cacf2f29734f43c35036c1f0280375
+content_hash: 652ffae9a2e677dd501985488b77561b0a91816f6dd5a47242649efab9b3ce82
 
 design_read_aesthetic: taste-default
 design_read_dials: {variance: 4, motion: 3, density: 5}
@@ -14,8 +14,8 @@ feature: send-money
 state: loading
 state_visibility: loading
 
-project_id: 'null'
-design_system_id: 'null'
+project_id: '17153754672098888646'
+design_system_id: '2005644667042354169'
 
 generated_by: stitch-prompt-build.ts v2.0.0
 prompt_template_version: stitch-per-state-v3.0.0
@@ -24,36 +24,62 @@ craft_rules_version: v1.0.0
 
 # send-money — loading state
 
-> Auto-generated from screens/send-money/ui.yaml @ SHA e9e5b51eb19f391d
-> Stitch DesignSystem: (pending DESIGN.md upload — run /idea-export-stitch sub-plan 02)
+> Auto-generated from screens/send-money/ui.yaml @ SHA b9d7f5fbb96ef59e
+> Stitch DesignSystem: 2005644667042354169
 > DO NOT redeclare colors / fonts / spacing — they live in DESIGN.md.
 
 ↓↓↓ MOCKUP PROMPT
-Design the loading state of the send money screen for **Mifos X Open Banking**, a Open Banking KMP super-app — consumer retail banking + field officer agent banking powered by Open Bank Project API v7, built with Compose Multiplatform across Android, iOS, Desktop, and Web.
 
-Palette: primary #B2D188, on_primary #1F3701, primary_container #354E16, on_primary_container #CDEDA3, secondary #A0CFCB, on_secondary #003735, secondary_container #1F4E4B, on_secondary_container #BCEBE7, background #12140E, on_background #E3E3D8, surface #12140E, on_surface #E3E3D8, surface_variant #44483D, on_surface_variant #C5C8BA, surface_container #1E201A, surface_container_high #282A24, outline #8F9285, outline_variant #44483D, error #FFB4AB, pending #E8A317, nav_active_indicator #354E16.
+## Archetype: index_list
 
-**Component 1 — App Bar Shimmer** (64dp tall, full width): Shimmer placeholder rectangle 120dp wide x 20dp tall, centered horizontally with 16dp top/bottom padding. Shimmer base #1E201A, highlight #282A24, animation duration 1200ms horizontal sweep. Background #12140E, zero elevation. skeleton_screen archetype.
+## Layout
+- type: scrollable_column
+- padding: default
+- alignment: start
 
-**Component 2 — Text Field Shimmer** (full width minus 32dp insets, top margin 24dp): Rectangular shimmer block 56dp tall, 12dp corner radius. Same shimmer animation at 1200ms cadence.
+## Composition (top → bottom)
+1. **text** (#from_account_header) — label: "From account", content: "FROM ACCOUNT"
+2. **list_item** (#account_selector) — label: "From account", content: "Primary Checking — €4,820.00"
+3. **text** (#recent_recipients_header) — label: "Recent Recipients", content: "RECENT RECIPIENTS"
+4. **box** (#recipient_new) — label: "New", content: "New"
+5. **box** (#recent_recipient_item) — label: "Recent recipient", content: "LW"
+6. **text** (#all_beneficiaries_header) — label: "All Beneficiaries", content: "ALL BENEFICIARIES"
+7. **list_item** (#beneficiary_item) — label: "Beneficiary", content: "Liam Walker"
+8. **text** (#beneficiary_subtitle) — label: "SEPA · Afternoon Coffee Bank ·· 8842", content: "SEPA · Afternoon Coffee Bank ·· 8842"
+9. **text** (#no_beneficiaries_note) — label: "No payees on this account yet", content: "No payees on this account yet. Switch accounts above."
 
-**Component 3 — Text Field Shimmer** (full width minus 32dp insets, top margin 12dp): Rectangular shimmer block 56dp tall, 12dp corner radius. Same shimmer animation, 100ms phase offset.
+## State-specific behavior
+- Show shimmer/skeleton loaders matching the content layout block-for-block — no real text, no images. This is the screen's initial state.
 
-**Component 4 — Text Field Shimmer** (full width minus 32dp insets, top margin 12dp): Rectangular shimmer block 56dp tall, 12dp corner radius. 200ms phase offset.
+## Content source manifest
+- (no demo collections bound for this state)
 
-**Component 5 — Text Field Shimmer** (full width minus 32dp insets, top margin 12dp): Rectangular shimmer block 56dp tall, 12dp corner radius. 300ms phase offset.
+## Components (vocabulary used in this prompt)
+- (no named components extracted — see composition)
 
-**Component 6 — Chip Row Shimmer** (full width minus 32dp insets, top margin 16dp): Section label shimmer 80dp wide x 14dp tall. Below: two horizontally arranged chip shimmers, each 100dp wide x 40dp tall, 20dp corner radius, 8dp gap between chips.
+## Shell (app-shell resolved for this state)
+- App-shell rules are defined per project; per-screen overrides are merged in.
+- Render MUST keep nav/bar elements consistent with the resolved shell — present or absent, never partial.
 
-**Component 7 — Text Field Shimmer** (full width minus 32dp insets, top margin 16dp): Rectangular shimmer block 56dp tall, 12dp corner radius.
+## Tokens (design-tokens roles consumed)
+- Colors: primary / secondary / surface / on-surface / on-surface-variant / error (M3 standard roles).
+- Typography: body-large / title-large (M3 standard roles).
+- Spacing: gap.sm / gap.md / gap.lg.
+- ALL token references are by name from the uploaded design system — no hex literals, no inline size values.
 
-**Component 8 — Card Shimmer** (full width minus 32dp insets, top margin 16dp, 12dp corner radius): Card placeholder 140dp tall. Section header shimmer 80dp wide x 14dp at 16dp from top. Three row shimmers 48dp tall each, separated by 1dp dividers #282A24.
+## Self-Validation Checklist (MANDATORY)
 
-**Component 9 — Card Shimmer** (full width minus 32dp insets, top margin 12dp, 12dp corner radius): Rectangular shimmer block 48dp tall. Background #1E201A.
+Before returning the rendered mockup, verify ALL of these are true. If any fails, FIX the output and re-render.
 
-**Component 10 — Button Shimmer** (full width minus 32dp insets, top margin 24dp, bottom 32dp): Pill shimmer 52dp tall, 999dp corner radius, background #1E201A with shimmer sweep.
+- [ ] **Per-state shape:** the render shows ONLY this state ("loading"). Do not blend multiple states into one mockup.
+- [ ] **Real content:** every text label, image, and data point reflects the content source manifest above — no numbered generic items, no filler text, no dummy text, no empty strings.
+- [ ] **Token fidelity:** colors come from the uploaded design system (primary/secondary/surface/etc.) by name; spacing comes from declared scale tokens. No invented hex codes, no invented size literals.
+- [ ] **Component vocabulary:** every component in the render maps to a named design-system component (Card, FAB, BottomBar, etc.) — no invented or off-system components.
+- [ ] **Archetype honored:** the layout follows the "index_list" archetype skeleton — composition order top → bottom matches the Composition section.
+- [ ] **App-shell parity:** if a bottom nav, top app bar, or FAB appears in the render, it matches the resolved shell from the app-shell config. Shell elements are either present-and-consistent OR absent — never partial.
 
-Do not use em-dash anywhere in text. Do not make any headline more than 3 lines or any subtitle more than 25 words. Do not break the page theme between sections. Do not place light text on light buttons or dark text on dark buttons.
+If any of these fail and the fix isn't clear → halt rendering and surface "Self-validation failed at: {checkpoint}."
 
-Full vertically scrollable layout on #12140E. Shimmer placeholders use #1E201A as the rest tone with #282A24 as the highlight pulse at 1200ms, keeping the loading state calm and steady rather than flickery, calibrated to the professional open banking aesthetic.
+Return ONLY when all 6 checkpoints pass.
+
 ↑↑↑ MOCKUP PROMPT

@@ -1,56 +1,102 @@
 schema_version: 1.0.0
 capabilities:
+  idea-export:
+    last_run:
+      at: '2026-06-14T17:32:30.000Z'
+      status: success
+      duration_ms: 0
+      actor: claude
+      args: ''
+      command: /idea export
+    artifacts_written:
+      - path: idea-layer/EXPORT_MATRIX.yaml
+    drift:
+      stale_inputs: []
+      next_required:
+        - idea-approve
+    log_file_ref:
+      file: idea-layer/state/ACTIVITY_LOG.jsonl
+      line: 1228
+    metrics:
+      features_exported: 9
+      files_written: 44
+      roundtrip_passed: 9
+      roundtrip_failures: 0
+      features_to_designed: 8
+      consent_request_prompts_skipped: true
+      consent_request_skip_reason: STN2-8000-char-budget-overshoot
   idea-export-stitch:
     last_run:
-      at: '2026-06-11T03:54:13.443Z'
-      status: success
-      duration_ms: 42
+      at: '2026-06-14T17:10:53.121Z'
+      status: failure
+      duration_ms: 38
       actor: claude
-      command: /idea-export-stitch business-insights --build-prompts --force
+      command: /idea-export-stitch consent-request --build-prompts --force
     metrics:
-      build_prompts_last_run: '2026-06-11T03:54:13.443Z'
-      states_written_this_run: 5
-      states_failed_this_run: 0
-      avg_chars_per_state: 4242
+      build_prompts_last_run: '2026-06-14T17:10:53.120Z'
+      states_written_this_run: 0
+      states_failed_this_run: 5
+      avg_chars_per_state: 8034
     detail_ref: state/STITCH_STATE.yaml
   idea-verify:
     last_run:
-      at: '2026-06-11T16:00:00.000Z'
+      at: '2026-06-14T00:00:00.000Z'
       status: success
       duration_ms: 0
       actor: claude
       args: ''
       command: /idea verify
       errors: 0
-      warnings: 18
+      warnings: 11
       layer: idea
-      quality_score: 91
-      completeness_score: 84
-      checks_run: 78
-      checks_passed: 74
+      quality_score: 93
+      completeness_score: 89
+      checks_run: 84
+      checks_passed: 84
       checks_failed: 0
-      checks_warned: 4
+      checks_warned: 11
     metrics:
-      checks_run: 78
-      checks_passed: 74
+      checks_run: 84
+      checks_passed: 84
       checks_failed: 0
-      checks_warned: 4
+      checks_warned: 11
+    verify:
+      status: done
+      last_run: '2026-06-14T00:00:00.000Z'
+      checks_passed: 84
+      checks_failed: 0
+      failed_checks: []
+      warnings:
+        - >-
+          3 weak-typed target:"" clicks (beneficiaries read-only rows, products compare chips, send-money-confirm review
+          rows) — advisory, known
+        - >-
+          consent-expired reachability: programmatic re-consent (§9 FR-005) + splash→consent-expired — advisory, no fake
+          edge
+        - 'notifications reachability: app-shell top-bar bell + FR-023 (verify-checker blind spot) — advisory'
+        - >-
+          standing-order-edit reachability: wired via standing-order-detail→standing-order-edit; PISP edit-flow decision
+          pending (FR-044) — advisory/deferred
+        - >-
+          5 unbound OBIE endpoint groups (VRP/International-Scheduled/International-Standing-Order/File/Multi-Bill) —
+          step-G new-capability candidates, not defects
+        - >-
+          RV-001 raw hex: 3 violations in preview HTML (advisory — inside [data-theme] override blocks, not content hex)
+        - 'RV-014 rogue CSS vars: 12 across screens (advisory — unresolved var() references)'
+        - 'RV-015 font drift: 1 screen (advisory — font-family mismatch in preview)'
+        - >-
+          RV-023 missing dark-mode block: 13 screens (advisory — render polish, follow-up re-render queued)
+        - >-
+          RV-032 dangling data-nav-to: 7 targets in preview HTML pointing to OBP-removed screens (cards/login/change-password)
+          — advisory, previews not yet re-rendered post-migration
+        - >-
+          3 screens missing exports dir (payment-result, send-money-amount, standing-order-create) — added 2026-06-11,
+          export pending; EXPORT_MATRIX rows registered, render/export not yet run
+      note: >-
+        39 screens total: 31 approved, 8 designed (8 consent/redirect screens advanced enriched→designed via /idea export
+        2026-06-14). 0 draft. Server/owned-DB checks SKIP-by-policy (backend.owned=false). tests.yaml absent from 38/39
+        screens — capability-gated (has_testing not declared; standing-order-edit has tests.yaml). 0 NEW blocking failures.
     detail_ref: state/SYNC_STATE.verify
-  verify:
-    status: done
-    last_run: '2026-06-11T16:00:00.000Z'
-    checks_passed: 74
-    checks_failed: 0
-    failed_checks: []
-    warnings:
-      - "6 screens status=draft (quality_score=0): consent-intro, consent-request, bank-authorize-handoff, auth-callback, consent-declined, payment-authorize-handoff, consent-expired, payment-declined (HSBC migration additions — need /idea-enrich)"
-      - "8 screens missing preview/ dir: all 6 draft screens above + payment-declined + auth-callback"
-      - "4 reachability WARN: consent-expired/consent-manager/notifications/standing-order-edit have no flow.yaml incoming navigates_to[]"
-      - "about screen: api.yaml missing (static screen — expected)"
-      - "settings screen: api.yaml missing (static screen — expected)"
-      - "splash screen: api.yaml missing (gate screen — expected)"
-      - "STITCH: per prior run, STITCH_STATUS.yaml tracks pre-migration screen IDs — will need refresh after /idea export --stitch"
-last_completed_step: verify
   idea-api-map:
     last_run:
       at: '2026-06-11T15:13:01.000Z'
@@ -70,8 +116,198 @@ last_completed_step: verify
       apis_mapped: 39
       screens_covered: 39
       screens_with_no_api: 9
-      api_groups: 17
-      consumer_screens: 30
-      field_officer_screens: 18
-      shared_screens: 6
-      deferred_apis: 2
+      api_groups: 14
+      consumer_screens: 39
+      shared_screens: 5
+      deferred_apis: 5
+  idea-migrate-schema:
+    last_run:
+      at: '2026-06-14T00:00:00.000Z'
+      status: success
+      duration_ms: 0
+      actor: claude
+      args: '--confirm'
+      command: /idea-migrate-schema --confirm
+      errors: 0
+      warnings: 3
+    artifacts_written:
+      - path: idea-layer/state/migration-log.yaml
+    drift:
+      stale_inputs: []
+      next_required:
+        - idea-verify
+    metrics:
+      from_version: "1.1.0"
+      to_version: "2.0.0"
+      features_total: 39
+      docs_migrated: 39
+      ui_migrated: 39
+      skipped: 0
+      post_migration_gaps: 3
+    warnings:
+      - "payment-result/docs.yaml review_package paths are placeholder — exports dir does not exist yet (screen added 2026-06-11, export pending)"
+      - "send-money-amount/docs.yaml review_package paths are placeholder — exports dir does not exist yet"
+      - "standing-order-create/docs.yaml review_package paths are placeholder — exports dir does not exist yet"
+  idea-sync:
+    last_run:
+      at: '2026-06-15T00:30:00.000Z'
+      status: success
+      duration_ms: 0
+      actor: claude
+      args: '--skip-render'
+      command: /idea sync --skip-render
+      errors: 0
+      warnings: 8
+      layer: idea
+    metrics:
+      steps_total: 14
+      steps_succeeded: 10
+      steps_failed: 0
+      steps_skipped: 4
+      screens: 39
+      approved: 39
+      drafts: 0
+      contract_version_uniform: '2.0.0'
+      artifacts_regenerated: 2
+      artifacts_fresh: 5
+      new_findings: 1
+    new_findings:
+      - 'STALE EXPORTS: consent-intro/consent-request/consent-declined SPEC.md still document removed idle state — re-run /idea export'
+    note: >-
+      Run 5 — post-export/approve reconcile. 39/39 approved, 0 draft, uniform contract 2.0.0
+      (migration complete). DEV_STATUS.md + dev-status.html refreshed to 39-approved; other
+      artifacts verified fresh. The brief-cited "31 screens at 1.1.0" are historical
+      status_history[] stamps, not current markers.
+    detail_ref: state/SYNC_STEPS.yaml
+  idea-generate-data-flow:
+    last_run:
+      at: '2026-06-12T00:00:00.000Z'
+      status: success
+      duration_ms: 0
+      actor: claude
+      args: ''
+      command: /idea generate-data-flow
+      errors: 0
+      warnings: 3
+      layer: idea
+    metrics:
+      screens_processed: 37
+      files_generated: 13
+      files_updated: 8
+      files_fresh_skipped: 16
+      cache_views_updated: 53
+      aggregate_flows: 1
+      aggregate_dtos: 14
+      aggregate_features: 37
+    warnings:
+      - pfm-settings data-flow.yaml was already correct (OBIE-era) — no update needed
+      - consent-intro has api:[] — data-flow has no network entries (by design)
+      - 'transaction-tags: no OBIE network endpoints (LOCAL-ONLY store) — data-flow uses local_store transport'
+    detail_ref: null
+  idea-generate-dtos:
+    last_run:
+      at: '2026-06-12T00:00:00.000Z'
+      status: success
+      duration_ms: 0
+      actor: claude
+      args: '--refresh-back-refs'
+      command: /idea generate-dtos --refresh-back-refs
+      errors: 0
+      warnings: 2
+      layer: idea
+    artifacts:
+      - path: idea-layer/dtos/
+    metrics:
+      dtos_scanned: 72
+      dtos_updated: 9
+      dtos_unchanged: 63
+  idea-generate-demo-data:
+    last_run:
+      at: '2026-06-12T00:00:00.000Z'
+      status: success
+      duration_ms: 0
+      actor: claude
+      args: '--bulk'
+      command: /idea generate-demo-data --bulk
+      errors: 0
+      warnings: 1
+      layer: idea
+    metrics:
+      features_generated: 25
+      features_skipped_fresh: 3
+      features_static_skipped: 8
+      total_collections: 79
+      demo_source_backrefs_written: 47
+    self_validation:
+      DD1: pass
+      DD2: pass
+      DD3: pass
+      DD5: pass
+      DD6: pass
+    warnings:
+      - >-
+        pfm-settings + (some) standing-order-create/edit api/data-flow reference unversioned/older DTO aliases
+        (OBReadParty2, OBWriteDomesticStandingOrderConsent) — demo-data modelled on the registered DTO shape
+        (OBReadParty3 Data.Party[] etc.); data-flow DTO-name drift is out of scope for this run
+    detail_ref: null
+  idea-render-validate:
+    last_run:
+      at: '2026-06-14T17:03:38.000Z'
+      status: success
+      duration_ms: 0
+      actor: claude
+      args: '--cross-screen'
+      command: /idea-render-validate --cross-screen
+    artifacts_written: []
+    drift:
+      stale_inputs: []
+      next_required: []
+    log_file_ref:
+      file: idea-layer/state/ACTIVITY_LOG.jsonl
+      line: 1218
+    metrics:
+      files_checked: 188
+      screens_checked: 39
+      errors: 8
+      warnings: 7
+      rv001_violations: 3
+      rv014_rogue_vars: 12
+      rv015_font_drift: 1
+      rv016_pass: true
+      rv023_missing_dark: 40
+      rv025_pass: true
+      rv030_pass: true
+      rv032_dangling_nav_targets: 7
+      rv034_pass: true
+  idea-approve:
+    last_run:
+      at: '2026-06-14T18:36:36.000Z'
+      status: success
+      duration_ms: 0
+      actor: claude
+      args: '--all-ready'
+      command: /idea approve --all-ready
+      errors: 0
+      warnings: 2
+      layer: idea
+    artifacts_written:
+      - path: idea-layer/APPROVE_LOG.yaml
+      - path: idea-layer/screens/consent-intro/docs.yaml
+      - path: idea-layer/screens/consent-request/docs.yaml
+      - path: idea-layer/screens/consent-declined/docs.yaml
+    drift:
+      stale_inputs: []
+      next_required: []
+    log_file_ref:
+      file: idea-layer/state/ACTIVITY_LOG.jsonl
+      line: 1233
+    metrics:
+      candidates: 3
+      features_approved: 3
+      features_blocked: 0
+      gate: §5-predicate
+      resolution: 'idle-state alias removed → C3 §8.1.1 cleared; all 3 PASS'
+      contract_version_current: 2.0.0
+      predicate_run: true
+      remediation: '/idea-render-screen {consent-intro,consent-request,consent-declined} --state idle (or drop idle alias from states[])'
+last_completed_step: complete

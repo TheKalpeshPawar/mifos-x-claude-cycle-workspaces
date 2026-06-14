@@ -1,9 +1,9 @@
 ---
-ui_yaml_sha: a37ab086ed21a953df7bf0a7272221f8d846dd091086643f77aeaf43d90882ef
-design_md_hash: 71b53c295bf863d34057f16264caf37a11512e794d356b3bec219352550d05ec
-app_shell_hash: ad7a6b42b2ae10e63ef270f15d857bd44445d775e8d9b09313b31e6569df95b4
-design_read_hash: 1639ea0545fdbc1ba9ce1eef5369eae224a6f4f57f07f0639b699652daeb8558
-content_hash: 50f04c2c22d3b19553531501673534e29cf5efcd8edf502464b8bd17740e6925
+ui_yaml_sha: 131a09e0d37fbc1576b279c79cba2fab14c487f4ebc9172bc37ef5cdf0a545bd
+design_md_hash: 2b17083785e7e532a1554540e628db54640dfab77857b6c90d802767add94ba2
+app_shell_hash: d2fe35b34f2ccfe703fcea97291ff9cb0453b148553d7b69b40f4cfa59d08766
+design_read_hash: 60a4c95f7619b31daccc130861a96508d0cacf2f29734f43c35036c1f0280375
+content_hash: c82e1d2959eb4d98e9c9ff1ac60f47cc3e321e8efda19a975f144a791debd4b4
 
 design_read_aesthetic: taste-default
 design_read_dials: {variance: 4, motion: 3, density: 5}
@@ -14,8 +14,8 @@ feature: beneficiaries
 state: loading
 state_visibility: loading
 
-project_id: 'null'
-design_system_id: 'null'
+project_id: '17153754672098888646'
+design_system_id: '2005644667042354169'
 
 generated_by: stitch-prompt-build.ts v2.0.0
 prompt_template_version: stitch-per-state-v3.0.0
@@ -24,34 +24,64 @@ craft_rules_version: v1.0.0
 
 # beneficiaries — loading state
 
-> Auto-generated from screens/beneficiaries/ui.yaml @ SHA 7c34bc96f845e53a
-> Stitch DesignSystem: (pending DESIGN.md upload — run /idea-export-stitch sub-plan 02)
+> Auto-generated from screens/beneficiaries/ui.yaml @ SHA 73c3673a8fe3410f
+> Stitch DesignSystem: 2005644667042354169
 > DO NOT redeclare colors / fonts / spacing — they live in DESIGN.md.
 
 ↓↓↓ MOCKUP PROMPT
-Design the loading state of the Beneficiaries screen for **Mifos X Open Banking**, a open banking KMP super-app for consumer retail banking and field officer agent banking powered by Open Bank Project API v7.
 
-Palette: primary #B2D188, on_primary #1F3701, primary_container #354E16, on_primary_container #CDEDA3, secondary #A0CFCB, on_secondary #003735, background #12140E, on_surface #E3E3D8, on_surface_variant #C5C8BA, surface_container #1E201A, surface_container_high #282A24, outline #8F9285, error #FFB4AB.
+## Archetype: index_list
 
-**Component 1 — App Bar Shimmer** (64dp tall, full width): Shimmer rectangle 120dp wide by 24dp tall, centered. Base #1E201A, highlight #282A24, 1200ms horizontal sweep. Background #12140E. skeleton_screen archetype.
+## Layout
+- type: scrollable_column
+- padding: default
+- alignment: start
 
-**Component 2 — Text Field Shimmer** (full width minus 32dp insets, top margin 16dp): Rectangular shimmer 48dp tall, 24dp corner radius pill. Same sweep.
+## Composition (top → bottom)
+1. **card** (#beneficiary_account_selector) — label: "Beneficiaries of <account>", content: "Beneficiaries of <account>"
+2. **input** (#beneficiary_search_bar) — label: "Search"
+3. **text** (#recently_used_header) — label: "Recently Used", content: "Recently Used"
+4. **card** (#recent_beneficiary_card) — label: "Recent beneficiary", content: "Recent beneficiary"
+5. **divider** (#section_divider)
+6. **stack** (#all_beneficiaries_header_row) — label: "All Beneficiaries"
+7. **text** (#all_beneficiaries_header) — label: "All Beneficiaries", content: "All Beneficiaries"
+8. **icon** (#sort_button) — label: "Sort"
+9. **card** (#beneficiary_row) — label: "Beneficiary", content: "Beneficiary"
+10. **text** (#no_payees_row) — label: "No beneficiaries on this account yet. Switch accounts above.", content: "No beneficiaries on this account yet. Switch accounts above."
+11. **text** (#no_match_row) — label: "No beneficiaries match your search.", content: "No beneficiaries match your search."
 
-**Component 3 — Section Header Shimmer** (full width minus 32dp insets, top margin 16dp): Single shimmer rectangle 100dp wide by 14dp tall.
+## State-specific behavior
+- Show shimmer/skeleton loaders matching the content layout block-for-block — no real text, no images. This is the screen's initial state.
 
-**Component 4 — List Row Shimmer** (full width minus 32dp insets, top margin 8dp, 72dp tall): Leading 40dp circular shimmer avatar. Title shimmer 160dp by 16dp, subtitle shimmer 80dp by 12dp stacked on right, trailing shimmer 60dp by 12dp.
+## Content source manifest
+- (no demo collections bound for this state)
 
-**Component 5 — List Row Shimmer** (full width minus 32dp insets, top margin 4dp, 72dp tall): Same row shimmer shape.
+## Components (vocabulary used in this prompt)
+- (no named components extracted — see composition)
 
-**Component 6 — List Row Shimmer** (full width minus 32dp insets, top margin 4dp, 72dp tall): Same row shimmer shape.
+## Shell (app-shell resolved for this state)
+- App-shell rules are defined per project; per-screen overrides are merged in.
+- Render MUST keep nav/bar elements consistent with the resolved shell — present or absent, never partial.
 
-**Component 7 — Section Header Shimmer** (full width minus 32dp insets, top margin 16dp): Single shimmer 120dp by 14dp.
+## Tokens (design-tokens roles consumed)
+- Colors: primary / secondary / surface / on-surface / on-surface-variant / error (M3 standard roles).
+- Typography: body-large / title-large (M3 standard roles).
+- Spacing: gap.sm / gap.md / gap.lg.
+- ALL token references are by name from the uploaded design system — no hex literals, no inline size values.
 
-**Component 8 — Card Shimmer** (full width minus 32dp insets, top margin 8dp, 80dp tall): Leading 32dp square shimmer. Two text-line shimmers 180dp and 120dp, trailing 60dp by 12dp.
+## Self-Validation Checklist (MANDATORY)
 
-**Component 9 — Card Shimmer** (full width minus 32dp insets, top margin 8dp, bottom 24dp): Same shape, 80dp tall.
+Before returning the rendered mockup, verify ALL of these are true. If any fails, FIX the output and re-render.
 
-Do not use em-dash anywhere in text. Do not make any headline more than 3 lines or any subtitle more than 25 words. Do not break the dark theme between sections. Do not place light text on light buttons or dark text on dark buttons.
+- [ ] **Per-state shape:** the render shows ONLY this state ("loading"). Do not blend multiple states into one mockup.
+- [ ] **Real content:** every text label, image, and data point reflects the content source manifest above — no numbered generic items, no filler text, no dummy text, no empty strings.
+- [ ] **Token fidelity:** colors come from the uploaded design system (primary/secondary/surface/etc.) by name; spacing comes from declared scale tokens. No invented hex codes, no invented size literals.
+- [ ] **Component vocabulary:** every component in the render maps to a named design-system component (Card, FAB, BottomBar, etc.) — no invented or off-system components.
+- [ ] **Archetype honored:** the layout follows the "index_list" archetype skeleton — composition order top → bottom matches the Composition section.
+- [ ] **App-shell parity:** if a bottom nav, top app bar, or FAB appears in the render, it matches the resolved shell from the app-shell config. Shell elements are either present-and-consistent OR absent — never partial.
 
-Full scrollable layout on #12140E. Shimmer placeholders use surfaceContainer #1E201A rest with #282A24 sweep, keeping the loading state calm and restrained, anchored by the #B2D188 primary token for a minimal, balanced banking experience.
+If any of these fail and the fix isn't clear → halt rendering and surface "Self-validation failed at: {checkpoint}."
+
+Return ONLY when all 6 checkpoints pass.
+
 ↑↑↑ MOCKUP PROMPT

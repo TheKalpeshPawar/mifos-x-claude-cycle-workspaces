@@ -1,8 +1,8 @@
 ---
-ui_yaml_sha: 703dede95e22a6c8002180e4e78dc41fac4d66f5b6137b058715a4b52916a469
-design_md_hash: 71b53c295bf863d34057f16264caf37a11512e794d356b3bec219352550d05ec
-app_shell_hash: ad7a6b42b2ae10e63ef270f15d857bd44445d775e8d9b09313b31e6569df95b4
-design_read_hash: 1639ea0545fdbc1ba9ce1eef5369eae224a6f4f57f07f0639b699652daeb8558
+ui_yaml_sha: 3a8c35023e49e8cf38a0d63986777aee5b9adc8e6987e9220448fecb9e0e0a22
+design_md_hash: 2b17083785e7e532a1554540e628db54640dfab77857b6c90d802767add94ba2
+app_shell_hash: d2fe35b34f2ccfe703fcea97291ff9cb0453b148553d7b69b40f4cfa59d08766
+design_read_hash: 60a4c95f7619b31daccc130861a96508d0cacf2f29734f43c35036c1f0280375
 content_hash: dad0b4829b9c3decdc7d8ebd2393764368a555105fe44140f1f92810a98742f3
 
 design_read_aesthetic: taste-default
@@ -24,7 +24,7 @@ craft_rules_version: v1.0.0
 
 # business-insights — loading state
 
-> Auto-generated from screens/business-insights/ui.yaml @ SHA f1769dafa1a8c58f
+> Auto-generated from screens/business-insights/ui.yaml @ SHA 8eae8f867a2f1841
 > Stitch DesignSystem: 2005644667042354169
 > DO NOT redeclare colors / fonts / spacing — they live in DESIGN.md.
 

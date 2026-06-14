@@ -1,10 +1,12 @@
+sibling: ui
+feature_id: send-money-amount
 id: send-money-amount
 name: Send Money
 feature: send-money-amount
 flavor: consumer
 status: approved
 quality_score: 90
-contract_version: "1.1.0"
+contract_version: "2.0.0"
 approved_at: "2026-06-11T14:45:00Z"
 approved_by: "/idea approve"
 capabilities:
@@ -326,11 +328,11 @@ state_model:
   ui_state_type: "ScreenState<SendMoneyContent>"
   content_type: SendMoneyContent
   content_fields:
-    - { name: accounts, type: "List<OBAccount6>" }
-    - { name: selectedAccount, type: OBAccount6 }
-    - { name: beneficiaries, type: "List<OBBeneficiary5>" }
-    - { name: recentBeneficiaries, type: "List<OBBeneficiary5>" }
-    - { name: selectedBeneficiary, type: "OBBeneficiary5?" }
+    - { name: accounts, type: "List<OBReadAccount6>" }
+    - { name: selectedAccount, type: OBReadAccount6 }
+    - { name: beneficiaries, type: "List<OBReadBeneficiary5>" }
+    - { name: recentBeneficiaries, type: "List<OBReadBeneficiary5>" }
+    - { name: selectedBeneficiary, type: "OBReadBeneficiary5?" }
     - { name: amount, type: "String (Data.InstructedAmount.Amount)" }
     - { name: currency, type: "String (Data.InstructedAmount.Currency, ISO 4217)" }
     - { name: reference, type: String }
@@ -410,27 +412,27 @@ api:
     description: "The From Account picker. Requires an authorised account-access-consent (Status AUTH) + an authorization-code token (scope accounts)."
     response:
       fields:
-        - { name: Data.Account[].AccountId, type: String }
-        - { name: Data.Account[].Nickname, type: String }
-        - { name: Data.Account[].Currency, type: String }
-        - { name: Data.Account[].Account[].Identification, type: String }
+        - { name: "Data.Account[].AccountId", type: String }
+        - { name: "Data.Account[].Nickname", type: String }
+        - { name: "Data.Account[].Currency", type: String }
+        - { name: "Data.Account[].Account[].Identification", type: String }
   - endpoint: "GET /obie/open-banking/v4.0/aisp/accounts/{AccountId}/balances"
     tag: AISP
     description: "Live balance for the selected source account — drives the amount-affordability hint and the amount-entry currency prefix. Requires ReadBalances. Prefer Type InterimAvailable."
     response:
       fields:
-        - { name: Data.Balance[].Amount.Amount, type: String }
-        - { name: Data.Balance[].Amount.Currency, type: String }
-        - { name: Data.Balance[].Type, type: String }
+        - { name: "Data.Balance[].Amount.Amount", type: String }
+        - { name: "Data.Balance[].Amount.Currency", type: String }
+        - { name: "Data.Balance[].Type", type: String }
   - endpoint: "GET /obie/open-banking/v4.0/aisp/accounts/{AccountId}/beneficiaries"
     tag: AISP
     description: "Beneficiary list for the selected account (reloads on account switch). Requires ReadBeneficiariesBasic/Detail. CreditorAccount.SchemeName drives rail classification."
     response:
       fields:
-        - { name: Data.Beneficiary[].BeneficiaryId, type: String }
-        - { name: Data.Beneficiary[].CreditorAccount.Name, type: String }
-        - { name: Data.Beneficiary[].CreditorAccount.SchemeName, type: String }
-        - { name: Data.Beneficiary[].CreditorAccount.Identification, type: String }
+        - { name: "Data.Beneficiary[].BeneficiaryId", type: String }
+        - { name: "Data.Beneficiary[].CreditorAccount.Name", type: String }
+        - { name: "Data.Beneficiary[].CreditorAccount.SchemeName", type: String }
+        - { name: "Data.Beneficiary[].CreditorAccount.Identification", type: String }
   - endpoint: "POST /obie/open-banking/v4.0/cbpii/funds-confirmations"
     tag: CBPII
     description: "Confirmation-of-Funds check on Continue — confirms the entered amount is available on the source account against a funds-confirmation-consent. Requires an authorization-code token (scope fundsconfirmations) + a ConsentId in the payload; InstructedAmount.Currency must equal the account currency. Surfaces Data.FundsAvailable. ALTERNATIVE when a domestic-payment-consent (Status AUTH) already exists: GET /obie/open-banking/v4.0/pisp/domestic-payment-consents/{ConsentId}/funds-confirmation → Data.FundsAvailableResult.FundsAvailable."

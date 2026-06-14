@@ -4,78 +4,58 @@ feature_id: transaction-tags
 entries:
   - screen_id: transaction-tags
     trigger: on_mount
-    endpoints:
-      - obp_transaction_tags_get
+    endpoints: []
     direction: read
-    dtos:
-      - name: TransactionTag
-        role: response
-        api_id: obp_transaction_tags_get
+    transport: local_store
+    store: TransactionEnrichmentStore
+    dtos: []
     produces_state: content
-    error_paths:
-      - error_code: 401
-        behavior: navigate_login
-      - error_code: 404
-        behavior: empty_state
+    notes: >-
+      OBIE Account Information has no transaction-metadata endpoint (no tags, notes,
+      or receipt images). Transaction tagging + notes are LOCAL personal-finance features,
+      stored in the on-device TransactionEnrichmentStore keyed by OBIE TransactionId +
+      AccountId scope. Reads current tags and note for the given transaction on mount.
 
   - screen_id: transaction-tags
     trigger: on_interact
     event: TagAdded
-    endpoints:
-      - obp_transaction_tag_add
+    endpoints: []
     direction: write
-    dtos:
-      - name: TransactionTag
-        role: response
-        api_id: obp_transaction_tag_add
+    transport: local_store
+    store: TransactionEnrichmentStore
+    dtos: []
     produces_state: content
-    error_paths:
-      - error_code: 401
-        behavior: navigate_login
+    notes: "Appends tag to the local enrichment store for this TransactionId. No network call."
 
   - screen_id: transaction-tags
     trigger: on_interact
     event: TagRemoved
-    endpoints:
-      - obp_transaction_tag_delete
+    endpoints: []
     direction: write
-    dtos:
-      - name: TransactionTag
-        role: response
-        api_id: obp_transaction_tag_delete
+    transport: local_store
+    store: TransactionEnrichmentStore
+    dtos: []
     produces_state: content
-    error_paths:
-      - error_code: 401
-        behavior: navigate_login
-      - error_code: 404
-        behavior: error_state
+    notes: "Removes tag from the local enrichment store. No network call."
 
   - screen_id: transaction-tags
     trigger: on_interact
-    event: CommentAdded
-    endpoints:
-      - obp_transaction_comment_add
+    event: NoteChanged
+    endpoints: []
     direction: write
-    dtos:
-      - name: TransactionComment
-        role: response
-        api_id: obp_transaction_comment_add
+    transport: local_store
+    store: TransactionEnrichmentStore
+    dtos: []
     produces_state: content
-    error_paths:
-      - error_code: 401
-        behavior: navigate_login
+    notes: "Replaces the canonical single note (newest-wins) in the local store. No network call."
 
   - screen_id: transaction-tags
     trigger: on_interact
     event: ImageAdded
-    endpoints:
-      - obp_transaction_image_add
-    direction: write
-    dtos:
-      - name: TransactionComment
-        role: response
-        api_id: obp_transaction_image_add
+    endpoints: []
+    direction: none
+    dtos: []
     produces_state: content
-    error_paths:
-      - error_code: 401
-        behavior: navigate_login
+    notes: >-
+      UNSUPPORTED — receipt image upload was previously a coming-soon placeholder;
+      OBIE has no equivalent and the feature is out of scope under Open Banking.

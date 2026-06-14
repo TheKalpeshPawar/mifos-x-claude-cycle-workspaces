@@ -1,0 +1,69 @@
+sibling: data-flow
+schema_version: "4.0"
+feature_id: payment-result
+entries:
+  - screen_id: payment-result
+    trigger: on_mount
+    endpoints:
+      - get_domestic_payment_status
+    direction: read
+    consent_required: false
+    dtos:
+      - name: OBWriteDomesticResponse5
+        role: response
+        api_id: get_domestic_payment_status
+    produces_state: loading
+    notes: >-
+      Terminal result view. Polls GET /pisp/domestic-payments/{DomesticPaymentId} to surface
+      settlement status. DomesticPaymentId comes from the submit response in auth-callback.
+      Client Credentials grant token (status reads do not need the Authorization Code token).
+      Terminal success: AcceptedSettlementInProcess (ACSP) or AcceptedSettlementCompleted (ACSC).
+      Terminal failure: Rejected (RJCT) — routes to payment-declined.
+      SCA was performed at HSBC during the authorise redirect.
+    error_paths:
+      - error_code: 400
+        behavior: show_error_state
+      - error_code: 401
+        behavior: show_error_state
+      - error_code: 404
+        behavior: show_error_state
+      - error_code: 429
+        behavior: show_error_state
+      - error_code: 500
+        behavior: show_error_state
+
+  - screen_id: payment-result
+    trigger: on_interact
+    event: RetryStatusPoll
+    endpoints:
+      - get_domestic_payment_status
+    direction: read
+    consent_required: false
+    dtos:
+      - name: OBWriteDomesticResponse5
+        role: response
+        api_id: get_domestic_payment_status
+    produces_state: loading
+    error_paths:
+      - error_code: 400
+        behavior: show_error_state
+      - error_code: 500
+        behavior: show_error_state
+
+  - screen_id: payment-result
+    trigger: on_interact
+    event: GoHome
+    endpoints: []
+    direction: none
+    dtos: []
+    produces_state: content
+    notes: "Navigates to home. No API call."
+
+  - screen_id: payment-result
+    trigger: on_interact
+    event: MakeAnotherPayment
+    endpoints: []
+    direction: none
+    dtos: []
+    produces_state: content
+    notes: "Navigates to send-money. No API call."

@@ -1,30 +1,81 @@
 sibling: demo-data
 schema_version: "4.0"
 feature_id: notifications
-content:
-  obp_signal_channels:
+
+# OBIE event notifications. poll_events returns OBEventPollingResponse1 — moreAvailable plus
+# the sets map keyed by each notification's jti (values are signed-JWT SETs). The UI list is
+# built by decoding each SET into OBEventNotification2 fields (events.iss/iat/jti/sub/events),
+# matching the decoded field names declared in api.yaml. HSBC restricts the event type to
+# UK.OBIE.Consent-Authorization-Revoked, so each surfaced notification reads as a consent
+# revocation. event_subscriptions backs the notification-settings sheet.
+collections:
+  poll_events_response:
+    dto: OBEventPollingResponse1
+    description: "200 OK — short-poll response with two outstanding consent-revocation SETs keyed by jti, each value a signed-JWT in OBEventNotification2 format."
+    item:
+      moreAvailable: false
+      sets:
+        b9f3c1a0-77de-4e21-9a4c-1d2e3f4a5b6c: "eyJhbGciOiJQUzI1NiIsImtpZCI6Imhzd…signed-jwt-set"
+        c2e8d4b1-1042-4f9b-8c33-7a6b5c4d3e2f: "eyJhbGciOiJQUzI1NiIsImtpZCI6Imhzd…signed-jwt-set"
+
+  # Decoded notification list the UI renders from the SETs above (OBEventNotification2 fields).
+  notifications_list:
+    dto: OBEventPollingResponse1
+    description: "Decoded SETs rendered as the notification list — each a UK.OBIE.Consent-Authorization-Revoked event with issuer, issued-at, jti and affected consent resource."
     items:
-      - channel_id: "ch-txn-alerts-ke"
-        name: "Transaction Alerts"
-        description: "Real-time push notifications for all account debits and credits above KES 100"
-        created_at: "2026-01-15T08:00:00+03:00"
+      - iss: "https://secure.sandbox.ob.hsbc.co.uk"
+        iat: 1781251200
+        jti: "b9f3c1a0-77de-4e21-9a4c-1d2e3f4a5b6c"
+        sub: "https://secure.sandbox.ob.hsbc.co.uk/obie/open-banking/v4.0/aisp/account-access-consents/aac-d490a1f3-7e62-4c08"
+        title: "Data-sharing access ended"
+        body: "Your connection to Snoop Money has expired and can no longer access your accounts."
+        timestamp: "2026-06-09T11:20:00Z"
+        read: false
+        events:
+          "urn:uk:org:openbanking:events:consent-authorization-revoked":
+            subject:
+              subject_type: "http://openbanking.org.uk/rid_http://openbanking.org.uk/rty"
+              http://openbanking.org.uk/rid: "aac-d490a1f3-7e62-4c08"
+              http://openbanking.org.uk/rty: "account-access-consent"
 
-      - channel_id: "ch-security-ke"
-        name: "Security Alerts"
-        description: "Notifications for login attempts, PIN changes, and suspicious activity"
-        created_at: "2026-01-15T08:00:00+03:00"
+      - iss: "https://secure.sandbox.ob.hsbc.co.uk"
+        iat: 1780905600
+        jti: "c2e8d4b1-1042-4f9b-8c33-7a6b5c4d3e2f"
+        sub: "https://secure.sandbox.ob.hsbc.co.uk/obie/open-banking/v4.0/aisp/account-access-consents/aac-3a77b2e1-5d09-44ba"
+        title: "You revoked an app's access"
+        body: "Yolt can no longer see your HSBC account information."
+        timestamp: "2026-06-05T11:18:00Z"
+        read: true
+        events:
+          "urn:uk:org:openbanking:events:consent-authorization-revoked":
+            subject:
+              subject_type: "http://openbanking.org.uk/rid_http://openbanking.org.uk/rty"
+              http://openbanking.org.uk/rid: "aac-3a77b2e1-5d09-44ba"
+              http://openbanking.org.uk/rty: "account-access-consent"
 
-      - channel_id: "ch-balance-ke"
-        name: "Low Balance Warnings"
-        description: "Alert when account balance falls below your configured threshold"
-        created_at: "2026-02-01T09:30:00+03:00"
+  # OBEventSubscriptionResponse1 — backs the notification-settings sheet (enabled state).
+  event_subscriptions:
+    dto: OBEventSubscriptionResponse1
+    description: "200 OK GET event-subscriptions — the single active subscription proving notifications are enabled for the consent-revocation event type."
+    item:
+      Data:
+        EventSubscription:
+          - EventSubscriptionId: "evtsub-hsbc-44ad19c2"
+            Version: "4.0"
+            EventTypes:
+              - UK.OBIE.Consent-Authorization-Revoked
+      Links:
+        Self: "https://secure.sandbox.ob.hsbc.co.uk/obie/open-banking/v4.0/event-subscriptions"
+      Meta:
+        TotalPages: 1
 
-      - channel_id: "ch-promotions-ke"
-        name: "Offers & Promotions"
-        description: "Equity Bank product offers, interest rate updates, and limited-time promotions"
-        created_at: "2026-02-10T11:00:00+03:00"
-
-      - channel_id: "ch-standing-ke"
-        name: "Standing Order Reminders"
-        description: "Advance notice 24 hours before a scheduled standing order executes"
-        created_at: "2026-03-05T10:00:00+03:00"
+  # OBErrorResponse1 — drives the notifications error state.
+  poll_events_error:
+    description: "Representative 401 OBErrorResponse1 — the client-credentials token is invalid; the PSU must sign in again."
+    item:
+      Code: "401 Unauthorized"
+      Id: "notif-err-2c91"
+      Message: "Unauthorized"
+      Errors:
+        - ErrorCode: "UK.OBIE.Unauthorized"
+          Message: "Please sign in again to see your notifications."

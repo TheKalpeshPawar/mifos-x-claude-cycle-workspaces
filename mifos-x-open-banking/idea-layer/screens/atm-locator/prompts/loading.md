@@ -1,9 +1,9 @@
 ---
-ui_yaml_sha: c8c8040af254236430df923e229edc7208f4a0e351a42c63baa151d487b8456e
-design_md_hash: 71b53c295bf863d34057f16264caf37a11512e794d356b3bec219352550d05ec
-app_shell_hash: ad7a6b42b2ae10e63ef270f15d857bd44445d775e8d9b09313b31e6569df95b4
-design_read_hash: 1639ea0545fdbc1ba9ce1eef5369eae224a6f4f57f07f0639b699652daeb8558
-content_hash: d66c9e0a570c1a9b0ba82bd436bb59bd39ccac2aa158b8a904f854bdcad02432
+ui_yaml_sha: 8e7e5035f3814713301638fb1d901141132dd3a223b1fd7a604d21f138169ff2
+design_md_hash: 2b17083785e7e532a1554540e628db54640dfab77857b6c90d802767add94ba2
+app_shell_hash: d2fe35b34f2ccfe703fcea97291ff9cb0453b148553d7b69b40f4cfa59d08766
+design_read_hash: 60a4c95f7619b31daccc130861a96508d0cacf2f29734f43c35036c1f0280375
+content_hash: e3de56d64b58d5c07de268b629a0e550b7731d102725f193cb252013f0ca9586
 
 design_read_aesthetic: taste-default
 design_read_dials: {variance: 4, motion: 3, density: 5}
@@ -14,8 +14,8 @@ feature: atm-locator
 state: loading
 state_visibility: loading
 
-project_id: 'null'
-design_system_id: 'null'
+project_id: '17153754672098888646'
+design_system_id: '2005644667042354169'
 
 generated_by: stitch-prompt-build.ts v2.0.0
 prompt_template_version: stitch-per-state-v3.0.0
@@ -24,32 +24,84 @@ craft_rules_version: v1.0.0
 
 # atm-locator — loading state
 
-> Auto-generated from screens/atm-locator/ui.yaml @ SHA 6273d53d435827f0
-> Stitch DesignSystem: (pending DESIGN.md upload — run /idea-export-stitch sub-plan 02)
+> Auto-generated from screens/atm-locator/ui.yaml @ SHA 145445e508a4b803
+> Stitch DesignSystem: 2005644667042354169
 > DO NOT redeclare colors / fonts / spacing — they live in DESIGN.md.
 
 ↓↓↓ MOCKUP PROMPT
-Design the loading state of the ATM Locator screen for **Mifos X Open Banking**, a open banking KMP super-app for consumer retail banking and field officer agent banking powered by Open Bank Project API v7.
 
-Palette: primary #B2D188, on_primary #1F3701, primary_container #354E16, on_primary_container #CDEDA3, secondary #A0CFCB, on_secondary #003735, background #12140E, on_surface #E3E3D8, on_surface_variant #C5C8BA, surface_container #1E201A, surface_container_high #282A24, outline #8F9285, error #FFB4AB.
+## Archetype: index_list
 
-**Component 1 — App Bar Shimmer** (64dp tall, full width): Shimmer placeholder rectangle 120dp wide by 24dp tall, centered with 16dp horizontal padding. Shimmer base #1E201A, highlight #282A24, animation duration 1200ms horizontal sweep. Background #12140E, zero elevation. skeleton_screen archetype.
+## Layout
+- type: scrollable_column
+- padding: default
+- alignment: start
 
-**Component 2 — Text Field Shimmer** (full width minus 32dp insets, top margin 16dp): Rectangular shimmer block 56dp tall, 12dp corner radius, same shimmer animation cadence.
+## Composition (top → bottom)
+1. **text** (#atm_locator_title) — content: "ATM & Branches"
+2. **image** (#atm_map_area) — content: "ATM map"
+3. **stack** (#atm_search_row)
+4. **input** (#location_search_input) — label: "Search location"
+5. **icon_button** (#use_my_location_button) — content: "my_location"
+6. **text** (#nearby_results_header) — content: "4 ATMs near you"
+7. **box** (#atm_result_kcb_westlands)
+8. **text** (#atm_kcb_name) — content: "KCB Westlands ATM"
+9. **text** (#atm_kcb_hours) — content: "Open 24 hours"
+10. **badge** (#atm_kcb_distance) — content: "320 m"
+11. **text** (#atm_kcb_address) — content: "Westlands Commercial Centre, Waiyaki Way, Nairobi, Nairobi County, 00100"
+12. **chip** (#atm_kcb_accessible_chip) — label: "Accessible", content: "accessible"
+13. **chip** (#atm_kcb_deposits_chip) — label: "Deposits", content: "deposits"
+14. **button** (#atm_kcb_directions) — label: "Directions"
+15. **box** (#atm_result_equity_cbd)
+16. **text** (#atm_equity_name) — content: "Equity Bank CBD ATM"
+17. **text** (#atm_equity_hours) — content: "Open 24 hours"
+18. **badge** (#atm_equity_distance) — content: "1.2 km"
+19. **box** (#atm_result_coop_karen)
+20. **text** (#atm_coop_name) — content: "Co-op Bank Karen ATM"
+21. **text** (#atm_coop_hours) — content: "Daily 06:00–22:00"
+22. **badge** (#atm_coop_distance) — content: "6.4 km"
+23. **stack** (#atm_empty_state)
+24. **icon** (#atm_empty_icon) — content: "location_off"
+25. **text** (#atm_empty_title) — content: "No ATMs nearby"
+26. **text** (#atm_empty_message) — content: "None of your banks have published ATM locations yet."
+27. **stack** (#atm_error_state)
+28. **icon** (#atm_error_icon) — content: "cloud_off"
+29. **text** (#atm_error_title) — content: "Couldn't load ATMs"
+30. **text** (#atm_error_message) — content: "Check your connection and try again"
+31. **button** (#atm_retry_button) — label: "Retry"
 
-**Component 3 — Card Shimmer** (full width minus 32dp insets, top margin 12dp): Rectangular shimmer block 56dp tall, 12dp corner radius, surfaceContainer #1E201A rest with #282A24 sweep.
+## State-specific behavior
+- Show shimmer/skeleton loaders matching the content layout block-for-block — no real text, no images. This is the screen's initial state.
 
-**Component 4 — Chip Row Shimmer** (full width minus 32dp insets, top margin 16dp, horizontally scrollable): 4 chip-shaped shimmer placeholders, each 80dp wide by 32dp tall, 16dp corner radius, 8dp gap. Same sweep cadence.
+## Content source manifest
+- (no demo collections bound for this state)
 
-**Component 5 — Section Header Shimmer** (full width minus 32dp insets, top margin 16dp): Single shimmer rectangle 160dp wide by 16dp tall.
+## Components (vocabulary used in this prompt)
+- (no named components extracted — see composition)
 
-**Component 6 — Card Shimmer** (full width minus 32dp insets, top margin 8dp): Rectangular shimmer block 112dp tall, 12dp corner radius. Contains an icon placeholder 20dp by 20dp on left, two text line shimmers 180dp and 120dp stacked on right, and one 80dp by 16dp shimmer line at bottom.
+## Shell (app-shell resolved for this state)
+- App-shell rules are defined per project; per-screen overrides are merged in.
+- Render MUST keep nav/bar elements consistent with the resolved shell — present or absent, never partial.
 
-**Component 7 — Card Shimmer** (full width minus 32dp insets, top margin 8dp): Same shape as Component 6, 96dp tall.
+## Tokens (design-tokens roles consumed)
+- Colors: primary / secondary / surface / on-surface / on-surface-variant / error (M3 standard roles).
+- Typography: body-large / title-large (M3 standard roles).
+- Spacing: gap.sm / gap.md / gap.lg.
+- ALL token references are by name from the uploaded design system — no hex literals, no inline size values.
 
-**Component 8 — Card Shimmer** (full width minus 32dp insets, top margin 8dp, bottom 24dp): Same shimmer card 128dp tall with three text lines.
+## Self-Validation Checklist (MANDATORY)
 
-Do not use em-dash anywhere in text. Do not make any headline more than 3 lines or any subtitle more than 25 words. Do not break the dark theme between sections. Do not place light text on light buttons or dark text on dark buttons.
+Before returning the rendered mockup, verify ALL of these are true. If any fails, FIX the output and re-render.
 
-Full scrollable layout on #12140E. Shimmer placeholders use surfaceContainer #1E201A as rest tone with #282A24 as the highlight pulse, keeping the loading state calm and restrained throughout.
+- [ ] **Per-state shape:** the render shows ONLY this state ("loading"). Do not blend multiple states into one mockup.
+- [ ] **Real content:** every text label, image, and data point reflects the content source manifest above — no numbered generic items, no filler text, no dummy text, no empty strings.
+- [ ] **Token fidelity:** colors come from the uploaded design system (primary/secondary/surface/etc.) by name; spacing comes from declared scale tokens. No invented hex codes, no invented size literals.
+- [ ] **Component vocabulary:** every component in the render maps to a named design-system component (Card, FAB, BottomBar, etc.) — no invented or off-system components.
+- [ ] **Archetype honored:** the layout follows the "index_list" archetype skeleton — composition order top → bottom matches the Composition section.
+- [ ] **App-shell parity:** if a bottom nav, top app bar, or FAB appears in the render, it matches the resolved shell from the app-shell config. Shell elements are either present-and-consistent OR absent — never partial.
+
+If any of these fail and the fix isn't clear → halt rendering and surface "Self-validation failed at: {checkpoint}."
+
+Return ONLY when all 6 checkpoints pass.
+
 ↑↑↑ MOCKUP PROMPT

@@ -1,0 +1,126 @@
+sibling: demo-data
+schema_version: "4.0"
+feature_id: standing-order-create
+
+# OBIE PISP v4.0 domestic-standing-order create flow demo envelopes.
+# Submit stages a domestic-standing-order-consent (Status AwaitingAuthorisation);
+# the actual submit (POST /pisp/domestic-standing-orders) runs after bank authorise
+# + callback. New recurring order: GBP 92.00/month to British Gas, debtor account
+# acc-30000012345678 (sort 30-00-00 / 30000012345678 / Oliver Bennett).
+collections:
+  # Request body the app POSTs to /pisp/domestic-standing-order-consents on Submit.
+  create_domestic_standing_order_consent_request:
+    dto: OBWriteDomesticStandingOrderConsent5
+    description: "Request body — stages the recurring standing-order instruction (frequency, first-payment, creditor)."
+    item:
+      Data:
+        Permission: "Create"
+        Initiation:
+          Frequency: "IntrvlMnthDay:01:05"
+          Reference: "Gas and Electric"
+          NumberOfPayments: "12"
+          FirstPaymentDateTime: "2026-07-05T00:00:00+01:00"
+          FirstPaymentAmount:
+            Amount: "92.00"
+            Currency: "GBP"
+          RecurringPaymentAmount:
+            Amount: "92.00"
+            Currency: "GBP"
+          CreditorAccount:
+            SchemeName: "UK.OBIE.SortCodeAccountNumber"
+            Identification: "60000412009988"
+            Name: "British Gas"
+      Risk: {}
+
+  create_domestic_standing_order_consent:
+    dto: OBWriteDomesticStandingOrderConsentResponse6
+    description: "201 Created — standing-order-consent staged, ConsentId returned with Status AwaitingAuthorisation."
+    item:
+      Data:
+        ConsentId: "dsoc-8c14a7e2-6f30-4b91"
+        Status: "AwaitingAuthorisation"
+        CreationDateTime: "2026-06-12T09:14:22+01:00"
+        Initiation:
+          Frequency: "IntrvlMnthDay:01:05"
+          Reference: "Gas and Electric"
+          NumberOfPayments: "12"
+          FirstPaymentDateTime: "2026-07-05T00:00:00+01:00"
+          FirstPaymentAmount:
+            Amount: "92.00"
+            Currency: "GBP"
+          RecurringPaymentAmount:
+            Amount: "92.00"
+            Currency: "GBP"
+          CreditorAccount:
+            SchemeName: "UK.OBIE.SortCodeAccountNumber"
+            Identification: "60000412009988"
+            Name: "British Gas"
+      Links:
+        Self: "https://secure.sandbox.ob.hsbc.co.uk/obie/open-banking/v4.0/pisp/domestic-standing-order-consents/dsoc-8c14a7e2-6f30-4b91"
+      Meta:
+        TotalPages: 1
+
+  # Submit body posted post-callback to /pisp/domestic-standing-orders.
+  create_domestic_standing_order_request:
+    dto: OBWriteDomesticStandingOrder3
+    description: "Request body — submits the authorised standing order referencing the now-Authorised ConsentId; Initiation must byte-match the consent."
+    item:
+      Data:
+        ConsentId: "dsoc-8c14a7e2-6f30-4b91"
+        Initiation:
+          Frequency: "IntrvlMnthDay:01:05"
+          Reference: "Gas and Electric"
+          NumberOfPayments: "12"
+          FirstPaymentDateTime: "2026-07-05T00:00:00+01:00"
+          FirstPaymentAmount:
+            Amount: "92.00"
+            Currency: "GBP"
+          RecurringPaymentAmount:
+            Amount: "92.00"
+            Currency: "GBP"
+          CreditorAccount:
+            SchemeName: "UK.OBIE.SortCodeAccountNumber"
+            Identification: "60000412009988"
+            Name: "British Gas"
+      Risk: {}
+
+  create_domestic_standing_order:
+    dto: OBWriteDomesticStandingOrderResponse6
+    description: "201 Created — standing order submitted, DomesticStandingOrderId returned with Status InitiationCompleted."
+    item:
+      Data:
+        DomesticStandingOrderId: "dso-4e90b71c-22a5"
+        ConsentId: "dsoc-8c14a7e2-6f30-4b91"
+        Status: "InitiationCompleted"
+        CreationDateTime: "2026-06-12T09:16:05+01:00"
+        Initiation:
+          Frequency: "IntrvlMnthDay:01:05"
+          Reference: "Gas and Electric"
+          NumberOfPayments: "12"
+          FirstPaymentDateTime: "2026-07-05T00:00:00+01:00"
+          FirstPaymentAmount:
+            Amount: "92.00"
+            Currency: "GBP"
+          RecurringPaymentAmount:
+            Amount: "92.00"
+            Currency: "GBP"
+          CreditorAccount:
+            SchemeName: "UK.OBIE.SortCodeAccountNumber"
+            Identification: "60000412009988"
+            Name: "British Gas"
+      Links:
+        Self: "https://secure.sandbox.ob.hsbc.co.uk/obie/open-banking/v4.0/pisp/domestic-standing-orders/dso-4e90b71c-22a5"
+      Meta:
+        TotalPages: 1
+
+  # 400 OB.Field.Invalid driving the validation-error state on Submit.
+  create_domestic_standing_order_consent.error:
+    dto: OBErrorResponse1
+    description: "400 OBErrorResponse1 — rejected consent (first-payment date in the past)."
+    item:
+      Code: "400 Bad Request"
+      Id: "err-dsoc-1f73c8"
+      Message: "Invalid request"
+      Errors:
+        - ErrorCode: "UK.OBIE.Field.Invalid"
+          Message: "Initiation.FirstPaymentDateTime must be a future date."

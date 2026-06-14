@@ -1,21 +1,81 @@
 sibling: demo-data
 schema_version: "4.0"
 feature_id: send-money-confirm
-content:
-  obp_transaction_request_sepa:
+
+# OBIE PISP v4.0 consent-first demo envelopes for the confirm screen.
+# On Confirm the app POSTs a domestic-payment-consent (OBWriteDomesticConsent4)
+# and receives a ConsentId with Status AwaitingAuthorisation (AWAU) — it does NOT
+# submit the payment. Debtor consistent with send-money: 30-00-00 / 30000012345678.
+# Reviewed payment: GBP 150.00 to James Whitfield, ref "Rent June".
+collections:
+  # Request body the app POSTs to /pisp/domestic-payment-consents on Confirm.
+  create_domestic_payment_consent_request:
+    dto: OBWriteDomesticConsent4
+    description: "Request body — stages the domestic-payment-consent with the reviewed Initiation + Risk."
     item:
-      id: "txreq-ke-20260523-001"
-      type: "SEPA"
-      status: "COMPLETED"
-      start_date: "2026-05-23T14:05:00+03:00"
-      charge:
-        summary: "RTGS transfer fee"
-        value:
-          amount: "50.00"
-          currency: "KES"
-      challenge:
-        id: "chal-ke-001"
-        allowed_attempts: 3
-        challenge_type: "OTP"
-      transaction_ids:
-        - "txn-ke-20260523-88201"
+      Data:
+        ReadRefundAccount: "No"
+        Initiation:
+          InstructionIdentification: "SMINSTR-20260612-0001"
+          EndToEndIdentification: "SME2E-20260612-0001"
+          LocalInstrument: "UK.OBIE.FPS"
+          InstructedAmount:
+            Amount: "150.00"
+            Currency: "GBP"
+          DebtorAccount:
+            SchemeName: "UK.OBIE.SortCodeAccountNumber"
+            Identification: "30000012345678"
+            Name: "Oliver Bennett"
+          CreditorAccount:
+            SchemeName: "UK.OBIE.SortCodeAccountNumber"
+            Identification: "20415587224190"
+            Name: "James Whitfield"
+          RemittanceInformation:
+            Reference: "Rent June"
+      Risk:
+        PaymentContextCode: "PartyToParty"
+
+  create_domestic_payment_consent:
+    dto: OBWriteDomesticConsentResponse5
+    description: "201 Created — domestic-payment-consent staged, ConsentId returned with Status AwaitingAuthorisation (AWAU)."
+    item:
+      Data:
+        ConsentId: "dpc-5f8a3c21-9e44-4b07"
+        Status: "AwaitingAuthorisation"
+        CreationDateTime: "2026-06-12T09:05:11+01:00"
+        StatusUpdateDateTime: "2026-06-12T09:05:11+01:00"
+        Initiation:
+          InstructionIdentification: "SMINSTR-20260612-0001"
+          EndToEndIdentification: "SME2E-20260612-0001"
+          LocalInstrument: "UK.OBIE.FPS"
+          InstructedAmount:
+            Amount: "150.00"
+            Currency: "GBP"
+          DebtorAccount:
+            SchemeName: "UK.OBIE.SortCodeAccountNumber"
+            Identification: "30000012345678"
+            Name: "Oliver Bennett"
+          CreditorAccount:
+            SchemeName: "UK.OBIE.SortCodeAccountNumber"
+            Identification: "20415587224190"
+            Name: "James Whitfield"
+          RemittanceInformation:
+            Reference: "Rent June"
+      Risk:
+        PaymentContextCode: "PartyToParty"
+      Links:
+        Self: "https://secure.sandbox.ob.hsbc.co.uk/obie/open-banking/v4.0/pisp/domestic-payment-consents/dpc-5f8a3c21-9e44-4b07"
+      Meta:
+        TotalPages: 1
+
+  # 400 OB.Field.Invalid driving the error state when staging the consent fails.
+  create_domestic_payment_consent.error:
+    dto: OBErrorResponse1
+    description: "400 OBErrorResponse1 — rejected consent (invalid creditor identification)."
+    item:
+      Code: "400 Bad Request"
+      Id: "err-dpc-2a91f4"
+      Message: "Invalid request"
+      Errors:
+        - ErrorCode: "UK.OBIE.Field.Invalid"
+          Message: "Initiation.CreditorAccount.Identification failed sort-code/account-number validation."

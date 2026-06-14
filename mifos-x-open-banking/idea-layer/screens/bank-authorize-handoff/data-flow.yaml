@@ -1,0 +1,69 @@
+sibling: data-flow
+schema_version: "4.0"
+feature_id: bank-authorize-handoff
+entries:
+  - screen_id: bank-authorize-handoff
+    trigger: on_mount
+    event: GetClientCredentialsToken
+    endpoints:
+      - obie_get_cc_token
+    direction: write
+    consent_required: false
+    dtos:
+      - name: OBTokenResponse
+        role: response
+        api_id: obie_get_cc_token
+    produces_state: loading
+    notes: >-
+      First of two sequential mount steps. Obtains a client-credentials token
+      (grant_type=client_credentials, scope=accounts) via POST /obie/open-banking/v1.1/oauth2/token.
+      Required before staging the AIS account-access-consent.
+    error_paths:
+      - error_code: 400
+        behavior: show_error_state
+      - error_code: 401
+        behavior: show_error_state
+
+  - screen_id: bank-authorize-handoff
+    trigger: on_mount
+    event: StageAccountAccessConsent
+    endpoints:
+      - obie_stage_account_access_consent
+    direction: write
+    consent_required: false
+    dtos:
+      - name: OBReadConsentResponse1
+        role: response
+        api_id: obie_stage_account_access_consent
+    produces_state: loading
+    notes: >-
+      Second mount step (after cc-token obtained). POSTs account-access-consent with the
+      selected Permissions[] via POST /aisp/account-access-consents. Returns ConsentId
+      with Status AWAU (AwaitingAuthorisation). AIS context only.
+    error_paths:
+      - error_code: 400
+        behavior: show_error_state
+      - error_code: 401
+        behavior: show_error_state
+
+  - screen_id: bank-authorize-handoff
+    trigger: on_mount
+    event: OpenAuthorizeRedirect
+    endpoints:
+      - obie_authorize_redirect
+    direction: none
+    consent_required: false
+    dtos: []
+    produces_state: loading
+    notes: >-
+      Opens the system browser to the OBIE authorize endpoint
+      (GET /obie/open-banking/v1.1/oauth2/authorize) with a signed request-object JWT
+      embedding openbanking_intent_id=ConsentId, PKCE S256, response_type "code id_token".
+      The app is left in the background; HSBC SCA is completed in the external browser.
+      On success the deep-link org.mifos.openbanking://oauth/callback delivers code + state
+      to auth-callback. Shared by AIS and PISP consent flows.
+    error_paths:
+      - error_code: 302
+        behavior: show_error_state
+      - error_code: 400
+        behavior: show_error_state

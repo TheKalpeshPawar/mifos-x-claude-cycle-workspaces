@@ -1,102 +1,206 @@
 sibling: demo-data
 schema_version: "4.0"
 feature_id: business-insights
-content:
-  obp_account_detail:
-    items:
-      - label: "TechStart — Business Current GBP"
-        product_code: "BUSINESS"
-        balance:
-          currency: "GBP"
-          amount: "48700.00"
-      - label: "Marco — Freelancer Account"
-        product_code: "BUSINESS"
-        balance:
-          currency: "EUR"
-          amount: "5193.49"
 
-  obp_transactions_list:
-    items:
-      - transaction_id: "txn-biz-001"
-        this_account:
-          id: "mifos.techstart.current"
-          bank_id: "mifos-x-openbank"
-        details:
-          type: "SANDBOX_TAN"
-          description: "Q1 client invoice receipts"
-          completed: "2026-06-02T09:15:00Z"
-          value:
-            currency: "GBP"
-            amount: "75000.00"
+# OBIE AIS data backing business-insights. Business scope is filtered client-side by
+# AccountCategory=Business. Cash-flow (Money In / Money Out / Net), the expense category
+# taxonomy, trends, and top counterparties are ALL derived client-side from the transaction
+# list — OBIE has no insights endpoint. June 2026 window. Income credits are categorised but
+# excluded from the expenses-only donut. Counterparty names follow MerchantName -> resolved
+# holder -> TransactionInformation (never a raw login).
+collections:
+  # GET /aisp/accounts — business-scoped accounts (AccountCategory=Business).
+  accounts:
+    dto: OBReadAccount6
+    description: "Authorised account list; Business-scoped accounts drive the insights account picker."
+    item:
+      Data:
+        Account:
+          - AccountId: "acc-biz-1001"
+            Status: "Enabled"
+            Currency: "GBP"
+            AccountCategory: "Business"
+            AccountTypeCode: "CurrentAccount"
+            Nickname: "TechStart Trading"
+            Account:
+              - SchemeName: "UK.OBIE.SortCodeAccountNumber"
+                Identification: "404856 38112207"
+                Name: "TechStart Ltd"
+          - AccountId: "acc-biz-1002"
+            Status: "Enabled"
+            Currency: "GBP"
+            AccountCategory: "Business"
+            AccountTypeCode: "Savings"
+            Nickname: "TechStart Reserve"
+            Account:
+              - SchemeName: "UK.OBIE.SortCodeAccountNumber"
+                Identification: "404856 38112214"
+                Name: "TechStart Ltd"
+      Links: { Self: "https://secure.sandbox.ob.hsbc.co.uk/obie/open-banking/v4.0/aisp/accounts" }
+      Meta: { TotalPages: 1 }
 
-      - transaction_id: "txn-biz-002"
-        this_account:
-          id: "mifos.techstart.current"
-          bank_id: "mifos-x-openbank"
-        details:
-          type: "SANDBOX_TAN"
-          description: "Payroll April"
-          completed: "2026-06-03T08:00:00Z"
-          value:
-            currency: "GBP"
-            amount: "-15000.00"
+  # GET /aisp/accounts/{AccountId}/balances — InterimAvailable for the in-scope business account.
+  balances:
+    dto: OBReadBalance1
+    description: "Available balance context for the in-scope business account."
+    item:
+      Data:
+        Balance:
+          - AccountId: "acc-biz-1001"
+            CreditDebitIndicator: "Credit"
+            Type: "InterimAvailable"
+            DateTime: "2026-06-30T23:59:59.000Z"
+            Amount: { Amount: "48184.00", Currency: "GBP" }
+      Links: { Self: "https://secure.sandbox.ob.hsbc.co.uk/obie/open-banking/v4.0/aisp/accounts/acc-biz-1001/balances" }
+      Meta: { TotalPages: 1 }
 
-      - transaction_id: "txn-biz-003"
-        this_account:
-          id: "mifos.techstart.current"
-          bank_id: "mifos-x-openbank"
-        details:
-          type: "SANDBOX_TAN"
-          description: "VAT payment Q1"
-          completed: "2026-06-03T10:30:00Z"
-          value:
-            currency: "GBP"
-            amount: "-8000.00"
+  # GET /aisp/accounts/{AccountId}/transactions — June 2026 window, TechStart Trading account.
+  # Derived totals: Money In 26800.00 (two credits); Money Out 12116.00; Net 14684.00.
+  # Expense categories sum from the Debit rows: Payroll 8500.00; Office/Rent 2500.00;
+  # Software 450.00; Professional Services 516.00; Utilities 150.00 = 12116.00.
+  transactions:
+    dto: OBReadTransaction6
+    description: "June 2026 business transactions for the in-scope account — source for client-side cash-flow + categorisation."
+    item:
+      Data:
+        Transaction:
+          - AccountId: "acc-biz-1001"
+            TransactionId: "txn-biz-2026-06-001"
+            TransactionReference: "INV-2041"
+            CreditDebitIndicator: "Credit"
+            Status: "Booked"
+            BookingDateTime: "2026-06-03T09:15:00.000Z"
+            TransactionInformation: "NORTHWIND PLC INV-2041"
+            Amount: { Amount: "18500.00", Currency: "GBP" }
+            BankTransactionCode: { Code: "ReceivedCreditTransfer" }
+            MerchantDetails: { MerchantName: "Northwind Plc" }
+            Balance: { Amount: { Amount: "18500.00", Currency: "GBP" } }
+            CreditorAccount: { SchemeName: "UK.OBIE.SortCodeAccountNumber", Identification: "404856 38112207", Name: "TechStart Ltd" }
+          - AccountId: "acc-biz-1001"
+            TransactionId: "txn-biz-2026-06-002"
+            TransactionReference: "INV-2042"
+            CreditDebitIndicator: "Credit"
+            Status: "Booked"
+            BookingDateTime: "2026-06-17T10:40:00.000Z"
+            TransactionInformation: "CONTOSO RETAIL INV-2042"
+            Amount: { Amount: "8300.00", Currency: "GBP" }
+            BankTransactionCode: { Code: "ReceivedCreditTransfer" }
+            MerchantDetails: { MerchantName: "Contoso Retail Ltd" }
+            Balance: { Amount: { Amount: "26800.00", Currency: "GBP" } }
+            CreditorAccount: { SchemeName: "UK.OBIE.SortCodeAccountNumber", Identification: "404856 38112207", Name: "TechStart Ltd" }
+          - AccountId: "acc-biz-1001"
+            TransactionId: "txn-biz-2026-06-003"
+            CreditDebitIndicator: "Debit"
+            Status: "Booked"
+            BookingDateTime: "2026-06-25T06:00:00.000Z"
+            TransactionInformation: "STAFF PAYROLL JUN"
+            Amount: { Amount: "8500.00", Currency: "GBP" }
+            BankTransactionCode: { Code: "DirectCredit" }
+            MerchantDetails: { MerchantName: "TechStart Payroll" }
+            Balance: { Amount: { Amount: "18300.00", Currency: "GBP" } }
+            DebtorAccount: { SchemeName: "UK.OBIE.SortCodeAccountNumber", Identification: "404856 38112207", Name: "TechStart Ltd" }
+          - AccountId: "acc-biz-1001"
+            TransactionId: "txn-biz-2026-06-004"
+            CreditDebitIndicator: "Debit"
+            Status: "Booked"
+            BookingDateTime: "2026-06-05T08:30:00.000Z"
+            TransactionInformation: "WEWORK OFFICE RENT"
+            Amount: { Amount: "2500.00", Currency: "GBP" }
+            BankTransactionCode: { Code: "DirectDebit" }
+            MerchantDetails: { MerchantName: "WeWork" }
+            Balance: { Amount: { Amount: "15800.00", Currency: "GBP" } }
+            DebtorAccount: { SchemeName: "UK.OBIE.SortCodeAccountNumber", Identification: "404856 38112207", Name: "TechStart Ltd" }
+          - AccountId: "acc-biz-1001"
+            TransactionId: "txn-biz-2026-06-005"
+            CreditDebitIndicator: "Debit"
+            Status: "Booked"
+            BookingDateTime: "2026-06-08T03:00:00.000Z"
+            TransactionInformation: "AWS EMEA SARL"
+            Amount: { Amount: "312.00", Currency: "GBP" }
+            BankTransactionCode: { Code: "Purchase" }
+            MerchantDetails: { MerchantName: "Amazon Web Services" }
+            Balance: { Amount: { Amount: "15488.00", Currency: "GBP" } }
+            DebtorAccount: { SchemeName: "UK.OBIE.SortCodeAccountNumber", Identification: "404856 38112207", Name: "TechStart Ltd" }
+          - AccountId: "acc-biz-1001"
+            TransactionId: "txn-biz-2026-06-006"
+            CreditDebitIndicator: "Debit"
+            Status: "Booked"
+            BookingDateTime: "2026-06-09T03:00:00.000Z"
+            TransactionInformation: "ATLASSIAN PTY"
+            Amount: { Amount: "138.00", Currency: "GBP" }
+            BankTransactionCode: { Code: "Purchase" }
+            MerchantDetails: { MerchantName: "Atlassian" }
+            Balance: { Amount: { Amount: "15350.00", Currency: "GBP" } }
+            DebtorAccount: { SchemeName: "UK.OBIE.SortCodeAccountNumber", Identification: "404856 38112207", Name: "TechStart Ltd" }
+          - AccountId: "acc-biz-1001"
+            TransactionId: "txn-biz-2026-06-007"
+            CreditDebitIndicator: "Debit"
+            Status: "Booked"
+            BookingDateTime: "2026-06-12T14:20:00.000Z"
+            TransactionInformation: "GRANT THORNTON LLP"
+            Amount: { Amount: "516.00", Currency: "GBP" }
+            BankTransactionCode: { Code: "BillPayment" }
+            MerchantDetails: { MerchantName: "Grant Thornton" }
+            Balance: { Amount: { Amount: "14834.00", Currency: "GBP" } }
+            DebtorAccount: { SchemeName: "UK.OBIE.SortCodeAccountNumber", Identification: "404856 38112207", Name: "TechStart Ltd" }
+          - AccountId: "acc-biz-1001"
+            TransactionId: "txn-biz-2026-06-008"
+            CreditDebitIndicator: "Debit"
+            Status: "Pending"
+            BookingDateTime: "2026-06-28T06:30:00.000Z"
+            TransactionInformation: "BRITISH GAS BUSINESS"
+            Amount: { Amount: "150.00", Currency: "GBP" }
+            BankTransactionCode: { Code: "DirectDebit" }
+            MerchantDetails: { MerchantName: "British Gas Business" }
+            Balance: { Amount: { Amount: "14684.00", Currency: "GBP" } }
+            DebtorAccount: { SchemeName: "UK.OBIE.SortCodeAccountNumber", Identification: "404856 38112207", Name: "TechStart Ltd" }
+      Links: { Next: "https://secure.sandbox.ob.hsbc.co.uk/obie/open-banking/v4.0/aisp/accounts/acc-biz-1001/transactions?page=2" }
+      Meta: { TotalPages: 1 }
 
-      - transaction_id: "txn-biz-004"
-        this_account:
-          id: "mifos.techstart.current"
-          bank_id: "mifos-x-openbank"
-        details:
-          type: "SANDBOX_TAN"
-          description: "Office rent April"
-          completed: "2026-06-04T09:00:00Z"
-          value:
-            currency: "GBP"
-            amount: "-2500.00"
+  # DERIVED VIEW (client-side, no DTO) — cash-flow framing cards.
+  cashflow_summary:
+    description: "Money In / Money Out / Net for the period — derived from CreditDebitIndicator + Amount over the transaction list."
+    item:
+      period_label: "June 2026"
+      base_currency: "GBP"
+      money_in: "26800.00"
+      money_out: "12116.00"
+      net: "14684.00"
 
-      - transaction_id: "txn-biz-005"
-        this_account:
-          id: "mifos.techstart.current"
-          bank_id: "mifos-x-openbank"
-        details:
-          type: "SANDBOX_TAN"
-          description: "SaaS subscriptions"
-          completed: "2026-06-04T12:00:00Z"
-          value:
-            currency: "GBP"
-            amount: "-450.00"
+  # DERIVED VIEW (client-side, no DTO) — expenses-only category donut (income excluded).
+  expense_categories:
+    description: "Client-side expense taxonomy over the period — drives the expenses-only donut. Income credits excluded."
+    item:
+      period_label: "June 2026"
+      base_currency: "GBP"
+      total_expense: "12116.00"
+      categories:
+        - { category_id: "payroll", label: "Payroll", amount: "8500.00", percent: 70.2, txn_count: 1 }
+        - { category_id: "rent", label: "Office & Rent", amount: "2500.00", percent: 20.6, txn_count: 1 }
+        - { category_id: "professional", label: "Professional Services", amount: "516.00", percent: 4.3, txn_count: 1 }
+        - { category_id: "software", label: "Software & SaaS", amount: "450.00", percent: 3.7, txn_count: 2 }
+        - { category_id: "utilities", label: "Utilities", amount: "150.00", percent: 1.2, txn_count: 1 }
 
-      - transaction_id: "txn-biz-006"
-        this_account:
-          id: "mifos.techstart.current"
-          bank_id: "mifos-x-openbank"
-        details:
-          type: "SANDBOX_TAN"
-          description: "Business insurance"
-          completed: "2026-06-05T11:45:00Z"
-          value:
-            currency: "GBP"
-            amount: "-350.00"
+  # DERIVED VIEW (client-side, no DTO) — top counterparties.
+  top_counterparties:
+    description: "Highest-spend counterparties for the period — derived from MerchantDetails.MerchantName. Never a login username."
+    item:
+      period_label: "June 2026"
+      base_currency: "GBP"
+      counterparties:
+        - { name: "TechStart Payroll", category_id: "payroll", amount: "8500.00", txn_count: 1 }
+        - { name: "WeWork", category_id: "rent", amount: "2500.00", txn_count: 1 }
+        - { name: "Grant Thornton", category_id: "professional", amount: "516.00", txn_count: 1 }
+        - { name: "Amazon Web Services", category_id: "software", amount: "312.00", txn_count: 1 }
+        - { name: "British Gas Business", category_id: "utilities", amount: "150.00", txn_count: 1 }
 
-      - transaction_id: "txn-biz-007"
-        this_account:
-          id: "mifos.techstart.current"
-          bank_id: "mifos-x-openbank"
-        details:
-          type: "COUNTERPARTY"
-          description: "May contractor invoice"
-          completed: "2026-06-05T16:20:00Z"
-          value:
-            currency: "GBP"
-            amount: "-516.01"
+  # OBErrorResponse1 — 403 InvalidConsentStatus driving the insights error state.
+  load_error:
+    description: "Representative 403 OBErrorResponse1 for an expired/revoked consent on the insights load."
+    item:
+      Code: "403 Forbidden"
+      Id: "biz-insights-err-403-2b90"
+      Message: "Forbidden"
+      Errors:
+        - ErrorCode: "UK.OBIE.Resource.InvalidConsentStatus"
+          Message: "The account-access consent is no longer in an authorised state."

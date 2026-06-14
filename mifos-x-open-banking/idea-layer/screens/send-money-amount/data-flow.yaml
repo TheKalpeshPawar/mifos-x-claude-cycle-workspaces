@@ -1,0 +1,86 @@
+sibling: data-flow
+schema_version: "4.0"
+feature_id: send-money-amount
+entries:
+  - screen_id: send-money-amount
+    trigger: on_mount
+    endpoints:
+      - get_accounts
+      - get_account_balances
+      - get_account_beneficiaries
+    direction: read
+    consent_required: true
+    dtos:
+      - name: OBReadAccount6
+        role: response
+        api_id: get_accounts
+      - name: OBReadBalance1
+        role: response
+        api_id: get_account_balances
+      - name: OBReadBeneficiary5
+        role: response
+        api_id: get_account_beneficiaries
+    produces_state: content
+    notes: >-
+      Loads account list for From Account picker, live balance for affordability hint,
+      and beneficiary list for recipient autocomplete. Requires an authorised
+      account-access-consent (Status AUTH) + authorization-code token.
+    error_paths:
+      - error_code: 401
+        behavior: navigate_login
+      - error_code: 403
+        behavior: error_state
+      - error_code: 400
+        behavior: error_state
+
+  - screen_id: send-money-amount
+    trigger: on_interact
+    event: AccountSelected
+    endpoints:
+      - get_account_balances
+      - get_account_beneficiaries
+    direction: read
+    consent_required: true
+    dtos:
+      - name: OBReadBalance1
+        role: response
+        api_id: get_account_balances
+      - name: OBReadBeneficiary5
+        role: response
+        api_id: get_account_beneficiaries
+    produces_state: content
+    notes: "Reloads balance + beneficiary list when From Account changes."
+    error_paths:
+      - error_code: 401
+        behavior: navigate_login
+      - error_code: 403
+        behavior: error_state
+
+  - screen_id: send-money-amount
+    trigger: on_interact
+    event: ContinueClicked
+    endpoints:
+      - create_funds_confirmation
+    direction: write
+    consent_required: true
+    dtos:
+      - name: OBFundsConfirmation1
+        role: request
+        api_id: create_funds_confirmation
+      - name: OBFundsConfirmationResponse1
+        role: response
+        api_id: create_funds_confirmation
+    produces_state: loading
+    notes: >-
+      Confirmation-of-Funds check (CBPII) on Continue — POST /cbpii/funds-confirmations
+      checks whether the entered amount is available on the source account.
+      Returns Data.FundsAvailable; if false, surfaces a low-funds warning before
+      allowing the user to proceed. Requires a CBPII funds-confirmation-consent
+      (ConsentId) + authorization-code token (scope fundsconfirmations).
+    error_paths:
+      - error_code: 400
+        behavior: show_validation_error
+      - error_code: 401
+        behavior: navigate_login
+      - error_code: 403
+        behavior: show_consent_error

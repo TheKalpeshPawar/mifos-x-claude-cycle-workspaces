@@ -46,3 +46,22 @@ When writing or editing source code in this workspace (all `source/` repos, all 
 - License headers stay as-is (`/* … */` block at file top).
 - Scope: applies to NEW and EDITED code. Do NOT mass-rewrite existing `//` comments in untouched code; remove/convert them only in lines you are already changing.
 - **KDoc quality bar**: a KDoc must read as documentation, not a relocated `//` comment. First line = a short summary of WHAT the declaration is/does; body = the behavior contract in terms of its parameters (use `[param]` links). No design-session context ("like the reference design", "per the screenshot"), no narration of internals the caller can't observe.
+
+## Counterparty display names (user directive, 2026-06-07 — HARD RULE)
+
+OBP stamps the LOGIN USERNAME (e.g. `afternooncoffee`) into `other_account.holder.name` whenever the counterparty has no public holder — which covers every transfer between the user's own accounts and most sandbox merchant rows.
+
+- **NEVER render the login username as a counterparty name** anywhere in the app (transaction history, detail, tags, PFM merchant lists, standing orders, any future surface).
+- Display precedence: resolved destination **account holder name** (Owner customer-account link legal name, account label fallback) → real non-placeholder holder → transaction description.
+- Resolution infrastructure: `core/data/.../transactions/CounterpartyNameResolver.kt` — mirror-joins self-transfers across the user's own accounts (same description + completed timestamp, negated amount) to map the obfuscated `other_account.id` to a real account, persists learned names in the Room cache. Display helper: `counterpartyDisplayName(...)` in `feature/transactions/TransactionsFormat.kt`. New surfaces must reuse these, not re-derive from `holder.name`.
+
+## Idea-layer preview dark-mode — KNOWN ISSUE (2026-06-15)
+
+Preview HTML dark mode is fragile. The render template (`layers/idea/templates/prototype-render/PROMPT_SCREEN.md`) prescribes the `:root[data-theme="dark"]` toggle mechanism, but the shared `idea-layer/preview/_shared/preview-runtime.js` (the byte-identical, SHA-pinned framework runtime) **never sets `data-theme`** — there is no OS-preference sync and no in-app toggle. So a `:root[data-theme="dark"]` block alone is **dead CSS in the preview** — it never activates.
+
+Consequence: a preview only renders dark if its HTML *also* contains an `@media (prefers-color-scheme: dark)` block (auto-follows the OS). The render agents emit this inconsistently, so some screens render dark and some don't, even though all carry the `[data-theme="dark"]` palette.
+
+**When rendering/validating previews:**
+- A screen state is dark-capable ONLY if its `preview/{state}.html` contains `@media (prefers-color-scheme: dark)`. Checking for `[data-theme="dark"]` alone is misleading (RV-023 false-passes on it).
+- `/idea-render-screen` for this project MUST emit BOTH the `@media (prefers-color-scheme: dark)` block AND the `[data-theme="dark"]` block, and self-verify the `@media` block is present per file before finishing (`design_read.theme = auto` ⇒ dark must auto-follow the OS).
+- Proper root-cause fix (deferred, framework-scope): patch `preview-runtime.js` to sync `data-theme` to `matchMedia('(prefers-color-scheme: dark)')` — that would activate the existing `[data-theme]` blocks on every screen at once with no re-renders, but it touches the SHA-pinned framework template (`layers/idea/templates/preview/_shared/preview-runtime.js`) so it needs a framework change + re-propagation. Until then, renders must include `@media`.

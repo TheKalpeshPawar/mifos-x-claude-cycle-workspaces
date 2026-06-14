@@ -1,0 +1,90 @@
+sibling: demo-data
+schema_version: "4.0"
+feature_id: payment-result
+
+# OBIE PISP v4.0 demo envelopes for the terminal payment-result view.
+# The screen polls GET /pisp/domestic-payments/{DomesticPaymentId} and surfaces
+# the settlement status. Echoes the same payment staged in send-money-confirm:
+# GBP 150.00 to James Whitfield, ref "Rent June", debtor 30-00-00 / 30000012345678.
+collections:
+  get_domestic_payment_status:
+    dto: OBWriteDomesticResponse5
+    description: "200 OK — submitted domestic payment, terminal success AcceptedSettlementCompleted (ACSC)."
+    item:
+      Data:
+        DomesticPaymentId: "dp-7a21c9f4-3b02-4e88"
+        ConsentId: "dpc-5f8a3c21-9e44-4b07"
+        CreationDateTime: "2026-06-12T09:08:47+01:00"
+        Status: "AcceptedSettlementCompleted"
+        StatusUpdateDateTime: "2026-06-12T09:09:02+01:00"
+        ExpectedExecutionDateTime: "2026-06-12T09:08:50+01:00"
+        ExpectedSettlementDateTime: "2026-06-12T09:09:00+01:00"
+        Charges:
+          - Amount: "0.00"
+            Currency: "GBP"
+        Initiation:
+          InstructionIdentification: "SMINSTR-20260612-0001"
+          EndToEndIdentification: "SME2E-20260612-0001"
+          LocalInstrument: "UK.OBIE.FPS"
+          InstructedAmount:
+            Amount: "150.00"
+            Currency: "GBP"
+          DebtorAccount:
+            SchemeName: "UK.OBIE.SortCodeAccountNumber"
+            Identification: "30000012345678"
+            Name: "Oliver Bennett"
+          CreditorAccount:
+            SchemeName: "UK.OBIE.SortCodeAccountNumber"
+            Identification: "20415587224190"
+            Name: "James Whitfield"
+          RemittanceInformation:
+            Reference: "Rent June"
+      Links:
+        Self: "https://secure.sandbox.ob.hsbc.co.uk/obie/open-banking/v4.0/pisp/domestic-payments/dp-7a21c9f4-3b02-4e88"
+      Meta:
+        TotalPages: 1
+
+  # In-process variant — AcceptedSettlementInProcess (ACSP), still a terminal success view.
+  get_domestic_payment_status_in_process:
+    dto: OBWriteDomesticResponse5
+    description: "200 OK — payment accepted, settlement in process (ACSP); the pending status pill state."
+    item:
+      Data:
+        DomesticPaymentId: "dp-7a21c9f4-3b02-4e88"
+        ConsentId: "dpc-5f8a3c21-9e44-4b07"
+        CreationDateTime: "2026-06-12T09:08:47+01:00"
+        Status: "AcceptedSettlementInProcess"
+        StatusUpdateDateTime: "2026-06-12T09:08:48+01:00"
+        ExpectedSettlementDateTime: "2026-06-12T09:12:00+01:00"
+        Initiation:
+          InstructionIdentification: "SMINSTR-20260612-0001"
+          EndToEndIdentification: "SME2E-20260612-0001"
+          InstructedAmount:
+            Amount: "150.00"
+            Currency: "GBP"
+          DebtorAccount:
+            SchemeName: "UK.OBIE.SortCodeAccountNumber"
+            Identification: "30000012345678"
+            Name: "Oliver Bennett"
+          CreditorAccount:
+            SchemeName: "UK.OBIE.SortCodeAccountNumber"
+            Identification: "20415587224190"
+            Name: "James Whitfield"
+          RemittanceInformation:
+            Reference: "Rent June"
+      Links:
+        Self: "https://secure.sandbox.ob.hsbc.co.uk/obie/open-banking/v4.0/pisp/domestic-payments/dp-7a21c9f4-3b02-4e88"
+      Meta:
+        TotalPages: 1
+
+  # 404 OB.Resource.NotFound driving the error state when the resource id is unknown.
+  get_domestic_payment_status.error:
+    dto: OBErrorResponse1
+    description: "404 OBErrorResponse1 — DomesticPaymentId not found at the ASPSP."
+    item:
+      Code: "404 Not Found"
+      Id: "err-dp-9c41a7"
+      Message: "Resource not found"
+      Errors:
+        - ErrorCode: "UK.OBIE.Resource.NotFound"
+          Message: "No domestic-payment resource exists for the supplied DomesticPaymentId."

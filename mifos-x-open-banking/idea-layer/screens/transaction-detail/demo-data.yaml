@@ -1,43 +1,100 @@
 sibling: demo-data
 schema_version: "4.0"
 feature_id: transaction-detail
-content:
-  obp_transaction_detail:
+
+# OBIE AISP fixtures backing the transaction-detail screen. OBIE has no single-transaction-by-id
+# GET — detail is the Data.Transaction[] item selected by TransactionId from the same
+# ais_get_transactions resource the list screen fetches (OBReadTransaction6). These TransactionIds
+# match the transactions list fixture so detail-by-id reuse is coherent. Full detail fields:
+# Creditor/Debtor SchemeName+Identification+Name, BankTransactionCode.Code (-> Transaction Type label),
+# Pending status (-> 'Awaiting confirmation'). Same James Whitfield persona / sort-code 30-00-00.
+# Counterparty display: MerchantDetails.MerchantName then TransactionInformation — never raw Identification.
+collections:
+  ais_get_transactions:
+    dto: OBReadTransaction6
+    description: "200 OK — the transaction set the detail screen selects from by TransactionId (Debit booked, Credit booked, and a Pending row)."
     item:
-      id: "txn-ke-20260522-44001"
-      this_account:
-        id: "acc-equity-ke-001"
-        account_routings:
-          - scheme: "IBAN"
-            address: "KE61EQBA00001234567890"
-      other_account:
-        id: "cp-001-ke"
-        holder:
-          name: "Carrefour Sarit Centre"
-          is_alias: false
-        account_routings:
-          - scheme: "IBAN"
-            address: "KE61KCBA00004411223344"
-        metadata:
-          image_url: "https://assets.equitybank.co.ke/merchants/carrefour.png"
-      details:
-        type: "DEBIT"
-        description: "Carrefour Sarit Centre — weekly groceries"
-        posted: "2026-05-22T11:22:00+03:00"
-        completed: "2026-05-22T11:22:05+03:00"
-        new_balance:
-          currency: "KES"
-          amount: "85960.50"
-        value:
-          currency: "KES"
-          amount: "-3420.00"
-      metadata:
-        narrative: "Monthly grocery run — Sarit Centre branch"
-        comments:
-          - id: "cmt-ke-001"
-            value: "Bought extra supplies for the long weekend"
-            date: "2026-05-22T12:00:00+03:00"
-        tags:
-          - id: "tag-ke-001"
-            value: "#groceries"
-            date: "2026-05-22T12:01:00+03:00"
+      Data:
+        Transaction:
+          - AccountId: "acc-jw-current-0001"
+            TransactionId: "txn-jw-0002"
+            TransactionReference: "TESCO-20260611-1327"
+            CreditDebitIndicator: "Debit"
+            Status: "Booked"
+            BookingDateTime: "2026-06-11T13:27:09.000Z"
+            ValueDateTime: "2026-06-11T13:27:09.000Z"
+            TransactionInformation: "TESCO STORES 3411 LONDON"
+            Amount:
+              Amount: "42.16"
+              Currency: "GBP"
+            MerchantDetails:
+              MerchantName: "Tesco Stores"
+            BankTransactionCode:
+              Code: "PMNT"
+            CreditorAccount:
+              SchemeName: "UK.OBIE.SortCodeAccountNumber"
+              Identification: "20453388112299"
+              Name: "Tesco Stores Ltd"
+            DebtorAccount:
+              SchemeName: "UK.OBIE.SortCodeAccountNumber"
+              Identification: "30000012345678"
+          - AccountId: "acc-jw-current-0001"
+            TransactionId: "txn-jw-0004"
+            TransactionReference: "SAL-20260610-0005"
+            CreditDebitIndicator: "Credit"
+            Status: "Booked"
+            BookingDateTime: "2026-06-10T00:05:00.000Z"
+            ValueDateTime: "2026-06-10T00:05:00.000Z"
+            TransactionInformation: "SALARY ACME DIGITAL LTD"
+            Amount:
+              Amount: "3120.00"
+              Currency: "GBP"
+            MerchantDetails:
+              MerchantName: "Acme Digital Ltd"
+            BankTransactionCode:
+              Code: "PMNT"
+            CreditorAccount:
+              SchemeName: "UK.OBIE.SortCodeAccountNumber"
+              Identification: "30000012345678"
+              Name: "James Whitfield"
+            DebtorAccount:
+              SchemeName: "UK.OBIE.SortCodeAccountNumber"
+              Identification: "40221100558899"
+          - AccountId: "acc-jw-current-0001"
+            TransactionId: "txn-jw-0001"
+            TransactionReference: "TFL-20260612-0812"
+            CreditDebitIndicator: "Debit"
+            Status: "Pending"
+            BookingDateTime: "2026-06-12T08:12:44.000Z"
+            ValueDateTime: "2026-06-12T08:12:44.000Z"
+            TransactionInformation: "TFL TRAVEL CH PAYG"
+            Amount:
+              Amount: "6.80"
+              Currency: "GBP"
+            MerchantDetails:
+              MerchantName: "TfL Travel"
+            BankTransactionCode:
+              Code: "PMNT"
+            CreditorAccount:
+              SchemeName: "UK.OBIE.SortCodeAccountNumber"
+              Identification: "30001199887766"
+              Name: "Transport for London"
+            DebtorAccount:
+              SchemeName: "UK.OBIE.SortCodeAccountNumber"
+              Identification: "30000012345678"
+      Links:
+        Self: "https://secure.sandbox.ob.hsbc.co.uk/obie/open-banking/v4.0/aisp/accounts/acc-jw-current-0001/transactions"
+      Meta:
+        TotalPages: 1
+
+  # OBErrorResponse1 envelope for the 400/403/500 error state.
+  error:
+    dto: OBErrorResponse1
+    description: "Representative 400 OBErrorResponse1 driving the detail error state (e.g. TransactionId not found in the window)."
+    item:
+      Code: "400 Bad Request"
+      Id: "d774-err-2b08"
+      Message: "Invalid request"
+      Errors:
+        - ErrorCode: "UK.OBIE.Field.Invalid"
+          Message: "No transaction matches the supplied TransactionId for this account."

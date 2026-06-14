@@ -5,32 +5,55 @@ entries:
   - screen_id: profile
     trigger: on_mount
     endpoints:
-      - obp_get_user_profile
+      - get_party
     direction: read
+    consent_required: true
     dtos:
-      - name: UserProfile
+      - name: OBReadParty3
         role: response
-        api_id: obp_get_user_profile
+        api_id: get_party
     produces_state: content
+    notes: >-
+      Loads the OBIE account-holder party (PSU) via GET /aisp/party. Requires an
+      authorised account-access-consent (ReadParty permission) + authorization-code token.
+      OBIE Open Banking is READ-ONLY for account-holder data — no update-profile endpoint
+      exists (the OBP PUT /users/current is removed). Profile items (name, email, phone)
+      come from Data.Party and are PII. Counterparty name rule: never render the raw login
+      username — prefer the resolved holder name from Data.Party.Name / FullLegalName.
     error_paths:
       - error_code: 401
         behavior: navigate_login
+      - error_code: 403
+        behavior: error_state
       - error_code: 500
         behavior: error_state
 
   - screen_id: profile
     trigger: on_interact
-    event: CustomerSaved
+    event: RetryLoad
     endpoints:
-      - obp_update_user_profile
-    direction: write
+      - get_party
+    direction: read
+    consent_required: true
     dtos:
-      - name: UserProfile
-        role: request
-        api_id: obp_update_user_profile
+      - name: OBReadParty3
+        role: response
+        api_id: get_party
     produces_state: content
     error_paths:
-      - error_code: 400
-        behavior: error_state
       - error_code: 401
         behavior: navigate_login
+      - error_code: 403
+        behavior: error_state
+
+  - screen_id: profile
+    trigger: on_interact
+    event: DisconnectClicked
+    endpoints: []
+    direction: none
+    dtos: []
+    produces_state: content
+    notes: >-
+      Routes to consent-manager / consent-intro to revoke the account-access-consent via
+      DELETE /aisp/account-access-consents/{ConsentId}. There is no password-based logout
+      under OBIE Open Banking.

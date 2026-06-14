@@ -1,135 +1,356 @@
 sibling: demo-data
 schema_version: "4.0"
 feature_id: transactions
-content:
-  obp_transactions_list:
-    items:
-      - id: "txn-ke-20260525-001"
-        this_account:
-          id: "acc-equity-ke-001"
-          bank_id: "ke.equity.bank"
-        other_account:
-          holder:
-            name: "Carrefour Sarit Centre"
-            is_alias: false
-          metadata:
-            image_url: "https://assets.equitybank.co.ke/merchants/carrefour.png"
-        details:
-          type: "DEBIT"
-          description: "Carrefour Sarit Centre — weekly groceries"
-          posted: "2026-05-25T10:05:00+03:00"
-          completed: "2026-05-25T10:05:08+03:00"
-          new_balance:
-            currency: "KES"
-            amount: "85960.50"
-          value:
-            currency: "KES"
-            amount: "-3420.00"
-        metadata:
-          narrative: "Weekly grocery run — Carrefour Sarit Centre"
-          tags: []
-          comments: []
 
-      - id: "txn-ke-20260524-002"
-        this_account:
-          id: "acc-equity-ke-001"
-          bank_id: "ke.equity.bank"
-        other_account:
-          holder:
-            name: "KPLC Prepaid"
-            is_alias: false
-          metadata:
-            image_url: null
-        details:
-          type: "DEBIT"
-          description: "KPLC electricity token — meter 11223344"
-          posted: "2026-05-24T17:30:00+03:00"
-          completed: "2026-05-24T17:30:12+03:00"
-          new_balance:
-            currency: "KES"
-            amount: "89380.50"
-          value:
-            currency: "KES"
-            amount: "-2000.00"
-        metadata:
-          narrative: "Electricity token top-up — meter 11223344"
-          tags: []
-          comments: []
+# OBIE AISP fixtures backing the transactions list screen.
+# ais_get_transactions -> OBReadTransaction6 (Data.Transaction[]) for the current account,
+# newest first, spanning Booked + Pending and Credit + Debit, with a running Balance.Amount per row,
+# BankTransactionCode.Code (ISO 20022), and Creditor/Debtor sort-code accounts. Same James Whitfield
+# persona / sort-code 30-00-00 as home/account-detail. Counterparty display uses MerchantDetails.MerchantName
+# then TransactionInformation — never a raw CreditorAccount/DebtorAccount Identification.
+collections:
+  ais_get_transactions:
+    dto: OBReadTransaction6
+    description: "200 OK — paginated transaction history for the current account, newest first; Links.Next supplies the next page."
+    item:
+      Data:
+        Transaction:
+          - AccountId: "acc-jw-current-0001"
+            TransactionId: "txn-jw-0001"
+            TransactionReference: "TFL-20260612-0812"
+            CreditDebitIndicator: "Debit"
+            Status: "Pending"
+            BookingDateTime: "2026-06-12T08:12:44.000Z"
+            ValueDateTime: "2026-06-12T08:12:44.000Z"
+            TransactionInformation: "TFL TRAVEL CH PAYG"
+            Amount:
+              Amount: "6.80"
+              Currency: "GBP"
+            BankTransactionCode:
+              Code: "PMNT"
+            MerchantDetails:
+              MerchantName: "TfL Travel"
+            Balance:
+              Amount:
+                Amount: "2483.17"
+                Currency: "GBP"
+            CreditorAccount:
+              SchemeName: "UK.OBIE.SortCodeAccountNumber"
+              Identification: "30001199887766"
+              Name: "Transport for London"
+          - AccountId: "acc-jw-current-0001"
+            TransactionId: "txn-jw-0002"
+            TransactionReference: "TESCO-20260611-1327"
+            CreditDebitIndicator: "Debit"
+            Status: "Booked"
+            BookingDateTime: "2026-06-11T13:27:09.000Z"
+            ValueDateTime: "2026-06-11T13:27:09.000Z"
+            TransactionInformation: "TESCO STORES 3411 LONDON"
+            Amount:
+              Amount: "42.16"
+              Currency: "GBP"
+            BankTransactionCode:
+              Code: "PMNT"
+            MerchantDetails:
+              MerchantName: "Tesco Stores"
+            Balance:
+              Amount:
+                Amount: "2489.97"
+                Currency: "GBP"
+            CreditorAccount:
+              SchemeName: "UK.OBIE.SortCodeAccountNumber"
+              Identification: "20453388112299"
+              Name: "Tesco Stores Ltd"
+          - AccountId: "acc-jw-current-0001"
+            TransactionId: "txn-jw-0003"
+            TransactionReference: "PRET-20260611-0841"
+            CreditDebitIndicator: "Debit"
+            Status: "Booked"
+            BookingDateTime: "2026-06-11T08:41:55.000Z"
+            ValueDateTime: "2026-06-11T08:41:55.000Z"
+            TransactionInformation: "PRET A MANGER 247 LONDON"
+            Amount:
+              Amount: "5.45"
+              Currency: "GBP"
+            BankTransactionCode:
+              Code: "PMNT"
+            MerchantDetails:
+              MerchantName: "Pret A Manger"
+            Balance:
+              Amount:
+                Amount: "2532.13"
+                Currency: "GBP"
+            CreditorAccount:
+              SchemeName: "UK.OBIE.SortCodeAccountNumber"
+              Identification: "60112233445566"
+              Name: "Pret A Manger UK Ltd"
+          - AccountId: "acc-jw-current-0001"
+            TransactionId: "txn-jw-0004"
+            TransactionReference: "SAL-20260610-0005"
+            CreditDebitIndicator: "Credit"
+            Status: "Booked"
+            BookingDateTime: "2026-06-10T00:05:00.000Z"
+            ValueDateTime: "2026-06-10T00:05:00.000Z"
+            TransactionInformation: "SALARY ACME DIGITAL LTD"
+            Amount:
+              Amount: "3120.00"
+              Currency: "GBP"
+            BankTransactionCode:
+              Code: "PMNT"
+            MerchantDetails:
+              MerchantName: "Acme Digital Ltd"
+            Balance:
+              Amount:
+                Amount: "2537.58"
+                Currency: "GBP"
+            DebtorAccount:
+              SchemeName: "UK.OBIE.SortCodeAccountNumber"
+              Identification: "40221100558899"
+              Name: "Acme Digital Ltd"
+          - AccountId: "acc-jw-current-0001"
+            TransactionId: "txn-jw-0005"
+            TransactionReference: "BGAS-20260609-0700"
+            CreditDebitIndicator: "Debit"
+            Status: "Booked"
+            BookingDateTime: "2026-06-09T07:00:12.000Z"
+            ValueDateTime: "2026-06-09T07:00:12.000Z"
+            TransactionInformation: "BRITISH GAS DD"
+            Amount:
+              Amount: "88.40"
+              Currency: "GBP"
+            BankTransactionCode:
+              Code: "DDBT"
+            MerchantDetails:
+              MerchantName: "British Gas"
+            Balance:
+              Amount:
+                Amount: "-582.42"
+                Currency: "GBP"
+            CreditorAccount:
+              SchemeName: "UK.OBIE.SortCodeAccountNumber"
+              Identification: "08440022113355"
+              Name: "British Gas Trading Ltd"
+          - AccountId: "acc-jw-current-0001"
+            TransactionId: "txn-jw-0006"
+            TransactionReference: "AMZN-20260608-1955"
+            CreditDebitIndicator: "Debit"
+            Status: "Booked"
+            BookingDateTime: "2026-06-08T19:55:31.000Z"
+            ValueDateTime: "2026-06-08T19:55:31.000Z"
+            TransactionInformation: "AMAZON UK MARKETPLACE"
+            Amount:
+              Amount: "63.99"
+              Currency: "GBP"
+            BankTransactionCode:
+              Code: "PMNT"
+            MerchantDetails:
+              MerchantName: "Amazon UK"
+            Balance:
+              Amount:
+                Amount: "-494.02"
+                Currency: "GBP"
+            CreditorAccount:
+              SchemeName: "UK.OBIE.SortCodeAccountNumber"
+              Identification: "23556677889900"
+              Name: "Amazon EU SARL UK Branch"
+          - AccountId: "acc-jw-current-0001"
+            TransactionId: "txn-jw-0007"
+            TransactionReference: "JW-SAVE-20260607-1200"
+            CreditDebitIndicator: "Debit"
+            Status: "Booked"
+            BookingDateTime: "2026-06-07T12:00:00.000Z"
+            ValueDateTime: "2026-06-07T12:00:00.000Z"
+            TransactionInformation: "TRANSFER TO BONUS SAVER"
+            Amount:
+              Amount: "250.00"
+              Currency: "GBP"
+            BankTransactionCode:
+              Code: "ICDT"
+            MerchantDetails:
+              MerchantName: "Online Bonus Saver"
+            Balance:
+              Amount:
+                Amount: "-430.03"
+                Currency: "GBP"
+            CreditorAccount:
+              SchemeName: "UK.OBIE.SortCodeAccountNumber"
+              Identification: "30000087654321"
+              Name: "James Whitfield"
+          - AccountId: "acc-jw-current-0001"
+            TransactionId: "txn-jw-0008"
+            TransactionReference: "GREGG-20260606-0822"
+            CreditDebitIndicator: "Debit"
+            Status: "Booked"
+            BookingDateTime: "2026-06-06T08:22:18.000Z"
+            ValueDateTime: "2026-06-06T08:22:18.000Z"
+            TransactionInformation: "GREGGS 1188 LONDON"
+            Amount:
+              Amount: "3.85"
+              Currency: "GBP"
+            BankTransactionCode:
+              Code: "PMNT"
+            MerchantDetails:
+              MerchantName: "Greggs"
+            Balance:
+              Amount:
+                Amount: "-180.03"
+                Currency: "GBP"
+            CreditorAccount:
+              SchemeName: "UK.OBIE.SortCodeAccountNumber"
+              Identification: "51223344556677"
+              Name: "Greggs Plc"
+          - AccountId: "acc-jw-current-0001"
+            TransactionId: "txn-jw-0009"
+            TransactionReference: "REFUND-20260605-1430"
+            CreditDebitIndicator: "Credit"
+            Status: "Booked"
+            BookingDateTime: "2026-06-05T14:30:42.000Z"
+            ValueDateTime: "2026-06-05T14:30:42.000Z"
+            TransactionInformation: "REFUND ASOS.COM"
+            Amount:
+              Amount: "29.50"
+              Currency: "GBP"
+            BankTransactionCode:
+              Code: "PMNT"
+            MerchantDetails:
+              MerchantName: "ASOS"
+            Balance:
+              Amount:
+                Amount: "-176.18"
+                Currency: "GBP"
+            DebtorAccount:
+              SchemeName: "UK.OBIE.SortCodeAccountNumber"
+              Identification: "77665544332211"
+              Name: "ASOS.com Ltd"
+          - AccountId: "acc-jw-current-0001"
+            TransactionId: "txn-jw-0010"
+            TransactionReference: "SPOT-20260604-0600"
+            CreditDebitIndicator: "Debit"
+            Status: "Booked"
+            BookingDateTime: "2026-06-04T06:00:09.000Z"
+            ValueDateTime: "2026-06-04T06:00:09.000Z"
+            TransactionInformation: "SPOTIFY UK"
+            Amount:
+              Amount: "11.99"
+              Currency: "GBP"
+            BankTransactionCode:
+              Code: "DDBT"
+            MerchantDetails:
+              MerchantName: "Spotify UK"
+            Balance:
+              Amount:
+                Amount: "-205.68"
+                Currency: "GBP"
+            CreditorAccount:
+              SchemeName: "UK.OBIE.SortCodeAccountNumber"
+              Identification: "18992288337744"
+              Name: "Spotify Ltd"
+          - AccountId: "acc-jw-current-0001"
+            TransactionId: "txn-jw-0011"
+            TransactionReference: "JW-FRIEND-20260603-2014"
+            CreditDebitIndicator: "Debit"
+            Status: "Booked"
+            BookingDateTime: "2026-06-03T20:14:55.000Z"
+            ValueDateTime: "2026-06-03T20:14:55.000Z"
+            TransactionInformation: "FASTER PAYMENT TO J WHITFIELD"
+            Amount:
+              Amount: "40.00"
+              Currency: "GBP"
+            BankTransactionCode:
+              Code: "PMNT"
+            MerchantDetails:
+              MerchantName: "Sophie Bennett"
+            Balance:
+              Amount:
+                Amount: "-193.69"
+                Currency: "GBP"
+            CreditorAccount:
+              SchemeName: "UK.OBIE.SortCodeAccountNumber"
+              Identification: "11335577990022"
+              Name: "Sophie Bennett"
+          - AccountId: "acc-jw-current-0001"
+            TransactionId: "txn-jw-0012"
+            TransactionReference: "SAINS-20260602-1742"
+            CreditDebitIndicator: "Debit"
+            Status: "Booked"
+            BookingDateTime: "2026-06-02T17:42:03.000Z"
+            ValueDateTime: "2026-06-02T17:42:03.000Z"
+            TransactionInformation: "SAINSBURYS S/MKT 0421 LONDON"
+            Amount:
+              Amount: "57.32"
+              Currency: "GBP"
+            BankTransactionCode:
+              Code: "PMNT"
+            MerchantDetails:
+              MerchantName: "Sainsbury's"
+            Balance:
+              Amount:
+                Amount: "-153.69"
+                Currency: "GBP"
+            CreditorAccount:
+              SchemeName: "UK.OBIE.SortCodeAccountNumber"
+              Identification: "30661122994455"
+              Name: "Sainsbury's Supermarkets Ltd"
+          - AccountId: "acc-jw-current-0001"
+            TransactionId: "txn-jw-0013"
+            TransactionReference: "TFL-20260601-0759"
+            CreditDebitIndicator: "Debit"
+            Status: "Booked"
+            BookingDateTime: "2026-06-01T07:59:21.000Z"
+            ValueDateTime: "2026-06-01T07:59:21.000Z"
+            TransactionInformation: "TFL TRAVEL CH PAYG"
+            Amount:
+              Amount: "2.80"
+              Currency: "GBP"
+            BankTransactionCode:
+              Code: "PMNT"
+            MerchantDetails:
+              MerchantName: "TfL Travel"
+            Balance:
+              Amount:
+                Amount: "-96.37"
+                Currency: "GBP"
+            CreditorAccount:
+              SchemeName: "UK.OBIE.SortCodeAccountNumber"
+              Identification: "30001199887766"
+              Name: "Transport for London"
+          - AccountId: "acc-jw-current-0001"
+            TransactionId: "txn-jw-0014"
+            TransactionReference: "COSTA-20260531-0915"
+            CreditDebitIndicator: "Debit"
+            Status: "Booked"
+            BookingDateTime: "2026-05-31T09:15:47.000Z"
+            ValueDateTime: "2026-05-31T09:15:47.000Z"
+            TransactionInformation: "COSTA COFFEE 884 LONDON"
+            Amount:
+              Amount: "4.10"
+              Currency: "GBP"
+            BankTransactionCode:
+              Code: "PMNT"
+            MerchantDetails:
+              MerchantName: "Costa Coffee"
+            Balance:
+              Amount:
+                Amount: "-93.57"
+                Currency: "GBP"
+            CreditorAccount:
+              SchemeName: "UK.OBIE.SortCodeAccountNumber"
+              Identification: "44778811220033"
+              Name: "Costa Ltd"
+      Links:
+        Self: "https://secure.sandbox.ob.hsbc.co.uk/obie/open-banking/v4.0/aisp/accounts/acc-jw-current-0001/transactions"
+        Next: "https://secure.sandbox.ob.hsbc.co.uk/obie/open-banking/v4.0/aisp/accounts/acc-jw-current-0001/transactions?page=2"
+      Meta:
+        TotalPages: 2
 
-      - id: "txn-ke-20260523-003"
-        this_account:
-          id: "acc-equity-ke-001"
-          bank_id: "ke.equity.bank"
-        other_account:
-          holder:
-            name: "Wycliffe Ochieng"
-            is_alias: false
-          metadata:
-            image_url: null
-        details:
-          type: "DEBIT"
-          description: "Transfer to Wycliffe Ochieng — rent contribution"
-          posted: "2026-05-23T14:05:00+03:00"
-          completed: "2026-05-23T14:05:30+03:00"
-          new_balance:
-            currency: "KES"
-            amount: "91380.50"
-          value:
-            currency: "KES"
-            amount: "-15000.00"
-        metadata:
-          narrative: "May rent contribution"
-          tags: []
-          comments: []
-
-      - id: "txn-ke-20260522-004"
-        this_account:
-          id: "acc-equity-ke-001"
-          bank_id: "ke.equity.bank"
-        other_account:
-          holder:
-            name: "Uber Kenya"
-            is_alias: false
-          metadata:
-            image_url: "https://assets.equitybank.co.ke/merchants/uber.png"
-        details:
-          type: "DEBIT"
-          description: "Uber — Westlands to JKIA T1B"
-          posted: "2026-05-22T05:45:00+03:00"
-          completed: "2026-05-22T05:45:10+03:00"
-          new_balance:
-            currency: "KES"
-            amount: "106380.50"
-          value:
-            currency: "KES"
-            amount: "-890.00"
-        metadata:
-          narrative: "Uber ride — Westlands to JKIA T1B"
-          tags: []
-          comments: []
-
-      - id: "txn-ke-20260501-005"
-        this_account:
-          id: "acc-equity-ke-001"
-          bank_id: "ke.equity.bank"
-        other_account:
-          holder:
-            name: "Bamburi Cement Ltd Payroll"
-            is_alias: false
-          metadata:
-            image_url: null
-        details:
-          type: "CREDIT"
-          description: "Salary — May 2026"
-          posted: "2026-05-01T08:00:00+03:00"
-          completed: "2026-05-01T08:00:30+03:00"
-          new_balance:
-            currency: "KES"
-            amount: "107270.50"
-          value:
-            currency: "KES"
-            amount: "95000.00"
-        metadata:
-          narrative: "May 2026 salary disbursement"
-          tags: []
-          comments: []
+  # OBErrorResponse1 envelope for the 400/403/500 error state.
+  error:
+    dto: OBErrorResponse1
+    description: "Representative 403 OBErrorResponse1 driving the error state when the consent lacks ReadTransactions."
+    item:
+      Code: "403 Forbidden"
+      Id: "a912-err-66d1"
+      Message: "Invalid consent status"
+      Errors:
+        - ErrorCode: "UK.OBIE.Resource.InvalidConsentStatus"
+          Message: "The account-access-consent does not grant a ReadTransactions permission."

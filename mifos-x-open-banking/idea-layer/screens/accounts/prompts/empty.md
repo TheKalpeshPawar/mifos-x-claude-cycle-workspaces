@@ -1,9 +1,9 @@
 ---
-ui_yaml_sha: 32104a29c04c671ed5b57d3bf8d3f614dc3c4a3c7f3991600922913889eb8f9c
-design_md_hash: 71b53c295bf863d34057f16264caf37a11512e794d356b3bec219352550d05ec
-app_shell_hash: ad7a6b42b2ae10e63ef270f15d857bd44445d775e8d9b09313b31e6569df95b4
-design_read_hash: 1639ea0545fdbc1ba9ce1eef5369eae224a6f4f57f07f0639b699652daeb8558
-content_hash: 94fefbfb805bb056b4f7abdbcf019c61010c460cf3352cba79d270fb40dd5fd4
+ui_yaml_sha: c914a33e7bebf707b3d60663987107732c5e4db0741f63e5759a4e30102e3c92
+design_md_hash: 2b17083785e7e532a1554540e628db54640dfab77857b6c90d802767add94ba2
+app_shell_hash: d2fe35b34f2ccfe703fcea97291ff9cb0453b148553d7b69b40f4cfa59d08766
+design_read_hash: 60a4c95f7619b31daccc130861a96508d0cacf2f29734f43c35036c1f0280375
+content_hash: 0880c212f9f935e31ab6c082b82d7eefcde87f771e2ffe72627dbb6b89ebf687
 
 design_read_aesthetic: taste-default
 design_read_dials: {variance: 4, motion: 3, density: 5}
@@ -24,28 +24,97 @@ craft_rules_version: v1.0.0
 
 # accounts — empty state
 
-> Auto-generated from screens/accounts/ui.yaml @ SHA c252f42ece8b91d1
+> Auto-generated from screens/accounts/ui.yaml @ SHA fefe73b087bb3cc5
 > Stitch DesignSystem: 2005644667042354169
 > DO NOT redeclare colors / fonts / spacing — they live in DESIGN.md.
 
 ↓↓↓ MOCKUP PROMPT
 
-Design the **empty** state of the My Accounts screen for **mifos-x-open-banking**, a consumer Open Banking app powered by Open Bank Project API v7 and built with Compose Multiplatform across Android, iOS, Desktop, and Web.
+## Archetype: index_list
 
-Palette: background #12140E, surface #12140E, onSurface #E3E3D8, primary #B2D188, onPrimary #1F3701, primaryContainer #354E16, onPrimaryContainer #CDEDA3, secondary #A0CFCB, onSecondary #003735, surfaceContainer #1E201A, onSurfaceVariant #C5C8BA, outline #8F9285, outlineVariant #44483D.
+## Layout
+- type: scrollable_column
+- padding: default
+- alignment: start
 
-**Component 1 — Top App Bar** (64dp tall, full width): Title "My Accounts" Outfit Medium 20sp #E3E3D8 left-aligned with 16dp leading inset. Trailing help icon 24dp #C5C8BA. Zero elevation, background #12140E. empty_state archetype.
+## Composition (top → bottom)
+1. **stack** (#accounts_header) — "accounts_header"
+   - **text** (#accounts_title) — content: "My Accounts"
+   - **icon** (#accounts_help_icon) — content: "help_outline"
+2. **text_field** (#accounts_search)
+3. **stack** (#bank_group_1_header) — "bank_group_1_header"
+   - **stack** (#bank_group_1_title_row) — "bank_group_1_title_row"
+      - **icon** (#bank_group_1_icon) — content: "account_balance"
+      - **stack** (#bank_group_1_title_col) — "bank_group_1_title_col"
+         - **text** (#bank_group_1_name) — content: "Mifos Bank UK"
+         - **text** (#bank_group_1_count) — content: "2 accounts"
+4. **box** (#account_card_1) — "account_card_1"
+   - **stack** (#acct1_header_row) — "acct1_header_row"
+      - **text** (#acct1_label) — content: "Primary Checking"
+      - **box** (#acct1_type_badge) — "acct1_type_badge"
+         - **text** (#acct1_type_label) — content: "CHECKING"
+   - **text** (#acct1_balance) — content: "£4,250.00"
+   - **stack** (#acct1_iban_row) — "acct1_iban_row"
+      - **icon** (#acct1_iban_icon) — content: "account_box"
+      - **text** (#acct1_iban) — content: "DE89 3704 0044 0532 0130 00"
+5. **box** (#account_card_2) — "account_card_2"
+   - **stack** (#acct2_header_row) — "acct2_header_row"
+      - **text** (#acct2_label) — content: "Holiday Savings"
+      - **box** (#acct2_type_badge) — "acct2_type_badge"
+         - **text** (#acct2_type_label) — content: "SAVINGS"
+   - **text** (#acct2_balance) — content: "£6,180.50"
+   - **stack** (#acct2_iban_row) — "acct2_iban_row"
+      - **icon** (#acct2_iban_icon) — content: "account_box"
+      - **text** (#acct2_iban) — content: "DE89 3704 0044 0532 0131 00"
+6. **stack** (#bank_group_2_header) — "bank_group_2_header"
+   - **stack** (#bank_group_2_title_row) — "bank_group_2_title_row"
+      - **icon** (#bank_group_2_icon) — content: "account_balance"
+      - **stack** (#bank_group_2_title_col) — "bank_group_2_title_col"
+         - **text** (#bank_group_2_name) — content: "Mifos Business UK"
+         - **text** (#bank_group_2_count) — content: "1 account"
+7. **box** (#account_card_3) — "account_card_3"
+   - **stack** (#acct3_header_row) — "acct3_header_row"
+      - **text** (#acct3_label) — content: "Business Current"
+      - **box** (#acct3_type_badge) — "acct3_type_badge"
+         - **text** (#acct3_type_label) — content: "BUSINESS"
+   - **text** (#acct3_balance) — content: "£2,050.00"
+   - **stack** (#acct3_iban_row) — "acct3_iban_row"
+      - **icon** (#acct3_iban_icon) — content: "account_box"
+      - **text** (#acct3_iban) — content: "DE89 3704 0044 0532 0132 00"
+8. **text** (#accounts_no_match_row) — content: "No accounts match your search."
 
-**Component 2 — Hero Illustration** (centered, top margin 80dp): 160dp wide x 160dp tall illustration of an empty wallet or unlinked bank building rendered in muted tones #44483D / #8F9285 on #12140E background. The illustration conveys "no accounts yet" with a calm, approachable feel — no harsh warning tones. Centered horizontally within the 393dp canvas.
+## State-specific behavior
+- Show an empty-state illustration, a friendly message, and one primary call-to-action button.
 
-**Component 3 — Empty State Heading** (centered, top margin 32dp, horizontal padding 32dp): "No accounts found" Outfit SemiBold 22sp #E3E3D8, text-align center, max 2 lines.
+## Content source manifest
+- (no demo collections bound for this state)
 
-**Component 4 — Empty State Body** (centered, top margin 8dp, horizontal padding 48dp): "You don't have any accounts yet. Request a new account to get started." Outfit Regular 14sp #C5C8BA, line-height 20sp, text-align center, max 25 words.
+## Components (vocabulary used in this prompt)
+- (no named components extracted — see composition)
 
-**Component 5 — Request Account Button** (full width minus 48dp horizontal insets, top margin 40dp): Filled pill Button 52dp tall, corner radius 999dp, background #B2D188, label "Request Account" Outfit SemiBold 16sp #1F3701. No leading icon. Touch target 52dp.
+## Shell (app-shell resolved for this state)
+- App-shell rules are defined per project; per-screen overrides are merged in.
+- Render MUST keep nav/bar elements consistent with the resolved shell — present or absent, never partial.
 
-DO NOT use em-dash anywhere in text. DO NOT make any headline more than 3 lines or any subtitle more than 25 words. DO NOT break the dark earth-green theme between sections. DO NOT place light text on light buttons or dark text on dark buttons.
+## Tokens (design-tokens roles consumed)
+- Colors: primary / secondary / surface / on-surface / on-surface-variant / error (M3 standard roles).
+- Typography: body-large / title-large (M3 standard roles).
+- Spacing: gap.sm / gap.md / gap.lg.
+- ALL token references are by name from the uploaded design system — no hex literals, no inline size values.
 
-Centered layout on the #12140E background with generous top spacing before the hero and ample breathing room between elements. The sage-green #B2D188 Request Account button anchors the call-to-action with the warmth of responsible growth; the muted illustration palette stays calm and restrained, clearly communicating an empty_state that invites action rather than frustration.
+## Self-Validation Checklist (MANDATORY)
+
+Before returning the rendered mockup, verify ALL of these are true. If any fails, FIX the output and re-render.
+
+- [ ] **Per-state shape:** the render shows ONLY this state ("empty"). Do not blend multiple states into one mockup.
+- [ ] **Real content:** every text label, image, and data point reflects the content source manifest above — no numbered generic items, no filler text, no dummy text, no empty strings.
+- [ ] **Token fidelity:** colors come from the uploaded design system (primary/secondary/surface/etc.) by name; spacing comes from declared scale tokens. No invented hex codes, no invented size literals.
+- [ ] **Component vocabulary:** every component in the render maps to a named design-system component (Card, FAB, BottomBar, etc.) — no invented or off-system components.
+- [ ] **Archetype honored:** the layout follows the "index_list" archetype skeleton — composition order top → bottom matches the Composition section.
+- [ ] **App-shell parity:** if a bottom nav, top app bar, or FAB appears in the render, it matches the resolved shell from the app-shell config. Shell elements are either present-and-consistent OR absent — never partial.
+
+If any of these fail and the fix isn't clear → halt rendering and surface "Self-validation failed at: {checkpoint}."
+
+Return ONLY when all 6 checkpoints pass.
 
 ↑↑↑ MOCKUP PROMPT

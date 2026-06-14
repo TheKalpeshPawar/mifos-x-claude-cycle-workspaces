@@ -1,42 +1,89 @@
 ---
+ui_yaml_sha: d43f94dd47be443c1f05709d9c7d049415d8f1145c0f08cf6f9140173c24dc9c
+design_md_hash: 2b17083785e7e532a1554540e628db54640dfab77857b6c90d802767add94ba2
+app_shell_hash: d2fe35b34f2ccfe703fcea97291ff9cb0453b148553d7b69b40f4cfa59d08766
+design_read_hash: 60a4c95f7619b31daccc130861a96508d0cacf2f29734f43c35036c1f0280375
+content_hash: deda596e6170be7d7dd53b7982c6d4588206380155d8c29be127c9e2be950786
+
 design_read_aesthetic: taste-default
 design_read_dials: {variance: 4, motion: 3, density: 5}
 aesthetic_variant_override: null
-archetype: error_state
+archetype: form
 
 feature: send-money-amount
 state: unauthenticated
 state_visibility: unauthenticated
 
-project_id: 'null'
-design_system_id: 'null'
+project_id: '17153754672098888646'
+design_system_id: '2005644667042354169'
 
-generated_by: idea-render-screen (LLM-local) v1.0.0
+generated_by: stitch-prompt-build.ts v2.0.0
 prompt_template_version: stitch-per-state-v3.0.0
 craft_rules_version: v1.0.0
 ---
 
 # send-money-amount — unauthenticated state
 
-> Auto-generated from screens/send-money-amount/ui.yaml
+> Auto-generated from screens/send-money-amount/ui.yaml @ SHA da8a153d78470cd3
+> Stitch DesignSystem: 2005644667042354169
 > DO NOT redeclare colors / fonts / spacing — they live in DESIGN.md.
 
 ↓↓↓ MOCKUP PROMPT
-Design the unauthenticated (session expired) state of the send money amount-entry screen for **Mifos X Open Banking**, a Open Banking KMP super-app — consumer retail banking + field officer agent banking powered by Open Bank Project API v7, built with Compose Multiplatform across Android, iOS, Desktop, and Web. The secure session timed out before the form could load.
 
-Palette: primary #4C662B, on_primary #FFFFFF, primary_container #CDEDA3, on_primary_container #102000, background #F9FAEF, on_background #1A1C16, on_surface_variant #44483D.
+## Archetype: form
 
-**Component 1 — App Bar** (64dp tall, full width): Leading back-arrow icon 24dp #44483D, title "Send Money" Outfit SemiBold 22sp #1A1C16. Background #F9FAEF, zero elevation.
+## Layout
+- type: scrollable_column
+- padding: default
+- alignment: start
 
-**Component 2 — Lock illustration** (centered): 96dp circle background #CDEDA3 with lock icon 48dp #102000.
+## Composition (top → bottom)
+1. **list_item** (#from_account_selector) — label: "From Account", content: "Primary Checking — €4,820.00"
+2. **input** (#amount_input) — label: "Amount"
+3. **text** (#to_label) — label: "To", content: "To"
+4. **input** (#beneficiary_search) — label: "Search beneficiary"
+5. **list_item** (#beneficiary_row) — label: "Beneficiary", content: "Liam Walker"
+6. **input** (#reference_input) — label: "Reference"
+7. **text** (#payment_type_label) — label: "Payment Type", content: "Payment Type"
+8. **chip_group** (#payment_type_chips) — label: "Payment rail", content: "SEPA · Domestic · International"
+9. **text** (#rail_ineligible_reason) — label: "Rail unavailable reason", content: "International unavailable — no BIC on file for this beneficiary"
+10. **box** (#fee_banner) — label: "Estimated fee", content: "Estimated fee: Free (SEPA)"
+11. **text** (#internal_transfer_note) — label: "Internal bank transfer note", content: "Internal bank transfer — sent instantly within the bank."
+12. **text** (#sandbox_block_reason) — label: "Sandbox block reason", content: "On the sandbox, amounts this large can only be sent to accounts within the bank."
+13. **button** (#continue_button) — label: "Continue"
 
-**Component 3 — Headline** "Session expired" Outfit Bold 20sp #1A1C16, centered, top margin 24dp.
+## State-specific behavior
+- Custom state "Unauthenticated" — render per the composition below.
 
-**Component 4 — Supporting text** "Your secure session timed out. Sign in again to continue your transfer." Outfit Regular 14sp #44483D, centered, max 320dp width, max 25 words.
+## Content source manifest
+- (no demo collections bound for this state)
 
-**Component 5 — Primary button** (full width minus 64dp insets, max 320dp, top margin 24dp): Filled button 48dp tall, 12dp radius, background #4C662B, leading login icon 20dp, label "Sign in again" Outfit SemiBold 14sp #FFFFFF. Navigates to login.
+## Components (vocabulary used in this prompt)
+- (no named components extracted — see composition)
 
-Do not use em-dash anywhere in text. Do not break the page theme between sections. Do not place light text on light buttons. Never render an OBP login username anywhere.
+## Shell (app-shell resolved for this state)
+- App-shell rules are defined per project; per-screen overrides are merged in.
+- Render MUST keep nav/bar elements consistent with the resolved shell — present or absent, never partial.
 
-Vertically centered session-expired state on #F9FAEF, calm and secure, refined for this regulated open banking context.
+## Tokens (design-tokens roles consumed)
+- Colors: primary / secondary / surface / on-surface / on-surface-variant / error (M3 standard roles).
+- Typography: body-large / title-large (M3 standard roles).
+- Spacing: gap.sm / gap.md / gap.lg.
+- ALL token references are by name from the uploaded design system — no hex literals, no inline size values.
+
+## Self-Validation Checklist (MANDATORY)
+
+Before returning the rendered mockup, verify ALL of these are true. If any fails, FIX the output and re-render.
+
+- [ ] **Per-state shape:** the render shows ONLY this state ("unauthenticated"). Do not blend multiple states into one mockup.
+- [ ] **Real content:** every text label, image, and data point reflects the content source manifest above — no numbered generic items, no filler text, no dummy text, no empty strings.
+- [ ] **Token fidelity:** colors come from the uploaded design system (primary/secondary/surface/etc.) by name; spacing comes from declared scale tokens. No invented hex codes, no invented size literals.
+- [ ] **Component vocabulary:** every component in the render maps to a named design-system component (Card, FAB, BottomBar, etc.) — no invented or off-system components.
+- [ ] **Archetype honored:** the layout follows the "form" archetype skeleton — composition order top → bottom matches the Composition section.
+- [ ] **App-shell parity:** if a bottom nav, top app bar, or FAB appears in the render, it matches the resolved shell from the app-shell config. Shell elements are either present-and-consistent OR absent — never partial.
+
+If any of these fail and the fix isn't clear → halt rendering and surface "Self-validation failed at: {checkpoint}."
+
+Return ONLY when all 6 checkpoints pass.
+
 ↑↑↑ MOCKUP PROMPT

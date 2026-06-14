@@ -1,9 +1,9 @@
 ---
-ui_yaml_sha: 43bf8e879b37ae93b3ce62dd72bfb9fee6978b31c734296cf84770dbd633d439
-design_md_hash: 71b53c295bf863d34057f16264caf37a11512e794d356b3bec219352550d05ec
-app_shell_hash: ad7a6b42b2ae10e63ef270f15d857bd44445d775e8d9b09313b31e6569df95b4
-design_read_hash: 1639ea0545fdbc1ba9ce1eef5369eae224a6f4f57f07f0639b699652daeb8558
-content_hash: 77fc9497f7116cd102d4eee4a7d163d70b806802a5d71331a88f4c3026570e3c
+ui_yaml_sha: d421a4c0c9ef8d437612d10ec91aabbefc81f46db71529fdf7081c8d737ba922
+design_md_hash: 2b17083785e7e532a1554540e628db54640dfab77857b6c90d802767add94ba2
+app_shell_hash: d2fe35b34f2ccfe703fcea97291ff9cb0453b148553d7b69b40f4cfa59d08766
+design_read_hash: 60a4c95f7619b31daccc130861a96508d0cacf2f29734f43c35036c1f0280375
+content_hash: fbbd7df26939cde3467c0503f153a871b774809ed95478ada02ebc14085567cc
 
 design_read_aesthetic: taste-default
 design_read_dials: {variance: 4, motion: 3, density: 5}
@@ -14,8 +14,8 @@ feature: direct-debit-detail
 state: content
 state_visibility: content
 
-project_id: 'null'
-design_system_id: 'null'
+project_id: '17153754672098888646'
+design_system_id: '2005644667042354169'
 
 generated_by: stitch-prompt-build.ts v2.0.0
 prompt_template_version: stitch-per-state-v3.0.0
@@ -24,28 +24,101 @@ craft_rules_version: v1.0.0
 
 # direct-debit-detail — content state
 
-> Auto-generated from screens/direct-debit-detail/ui.yaml @ SHA 57543724e56ae1f6
-> Stitch DesignSystem: (pending DESIGN.md upload — run /idea-export-stitch sub-plan 02)
+> Auto-generated from screens/direct-debit-detail/ui.yaml @ SHA bd81c8300e11835b
+> Stitch DesignSystem: 2005644667042354169
 > DO NOT redeclare colors / fonts / spacing — they live in DESIGN.md.
 
 ↓↓↓ MOCKUP PROMPT
-Design the content state of the direct-debit-detail screen for **Mifos X Open Banking**, a mobile KMP super-app for consumer retail banking and field officer agent banking powered by Open Bank Project API v7.
 
-Palette: primary #B2D188, on_primary #1F3701, primary_container #354E16, on_primary_container #CDEDA3, secondary #A0CFCB, on_secondary #003735, secondary_container #1F4E4B, on_secondary_container #BCEBE7, error #FFB4AB, background #12140E, on_background #E3E3D8, surface #12140E, on_surface #E3E3D8, surface_variant #44483D, on_surface_variant #C5C8BA, surface_container #1E201A, surface_container_high #282A24, outline #8F9285, outline_variant #44483D, pending #E8A317, nav_active_indicator #354E16.
+## Archetype: detail_screen
 
-**Component 1 — App Bar** (64dp tall, full width): Title "Direct Debit" Outfit Medium 18sp #E3E3D8 centered. Leading back-arrow 24dp #B2D188. Trailing more-vertical icon 24dp #8F9285. Background #12140E. detail_screen layout.
+## Layout
+- type: column
+- padding: spacing.lg
+- alignment: start
 
-**Component 2 — Hero** (centered, top margin 24dp): Merchant logo 64dp x 64dp circle, #1E201A background with letter "N" Outfit Bold 28sp #E3E3D8 (Netflix). Merchant name "Netflix Entertainment" Outfit SemiBold 20sp #E3E3D8 centered, top margin 12dp. "Active" badge 28dp tall, 999dp radius, background #354E16, label Outfit Medium 12sp #CDEDA3 centered, top margin 8dp.
+## Composition (top → bottom)
+1. **stack** (#ddd_root)
+2. **stack** (#ddd_merchant_hero)
+3. **text** (#ddd_merchant_name) — content: "Netflix"
+4. **badge** (#ddd_mandate_status_badge) — content: "Active"
+5. **text** (#ddd_mandate_amount_value) — content: "£15.99"
+6. **text** (#ddd_mandate_frequency_text) — content: "Monthly"
+7. **card** (#ddd_mandate_details_card)
+8. **text** (#ddd_details_header) — content: "Mandate Details"
+9. **stack** (#ddd_next_payment_row)
+10. **text** (#ddd_next_payment_label) — content: "Next Payment"
+11. **text** (#ddd_next_payment_value) — content: "15 Jun 2026"
+12. **divider** (#ddd_divider_1)
+13. **stack** (#ddd_account_row)
+14. **text** (#ddd_account_label) — content: "Account"
+15. **stack** (#ddd_account_value_group)
+16. **text** (#ddd_account_name) — content: "Current Account"
+17. **text** (#ddd_account_number) — content: "••••4521"
+18. **divider** (#ddd_divider_2)
+19. **stack** (#ddd_mandate_ref_row)
+20. **text** (#ddd_mandate_ref_label) — content: "Mandate Ref"
+21. **text** (#ddd_mandate_ref_value) — content: "DD-NF-20240301"
+22. **divider** (#ddd_divider_3)
+23. **stack** (#ddd_start_date_row)
+24. **text** (#ddd_start_date_label) — content: "Start Date"
+25. **text** (#ddd_start_date_value) — content: "1 Mar 2024"
+26. **card** (#ddd_payment_history_card)
+27. **stack** (#ddd_history_header_row)
+28. **text** (#ddd_history_header) — content: "Recent Payments"
+29. **link** (#ddd_history_view_all_link) — label: "View all"
+30. **list** (#ddd_history_list)
+31. **list_item** (#ddd_history_row)
+32. **text** (#ddd_history_row_date) — content: "15 May 2026"
+33. **text** (#ddd_history_row_amount) — content: "-£15.99"
+34. **button** (#ddd_cancel_button) — label: "Cancel Mandate"
+35. **dialog** (#ddd_cancel_dialog) — title: "Cancel Direct Debit?", label: "Cancel Direct Debit?"
+36. **button** (#ddd_cancel_confirm_cta) — label: "Yes, Cancel Mandate"
+37. **button** (#ddd_cancel_dismiss_cta) — label: "Keep Mandate"
+38. **skeleton** (#ddd_loading_skeleton)
+39. **stack** (#ddd_error_state)
+40. **icon** (#ddd_error_icon) — content: "cloud_off"
+41. **text** (#ddd_error_title) — content: "Unable to load mandate"
+42. **text** (#ddd_error_message) — content: "Check your connection and try again"
+43. **button** (#ddd_retry_button) — label: "Retry"
+44. **stack** (#ddd_empty_state)
+45. **icon** (#ddd_empty_icon) — content: "event_busy"
+46. **text** (#ddd_empty_title) — content: "Mandate not available"
+47. **text** (#ddd_empty_message) — content: "This direct debit could not be found. It may have already been cancelled or expi"
+48. **button** (#ddd_empty_back_button) — label: "Back to Direct Debits"
 
-**Component 3 — App Bar** (centered, top margin 16dp): Amount "£15.99" Outfit Bold 32sp #E3E3D8 centered. Frequency "Monthly" Outfit Regular 14sp #8F9285 centered, top margin 4dp.
+## State-specific behavior
+- Fully populated with the real demo content listed below.
 
-**Component 4 — Card** (full width minus 32dp insets, top margin 24dp): surface_container #1E201A, 12dp radius. Header "Mandate Details" Outfit SemiBold 15sp #B2D188, 16dp padding. Divider rows: "Next Payment" / "15 Jun 2026", "Account" / "Current Account ****4521", "Mandate Ref" / "MDT-2024-00947", "Start Date" / "12 Jan 2024". Each row: label Outfit Regular 13sp #8F9285 left, value Outfit Medium 14sp #E3E3D8 right, 52dp tall, 1dp #44483D divider.
+## Content source manifest
+- (no demo collections bound for this state)
 
-**Component 5 — Card** (full width minus 32dp insets, top margin 16dp): surface_container #1E201A, 12dp radius. Header row: "Recent Payments" Outfit SemiBold 15sp #B2D188 left, "View all" Outfit Medium 13sp #A0CFCB right, 16dp padding. History rows: Row 1: date "15 May 2026" Outfit Regular 13sp #C5C8BA, status "Collected" badge #354E16/#CDEDA3, amount "-£15.99" Outfit SemiBold 14sp #E3E3D8 right. Row 2: "15 Apr 2026" / "Collected" / "-£15.99". Row 3: "15 Mar 2026" / "Failed" badge #93000A/#FFB4AB / "-£15.99" #FFB4AB. 1dp #44483D dividers.
+## Components (vocabulary used in this prompt)
+- (no named components extracted — see composition)
 
-**Component 6 — Button** (full width minus 32dp insets, top margin 24dp, bottom 32dp): Outlined button 48dp, 12dp radius, outline 1dp #93000A, label "Cancel Mandate" Outfit SemiBold 14sp #FFB4AB. Below: Filled button same dims, background #B2D188, label "Edit Mandate" Outfit SemiBold 14sp #1F3701. 8dp gap.
+## Shell (app-shell resolved for this state)
+- App-shell rules are defined per project; per-screen overrides are merged in.
+- Render MUST keep nav/bar elements consistent with the resolved shell — present or absent, never partial.
 
-Do not use em-dash anywhere in text. Do not make any headline more than 3 lines or any subtitle more than 25 words. Do not break the dark page theme between sections. Do not place light text on light buttons or dark text on dark buttons.
+## Tokens (design-tokens roles consumed)
+- Colors: primary / secondary / surface / on-surface / on-surface-variant / error (M3 standard roles).
+- Typography: body-large / title-large (M3 standard roles).
+- Spacing: gap.sm / gap.md / gap.lg.
+- ALL token references are by name from the uploaded design system — no hex literals, no inline size values.
 
-Scrollable layout on #12140E. Anchored by the earth-green #B2D188 on section headings and the Edit action, the layout stays calm and refined, while the subtle error-toned Cancel uses #FFB4AB to signal irreversibility without alarming the user.
+## Self-Validation Checklist (MANDATORY)
+
+Before returning the rendered mockup, verify ALL of these are true. If any fails, FIX the output and re-render.
+
+- [ ] **Per-state shape:** the render shows ONLY this state ("content"). Do not blend multiple states into one mockup.
+- [ ] **Real content:** every text label, image, and data point reflects the content source manifest above — no numbered generic items, no filler text, no dummy text, no empty strings.
+- [ ] **Token fidelity:** colors come from the uploaded design system (primary/secondary/surface/etc.) by name; spacing comes from declared scale tokens. No invented hex codes, no invented size literals.
+- [ ] **Component vocabulary:** every component in the render maps to a named design-system component (Card, FAB, BottomBar, etc.) — no invented or off-system components.
+- [ ] **Archetype honored:** the layout follows the "detail_screen" archetype skeleton — composition order top → bottom matches the Composition section.
+- [ ] **App-shell parity:** if a bottom nav, top app bar, or FAB appears in the render, it matches the resolved shell from the app-shell config. Shell elements are either present-and-consistent OR absent — never partial.
+
+If any of these fail and the fix isn't clear → halt rendering and surface "Self-validation failed at: {checkpoint}."
+
+Return ONLY when all 6 checkpoints pass.
+
 ↑↑↑ MOCKUP PROMPT

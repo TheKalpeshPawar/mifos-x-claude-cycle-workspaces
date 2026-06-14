@@ -1,61 +1,55 @@
 # PROTOTYPE_TESTS.yaml — Navigation & Interaction Audit Results
-# Written by /idea verify on 2026-06-11T16:00:00Z
+# Written by /idea sync STEP 1 (verify) on 2026-06-12T00:00:00Z
 # Project: mifos-x/mifos-x-open-banking
-# Screens tested: 39 (post-HSBC migration — consumer Open Banking only)
+# Screens tested: 39 (post-HSBC migration + consent/redirect enrichment — consumer Open Banking only)
 
 version: 1
-ran_at: "2026-06-11T16:00:00Z"
+ran_at: "2026-06-12T00:00:00Z"
 
 passes:
   navigation:
     total: 39
     passed: 39
     failed: []
-    note: "All navigates_to[] targets resolve to valid screen IDs. Non-screen targets (account_picker_sheet, ddd_cancel_dialog, etc.) are local UI dialogs — not broken nav. External URL targets in about/ are browser-opens, not screen nav."
+    note: "All on_click nav targets resolve to valid screen IDs (34 distinct screen-shaped targets, 0 dead destinations cross-checked against the 39-screen roster). Non-screen targets (account_picker_sheet, ddd_cancel_dialog, soc_* form fields, chart periods, view_consent_detail, etc.) are local UI dialogs/state actions — not broken nav. External URL targets in about/ are browser-opens, not screen nav."
 
   interaction:
     total: 39
-    passed: 33
-    failed:
-      - consent-intro: "draft status — on_click targets need enrich"
-      - consent-request: "draft status — on_click targets need enrich"
-      - bank-authorize-handoff: "draft status — no on_click interaction yet"
-      - auth-callback: "draft status — programmatic-only screen (no tappable components)"
-      - consent-declined: "draft status — on_click targets need enrich"
-      - payment-authorize-handoff: "draft status — no on_click interaction yet"
-    note: "6 draft screens (quality_score=0) awaiting /idea-enrich. All approved screens pass."
+    passed: 36
+    failed: []
+    advisory:
+      - beneficiaries: "weak-typed target:\"\" on read-only AIS rows (add/edit not supported under Open Banking) — advisory, not a defect."
+      - products: "weak-typed target:\"\" on product-compare chips — advisory."
+      - send-money-confirm: "weak-typed target:\"\" on review-row taps — advisory (shipped/approved)."
+    note: "0 draft screens remain — all 8 HSBC consent/redirect screens enriched this session (draft→enriched). 3 advisory weak-typed clicks unchanged (known-advisory, not blocking)."
 
   states:
     total: 39
-    passed: 34
-    failed:
-      - auth-callback: "draft — no states declared yet"
-      - bank-authorize-handoff: "draft — no states declared yet"
-      - consent-declined: "draft — no states declared yet"
-      - consent-expired: "draft — initial_state missing"
-      - payment-authorize-handoff: "draft — no states declared yet"
-    note: "5 draft screens missing state declarations. consent-intro has states (draft intentional)."
+    passed: 39
+    failed: []
+    note: "Every screen declares states matching idea-plan §10. The 8 enriched consent/redirect screens now carry their state models (consent-request idle/submitting/error/content/empty; bank-authorize-handoff preparing/redirecting/error; auth-callback exchanging/success/error; consent-intro/declined/expired content; payment-authorize-handoff preparing/redirecting/error; payment-declined content)."
 
   api:
     total: 39
     passed: 39
     failed: []
-    note: "SKIP — backend.owned=false (external HSBC sandbox). Server connectivity errors are expected and are not failures per project policy. All api[] entries in ui.yaml are client-side OBIE contracts, not owned-backend RPC."
+    note: "SKIP-by-policy — backend.owned=false (external HSBC sandbox). Server connectivity + owned-DB checks are expected to be absent and are not failures per project policy. All api.yaml entries are client-side OBIE contracts (mTLS + detached JWS), not owned-backend RPC. 30 screens carry api.yaml; 9 are static/gate screens (about, settings, splash + the 6 newly-enriched have api.yaml now except the 4 pure-redirect screens whose api is the OBIE token/consent contract)."
 
   reachability:
     total: 39
     passed: 35
-    failed:
-      - consent-expired: "No screen's navigates_to[] includes consent-expired. Reached programmatically (token expiry detector), not by nav graph. WARN — advisory."
-      - consent-manager: "No screen's navigates_to[] includes consent-manager. Potentially reachable via Settings bottom sheet or deep link. WARN — advisory."
-      - notifications: "No flow.yaml navigates_to[] includes notifications. Reachable via bottom nav (consumer flavor nav_items not yet wired in flow graph). WARN — advisory."
-      - standing-order-edit: "standing-order-detail/flow.yaml does not list standing-order-edit in navigates_to[]. Has navigated_from declaration but forward edge missing. WARN — advisory."
-    note: "4 advisory-only warnings. None are blocking (all have declared flow_ids or navigated_from). Entry point: splash."
+    failed: []
+    advisory:
+      - consent-expired: "No screen's connections include consent-expired as a 'to'. Reached programmatically per §9 FR-005 (prior consent EXPD/RJCT/revoked → re-consent) + app-main.yaml splash→consent-expired. WARN — advisory, intentional (no fake incoming edge)."
+      - notifications: "No flow connection lists notifications as 'to'. Reachable via app-shell top-bar bell + §9 FR-023 event feed (verify-checker blind spot for app-shell chrome). WARN — advisory."
+      - standing-order-edit: "PISP standing-order create/edit wiring (§9 FR-044, ties to standing-order-create). consumer-banking.yaml DOES list standing-order-detail→standing-order-edit, so it IS reachable in the flow graph; flagged advisory pending the PISP edit-flow decision. WARN — advisory/deferred."
+      - "5 unbound OBIE endpoint groups": "VRP / International-Scheduled / International-Standing-Order / File / Multi-Bill have screens:[] in api_manifest — NEW-capability candidates (step-G goal track), not reachability defects. WARN — advisory."
+    note: "consent-manager reachability RESOLVED this session — settings→consent-manager edge (FR-022 'Data & Consent' row) added to consumer-banking.yaml + settings/ui.yaml. Remaining advisory warnings are intentional/deferred, none blocking. Entry point: splash."
 
 summary:
   total_passes: 5
   total_checks: 195
   total_failures: 0
-  total_warnings: 14
+  total_warnings: 7
   blocking: false
-  note: "Zero blocking failures. 14 advisory warnings across 6 draft screens and 4 reachability gaps. All approved screens pass all 5 passes."
+  note: "Zero blocking failures. 0 draft screens (all enriched). 7 advisory warnings (3 weak-typed clicks + 3 reachability + 1 unbound-OBIE-groups class). consent-manager UI-orphan resolved. All known-advisory per the HSBC migration reconcile."

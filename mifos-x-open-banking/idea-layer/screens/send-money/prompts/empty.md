@@ -1,9 +1,9 @@
 ---
-ui_yaml_sha: f40389aebb44c1ab7cf7d41e2c7831d6dfd06eb9cf01fcd11f6806ecc71dc804
-design_md_hash: 71b53c295bf863d34057f16264caf37a11512e794d356b3bec219352550d05ec
-app_shell_hash: ad7a6b42b2ae10e63ef270f15d857bd44445d775e8d9b09313b31e6569df95b4
-design_read_hash: 1639ea0545fdbc1ba9ce1eef5369eae224a6f4f57f07f0639b699652daeb8558
-content_hash: 3ed559556def0446f48ef4d39d028624e1d54bf6e0d1f3ee1bcc5b471e5c5ed5
+ui_yaml_sha: e0400d768f304708fffa1073e707806d5e2deeb8c26a3dce5ad65d688d92d99a
+design_md_hash: 2b17083785e7e532a1554540e628db54640dfab77857b6c90d802767add94ba2
+app_shell_hash: d2fe35b34f2ccfe703fcea97291ff9cb0453b148553d7b69b40f4cfa59d08766
+design_read_hash: 60a4c95f7619b31daccc130861a96508d0cacf2f29734f43c35036c1f0280375
+content_hash: 8353ac18b52323b5aa5087344c01e498f7576d453894236e9ce703cb659f3183
 
 design_read_aesthetic: taste-default
 design_read_dials: {variance: 4, motion: 3, density: 5}
@@ -14,8 +14,8 @@ feature: send-money
 state: empty
 state_visibility: empty
 
-project_id: 'null'
-design_system_id: 'null'
+project_id: '17153754672098888646'
+design_system_id: '2005644667042354169'
 
 generated_by: stitch-prompt-build.ts v2.0.0
 prompt_template_version: stitch-per-state-v3.0.0
@@ -24,28 +24,62 @@ craft_rules_version: v1.0.0
 
 # send-money — empty state
 
-> Auto-generated from screens/send-money/ui.yaml @ SHA 3c15b4f8c73f5314
-> Stitch DesignSystem: (pending DESIGN.md upload — run /idea-export-stitch sub-plan 02)
+> Auto-generated from screens/send-money/ui.yaml @ SHA 90fd1ab1ab6102eb
+> Stitch DesignSystem: 2005644667042354169
 > DO NOT redeclare colors / fonts / spacing — they live in DESIGN.md.
 
 ↓↓↓ MOCKUP PROMPT
-Design the empty state of the send money screen for **Mifos X Open Banking**, a Open Banking KMP super-app — consumer retail banking + field officer agent banking powered by Open Bank Project API v7, built with Compose Multiplatform across Android, iOS, Desktop, and Web.
 
-Palette: primary #B2D188, on_primary #1F3701, primary_container #354E16, on_primary_container #CDEDA3, secondary #A0CFCB, on_secondary #003735, secondary_container #1F4E4B, on_secondary_container #BCEBE7, background #12140E, on_background #E3E3D8, surface #12140E, on_surface #E3E3D8, surface_variant #44483D, on_surface_variant #C5C8BA, surface_container #1E201A, surface_container_high #282A24, outline #8F9285, outline_variant #44483D, error #FFB4AB, pending #E8A317, nav_active_indicator #354E16.
+## Archetype: index_list
 
-**Component 1 — App Bar** (64dp tall, full width): Title "Send Money" Outfit Medium 18sp #E3E3D8 centered. Leading back-arrow 24dp tinted #B2D188. Background #12140E, zero elevation.
+## Layout
+- type: scrollable_column
+- padding: default
+- alignment: start
 
-**Component 2 — Hero** (centered, top margin 80dp): 120dp x 120dp illustration of a paper airplane or transfer envelope rendered in neutral tones #1E201A / #44483D on #12140E background, conveying "no recent activity" without alarm. empty_state archetype.
+## Composition (top → bottom)
+1. **text** (#from_account_header) — label: "From account", content: "FROM ACCOUNT"
+2. **list_item** (#account_selector) — label: "From account", content: "Primary Checking — €4,820.00"
+3. **text** (#recent_recipients_header) — label: "Recent Recipients", content: "RECENT RECIPIENTS"
+4. **box** (#recipient_new) — label: "New", content: "New"
+5. **box** (#recent_recipient_item) — label: "Recent recipient", content: "LW"
+6. **text** (#all_beneficiaries_header) — label: "All Beneficiaries", content: "ALL BENEFICIARIES"
+7. **list_item** (#beneficiary_item) — label: "Beneficiary", content: "Liam Walker"
+8. **text** (#beneficiary_subtitle) — label: "SEPA · Afternoon Coffee Bank ·· 8842", content: "SEPA · Afternoon Coffee Bank ·· 8842"
+9. **text** (#no_beneficiaries_note) — label: "No payees on this account yet", content: "No payees on this account yet. Switch accounts above."
 
-**Component 3 — Text Field** (centered, top margin 32dp, horizontal padding 48dp): Title "No payment history yet" Outfit SemiBold 22sp #E3E3D8 centered, max 2 lines.
+## State-specific behavior
+- Show an empty-state illustration, a friendly message, and one primary call-to-action button.
 
-**Component 4 — Text Field** (centered, top margin 8dp, horizontal padding 48dp): Subtext "Send your first payment to a beneficiary using SEPA, domestic, or international transfer." Outfit Regular 14sp #8F9285 centered, line-height 20sp, max 25 words.
+## Content source manifest
+- (no demo collections bound for this state)
 
-**Component 5 — Button** (full width minus 64dp insets, top margin 32dp): Filled pill button 52dp tall, 999dp corner radius, background #B2D188, leading send icon 20dp #1F3701, label "Start Transfer" Outfit SemiBold 16sp #1F3701 centered.
+## Components (vocabulary used in this prompt)
+- (no named components extracted — see composition)
 
-**Component 6 — Button** (centered, top margin 16dp, bottom 48dp): Text button "Manage Beneficiaries" Outfit Medium 14sp #8F9285, no background, no icon, 48dp tap target.
+## Shell (app-shell resolved for this state)
+- App-shell rules are defined per project; per-screen overrides are merged in.
+- Render MUST keep nav/bar elements consistent with the resolved shell — present or absent, never partial.
 
-Do not use em-dash anywhere in text. Do not make any headline more than 3 lines or any subtitle more than 25 words. Do not break the page theme between sections. Do not place light text on light buttons or dark text on dark buttons.
+## Tokens (design-tokens roles consumed)
+- Colors: primary / secondary / surface / on-surface / on-surface-variant / error (M3 standard roles).
+- Typography: body-large / title-large (M3 standard roles).
+- Spacing: gap.sm / gap.md / gap.lg.
+- ALL token references are by name from the uploaded design system — no hex literals, no inline size values.
 
-Centered layout with generous vertical breathing room on #12140E. The earth-green #B2D188 on the start transfer button provides a calm, inviting call-to-action calibrated to the trust-first aesthetic, without creating alarm in this no-activity state.
+## Self-Validation Checklist (MANDATORY)
+
+Before returning the rendered mockup, verify ALL of these are true. If any fails, FIX the output and re-render.
+
+- [ ] **Per-state shape:** the render shows ONLY this state ("empty"). Do not blend multiple states into one mockup.
+- [ ] **Real content:** every text label, image, and data point reflects the content source manifest above — no numbered generic items, no filler text, no dummy text, no empty strings.
+- [ ] **Token fidelity:** colors come from the uploaded design system (primary/secondary/surface/etc.) by name; spacing comes from declared scale tokens. No invented hex codes, no invented size literals.
+- [ ] **Component vocabulary:** every component in the render maps to a named design-system component (Card, FAB, BottomBar, etc.) — no invented or off-system components.
+- [ ] **Archetype honored:** the layout follows the "index_list" archetype skeleton — composition order top → bottom matches the Composition section.
+- [ ] **App-shell parity:** if a bottom nav, top app bar, or FAB appears in the render, it matches the resolved shell from the app-shell config. Shell elements are either present-and-consistent OR absent — never partial.
+
+If any of these fail and the fix isn't clear → halt rendering and surface "Self-validation failed at: {checkpoint}."
+
+Return ONLY when all 6 checkpoints pass.
+
 ↑↑↑ MOCKUP PROMPT

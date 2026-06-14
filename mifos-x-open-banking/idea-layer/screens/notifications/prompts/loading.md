@@ -1,9 +1,9 @@
 ---
-ui_yaml_sha: 3fd23727025f84161f07e7aec5d0eac94651cf54a8c6617a21f7b92e54ebab5a
-design_md_hash: 71b53c295bf863d34057f16264caf37a11512e794d356b3bec219352550d05ec
-app_shell_hash: ad7a6b42b2ae10e63ef270f15d857bd44445d775e8d9b09313b31e6569df95b4
-design_read_hash: 1639ea0545fdbc1ba9ce1eef5369eae224a6f4f57f07f0639b699652daeb8558
-content_hash: 1c9a3cd8755933fc3538b4e3e88a8292c4cd8d2d993d9427662a01881c96c828
+ui_yaml_sha: b924b1a78850d7e7b49f6324bfe725251eab8dda964294105a62d7c0d693e758
+design_md_hash: 2b17083785e7e532a1554540e628db54640dfab77857b6c90d802767add94ba2
+app_shell_hash: d2fe35b34f2ccfe703fcea97291ff9cb0453b148553d7b69b40f4cfa59d08766
+design_read_hash: 60a4c95f7619b31daccc130861a96508d0cacf2f29734f43c35036c1f0280375
+content_hash: b263c3cc512077a9cce46544927b701ff1951fb1e10229fded5efe5f65b6546d
 
 design_read_aesthetic: taste-default
 design_read_dials: {variance: 4, motion: 3, density: 5}
@@ -14,8 +14,8 @@ feature: notifications
 state: loading
 state_visibility: loading
 
-project_id: 'null'
-design_system_id: 'null'
+project_id: '17153754672098888646'
+design_system_id: '2005644667042354169'
 
 generated_by: stitch-prompt-build.ts v2.0.0
 prompt_template_version: stitch-per-state-v3.0.0
@@ -24,32 +24,84 @@ craft_rules_version: v1.0.0
 
 # notifications — loading state
 
-> Auto-generated from screens/notifications/ui.yaml @ SHA d569e442092a2399
-> Stitch DesignSystem: (pending DESIGN.md upload — run /idea-export-stitch sub-plan 02)
+> Auto-generated from screens/notifications/ui.yaml @ SHA 8c1913e112069b33
+> Stitch DesignSystem: 2005644667042354169
 > DO NOT redeclare colors / fonts / spacing — they live in DESIGN.md.
 
 ↓↓↓ MOCKUP PROMPT
 
-Design the loading state of the notifications screen for **Mifos X Open Banking**, a professional open banking super-app for consumer retail banking and field officer workflows.
+## Archetype: index_list
 
-Palette: primary #B2D188, on_primary #1F3701, primary_container #354E16, on_primary_container #CDEDA3, secondary #A0CFCB, on_secondary #003735, secondary_container #1F4E4B, background #12140E, on_surface #E3E3D8, surface_container #1E201A, surface_container_high #282A24, outline #8F9285, pending #E8A317.
+## Layout
+- type: scrollable_column
+- padding: default
+- alignment: start
 
-**Component 1 — App Bar Shimmer** (64dp tall, full width): Title placeholder shimmer rectangle 120dp wide, 20dp tall, left-aligned 16dp padding. Shimmer base #1E201A, highlight sweep #282A24, 1200ms horizontal animation. Background #12140E. skeleton_screen archetype.
+## Composition (top → bottom)
+1. **stack** (#title_action_row) — label: "Notifications header row"
+2. **text** (#notifications_title) — label: "Notifications", content: "Notifications"
+3. **button** (#mark_all_read_button) — label: "Mark All Read"
+4. **text** (#section_today_label) — label: "Today", content: "Today"
+5. **box** (#notification_payment_james) — label: "Payment received from James Wilson", content: "Payment received from James Wilson"
+6. **stack** (#payment_james_row) — label: "Payment from James Wilson row"
+7. **box** (#payment_james_icon_bg) — label: "Payment received icon background"
+8. **icon** (#payment_james_icon) — label: "Incoming payment"
+9. **stack** (#payment_james_text_col) — label: "Payment from James Wilson text"
+10. **text** (#payment_james_title) — label: "Payment received", content: "Payment received"
+11. **text** (#payment_james_message) — label: "Payment of £50.00 received from James Wilson", content: "Payment of £50.00 received from James Wilson"
+12. **text** (#payment_james_time) — label: "10 min ago", content: "10 min ago"
+13. **box** (#unread_dot_payment_james) — label: "Unread indicator"
+14. **text** (#section_earlier_label) — label: "Earlier", content: "Earlier"
+15. **box** (#notification_netflix_mandate) — label: "Direct debit mandate created for Netflix", content: "Direct debit mandate created for Netflix"
+16. **stack** (#netflix_mandate_row) — label: "Netflix mandate notification row"
+17. **box** (#netflix_mandate_icon_bg) — label: "Direct debit mandate icon background"
+18. **icon** (#netflix_mandate_icon) — label: "Direct debit"
+19. **stack** (#netflix_mandate_text_col) — label: "Netflix mandate notification text"
+20. **text** (#netflix_mandate_title) — label: "Direct debit mandate created", content: "Direct debit mandate created"
+21. **text** (#netflix_mandate_message) — label: "Direct debit mandate created for Netflix — £15.99/month from your Current Accoun", content: "Direct debit mandate created for Netflix — £15.99/month from your Current Accoun"
+22. **text** (#netflix_mandate_time) — label: "3 hr ago", content: "3 hr ago"
+23. **box** (#notification_salary_credited) — label: "Salary credited notification", content: "Salary credited notification"
+24. **stack** (#salary_credited_row) — label: "Salary credited notification row"
+25. **box** (#salary_credited_icon_bg) — label: "Salary credited icon background"
+26. **icon** (#salary_credited_icon) — label: "Incoming payment"
+27. **stack** (#salary_credited_text_col) — label: "Salary credited text"
+28. **text** (#salary_credited_title) — label: "Salary credited", content: "Salary credited"
+29. **text** (#salary_credited_message) — label: "£3,200.00 from Acme Ltd has been credited to your Current Account.", content: "£3,200.00 from Acme Ltd has been credited to your Current Account."
+30. **text** (#salary_credited_time) — label: "Yesterday", content: "Yesterday"
+31. **spacer** (#bottom_spacer)
 
-**Component 2 — Section Header Shimmer** (full width minus 32dp insets, top margin 16dp): One shimmer rectangle 80dp wide, 16dp tall, simulating "Today" section label.
+## State-specific behavior
+- Show shimmer/skeleton loaders matching the content layout block-for-block — no real text, no images. This is the screen's initial state.
 
-**Component 3 — List Row Shimmer 1** (full width minus 32dp insets, top margin 12dp, 72dp tall): Circular shimmer 40dp left for icon background, two stacked text-line shimmers 180dp + 120dp on right, timestamp shimmer 48dp bottom-right. Corner radius 12dp.
+## Content source manifest
+- (no demo collections bound for this state)
 
-**Component 4 — List Row Shimmer 2** (full width minus 32dp insets, top margin 8dp, 72dp tall): Same structure as Component 3 — icon circle + two text lines + timestamp, shimmer base #1E201A.
+## Components (vocabulary used in this prompt)
+- (no named components extracted — see composition)
 
-**Component 5 — Section Header Shimmer 2** (full width minus 32dp insets, top margin 24dp): One shimmer rectangle 72dp wide, 16dp tall, simulating "Earlier" label.
+## Shell (app-shell resolved for this state)
+- App-shell rules are defined per project; per-screen overrides are merged in.
+- Render MUST keep nav/bar elements consistent with the resolved shell — present or absent, never partial.
 
-**Component 6 — List Row Shimmer 3** (full width minus 32dp insets, top margin 12dp, 72dp tall): Same layout, two text-line shimmers 200dp + 140dp.
+## Tokens (design-tokens roles consumed)
+- Colors: primary / secondary / surface / on-surface / on-surface-variant / error (M3 standard roles).
+- Typography: body-large / title-large (M3 standard roles).
+- Spacing: gap.sm / gap.md / gap.lg.
+- ALL token references are by name from the uploaded design system — no hex literals, no inline size values.
 
-**Component 7 — List Row Shimmer 4** (full width minus 32dp insets, top margin 8dp, 72dp tall): Same structure, 160dp + 100dp text shimmers. No real labels.
+## Self-Validation Checklist (MANDATORY)
 
-Do not use em-dash anywhere in text. Do not make any headline more than 3 lines or any subtitle more than 25 words. Do not break the dark theme between sections. Do not place light text on light buttons or dark text on dark buttons.
+Before returning the rendered mockup, verify ALL of these are true. If any fails, FIX the output and re-render.
 
-The shimmer palette of #1E201A base with #282A24 highlight keeps the skeleton_screen calm and warm rather than anxious, with each sweep suggesting imminent arrival of notification data.
+- [ ] **Per-state shape:** the render shows ONLY this state ("loading"). Do not blend multiple states into one mockup.
+- [ ] **Real content:** every text label, image, and data point reflects the content source manifest above — no numbered generic items, no filler text, no dummy text, no empty strings.
+- [ ] **Token fidelity:** colors come from the uploaded design system (primary/secondary/surface/etc.) by name; spacing comes from declared scale tokens. No invented hex codes, no invented size literals.
+- [ ] **Component vocabulary:** every component in the render maps to a named design-system component (Card, FAB, BottomBar, etc.) — no invented or off-system components.
+- [ ] **Archetype honored:** the layout follows the "index_list" archetype skeleton — composition order top → bottom matches the Composition section.
+- [ ] **App-shell parity:** if a bottom nav, top app bar, or FAB appears in the render, it matches the resolved shell from the app-shell config. Shell elements are either present-and-consistent OR absent — never partial.
+
+If any of these fail and the fix isn't clear → halt rendering and surface "Self-validation failed at: {checkpoint}."
+
+Return ONLY when all 6 checkpoints pass.
 
 ↑↑↑ MOCKUP PROMPT
