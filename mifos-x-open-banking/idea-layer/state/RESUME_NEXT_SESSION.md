@@ -2,6 +2,15 @@
 
 Updated: 2026-06-15. Branch: `feat/hsbc-open-banking-migration` (workspace, local only, NOT pushed).
 
+## ⭐ CURRENT STATE (2026-06-15) — idea-layer pipeline DONE + COMMITTED
+- **39/39 screens approved**; contract migration **COMPLETE** (all 39 at 2.0.0); dark-mode **FIXED** (0/188 preview files lack the `@media (prefers-color-scheme: dark)` block).
+- **Two commits on the branch:** `0f2aad2a` (binding + steps A/B/C) and `7b643965` (steps D–F: data-flow/DTOs/demo-data, exports, full render + dark-mode fix, schema migration, approvals, + the dark-mode KNOWN ISSUE doc in workspaces/mifos-x/CLAUDE.md). Working tree clean except `.cache/` (excluded).
+- **NOT pushed.** Next actions: (a) push the workspace branch + open PR when ready; (b) **Step G** — goal track for the 5 unbound OBIE groups (VRP / International-Scheduled / International-Standing-Order / File / Multi-Bill); (c) **Step H** — `/kmp-implement` Kotlin client/auth rebuild (OBP DirectLogin → HSBC FAPI/mTLS/JWS/DCR), wiring certs from /home/kalpesh/OpenBankingProject/HSBC_Sandbox/.
+- Minor leftover polish (non-blocking): Roboto Mono in direct-debit-detail (RV-015); RV-014 --space-*/--sp-* + --r-*/--radius-* token-name fragmentation; consent-request canonical prompts can't build (STN2 form-budget framework issue — previews use ui.yaml fallback); proper dark-mode root-cause fix (patch framework preview-runtime.js to sync data-theme) still deferred (framework-scope).
+
+---
+## (historical handoff below — superseded by CURRENT STATE above)
+
 ## ✅ IDEA-LAYER PIPELINE COMPLETE — 39/39 screens APPROVED
 Steps A–F all done this multi-session run:
 - **A sync/verify + auto-fix** — verify PASS; REQUIREMENTS re-synced to §9; field-officer debt purged.
