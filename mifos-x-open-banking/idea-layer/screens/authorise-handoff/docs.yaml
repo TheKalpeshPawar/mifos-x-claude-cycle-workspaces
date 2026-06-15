@@ -1,0 +1,50 @@
+sibling: docs
+schema_version: '4.0'
+feature_id: authorise-handoff
+id: authorise-handoff
+name: Authorise with HSBC
+feature: authorise-handoff
+flavor: consumer
+status: approved
+quality_score: 92
+contract_version: "2.0.0"
+approved_at: "2026-06-15T02:40:00Z"
+approved_by: "consumer-app-redesign Phase 2 (T5)"
+capabilities:
+  - has_ui
+  - has_api
+status_history:
+  - to: draft
+    at: "2026-06-15T00:00:00Z"
+    by: "consumer-app-redesign Phase 2 (T2)"
+    note: >-
+      Single parameterised redirect handoff merging bank-authorize-handoff (AIS
+      account-access-consent) + payment-authorize-handoff (PISP payment-consent)
+      into one screen, selected by a consentContext param ∈ {ais-consent,
+      pay-now, scheduled, recurring, international}. Full-screen takeover (no top
+      bar, no bottom nav). On mount stages the right consent, builds PKCE S256 +
+      signed request object (intent_id = ConsentId), launches the external HSBC
+      authorise redirect; SCA happens at HSBC, never in-app. The deep-link
+      org.mifos.openbanking://oauth/callback returns to auth-callback, which
+      routes by context. Payment contexts show an amount+payee summary card;
+      ais-consent shows a read-only access-scope note. Cancel → consent-declined
+      (ais) or payment-declined (payment). Approve in T5 after the shared
+      amount/confirm/result path is rebuilt.
+screens:
+  - id: authorise-handoff
+    name: Authorise with HSBC
+    viewmodel: AuthoriseHandoffViewModel
+    archetype: loading
+    states_handled: [preparing, redirecting, error]
+    shell:
+      top_bar: false
+      bottom_nav: false
+dependencies:
+  tier: feature
+  features:
+    - consent-request
+    - send-money-confirm
+    - obp-auth
+    - auth-callback
+    - consent-declined
+    - payment-declined

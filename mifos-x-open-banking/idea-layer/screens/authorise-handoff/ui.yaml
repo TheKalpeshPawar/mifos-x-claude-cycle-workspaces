@@ -1,0 +1,694 @@
+sibling: ui
+feature_id: authorise-handoff
+id: authorise-handoff
+name: "Authorise with HSBC"
+feature: authorise-handoff
+flavor: consumer
+status: approved
+quality_score: 92
+contract_version: "2.0.0"
+approved_at: "2026-06-15T02:40:00Z"
+approved_by: "consumer-app-redesign Phase 2 (T5)"
+capabilities:
+  - has_ui
+  - has_api
+tags: [FR-OBIE-AIS-AUTHORIZE, FR-OBIE-PISP-AUTHORIZE, FR-OBIE-PAYMENT-CONSENT]
+status_history:
+  - status: draft
+    at: "2026-06-15T00:00:00Z"
+    by: "consumer-app-redesign Phase 2 (T2)"
+    note: "Single parameterised redirect handoff that MERGES bank-authorize-handoff (AIS account-access-consent) + payment-authorize-handoff (PISP payment-consent) into one screen, per GOAL.md D4 + TARGET_IA. Selected by a `consentContext` param ∈ {ais-consent, pay-now, scheduled, recurring, international}. Full-screen takeover (NOT a tab root — no bottom nav). On mount it stages the right consent (account-access-consent for ais-consent; the kind's payment-consent for a payment kind), builds the PKCE S256 + signed request object (intent_id = ConsentId), and launches the external HSBC authorise redirect. SCA happens AT HSBC — never in-app. The deep-link org.mifos.openbanking://oauth/callback returns to auth-callback, which routes by context. For payment contexts a summary card restates amount + payee; for ais-consent an access-scope note replaces it. Cancel routes to consent-declined (ais-consent) or payment-declined (payment kinds). Approve in T5."
+
+screens:
+  - id: authorise-handoff
+    name: "Authorise with HSBC"
+    viewmodel: "AuthoriseHandoffViewModel"
+    description: "Transitional full-screen takeover that stages the appropriate OBIE consent for the active consentContext (AIS account-access-consent OR a PISP payment-consent), builds the signed OAuth2 authorise request (intent_id = ConsentId), and launches the redirect to HSBC. Reassures the PSU that authentication + SCA happen at HSBC and the app never sees their credentials, restates what is being approved (account access OR amount+payee), then hands off — not a form."
+    states_handled: [preparing, redirecting, error]
+
+archetype: loading
+
+route:
+  name: AuthoriseHandoffRoute
+  params:
+    consentContext:
+      type: "AuthoriseContext"
+      required: true
+      note: "enum AuthoriseContext { AIS_CONSENT, PAY_NOW, SCHEDULED, RECURRING, INTERNATIONAL, VRP_SETUP }. Drives which consent endpoint is staged, the title/message copy, whether the amount+payee summary card or the access-scope note is shown, the authorise scope (openid accounts | openid payments), and the cancel destination (consent-declined | payment-declined). The auth-callback already routes the deep-link return by this same context."
+    consentId:
+      type: "String?"
+      required: false
+      note: "Usually null on entry — this screen STAGES the consent on mount and only then has a ConsentId. Passed back in when re-entering after a partial failure. Becomes openbanking_intent_id inside the signed request object."
+    amount:
+      type: "String?"
+      required: false
+      note: "Display amount of the payment being authorised (e.g. £250.00), carried from the confirmed PaymentDraft on send-money-confirm. Null/ignored when consentContext == AIS_CONSENT."
+    payeeName:
+      type: "String?"
+      required: false
+      note: "Payee display name (e.g. Jordan Avery), carried from the confirmed PaymentDraft. Null/ignored when consentContext == AIS_CONSENT."
+
+components:
+  - type: stack
+    id: handoff_root
+    variant: column
+    style:
+      background: "#F9FAEF"
+      padding: spacing.lg
+      align: center
+      justify: center
+    a11y:
+      role: region
+      label: "Authorising securely with HSBC"
+    test_context:
+      purpose: "Root vertical takeover container that centres the authorise handoff content"
+      interaction_type: display
+      data_driven: false
+    children:
+      - handoff_bank_icon
+      - handoff_title
+      - handoff_message
+      - handoff_summary_card
+      - handoff_access_note
+      - handoff_spinner
+      - handoff_continue_button
+      - handoff_security_note
+      - handoff_error_card
+      - handoff_retry_button
+      - handoff_cancel_link
+
+  - type: icon
+    id: handoff_bank_icon
+    content: "account_balance"
+    variant: default
+    style:
+      color: "#4C662B"
+      size: "80dp"
+      alignment: center
+    a11y:
+      role: image
+      contentDescription: "HSBC bank"
+      label: "HSBC"
+    test_context:
+      purpose: "Bank icon at the top of the full-screen authorise handoff takeover"
+      interaction_type: display
+      data_driven: false
+
+  - type: text
+    id: handoff_title
+    content: "Getting ready to connect securely"
+    variant: headline_small
+    style:
+      typography: "Outfit/headline_small"
+      color: "#1A1C16"
+      alignment: center
+      padding_top: spacing.lg
+    a11y:
+      role: heading
+      level: 1
+      contentDescription: "Getting ready to connect securely"
+      label: "Getting ready to connect securely"
+    test_context:
+      purpose: "Primary heading. consentContext-driven: AIS = 'Getting ready to connect securely' → 'Taking you to HSBC to approve access'; payment = 'Getting your payment ready to authorise' → 'Taking you to HSBC to authorise this payment'. Switches to the redirecting copy when the authorise URL is ready."
+      interaction_type: display
+      data_driven: true
+
+  - type: text
+    id: handoff_message
+    content: "You'll sign in directly with HSBC to approve this. Your username, password and security codes are never entered in this app — and you'll come straight back here once you've approved."
+    variant: body_medium
+    style:
+      typography: "Outfit/body_medium"
+      color: "#44483D"
+      alignment: center
+      padding_top: spacing.sm
+    a11y:
+      role: text
+      contentDescription: "You will sign in directly with HSBC to approve this. Your username, password and security codes are never entered in this app, and you will come straight back here once you have approved."
+      label: "Explains that approval and security checks happen at HSBC, never in this app"
+    test_context:
+      purpose: "Security explainer — authentication and SCA happen at HSBC, the app never sees credentials. For payment contexts the copy adds 'the payment is only sent once you've approved it.'"
+      interaction_type: display
+      data_driven: true
+
+  - type: card
+    id: handoff_summary_card
+    variant: filled
+    style:
+      background: "#FFFFFF"
+      border_radius: "16dp"
+      border_color: "#CDEDA3"
+      border_width: 1
+      padding: spacing.md
+      margin_top: spacing.lg
+      width: "match_parent"
+    visible_when: "consentContext != AuthoriseContext.AIS_CONSENT"
+    a11y:
+      role: group
+      label: "Payment being authorised"
+    test_context:
+      purpose: "Summary card restating the amount + payee of the payment being authorised. Shown ONLY for payment contexts (pay-now/scheduled/recurring/international); hidden for ais-consent (the access-scope note replaces it)."
+      interaction_type: display
+      data_driven: true
+    children:
+      - handoff_amount_value
+      - handoff_payee_value
+      - handoff_securing_label
+
+  - type: text
+    id: handoff_amount_value
+    content: "£250.00"
+    variant: display_small
+    style:
+      typography: "Outfit/display_small"
+      color: "#4C662B"
+      font_weight: 700
+      alignment: center
+      padding_bottom: spacing.xs
+    a11y:
+      role: text
+      contentDescription: "Amount: two hundred and fifty pounds"
+      label: "Amount: two hundred and fifty pounds"
+    test_context:
+      purpose: "Amount of the payment being authorised, carried from the confirmed PaymentDraft on send-money-confirm. Payment contexts only."
+      interaction_type: display
+      data_driven: true
+
+  - type: text
+    id: handoff_payee_value
+    content: "To Jordan Avery"
+    variant: body_large
+    style:
+      typography: "Outfit/body_large"
+      color: "#1A1C16"
+      alignment: center
+    a11y:
+      role: text
+      contentDescription: "To Jordan Avery"
+      label: "To Jordan Avery"
+    test_context:
+      purpose: "Payee line of the payment being authorised. Payment contexts only."
+      interaction_type: display
+      data_driven: true
+
+  - type: text
+    id: handoff_securing_label
+    content: "Authorising securely with HSBC Open Banking"
+    variant: body_small
+    style:
+      typography: "Outfit/body_small"
+      color: "#44483D"
+      alignment: center
+      padding_top: spacing.sm
+    a11y:
+      role: text
+      contentDescription: "Authorising securely with HSBC Open Banking"
+      label: "Authorising securely with HSBC Open Banking"
+    test_context:
+      purpose: "Reassurance line under the amount + payee while the consent is created and the authorise URL is built"
+      interaction_type: display
+      data_driven: false
+
+  - type: card
+    id: handoff_access_note
+    variant: filled
+    style:
+      background: "#FFFFFF"
+      border_radius: "16dp"
+      border_color: "#CDEDA3"
+      border_width: 1
+      padding: spacing.md
+      margin_top: spacing.lg
+      width: "match_parent"
+    visible_when: "consentContext == AuthoriseContext.AIS_CONSENT"
+    a11y:
+      role: group
+      label: "Access you're approving"
+    test_context:
+      purpose: "Access-scope summary shown ONLY for the ais-consent context — restates what the PSU is granting (read your account details, balances, transactions and payees). Replaces the payment amount+payee summary card."
+      interaction_type: display
+      data_driven: true
+    children:
+      - handoff_access_title
+      - handoff_access_list
+
+  - type: text
+    id: handoff_access_title
+    content: "You're approving read-only access to:"
+    variant: body_large
+    style:
+      typography: "Outfit/body_large"
+      color: "#1A1C16"
+      alignment: center
+      padding_bottom: spacing.xs
+    a11y:
+      role: text
+      contentDescription: "You are approving read-only access to:"
+      label: "You're approving read-only access to:"
+    test_context:
+      purpose: "Heading of the AIS access-scope card"
+      interaction_type: display
+      data_driven: false
+
+  - type: text
+    id: handoff_access_list
+    content: "Your account details, balances, transactions and payees · for 90 days"
+    variant: body_small
+    style:
+      typography: "Outfit/body_small"
+      color: "#44483D"
+      alignment: center
+    a11y:
+      role: text
+      contentDescription: "Your account details, balances, transactions and payees, for 90 days"
+      label: "Read-only access scope: accounts, balances, transactions and payees, for 90 days"
+    test_context:
+      purpose: "The AIS read-only scope being granted (ReadAccountsDetail / ReadBalances / ReadTransactionsDetail / ReadBeneficiaries) and the consent validity window"
+      interaction_type: display
+      data_driven: true
+
+  - type: loading_indicator
+    id: handoff_spinner
+    variant: circular_indeterminate
+    style:
+      color: "#4C662B"
+      size: "32dp"
+      alignment: center
+      padding_top: spacing.lg
+    a11y:
+      role: progressbar
+      contentDescription: "Preparing your secure authorisation"
+      label: "Preparing authorisation"
+    test_context:
+      purpose: "Indeterminate spinner shown while the consent is staged and the signed authorise request is built"
+      interaction_type: display
+      data_driven: false
+
+  - type: button
+    id: handoff_continue_button
+    label: "Continue to your bank"
+    variant: filled
+    supported_states: [idle, hover, focus_visible, pressed, disabled, loading]
+    style:
+      background: "#4C662B"
+      typography: "Outfit/label_large"
+      color: "#FFFFFF"
+      border_radius: "8dp"
+      padding: spacing.md
+      margin_top: spacing.lg
+      width: "match_parent"
+    visible_when: "uiState.phase == OPENING_BROWSER"
+    on_click:
+      action: launch_external
+      target: auth-callback
+      params:
+        url: "{authorizeUrl}"
+    a11y:
+      role: button
+      contentDescription: "Continue to HSBC to approve securely"
+      label: "Continue to HSBC to approve securely"
+    keyboard:
+      focusable: true
+    test_context:
+      purpose: "Manual-launch fallback for the redirecting state — re-opens the external HSBC authorise URL in a Custom Tab if the auto-launch was blocked. Leaves the app; the deep-link return lands on auth-callback."
+      interaction_type: action
+      data_driven: true
+
+  - type: text
+    id: handoff_security_note
+    content: "Encrypted connection · You can return here anytime"
+    variant: body_small
+    style:
+      typography: "Outfit/body_small"
+      color: "#74796D"
+      alignment: center
+      padding_top: spacing.md
+    a11y:
+      role: text
+      contentDescription: "Encrypted connection. You can return to this app at any time."
+      label: "Encrypted connection. You can return to this app at any time."
+    test_context:
+      purpose: "Reassurance caption beneath the spinner / continue button"
+      interaction_type: display
+      data_driven: false
+
+  - type: card
+    id: handoff_error_card
+    variant: filled
+    style:
+      background: "#FFDAD6"
+      border_radius: "8dp"
+      padding: spacing.md
+      margin_top: spacing.lg
+    visible_when: "uiState.phase == ERROR"
+    a11y:
+      role: alert
+      label: "Couldn't start authorisation"
+    test_context:
+      purpose: "Failure card shown when the consent could not be staged or the signed authorise request could not be built / launched"
+      interaction_type: display
+      data_driven: false
+    children:
+      - handoff_error_icon
+      - handoff_error_message
+
+  - type: icon
+    id: handoff_error_icon
+    content: "error"
+    variant: default
+    style:
+      color: "#BA1A1A"
+      size: "20dp"
+    a11y:
+      role: image
+      contentDescription: "Error"
+      label: "Error"
+    test_context:
+      purpose: "Error icon in the failure card"
+      interaction_type: display
+      data_driven: false
+
+  - type: text
+    id: handoff_error_message
+    content: "We couldn't start your secure sign-in with HSBC. No money has left your account. Please check your connection and try again."
+    variant: body_small
+    style:
+      typography: "Outfit/body_small"
+      color: "#410002"
+      padding_start: spacing.sm
+    a11y:
+      role: alert
+      contentDescription: "We couldn't start your secure sign-in with HSBC. No money has left your account. Please check your connection and try again."
+      label: "Authorisation error message"
+    test_context:
+      purpose: "Error copy shown when consent staging or authorise-request building fails. For payment contexts it reassures that no charge was made; for ais-consent the 'No money has left your account' clause is dropped."
+      interaction_type: display
+      data_driven: true
+
+  - type: button
+    id: handoff_retry_button
+    label: "Try again"
+    variant: filled
+    supported_states: [idle, hover, focus_visible, pressed, disabled]
+    style:
+      background: "#4C662B"
+      typography: "Outfit/label_large"
+      color: "#FFFFFF"
+      border_radius: "8dp"
+      padding: spacing.md
+      margin_top: spacing.lg
+      width: "match_parent"
+    visible_when: "uiState.phase == ERROR"
+    on_click:
+      action: retry
+      target: authorise-handoff
+    a11y:
+      role: button
+      contentDescription: "Retry authorising securely with HSBC"
+      label: "Retry authorising securely with HSBC"
+    keyboard:
+      focusable: true
+    test_context:
+      purpose: "Re-stages the consent and re-builds the HSBC authorise redirect after a failure (returns the screen to the preparing state)"
+      interaction_type: action
+      data_driven: false
+
+  - type: button
+    id: handoff_cancel_link
+    label: "Cancel"
+    variant: text
+    supported_states: [idle, hover, focus_visible, pressed, disabled]
+    style:
+      typography: "Outfit/label_large"
+      color: "#386663"
+      alignment: center
+      min_height: 44
+      padding_vertical: spacing.sm
+    visible_when: "uiState.phase == ERROR"
+    on_click:
+      action: navigate
+      target: payment-declined
+    a11y:
+      role: button
+      contentDescription: "Cancel and see what to do next"
+      label: "Cancel the authorisation"
+    keyboard:
+      focusable: true
+    test_context:
+      purpose: "Aborts the handoff. consentContext-driven target: ais-consent → consent-declined; payment kinds → payment-declined (the shared not-completed recovery screens)."
+      interaction_type: navigate
+      data_driven: true
+
+responsive:
+  mobile_only: true
+  baseline_width: 390
+
+states:
+  initial_state: preparing
+  preparing:
+    layout: { type: column, padding: spacing.lg, align: center, justify: center }
+    visible_components: [handoff_bank_icon, handoff_title, handoff_message, handoff_summary_card, handoff_amount_value, handoff_payee_value, handoff_securing_label, handoff_access_note, handoff_access_title, handoff_access_list, handoff_spinner, handoff_security_note]
+    overrides:
+      handoff_title: { content: "Getting ready to connect securely" }
+    note: "Full-screen takeover, first phase. The app stages the right consent for the consentContext (POST account-access-consents for ais-consent; POST the kind's payment-consent for a payment kind → ConsentId, Status AWAU/AwaitingAuthorisation), generates the PKCE code_verifier + S256 code_challenge, and builds + signs the authorise request-object JWT (openbanking_intent_id = ConsentId; scope = 'openid accounts' or 'openid payments'). For payment contexts the summary card restates amount + payee; for ais-consent the access-scope note is shown instead. Spinner runs; no user action required."
+  redirecting:
+    layout: { type: column, padding: spacing.lg, align: center, justify: center }
+    visible_components: [handoff_bank_icon, handoff_title, handoff_message, handoff_summary_card, handoff_amount_value, handoff_payee_value, handoff_securing_label, handoff_access_note, handoff_access_title, handoff_access_list, handoff_continue_button, handoff_security_note]
+    overrides:
+      handoff_title: { content: "Taking you to HSBC to approve securely" }
+    note: "Second phase. The signed authorise URL is ready; the host opens it in the system browser / Custom Tab (auto-launch). 'Continue to your bank' is the manual fallback if the auto-launch is blocked. The external redirect leaves the app at the end of this state; on return the deep-link org.mifos.openbanking://oauth/callback lands on auth-callback, which routes by consentContext."
+  error:
+    layout: { type: column, padding: spacing.lg, align: center, justify: center }
+    visible_components: [handoff_bank_icon, handoff_title, handoff_error_card, handoff_error_icon, handoff_error_message, handoff_retry_button, handoff_cancel_link]
+    overrides:
+      handoff_title: { content: "Couldn't start authorisation" }
+    note: "Consent staging or authorise-request building/launch failed (network / 400 OB.Field.Invalid / request-object signing error / no available browser). For payment contexts no charge was made. Offers retry (re-prepare) or cancel — to consent-declined (ais-consent) or payment-declined (payment kinds)."
+
+state_model:
+  AuthoriseHandoffViewModel:
+    screen_state: AuthoriseHandoffUiState
+    ui_state_type: AuthoriseHandoffUiState
+    state:
+      - field: consentContext
+        type: "AuthoriseContext"
+        default: "AuthoriseContext.AIS_CONSENT"
+        note: "enum AuthoriseContext { AIS_CONSENT, PAY_NOW, SCHEDULED, RECURRING, INTERNATIONAL, VRP_SETUP }. Selects the consent endpoint, copy, summary-vs-access-note, authorise scope, and cancel destination."
+      - field: phase
+        type: "HandoffPhase"
+        default: "HandoffPhase.STAGING"
+        note: "enum HandoffPhase { STAGING, BUILDING_REQUEST, OPENING_BROWSER, REDIRECTED, ERROR }. STAGING/BUILDING_REQUEST render 'preparing'; OPENING_BROWSER/REDIRECTED render 'redirecting'; ERROR renders 'error'. PKCE code_verifier / CSRF state / consentId live in ObpAuthRepository, NOT in UI state."
+      - field: amount
+        type: "String?"
+        default: "null"
+        note: "Display amount (payment contexts only)."
+      - field: payeeName
+        type: "String?"
+        default: "null"
+        note: "Payee display name (payment contexts only)."
+      - field: consentId
+        type: "String?"
+        default: "null"
+        note: "Data.ConsentId returned by the staged consent; becomes the authorise intent_id."
+      - field: authorizeUrl
+        type: "String?"
+        default: "null"
+        note: "The fully-built external HSBC authorise URL, set once BUILDING_REQUEST completes; consumed by the LaunchAuthorize event and the 'Continue to your bank' manual fallback."
+      - field: errorMessage
+        type: "String?"
+        default: "null"
+      - field: isError
+        type: Boolean
+        default: "false"
+    derived:
+      - field: isReadyToRedirect
+        type: Boolean
+        note: "computed get(): authorizeUrl != null && phase == HandoffPhase.OPENING_BROWSER"
+      - field: isPaymentContext
+        type: Boolean
+        note: "computed get(): consentContext != AuthoriseContext.AIS_CONSENT — drives the summary-card-vs-access-note + cancel destination + 'no charge was made' copy"
+    errors:
+      name: AuthoriseHandoffError
+      types:
+        - { type: BadRequest, retry: true, message_key: error_authorize_bad_request }
+        - { type: RequestTimeout, retry: true, message_key: error_network }
+        - { type: SigningFailed, retry: true, message_key: error_authorize_signing }
+        - { type: InvalidConsentStatus, retry: true, message_key: error_invalid_consent_status }
+        - { type: BrowserUnavailable, retry: true, message_key: error_browser_unavailable }
+        - { type: Unknown, retry: true, message_key: error_unknown }
+    events:
+      name: AuthoriseHandoffEvent
+      members:
+        - "LaunchAuthorize(authorizeUrl: String)"
+        - NavigateToCallback
+        - NavigateToConsentDeclined
+        - NavigateToPaymentDeclined
+    actions:
+      name: AuthoriseHandoffAction
+      members:
+        - { name: RetryClicked, trigger: "Tap Try again in the error state" }
+        - { name: CancelClicked, trigger: "Tap Cancel in the error state — routes by consentContext" }
+        - { name: ContinueClicked, trigger: "Tap Continue to your bank manual-launch fallback" }
+        - { name: "Internal.ConsentStaged", params: { consentId: String }, trigger: "Consent reached AWAU / AwaitingAuthorisation" }
+        - { name: "Internal.AuthorizeRequestBuilt", params: { authorizeUrl: String }, trigger: "Signed request object built" }
+        - { name: "Internal.StagingFailed", params: { error: AuthoriseHandoffError }, trigger: "Consent staging or signing failed" }
+    di: [ObpAuthRepository, ConsentRepository, PaymentsRepository, OidcCallbackBus]
+    base: "template.core.base.ui.viewmodel.BaseViewModel<AuthoriseHandoffUiState, AuthoriseHandoffEvent, AuthoriseHandoffAction>"
+    nav_args:
+      type: AuthoriseHandoffArgs
+      note: "Carries consentContext + (for payment contexts) the confirmed PaymentDraft (amount, currency, payeeName, payeeBank, Initiation fields) forward from send-money-confirm so the consent Initiation byte-matches the later submit. For ais-consent it carries the requested permission set + consent window."
+    note: "Handoff is REACTIVE: on mount the right repository stages the consent for consentContext (ConsentRepository for ais-consent; PaymentsRepository for a payment kind) via ObpAuthRepository, which builds the PKCE + signed request authorise URL (intent_id = ConsentId; scope by context) and emits LaunchAuthorize. SCA is NEVER collected in-app — it happens at HSBC during the external authorise redirect. The deep-link callback drives navigation to auth-callback (which routes by context); this screen only emits LaunchAuthorize + NavigateToCallback + NavigateToConsentDeclined/NavigateToPaymentDeclined."
+
+navigation:
+  - id: nav_to_auth_callback
+    target: auth-callback
+    trigger: external_redirect_return
+    note: "Primary outbound transition — the PSU authenticates + completes SCA at HSBC, then HSBC redirects to org.mifos.openbanking://oauth/callback. The deep-link is received by auth-callback (one-shot NavigateToCallback), NOT this screen. external_redirect edge, not an imperative navigate. auth-callback routes by consentContext (→ home for ais-consent; → payment-result/payment-declined for payment kinds). The 'Continue to your bank' button re-launches the same external authorize URL."
+  - id: nav_to_consent_declined
+    target: consent-declined
+    trigger: cancel_click_ais
+    on_click:
+      action: navigate
+      target: consent-declined
+    note: "Cancel in the error state for consentContext == AIS_CONSENT aborts the handoff and routes to consent-declined."
+  - id: nav_to_payment_declined
+    target: payment-declined
+    trigger: cancel_click_payment
+    on_click:
+      action: navigate
+      target: payment-declined
+    note: "Cancel in the error state for a payment consentContext aborts the handoff and routes to payment-declined (the shared payment-not-completed recovery screen). No charge was made."
+
+api:
+  - id: create_account_access_consent
+    endpoint: "POST /obie/open-banking/v4.0/aisp/account-access-consents"
+    api_group: aisp
+    tag: AISP
+    trigger: "on_handoff_mount when consentContext == AIS_CONSENT"
+    description: "Stages the account-access-consent before the authorise redirect (ais-consent context). ASPSP returns Data.ConsentId with Status AwaitingAuthorisation. Client Credentials grant. The Permissions + ExpirationDateTime requested here are what the PSU approves at HSBC. CE HSBCnet: POST /ce/obie/open-banking/v3.1/aisp/account-access-consents."
+    request:
+      fields:
+        - name: Data.Permissions
+          type: "List<String>"
+          example: "[ReadAccountsDetail, ReadBalances, ReadTransactionsDetail, ReadBeneficiaries]"
+        - name: Data.ExpirationDateTime
+          type: String
+        - name: Risk
+          type: Object
+    response:
+      fields:
+        - name: Data.ConsentId
+          type: String
+          stored_as: account_access_consent_id
+          example: "aac-1d2c3b4a-..."
+        - name: Data.Status
+          type: String
+          example: "AwaitingAuthorisation"
+        - name: Data.CreationDateTime
+          type: String
+    errors:
+      - code: 400
+        name: OB_FIELD_INVALID
+        ui_message: "We couldn't start your secure sign-in with HSBC. Please check your connection and try again."
+      - code: 401
+        name: UNAUTHORIZED
+        ui_message: "We couldn't start this session. Please try again."
+
+  - id: create_payment_consent
+    endpoint: "POST /obie/open-banking/v4.0/pisp/{domestic|international|...}-payment-consents"
+    api_group: pisp
+    tag: PISP
+    trigger: "on_handoff_mount when consentContext is a payment kind"
+    description: "Stages the payment-consent for the active payment kind before the authorise redirect. The endpoint resolves by consentContext: PAY_NOW/SCHEDULED/RECURRING → domestic-payment-consents (+ scheduled / standing-order variants); INTERNATIONAL → international-payment-consents (+ scheduled / standing-order variants). ASPSP returns Data.ConsentId, Status AWAU. The Initiation block here MUST byte-match the later payment submit."
+    request:
+      fields:
+        - name: Data.Initiation.InstructedAmount.Amount
+          type: String
+          example: "250.00"
+        - name: Data.Initiation.InstructedAmount.Currency
+          type: String
+          example: "GBP"
+        - name: Data.Initiation.CreditorAccount.Identification
+          type: String
+        - name: Data.Initiation.CreditorAccount.Name
+          type: String
+          example: "Jordan Avery"
+        - name: Risk.PaymentContextCode
+          type: String
+          example: "TransferToThirdParty"
+    response:
+      fields:
+        - name: Data.ConsentId
+          type: String
+          stored_as: payment_consent_id
+          example: "pdc-7a31f9c2-..."
+        - name: Data.Status
+          type: String
+          example: "AWAU"
+    errors:
+      - code: 400
+        name: OB_FIELD_INVALID
+        ui_message: "We couldn't reach HSBC to authorise your payment. No money has left your account. Please check your connection and try again."
+      - code: 403
+        name: OB_RESOURCE_INVALID_CONSENT_STATUS
+        ui_message: "This payment can't be authorised right now. Please go back and start the payment again."
+
+  - id: oauth2_authorize
+    endpoint: "GET https://sandbox.ob.hsbc.co.uk/oauth2/authorize"
+    api_group: auth
+    tag: Authorization
+    trigger: on_consent_created
+    description: "Opens the system browser / Custom Tab for the OBIE authorise redirect. authorization_code + PKCE with a signed request object; openbanking_intent_id = the staged ConsentId; scope = 'openid accounts' (ais-consent) or 'openid payments' (payment kinds). EXTERNAL — this screen CONSTRUCTS the request, it is not a REST response the screen consumes. The PSU authenticates AND completes SCA at HSBC — no in-app code entry. On success HSBC redirects to the registered deep-link with code + id_token + state; on PSU decline / consent RJCT it returns an error param. CE brands use /ce/...."
+    request:
+      params:
+        response_type: "code id_token"
+        client_id: "{hsbc_client_id}"
+        redirect_uri: "org.mifos.openbanking://oauth/callback"
+        scope: "openid {accounts|payments}"
+        state: "{csrf_state}"
+        nonce: "{oidc_nonce}"
+        request: "{signed_request_object_jwt}"
+        code_challenge: "{pkce_code_challenge}"
+        code_challenge_method: "S256"
+    response:
+      redirect_params:
+        - name: code
+          type: String
+        - name: id_token
+          type: String
+        - name: state
+          type: String
+        - name: error
+          type: String
+          note: "Present instead of code when the PSU declines or the consent is RJCT — drives navigation to consent-declined (ais) or payment-declined (payment) via auth-callback."
+    errors:
+      - code: 302
+        name: PSU_DECLINED
+        ui_message: "You didn't approve this at HSBC. No changes were made."
+
+dependencies:
+  tier: feature
+  features:
+    - feature: consent-request
+      type: nav
+      required: true
+      check: "AIS consent-request screen routes here for ais-consent"
+    - feature: send-money-confirm
+      type: nav
+      required: true
+      check: "payment confirm screen routes here for payment kinds"
+    - feature: obp-auth
+      type: auth
+      required: true
+      check: "ObpAuthRepository exists"
+    - feature: auth-callback
+      type: nav
+      required: true
+      check: "auth-callback deep-link handler routes by consentContext"
+    - feature: consent-declined
+      type: nav
+      required: true
+    - feature: payment-declined
+      type: nav
+      required: true
+  services: [ObpAuthRepository, ConsentRepository, PaymentsRepository, OidcCallbackBus]
+  shared_entities: [PaymentDraft, Consent]

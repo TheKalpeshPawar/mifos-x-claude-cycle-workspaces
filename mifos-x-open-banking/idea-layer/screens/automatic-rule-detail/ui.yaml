@@ -1,0 +1,170 @@
+sibling: ui
+feature_id: automatic-rule-detail
+id: automatic-rule-detail
+name: Automatic rule
+feature: automatic-rule-detail
+flavor: consumer
+status: approved
+quality_score: 90
+contract_version: "2.0.0"
+approved_at: "2026-06-15T02:54:00Z"
+approved_by: "consumer-app-redesign Phase 4 (T3)"
+capabilities:
+  - has_ui
+  - has_api
+tags: [FR-OBIE-VRP, FR-VRP-REVOKE]
+status_history:
+  - status: approved
+    at: "2026-06-15T02:54:00Z"
+    by: "consumer-app-redesign Phase 4 (T3)"
+    note: "VRP rule detail — shows the rule's PSU control limits, recent automatic payments, and a clearly-affordanced Revoke action (DELETE the domestic-VRP-consent). Revoke is a state action (data-action, not nav, per RULE-PROTO-CLICK-002) and opens a confirm dialog before calling the API. Binds vrp group."
+
+screens:
+  - id: automatic-rule-detail
+    name: Automatic rule
+    archetype: detail
+    shell:
+      top_bar:
+        title: "Automatic rule"
+        navigation_icon: arrow_back
+        actions: []
+      bottom_nav: false
+
+archetype: detail
+
+components:
+  - type: text
+    id: rule_name
+    label: "Rule name"
+    content: "Round-up to Rainy Day Saver"
+    style: { typography: "Outfit/headline_small", color: "#1A1C16", font_weight: 700 }
+    a11y: { label: "Round-up to Rainy Day Saver", role: heading }
+    test_context: { tag: rule_name }
+
+  - type: badge
+    id: status_pill
+    label: "Status"
+    content: "● ACTIVE"
+    style: { shape: pill, background: "#CDEDA3", text_color: "#102000", dot_color: "#4C662B" }
+    a11y: { label: "Status: active", role: text }
+    test_context: { tag: status_pill }
+
+  - type: box
+    id: limits_card
+    label: "Limits"
+    content: "Max £50 per payment · £200 per month · Valid until 20 May 2027"
+    style: { background: "#FFFFFF", corner_radius: 16, border_color: "#E1E4D5", border_width: 1, padding: 16, leading_icon: shield }
+    a11y: { label: "Maximum 50 pounds per payment, 200 pounds per month, valid until 20 May 2027", role: group }
+    test_context: { tag: limits_card }
+
+  - type: text
+    id: activity_header
+    label: "Recent payments"
+    content: "RECENT PAYMENTS"
+    style: { typography: "Outfit/label_medium", color: "#44483D" }
+    a11y: { label: "Recent payments section", role: heading }
+    test_context: { tag: activity_header }
+
+  - type: list_item
+    id: activity_row
+    label: "Automatic payment"
+    content: "£12.40 to Rainy Day Saver"
+    style: { background: "#F3F4EC", border_radius: 12, padding: 12, leading_icon: savings }
+    a11y: { label: "12 pounds 40 to Rainy Day Saver, 12 June", role: text }
+    test_context: { tag: activity_row }
+
+  - type: text
+    id: activity_subtitle
+    label: "Date"
+    content: "12 June · Round-up"
+    style: { typography: "Outfit/body_small", color: "#44483D" }
+    a11y: { label: "12 June, round-up", role: text }
+    test_context: { tag: activity_subtitle }
+
+  - type: button
+    id: revoke_button
+    label: "Revoke rule"
+    supported_states: [idle, focus_visible, pressed]
+    style: { variant: outlined, border_color: "#BA1A1A", text_color: "#BA1A1A", corner_radius: 12, full_width: true, height: 52, leading_icon: block }
+    on_click:
+      action: revoke_vrp
+    a11y: { label: "Revoke this automatic rule. Opens a confirmation.", role: button }
+    test_context: { tag: revoke_button, assert_text: "Revoke rule" }
+
+  - type: text
+    id: revoke_note
+    label: "Revoke note"
+    content: "Revoking stops all future automatic payments immediately. Money already moved stays in your savings."
+    style: { typography: "Outfit/body_small", color: "#44483D" }
+    a11y: { label: "Revoking stops all future automatic payments immediately", role: text }
+    test_context: { tag: revoke_note }
+
+responsive:
+  mobile_only: true
+  baseline_width: 390
+
+states:
+  initial_state: loading
+  loading:
+    layout: { visible_components: [rule_name], show_progress_indicator: true }
+  content:
+    layout:
+      visible_components: [rule_name, status_pill, limits_card, activity_header, activity_row, activity_subtitle, revoke_button, revoke_note]
+    note: "Reads the domestic-VRP consent by ConsentId (GET /pisp/domestic-vrp-consents/{ConsentId}) for the limits + status, and the recent domestic-VRP payments for the activity list. Revoke fires a confirm dialog, then DELETE /pisp/domestic-vrp-consents/{ConsentId} — a state action, no SCA needed to cancel."
+  error:
+    layout:
+      visible_components: [rule_name]
+      show_error_state: true
+      error_icon: cloud_off
+      error_title: "Couldn't load this rule"
+      error_message: "Check your connection and try again."
+      show_retry_button: true
+
+state_model:
+  view_model: AutomaticRuleDetailViewModel
+  ui_state_type: "ScreenState<AutomaticRuleDetailContent>"
+  content_type: AutomaticRuleDetailContent
+  nav_params:
+    - { name: consentId, type: String }
+  content_fields:
+    - { name: name, type: String }
+    - { name: status, type: "String (Data.Status)" }
+    - { name: maxPerPayment, type: "String (Data.ControlParameters.MaximumIndividualAmount.Amount)" }
+    - { name: periodicLimit, type: "String (Data.ControlParameters.PeriodicLimits[].Amount + PeriodType)" }
+    - { name: validTo, type: "String (Data.ControlParameters.ValidToDateTime)" }
+    - { name: recentPayments, type: "List<VrpPayment>" }
+  states: [Loading, Content, Error]
+  events: [onRetry, onRevoke, onRevokeConfirmed]
+  actions: [revoke_vrp]
+  callbacks:
+    - { name: onRevoked, signature: "() -> Unit", consumer: automatic-rules }
+  di: [VrpRepository]
+
+api:
+  - id: get_domestic_vrp_consent
+    endpoint: "GET /obie/open-banking/v4.0/pisp/domestic-vrp-consents/{ConsentId}"
+    api_group: vrp
+    tag: PISP
+    trigger: on_mount
+    description: "Reads one domestic-VRP consent for its ControlParameters + Status."
+    response:
+      fields:
+        - { name: Data.ConsentId, type: String }
+        - { name: Data.Status, type: String }
+        - { name: Data.ControlParameters.MaximumIndividualAmount.Amount, type: String }
+        - { name: Data.ControlParameters.PeriodicLimits, type: "Array<OBDomesticVRPControlParametersPeriodicLimits>" }
+        - { name: Data.ControlParameters.ValidToDateTime, type: String }
+  - id: revoke_domestic_vrp_consent
+    endpoint: "DELETE /obie/open-banking/v4.0/pisp/domestic-vrp-consents/{ConsentId}"
+    api_group: vrp
+    tag: PISP
+    trigger: on_revoke_confirmed
+    description: "Revokes (deletes) the VRP consent — stops all future automatic payments. No SCA required to cancel. On success the rule disappears from automatic-rules."
+    response:
+      fields:
+        - { name: status, type: "204 No Content" }
+
+dependencies:
+  tier: feature
+  features:
+    - automatic-rules

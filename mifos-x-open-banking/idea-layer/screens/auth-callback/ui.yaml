@@ -207,7 +207,7 @@ components:
     visible_when: "phase == ERROR"
     on_click:
       action: navigate
-      target: bank-authorize-handoff
+      target: authorise-handoff
       intent: "Restart the authorise handoff for the active flow to obtain a fresh authorization code, then return here"
     a11y:
       role: button
@@ -215,7 +215,7 @@ components:
     keyboard:
       focusable: true
     test_context:
-      purpose: "Restarts the authorise handoff to obtain a fresh code after a failed exchange. The originating flow is preserved via consentContext — AIS and PAYMENT both restart at bank-authorize-handoff."
+      purpose: "Restarts the authorise handoff to obtain a fresh code after a failed exchange. The originating flow is preserved via consentContext — AIS and PAYMENT both restart at authorise-handoff."
       interaction_type: navigate
       data_driven: false
 
@@ -299,7 +299,7 @@ state_model:
       - field: consentContext
         type: "ConsentContext"
         default: "ConsentContext.AIS"
-        note: "enum ConsentContext { AIS, PAYMENT } — the ROUTING KEY. Propagated from bank-authorize-handoff via OidcCallbackBus. AIS → verify consent AUTH → home (success) / consent-declined (failure). PAYMENT → submit + poll payment → payment-result (success) / payment-declined (failure). Determines both the verifying-phase copy and every terminal destination."
+        note: "enum ConsentContext { AIS, PAYMENT } — the ROUTING KEY. Propagated from authorise-handoff via OidcCallbackBus. AIS → verify consent AUTH → home (success) / consent-declined (failure). PAYMENT → submit + poll payment → payment-result (success) / payment-declined (failure). Determines both the verifying-phase copy and every terminal destination."
       - field: consentId
         type: "String?"
         default: "null"
@@ -355,13 +355,13 @@ navigation:
       intent: "PAYMENT failure terminal — also the Cancel destination for the PAYMENT context"
     note: "consentContext == PAYMENT, failure — callback error param / PSU declined / consent RJCT / token exchange failed / payment rejected. Auto-routed when unrecoverable; also reachable via Cancel."
   - id: nav_retry_handoff
-    target: bank-authorize-handoff
+    target: authorise-handoff
     trigger: retry_clicked
     on_click:
       action: navigate
-      target: bank-authorize-handoff
+      target: authorise-handoff
       intent: "Restart the authorise handoff for the active flow (consentContext-preserved) to obtain a fresh authorization code"
-    note: "Error-state Try again — restarts at bank-authorize-handoff for both AIS and PAYMENT; the originating flow is preserved by consentContext."
+    note: "Error-state Try again — restarts at authorise-handoff for both AIS and PAYMENT; the originating flow is preserved by consentContext."
 
 api:
   - id: obie_exchange_code

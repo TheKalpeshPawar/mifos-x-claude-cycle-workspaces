@@ -1,0 +1,153 @@
+sibling: ui
+feature_id: automatic-rules
+id: automatic-rules
+name: Automatic rules
+feature: automatic-rules
+flavor: consumer
+status: approved
+quality_score: 90
+contract_version: "2.0.0"
+approved_at: "2026-06-15T02:50:00Z"
+approved_by: "consumer-app-redesign Phase 4 (T1)"
+capabilities:
+  - has_ui
+  - has_api
+tags: [FR-OBIE-VRP, FR-PFM-AUTOMATION]
+status_history:
+  - status: approved
+    at: "2026-06-15T02:50:00Z"
+    by: "consumer-app-redesign Phase 4 (T1)"
+    note: "VRP 'Automatic rules' list — the set-and-forget money-automation surface under Insights (GOAL.md D3). Lists the consumer's active domestic-VRP consents (auto-save / sweeping rules) with their PSU control limits, links to detail, and a New rule CTA. Reached from pfm-dashboard. Binds the vrp OBIE group (with create + detail)."
+
+screens:
+  - id: automatic-rules
+    name: Automatic rules
+    archetype: index_list
+    shell:
+      top_bar:
+        title: "Automatic rules"
+        navigation_icon: arrow_back
+        actions: []
+      bottom_nav: false
+
+archetype: index_list
+
+components:
+  - type: text
+    id: intro_copy
+    label: "What automatic rules do"
+    content: "Move money automatically within limits you set — like sweeping spare cash to savings. You stay in control and can cancel anytime."
+    style: { typography: "Outfit/body_medium", color: "#44483D" }
+    a11y: { label: "Automatic rules move money within limits you set; you can cancel anytime", role: text }
+    test_context: { tag: intro_copy }
+
+  - type: list_item
+    id: rule_item
+    label: "Automatic rule"
+    content: "Round-up to Rainy Day Saver"
+    style:
+      background: "#FFFFFF"
+      border_radius: 12
+      border_color: "#E1E4D5"
+      border_width: 1
+      padding: 14
+      leading_icon: savings
+      trailing_icon: chevron_right
+      supporting_text: "Max £50/payment · £200/month · Active"
+    on_click: { action: open_rule, target: automatic-rule-detail }
+    a11y: { label: "Round-up to Rainy Day Saver. Max £50 per payment, £200 per month, active. View details.", role: button }
+    test_context: { tag: rule_item }
+
+  - type: list_item
+    id: rule_item_2
+    label: "Automatic rule"
+    content: "Weekly save £25"
+    style:
+      background: "#FFFFFF"
+      border_radius: 12
+      border_color: "#E1E4D5"
+      border_width: 1
+      padding: 14
+      leading_icon: schedule
+      trailing_icon: chevron_right
+      supporting_text: "Max £25/payment · £100/month · Active"
+    on_click: { action: open_rule, target: automatic-rule-detail }
+    a11y: { label: "Weekly save 25 pounds. Max £25 per payment, £100 per month, active. View details.", role: button }
+    test_context: { tag: rule_item_2 }
+
+  - type: button
+    id: new_rule_button
+    label: "New rule"
+    supported_states: [idle, focus_visible, pressed]
+    style: { variant: filled, corner_radius: 12, full_width: true, height: 52, leading_icon: add }
+    on_click: { action: new_rule, target: automatic-rule-create }
+    a11y: { label: "Create a new automatic rule", role: button }
+    test_context: { tag: new_rule_button, assert_text: "New rule" }
+
+responsive:
+  mobile_only: true
+  baseline_width: 390
+
+states:
+  initial_state: loading
+  loading:
+    layout: { visible_components: [intro_copy], show_progress_indicator: true }
+  content:
+    layout:
+      visible_components: [intro_copy, rule_item, rule_item_2, new_rule_button]
+    note: "Lists the consumer's active domestic-VRP consents (GET /pisp/domestic-vrp-consents); each row shows the rule name + its PSU control limits (MaximumIndividualAmount + PeriodicLimits) + status. New rule launches automatic-rule-create."
+  empty:
+    layout:
+      visible_components: [intro_copy, new_rule_button]
+      show_empty_state: true
+      empty_state_title: "No automatic rules yet"
+      empty_state_message: "Set up a rule to move money automatically within limits you choose."
+      empty_state_cta: "New rule"
+  error:
+    layout:
+      visible_components: [intro_copy]
+      show_error_state: true
+      error_icon: cloud_off
+      error_title: "Couldn't load your rules"
+      error_message: "Check your connection and try again."
+      show_retry_button: true
+
+state_model:
+  view_model: AutomaticRulesViewModel
+  ui_state_type: "ScreenState<AutomaticRulesContent>"
+  content_type: AutomaticRulesContent
+  content_fields:
+    - { name: rules, type: "List<VrpRule>" }
+  state_field_types:
+    - { name: rule.consentId, type: "Data.ConsentId (String)" }
+    - { name: rule.maxPerPayment, type: "Data.ControlParameters.MaximumIndividualAmount.Amount (String)" }
+    - { name: rule.periodicLimit, type: "Data.ControlParameters.PeriodicLimits[].Amount (String) + PeriodType (String)" }
+    - { name: rule.status, type: "Data.Status (String — Authorised | Revoked)" }
+  states: [Loading, Content, Empty, Error]
+  events: [onRefresh, onRetry, onOpenRule, onNewRule]
+  actions: [open_rule, new_rule]
+  callbacks:
+    - { name: onOpenRule, signature: "(consentId: String) -> Unit", consumer: automatic-rule-detail }
+    - { name: onNewRule, signature: "() -> Unit", consumer: automatic-rule-create }
+  di: [VrpRepository]
+
+api:
+  - id: list_domestic_vrp_consents
+    endpoint: "GET /obie/open-banking/v4.0/pisp/domestic-vrp-consents"
+    api_group: vrp
+    tag: PISP
+    trigger: on_mount
+    description: "Lists the PSU's domestic-VRP consents (the active automatic rules) with their ControlParameters (MaximumIndividualAmount + PeriodicLimits) and Status. Authorised consents render as active rules."
+    response:
+      fields:
+        - { name: Data.ConsentId, type: String }
+        - { name: Data.Status, type: String }
+        - { name: Data.ControlParameters.MaximumIndividualAmount.Amount, type: String }
+        - { name: Data.ControlParameters.PeriodicLimits, type: "Array<OBDomesticVRPControlParametersPeriodicLimits>" }
+
+dependencies:
+  tier: feature
+  features:
+    - pfm-dashboard
+    - automatic-rule-create
+    - automatic-rule-detail

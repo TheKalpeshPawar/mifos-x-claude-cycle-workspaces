@@ -161,6 +161,79 @@ components:
       tag: reference_input
 
   - type: text
+    id: schedule_section_label
+    label: "When to pay"
+    content: "WHEN TO PAY"
+    style:
+      typography: "Outfit/label_large"
+      color: "#44483D"
+    a11y:
+      label: "When to pay section"
+      role: heading
+    test_context:
+      tag: schedule_section_label
+
+  - type: input
+    id: schedule_date_field
+    label: "Payment date"
+    content: ""
+    supported_states: [idle, focus_visible, error]
+    style:
+      variant: outlined
+      leading_icon: event
+      placeholder: "Choose a date"
+      keyboard_type: date
+      corner_radius: 12
+    validation:
+      required: true
+      rule: "date >= today"
+      error_message: "Choose today or a future date"
+    a11y:
+      label: "Payment date. Shown for scheduled and recurring payments."
+      role: textbox
+    keyboard:
+      focusable: true
+    test_context:
+      tag: schedule_date_field
+
+  - type: chip_group
+    id: recurring_frequency_chips
+    label: "Frequency"
+    content: "Weekly · Monthly · Quarterly · Yearly"
+    supported_states: [idle, selected, disabled]
+    style:
+      variant: filter
+    on_click:
+      action: select_frequency
+      target: ""
+    a11y:
+      label: "How often the payment repeats. Shown for recurring payments."
+      role: radiogroup
+    keyboard:
+      focusable: true
+    test_context:
+      tag: recurring_frequency_chips
+
+  - type: input
+    id: recurring_end_field
+    label: "Until"
+    content: ""
+    supported_states: [idle, focus_visible]
+    style:
+      variant: outlined
+      leading_icon: event_repeat
+      placeholder: "No end date"
+      supporting_text: "Leave blank to repeat until you cancel"
+      corner_radius: 12
+    a11y:
+      label: "Final payment date, optional. Shown for recurring payments."
+      role: textbox
+    keyboard:
+      focusable: true
+    test_context:
+      tag: recurring_end_field
+
+  - type: text
     id: payment_type_label
     label: "Payment Type"
     content: "Payment Type"
@@ -287,12 +360,16 @@ states:
         - beneficiary_search
         - beneficiary_row
         - reference_input
+        - schedule_section_label
+        - schedule_date_field
+        - recurring_frequency_chips
+        - recurring_end_field
         - payment_type_label
         - payment_type_chips
         - rail_ineligible_reason
         - fee_banner
         - continue_button
-    note: "Default form. When useSandboxTan: payment_type_chips + fee_banner + rail_ineligible_reason are replaced by internal_transfer_note. When the beneficiary is preselected (preselectedCounterpartyId), beneficiary_search is hidden and a single locked beneficiary_row is shown. sandbox_block_reason + the form error line appear only when set. Continue label shows 'Checking...' while the funds check runs."
+    note: "Default form, kind-aware (nav param `kind` ∈ {now, scheduled, recurring}). kind=now: the WHEN TO PAY block (schedule_section_label + schedule_date_field + recurring_frequency_chips + recurring_end_field) is HIDDEN — amount/beneficiary/rail only. kind=scheduled: schedule_section_label + schedule_date_field shown (single execution date ≥ today); frequency/end hidden. kind=recurring: schedule_section_label + schedule_date_field (first payment) + recurring_frequency_chips + recurring_end_field (optional 'until') shown. When useSandboxTan: payment_type_chips + fee_banner + rail_ineligible_reason are replaced by internal_transfer_note. When the beneficiary is preselected (preselectedCounterpartyId), beneficiary_search is hidden and a single locked beneficiary_row is shown. sandbox_block_reason + the form error line appear only when set. Continue label shows 'Checking...' while the funds check runs and carries `kind` forward in the PaymentDraft to send-money-confirm."
   empty:
     layout:
       visible_components: []
@@ -337,6 +414,10 @@ state_model:
     - { name: currency, type: "String (Data.InstructedAmount.Currency, ISO 4217)" }
     - { name: reference, type: String }
     - { name: query, type: String }
+    - { name: kind, type: "PaymentKind (now | scheduled | recurring)" }
+    - { name: scheduleDate, type: "String? (ISO date; Data.Initiation.RequestedExecutionDateTime for scheduled, FirstPaymentDateTime for recurring)" }
+    - { name: frequency, type: "StandingOrderFrequency? (Data.Initiation.Frequency, e.g. EvryWorkgDay/IntrvlMnthDay; recurring only)" }
+    - { name: recurringEnd, type: "String? (Data.Initiation.FinalPaymentDateTime; recurring only, optional)" }
     - { name: paymentType, type: PaymentType }
     - { name: railAssessments, type: "Map<PaymentType, RailAssessment>" }
     - { name: fundsAvailable, type: "Boolean? (Data.FundsAvailable)" }
@@ -381,6 +462,9 @@ state_model:
     - onBeneficiarySelected
     - onReferenceChanged
     - onPaymentTypeChanged
+    - onScheduleDateChanged
+    - onFrequencyChanged
+    - onRecurringEndChanged
     - onRetry
     - onContinue
   actions:
@@ -388,8 +472,10 @@ state_model:
     - select_beneficiary
     - filter_beneficiaries
     - select_payment_type
+    - select_frequency
     - continue
   nav_params:
+    - { name: kind, type: "PaymentKind", default: "now", note: "enum PaymentKind { now, scheduled, recurring }, carried from the Pay hub kind chooser. Drives which scheduling fields show (none for now; schedule_date for scheduled; recurring_frequency + recurring_start_date + recurring_end for recurring), the screen title, and which payment-consent the downstream authorise-handoff stages (domestic-payment-consent for now; domestic-scheduled-payment-consent for scheduled; domestic-standing-order-consent for recurring)." }
     - { name: preselectedCounterpartyId, type: String, default: "" }
     - { name: accountId, type: String, default: "" }
   callbacks:

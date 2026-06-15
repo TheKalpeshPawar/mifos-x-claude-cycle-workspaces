@@ -1,0 +1,184 @@
+sibling: ui
+feature_id: automatic-rule-create
+id: automatic-rule-create
+name: New automatic rule
+feature: automatic-rule-create
+flavor: consumer
+status: approved
+quality_score: 90
+contract_version: "2.0.0"
+approved_at: "2026-06-15T02:52:00Z"
+approved_by: "consumer-app-redesign Phase 4 (T2)"
+capabilities:
+  - has_ui
+  - has_api
+tags: [FR-OBIE-VRP, FR-VRP-CONSENT]
+status_history:
+  - status: approved
+    at: "2026-06-15T02:52:00Z"
+    by: "consumer-app-redesign Phase 4 (T2)"
+    note: "VRP rule creation form. LEADS with the PSU control parameters (max-per-payment + periodic limit) per GOAL.md Risk row — the trust surface for an unattended-payment mandate must foreground the limits the user controls. Sets a destination + trigger, shows regulated-industry trust copy, then routes setup through the shared authorise-handoff (consentContext=vrp-setup) so SCA happens at HSBC. On return the consent is Authorised and the rule appears in automatic-rules."
+
+screens:
+  - id: automatic-rule-create
+    name: New automatic rule
+    archetype: form
+    shell:
+      top_bar:
+        title: "New automatic rule"
+        navigation_icon: arrow_back
+        actions: []
+      bottom_nav: false
+
+archetype: form
+
+components:
+  - type: text
+    id: limits_header
+    label: "Your limits"
+    content: "YOUR LIMITS — YOU STAY IN CONTROL"
+    style: { typography: "Outfit/label_medium", color: "#44483D" }
+    a11y: { label: "Your limits. You stay in control.", role: heading }
+    test_context: { tag: limits_header }
+
+  - type: input
+    id: max_per_payment
+    label: "Maximum per payment"
+    content: ""
+    supported_states: [idle, focus_visible, error]
+    style: { variant: outlined, prefix: "£", placeholder: "50.00", keyboard_type: decimal, supporting_text: "No single payment can exceed this", corner_radius: 12 }
+    validation: { required: true, rule: "amount > 0", error_message: "Set a maximum per payment" }
+    a11y: { label: "Maximum per payment in pounds, required", role: textbox }
+    test_context: { tag: max_per_payment }
+
+  - type: input
+    id: period_limit
+    label: "Limit per period"
+    content: ""
+    supported_states: [idle, focus_visible, error]
+    style: { variant: outlined, prefix: "£", placeholder: "200.00", keyboard_type: decimal, supporting_text: "Total cap across the chosen period", corner_radius: 12 }
+    validation: { required: true, rule: "amount > 0", error_message: "Set a limit per period" }
+    a11y: { label: "Limit per period in pounds, required", role: textbox }
+    test_context: { tag: period_limit }
+
+  - type: chip_group
+    id: period_chips
+    label: "Period"
+    content: "Day · Week · Month"
+    supported_states: [idle, selected]
+    style: { variant: filter }
+    on_click: { action: select_period, target: "" }
+    a11y: { label: "Choose the limit period", role: radiogroup }
+    test_context: { tag: period_chips }
+
+  - type: text
+    id: destination_header
+    label: "What this rule does"
+    content: "WHAT THIS RULE DOES"
+    style: { typography: "Outfit/label_medium", color: "#44483D" }
+    a11y: { label: "What this rule does section", role: heading }
+    test_context: { tag: destination_header }
+
+  - type: list_item
+    id: destination_account
+    label: "Move money to"
+    content: "Move to Rainy Day Saver"
+    style: { background: "#FFFFFF", border_radius: 12, border_color: "#E1E4D5", border_width: 1, padding: 14, leading_icon: savings, trailing_icon: expand_more }
+    on_click: { action: select_destination, target: "" }
+    a11y: { label: "Move money to Rainy Day Saver. Tap to change.", role: button }
+    test_context: { tag: destination_account }
+
+  - type: chip_group
+    id: trigger_chips
+    label: "When it runs"
+    content: "Round-ups · Weekly · Leftover at month-end"
+    supported_states: [idle, selected]
+    style: { variant: filter }
+    on_click: { action: select_trigger, target: "" }
+    a11y: { label: "Choose what triggers a payment", role: radiogroup }
+    test_context: { tag: trigger_chips }
+
+  - type: box
+    id: trust_copy
+    label: "Trust and control"
+    content: "Payments only ever run within these limits. You approve this rule once at HSBC, and you can cancel it anytime. HSBC stays responsible for keeping your money safe."
+    style: { background: "#BCEBE7", corner_radius: 12, padding_horizontal: 16, padding_vertical: 14, leading_icon: verified_user, text_color: "#00201E" }
+    a11y: { label: "Payments only run within these limits. You approve once at HSBC and can cancel anytime.", role: text }
+    test_context: { tag: trust_copy }
+
+  - type: button
+    id: setup_button
+    label: "Approve at your bank"
+    supported_states: [idle, focus_visible, pressed, disabled, loading]
+    style: { variant: filled, corner_radius: 12, full_width: true, height: 52 }
+    on_click:
+      action: setup
+      target: authorise-handoff
+      data:
+        consentContext: vrp-setup
+    a11y: { label: "Approve this rule at your bank", role: button }
+    test_context: { tag: setup_button, assert_text: "Approve at your bank" }
+
+responsive:
+  mobile_only: true
+  baseline_width: 390
+
+states:
+  initial_state: content
+  content:
+    layout:
+      visible_components: [limits_header, max_per_payment, period_limit, period_chips, destination_header, destination_account, trigger_chips, trust_copy, setup_button]
+    note: "PSU control parameters lead. max_per_payment → Data.ControlParameters.MaximumIndividualAmount; period_limit + period_chips → Data.ControlParameters.PeriodicLimits[]. trigger/destination shape the rule's intent. Approve routes to authorise-handoff (consentContext=vrp-setup) staging a domestic-VRP-consent; SCA at HSBC. trust_copy is mandatory regulated-industry framing (GOAL.md Risk row)."
+  error:
+    layout:
+      visible_components: [limits_header, max_per_payment, period_limit]
+      show_error_state: true
+      error_icon: error
+      error_title: "Couldn't set up the rule"
+      error_message: "We couldn't create this automatic rule. Check your limits and try again."
+      show_retry_button: true
+
+state_model:
+  view_model: AutomaticRuleCreateViewModel
+  ui_state_type: AutomaticRuleCreateUiState
+  nav_params: []
+  state:
+    - { field: maxPerPayment, type: String }
+    - { field: periodLimit, type: String }
+    - { field: periodType, type: "String (Day | Week | Month)" }
+    - { field: destinationAccountId, type: String }
+    - { field: trigger, type: "VrpTrigger (RoundUps | Weekly | MonthEndLeftover)" }
+    - { field: errorMessage, type: "String?" }
+  events: [onMaxChanged, onPeriodLimitChanged, onPeriodSelected, onDestinationSelected, onTriggerSelected, onSetup]
+  actions: [select_period, select_destination, select_trigger, setup]
+  callbacks:
+    - { name: onSetup, signature: "(VrpConsentDraft) -> Unit", consumer: authorise-handoff }
+  di: [VrpRepository, AccountsRepository]
+
+api:
+  - id: create_domestic_vrp_consent
+    endpoint: "POST /obie/open-banking/v4.0/pisp/domestic-vrp-consents"
+    api_group: vrp
+    tag: PISP
+    trigger: on_setup
+    description: "Stages a domestic-VRP consent with the PSU ControlParameters (MaximumIndividualAmount + PeriodicLimits) the user set, then hands off to HSBC to authorise (consentContext=vrp-setup). Status AwaitingAuthorisation until the PSU approves at the bank."
+    request:
+      fields:
+        - { name: Data.ControlParameters.MaximumIndividualAmount.Amount, type: String, example: "50.00" }
+        - { name: Data.ControlParameters.MaximumIndividualAmount.Currency, type: String, example: "GBP" }
+        - { name: Data.ControlParameters.PeriodicLimits[].Amount, type: String, example: "200.00" }
+        - { name: Data.ControlParameters.PeriodicLimits[].PeriodType, type: String, example: "Month" }
+        - { name: Data.Initiation.CreditorAccount.Identification, type: String }
+    response:
+      fields:
+        - { name: Data.ConsentId, type: String, example: "vrp-9a83c1d0-..." }
+        - { name: Data.Status, type: String, example: "AwaitingAuthorisation" }
+    errors:
+      - { code: 400, message: "OB.Field.Invalid" }
+
+dependencies:
+  tier: feature
+  features:
+    - automatic-rules
+    - authorise-handoff
+    - accounts

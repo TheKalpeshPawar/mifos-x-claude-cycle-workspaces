@@ -508,7 +508,9 @@ components:
       typography: "Outfit/label_large"
     on_click:
       action: submit
-      target: ""
+      target: authorise-handoff
+      data:
+        consentContext: "{kind}"
     a11y:
       label: "Confirm and send this payment"
       role: button
@@ -648,7 +650,7 @@ state_model:
     fields:
       - { name: consentId, type: "String (Data.ConsentId)" }
       - { name: status, type: "String (Data.Status, e.g. AWAU)" }
-      - { name: authorizeUrl, type: "String (Links — bank authorise URL, used by payment-authorize-handoff)" }
+      - { name: authorizeUrl, type: "String (Links — bank authorise URL, used by authorise-handoff)" }
   errors:
     - field: global
       code: OB.Field.Invalid
@@ -669,8 +671,9 @@ state_model:
       signature: "reset()"
   callbacks:
     - name: onConsentCreated
-      signature: "(OBWriteDomesticConsentResponse5) -> Unit"
-      consumer: payment-authorize-handoff
+      signature: "(OBWriteDomesticConsentResponse5, consentContext: AuthoriseContext) -> Unit"
+      consumer: authorise-handoff
+      note: "Routes to the merged authorise-handoff with consentContext derived from the PaymentDraft.kind (now → PAY_NOW, scheduled → SCHEDULED, recurring → RECURRING). For scheduled/recurring the consent staged is the scheduled-payment / standing-order variant; the review echoes the date/frequency."
     - name: onEdit
       signature: "() -> Unit"
       consumer: send-money-amount

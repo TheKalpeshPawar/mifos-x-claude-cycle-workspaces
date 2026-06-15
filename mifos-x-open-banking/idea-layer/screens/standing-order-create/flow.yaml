@@ -4,6 +4,7 @@ feature_id: standing-order-create
 flow_ids:
   - consumer-banking
 navigates_to:
+  - authorise-handoff
   - standing-orders
 flow_logic:
   - from: standing-orders
@@ -12,10 +13,10 @@ flow_logic:
     guard: "CreateGate.Ready — the source account has at least one beneficiary (CreateGate.NoPayees shows the no-payees dialog on the list instead). Passes the selected accountId as initialAccountId."
     note: "Inbound edge: the list FAB navigates here only after the payee check passes."
   - from: standing-order-create
-    to: standing-orders
+    to: authorise-handoff
     trigger: soc_submit_button
-    guard: "form.created — a successful POST. A 'Standing order created' toast fires, then the screen navigates back."
-    note: "On success the created order is in the local cache and appears in the derived list."
+    guard: "form valid — FOLDED into the unified recurring path (T5). 'Create standing order' stages a domestic-standing-order-consent and hands off to HSBC to authorise (consentContext=recurring), reusing the shared authorise-handoff → auth-callback → payment-result/declined tail instead of a separate authorise/result pair."
+    note: "OBIE: creating a standing order = standing-order-consent → authorise (SCA at bank) → submit. The list still shows the created order on return."
   - from: standing-order-create
     to: standing-orders
     trigger: nav_back

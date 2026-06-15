@@ -438,6 +438,7 @@ state_model:
     base: "template.core.base.ui.viewmodel.BaseViewModel<PaymentDeclinedUiState, PaymentDeclinedEvent, PaymentDeclinedAction>"
     note: "Stateless apart from inbound nav args — no network call, no DI. SCA is performed at HSBC during the authorise redirect, so this terminal screen replaces the OBP in-app sca-challenge error path. TryAgainClicked emits NavigateToSendMoneyConfirm (re-stage the consent + re-authorise); BackToHomeClicked emits NavigateToHome. The decline reason and amount/payee are resolved upstream by auth-callback and passed in as nav args."
   nav_params:
+    - { name: kind, type: "PaymentKind (now | scheduled | recurring)", default: "now", note: "Carried from the Pay hub. Makes the decline copy kind-aware: now → 'it wasn't sent'; scheduled → 'it wasn't scheduled'; recurring → 'the standing order wasn't set up'. The shared screen serves all payment kinds; Try again routes back to send-money-confirm preserving kind." }
     - { name: amount, type: String }
     - { name: currency, type: String }
     - { name: payeeName, type: String }
@@ -470,4 +471,4 @@ dependencies:
   features:
     - send-money-confirm
     - send-money
-    - payment-authorize-handoff
+    - authorise-handoff

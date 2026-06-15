@@ -1,0 +1,527 @@
+sibling: ui
+feature_id: pay
+id: pay
+name: Pay
+feature: pay
+flavor: consumer
+status: approved
+quality_score: 92
+contract_version: "2.0.0"
+approved_at: "2026-06-15T02:40:00Z"
+approved_by: "consumer-app-redesign Phase 2 (T5)"
+capabilities:
+  - has_ui
+status_history:
+  - status: approved
+    at: "2026-06-15T02:40:00Z"
+    by: "consumer-app-redesign Phase 2 (T5)"
+    note: "Approved as part of the Pay-hub rebuild: 6 preview states rendered (§8.1 coverage), kind chooser + hub coherent, app-shell Pay tab repointed to pay. Exports (SPEC/API/MOCKUP) regenerated in the Phase-2 ripple."
+  - status: draft
+    at: "2026-06-15T00:00:00Z"
+    by: "consumer-app-redesign Phase 2 (T1)"
+    note: "Rebuilt send-money recipient hub into the unified Pay tab root. Leads with a payment-kind chooser (Pay now / Scheduled / Recurring) per TARGET_IA D2 — international kind added in Phase 3. Preserves the proven from-account selector + recent-recipients + all-beneficiaries hub (real OBIE AIS data) as the pay-now shortcut: tapping a recipient routes to send-money-amount with kind=now. Tab root: bottom_nav on, no back arrow. Approve happens in T5 after the shared amount/confirm/result path is rebuilt."
+
+screens:
+  - id: pay
+    name: Pay
+    archetype: index_list
+    shell:
+      top_bar:
+        title: "Pay"
+        actions:
+          - icon: person_search
+            action: new_recipient
+      bottom_nav: true
+
+archetype: index_list
+
+components:
+  - type: text
+    id: kind_chooser_header
+    label: "How would you like to pay?"
+    content: "HOW WOULD YOU LIKE TO PAY?"
+    style:
+      typography: "Outfit/label_medium"
+      color: "#44483D"
+      font_weight: semibold
+    a11y:
+      label: "Choose a payment type"
+      role: heading
+    test_context:
+      tag: kind_chooser_header
+      assert_text: "HOW WOULD YOU LIKE TO PAY?"
+
+  - type: list_item
+    id: kind_now
+    label: "Pay now"
+    content: "Pay now"
+    style:
+      background: "#FFFFFF"
+      border_radius: 12
+      border_color: "#E1E4D5"
+      border_width: 1
+      padding: 14
+      leading_icon: bolt
+      trailing_icon: chevron_right
+      supporting_text: "Send a one-off payment straight away"
+    on_click:
+      action: select_kind
+      target: send-money-amount
+      data:
+        kind: now
+    a11y:
+      label: "Pay now. Send a one-off payment straight away."
+      role: button
+    keyboard:
+      focusable: true
+    test_context:
+      tag: kind_now
+      assert_text: "Pay now"
+
+  - type: list_item
+    id: kind_scheduled
+    label: "Scheduled payment"
+    content: "Scheduled payment"
+    style:
+      background: "#FFFFFF"
+      border_radius: 12
+      border_color: "#E1E4D5"
+      border_width: 1
+      padding: 14
+      leading_icon: event
+      trailing_icon: chevron_right
+      supporting_text: "Pay on a future date you choose"
+    on_click:
+      action: select_kind
+      target: send-money-amount
+      data:
+        kind: scheduled
+    a11y:
+      label: "Scheduled payment. Pay on a future date you choose."
+      role: button
+    keyboard:
+      focusable: true
+    test_context:
+      tag: kind_scheduled
+      assert_text: "Scheduled payment"
+
+  - type: list_item
+    id: kind_recurring
+    label: "Recurring payment"
+    content: "Recurring payment"
+    style:
+      background: "#FFFFFF"
+      border_radius: 12
+      border_color: "#E1E4D5"
+      border_width: 1
+      padding: 14
+      leading_icon: autorenew
+      trailing_icon: chevron_right
+      supporting_text: "Set up a standing order that repeats"
+    on_click:
+      action: select_kind
+      target: send-money-amount
+      data:
+        kind: recurring
+    a11y:
+      label: "Recurring payment. Set up a standing order that repeats."
+      role: button
+    keyboard:
+      focusable: true
+    test_context:
+      tag: kind_recurring
+      assert_text: "Recurring payment"
+
+  - type: list_item
+    id: kind_international
+    label: "International payment"
+    content: "International payment"
+    style:
+      background: "#FFFFFF"
+      border_radius: 12
+      border_color: "#E1E4D5"
+      border_width: 1
+      padding: 14
+      leading_icon: public
+      trailing_icon: chevron_right
+      supporting_text: "Send abroad with the exchange rate shown upfront"
+    on_click:
+      action: select_kind
+      target: pay-international
+      data:
+        kind: now
+    a11y:
+      label: "International payment. Send abroad with the exchange rate shown upfront."
+      role: button
+    keyboard:
+      focusable: true
+    test_context:
+      tag: kind_international
+      assert_text: "International payment"
+
+  - type: text
+    id: from_account_header
+    label: "From account"
+    content: "FROM ACCOUNT"
+    style:
+      typography: "Outfit/label_medium"
+      color: "#44483D"
+      font_weight: semibold
+    a11y:
+      label: "From account section"
+      role: heading
+    test_context:
+      tag: from_account_header
+      assert_text: "FROM ACCOUNT"
+
+  - type: list_item
+    id: account_selector
+    label: "From account"
+    content: "Primary Checking — €4,820.00"
+    style:
+      background: "#FFFFFF"
+      border_radius: 12
+      border_color: "#E1E4D5"
+      border_width: 1
+      padding: 14
+      leading_icon: account_balance
+      trailing_icon: arrow_drop_down
+    on_click:
+      action: select_account
+      target: ""
+    a11y:
+      label: "From account. Tap to choose another account."
+      role: button
+    keyboard:
+      focusable: true
+    test_context:
+      tag: account_selector
+
+  - type: text
+    id: recent_recipients_header
+    label: "Recent Recipients"
+    content: "RECENT RECIPIENTS"
+    style:
+      typography: "Outfit/label_medium"
+      color: "#44483D"
+      font_weight: semibold
+    a11y:
+      label: "Recent recipients section"
+      role: heading
+    test_context:
+      tag: recent_recipients_header
+      assert_text: "RECENT RECIPIENTS"
+
+  - type: box
+    id: recipient_new
+    label: "New"
+    content: "New"
+    style:
+      shape: circle
+      diameter: 60
+      background: "#CDEDA3"
+      text_color: "#102000"
+      leading_icon: add
+    on_click:
+      action: new_recipient
+      target: send-money-amount
+      data:
+        kind: now
+    a11y:
+      label: "Start a new transfer"
+      role: button
+    keyboard:
+      focusable: true
+    test_context:
+      tag: recipient_new
+      assert_text: "New"
+
+  - type: box
+    id: recent_recipient_item
+    label: "Recent recipient"
+    content: "LW"
+    style:
+      shape: circle
+      diameter: 60
+      background: "#386663"
+      text_color: "#FFFFFF"
+    on_click:
+      action: select_recipient
+      target: send-money-amount
+      data:
+        kind: now
+    a11y:
+      label: "Pay a recent recipient now"
+      role: button
+    keyboard:
+      focusable: true
+    test_context:
+      tag: recent_recipient_item
+
+  - type: text
+    id: all_beneficiaries_header
+    label: "All Beneficiaries"
+    content: "ALL BENEFICIARIES"
+    style:
+      typography: "Outfit/label_medium"
+      color: "#44483D"
+      font_weight: semibold
+    a11y:
+      label: "All beneficiaries section"
+      role: heading
+    test_context:
+      tag: all_beneficiaries_header
+      assert_text: "ALL BENEFICIARIES"
+
+  - type: list_item
+    id: beneficiary_item
+    label: "Beneficiary"
+    content: "Liam Walker"
+    style:
+      background: "#F3F4EC"
+      border_radius: 12
+      padding: 14
+      border_color: "#E1E4D5"
+      border_width: 1
+      leading_avatar: initials
+      avatar_background: "#386663"
+      avatar_text_color: "#FFFFFF"
+    on_click:
+      action: select_recipient
+      target: send-money-amount
+      data:
+        kind: now
+    a11y:
+      label: "Pay this beneficiary now"
+      role: button
+    keyboard:
+      focusable: true
+    test_context:
+      tag: beneficiary_item
+
+  - type: text
+    id: beneficiary_subtitle
+    label: "SEPA · Afternoon Coffee Bank ·· 8842"
+    content: "SEPA · Afternoon Coffee Bank ·· 8842"
+    style:
+      typography: "Outfit/body_small"
+      color: "#44483D"
+    a11y:
+      label: "SEPA, Afternoon Coffee Bank, ending 8842"
+      role: text
+    test_context:
+      tag: beneficiary_subtitle
+
+  - type: text
+    id: no_beneficiaries_note
+    label: "No payees on this account yet"
+    content: "No payees on this account yet. Switch accounts above."
+    style:
+      typography: "Outfit/body_medium"
+      color: "#44483D"
+    a11y:
+      label: "No payees on this account yet. Switch accounts above."
+      role: text
+    test_context:
+      tag: no_beneficiaries_note
+
+responsive:
+  mobile_only: true
+  baseline_width: 390
+
+states:
+  initial_state: loading
+  loading:
+    motion:
+      shimmer_duration: short4
+      reduced_motion_fallback: static_placeholder
+    layout:
+      visible_components:
+        - kind_chooser_header
+        - kind_now
+        - kind_scheduled
+        - kind_recurring
+        - kind_international
+        - from_account_header
+      show_progress_indicator: true
+  content:
+    layout:
+      visible_components:
+        - kind_chooser_header
+        - kind_now
+        - kind_scheduled
+        - kind_recurring
+        - kind_international
+        - from_account_header
+        - account_selector
+        - recent_recipients_header
+        - recipient_new
+        - recent_recipient_item
+        - all_beneficiaries_header
+        - beneficiary_item
+        - beneficiary_subtitle
+        - no_beneficiaries_note
+  empty:
+    layout:
+      visible_components:
+        - kind_chooser_header
+        - kind_now
+        - kind_scheduled
+        - kind_recurring
+        - kind_international
+        - from_account_header
+        - account_selector
+        - recent_recipients_header
+        - recipient_new
+      show_empty_state: true
+      empty_state_title: "No recipients yet"
+      empty_state_message: "People you pay will appear here. Start a new payment above."
+      empty_state_cta: "New payment"
+  error:
+    layout:
+      visible_components:
+        - kind_chooser_header
+        - kind_now
+        - kind_scheduled
+        - kind_recurring
+      show_error_state: true
+      error_icon: cloud_off
+      error_title: "Couldn't load recipients"
+      error_message: "We couldn't load this account's recipients. Try again, or switch to another account."
+      show_retry_button: true
+  no_network:
+    layout:
+      visible_components:
+        - kind_chooser_header
+        - kind_now
+        - kind_scheduled
+        - kind_recurring
+      show_error_state: true
+      error_icon: cloud_off
+      error_title: "You're offline"
+      error_message: "We can't reach your bank right now. Check your connection and try again."
+      show_retry_button: true
+  unauthenticated:
+    layout:
+      visible_components: []
+      show_error_state: true
+      error_icon: cloud_off
+      error_title: "Session expired"
+      error_message: "Your sign-in has expired. Sign in again to load your recipients."
+      show_retry_button: true
+
+state_model:
+  view_model: PayHubViewModel
+  ui_state_type: "ScreenState<PayHubContent>"
+  content_type: PayHubContent
+  content_fields:
+    - name: accounts
+      type: "List<OBReadAccount6>"
+    - name: selectedAccountId
+      type: String
+    - name: recentRecipients
+      type: List<HubRecipient>
+    - name: allBeneficiaries
+      type: List<HubRecipient>
+  state_field_types:
+    - name: account.id
+      type: "Data.Account[].AccountId (String)"
+    - name: account.label
+      type: "Data.Account[].Nickname (String, fallback Account[].Name)"
+    - name: account.identification
+      type: "Data.Account[].Account[].Identification (String)"
+    - name: beneficiary.id
+      type: "Data.Beneficiary[].BeneficiaryId (String)"
+    - name: beneficiary.name
+      type: "Data.Beneficiary[].CreditorAccount.Name (String)"
+    - name: beneficiary.identification
+      type: "Data.Beneficiary[].CreditorAccount.Identification (String)"
+    - name: beneficiary.scheme
+      type: "Data.Beneficiary[].CreditorAccount.SchemeName (String)"
+  states:
+    - Loading
+    - Content
+    - Empty
+    - Error
+    - NoNetwork
+    - Unauthenticated
+  errors:
+    - field: global
+      code: LOAD_FAILED
+      message: "Couldn't load recipients."
+  events:
+    - onRefresh
+    - onRetry
+    - onAccountSelected
+    - onKindSelected
+  actions:
+    - select_kind
+    - select_recipient
+    - new_recipient
+    - select_account
+  callbacks:
+    - name: onKindSelected
+      signature: "(kind: PaymentKind) -> Unit"
+      consumer: send-money-amount
+    - name: onRecipientSelected
+      signature: "(accountId: String, counterpartyId: String, kind: PaymentKind) -> Unit"
+      consumer: send-money-amount
+    - name: onNewPayment
+      signature: "(accountId: String, kind: PaymentKind) -> Unit"
+      consumer: send-money-amount
+  di:
+    - AccountsRepository
+    - PaymentsRepository
+    - BanksRepository
+    - UserPreferencesRepository
+
+api:
+  - endpoint: "GET /obie/open-banking/v4.0/aisp/accounts"
+    tag: AISP
+    description: "List the PSU's authorised accounts to populate the FROM ACCOUNT selector. Requires an authorised account-access-consent (Status AUTH) + an authorization-code token (scope accounts)."
+    response:
+      fields:
+        - name: Data.Account[].AccountId
+          type: String
+        - name: Data.Account[].Nickname
+          type: String
+        - name: Data.Account[].Currency
+          type: String
+        - name: Data.Account[].Account[].Identification
+          type: String
+  - endpoint: "GET /obie/open-banking/v4.0/aisp/accounts/{AccountId}/balances"
+    tag: AISP
+    description: "Available balance for the selected source account, shown in the FROM ACCOUNT row. Requires ReadBalances on the account-access-consent. Prefer Type InterimAvailable."
+    response:
+      fields:
+        - name: Data.Balance[].Amount.Amount
+          type: String
+        - name: Data.Balance[].Amount.Currency
+          type: String
+        - name: Data.Balance[].Type
+          type: String
+  - endpoint: "GET /obie/open-banking/v4.0/aisp/accounts/{AccountId}/beneficiaries"
+    tag: AISP
+    description: "Saved beneficiaries linked to the selected account — builds the recent recipients + all beneficiaries lists for the pay-now shortcut. Requires ReadBeneficiariesBasic/Detail on the account-access-consent. The 'SEPA · BankName ·· last4' subtitle is derived from CreditorAccount.SchemeName + Identification (no separate bank-directory lookup under OBIE). 'Recent recipients' is a client-side ordering — OBIE AIS has no payee-recency timeline."
+    response:
+      fields:
+        - name: Data.Beneficiary[].BeneficiaryId
+          type: String
+        - name: Data.Beneficiary[].CreditorAccount.Name
+          type: String
+        - name: Data.Beneficiary[].CreditorAccount.SchemeName
+          type: String
+        - name: Data.Beneficiary[].CreditorAccount.Identification
+          type: String
+    errors:
+      - code: 401
+        message: "UNAUTHORIZED"
+      - code: 403
+        message: "OB.Resource.InvalidConsentStatus"
+
+dependencies:
+  tier: feature
+  features:
+    - accounts
+    - beneficiaries
+    - send-money-amount

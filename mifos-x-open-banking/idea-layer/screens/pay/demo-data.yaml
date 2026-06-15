@@ -1,0 +1,122 @@
+sibling: demo-data
+schema_version: "4.0"
+feature_id: pay
+
+# OBIE AISP v4.0 demo envelopes backing the Pay hub's pay-now shortcut:
+# the authorised account list (FROM ACCOUNT selector), the selected account's
+# available balance, and the saved beneficiaries (recent + all recipients).
+# Debtor (persona) account is consistent across all pay / standing-order
+# features: sort 30-00-00, account 30000012345678, holder "Oliver Bennett".
+collections:
+  get_accounts:
+    dto: OBReadAccount6
+    description: "200 OK — the PSU's authorised accounts populating the FROM ACCOUNT selector."
+    item:
+      Data:
+        Account:
+          - AccountId: "acc-30000012345678"
+            Status: "Enabled"
+            StatusUpdateDateTime: "2026-05-02T07:14:55+01:00"
+            Currency: "GBP"
+            AccountCategory: "Personal"
+            AccountTypeCode: "CurrentAccount"
+            Nickname: "Everyday Current"
+            Account:
+              - SchemeName: "UK.OBIE.SortCodeAccountNumber"
+                Identification: "30000012345678"
+                Name: "Oliver Bennett"
+          - AccountId: "acc-30000098765432"
+            Status: "Enabled"
+            StatusUpdateDateTime: "2026-04-18T09:02:11+01:00"
+            Currency: "GBP"
+            AccountCategory: "Personal"
+            AccountTypeCode: "Savings"
+            Nickname: "Rainy Day Saver"
+            Account:
+              - SchemeName: "UK.OBIE.SortCodeAccountNumber"
+                Identification: "30000098765432"
+                Name: "Oliver Bennett"
+      Links:
+        Self: "https://secure.sandbox.ob.hsbc.co.uk/obie/open-banking/v4.0/aisp/accounts"
+      Meta:
+        TotalPages: 1
+
+  get_account_balances:
+    dto: OBReadBalance1
+    description: "200 OK — InterimAvailable balance for the selected source account (Everyday Current)."
+    item:
+      Data:
+        Balance:
+          - AccountId: "acc-30000012345678"
+            CreditDebitIndicator: "Credit"
+            Type: "InterimAvailable"
+            DateTime: "2026-06-12T08:55:03+01:00"
+            Amount:
+              Amount: "2483.57"
+              Currency: "GBP"
+          - AccountId: "acc-30000012345678"
+            CreditDebitIndicator: "Credit"
+            Type: "ClosingBooked"
+            DateTime: "2026-06-12T00:00:00+01:00"
+            Amount:
+              Amount: "2548.57"
+              Currency: "GBP"
+      Links:
+        Self: "https://secure.sandbox.ob.hsbc.co.uk/obie/open-banking/v4.0/aisp/accounts/acc-30000012345678/balances"
+      Meta:
+        TotalPages: 1
+
+  get_account_beneficiaries:
+    dto: OBReadBeneficiary5
+    description: "200 OK — saved payees for the selected account; client orders these into recent + all recipients."
+    item:
+      Data:
+        Beneficiary:
+          - AccountId: "acc-30000012345678"
+            BeneficiaryId: "ben-001-james-whitfield"
+            BeneficiaryType: "Trusted"
+            Reference: "Rent June"
+            CreditorAccount:
+              SchemeName: "UK.OBIE.SortCodeAccountNumber"
+              Identification: "20415587224190"
+              Name: "James Whitfield"
+          - AccountId: "acc-30000012345678"
+            BeneficiaryId: "ben-002-british-gas"
+            BeneficiaryType: "Ordinary"
+            Reference: "Gas and Electric"
+            CreditorAccount:
+              SchemeName: "UK.OBIE.SortCodeAccountNumber"
+              Identification: "60000412009988"
+              Name: "British Gas"
+          - AccountId: "acc-30000012345678"
+            BeneficiaryId: "ben-003-thames-water"
+            BeneficiaryType: "Ordinary"
+            Reference: "Water Account 88421"
+            CreditorAccount:
+              SchemeName: "UK.OBIE.SortCodeAccountNumber"
+              Identification: "40020755663210"
+              Name: "Thames Water"
+          - AccountId: "acc-30000012345678"
+            BeneficiaryId: "ben-004-vodafone-uk"
+            BeneficiaryType: "Ordinary"
+            Reference: "Mobile 07700900421"
+            CreditorAccount:
+              SchemeName: "UK.OBIE.SortCodeAccountNumber"
+              Identification: "08320198553471"
+              Name: "Vodafone UK"
+      Links:
+        Self: "https://secure.sandbox.ob.hsbc.co.uk/obie/open-banking/v4.0/aisp/accounts/acc-30000012345678/beneficiaries"
+      Meta:
+        TotalPages: 1
+
+  # 403 OB.Resource.InvalidConsentStatus driving the error state.
+  get_accounts.error:
+    dto: OBErrorResponse1
+    description: "403 OBErrorResponse1 — account-access consent revoked or missing a required permission."
+    item:
+      Code: "403 Forbidden"
+      Id: "err-pay-3c19f0"
+      Message: "Invalid consent status"
+      Errors:
+        - ErrorCode: "UK.OBIE.Resource.InvalidConsentStatus"
+          Message: "The account-access-consent is not in an authorised (AUTH) state."

@@ -71,7 +71,7 @@ api_groups:
     name: Variable Recurring Payments (VRP)
     obie_role: pisp
     spec_file: "server/apis/vrp.yaml"
-    screens: []     # NEW capability — no screen yet (step-D candidate: recurring/sweeping payments)
+    screens: [automatic-rules, automatic-rule-create, automatic-rule-detail]     # bound in consumer-app-redesign Phase 4 (VRP 'Automatic rules' under Insights)
     endpoints:
       - { method: POST,   path: "/obie/open-banking/v4.0/pisp/domestic-vrp-consents", description: "Create VRP consent" }
       - { method: POST,   path: "/obie/open-banking/v4.0/pisp/domestic-vrp-consents/{ConsentId}/funds-confirmation", description: "VRP funds confirmation" }
@@ -115,7 +115,7 @@ api_groups:
     name: International Payment (PISP)
     obie_role: pisp
     spec_file: "server/apis/pisp-international.yaml"
-    screens: [send-money]     # international option (NEW vs OBP)
+    screens: [pay-international]     # bound in consumer-app-redesign Phase 3 (was send-money)
     endpoints:
       - { method: POST, path: "/obie/open-banking/v4.0/pisp/international-payment-consents", description: "Create consent (CurrencyOfTransfer, ExchangeRateInformation)" }
       - { method: POST, path: "/obie/open-banking/v4.0/pisp/international-payment-consents/{ConsentId}/funds-confirmation", description: "Check funds" }
@@ -126,7 +126,7 @@ api_groups:
     name: International Scheduled Payment (PISP)
     obie_role: pisp
     spec_file: "server/apis/pisp-international-scheduled.yaml"
-    screens: []     # NEW capability candidate
+    screens: [pay-international]     # bound in consumer-app-redesign Phase 3 (kind=scheduled)
     endpoints:
       - { method: POST, path: "/obie/open-banking/v4.0/pisp/international-scheduled-payment-consents", description: "Create consent" }
       - { method: POST, path: "/obie/open-banking/v4.0/pisp/international-scheduled-payments", description: "Initiate" }
@@ -136,7 +136,7 @@ api_groups:
     name: International Standing Order (PISP)
     obie_role: pisp
     spec_file: "server/apis/pisp-international-standing-order.yaml"
-    screens: []     # NEW capability candidate
+    screens: [pay-international]     # bound in consumer-app-redesign Phase 3 (kind=standing-order)
     endpoints:
       - { method: POST, path: "/obie/open-banking/v4.0/pisp/international-standing-order-consents", description: "Create consent (v3.1 flat vs v4.0 OBMandateRelatedInformation1)" }
       - { method: POST, path: "/obie/open-banking/v4.0/pisp/international-standing-orders", description: "Initiate" }
@@ -194,12 +194,12 @@ api_groups:
 # ─── OBIE groups integrated at the contract level with NO consumer screen yet ──
 # step-G new-capability candidates (goal track): each has a full spec_file + endpoints,
 # but no screen binding. /goal-analysis-project would decide whether to surface them.
+# consumer-app-redesign reconciliation (2026-06-15): vrp + the 2 international groups are now
+# BOUND (Phases 3-4 — automatic-rules + pay-international). Only the two B2B groups remain
+# deliberately deferred to a future `business` flavour (D9), NOT consumer scope.
 unbound_obie_groups:
-  - vrp                              # Variable Recurring Payments (recurring/sweeping)
-  - pisp-international-scheduled     # International Scheduled Payment
-  - pisp-international-standing-order # International Standing Order
-  - pisp-file                       # File Payment / bulk (ISO 20022 pain.001)
-  - pisp-multibill                  # Multi-Bill (HSBC-specific, UK Business)
+  - { group: file-bulk,  obie_id: pisp-file,      reason: "B2B/corporate bulk (ISO-20022 pain.001 upload)", deferred: business-flavour }
+  - { group: multi-bill, obie_id: pisp-multibill, reason: "HSBC UK Business multi-bill only",                deferred: business-flavour }
 
 # Note: the OBP-era field-officer screens, cards, card-detail, and fx-rates were DELETED in the
 # OBP → HSBC migration (commit 8fbb3bdc) — no longer in the 39-screen roster, so not listed here.

@@ -1,0 +1,304 @@
+sibling: ui
+feature_id: pay-international
+id: pay-international
+name: International payment
+feature: pay-international
+flavor: consumer
+status: approved
+quality_score: 90
+contract_version: "2.0.0"
+approved_at: "2026-06-15T02:45:00Z"
+approved_by: "consumer-app-redesign Phase 3 (T1)"
+capabilities:
+  - has_ui
+  - has_api
+tags: [FR-OBIE-PISP-INTERNATIONAL, FR-OBIE-FX]
+status_history:
+  - status: approved
+    at: "2026-06-15T02:45:00Z"
+    by: "consumer-app-redesign Phase 3 (T1)"
+    note: "New international payment screen reachable from the Pay hub 'International' kind. Kind-aware (now / scheduled / standing-order) like the domestic shared path, but surfaces ExchangeRateInformation (rate, quote type, fee) from the international-payment-consent BEFORE the user authorises (GOAL.md D1 risk mitigation). Reuses the shared send-money-confirm → authorise-handoff (consentContext=international) → payment-result/declined tail. International beneficiaries carry IBAN + BIC + a payment-purpose code. Binds pisp-international{,-scheduled,-standing-order}."
+
+screens:
+  - id: pay-international
+    name: International payment
+    archetype: form
+    shell:
+      top_bar:
+        title: "International payment"
+        navigation_icon: arrow_back
+        actions: []
+      bottom_nav: false
+
+archetype: form
+
+components:
+  - type: list_item
+    id: from_account_selector
+    label: "From account"
+    content: "Everyday Current — £2,483.57"
+    style:
+      variant: outlined
+      leading_icon: account_balance
+      trailing_icon: expand_more
+      corner_radius: 12
+    on_click: { action: select_account, target: "" }
+    a11y: { label: "From account. Tap to choose another account.", role: button }
+    test_context: { tag: from_account_selector }
+
+  - type: input
+    id: amount_input
+    label: "You send"
+    content: ""
+    supported_states: [idle, focus_visible, error]
+    style:
+      variant: outlined
+      prefix: "£"
+      placeholder: "0.00"
+      keyboard_type: decimal
+      corner_radius: 12
+    validation: { required: true, rule: "amount > 0", error_message: "Enter an amount greater than 0" }
+    a11y: { label: "Amount to send in pounds", role: textbox }
+    test_context: { tag: amount_input }
+
+  - type: text
+    id: recipient_label
+    label: "Recipient gets"
+    content: "RECIPIENT GETS"
+    style: { typography: "Outfit/label_medium", color: "#44483D" }
+    a11y: { label: "Recipient receives section", role: heading }
+    test_context: { tag: recipient_label }
+
+  - type: text
+    id: recipient_amount
+    label: "Converted amount"
+    content: "€2,902.50"
+    style: { typography: "Outfit/headline_small", color: "#1A1C16", font_weight: 700 }
+    a11y: { label: "Recipient receives 2,902.50 euros", role: text }
+    test_context: { tag: recipient_amount }
+
+  - type: box
+    id: fx_rate_card
+    label: "Exchange rate"
+    content: "Exchange rate: 1 GBP = 1.1700 EUR"
+    style:
+      background: "#BCEBE7"
+      corner_radius: 12
+      padding_horizontal: 16
+      padding_vertical: 12
+      leading_icon: currency_exchange
+      text_color: "#00201E"
+    a11y: { label: "Exchange rate 1 pound equals 1.17 euros, indicative", role: text }
+    test_context: { tag: fx_rate_card }
+
+  - type: text
+    id: fx_quote_note
+    label: "Quote type"
+    content: "Indicative rate · locked when you authorise at HSBC"
+    style: { typography: "Outfit/body_small", color: "#44483D" }
+    a11y: { label: "Indicative rate, locked when you authorise at HSBC", role: text }
+    test_context: { tag: fx_quote_note }
+
+  - type: box
+    id: fx_fee_banner
+    label: "Estimated fee"
+    content: "Estimated fee: £4.50 · No HSBC markup on the rate"
+    style:
+      background: "#CDEDA3"
+      corner_radius: 8
+      padding_horizontal: 16
+      padding_vertical: 12
+      leading_icon: info
+      text_color: "#102000"
+    a11y: { label: "Estimated fee 4 pounds 50, no markup on the rate", role: text }
+    test_context: { tag: fx_fee_banner }
+
+  - type: text
+    id: to_label
+    label: "To"
+    content: "TO"
+    style: { typography: "Outfit/label_medium", color: "#44483D" }
+    a11y: { label: "Recipient section", role: heading }
+    test_context: { tag: to_label }
+
+  - type: list_item
+    id: beneficiary_row
+    label: "International beneficiary"
+    content: "Sofia Marchetti"
+    style:
+      background: "#FFFFFF"
+      border_radius: 12
+      border_color: "#E1E4D5"
+      border_width: 1
+      padding: 12
+      leading_avatar: initials
+    on_click: { action: select_beneficiary, target: "" }
+    a11y: { label: "Recipient Sofia Marchetti. Tap to change.", role: button }
+    test_context: { tag: beneficiary_row }
+
+  - type: text
+    id: beneficiary_subtitle
+    label: "IBAN and BIC"
+    content: "IT60 X054 ·· 8200 · BIC UNCRITMM · Italy"
+    style: { typography: "Outfit/body_small", color: "#44483D" }
+    a11y: { label: "IBAN ending 8200, BIC UNCRITMM, Italy", role: text }
+    test_context: { tag: beneficiary_subtitle }
+
+  - type: input
+    id: purpose_input
+    label: "Purpose of payment"
+    content: ""
+    supported_states: [idle, focus_visible, error]
+    style:
+      variant: outlined
+      placeholder: "e.g. Family support, Property, Services"
+      supporting_text: "Required for international transfers"
+      corner_radius: 12
+    validation: { required: true, error_message: "Choose a payment purpose" }
+    a11y: { label: "Purpose of payment, required", role: textbox }
+    test_context: { tag: purpose_input }
+
+  - type: text
+    id: schedule_section_label
+    label: "When to pay"
+    content: "WHEN TO PAY"
+    style: { typography: "Outfit/label_medium", color: "#44483D" }
+    a11y: { label: "When to pay section", role: heading }
+    test_context: { tag: schedule_section_label }
+
+  - type: input
+    id: schedule_date_field
+    label: "Payment date"
+    content: ""
+    supported_states: [idle, focus_visible, error]
+    style:
+      variant: outlined
+      leading_icon: event
+      placeholder: "Choose a date"
+      keyboard_type: date
+      corner_radius: 12
+    validation: { required: true, rule: "date >= today", error_message: "Choose today or a future date" }
+    a11y: { label: "Payment date. Shown for scheduled and standing-order kinds.", role: textbox }
+    test_context: { tag: schedule_date_field }
+
+  - type: chip_group
+    id: recurring_frequency_chips
+    label: "Frequency"
+    content: "Monthly · Quarterly · Yearly"
+    supported_states: [idle, selected, disabled]
+    style: { variant: filter }
+    on_click: { action: select_frequency, target: "" }
+    a11y: { label: "How often the international payment repeats. Shown for standing-order kind.", role: radiogroup }
+    test_context: { tag: recurring_frequency_chips }
+
+  - type: button
+    id: review_button
+    label: "Review"
+    supported_states: [idle, focus_visible, pressed, disabled, loading]
+    style: { variant: filled, corner_radius: 12, full_width: true, height: 52 }
+    on_click:
+      action: review
+      target: send-money-confirm
+      data: { kind: international }
+    a11y: { label: "Review international payment", role: button }
+    test_context: { tag: review_button, assert_text: "Review" }
+
+responsive:
+  mobile_only: true
+  baseline_width: 390
+
+states:
+  initial_state: loading
+  loading:
+    layout: { visible_components: [], show_progress_indicator: true }
+  content:
+    layout:
+      visible_components:
+        - from_account_selector
+        - amount_input
+        - recipient_label
+        - recipient_amount
+        - fx_rate_card
+        - fx_quote_note
+        - fx_fee_banner
+        - to_label
+        - beneficiary_row
+        - beneficiary_subtitle
+        - purpose_input
+        - schedule_section_label
+        - schedule_date_field
+        - recurring_frequency_chips
+        - review_button
+    note: "Kind-aware (nav param kind ∈ {now, scheduled, standing-order}). kind=now hides the WHEN TO PAY block (schedule_section_label/schedule_date_field/recurring_frequency_chips). kind=scheduled shows schedule_date_field (single future date); frequency hidden. kind=standing-order shows schedule_date_field (first payment) + recurring_frequency_chips. recipient_amount + fx_rate_card + fx_fee_banner update live as the amount changes (indicative quote from the international-payment-consent ExchangeRateInformation); the rate locks at HSBC during authorise. Review carries kind=international forward in the PaymentDraft to the shared send-money-confirm."
+  empty:
+    layout: { visible_components: [], show_empty_state: true, empty_state_message: "No international recipients yet. Add one to send abroad." }
+  error:
+    layout: { visible_components: [], show_error_state: true, error_icon: cloud_off, error_title: "Couldn't load the rate", error_message: "We couldn't fetch an exchange rate. Check your connection and try again.", show_retry_button: true }
+  no_network:
+    layout: { visible_components: [], show_error_state: true, error_icon: cloud_off, error_title: "You're offline", error_message: "We can't reach HSBC for a live rate right now. Try again when you're back online.", show_retry_button: true }
+
+state_model:
+  view_model: PayInternationalViewModel
+  ui_state_type: "ScreenState<PayInternationalContent>"
+  content_type: PayInternationalContent
+  content_fields:
+    - { name: accounts, type: "List<OBReadAccount6>" }
+    - { name: selectedAccount, type: OBReadAccount6 }
+    - { name: beneficiary, type: "InternationalBeneficiary?" }
+    - { name: kind, type: "PaymentKind (now | scheduled | standing-order)" }
+    - { name: sendAmount, type: "String (Data.Initiation.InstructedAmount.Amount, debtor currency)" }
+    - { name: sendCurrency, type: "String (ISO 4217, debtor currency)" }
+    - { name: recipientCurrency, type: "String (Data.Initiation.CurrencyOfTransfer)" }
+    - { name: exchangeRate, type: "String (Data.ExchangeRateInformation.ExchangeRate)" }
+    - { name: rateType, type: "String (Data.ExchangeRateInformation.RateType — Actual | Indicative | Agreed)" }
+    - { name: convertedAmount, type: "String (derived: sendAmount × exchangeRate)" }
+    - { name: estimatedFee, type: "String (Data.Charges[].Amount.Amount summed)" }
+    - { name: purpose, type: "String (Data.Initiation.Purpose / RemittanceInformation)" }
+    - { name: scheduleDate, type: "String? (RequestedExecutionDateTime / FirstPaymentDateTime)" }
+    - { name: frequency, type: "String? (Data.Initiation.Frequency; standing-order only)" }
+  states: [Loading, Content, Empty, Error, NoNetwork]
+  events: [setAccount, onAmountChanged, onBeneficiarySelected, onPurposeChanged, onScheduleDateChanged, onFrequencyChanged, onRetry, onReview]
+  actions: [select_account, select_beneficiary, select_frequency, review]
+  nav_params:
+    - { name: kind, type: "PaymentKind", default: "now" }
+  callbacks:
+    - name: onReview
+      signature: "(PaymentDraft) -> Unit"
+      consumer: send-money-confirm
+  di: [AccountsRepository, PaymentsRepository, FxRatesRepository]
+
+api:
+  - id: create_international_payment_consent
+    endpoint: "POST /obie/open-banking/v4.0/pisp/international-payment-consents"
+    api_group: pisp-international
+    tag: PISP
+    trigger: "on_review (kind=now)"
+    description: "Stages the international-payment-consent and returns Data.ExchangeRateInformation (ExchangeRate, RateType, ContractIdentification when Agreed) so the FX rate + converted amount + charges are surfaced before authorise. The -scheduled and -standing-order variants resolve to /international-scheduled-payment-consents and /international-standing-order-consents respectively. Status AWAU; the Initiation block byte-matches the later submit. Authorise via the shared authorise-handoff (consentContext=international)."
+    request:
+      fields:
+        - { name: Data.Initiation.InstructedAmount.Amount, type: String, example: "2480.00" }
+        - { name: Data.Initiation.InstructedAmount.Currency, type: String, example: "GBP" }
+        - { name: Data.Initiation.CurrencyOfTransfer, type: String, example: "EUR" }
+        - { name: Data.Initiation.CreditorAccount.SchemeName, type: String, example: "UK.OBIE.IBAN" }
+        - { name: Data.Initiation.CreditorAccount.Identification, type: String, example: "IT60X0542811101000000123456" }
+        - { name: Data.Initiation.CreditorAccount.Name, type: String, example: "Sofia Marchetti" }
+        - { name: Data.Initiation.Purpose, type: String }
+    response:
+      fields:
+        - { name: Data.ConsentId, type: String, example: "ipc-5f2a..." }
+        - { name: Data.Status, type: String, example: "AWAU" }
+        - { name: Data.ExchangeRateInformation.ExchangeRate, type: String, example: "1.1700" }
+        - { name: Data.ExchangeRateInformation.RateType, type: String, example: "Indicative" }
+        - { name: Data.ExchangeRateInformation.UnitCurrency, type: String, example: "GBP" }
+        - { name: Data.Charges, type: "Array<OBCharge2>" }
+    errors:
+      - { code: 400, message: "OB.Field.Invalid" }
+      - { code: 403, message: "OB.Resource.InvalidConsentStatus" }
+
+dependencies:
+  tier: feature
+  features:
+    - pay
+    - send-money-confirm
+    - authorise-handoff
+    - beneficiaries

@@ -1,0 +1,23 @@
+sibling: flow
+schema_version: "4.0"
+feature_id: authorise-handoff
+flow_ids:
+  - account-access-consent
+  - payment-initiation
+navigates_to:
+  - auth-callback
+  - consent-declined
+  - payment-declined
+flow_logic:
+  - decision: "Consent staged + signed authorise request built?"
+    condition: "uiState.phase == HandoffPhase.OPENING_BROWSER && authorizeUrl != null"
+    true_path: auth-callback
+    false_path: authorise-handoff
+    impl: "AuthoriseHandoffViewModel:stageConsentAndBuildAuthorize()"
+  - decision: "Cancelled after a failure, and context is AIS consent?"
+    condition: "uiState.phase == HandoffPhase.ERROR && consentContext == AuthoriseContext.AIS_CONSENT"
+    true_path: consent-declined
+    false_path: payment-declined
+    impl: "AuthoriseHandoffViewModel:onCancelClicked()"
+journey_ids:
+  - consumer-accounts-payments

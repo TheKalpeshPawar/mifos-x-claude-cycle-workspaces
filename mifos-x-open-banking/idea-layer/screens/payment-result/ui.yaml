@@ -270,7 +270,8 @@ state_model:
     GET /pisp/domestic-payments/{DomesticPaymentId} on mount to confirm settlement status.
     SCA already happened at the bank during authorise — none here.
   nav_params:
-    - { name: domesticPaymentId, type: String, note: "Data.DomesticPaymentId from the submit POST — drives the status read." }
+    - { name: kind, type: "PaymentKind (now | scheduled | recurring)", note: "Carried through from the Pay hub via the PaymentDraft. Drives kind-aware terminal copy: now → title 'Payment sent' + pill 'COMPLETED'; scheduled → title 'Payment scheduled' + summary '{amount} to {beneficiary} on {date}' + pill 'SCHEDULED'; recurring → title 'Standing order set up' + summary '{amount} {frequency} to {beneficiary}' + pill 'ACTIVE'. For scheduled/recurring no funds have moved yet, so charge_row reads '—' and posted_row becomes 'Starts {date}'." }
+    - { name: domesticPaymentId, type: String, note: "Data.DomesticPaymentId (now) / scheduled-payment Id / standing-order Id from the submit POST — drives the status read." }
     - { name: amount, type: String, note: "Data.Initiation.InstructedAmount.Amount (instant-paint arg, also confirmed by the read)." }
     - { name: currency, type: String, note: "Data.Initiation.InstructedAmount.Currency (ISO 4217)." }
     - { name: beneficiaryName, type: String, note: "Resolved holder name for Data.Initiation.CreditorAccount.Name (counterparty rule applies)." }
@@ -291,7 +292,7 @@ state_model:
       consumer: transaction-detail
     - name: onDone
       signature: "() -> Unit"
-      consumer: send-money
+      consumer: pay
   di:
     - PaymentsRepository
 

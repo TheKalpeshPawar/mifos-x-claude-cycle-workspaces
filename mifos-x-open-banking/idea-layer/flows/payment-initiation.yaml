@@ -12,23 +12,28 @@ created_at: "2026-06-11"
 status: active
 gated_by: account-access-consent
 
-entry_screen: send-money
+entry_screen: pay
 screens:
+  - pay
+  - pay-international
   - send-money
   - send-money-amount
   - send-money-confirm
-  - payment-authorize-handoff
+  - authorise-handoff
   - auth-callback
   - payment-result
   - payment-declined
 
 connections:
+  - { from: pay, to: send-money-amount, type: push, label: "Choose payment kind (now/scheduled/recurring) → enter amount" }
+  - { from: pay, to: pay-international, type: push, label: "International kind → FX screen (exchange rate surfaced)" }
+  - { from: pay-international, to: send-money-confirm, type: push, label: "Review international payment (kind=international, FX shown) → shared confirm" }
   - { from: send-money, to: send-money-amount, type: push, label: "Select payee/account → enter amount" }
   - { from: send-money-amount, to: send-money-confirm, type: push, label: "Funds check OK (CoF) → review" }
   - { from: send-money-amount, to: send-money, type: pop, label: "Back" }
-  - { from: send-money-confirm, to: payment-authorize-handoff, type: push, label: "Confirm — POST domestic-payment-consents (AWAU) + build signed authorise request" }
+  - { from: send-money-confirm, to: authorise-handoff, type: push, label: "Confirm — POST domestic-payment-consents (AWAU) + build signed authorise request" }
   - { from: send-money-confirm, to: send-money-amount, type: pop, label: "Edit payment" }
-  - { from: payment-authorize-handoff, to: auth-callback, type: external_redirect, label: "PSU authenticates + completes SCA at HSBC → deep-link returns code" }
+  - { from: authorise-handoff, to: auth-callback, type: external_redirect, label: "PSU authenticates + completes SCA at HSBC → deep-link returns code" }
   - { from: auth-callback, to: payment-result, type: replace, label: "code → token; POST domestic-payments; poll status → terminal" }
   - { from: auth-callback, to: payment-declined, type: replace, label: "callback error / PSU declined / consent RJCT" }
   - { from: payment-result, to: transaction-detail, type: push, label: "View transaction" }
