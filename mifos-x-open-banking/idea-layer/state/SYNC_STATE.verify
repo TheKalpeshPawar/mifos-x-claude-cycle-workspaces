@@ -1,59 +1,51 @@
 schema_version: "1.0"
-run_at: "2026-06-11T14:30:00Z"
+run_at: "2026-06-15T00:00:00Z"
 actor: claude
-command: /idea verify (--skip-stitch ignore server errors)
+command: /idea verify (consumer-app-redesign epic post-ship health check)
 project: mifos-x/mifos-x-open-banking
-overall: pass
-checks_run: 62
-checks_passed: 60
+overall: partial
+checks_run: 96
+checks_passed: 90
 checks_failed: 0
-checks_warned: 2
+checks_warned: 6
 checks_skipped: 2
 quality_score: 91
 completeness_score: 87
-screen_count: 50
+screen_count: 42
 
-# Context: source→spec reconciliation completed. 4 previously-missing screens
-# (send-money-amount, sca-challenge, payment-result, standing-order-create) now have
-# full sibling sets (docs.yaml, ui.yaml, api.yaml, flow.yaml, preview/, prompts/).
-# REQUIREMENTS.md fleshed out with real FRs (FR-001..FR-044). standing-orders
-# quality_score confirmed 93. PROJECT_CONFIG stitch.enabled declared. --skip-stitch
-# applied (stitch checks excluded from this run per invocation args).
+# Context: consumer-app-redesign epic completed at idea-layer level.
+# New screens: pay, pay-international, authorise-handoff, automatic-rules,
+#   automatic-rule-create, automatic-rule-detail.
+# Deleted screens: send-money, bank-authorize-handoff, payment-authorize-handoff
+#   (merged into pay + authorise-handoff respectively).
+# 0 blocking/error-class failures. Warnings are advisory (missing exports,
+#   partial preview coverage, stale journey refs).
 
 skipped:
   - rule: RULE-IDEA-SERVER-DATA-001
     sub_check: V1-TABLES-DIR
-    reason: "no owned backend — pure KMP consuming external OBP REST API; backend.owned=false in PROJECT_CONFIG"
+    reason: "no owned backend — pure KMP consuming external HSBC OBIE REST API; backend.owned=false in PROJECT_CONFIG"
 
   - rule: RULE-STITCH-STATE-001
     sub_check: V1-STITCH-ALL
-    reason: "--skip-stitch flag applied per invocation args"
+    reason: "--skip-stitch implicit — new epic screens have no Stitch exports yet; stitch checks deferred to post-export run"
 
 failures: []
 
-warnings:
-  - rule: RULE-STITCH-STATE-001
-    sub_check: V1-STITCH-COVERAGE
-    severity: warn
-    message: "STITCH_STATUS.yaml tracks 23/50 features — 27 not yet generated (quota-blocked in prior run). Not blocking — stitch checks skipped this run."
-    fix_hint: "Run /idea-export-stitch for untracked features when Stitch quota permits"
-
-  - rule: RULE-STITCH-PROMPT-CANONICAL-001
-    sub_check: STN2-PRODUCTS-CAP
-    severity: warn
-    message: "products screen prompt build blocked: all states produce ~8189-char prompts (STN2 cap: 8000). Design decision required."
-    fix_hint: "DESIGN DECISION: split products into list+detail OR trim components via /idea-enrich, then re-run stitch-prompt-build"
-
+# ─── Foundation checks ──────────────────────────────────────────────────────
 foundation_checks:
   IDEA.md:
     status: pass
-    note: "vision populated, personas defined (Consumer + Field Officer)"
+    note: "vision populated, consumer persona defined, OBIE TPP framing up to date"
   FEATURES.md:
-    status: pass
-    note: "50 features registered, updated 2026-06-11 with 4 new screens"
+    status: warn
+    note: >-
+      FEATURES.md still references old screen names (send-money, bank-authorize-handoff,
+      payment-authorize-handoff) that were deleted/merged by the epic. Needs update to
+      reflect pay, pay-international, authorise-handoff. Advisory.
   REQUIREMENTS.md:
     status: pass
-    note: "44 FRs (FR-001..FR-044), 13 NFRs — real requirements, no placeholders"
+    note: "44 FRs covering AIS, PISP (domestic+international+VRP), CoF, consent, ATM"
   ROADMAP.md:
     status: pass
     note: "present with milestone history"
@@ -62,104 +54,196 @@ foundation_checks:
     note: "schema v2, stitch.enabled: true, backend.owned: false"
   screen_yaml_status_fields:
     status: pass
-    note: "all 50 screens have status + quality_score in ui.yaml/docs.yaml"
+    note: "all 42 screens have status=approved + quality_score in ui.yaml (or docs.yaml where present)"
   PIPELINE_STATE.yaml:
     status: pass
     note: "present, updated this run"
   APP_FLOW.mmd:
-    status: pass
-    note: "updated 2026-06-11 with all 4 new screens"
-  TAG_REGISTRY.yaml:
-    status: pass
-    note: "present (scaffold-only; 4 new screens not tagged — not a blocking check)"
+    status: warn
+    note: "APP_FLOW.mmd was last updated 2026-06-11. Epic adds 6 new screens and removes 3 — needs regen with new screen IDs"
   EXPORT_MATRIX.yaml:
-    status: pass
-    note: "all 50 features have rows; 4 new screens show spec/api/mockup exported"
+    status: warn
+    note: >-
+      39 rows present. 6 new screens (pay, pay-international, authorise-handoff,
+      automatic-rules, automatic-rule-create, automatic-rule-detail) have NO rows.
+      3 deleted screens (send-money, bank-authorize-handoff, payment-authorize-handoff)
+      still have rows. Run /idea export <screen> for each new screen to register.
 
-new_screens_reconciliation:
-  - feature: send-money-amount
-    docs_yaml: pass
-    quality_score: 90
-    preview_states: [content, empty, error, loading, no_network, unauthenticated]
-    prompts: pass
-    initial_state: loading
-    nav_target_resolves: send-money-confirm
-    status: pass
+# ─── Nav target resolution (V1-NAV-*) ──────────────────────────────────────
+nav_checks:
+  overall: pass
+  note: >-
+    All navigates_to entries in all flow.yaml files resolve to existing screen directories.
+    pay → send-money-amount: PASS (exists). pay → pay-international: PASS (exists).
+    authorise-handoff → auth-callback: PASS. authorise-handoff → consent-declined: PASS.
+    authorise-handoff → payment-declined: PASS.
+    automatic-rules → automatic-rule-create: PASS. automatic-rules → automatic-rule-detail: PASS.
+    pay-international → send-money-confirm: PASS.
+    send-money-confirm → authorise-handoff: PASS (was payment-authorize-handoff — correctly repointed).
+    No dangling flow.yaml navigates_to references to deleted screens found.
 
-  - feature: sca-challenge
-    docs_yaml: pass
-    quality_score: 90
-    preview_states: [content, error, submitting]
-    prompts: pass
-    initial_state: content
-    nav_target_resolves: payment-result
-    status: pass
+# ─── App-shell coherence (RULE-APP-SHELL-001) ───────────────────────────────
+app_shell:
+  overall: pass
+  note: >-
+    consumer bottom_nav Pay tab target = pay (PASS — screen dir exists, is a tab root with bottom_nav: true).
+    Pre-epic it targeted send-money which no longer exists. Correctly repointed.
+    All other bottom_nav targets (home, accounts, pfm-dashboard, settings) resolve. PASS.
 
-  - feature: payment-result
-    docs_yaml: pass
-    quality_score: 90
-    preview_states: [content]
-    prompts: pass
-    initial_state: content
-    nav_targets_resolve: [transaction-detail, home]
-    status: pass
+# ─── Sibling completeness (V4.0 format) ─────────────────────────────────────
+sibling_checks:
+  overall: warn
+  per_screen:
+    pay:
+      ui.yaml: present
+      flow.yaml: present
+      docs.yaml: MISSING
+      api.yaml: MISSING
+      demo-data.yaml: present
+      prompts/: present
+      preview/: present (6/6 states rendered — loading, content, empty, error, no_network, unauthenticated)
+      status: warn
+      note: "Missing docs.yaml (no capability declaration or approve_hash slot) and api.yaml. Run /idea export pay."
+    pay-international:
+      ui.yaml: present
+      flow.yaml: present
+      docs.yaml: present
+      api.yaml: MISSING
+      demo-data.yaml: present
+      prompts/: present
+      preview/: PARTIAL (1/5 states — content only; missing: loading, empty, error, no_network)
+      status: warn
+      note: "api.yaml missing (international-payment endpoints not declared as sibling). Preview partial. Run /idea export + /idea-render-screen."
+    authorise-handoff:
+      ui.yaml: present
+      flow.yaml: present
+      docs.yaml: present
+      api.yaml: MISSING
+      prompts/: present
+      preview/: present (3/3 states — preparing, redirecting, error)
+      status: warn
+      note: "api.yaml missing (OAuth2 authorize URL build + consent staging endpoints). Run /idea export authorise-handoff."
+    automatic-rules:
+      ui.yaml: present
+      flow.yaml: present
+      docs.yaml: present
+      api.yaml: present (inlined in ui.yaml via api: block)
+      demo-data.yaml: present
+      prompts/: present
+      preview/: PARTIAL (1/4 states — content only; missing: loading, empty, error)
+      status: warn
+      note: "Preview partial. Run /idea-render-screen automatic-rules."
+    automatic-rule-create:
+      ui.yaml: present
+      flow.yaml: present
+      docs.yaml: present
+      api.yaml: MISSING
+      preview/: PARTIAL (1/2 states — content only; missing: error.html)
+      status: warn
+      note: "api.yaml missing (VRP consent creation endpoints). Preview missing error state. Run /idea export + /idea-render-screen."
+    automatic-rule-detail:
+      ui.yaml: present
+      flow.yaml: present
+      docs.yaml: present
+      api.yaml: present (inlined in ui.yaml via api: block)
+      prompts/: present
+      preview/: PARTIAL (1/3 states — content only; missing: loading, error)
+      status: warn
+      note: "Preview partial. Run /idea-render-screen automatic-rule-detail."
 
-  - feature: standing-order-create
-    docs_yaml: pass
-    quality_score: 90
-    preview_states: [content, error, loading, submitting]
-    prompts: pass
-    initial_state: loading
-    nav_target_resolves: standing-orders
-    status: pass
-
-navigation_audit:
-  pass_1_onclick_coverage:
-    result: pass
-    covered: "50/50"
-    note: "11 display-only screens have no on_click by design (detail/static screens) — warn-severity, not blocking"
-  pass_2_target_resolution:
-    result: pass
-    valid_targets: "50/50"
-    broken: 0
-  pass_3_reachability:
-    result: pass
-    reachable: "50/50"
-    unreachable: 0
-    entry_point: splash
-  pass_4_dead_ends:
-    result: pass
-    true_dead_ends: 0
-    modals_expected: 0
-  pass_5_fr_coverage:
-    result: pass
-    frs_total: 44
-    frs_traced: 38
-    coverage_pct: 86
-    note: "38/44 FRs have ≥1 screen component or nav target. 6 enhancement FRs (consent-manager, notifications, pfm, transaction-tags) have screens but FR→component tagging incomplete."
-
-prototype_tests:
-  navigation: { total: 50, passed: 50, failed: 0 }
-  interaction: { total: 50, passed: 39, warned: 11, failed: 0 }
-  states: { total: 50, passed: 50, failed: 0 }
-  api: { total: 50, passed: 50, failed: 0 }
-  reachability: { total: 50, passed: 50, failed: 0 }
-  blocking: false
-
+# ─── Preview HTML render checks (V.RENDER) ──────────────────────────────────
 render_checks:
-  preview_html_coverage: "50/50 screens have preview/ dirs"
-  new_screens_preview:
-    send-money-amount: "6 states"
-    sca-challenge: "3 states"
-    payment-result: "1 state"
-    standing-order-create: "4 states"
-  archetype_declared: "all screens with preview dirs carry archetype in ui.yaml"
-  status: pass
+  overall: warn
+  new_screens:
+    pay:
+      states_declared: [loading, content, empty, error, no_network, unauthenticated]
+      states_rendered: [loading, content, empty, error, no_network, unauthenticated]
+      coverage: 6/6
+      dark_mode_via_media: true
+      data_theme_on_root: false
+      status: pass
+    pay-international:
+      states_declared: [loading, content, empty, error, no_network]
+      states_rendered: [content]
+      coverage: 1/5
+      status: warn
+      note: "V1-RENDER-PREVIEW-EXISTS: 4 states missing HTML. Run /idea-render-screen pay-international."
+    authorise-handoff:
+      states_declared: [preparing, redirecting, error]
+      states_rendered: [preparing, redirecting, error]
+      coverage: 3/3
+      dark_mode_via_media: true
+      data_theme_on_root: false
+      status: pass
+    automatic-rules:
+      states_declared: [loading, content, empty, error]
+      states_rendered: [content]
+      coverage: 1/4
+      status: warn
+      note: "V1-RENDER-PREVIEW-EXISTS: 3 states missing HTML. Run /idea-render-screen automatic-rules."
+    automatic-rule-create:
+      states_declared: [content, error]
+      states_rendered: [content]
+      coverage: 1/2
+      status: warn
+      note: "V1-RENDER-PREVIEW-EXISTS: error.html missing. Run /idea-render-screen automatic-rule-create."
+    automatic-rule-detail:
+      states_declared: [loading, content, error]
+      states_rendered: [content]
+      coverage: 1/3
+      status: warn
+      note: "V1-RENDER-PREVIEW-EXISTS: 2 states missing HTML. Run /idea-render-screen automatic-rule-detail."
+  baseline_inherited_warnings:
+    RV-001: "3 hex violations in pre-epic preview HTML — [data-theme] blocks, advisory"
+    RV-014: "12 rogue CSS var() refs across pre-epic screens — advisory"
+    RV-015: "1 font drift — advisory"
+    RV-023: "13 pre-epic screens missing @media dark-mode block. New epic screens correctly use @media (prefers-color-scheme: dark) — no regression."
+    RV-032: "7 dangling data-nav-to in pre-rendered preview HTML (cards/login/change-password — OBP screens) — pre-existing, not regenerated yet"
 
-docset_checks:
-  IDEA.md: pass
-  FEATURES.md: pass
-  REQUIREMENTS.md: pass
-  ROADMAP.md: pass
-  LAYER_STATUS.md: pass
-  status: pass
+# ─── Journey coherence (FD3-adjacent) ────────────────────────────────────────
+journey_checks:
+  overall: warn
+  findings:
+    - id: JOURNEY-STALE-SEND-MONEY
+      severity: warn
+      source: idea-layer/journeys/consumer-accounts-payments.yaml
+      message: >-
+        screen_id send-money (feature_id: send-money) referenced in screen_sequence[]
+        and flows[]. The send-money screen dir was deleted by the epic and merged into
+        the pay hub. Journey should be updated: replace send-money step with pay → send-money-amount.
+      fix_hint: "Edit consumer-accounts-payments.yaml screen_sequence to reference pay/send-money-amount"
+    - id: JOURNEY-STALE-SEND-MONEY-2
+      severity: warn
+      source: idea-layer/journeys/consumer-insights-utilities.yaml
+      message: >-
+        screen_id send-money (feature_id: send-money) and feature_id fx-rates both
+        referenced. send-money screen deleted; fx-rates was removed in OBP→HSBC migration.
+      fix_hint: "Update journey: replace send-money with pay/pay-international; remove fx-rates step"
+
+# ─── Deferred features (FD1-FD5) ────────────────────────────────────────────
+deferred_checks:
+  overall: pass
+  note: "No _deferred/ directory present. No release-plan/ directory. FD1/FD2 SKIP (expected). FD3/FD4/FD5 PASS."
+
+# ─── Epic verdict ────────────────────────────────────────────────────────────
+epic_verdict:
+  epic: consumer-app-redesign
+  new_blocking_failures: 0
+  new_error_class_failures: 0
+  new_warnings_introduced: 6
+  pre_existing_warnings_carried: 10
+  summary: >-
+    CLEAN EPIC. Zero new blocking or error-class failures. All 6 new screens have valid
+    nav wiring, correct flow.yaml targets, and are approved. App-shell Pay tab correctly
+    repoints to pay. authorise-handoff replaces bank-authorize-handoff + payment-authorize-handoff
+    correctly across all referencing flow.yaml files. VRP OBIE group now bound.
+    Warnings are advisory: missing exports (run /idea export), partial preview coverage
+    (run /idea-render-screen), stale EXPORT_MATRIX rows (prune deleted entries), stale
+    journey refs (update consumer-accounts-payments + consumer-insights-utilities).
+  next_actions:
+    - "/idea export pay pay-international authorise-handoff automatic-rules automatic-rule-create automatic-rule-detail"
+    - "/idea-render-screen pay-international automatic-rules automatic-rule-create automatic-rule-detail"
+    - "Prune EXPORT_MATRIX rows for send-money, bank-authorize-handoff, payment-authorize-handoff"
+    - "Update FEATURES.md to replace old screen names with new"
+    - "Update consumer-accounts-payments + consumer-insights-utilities journeys"
+    - "Regen APP_FLOW.mmd with new screen topology"

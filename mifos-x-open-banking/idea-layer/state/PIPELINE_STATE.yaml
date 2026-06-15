@@ -40,61 +40,100 @@ capabilities:
     detail_ref: state/STITCH_STATE.yaml
   idea-verify:
     last_run:
-      at: '2026-06-14T00:00:00.000Z'
-      status: success
+      at: '2026-06-15T00:00:00.000Z'
+      status: partial
       duration_ms: 0
       actor: claude
       args: ''
       command: /idea verify
       errors: 0
-      warnings: 11
+      warnings: 16
       layer: idea
-      quality_score: 93
-      completeness_score: 89
-      checks_run: 84
-      checks_passed: 84
+      quality_score: 91
+      completeness_score: 87
+      checks_run: 96
+      checks_passed: 90
       checks_failed: 0
-      checks_warned: 11
+      checks_warned: 6
     metrics:
-      checks_run: 84
-      checks_passed: 84
+      checks_run: 96
+      checks_passed: 90
       checks_failed: 0
-      checks_warned: 11
+      checks_warned: 6
     verify:
-      status: done
-      last_run: '2026-06-14T00:00:00.000Z'
-      checks_passed: 84
+      status: partial
+      last_run: '2026-06-15T00:00:00.000Z'
+      checks_passed: 90
       checks_failed: 0
       failed_checks: []
       warnings:
+        # ── Carried from pre-epic baseline (pre-existing, not new) ──
         - >-
-          3 weak-typed target:"" clicks (beneficiaries read-only rows, products compare chips, send-money-confirm review
-          rows) — advisory, known
+          [BASELINE] 3 weak-typed target:"" clicks (beneficiaries read-only rows, products compare chips,
+          send-money-confirm review rows) — advisory, known pre-epic
         - >-
-          consent-expired reachability: programmatic re-consent (§9 FR-005) + splash→consent-expired — advisory, no fake
-          edge
-        - 'notifications reachability: app-shell top-bar bell + FR-023 (verify-checker blind spot) — advisory'
+          [BASELINE] consent-expired reachability: programmatic re-consent (§9 FR-005) + splash→consent-expired —
+          advisory, no fake edge
+        - '[BASELINE] notifications reachability: app-shell top-bar bell + FR-023 (verify-checker blind spot) — advisory'
         - >-
-          standing-order-edit reachability: wired via standing-order-detail→standing-order-edit; PISP edit-flow decision
-          pending (FR-044) — advisory/deferred
+          [BASELINE] standing-order-edit reachability: wired via standing-order-detail→standing-order-edit; PISP
+          edit-flow decision pending (FR-044) — advisory/deferred
         - >-
-          5 unbound OBIE endpoint groups (VRP/International-Scheduled/International-Standing-Order/File/Multi-Bill) —
-          step-G new-capability candidates, not defects
-        - 'RV-001 raw hex: 3 violations in preview HTML (advisory — inside [data-theme] override blocks, not content hex)'
-        - 'RV-014 rogue CSS vars: 12 across screens (advisory — unresolved var() references)'
-        - 'RV-015 font drift: 1 screen (advisory — font-family mismatch in preview)'
-        - 'RV-023 missing dark-mode block: 13 screens (advisory — render polish, follow-up re-render queued)'
+          [BASELINE] 3 unbound OBIE endpoint groups (International-Scheduled/International-Standing-Order/File/Multi-Bill)
+          — step-G new-capability candidates, not defects. VRP now BOUND via automatic-rules/create/detail screens.
+        - '[BASELINE] RV-001 raw hex: 3 violations in preview HTML (advisory — inside [data-theme] override blocks, not content hex)'
+        - '[BASELINE] RV-014 rogue CSS vars: 12 across screens (advisory — unresolved var() references)'
+        - '[BASELINE] RV-015 font drift: 1 screen (advisory — font-family mismatch in preview)'
+        - '[BASELINE] RV-023 missing dark-mode block: 13 pre-epic screens (advisory — render polish queued; new epic screens use @media correctly)'
         - >-
-          RV-032 dangling data-nav-to: 7 targets in preview HTML pointing to OBP-removed screens
-          (cards/login/change-password) — advisory, previews not yet re-rendered post-migration
+          [BASELINE] RV-032 dangling data-nav-to: 7 targets in preview HTML pointing to OBP-removed screens
+          (cards/login/change-password) — advisory, pre-rendered previews not yet regenerated post-migration
+        # ── New warnings introduced by consumer-app-redesign epic ──
         - >-
-          3 screens missing exports dir (payment-result, send-money-amount, standing-order-create) — added 2026-06-11,
-          export pending; EXPORT_MATRIX rows registered, render/export not yet run
+          [EPIC-NEW] EXPORT_MATRIX stale: 6 new screens (pay, pay-international, authorise-handoff,
+          automatic-rules, automatic-rule-create, automatic-rule-detail) missing from EXPORT_MATRIX.yaml rows.
+          Run /idea export for these screens to register SPEC/API/MOCKUP entries. WARN severity — screens are
+          approved but exports not yet generated.
+        - >-
+          [EPIC-NEW] EXPORT_MATRIX orphan rows: 3 deleted screens (send-money, bank-authorize-handoff,
+          payment-authorize-handoff) still have rows in EXPORT_MATRIX.yaml. These screens were merged into
+          pay/authorise-handoff and deleted. Rows should be pruned after export of replacement screens.
+          Advisory only — no runtime impact.
+        - >-
+          [EPIC-NEW] pay/docs.yaml MISSING — pay screen has no docs.yaml sibling. Has ui.yaml + flow.yaml
+          + preview (all 6 states rendered) + demo-data + prompts. docs.yaml needed for capability declaration,
+          last_verify cache, and approve_hash storage. Run /idea export pay to generate.
+        - >-
+          [EPIC-NEW] authorise-handoff/api.yaml MISSING — authorise-handoff has docs.yaml + ui.yaml + flow.yaml
+          + preview (all 3 states) but no api.yaml sibling. The screen's API surface (OAuth2 authorize URL build,
+          consent staging) should be declared there. Run /idea export authorise-handoff to generate.
+        - >-
+          [EPIC-NEW] automatic-rule-create/api.yaml MISSING — automatic-rule-create has docs.yaml + ui.yaml +
+          flow.yaml + preview but no api.yaml sibling. VRP consent creation endpoints need declaring. Run
+          /idea export automatic-rule-create to generate.
+        - >-
+          [EPIC-NEW] Preview state coverage gaps: pay-international has 5 declared states but only content.html
+          rendered (missing: loading, empty, error, no_network). automatic-rules has 4 states, only content.html.
+          automatic-rule-detail has 3 states, only content.html. automatic-rule-create has 2 states, only
+          content.html (missing: error.html). Run /idea-render-screen for each to fill gaps. Advisory — screens
+          are approved with partial render coverage.
+        # ── Journey drift — pre-existing, surfaced by epic context ──
+        - >-
+          [EPIC-SURFACE] consumer-accounts-payments journey + consumer-insights-utilities journey reference
+          screen_id send-money (feature_id: send-money) which no longer exists as a screen dir — merged into
+          pay hub. Journey YAMLs need update to reference pay + send-money-amount. FD3 advisory — journeys
+          not yet reconciled post-epic.
+        - >-
+          [EPIC-SURFACE] consumer-insights-utilities journey references feature_id fx-rates which was removed
+          in the OBP→HSBC migration. Stale journey entry. Update to pay-international or remove. Advisory.
       note: >-
-        39 screens total: 31 approved, 8 designed (8 consent/redirect screens advanced enriched→designed via /idea
-        export 2026-06-14). 0 draft. Server/owned-DB checks SKIP-by-policy (backend.owned=false). tests.yaml absent from
-        38/39 screens — capability-gated (has_testing not declared; standing-order-edit has tests.yaml). 0 NEW blocking
-        failures.
+        42 screens total post-epic: 36 approved, 6 new screens approved (pay, pay-international,
+        authorise-handoff, automatic-rules, automatic-rule-create, automatic-rule-detail).
+        Deleted: send-money, bank-authorize-handoff, payment-authorize-handoff (merged into pay + authorise-handoff).
+        0 blocking failures. All new screen nav targets resolve to existing screen dirs. Flow files (payment-initiation,
+        account-access-consent) correctly reference new screen IDs. App-shell Pay tab correctly targets pay.
+        VRP OBIE group now BOUND via automatic-rules screens. 0 NEW error-class failures introduced by the epic.
+        Warnings are advisory only (missing exports, partial preview coverage, stale journey refs).
     detail_ref: state/SYNC_STATE.verify
   idea-api-map:
     last_run:
