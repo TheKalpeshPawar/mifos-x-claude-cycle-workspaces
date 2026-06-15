@@ -395,7 +395,7 @@ components:
     test_context:
       tag: soc_submit_button
       assert_text: "Create standing order"
-      purpose: "Validates then POSTs the OBIE domestic-standing-order-consent (create_domestic_standing_order_consent → ConsentId, Status AWAU). Disabled while submitting (label 'Creating…'). On success the screen hands off to payment-authorize-handoff (consent → bank authorise → callback → submit POST /pisp/domestic-standing-orders). SCA happens at the bank."
+      purpose: "Validates then POSTs the OBIE domestic-standing-order-consent (create_domestic_standing_order_consent → ConsentId, Status AWAU). Disabled while submitting (label 'Creating…'). On success the screen hands off to authorise-handoff (consent → bank authorise → callback → submit POST /pisp/domestic-standing-orders). SCA happens at the bank."
       interaction_type: action
       data_driven: true
 
@@ -470,7 +470,7 @@ states:
   created:
     layout: { type: column }
     visible_components: []
-    note: "form.created flips true after a successful consent POST (Status AWAU) → the screen navigates to payment-authorize-handoff carrying the ConsentId for consent → bank authorise → callback → submit (POST /pisp/domestic-standing-orders). No standalone success surface here."
+    note: "form.created flips true after a successful consent POST (Status AWAU) → the screen navigates to authorise-handoff carrying the ConsentId for consent → bank authorise → callback → submit (POST /pisp/domestic-standing-orders). No standalone success surface here."
 
 state_model:
   view_model: CreateStandingOrderViewModel
@@ -497,8 +497,8 @@ state_model:
       - { name: endDate, type: "LocalDate?", default: "null" }
       - { name: submitting, type: Boolean, default: "false" }
       - { name: error, type: "String?", default: "null" }
-      - { name: consentId, type: String, default: "\"\"", note: "Data.ConsentId from the consent POST — passed to payment-authorize-handoff" }
-      - { name: created, type: Boolean, default: "false", note: "true after a successful consent POST (Status AWAU) → navigate to payment-authorize-handoff" }
+      - { name: consentId, type: String, default: "\"\"", note: "Data.ConsentId from the consent POST — passed to authorise-handoff" }
+      - { name: created, type: Boolean, default: "false", note: "true after a successful consent POST (Status AWAU) → navigate to authorise-handoff" }
   constants:
     - { name: STANDING_ORDER_FREQUENCIES, value: "[DAILY, WEEKLY, BI-WEEKLY, MONTHLY, YEARLY]" }
   validation:
@@ -534,7 +534,7 @@ api:
   - id: create_domestic_standing_order
     endpoint: "POST /obie/open-banking/v4.0/pisp/domestic-standing-orders"
     note: >
-      Submit step performed by payment-authorize-handoff AFTER bank authorise + callback (not by this
+      Submit step performed by authorise-handoff AFTER bank authorise + callback (not by this
       screen's button). References the authorised ConsentId; Data.Initiation must match the consent.
       SCA at the bank. See api.yaml.
     tag: pisp-domestic-standing-order
