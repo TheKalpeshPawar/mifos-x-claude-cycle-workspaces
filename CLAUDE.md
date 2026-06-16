@@ -1,3 +1,15 @@
+## HSBC source build (step H) — active plan
+
+The Kotlin source migration from OBP → HSBC UK/CE OBIE sandbox (FAPI 1.0 Advanced) is planned in
+**`plan-layer/project-plans/mifos-x/mifos-x-open-banking/active/hsbc-source-implementation/PLAN.md`**
+(framework repo). Read it before any `source/` work. Highlights: network-layer-FIRST (mTLS +
+`private_key_jwt` PS256 + detached-JWS for PISP writes + OAuth2/PKCE), then consent→authorise→callback,
+then OBIE DTOs/repos, then features (each gated on a real-HSBC-endpoint smoke probe + a per-screen
+**source-phase screenshot-verify** against the idea-layer preview). Verified live 2026-06-15: auth +
+`POST /aisp/account-access-consents` → 201/AWAU. New source branch `feat/hsbc-obie-fapi-network` on top of
+`feat/kmp-detemplate-app-shell-obp-client`. Certs/keys by path/env-var only (HSBC material at
+`/home/kalpesh/OpenBankingProject/HSBC_Sandbox/` + key `/home/kalpesh/OpenBankingProject/mifos-sandbox.key`).
+
 <!-- code-review-graph MCP tools -->
 ## MCP Tools: code-review-graph
 
