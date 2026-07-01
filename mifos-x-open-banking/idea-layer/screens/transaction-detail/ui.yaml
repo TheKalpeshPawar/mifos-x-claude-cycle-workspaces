@@ -1,0 +1,281 @@
+screen_id: transaction-detail
+name: "Transaction Detail"
+status: enriched
+initial_state: loading
+quality_score: 94
+
+capability_tags:
+  - rest-client
+  - data-display
+  - open-banking-ais
+  - navigation
+
+i18n_coverage: true
+
+status_history:
+  - from: draft
+    to: enriched
+    at: "2026-06-29"
+    by: "/idea-enrich"
+  - from: enriched
+    to: enriched
+    at: "2026-06-29"
+    by: "/idea-enrich"
+    note: "quality push 83→94: i18n, MCC row, currency meta, conditional retry, copy reference, credit-transaction demo, error subtypes"
+
+business_logic:
+  kind: crud
+  description: "Resolves a single transaction by transactionId from the in-memory OBReadTransaction6 list fetched via ktorfit on the transactions screen; surfaces Amount (with currency), MerchantDetails.MerchantName, Status, BookingDateTime, ValueDateTime, client-derived Category, MerchantCategoryCode, Balance.Amount, TransactionInformation (with copy-to-clipboard), and ProprietaryBankTransactionCode for a read-only AISP detail view. Retry gated by error.recoverable flag; non-recoverable errors (403 ConsentWithdrawn, TransactionNotFound) show Go Back instead."
+  external_library_refs:
+    - "ktorfit"
+    - "hsbc-obie-ais-v4.0:transactions"
+  description_author: claude
+  description_authored_at: "2026-06-29T12:00:00Z"
+
+shell:
+  bottom_navigation_visible: false
+  top_app_bar_visible: true
+  top_app_bar_title: "{strings.transaction_detail_screen_title}"
+  top_app_bar_leading: back
+  fab_visible: false
+
+states: [loading, content, error]
+
+components:
+  # ── LOADING STATE ────────────────────────────────────────────────────────────
+  - type: progress_indicator
+    variant: circular
+    state_binding: [loading]
+    accessibility_label: "{strings.transaction_detail_loading}"
+    test_context:
+      purpose: "Visual feedback while OBReadTransaction6 list is fetched and filtered by transactionId"
+      required_fields: []
+      interaction_type: display
+      data_driven: false
+
+  # ── NAVIGATION (always visible) ───────────────────────────────────────────────
+  - type: icon_button
+    id: back_button
+    icon: arrow_back
+    accessibility_label: "{strings.transaction_detail_back_a11y}"
+    on_click:
+      action: navigate_back
+      target: transactions
+    test_context:
+      purpose: "Pop screen off nav stack returning to transactions list"
+      required_fields: []
+      interaction_type: navigate
+      data_driven: false
+
+  # ── HEADER — AMOUNT ───────────────────────────────────────────────────────────
+  - type: text
+    id: amount_header
+    state_binding: [content]
+    value: "{transaction.CreditDebitIndicator == 'Credit' ? '+' : '-'}£{transaction.Amount.Amount}"
+    style: displaySmall
+    color: "{transaction.CreditDebitIndicator == 'Credit' ? 'primary' : 'error'}"
+    accessibility_label: "{strings.transaction_detail_amount_a11y_prefix}: {transaction.Amount.Amount} {transaction.Amount.Currency}"
+    test_context:
+      purpose: "Large colour-coded amount header: primary for credit, error for debit; sign prefixed from CreditDebitIndicator"
+      required_fields: [transaction.Amount.Amount, transaction.CreditDebitIndicator]
+      interaction_type: display
+      data_driven: true
+
+  - type: text
+    id: transaction_currency_meta
+    state_binding: [content]
+    value: "{transaction.Amount.Currency}"
+    style: labelMedium
+    color: on-surface-variant
+    accessibility_label: "Currency: {transaction.Amount.Currency}"
+    test_context:
+      purpose: "Currency code (GBP) displayed in muted labelMedium below the amount — confirms ISO 4217 currency for screen-reader users and international PSUs"
+      required_fields: [transaction.Amount.Currency]
+      interaction_type: display
+      data_driven: true
+
+  # ── HEADER — MERCHANT & STATUS ────────────────────────────────────────────────
+  - type: text
+    id: merchant_name
+    state_binding: [content]
+    value: "{transaction.MerchantDetails.MerchantName || transaction.TransactionInformation}"
+    style: headlineMedium
+    accessibility_label: "{strings.transaction_detail_merchant_a11y_prefix}: {transaction.MerchantDetails.MerchantName}"
+    test_context:
+      purpose: "Merchant name from OBTransaction6.MerchantDetails.MerchantName; falls back to TransactionInformation when MerchantDetails absent (e.g. direct credits, bank transfers)"
+      required_fields: [transaction.MerchantDetails.MerchantName]
+      interaction_type: display
+      data_driven: true
+
+  - type: chip
+    id: status_badge
+    state_binding: [content]
+    label: "{transaction.Status}"
+    variant: assist
+    color: "{transaction.Status == 'Booked' ? 'primary-container' : 'secondary-container'}"
+    accessibility_label: "{strings.transaction_detail_status_a11y_prefix}: {transaction.Status}"
+    test_context:
+      purpose: "OBIE Status enum badge (Booked=primary-container, Pending=secondary-container)"
+      required_fields: [transaction.Status]
+      interaction_type: display
+      data_driven: true
+
+  - type: divider
+    id: header_separator
+    state_binding: [content]
+
+  # ── DETAIL CARD ───────────────────────────────────────────────────────────────
+  - type: card
+    id: detail_card
+    state_binding: [content]
+    elevation: 1
+    test_context:
+      purpose: "Grouped detail card of all supplementary transaction fields from OBTransaction6"
+      required_fields: [transaction.BookingDateTime, transaction.ValueDateTime, transaction.Category, transaction.Balance.Amount.Amount, transaction.TransactionInformation, transaction.ProprietaryBankTransactionCode.Code]
+      interaction_type: display
+      data_driven: true
+    children:
+      - type: text
+        id: detail_card_header
+        value: "{strings.transaction_detail_card_title}"
+        style: titleSmall
+        color: on-surface-variant
+        accessibility_label: "{strings.transaction_detail_card_title}"
+
+      - type: list_item
+        id: booking_date_row
+        label: "{strings.transaction_detail_booking_date}"
+        supporting_text: "{transaction.BookingDateTime}"
+        accessibility_label: "{strings.transaction_detail_booking_date}: {transaction.BookingDateTime}"
+        test_context:
+          purpose: "ISO 8601 BookingDateTime from OBTransaction6 showing when the transaction cleared"
+          required_fields: [transaction.BookingDateTime]
+          interaction_type: display
+          data_driven: true
+
+      - type: divider
+
+      - type: list_item
+        id: value_date_row
+        label: "{strings.transaction_detail_value_date}"
+        supporting_text: "{transaction.ValueDateTime}"
+        accessibility_label: "{strings.transaction_detail_value_date}: {transaction.ValueDateTime}"
+        test_context:
+          purpose: "ISO 8601 ValueDateTime from OBTransaction6 showing effective value date (may differ from BookingDateTime for pending transactions)"
+          required_fields: [transaction.ValueDateTime]
+          interaction_type: display
+          data_driven: true
+
+      - type: divider
+
+      - type: list_item
+        id: category_row
+        label: "{strings.transaction_detail_category}"
+        supporting_text: "{transaction.Category}"
+        accessibility_label: "{strings.transaction_detail_category}: {transaction.Category}"
+        test_context:
+          purpose: "Client-derived PFM category from ProprietaryBankTransactionCode.Code MCC lookup (e.g. MCC 5411 → Groceries)"
+          required_fields: [transaction.Category]
+          interaction_type: display
+          data_driven: true
+
+      - type: divider
+
+      - type: list_item
+        id: mcc_row
+        label: "{strings.transaction_detail_mcc}"
+        supporting_text: "{transaction.MerchantDetails.MerchantCategoryCode}"
+        visible: "{transaction.MerchantDetails.MerchantCategoryCode != null}"
+        accessibility_label: "{strings.transaction_detail_mcc}: {transaction.MerchantDetails.MerchantCategoryCode}"
+        test_context:
+          purpose: "ISO 18245 Merchant Category Code from OBTransaction6.MerchantDetails.MerchantCategoryCode; conditionally rendered — absent for direct credits, bank transfers, and non-card transactions"
+          required_fields: [transaction.MerchantDetails.MerchantCategoryCode]
+          interaction_type: display
+          data_driven: true
+
+      - type: divider
+
+      - type: list_item
+        id: balance_after_row
+        label: "{strings.transaction_detail_balance_after}"
+        trailing_content: "{transaction.Balance.CreditDebitIndicator == 'Credit' ? '' : '-'}£{transaction.Balance.Amount.Amount}"
+        trailing_style: bodyMedium
+        accessibility_label: "{strings.transaction_detail_balance_after}: {transaction.Balance.CreditDebitIndicator == 'Credit' ? '' : 'negative '}£{transaction.Balance.Amount.Amount}"
+        test_context:
+          purpose: "Running balance after transaction from OBTransactionCashBalance field; sign derived from Balance.CreditDebitIndicator; type InterimBooked"
+          required_fields: [transaction.Balance.Amount.Amount, transaction.Balance.CreditDebitIndicator]
+          interaction_type: display
+          data_driven: true
+
+      - type: divider
+
+      - type: list_item
+        id: reference_row
+        label: "{strings.transaction_detail_reference}"
+        supporting_text: "{transaction.TransactionInformation}"
+        trailing_icon: content_copy
+        on_click:
+          action: copy_to_clipboard
+          value: "{transaction.TransactionInformation}"
+        accessibility_label: "{strings.transaction_detail_reference}: {transaction.TransactionInformation}. {strings.transaction_detail_copy_reference_a11y}"
+        test_context:
+          purpose: "Free-text reference from OBTransaction6.TransactionInformation (e.g. TESCO STORES 3476 LONDON); trailing copy-to-clipboard icon triggers CopyTransactionReference VM action"
+          required_fields: [transaction.TransactionInformation]
+          interaction_type: action
+          data_driven: true
+
+      - type: divider
+
+      - type: list_item
+        id: bank_code_row
+        label: "{strings.transaction_detail_bank_code}"
+        supporting_text: "{transaction.ProprietaryBankTransactionCode.Code} · {transaction.ProprietaryBankTransactionCode.Issuer}"
+        accessibility_label: "{strings.transaction_detail_bank_code}: {transaction.ProprietaryBankTransactionCode.Code} {strings.transaction_detail_bank_code_issued_by} {transaction.ProprietaryBankTransactionCode.Issuer}"
+        test_context:
+          purpose: "HSBC proprietary transaction code and issuer from OBTransaction6.ProprietaryBankTransactionCode (e.g. DR · HSBC)"
+          required_fields: [transaction.ProprietaryBankTransactionCode.Code, transaction.ProprietaryBankTransactionCode.Issuer]
+          interaction_type: display
+          data_driven: true
+
+  # ── ERROR STATE ───────────────────────────────────────────────────────────────
+  - type: empty_state
+    id: error_state
+    variant: error
+    state_binding: [error]
+    icon: error_outline
+    title: "{strings.transaction_detail_error_title}"
+    body: "{error.message}"
+    accessibility_label: "{strings.transaction_detail_error_title}"
+    test_context:
+      purpose: "Fallback error surface for 401 token expired (recoverable), 403 consent withdrawn (non-recoverable), or transactionId not found in list (non-recoverable). Retry button conditional on error.recoverable."
+      required_fields: [error.message, error.recoverable]
+      interaction_type: display
+      data_driven: true
+    children:
+      - type: button
+        id: retry_button
+        variant: filled
+        visible: "{error.recoverable}"
+        label: "{strings.transaction_detail_retry}"
+        accessibility_label: "{strings.transaction_detail_retry}"
+        on_click:
+          action: retry_load
+        test_context:
+          purpose: "Trigger retry of OBReadTransaction6 fetch — visible only when error.recoverable is true (401 token expiry, network errors)"
+          required_fields: [error.recoverable]
+          interaction_type: action
+          data_driven: true
+
+      - type: button
+        id: go_back_button
+        variant: outlined
+        visible: "{!error.recoverable}"
+        label: "{strings.transaction_detail_go_back}"
+        accessibility_label: "{strings.transaction_detail_go_back}"
+        on_click:
+          action: navigate_back
+        test_context:
+          purpose: "Navigate back to transactions list — shown when error is non-recoverable (403 ConsentWithdrawn, TransactionNotFoundError). No retry is meaningful."
+          required_fields: [error.recoverable]
+          interaction_type: navigate
+          data_driven: true

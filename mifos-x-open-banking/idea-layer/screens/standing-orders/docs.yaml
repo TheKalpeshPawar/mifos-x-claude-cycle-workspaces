@@ -1,0 +1,89 @@
+feature: standing-orders
+status: enriched
+cluster: payments-context
+acceptance_refs: [FR-006]
+scaffolded_by: "/idea-heal"
+archetype: index_list
+flow_ref: recurring-and-statements
+description: "Read-only list of recurring outbound standing orders for an account, sourced from OBReadStandingOrder6. Shows payee name, status badge (Active/Inactive), next payment amount, human-readable frequency, next payment date, optional final payment date, sort-code/account number, and payment reference. Active/Inactive summary row computed from StandingOrderStatusCode counts. Reached from account-detail Standing Orders chip."
+has_ui: true
+has_server: false
+
+metadata:
+  category: crud
+  implementation_ready: true
+  impl_ready_at: "2026-06-29T15:00:00Z"
+  impl_ready_schema: "v2"
+  i18n_covered: true
+  a11y_covered: true
+
+contracts: []
+
+libraries:
+  - capability: rest-client
+    library: ktorfit
+    version: "latest"
+    targets: [android, ios, desktop, web]
+
+vm_actions:
+  - name: LoadStandingOrders
+    signature: "suspend fun loadStandingOrders(accountId: String)"
+    state_mutations:
+      - "uiState = Loading"
+      - "uiState = Content(standingOrders = response.Data.StandingOrder.map { it.withFrequencyLabel().withStatusVariant().withFinalPaymentFlag() }, summaryLabel = computeSummaryLabel(orders))"
+      - "uiState = Empty (when list is empty)"
+    side_effects:
+      - "GET /accounts/{accountId}/standing-orders via Ktorfit AisApiService"
+    error_handling:
+      on_401: "uiState = Error(TokenExpired)"
+      on_403: "uiState = Error(ConsentRevoked)"
+      on_429: "uiState = Error(RateLimited)"
+      on_network: "uiState = Error(NetworkError)"
+
+  - name: RetryLoad
+    signature: "fun retryLoad()"
+    state_mutations:
+      - "re-invokes LoadStandingOrders with same accountId"
+    side_effects: []
+    error_handling: {}
+
+  - name: NavigateBack
+    signature: "fun navigateBack()"
+    state_mutations: []
+    side_effects:
+      - "Emits NavigationEvent.Back to NavController"
+    error_handling: {}
+
+error_cases:
+  - id: TokenExpired
+    trigger: "HTTP 401 from HSBC AIS"
+    user_message: "Session expired. Please log in again."
+    recovery: "Route to login screen"
+
+  - id: ConsentRevoked
+    trigger: "HTTP 403 from HSBC AIS"
+    user_message: "Account access consent has been revoked."
+    recovery: "Route to consent-list screen"
+
+  - id: RateLimited
+    trigger: "HTTP 429 from HSBC AIS"
+    user_message: "Too many requests. Please wait a moment and try again."
+    recovery: "Retry button re-triggers LoadStandingOrders after brief delay"
+
+  - id: NetworkError
+    trigger: "IOException / timeout"
+    user_message: "No network connection. Check your connection and retry."
+    recovery: "Retry button re-triggers LoadStandingOrders"
+
+  - id: EmptyResult
+    trigger: "Data.StandingOrder[] is empty"
+    user_message: "No standing orders are set up for this account."
+    recovery: "Empty state shown; no action needed"
+
+test_fixtures:
+  source: "idea-layer/screens/standing-orders/demo-data.yaml"
+  scenario_count: 11
+  priority_distribution:
+    p0: 2
+    p1: 6
+    p2: 3

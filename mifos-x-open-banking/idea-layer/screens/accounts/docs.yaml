@@ -1,0 +1,75 @@
+feature: accounts
+status: designed
+cluster: account
+acceptance_refs:
+  - FR-003
+  - FR-004
+  - FR-009
+scaffolded_by: /idea-add
+archetype: index_list
+description: >-
+  Authorised accounts list with balance preview per account. Primary bottom-nav anchor (tab order 0). Supports
+  multi-currency cards (Global Money / Global Wallet). Entry point to account-detail. Shows consent expiry warning when
+  < 30 days remain.
+has_ui: true
+has_server: false
+impl_notes:
+  viewmodel: 'AccountsViewModel : BaseViewModel<AccountsState, AccountsEvent, AccountsAction>'
+  state_model: |
+    data class AccountsState(
+      val accounts: List<AccountWithBalance> = emptyList(),
+      val filteredAccounts: List<AccountWithBalance> = emptyList(),
+      val activeFilter: AccountSubType? = null,
+      val totalBalanceFormatted: String = "",
+      val totalBalanceAccountCount: Int = 0,
+      val activeConsentId: String = "",
+      val consentDaysRemaining: Int = Int.MAX_VALUE,
+      val isConsentExpiring: Boolean = false,
+      val uiState: UiState = UiState.Loading
+    )
+    // UiState ∈ { Loading, Content, ConsentExpiring, Empty, Error(cause) }
+  dto_refs:
+    - OBReadAccount6
+    - OBReadAccount6Data
+    - OBAccount6
+    - OBCashAccount3
+    - OBReadBalance1
+    - OBReadBalance1Data
+    - OBCashBalance3
+    - OBActiveOrHistoricCurrencyAndAmount
+  api_calls:
+    - 'GET /accounts → OBReadAccount6 (permission: ReadAccountsDetail)'
+    - 'GET /accounts/{AccountId}/balances → OBReadBalance1 (permission: ReadBalances) — parallel per AccountId'
+  parallelism: coroutineScope { accounts.map { async { apiService.getBalances(it.AccountId) } }.awaitAll() }
+  consent_expiry_check: |
+    val daysRemaining = ChronoUnit.DAYS.between(Instant.now(), consent.ExpirationDateTime)
+    isConsentExpiring = daysRemaining < 30
+    uiState = if (isConsentExpiring) UiState.ConsentExpiring else UiState.Content
+  balance_display_rules:
+    - Use InterimAvailable balance type preferentially; fallback to InterimBooked.
+    - >-
+      CreditCard + CreditDebitIndicator=Debit → balanceColor=error, showBalanceBadge=true,
+      balanceTypeLabel=strings.accounts.card.balance.owed_label
+    - All other accounts → balanceColor=on_surface, showBalanceBadge=false
+    - Non-GBP currencies (GlobalWallet) → display native currency code (e.g. USD 250.00)
+  account_type_icon_map:
+    CurrentAccount: account_balance
+    Savings: savings
+    CreditCard: credit_card
+    GlobalMoney: public
+    GlobalWallet: currency_exchange
+  navigation:
+    - 'accounts → account-detail (param: AccountId)'
+    - 'accounts → consent-detail (param: ConsentId) — reconfirm path when consent_expiring'
+    - accounts → login — on 401 / no active consent
+  i18n_keys_prefix: accounts.*
+  i18n_keys_file: idea-layer/_strings/strings.yaml
+status_history:
+  - from: enriched
+    to: design_partial
+    at: '2026-07-01T04:05:29.695Z'
+    by: /idea-export-stitch
+  - from: design_partial
+    to: designed
+    at: '2026-07-01T04:09:19.683Z'
+    by: /idea-export-stitch

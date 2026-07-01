@@ -1,0 +1,78 @@
+feature: pfm
+status: enriched
+cluster: pfm
+acceptance_refs: [FR-011]
+scaffolded_by: "/idea-heal"
+archetype: dashboard
+description: "Category-level spending breakdown derived from cached AIS transactions (CreditDebitIndicator=Debit). Period selector (this month / last month / 3 months) drives a pure in-memory re-aggregation without network calls. Tapping a category drills into the filtered transactions screen. Client-only; no external API. Loading, content, empty, and error states all handled."
+has_ui: true
+has_server: false
+
+metadata:
+  category: calculation
+  implementation_ready: true
+  impl_ready_at: "2026-06-29T12:00:00Z"
+  impl_ready_schema: "v2"
+
+contracts: []
+
+libraries:
+  - capability: date-time
+    library: kotlinx-datetime
+    version: "latest"
+    targets: [android, ios, desktop, web]
+  - capability: async-computation
+    library: kotlin-coroutines
+    version: "latest"
+    targets: [android, ios, desktop, web]
+
+vm_actions:
+  - name: selectPeriod
+    signature: "fun selectPeriod(period: SpendingPeriod)"
+    state_mutations:
+      - selectedPeriod
+      - uiState (loading → content | empty | error)
+      - categories
+      - periodTotalSpend
+      - periodLabel
+    side_effects:
+      - "Sets uiState = Loading"
+      - "Reads cached Room transactions filtered by CreditDebitIndicator=Debit and kotlinx-datetime LocalDate range for the period"
+      - "Groups by auto-assigned category tag (derived from MerchantCategory / ProprietaryBankTransactionCode)"
+      - "Computes per-group: totalAmount (GBP), transactionCount, percentageOfTotal (rounded to 1dp), fraction (0.0–1.0)"
+      - "Sorts descending by totalAmount"
+    error_handling:
+      on_empty: "Transition to empty state"
+      on_error: "Transition to error state; expose retryCompute action"
+
+  - name: navigateCategoryTransactions
+    signature: "fun navigateCategoryTransactions(category: String)"
+    state_mutations: []
+    side_effects:
+      - "Emits navigation event to TransactionsRoute with categoryFilter param URI-encoded"
+    error_handling: {}
+
+  - name: retryCompute
+    signature: "fun retryCompute()"
+    state_mutations:
+      - uiState (error → loading → content | empty | error)
+    side_effects:
+      - "Re-triggers selectPeriod with currently selected period"
+    error_handling:
+      on_error: "Returns to error state"
+
+error_cases:
+  - id: EC-SBC-001
+    trigger: "No debit transactions in local Room cache for selected date range"
+    handling: "Transition to empty state; period selector remains interactive"
+  - id: EC-SBC-002
+    trigger: "Room query or in-memory aggregation throws an exception"
+    handling: "Transition to error state; retry button dispatches retryCompute"
+
+test_fixtures:
+  source: "Priya Sharma anchor data — 3 months of HSBC UK sandbox transactions (Apr–Jun 2026) with 5–7 distinct MCC-derived categories per period"
+  scenario_count: 7
+  priority_distribution:
+    high: 4
+    medium: 2
+    low: 1

@@ -1,0 +1,351 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Direct Debits — error</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;500&family=Roboto+Mono:wght@400;500&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@24,400,0,0" rel="stylesheet">
+  <style>
+    /* ── Design tokens: Open Banking Trust Blue (M3 light) ── */
+    :root {
+      --md-primary: #266489;
+      --md-on-primary: #FFFFFF;
+      --md-primary-container: #C9E6FF;
+      --md-on-primary-container: #004B6F;
+      --md-background: #F7F9FF;
+      --md-surface-container-low: #F1F4F9;
+      --md-surface-container: #EBEEF3;
+      --md-surface-container-highest: #E0E3E8;
+      --md-on-surface: #181C20;
+      --md-on-surface-variant: #41474D;
+      --md-outline: #72787E;
+      --md-outline-variant: #C1C7CE;
+      --md-error: #BA1A1A;
+      --md-error-container: #FFDAD6;
+      --md-on-error-container: #93000A;
+      --radius-medium: 12px;
+      --radius-large: 16px;
+      --radius-full: 9999px;
+      --screen-padding: 16px;
+    }
+
+    /* ── Reset ── */
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      font-family: 'Roboto', sans-serif;
+      background: #D7DADF;
+      min-height: 100vh;
+      display: flex;
+      justify-content: center;
+      align-items: flex-start;
+      padding: 24px 16px;
+    }
+
+    /* ── Device frame ── */
+    .device-frame {
+      width: 393px;
+      height: 852px;
+      background: var(--md-background);
+      border-radius: 44px;
+      overflow: hidden;
+      display: flex;
+      flex-direction: column;
+      box-shadow: 0 12px 48px rgba(0,0,0,0.20), 0 2px 8px rgba(0,0,0,0.12);
+    }
+
+    /* ── Status bar ── */
+    .status-bar {
+      height: 44px;
+      background: var(--md-surface-container-low);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 0 24px;
+      flex-shrink: 0;
+    }
+    .status-time { font-size: 15px; font-weight: 600; color: var(--md-on-surface); }
+    .status-icons { display: flex; gap: 5px; align-items: center; color: var(--md-on-surface); }
+    .material-symbols-outlined.sm { font-size: 16px; }
+
+    /* ── Top app bar ── */
+    .top-app-bar {
+      height: 64px;
+      background: var(--md-surface-container-low);
+      display: flex;
+      align-items: center;
+      padding: 0 4px;
+      gap: 4px;
+      flex-shrink: 0;
+      border-bottom: 1px solid var(--md-outline-variant);
+    }
+    .icon-btn {
+      width: 48px;
+      height: 48px;
+      border: none;
+      background: transparent;
+      border-radius: var(--radius-full);
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: var(--md-on-surface);
+      -webkit-tap-highlight-color: transparent;
+    }
+    .icon-btn:hover { background: rgba(24,28,32,0.08); }
+    .icon-btn:active { background: rgba(24,28,32,0.12); }
+    .top-bar-title {
+      font-size: 22px;
+      font-weight: 400;
+      color: var(--md-on-surface);
+      line-height: 28px;
+    }
+
+    /* ── Screen content ── */
+    .screen-content {
+      flex: 1;
+      overflow-y: auto;
+      display: flex;
+      flex-direction: column;
+      padding: var(--screen-padding);
+      gap: 16px;
+    }
+
+    /* ── Error state ── */
+    .error-state {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      text-align: center;
+      padding: 24px 8px;
+      gap: 16px;
+    }
+    .error-icon-wrap {
+      width: 88px;
+      height: 88px;
+      background: var(--md-error-container);
+      border-radius: var(--radius-full);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      margin-bottom: 8px;
+    }
+    .error-icon-wrap .material-symbols-outlined {
+      font-size: 44px;
+      color: var(--md-on-error-container);
+    }
+    .error-title {
+      font-size: 22px;
+      font-weight: 400;
+      color: var(--md-on-surface);
+      line-height: 28px;
+    }
+    .error-message {
+      font-size: 14px;
+      font-weight: 400;
+      color: var(--md-on-surface-variant);
+      line-height: 20px;
+      max-width: 280px;
+    }
+
+    /* ── Error type tabs (demo: shows current scenario) ── */
+    .error-scenario-note {
+      font-size: 11px;
+      color: var(--md-on-surface-variant);
+      background: var(--md-surface-container);
+      border-radius: var(--radius-medium);
+      padding: 8px 12px;
+      text-align: left;
+      width: 100%;
+      max-width: 320px;
+    }
+    .error-scenario-note strong { color: var(--md-on-surface); }
+
+    /* ── Retry button ── */
+    .btn-filled {
+      background: var(--md-primary);
+      color: var(--md-on-primary);
+      border: none;
+      border-radius: var(--radius-full);
+      padding: 10px 32px;
+      font-family: 'Roboto', sans-serif;
+      font-size: 14px;
+      font-weight: 500;
+      line-height: 20px;
+      cursor: pointer;
+      min-height: 40px;
+      min-width: 120px;
+      transition: box-shadow 150ms;
+      -webkit-tap-highlight-color: transparent;
+    }
+    .btn-filled:hover { box-shadow: 0 1px 4px rgba(0,0,0,0.22); }
+    .btn-filled:active { opacity: 0.88; box-shadow: none; }
+
+    /* ── Bottom nav ── */
+    .bottom-nav {
+      height: 80px;
+      background: var(--md-surface-container);
+      display: flex;
+      align-items: stretch;
+      flex-shrink: 0;
+      border-top: 1px solid var(--md-outline-variant);
+    }
+    .nav-item {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: 4px;
+      cursor: pointer;
+      color: var(--md-on-surface-variant);
+      text-decoration: none;
+      background: transparent;
+      border: none;
+      padding: 8px 0 12px;
+      font-family: 'Roboto', sans-serif;
+      font-size: 12px;
+      font-weight: 500;
+      line-height: 16px;
+      -webkit-tap-highlight-color: transparent;
+    }
+    .nav-item .material-symbols-outlined { font-size: 24px; }
+    .nav-item.active { color: var(--md-primary); }
+    .nav-pill {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      width: 64px;
+      height: 32px;
+      border-radius: var(--radius-full);
+    }
+    .nav-item.active .nav-pill { background: var(--md-primary-container); }
+  </style>
+</head>
+<body>
+  <div class="device-frame">
+
+    <!-- Status bar -->
+    <div class="status-bar" aria-hidden="true">
+      <span class="status-time">9:41</span>
+      <span class="status-icons">
+        <span class="material-symbols-outlined sm">signal_cellular_alt</span>
+        <span class="material-symbols-outlined sm">wifi</span>
+        <span class="material-symbols-outlined sm">battery_full</span>
+      </span>
+    </div>
+
+    <!-- Top app bar -->
+    <header class="top-app-bar" role="banner">
+      <button
+        class="icon-btn"
+        aria-label="Navigate back to Account Detail"
+        data-action="navigate_back"
+        data-nav-to="account-detail"
+      >
+        <span class="material-symbols-outlined" aria-hidden="true">arrow_back</span>
+      </button>
+      <h1 class="top-bar-title">Direct Debits</h1>
+    </header>
+
+    <!-- Error state -->
+    <!--
+      Typed error scenarios (ViewModel maps HTTP code → userMessage + isRetriable):
+        401 TokenExpired    → "Session expired. Please log in again."            isRetriable: true  [SHOWN BELOW]
+        403 ConsentRevoked  → "Account access consent has been revoked…"         isRetriable: false [Retry hidden]
+        429 RateLimited     → "Too many requests. Please wait a moment…"         isRetriable: true
+        NetworkError        → "No network connection. Check your connection…"    isRetriable: true
+    -->
+    <main class="screen-content">
+      <section
+        class="error-state"
+        data-component-type="empty_state"
+        data-component-id="error_state"
+        data-component-variant="error"
+        aria-label="Error loading direct debits"
+        aria-live="assertive"
+      >
+        <div class="error-icon-wrap" aria-hidden="true">
+          <span class="material-symbols-outlined">error_outline</span>
+        </div>
+
+        <h2 class="error-title">Could not load direct debits</h2>
+
+        <!-- error.userMessage — ViewModel-provided (401 TokenExpired scenario) -->
+        <p class="error-message" data-component-id="error_user_message">
+          Session expired. Please log in again.
+        </p>
+
+        <!-- Retry button — visible only when error.isRetriable = true -->
+        <!-- hidden via style="display:none" when isRetriable = false (403 ConsentRevoked) -->
+        <button
+          class="btn-filled"
+          aria-label="Retry loading direct debits"
+          data-action="retry_load"
+          data-component-id="retry_button"
+          data-component-variant="filled"
+        >Retry</button>
+
+        <!-- Preview helper: error type info (not in production UI) -->
+        <div class="error-scenario-note" aria-hidden="true">
+          <strong>Preview:</strong> Showing 401 TokenExpired scenario.
+          ViewModel also handles 403 ConsentRevoked (Retry hidden),
+          429 RateLimited, and NetworkError.
+        </div>
+
+      </section>
+    </main>
+
+    <!-- Bottom navigation (sub-screen: no active tab — direct-debits is pushed from account-detail) -->
+    <nav class="bottom-nav" aria-label="Main navigation">
+      <button class="nav-item" aria-label="Home" data-nav-to="home">
+        <div class="nav-pill">
+          <span class="material-symbols-outlined" aria-hidden="true">home</span>
+        </div>
+        <span>Home</span>
+      </button>
+      <button class="nav-item" aria-label="Accounts" data-nav-to="accounts">
+        <div class="nav-pill">
+          <span class="material-symbols-outlined" aria-hidden="true">account_balance</span>
+        </div>
+        <span>Accounts</span>
+      </button>
+      <button class="nav-item" aria-label="Transactions" data-nav-to="transactions">
+        <div class="nav-pill">
+          <span class="material-symbols-outlined" aria-hidden="true">receipt_long</span>
+        </div>
+        <span>Transactions</span>
+      </button>
+      <button class="nav-item" aria-label="More" data-nav-to="settings">
+        <div class="nav-pill">
+          <span class="material-symbols-outlined" aria-hidden="true">more_horiz</span>
+        </div>
+        <span>More</span>
+      </button>
+    </nav>
+
+  </div>
+
+  <!-- preview-runtime.js v1.3.0 inline — RULE-PROTO-CLICK-002 -->
+  <script>
+    (function () {
+      function emit(el) {
+        var action = el.getAttribute('data-action');
+        var navTo  = el.getAttribute('data-nav-to');
+        if (!action && !navTo) return;
+        try {
+          window.parent.postMessage({ type: 'pdb:action', action: action, navTo: navTo }, '*');
+        } catch (e) {}
+      }
+      document.addEventListener('click', function (e) {
+        var el = e.target.closest('[data-action],[data-nav-to]');
+        if (el) { e.preventDefault(); emit(el); }
+      });
+    })();
+  </script>
+</body>
+</html>

@@ -1,0 +1,248 @@
+screen_id: standing-orders
+name: "Standing Orders"
+status: enriched
+initial_state: loading
+
+shell:
+  bottom_navigation_visible: true
+  top_app_bar_visible: true
+  top_app_bar_title: "{strings.standing_orders_screen_title}"
+  top_app_bar_leading: back
+  fab_visible: false
+
+states: [loading, content, empty, error]
+
+business_logic:
+  kind: crud
+  description: "Calls GET /accounts/{AccountId}/standing-orders via ktorfit to retrieve OBReadStandingOrder6. Maps CreditorAccount.Name, CreditorAccount.Identification, NextPaymentAmount, NextPaymentDateTime, FinalPaymentDateTime (when non-null), Reference, and StandingOrderStatusCode per Data.StandingOrder. OBIE ISO 20022 frequency codes (IntrvlMnthDay, IntrvlWkDay, IntrvlDay, IntrvlYear) are decoded to human-readable labels in StandingOrdersViewModel via a sealed FrequencyDecoder; Active/Inactive status drives badge variant (primary/secondary); hasFinalPayment flag controls FinalPaymentDateTime row visibility; summary label (e.g. '3 Active · 1 Inactive') is computed as SummaryLabel and emitted in UiState.Content."
+  external_library_refs:
+    - "ktorfit"
+    - "hsbc-obie-ais-v4.0:standing-orders"
+  description_author: claude
+  description_authored_at: "2026-06-29T15:00:00Z"
+
+components:
+  # ── LOADING STATE ────────────────────────────────────────────────
+  - type: progress_indicator
+    variant: circular
+    state_binding: [loading]
+    accessibility_label: "{strings.standing_orders_loading_a11y}"
+    test_context:
+      purpose: "Indicate async fetch of OBReadStandingOrder6 from HSBC AIS endpoint"
+      required_fields: []
+      interaction_type: display
+      data_driven: false
+
+  # ── NAVIGATION ───────────────────────────────────────────────────
+  - type: icon_button
+    id: back_button
+    icon: arrow_back
+    accessibility_label: "{strings.standing_orders_nav_back_a11y}"
+    on_click:
+      action: navigate_back
+      target: account-detail
+    test_context:
+      purpose: "Return user to account-detail screen, emitting NavigationEvent.Back to NavController"
+      required_fields: []
+      interaction_type: navigate
+      data_driven: false
+
+  # ── CONTENT STATE — summary bar ──────────────────────────────────
+  - type: text
+    id: summary_row
+    state_binding: [content]
+    role: subtitle
+    value: "{standingOrders_summary_label}"
+    style: labelMedium
+    color: "on-surface-variant"
+    accessibility_label: "{standingOrders_summary_label}"
+    test_context:
+      purpose: "ViewModel-computed summary label (e.g. '3 Active · 1 Inactive') from StandingOrderStatusCode counts; uses {strings.standing_orders_summary_format} internally"
+      required_fields: ["standingOrders_summary_label"]
+      interaction_type: display
+      data_driven: true
+
+  # ── CONTENT STATE — standing orders list ─────────────────────────
+  - type: list
+    id: standing_orders_list
+    state_binding: [content]
+    scroll_direction: vertical
+    items_source: "{standingOrders}"
+    pull_to_refresh: true
+    pull_to_refresh_action: retry_load
+    pull_to_refresh_a11y: "{strings.standing_orders_pull_refresh_a11y}"
+    test_context:
+      purpose: "Render full OBReadStandingOrder6 Data.StandingOrder array; pull-to-refresh re-triggers LoadStandingOrders"
+      required_fields: ["standingOrders"]
+      interaction_type: display
+      data_driven: true
+    children:
+      - type: card
+        id: standing_order_card
+        elevation: 1
+        test_context:
+          purpose: "Per-standing-order container grouping all payment fields for one recurring instruction"
+          required_fields: ["item"]
+          interaction_type: display
+          data_driven: true
+        children:
+          # Row 1: payee name + status badge (inline)
+          - type: text
+            id: so_payee_name
+            role: title
+            value: "{item.CreditorAccount.Name}"
+            style: titleMedium
+            accessibility_label: "{strings.standing_orders_payee_a11y_prefix} {item.CreditorAccount.Name}"
+            test_context:
+              purpose: "Beneficiary name from CreditorAccount.Name in OBReadStandingOrder6"
+              required_fields: ["item.CreditorAccount.Name"]
+              interaction_type: display
+              data_driven: true
+
+          - type: badge
+            id: so_status_badge
+            value: "{item.StandingOrderStatusCode}"
+            variant: "{item.status_variant}"
+            accessibility_label: "{strings.standing_orders_status_prefix} {item.StandingOrderStatusCode}"
+            test_context:
+              purpose: "Active (variant=primary) / Inactive (variant=secondary) badge; variant mapped in ViewModel from StandingOrderStatusCode enum"
+              required_fields: ["item.StandingOrderStatusCode", "item.status_variant"]
+              interaction_type: display
+              data_driven: true
+
+          # Row 2: next payment amount (headline)
+          - type: text
+            id: so_amount
+            role: amount
+            value: "{item.NextPaymentAmount.Amount} {item.NextPaymentAmount.Currency}"
+            style: headlineSmall
+            color: "on-surface"
+            accessibility_label: "{strings.standing_orders_amount_a11y_prefix} {item.NextPaymentAmount.Amount} {item.NextPaymentAmount.Currency}"
+            test_context:
+              purpose: "Next payment amount + currency from NextPaymentAmount OB object; on-surface color (read-only banking view — not error)"
+              required_fields: ["item.NextPaymentAmount.Amount", "item.NextPaymentAmount.Currency"]
+              interaction_type: display
+              data_driven: true
+
+          # Row 3: frequency label (human-readable)
+          - type: text
+            id: so_frequency
+            role: body
+            value: "{item.frequency_label}"
+            style: bodySmall
+            color: "on-surface-variant"
+            accessibility_label: "{strings.standing_orders_frequency_a11y_prefix} {item.frequency_label}"
+            test_context:
+              purpose: "Human-readable frequency decoded in ViewModel; covers IntrvlMnthDay, IntrvlWkDay, IntrvlDay, IntrvlYear OBIE patterns"
+              required_fields: ["item.frequency_label"]
+              interaction_type: display
+              data_driven: true
+
+          # Row 4: next payment date
+          - type: text
+            id: so_next_date
+            role: body
+            value: "{strings.standing_orders_next_prefix} {item.NextPaymentDateTime}"
+            style: bodySmall
+            color: "on-surface-variant"
+            test_context:
+              purpose: "ISO-8601 NextPaymentDateTime with localised 'Next:' prefix; ViewModel formats to dd MMM yyyy"
+              required_fields: ["item.NextPaymentDateTime"]
+              interaction_type: display
+              data_driven: true
+
+          # Row 5 (conditional): final payment date — only when hasFinalPayment=true
+          - type: text
+            id: so_final_date
+            role: body
+            value: "{strings.standing_orders_final_prefix} {item.FinalPaymentDateTime}"
+            style: bodySmall
+            color: "on-surface-variant"
+            visibility: "{item.hasFinalPayment}"
+            test_context:
+              purpose: "FinalPaymentDateTime shown only when non-null; signals last scheduled payment; hasFinalPayment flag set in ViewModel transform"
+              required_fields: ["item.FinalPaymentDateTime", "item.hasFinalPayment"]
+              interaction_type: display
+              data_driven: true
+
+          # Row 6: creditor sort-code / account number
+          - type: text
+            id: so_sort_code
+            role: body
+            value: "{item.CreditorAccount.Identification}"
+            style: bodySmall
+            color: "on-surface-variant"
+            accessibility_label: "{strings.standing_orders_sort_code_a11y_prefix} {item.CreditorAccount.Identification}"
+            test_context:
+              purpose: "CreditorAccount.Identification (UK.OBIE.SortCodeAccountNumber scheme, format '40-12-09 65872310'); aids user recognition of destination"
+              required_fields: ["item.CreditorAccount.Identification"]
+              interaction_type: display
+              data_driven: true
+
+          # Row 7: payment reference
+          - type: text
+            id: so_payment_ref
+            role: body
+            value: "{strings.standing_orders_ref_prefix} {item.Reference}"
+            style: bodySmall
+            color: "on-surface-variant"
+            test_context:
+              purpose: "Payment reference string (e.g. RENT-FLAT12, ISA-TOPUP) from OB Reference field; helps distinguish multiple orders to same creditor"
+              required_fields: ["item.Reference"]
+              interaction_type: display
+              data_driven: true
+
+  # ── EMPTY STATE ──────────────────────────────────────────────────
+  - type: empty_state
+    id: empty_standing_orders
+    state_binding: [empty]
+    icon: autorenew
+    title: "{strings.standing_orders_empty_title}"
+    body: "{strings.standing_orders_empty_body}"
+    accessibility_label: "{strings.standing_orders_empty_a11y}"
+    test_context:
+      purpose: "Zero-result state when Data.StandingOrder[] is empty in OBIE response"
+      required_fields: []
+      interaction_type: display
+      data_driven: false
+
+  # ── ERROR STATE ──────────────────────────────────────────────────
+  - type: empty_state
+    id: error_state
+    variant: error
+    state_binding: [error]
+    icon: error_outline
+    title: "{strings.standing_orders_error_title}"
+    body: "{error.message}"
+    accessibility_label: "{strings.standing_orders_error_a11y}"
+    test_context:
+      purpose: "Surface typed API errors (401 TokenExpired / 403 ConsentRevoked / 429 RateLimited / network) with ViewModel-resolved message"
+      required_fields: ["error.message"]
+      interaction_type: display
+      data_driven: true
+    children:
+      - type: button
+        id: retry_button
+        variant: filled
+        label: "{strings.standing_orders_retry}"
+        accessibility_label: "{strings.standing_orders_retry_a11y}"
+        on_click:
+          action: retry_load
+        test_context:
+          purpose: "Re-trigger LoadStandingOrders ViewModel action after transient failure"
+          required_fields: []
+          interaction_type: action
+          data_driven: false
+
+quality_score: 93
+i18n_covered: true
+a11y_covered: true
+status_history:
+  - from: draft
+    to: enriched
+    at: "2026-06-29"
+    by: "/idea-enrich"
+  - from: enriched
+    to: enriched
+    at: "2026-06-29"
+    by: "/idea-enrich (re-enrich: +i18n x20 keys, +sort-code row, +reference row, +final-date conditional row, +summary_row, +pull-to-refresh, fix amount color error→on-surface; quality 85→93)"

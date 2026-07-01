@@ -1,0 +1,33 @@
+screen_id: statement-detail
+
+on_mount:
+  - trigger: statement_detail_load
+    description: "Load statement detail and statement transactions in parallel for the given accountId and statementId."
+    steps:
+      - call: statement-detail
+        path_params:
+          AccountId: "{accountId}"
+          StatementId: "{statementId}"
+        store_as: statement
+      - call: statement-txns
+        path_params:
+          AccountId: "{accountId}"
+          StatementId: "{statementId}"
+        store_as: statementTransactions
+    on_loading: loading
+    on_success: content
+    on_error: error
+
+on_user_action:
+  - trigger: download_statement_pdf
+    description: "Fetch statement PDF binary and trigger native share/save sheet."
+    steps:
+      - call: statement-file
+        path_params:
+          AccountId: "{accountId}"
+          StatementId: "{statementId}"
+        store_as: statementPdfBlob
+    on_success: share_sheet
+
+  - trigger: retry_load
+    re_runs: [statement_detail_load]

@@ -1,0 +1,110 @@
+feature: pfm
+status: enriched
+cluster: pfm
+acceptance_refs: [FR-011]
+scaffolded_by: "/idea-heal"
+archetype: form
+description: "Set and track monthly spending budgets per category. Loading skeleton on mount; content shows form + 6 budget cards with linear progress bars (two over-budget in demo: Dining £168/£150, Shopping £124.99/£100). Over-budget alert shown with error-colour bar and detail text. Form validates amount is numeric and > 0 (RULE-IDEA-FORM-VALIDATION-001); duplicate category overwrites. Delete affordance on each card. Client-only; budgets persisted locally via kotlinx-serialization to DataStore."
+has_ui: true
+has_server: false
+
+metadata:
+  category: calculation
+  implementation_ready: true
+  impl_ready_at: "2026-06-29T12:00:00Z"
+  impl_ready_schema: "v2"
+
+contracts: []
+
+libraries:
+  - capability: local-store
+    library: kotlinx-serialization
+    version: "latest"
+    targets: [android, ios, desktop, web]
+  - capability: date-time
+    library: kotlinx-datetime
+    version: "latest"
+    targets: [android, ios, desktop, web]
+
+vm_actions:
+  - name: retryLoad
+    signature: "suspend fun retryLoad()"
+    state_mutations:
+      - uiState (→ loading → content | empty | error)
+    side_effects:
+      - "Re-runs budgets_load from loading state"
+    error_handling:
+      on_error: "Transition to error state; show error_state component"
+
+  - name: selectBudgetCategory
+    signature: "fun selectBudgetCategory(category: String)"
+    state_mutations:
+      - form.category
+    side_effects: []
+    error_handling: {}
+
+  - name: updateBudgetAmountField
+    signature: "fun updateBudgetAmountField(amount: String)"
+    state_mutations:
+      - form.amount
+      - form.amountError
+    side_effects: []
+    error_handling:
+      on_invalid: "Set form.amountError with appropriate message"
+
+  - name: saveBudget
+    signature: "suspend fun saveBudget()"
+    state_mutations:
+      - budgets (upsert by category key)
+      - form (reset after save)
+      - uiState (empty → content if this is the first budget)
+    side_effects:
+      - "Validates form.amount is numeric and > 0"
+      - "Serialises BudgetEntry to DataStore via kotlinx-serialization"
+      - "Re-computes budget progress fractions against current-month AIS transaction cache"
+    error_handling:
+      on_validation_fail: "Set field-level error messages; do not persist"
+      on_write_error: "Show snackbar with '{strings.budgets.snackbar_write_error}' and retry"
+
+  - name: deleteBudget
+    signature: "suspend fun deleteBudget(category: String)"
+    state_mutations:
+      - budgets (remove entry matching category)
+      - uiState (content → empty if list becomes empty)
+    side_effects:
+      - "Removes BudgetEntry from DataStore by category key"
+      - "Re-renders budget list"
+    error_handling:
+      on_write_error: "Show snackbar with '{strings.budgets.snackbar_write_error}'; entry remains"
+
+  - name: navigateSpendingByCategory
+    signature: "fun navigateSpendingByCategory(category: String)"
+    state_mutations: []
+    side_effects:
+      - "Emits navigation event to spending-by-category screen with category filter param"
+    error_handling: {}
+
+error_cases:
+  - id: EC-BUD-001
+    trigger: "Amount field empty on Save Budget tap"
+    handling: "Show 'Amount is required' inline validation error; do not persist"
+  - id: EC-BUD-002
+    trigger: "Amount field contains non-numeric input"
+    handling: "Show 'Enter a valid amount' inline validation error"
+  - id: EC-BUD-003
+    trigger: "Amount field value <= 0"
+    handling: "Show 'Budget must be greater than £0' inline validation error"
+  - id: EC-BUD-004
+    trigger: "DataStore read fails on mount (IOException)"
+    handling: "Transition to error state; show error_state with retry button"
+  - id: EC-BUD-005
+    trigger: "DataStore write fails on saveBudget or deleteBudget"
+    handling: "Show snackbar 'Couldn't save budget. Tap to retry.'; in-memory state unchanged"
+
+test_fixtures:
+  source: "FakeDataStore with 6 pre-set budgets + FakeTransactionCache with over-budget Dining and Shopping"
+  scenario_count: 12
+  priority_distribution:
+    high: 6
+    medium: 4
+    low: 2

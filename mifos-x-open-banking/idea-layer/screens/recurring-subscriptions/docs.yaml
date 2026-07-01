@@ -1,0 +1,79 @@
+feature: pfm
+status: enriched
+cluster: pfm
+acceptance_refs: [FR-011]
+scaffolded_by: "/idea-heal"
+archetype: index_list
+description: "Recurring payments and subscriptions detected in-app from AIS transaction patterns (distinct from bank-registered standing orders / direct debits). Shows merchant, cadence, amount, next-expected date, and a 'Detected' badge. Supports Weekly/Fortnightly/Monthly/Annual cadences; normalises all to monthly equivalent for the summary total. Client-only; no additional API calls. Tapping a subscription row opens merchant-filtered transaction history."
+has_ui: true
+has_server: false
+
+metadata:
+  category: calculation
+  implementation_ready: true
+  impl_ready_at: "2026-06-29T12:00:00Z"
+  impl_ready_schema: "v2"
+
+contracts: []
+
+libraries:
+  - capability: date-time
+    library: kotlinx-datetime
+    version: "latest"
+    targets: [android, ios, desktop, web]
+
+vm_actions:
+  - name: loadSubscriptions
+    signature: "suspend fun loadSubscriptions()"
+    state_mutations:
+      - subscriptions
+      - summary.total_monthly
+      - summary.count
+      - uiState (loading → content | empty | error)
+    side_effects:
+      - "Reads full cached transaction corpus from local DataStore"
+      - "Groups by normalised merchant name (lower-case, strip legal suffixes, collapse whitespace)"
+      - "Filters groups with ≥ 2 occurrences; infers cadence (Weekly/Fortnightly/Monthly/Annual) via kotlinx-datetime DatePeriod"
+      - "Computes next_date by adding detected period to last transaction date"
+      - "Derives monthly_equivalent per entry (monthly → same amount; annual → amount / 12; weekly → amount × 52/12; fortnightly → amount × 26/12)"
+      - "Normalises all cadences to monthly_equivalent for total_monthly"
+      - "Sorts result by monthly_equivalent descending"
+    error_handling:
+      on_empty_cache: "Transition to empty state"
+      on_insufficient_history: "Transition to empty state"
+      on_datastore_error: "Transition to error state; expose retryLoadSubscriptions action"
+
+  - name: retryLoadSubscriptions
+    signature: "fun retryLoadSubscriptions()"
+    state_mutations:
+      - uiState (error → loading)
+    side_effects:
+      - "Resets error state; reinvokes loadSubscriptions()"
+
+  - name: showMerchantTransactionHistory
+    signature: "fun showMerchantTransactionHistory(merchant: String)"
+    state_mutations: []
+    side_effects:
+      - "Navigates to transactions screen or opens bottom sheet pre-filtered by merchant name"
+      - "Passes normalised merchant name; transactions ViewModel applies case-insensitive contains match"
+
+error_cases:
+  - id: EC-RS-001
+    trigger: "Fewer than 2 qualifying recurrent transactions per merchant across all cached data"
+    handling: "Transition to empty state"
+
+  - id: EC-RS-002
+    trigger: "Transaction cache empty (no sync performed yet)"
+    handling: "Transition to empty state with instructional body text"
+
+  - id: EC-RS-003
+    trigger: "DataStore read throws IOException or serialisation error"
+    handling: "Transition to error state; display error_state component with retry button"
+
+test_fixtures:
+  source: "Fake cached transactions: 6 monthly and 1 annual recurring merchant patterns (7 total)"
+  scenario_count: 8
+  priority_distribution:
+    high: 5
+    medium: 3
+    low: 0

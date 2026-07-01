@@ -1,0 +1,46 @@
+name: OBReadATMResponse1
+version: 1.0.0
+description: >
+  HSBC Open Data public API response for GET /atms. Unauthenticated — uses a separate
+  base URL (https://api.hsbc.com/v2.0/uk/open-banking) with no AIS consent or OAuth token.
+  Returns HSBC ATM locations with services, accessibility flags, and geo-coordinates.
+  15-second timeout recommended; no SLA guarantee on this public endpoint.
+source:
+  origin: rest
+  endpoint: "/atms"
+fields:
+  - name: atm
+    type: { list_of: Json }
+    description: >
+      ATM records from data.ATM[]. Each entry contains:
+      Identification (ATM ID, primary key), SupportedLanguages[],
+      ATMServices[] (enum: CashWithdrawal, CashDeposit, Balance, StatementPrinting,
+      PinUnblock, PinChange, MiniStatement, FundTransfer, ChequeDeposit, CardActivation),
+      Accessibility[] (enum: WheelchairAccess, AudioCashMachine, BrailleInstruction,
+      LevelAccess, ExternallyLit, InductionLoop, LowCountertop, VisuallyImpairedHandset),
+      SupportedCurrencies[], MinimumPossibleAmount (decimal string),
+      Location { PostalAddress {
+        AddressLine[], StreetName, BuildingNumber, TownName, PostCode, CountrySubDivision,
+        Country, GeoLocation { GeographicCoordinates { Latitude, Longitude } }
+      } }.
+      ViewModel maps each entry to AtmDisplayItem for map-pin rendering.
+    required: true
+    source_field: "data.ATM"
+  - name: meta
+    type: { optional: Json }
+    description: "Response metadata (publication datetime, copyright, licence)."
+    source_field: "meta"
+used_by:
+  - feature: atmLocator
+    kind: response
+    api_id: atms
+    role: body
+capabilities_used:
+  - has_api
+tier: medium
+tags:
+  - open-data
+  - atm
+  - geo
+  - unauthenticated
+  - envelope

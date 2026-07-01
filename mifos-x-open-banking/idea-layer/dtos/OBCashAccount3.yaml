@@ -1,0 +1,81 @@
+name: OBCashAccount3
+version: 1.0.0
+description: >
+  OBIE account identification — scheme name + identification string + optional holder name.
+  Appears in OBAccount6.Account[] (the PSU's own account identifiers), OBTransaction6
+  CreditorAccount/DebtorAccount, OBBeneficiary5 CreditorAccount, OBStandingOrder6
+  CreditorAccount, and OBScheduledPayment3 CreditorAccount.
+  Identification and Name are PII.
+source:
+  origin: rest
+  endpoint: "/accounts/{AccountId}"
+fields:
+  - name: schemeName
+    type: String
+    description: >
+      OBIE scheme identifier. Governs how to interpret `identification`.
+      UK.OBIE.SortCodeAccountNumber = '40-12-09 65872310' format.
+      UK.OBIE.IBAN = 'GB29NWBK60161331926819'.
+      UK.OBIE.Paym = mobile-number-linked scheme.
+      UK.OBIE.PAN = card PAN (masked).
+    required: true
+    source_field: "SchemeName"
+    example: "UK.OBIE.SortCodeAccountNumber"
+  - name: identification
+    type: String
+    description: "Account number in the scheme format. PII — must not be logged or stored in plain text beyond session."
+    required: true
+    source_field: "Identification"
+    pii: true
+    example: "40-12-09 65872310"
+  - name: name
+    type: { optional: String }
+    description: "Account holder name as registered with the ASPSP. PII."
+    source_field: "Name"
+    pii: true
+    example: "Jane Smith"
+  - name: secondaryIdentification
+    type: { optional: String }
+    description: "Secondary identification — building society roll number. Optional, rarely populated."
+    source_field: "SecondaryIdentification"
+    example: "A1234"
+used_by:
+  - feature: home
+    kind: response
+    api_id: accountsList
+    role: nested
+  - feature: accounts
+    kind: response
+    api_id: accountsList
+    role: nested
+  - feature: accountDetail
+    kind: response
+    api_id: accountDetail
+    role: nested
+  - feature: beneficiaries
+    kind: response
+    api_id: beneficiariesList
+    role: nested
+  - feature: standingOrders
+    kind: response
+    api_id: standingOrdersList
+    role: nested
+  - feature: scheduledPayments
+    kind: response
+    api_id: scheduledPaymentsList
+    role: nested
+  - feature: transactions
+    kind: response
+    api_id: transactions
+    role: nested
+  - feature: transactionDetail
+    kind: response
+    api_id: transactions
+    role: nested
+capabilities_used:
+  - has_api
+tier: medium
+tags:
+  - obie
+  - account-identification
+  - pii

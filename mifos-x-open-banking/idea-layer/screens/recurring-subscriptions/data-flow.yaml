@@ -1,0 +1,46 @@
+screen_id: recurring-subscriptions
+
+on_mount:
+  - trigger: recurring_detect
+    description: "Client-derived recurring-payment detection over cached transaction history."
+    initial_state: loading
+    steps:
+      - client_derived:
+          description: >
+            Scan the cached debit transaction history for recurring patterns:
+            group transactions by merchant name (fuzzy normalised — strip legal suffixes,
+            lower-case, collapse whitespace), check for occurrences on a weekly,
+            fortnightly, monthly, or annual cadence (±5 days tolerance),
+            and require ≥2 past occurrences for detection. For each detected
+            subscription compute: cadence (Weekly/Fortnightly/Monthly/Annual),
+            amount (median of occurrences), next_date (last_date + cadence interval
+            via kotlinx-datetime DatePeriod). Annual entries also expose
+            monthly_equivalent = amount / 12 for summary rollup.
+          store_as: subscriptions
+      - client_derived:
+          description: >
+            Compute summary totals:
+              count = subscriptions.length
+              total_monthly = sum(monthly-cadence amounts)
+                            + sum(annual-cadence monthly_equivalent)
+                            + sum(fortnightly-cadence amounts × 26/12)
+                            + sum(weekly-cadence amounts × 52/12)
+            Round to 2 decimal places.
+          store_as: summary
+    on_success: content
+    on_empty: empty
+    on_error: error
+
+on_action:
+  - action: retry_load_subscriptions
+    transition: loading
+    dispatches: recurring_detect
+
+  - action: show_merchant_transaction_history
+    description: >
+      Opens a bottom sheet (or navigates to transactions screen) pre-filtered
+      by the tapped merchant name. Passes the normalised merchant name as a
+      filter parameter so the transactions ViewModel applies a case-insensitive
+      contains match against TransactionInformation and MerchantDetails.
+    params:
+      merchant: string

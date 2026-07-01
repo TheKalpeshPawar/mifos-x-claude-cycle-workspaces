@@ -1,0 +1,92 @@
+screen_id: atm-locator
+
+scenarios:
+  - id: TC-ATM-001
+    description: "ATM list loads 4 London HSBC ATMs on mount"
+    state: content
+    given: "HSBC Open Data endpoint returns 4 ATM records; no auth token required"
+    when: "Screen mounts"
+    then:
+      - "4 ATM cards render (Camden Town, Kentish Town, Euston Road, Oxford Street)"
+      - "Each card shows name, PostalAddress, distance, and service/accessibility chips"
+      - "Camden Town shows '24 hours' chip, Wheelchair chip, Cash deposit chip"
+      - "Euston Road shows 'Mon–Sat 08:00–20:00' chip (not 24h)"
+      - "Result count text reads '4 ATMs found'"
+
+  - id: TC-ATM-002
+    description: "Loading state shown while ATM fetch is in flight"
+    state: loading
+    given: "Slow network; API call in flight"
+    when: "Screen mounts"
+    then:
+      - "Linear progress indicator visible"
+      - "ATM list and filter chips not rendered"
+
+  - id: TC-ATM-003
+    description: "Error state with Retry on network failure"
+    state: error
+    given: "Device is offline; ATM endpoint unreachable"
+    when: "Screen mounts"
+    then:
+      - "Error state renders with error_outline icon"
+      - "'Could not reach HSBC Open Data. Check your connection.' message shown"
+      - "Retry filled_button visible"
+      - "Tapping Retry re-triggers atms_load"
+
+  - id: TC-ATM-004
+    description: "Empty state when no ATMs match search"
+    state: empty
+    given: "HSBC Open Data returns 4 ATMs; user searches for 'TR1 9ZZ'"
+    when: "User enters 'TR1 9ZZ' in search field"
+    then:
+      - "filteredAtms is empty after substring predicate"
+      - "Empty state renders with location_off icon"
+      - "'No ATMs found nearby' title shown"
+      - "Body suggests trying a different postcode"
+
+  - id: TC-ATM-005
+    description: "Text search filters ATM list by postcode fragment"
+    state: content
+    when: "User types 'NW1' in search field"
+    then:
+      - "Only ATMs with NW1 postcodes remain visible (Camden Town, Kentish Town, Euston Road)"
+      - "Oxford Street (W1D 1LR) filtered out"
+      - "Result count updates to '3 ATMs found'"
+
+  - id: TC-ATM-006
+    description: "24h filter chip shows only 24-hour ATMs"
+    state: content
+    when: "User taps '24h' filter chip"
+    then:
+      - "filter_24h chip shows selected state"
+      - "Euston Road (Mon–Sat 08:00–20:00) is hidden from the list"
+      - "3 ATMs remain (Camden Town, Kentish Town, Oxford Street)"
+      - "Result count updates to '3 ATMs found'"
+
+  - id: TC-ATM-007
+    description: "Multiple active filters stack (24h AND Cash deposit)"
+    state: content
+    when: "User taps '24h' chip then taps 'Cash deposit' chip"
+    then:
+      - "Both filter_24h and filter_deposit chips show selected state"
+      - "Only ATMs that are 24h AND have cash deposit remain"
+      - "Camden Town and Oxford Street remain; Kentish Town (no deposit) and Euston Road (not 24h) are hidden"
+      - "Result count updates to '2 ATMs found'"
+
+  - id: TC-ATM-008
+    description: "Tapping an ATM card triggers open_atm_directions OS intent"
+    state: content
+    when: "User taps the Camden Town ATM card"
+    then:
+      - "ViewModel emits open_atm_directions with Latitude=51.5395, Longitude=-0.1428, Name='HSBC Camden Town'"
+      - "Platform-specific geo:/maps:// intent is fired (expect/actual)"
+      - "No in-app navigation state change"
+
+  - id: TC-ATM-009
+    description: "Conditional chips: wheelchair and cash deposit chips hidden for ATMs without those services"
+    state: content
+    when: "ATM list renders Kentish Town entry (HasCashDeposit=false)"
+    then:
+      - "Kentish Town card shows '24 hours' chip"
+      - "Kentish Town card shows 'Wheelchair' chip (HasWheelchairAccess=true)"
+      - "Kentish Town card does NOT show 'Cash deposit' chip (HasCashDeposit=false)"

@@ -1,0 +1,339 @@
+screen_id: transactions
+name: "{strings.transactions.title}"
+status: enriched
+initial_state: loading
+quality_score: 95
+
+status_history:
+  - from: draft
+    to: enriched
+    at: "2026-06-29"
+    by: "/idea-enrich"
+  - from: enriched
+    to: enriched
+    at: "2026-06-29"
+    by: "/idea-enrich (re-enrichment: i18n coverage, pagination affordance, pending badge, period summary strip)"
+
+business_logic:
+  kind: crud
+  description: >
+    Fetches OBReadTransaction6 via GET /accounts/{AccountId}/transactions using ktorfit;
+    transparently pages via Links.Next cursor (each page appended to in-memory list) until
+    all transactions are loaded or user requests the next page via load_more_transactions;
+    applies client-side CreditDebitIndicator filtering, kotlinx-datetime LocalDate grouping
+    by BookingDateTime, and case-insensitive search over TransactionInformation and
+    MerchantDetails.MerchantName; derives PFM Category from ProprietaryBankTransactionCode.Code
+    or MerchantCategoryCode via an MCC lookup map; computes period totals (sum of Credit
+    amounts, sum of Debit amounts) from the currently-filtered result set for the summary strip;
+    distinguishes Pending vs Booked Status to render a badge on unsettled transactions.
+  external_library_refs:
+    - "ktorfit"
+    - "hsbc-obie-ais-v4.0:transactions"
+    - "kotlinx-datetime"
+  description_author: claude
+  description_authored_at: "2026-06-29T14:00:00Z"
+
+shell:
+  bottom_navigation_visible: true
+  top_app_bar_visible: true
+  top_app_bar_title: "{strings.transactions.title}"
+  top_app_bar_leading: back
+  fab_visible: false
+
+states: [loading, content, empty, error]
+
+components:
+  # ─── Loading ───────────────────────────────────────────────────────────────
+
+  - type: progress_indicator
+    id: loading_spinner
+    variant: circular
+    state_binding: [loading]
+    accessibility_label: "{strings.transactions.a11y.loading}"
+    test_context:
+      purpose: "Full-screen visual feedback while GET /accounts/{AccountId}/transactions first page is in flight"
+      required_fields: []
+      interaction_type: display
+      data_driven: false
+
+  # ─── Content: period summary strip ─────────────────────────────────────────
+
+  - type: stat_block
+    id: period_summary
+    state_binding: [content]
+    accessibility_label: "{strings.transactions.a11y.summary}"
+    stats:
+      - id: total_credit
+        label: "{strings.transactions.filter.money_in}"
+        value: "+£{period.totalCredit}"
+        value_color: primary
+      - id: total_debit
+        label: "{strings.transactions.filter.money_out}"
+        value: "-£{period.totalDebit}"
+        value_color: error
+    test_context:
+      purpose: "Period totals computed client-side from currently-filtered OBTransaction6 result set; credit sum in primary, debit sum in error colour"
+      required_fields: [period.totalCredit, period.totalDebit]
+      interaction_type: display
+      data_driven: true
+
+  # ─── Content: filter chips ─────────────────────────────────────────────────
+
+  - type: chip_row
+    id: filter_chips
+    state_binding: [content, empty]
+    scroll_direction: horizontal
+    test_context:
+      purpose: "Client-side filter controls applied to in-memory OBReadTransaction6 result set"
+      required_fields: []
+      interaction_type: action
+      data_driven: false
+    children:
+      - type: chip
+        id: filter_all
+        label: "{strings.transactions.filter.all}"
+        variant: filter
+        selected: true
+        accessibility_label: "{strings.transactions.a11y.filter_all}"
+        on_click:
+          action: filter_transactions
+          params:
+            filter: "all"
+        test_context:
+          purpose: "Reset CreditDebitIndicator filter to show all transactions; restores period totals to full set"
+          required_fields: []
+          interaction_type: action
+          data_driven: false
+
+      - type: chip
+        id: filter_money_in
+        label: "{strings.transactions.filter.money_in}"
+        variant: filter
+        icon: arrow_downward
+        accessibility_label: "{strings.transactions.a11y.filter_money_in}"
+        on_click:
+          action: filter_transactions
+          params:
+            filter: "credit"
+        test_context:
+          purpose: "Filter transactions list to CreditDebitIndicator=Credit rows only"
+          required_fields: []
+          interaction_type: action
+          data_driven: false
+
+      - type: chip
+        id: filter_money_out
+        label: "{strings.transactions.filter.money_out}"
+        variant: filter
+        icon: arrow_upward
+        accessibility_label: "{strings.transactions.a11y.filter_money_out}"
+        on_click:
+          action: filter_transactions
+          params:
+            filter: "debit"
+        test_context:
+          purpose: "Filter transactions list to CreditDebitIndicator=Debit rows only"
+          required_fields: []
+          interaction_type: action
+          data_driven: false
+
+      - type: chip
+        id: filter_date_range
+        label: "{strings.transactions.filter.date_range}"
+        variant: filter
+        icon: date_range
+        accessibility_label: "{strings.transactions.a11y.filter_date_range}"
+        on_click:
+          action: open_date_range_picker
+        test_context:
+          purpose: "Opens date range picker; on confirm re-fetches with fromBookingDateTime/toBookingDateTime and resets pagination cursor"
+          required_fields: []
+          interaction_type: action
+          data_driven: false
+
+  # ─── Content: search field ─────────────────────────────────────────────────
+
+  - type: text_field
+    id: search_field
+    state_binding: [content, empty]
+    label: "{strings.transactions.search.label}"
+    placeholder: "{strings.transactions.search.placeholder}"
+    leading_icon: search
+    trailing_icon: clear
+    validation: none
+    accessibility_label: "{strings.transactions.a11y.search}"
+    on_click:
+      action: search_transactions
+    test_context:
+      purpose: "Case-insensitive substring match against TransactionInformation and MerchantDetails.MerchantName"
+      required_fields: []
+      interaction_type: input
+      data_driven: false
+
+  # ─── Content: transaction list ─────────────────────────────────────────────
+
+  - type: list
+    id: transactions_list
+    state_binding: [content]
+    scroll_direction: vertical
+    items_source: "{transactions_by_date}"
+    test_context:
+      purpose: "Date-grouped list of OBTransaction6 rows after client-side filter and search applied"
+      required_fields: [transactions_by_date]
+      interaction_type: display
+      data_driven: true
+    children:
+      - type: section_header
+        id: date_group_header
+        label: "{group.date}"
+        test_context:
+          purpose: "BookingDateTime date header derived via kotlinx-datetime LocalDate grouping; formatted as 'EEE d MMM yyyy' by ViewModel"
+          required_fields: [group.date]
+          interaction_type: display
+          data_driven: true
+
+      - type: list_item
+        id: transaction_row
+        leading_content_type: icon
+        leading_icon: "{item.CreditDebitIndicator == 'Credit' ? 'arrow_downward' : 'arrow_upward'}"
+        supporting_text: "{item.Category}"
+        trailing_content: "{item.CreditDebitIndicator == 'Credit' ? '+' : '-'}£{item.Amount.Amount}"
+        trailing_color: "{item.CreditDebitIndicator == 'Credit' ? 'primary' : 'error'}"
+        trailing_style: titleMedium
+        accessibility_label: "{item.TransactionInformation}, {item.CreditDebitIndicator == 'Credit' ? strings.transactions.a11y.credit : strings.transactions.a11y.debit}, £{item.Amount.Amount} {item.Amount.Currency}{item.Status == 'Pending' ? ', ' + strings.transactions.status.pending : ''}"
+        on_click:
+          action: navigate_transaction_detail
+          target: transaction-detail
+          params:
+            transactionId: "{item.TransactionId}"
+            accountId: "{item.AccountId}"
+        test_context:
+          purpose: "Tappable transaction row with merchant name, PFM category chip, colour-coded amount, and conditional Pending badge; navigates to transaction-detail on tap"
+          required_fields: [item.TransactionId, item.TransactionInformation, item.CreditDebitIndicator, item.Amount.Amount, item.Category, item.Status]
+          interaction_type: navigate
+          data_driven: true
+        children:
+          - type: text
+            id: tx_merchant
+            value: "{item.TransactionInformation}"
+            style: bodyMedium
+            test_context:
+              purpose: "Transaction merchant or narrative from OBTransaction6.TransactionInformation"
+              required_fields: [item.TransactionInformation]
+              interaction_type: display
+              data_driven: true
+
+          - type: chip
+            id: tx_category_tag
+            label: "{item.Category}"
+            variant: assist
+            style: labelSmall
+            test_context:
+              purpose: "Client-derived PFM category tag from ProprietaryBankTransactionCode.Code / MCC lookup"
+              required_fields: [item.Category]
+              interaction_type: display
+              data_driven: true
+
+          - type: badge
+            id: tx_pending_badge
+            label: "{strings.transactions.status.pending}"
+            variant: warning
+            visible_when: "{item.Status == 'Pending'}"
+            accessibility_label: "{strings.transactions.a11y.pending_status}"
+            test_context:
+              purpose: "Warning badge shown only when OBTransaction6.Status=Pending; distinguishes unsettled from booked transactions"
+              required_fields: [item.Status]
+              interaction_type: display
+              data_driven: true
+
+  # ─── Content: pagination footer ────────────────────────────────────────────
+
+  - type: button
+    id: load_more_button
+    variant: text
+    label: "{strings.transactions.load_more}"
+    state_binding: [content]
+    visible_when: "{has_next_page && !is_paginating}"
+    accessibility_label: "{strings.transactions.a11y.load_more}"
+    on_click:
+      action: load_more_transactions
+    test_context:
+      purpose: "Triggers next-page fetch using Links.Next cursor from OBIE pagination response; shown only when has_next_page=true and not already paginating"
+      required_fields: [has_next_page, is_paginating]
+      interaction_type: action
+      data_driven: true
+
+  - type: progress_indicator
+    id: pagination_loader
+    variant: linear
+    state_binding: [content]
+    visible_when: "{is_paginating}"
+    accessibility_label: "{strings.transactions.a11y.loading_more}"
+    test_context:
+      purpose: "Linear progress bar at list bottom while next-page fetch is in flight; replaces load_more_button during pagination"
+      required_fields: [is_paginating]
+      interaction_type: display
+      data_driven: true
+
+  # ─── Empty state ───────────────────────────────────────────────────────────
+
+  - type: empty_state
+    id: empty_transactions
+    state_binding: [empty]
+    icon: receipt_long
+    title: "{strings.transactions.empty.title}"
+    body: "{strings.transactions.empty.body}"
+    accessibility_label: "{strings.transactions.a11y.empty_no_match}"
+    test_context:
+      purpose: "Empty state shown when active filter, search, or date range yields zero matching OBTransaction6 rows"
+      required_fields: []
+      interaction_type: display
+      data_driven: false
+    children:
+      - type: button
+        id: clear_filters_button
+        variant: outlined
+        label: "{strings.transactions.empty.clear_filters}"
+        accessibility_label: "{strings.transactions.a11y.clear_filters}"
+        on_click:
+          action: clear_filters
+        test_context:
+          purpose: "Reset CreditDebitIndicator filter, date range, and search query; transitions to content if transactions exist"
+          required_fields: []
+          interaction_type: action
+          data_driven: false
+
+  # ─── Error state ───────────────────────────────────────────────────────────
+
+  - type: empty_state
+    id: error_state
+    variant: error
+    state_binding: [error]
+    icon: error_outline
+    title: "{strings.transactions.error.title}"
+    body: "{error.message}"
+    accessibility_label: "{strings.transactions.a11y.error}"
+    test_context:
+      purpose: >
+        Contextual error surface; error.message resolved by ViewModel from i18n strings by HTTP status:
+        401 → strings.transactions.error.session_expired,
+        403 → strings.transactions.error.consent_withdrawn,
+        429 → strings.transactions.error.rate_limited,
+        null → strings.transactions.error.no_network
+      required_fields: [error.message, error.recoverable]
+      interaction_type: display
+      data_driven: true
+    children:
+      - type: button
+        id: retry_button
+        variant: filled
+        label: "{strings.transactions.error.retry}"
+        visible_when: "{error.recoverable}"
+        accessibility_label: "{strings.transactions.a11y.retry}"
+        on_click:
+          action: retry_load
+        test_context:
+          purpose: "Retry GET /accounts/{AccountId}/transactions via ktorfit; hidden when error.recoverable=false (403 consent withdrawn)"
+          required_fields: [error.recoverable]
+          interaction_type: action
+          data_driven: true

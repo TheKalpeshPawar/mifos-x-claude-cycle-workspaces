@@ -1,0 +1,159 @@
+feature: home
+status: enriched
+cluster: dashboard
+acceptance_refs: [FR-001, FR-003, FR-004, FR-009]
+scaffolded_by: "/idea-add"
+scaffolded_from_context: false
+archetype: dashboard
+is_primary_flow: true
+description: >
+  Landing screen (Home tab, bottom-nav order 0) displaying the currently selected
+  account with its hero balance card, quick-action row, recent transactions preview,
+  and a spending snapshot. Aggregates AIS data: selected account metadata
+  (GET /accounts/{AccountId}), its InterimAvailable balance (GET /accounts/{AccountId}/balances),
+  and 5 most-recent transactions (GET /accounts/{AccountId}/transactions). Account-switcher
+  chip at top drives state re-load for a different AccountId. Routes to consent-list
+  (Manage consents) — replacing bottom-nav Consents tab for production nav.
+has_ui: true
+has_server: false
+
+metadata:
+  category: aggregation
+  implementation_ready: false
+  impl_ready_schema: "v2"
+
+contracts: []
+
+libraries:
+  - capability: http-client
+    library: ktorfit
+    version: "latest"
+    targets: [android, ios, desktop, web]
+  - capability: async-computation
+    library: kotlin-coroutines
+    version: "latest"
+    targets: [android, ios, desktop, web]
+
+impl_notes:
+  viewmodel: "HomeViewModel : BaseViewModel<HomeState, HomeEvent, HomeAction>"
+  state_model: |
+    data class HomeState(
+      val allAccounts: List<OBAccount6> = emptyList(),
+      val selectedAccountId: String = "",
+      val selectedAccount: OBAccount6? = null,
+      val selectedAccountBalance: OBCashBalance3? = null,
+      val availableBalance: OBCashBalance3? = null,
+      val recentTransactions: List<OBTransaction6> = emptyList(),
+      val spendThisMonth: String = "",
+      val topCategoryName: String = "",
+      val activeConsentId: String = "",
+      val uiState: UiState = UiState.Loading
+    )
+    // UiState ∈ { Loading, Content, Empty(reason), Error(code, message, recoverable) }
+  dto_refs:
+    - OBReadAccount6        # GET /accounts response wrapper — for account-switcher list
+    - OBAccount6            # per-account record
+    - OBCashAccount3        # account identifier (sort code / IBAN / PAN)
+    - OBReadBalance1        # GET /accounts/{id}/balances response wrapper
+    - OBCashBalance3        # per-balance record — Type, CreditDebitIndicator, Amount
+    - OBActiveOrHistoricCurrencyAndAmount
+    - OBReadTransaction6    # GET /accounts/{id}/transactions response wrapper
+    - OBTransaction6        # per-transaction record
+  api_calls:
+    - "GET /accounts → OBReadAccount6 (permission: ReadAccountsDetail) — for switcher"
+    - "GET /accounts/{AccountId}/balances → OBReadBalance1 (permission: ReadBalances)"
+    - "GET /accounts/{AccountId}/transactions?limit=5 → OBReadTransaction6 (permission: ReadTransactionsDetail)"
+  parallelism: >
+    coroutineScope {
+      val balanceDef = async { apiService.getBalances(selectedAccountId) }
+      val txDef = async { apiService.getTransactions(selectedAccountId, limit = 5) }
+      val balance = balanceDef.await()
+      val txList = txDef.await()
+    }
+  selected_account_persistence: "Store/restore selectedAccountId in DataStore; default to first account returned."
+  navigation:
+    - "home → account-detail (param: AccountId)"
+    - "home → transactions (param: AccountId)"
+    - "home → statements (param: AccountId)"
+    - "home → spending-by-category (no params — uses cached data)"
+    - "home → consent-list (no params)"
+    - "home → login — on 401 / no active consent"
+  i18n_keys_prefix: "home.*"
+  i18n_keys_file: "idea-layer/_strings/strings.yaml"
+
+vm_actions:
+  - name: SelectAccount
+    signature: "fun selectAccount(accountId: String)"
+    state_mutations: [selectedAccountId, uiState → Loading → Content|Empty|Error]
+    side_effects:
+      - "Persists accountId to DataStore"
+      - "Triggers parallel balance + transactions fetch for new accountId"
+
+  - name: LoadHome
+    signature: "fun loadHome()"
+    state_mutations: [allAccounts, selectedAccount, selectedAccountBalance, availableBalance, recentTransactions, spendThisMonth, topCategoryName, uiState]
+    side_effects:
+      - "GET /accounts to populate switcher list"
+      - "Parallel: GET /accounts/{id}/balances + GET /accounts/{id}/transactions?limit=5"
+      - "Reads cached PFM data for spending snapshot (no extra API call)"
+
+  - name: RetryLoad
+    signature: "fun retryLoad()"
+    state_mutations: [uiState → Loading]
+    side_effects:
+      - "Re-invokes loadHome()"
+
+  - name: NavigateToAccountDetail
+    signature: "fun navigateToAccountDetail(accountId: String)"
+    state_mutations: []
+    side_effects: ["Emits NavEvent.ToAccountDetail(accountId)"]
+
+  - name: NavigateToTransactions
+    signature: "fun navigateToTransactions(accountId: String)"
+    state_mutations: []
+    side_effects: ["Emits NavEvent.ToTransactions(accountId)"]
+
+  - name: NavigateToStatements
+    signature: "fun navigateToStatements(accountId: String)"
+    state_mutations: []
+    side_effects: ["Emits NavEvent.ToStatements(accountId)"]
+
+  - name: NavigateToSpending
+    signature: "fun navigateToSpending()"
+    state_mutations: []
+    side_effects: ["Emits NavEvent.ToSpendingByCategory()"]
+
+  - name: NavigateToConsentList
+    signature: "fun navigateToConsentList()"
+    state_mutations: []
+    side_effects: ["Emits NavEvent.ToConsentList()"]
+
+error_cases:
+  - id: EC-HOME-001
+    trigger: "401 from /balances or /transactions — token expired"
+    handling: "Error state; userMessage 'Your session has expired. Please sign in again.'; navigate_to_login recovery."
+  - id: EC-HOME-002
+    trigger: "403 — ReadAccountsDetail / ReadBalances not in consent"
+    handling: "Error state; non-recoverable; userMessage directs to consent-list."
+  - id: EC-HOME-003
+    trigger: "429 rate-limit"
+    handling: "Error state; recoverable; exponential back-off + Retry CTA."
+  - id: EC-HOME-004
+    trigger: "No authorised accounts (empty Data.Account[])"
+    handling: "Empty state with reason=no_accounts; CTA navigates to login/consent."
+  - id: EC-HOME-005
+    trigger: "Active consent absent or all consents revoked"
+    handling: "Empty state with reason=no_consent; CTA navigates to login."
+  - id: EC-HOME-006
+    trigger: "Network error (no connectivity)"
+    handling: "Error state; recoverable; Retry CTA."
+
+quality_log:
+  - at: "2026-06-30"
+    by: "/idea-add (scaffolding + enrichment)"
+    score: 91
+    notes: >
+      Enriched at creation: business_logic grounded in external_library_refs;
+      all states covered (loading/content/empty/error); i18n on every visible string;
+      a11y labels on all interactive/icon surfaces; OBIE demo data (Priya Sharma);
+      quick-action PISP pay disabled/planned; consent-list routed via Manage consents.

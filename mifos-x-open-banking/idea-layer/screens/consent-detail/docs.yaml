@@ -1,0 +1,88 @@
+feature: consent-detail
+status: enriched
+cluster: consent
+acceptance_refs: [FR-008]
+scaffolded_by: "/idea-heal"
+archetype: detail_screen
+description: "Full consent detail screen showing the HSBC OBIE status badge (color-coded: primary=Authorised, warning=Expired, error=Revoked/Rejected), all 11 granted permissions with human-readable labels, creation/expiry/transaction-from/transaction-to dates, an expiry warning banner when within 7 days, a 90-day reconfirm prompt, and a two-step destructive 'Revoke access' action (revoke_confirm dialog gate → revoking progress state → DELETE consent-revoke → clear local PSU token → navigate to consent-list). 404 on DELETE is treated idempotently as already-revoked."
+has_ui: true
+has_server: false
+
+metadata:
+  category: composite
+  implementation_ready: true
+  impl_ready_at: "2026-06-29T12:00:00Z"
+  impl_ready_schema: "v2"
+
+contracts: []
+
+libraries:
+  - capability: rest-client
+    library: ktorfit
+    version: "latest"
+    targets: [android, ios, desktop, web]
+
+vm_actions:
+  - name: LoadConsentDetail
+    signature: "suspend fun loadConsentDetail(consentId: String): Unit"
+    state_mutations: ["uiState = Loading"]
+    side_effects:
+      - "ConsentService.getConsentStatus(consentId)"
+      - "PermissionsMapper.toReadableLabels(permissions)"
+      - "Compute expiryWarningDays from Data.ExpirationDateTime (null if > 7 days)"
+    error_handling:
+      HttpException(401): "Transition to Error(ConsentDetailErrorCode.TokenExpired)"
+      HttpException(404): "Transition to Error(ConsentDetailErrorCode.ConsentNotFound)"
+      NetworkError: "Transition to Error(ConsentDetailErrorCode.NetworkError)"
+
+  - name: NavigateReconfirm
+    signature: "fun navigateReconfirm(): Unit"
+    state_mutations: []
+    side_effects: ["Navigator.navigate(Route.Login(reconfirmMode = true))"]
+    error_handling: {}
+
+  - name: ConfirmRevoke
+    signature: "fun confirmRevoke(): Unit"
+    state_mutations: ["uiState = RevokeConfirm(consent)"]
+    side_effects: []
+    error_handling: {}
+
+  - name: DismissRevokeConfirm
+    signature: "fun dismissRevokeConfirm(): Unit"
+    state_mutations: ["uiState = Content(consent, permissionsDetail, expiryWarningDays)"]
+    side_effects: []
+    error_handling: {}
+
+  - name: ExecuteRevoke
+    signature: "suspend fun executeRevoke(consentId: String): Unit"
+    state_mutations: ["uiState = Revoking(consent)"]
+    side_effects:
+      - "ConsentService.revokeConsent(consentId)"
+      - "LocalStorage.clearConsentId(consentId)"
+      - "LocalStorage.clearPsuToken()"
+      - "Navigator.navigate(Route.ConsentList)"
+    error_handling:
+      HttpException(401): "Surface Error(ConsentDetailErrorCode.TokenExpired)"
+      HttpException(404): "Treat as already revoked — clear local state, navigate to consent-list (idempotent)"
+      NetworkError: "Surface Error(ConsentDetailErrorCode.NetworkError) with retry"
+      HttpException(5xx): "Surface Error(ConsentDetailErrorCode.RevokeServerError)"
+
+  - name: RetryLoad
+    signature: "suspend fun retryLoad(): Unit"
+    state_mutations: ["uiState = Loading"]
+    side_effects: ["ConsentService.getConsentStatus(consentId)"]
+    error_handling:
+      NetworkError: "Transition to Error(ConsentDetailErrorCode.NetworkError)"
+
+error_cases:
+  - ConsentNotFound
+  - ConsentRevoked
+  - ConsentExpired
+  - TokenExpired
+  - NetworkError
+  - RevokeServerError
+
+test_fixtures:
+  source: "screens/consent-detail/tests.yaml"
+  scenario_count: 9
+  priority_distribution: { high: 5, medium: 3, low: 1 }

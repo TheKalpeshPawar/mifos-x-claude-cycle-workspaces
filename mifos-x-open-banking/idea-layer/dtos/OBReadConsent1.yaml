@@ -1,0 +1,46 @@
+name: OBReadConsent1
+version: 1.0.0
+description: >
+  OBIE AIS v4.0 request body for POST /account-access-consents (client_credentials token).
+  Declares the permissions and optional date bounds the AISP requests on behalf of the PSU.
+  Wrapped as { Data: { Permissions, ExpirationDateTime?, ... }, Risk: {} }.
+  HSBC sandbox caps ExpirationDateTime at 90 days from creation.
+source:
+  origin: rest
+  endpoint: "/account-access-consents"
+fields:
+  - name: permissions
+    type: { list_of: String }
+    description: >
+      Array of OBIE AIS permission codes to request. Full set for this app:
+      ReadAccountsDetail, ReadBalances, ReadTransactionsDetail, ReadTransactionsCreditDebits,
+      ReadBeneficiariesDetail, ReadDirectDebits, ReadStandingOrdersDetail, ReadProducts,
+      ReadParty, ReadOffers, ReadScheduledPaymentsDetail, ReadStatementsDetail.
+    required: true
+    source_field: "Data.Permissions"
+    example: ["ReadAccountsDetail", "ReadBalances", "ReadTransactionsDetail"]
+  - name: expirationDateTime
+    type: { optional: DateTime }
+    description: "Requested consent expiry. Omit to use ASPSP maximum. HSBC sandbox limit: 90 days."
+    source_field: "Data.ExpirationDateTime"
+  - name: transactionFromDateTime
+    type: { optional: DateTime }
+    description: "Historical transaction data start bound. Omit for ASPSP default (typically 12 months)."
+    source_field: "Data.TransactionFromDateTime"
+  - name: transactionToDateTime
+    type: { optional: DateTime }
+    description: "Historical transaction data end bound. Omit for no upper bound."
+    source_field: "Data.TransactionToDateTime"
+used_by:
+  - feature: login
+    kind: request
+    api_id: consentCreate
+    role: body
+capabilities_used:
+  - has_api
+tier: maximum
+tags:
+  - obie
+  - consent
+  - auth
+  - request-body

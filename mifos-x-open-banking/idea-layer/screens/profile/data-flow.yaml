@@ -1,0 +1,50 @@
+screen_id: profile
+
+on_mount:
+  - trigger: profile_load
+    description: "Fetch party details for the primary account, read cached consent summary (status + expiry + permissions), and compute days_remaining. Determines content vs content_expiring state."
+    steps:
+      - call: party
+        path_params:
+          AccountId: "40051512345678"
+        store_as: party
+      - client_derived:
+          description: "Read active-consent summary from local token store: status, expiry_date, consent_id, and permissions[]."
+          store_as: consent
+      - client_derived:
+          description: "Compute party.Initials from party.Name (first letter of each word, max 2 letters). Store as party.Initials."
+          store_as: party.Initials
+      - client_derived:
+          description: "Compute consent.days_remaining = calendar days between today and consent.expiry_date."
+          store_as: consent.days_remaining
+    on_loading: loading
+    on_success_conditional:
+      - condition: "consent.days_remaining <= 7"
+        state: content_expiring
+      - condition: "consent.days_remaining > 7"
+        state: content
+    on_error: error
+    error_code_mapping:
+      401: "Trigger token refresh then retry once. On second 401: execute_sign_out."
+      403: "error — message: strings.profile_error_403"
+      404: "error — message: strings.profile_error_404"
+      network: "error — message: strings.profile_error_network"
+
+on_user_action:
+  - trigger: retry_load
+    re_runs: [profile_load]
+
+  - trigger: confirm_sign_out
+    description: "Transition to confirm_sign_out state to show dialog. Previous state (content or content_expiring) saved to restore on cancel."
+
+  - trigger: dismiss_sign_out_dialog
+    description: "Transition back to content or content_expiring (whichever preceded confirm_sign_out) without clearing tokens."
+
+  - trigger: navigate_consent_detail
+    description: "Navigate to consent-detail screen."
+
+  - trigger: navigate_consent_renew
+    description: "Navigate to consent-detail screen with renew=true intent flag to prompt re-authorisation flow for expiring consent."
+
+  - trigger: execute_sign_out
+    description: "Delete PSU access token, refresh token, and consent ID from encrypted secure storage (EncryptedSharedPreferences / Keychain). Navigate to login regardless of any deletion error."

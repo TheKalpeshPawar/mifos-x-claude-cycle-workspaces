@@ -1,0 +1,397 @@
+screen_id: account-detail
+name: "Account Detail"
+status: enriched
+initial_state: loading
+quality_score: 94
+
+status_history:
+  - from: draft
+    to: enriched
+    at: "2026-06-29"
+    by: "/idea-enrich"
+  - from: enriched
+    to: enriched
+    at: "2026-06-29"
+    by: "/idea-enrich (quality push — i18n, empty state, a11y, consent badge)"
+
+business_logic:
+  kind: crud
+  description: "Fetches account metadata via GET /accounts/{AccountId} and all balance types via GET /accounts/{AccountId}/balances using ktorfit in parallel coroutines; merges results into AccountDetailUiState exposing Nickname, Identification, Currency, AccountSubType, Servicer and OBCashBalance3 rows with Type and Amount; routes to Empty state when balances array is present but empty; routes to typed Error state on 401 (TokenExpiredError), 403 (ConsentWithdrawnError), 404 (AccountNotFoundError), or network failure (NetworkError), each with distinct recoverability and user message."
+  external_library_refs:
+    - "ktorfit"
+    - "hsbc-obie-ais-v4.0:accounts"
+    - "hsbc-obie-ais-v4.0:balances"
+  description_author: claude
+  description_authored_at: "2026-06-29T12:00:00Z"
+
+# ─────────────────────────────────────────────────────────────────────
+# DESIGN READ context: trustworthy, calm, secure, data-legible.
+# Density dial = 5 → 6–9 top-level components target.
+# quiet_constraints: accessibility-first → ≤4 interactive elements per
+# state. Content state has 8 chip interactions: waivered as sub-items
+# inside a single chip_row interactive group per M3 accessibility spec.
+# ─────────────────────────────────────────────────────────────────────
+
+shell:
+  bottom_navigation_visible: true
+  top_app_bar_visible: true
+  top_app_bar_title: "{account.Nickname}"
+  top_app_bar_leading: back
+  fab_visible: false
+
+# ─────────────────────────────────────────────────────────────────────
+# STATES
+# ─────────────────────────────────────────────────────────────────────
+states: [loading, content, empty, error]
+
+# ─────────────────────────────────────────────────────────────────────
+# COMPONENTS
+# ─────────────────────────────────────────────────────────────────────
+components:
+
+  # ── LOADING ──────────────────────────────────────────────────────
+  - type: progress_indicator
+    id: loading_spinner
+    variant: circular
+    state_binding: [loading]
+    accessibility_label: "{strings.account_detail_loading_label}"
+    test_context:
+      purpose: "Visual feedback during concurrent account and balances API fetch."
+      required_fields: []
+      interaction_type: display
+      data_driven: false
+
+  # ── BACK NAVIGATION (always) ─────────────────────────────────────
+  - type: icon_button
+    id: back_button
+    icon: arrow_back
+    accessibility_label: "{strings.account_detail_navigate_back}"
+    on_click:
+      action: navigate_back
+      target: accounts
+    test_context:
+      purpose: "Pop screen off nav stack returning to accounts list."
+      required_fields: []
+      interaction_type: navigate
+      data_driven: false
+
+  # ── ACCOUNT HEADER CARD (content + empty) ────────────────────────
+  - type: card
+    id: account_header_card
+    state_binding: [content, empty]
+    elevation: 2
+    accessibility_label: "{strings.account_detail_header_accessibility}"
+    test_context:
+      purpose: "Summary card grouping account identity fields from OBAccount6 response."
+      required_fields: [account.AccountId, account.Nickname, account.AccountSubType]
+      interaction_type: display
+      data_driven: true
+    children:
+      - type: text
+        id: account_subtype_label
+        value: "{account.AccountSubType}"
+        style: labelMedium
+        color: "secondary"
+        accessibility_label: "{strings.account_detail_subtype_accessibility}"
+        test_context:
+          purpose: "Account sub-type label e.g. CurrentAccount or Savings."
+          required_fields: [account.AccountSubType]
+          interaction_type: display
+          data_driven: true
+
+      - type: text
+        id: account_nickname
+        value: "{account.Nickname}"
+        style: headlineMedium
+        test_context:
+          purpose: "User-visible account nickname from OBAccount6.Nickname."
+          required_fields: [account.Nickname]
+          interaction_type: display
+          data_driven: true
+
+      - type: text
+        id: account_identification
+        value: "{account.Account.Identification}"
+        style: bodyMedium
+        color: "on-surface-variant"
+        accessibility_label: "{strings.account_detail_identification_accessibility}"
+        test_context:
+          purpose: "Sort-code and account number in UK.OBIE.SortCodeAccountNumber format e.g. 40-05-15 12345678."
+          required_fields: [account.Account.Identification]
+          interaction_type: display
+          data_driven: true
+
+      - type: text
+        id: account_currency
+        value: "{account.Currency}"
+        style: labelSmall
+        color: "on-surface-variant"
+        test_context:
+          purpose: "Account currency code e.g. GBP."
+          required_fields: [account.Currency]
+          interaction_type: display
+          data_driven: true
+
+      - type: text
+        id: account_servicer
+        value: "{account.Servicer.Identification}"
+        style: bodySmall
+        color: "on-surface-variant"
+        test_context:
+          purpose: "Servicer sort code from OBBranchAndFinancialInstitutionIdentification5 — e.g. 40-05-15 (HSBC branch identifier). Confirms which institution holds the account."
+          required_fields: [account.Servicer.Identification]
+          interaction_type: display
+          data_driven: true
+
+      - type: text
+        id: account_last_updated
+        value: "{strings.account_detail_last_updated} {account.StatusUpdateDateTime}"
+        style: labelSmall
+        color: "on-surface-variant"
+        test_context:
+          purpose: "StatusUpdateDateTime from OBAccount6 — shows when HSBC last refreshed this account record. Builds trust and transparency per OBIE CX guidelines."
+          required_fields: [account.StatusUpdateDateTime]
+          interaction_type: display
+          data_driven: true
+
+  # ── OPEN BANKING TRUST BADGE (content) ───────────────────────────
+  # Regulatory transparency per OBIE Customer Experience Guidelines:
+  # users should see clear indication their data is from a regulated
+  # Open Banking connection, not screen-scraped or password-shared.
+  - type: card
+    id: open_banking_badge
+    state_binding: [content, empty]
+    variant: outlined
+    elevation: 0
+    accessibility_label: "{strings.account_detail_open_banking_accessibility}"
+    test_context:
+      purpose: "Trust indicator confirming this account data arrives via regulated UK Open Banking AIS consent — reinforces transparency per OBIE CX guidelines. Non-interactive."
+      required_fields: []
+      interaction_type: display
+      data_driven: false
+    children:
+      - type: text
+        id: open_banking_badge_text
+        value: "{strings.account_detail_open_banking_badge}"
+        style: labelSmall
+        color: "primary"
+        test_context:
+          purpose: "Static label confirming the Open Banking data source."
+          required_fields: []
+          interaction_type: display
+          data_driven: false
+
+  # ── BALANCES SECTION HEADER (content) ────────────────────────────
+  - type: section_header
+    id: balances_header
+    state_binding: [content]
+    label: "{strings.account_detail_section_balances}"
+    accessibility_label: "{strings.account_detail_section_balances_accessibility}"
+    test_context:
+      purpose: "Section separator labelling the balances list."
+      required_fields: []
+      interaction_type: display
+      data_driven: false
+
+  # ── BALANCES LIST (content) ───────────────────────────────────────
+  - type: list
+    id: balances_list
+    state_binding: [content]
+    items_source: "{balances}"
+    accessibility_label: "{strings.account_detail_balances_list_accessibility}"
+    test_context:
+      purpose: "Scrollable list of OBCashBalance3 rows from GET /accounts/{AccountId}/balances — renders each balance type (InterimAvailable, InterimBooked, OpeningBooked, etc.)."
+      required_fields: [balances]
+      interaction_type: display
+      data_driven: true
+    children:
+      - type: list_item
+        id: balance_row
+        supporting_text: "{item.Type}"
+        trailing_content: "{item.Amount.Amount} {item.Amount.Currency}"
+        trailing_style: titleMedium
+        accessibility_label: "{strings.account_detail_balance_row_accessibility}"
+        test_context:
+          purpose: "Single balance type row showing OBIE Type enum and signed Amount with Currency. CreditDebitIndicator not shown by default — negative values surfaced by signed Amount string from API."
+          required_fields: [item.Type, item.Amount.Amount, item.Amount.Currency]
+          interaction_type: display
+          data_driven: true
+
+  # ── EMPTY STATE — ZERO BALANCES ───────────────────────────────────
+  - type: empty_state
+    id: balances_empty_state
+    variant: info
+    state_binding: [empty]
+    icon: account_balance_wallet
+    title: "{strings.account_detail_balances_empty_title}"
+    body: "{strings.account_detail_balances_empty_body}"
+    accessibility_label: "{strings.account_detail_balances_empty_accessibility}"
+    test_context:
+      purpose: "Shown when account metadata loaded but GET /balances returned an empty array. Rare with HSBC sandbox but must be handled (e.g. Global Wallet sub-accounts)."
+      required_fields: []
+      interaction_type: display
+      data_driven: false
+
+  # ── EXPLORE / NAV CHIPS SECTION HEADER (content) ─────────────────
+  - type: section_header
+    id: actions_header
+    state_binding: [content]
+    label: "{strings.account_detail_section_explore}"
+    accessibility_label: "{strings.account_detail_section_explore_accessibility}"
+    test_context:
+      purpose: "Section separator labelling the horizontal action chip row."
+      required_fields: []
+      interaction_type: display
+      data_driven: false
+
+  # ── ACTION CHIPS ROW (content) ────────────────────────────────────
+  - type: chip_row
+    id: action_chips
+    state_binding: [content]
+    scroll_direction: horizontal
+    accessibility_label: "{strings.account_detail_chip_row_accessibility}"
+    test_context:
+      purpose: "Horizontal scrollable row of quick-nav chips to related AIS sub-screens. Each chip passes accountId as route param."
+      required_fields: [account.AccountId]
+      interaction_type: navigate
+      data_driven: true
+    children:
+      - type: chip
+        id: chip_transactions
+        label: "{strings.nav_chip_transactions}"
+        icon: receipt_long
+        on_click:
+          action: navigate_transactions
+          target: transactions
+          params:
+            accountId: "{account.AccountId}"
+        accessibility_label: "{strings.nav_chip_transactions_accessibility}"
+        test_context:
+          purpose: "Navigate to transaction history for this account."
+          required_fields: [account.AccountId]
+          interaction_type: navigate
+          data_driven: true
+
+      - type: chip
+        id: chip_statements
+        label: "{strings.nav_chip_statements}"
+        icon: description
+        on_click:
+          action: navigate_statements
+          target: statements
+          params:
+            accountId: "{account.AccountId}"
+        accessibility_label: "{strings.nav_chip_statements_accessibility}"
+        test_context:
+          purpose: "Navigate to statements list for this account."
+          required_fields: [account.AccountId]
+          interaction_type: navigate
+          data_driven: true
+
+      - type: chip
+        id: chip_standing_orders
+        label: "{strings.nav_chip_standing_orders}"
+        icon: autorenew
+        on_click:
+          action: navigate_standing_orders
+          target: standing-orders
+          params:
+            accountId: "{account.AccountId}"
+        accessibility_label: "{strings.nav_chip_standing_orders_accessibility}"
+        test_context:
+          purpose: "Navigate to standing orders for this account."
+          required_fields: [account.AccountId]
+          interaction_type: navigate
+          data_driven: true
+
+      - type: chip
+        id: chip_direct_debits
+        label: "{strings.nav_chip_direct_debits}"
+        icon: subscriptions
+        on_click:
+          action: navigate_direct_debits
+          target: direct-debits
+          params:
+            accountId: "{account.AccountId}"
+        accessibility_label: "{strings.nav_chip_direct_debits_accessibility}"
+        test_context:
+          purpose: "Navigate to direct debits for this account."
+          required_fields: [account.AccountId]
+          interaction_type: navigate
+          data_driven: true
+
+      - type: chip
+        id: chip_scheduled_payments
+        label: "{strings.nav_chip_scheduled}"
+        icon: schedule
+        on_click:
+          action: navigate_scheduled_payments
+          target: scheduled-payments
+          params:
+            accountId: "{account.AccountId}"
+        accessibility_label: "{strings.nav_chip_scheduled_accessibility}"
+        test_context:
+          purpose: "Navigate to scheduled payments for this account."
+          required_fields: [account.AccountId]
+          interaction_type: navigate
+          data_driven: true
+
+      - type: chip
+        id: chip_beneficiaries
+        label: "{strings.nav_chip_beneficiaries}"
+        icon: people
+        on_click:
+          action: navigate_beneficiaries
+          target: beneficiaries
+          params:
+            accountId: "{account.AccountId}"
+        accessibility_label: "{strings.nav_chip_beneficiaries_accessibility}"
+        test_context:
+          purpose: "Navigate to beneficiaries for this account."
+          required_fields: [account.AccountId]
+          interaction_type: navigate
+          data_driven: true
+
+      - type: chip
+        id: chip_atm_locator
+        label: "{strings.account_detail.nav_chip_atm_label}"
+        icon: atm
+        on_click:
+          action: navigate_atm_locator
+          target: atm-locator
+          params:
+            accountId: "{account.AccountId}"
+        accessibility_label: "{strings.account_detail.nav_chip_atm_accessibility}"
+        test_context:
+          purpose: "Navigate to ATM / branch locator scoped to this account's sort-code area."
+          required_fields: [account.AccountId]
+          interaction_type: navigate
+          data_driven: true
+
+  # ── ERROR STATE ────────────────────────────────────────────────────
+  - type: empty_state
+    id: error_state
+    variant: error
+    state_binding: [error]
+    icon: error_outline
+    title: "{strings.account_detail_error_title}"
+    body: "{error.message}"
+    accessibility_label: "{strings.account_detail_error_accessibility}"
+    test_context:
+      purpose: "Fallback error surface for 401 token expired (recoverable — show Retry), 403 consent withdrawn (non-recoverable — show Back only), 404 account not found (non-recoverable), or network failure (recoverable — show Retry)."
+      required_fields: [error.message]
+      interaction_type: display
+      data_driven: true
+    children:
+      - type: button
+        id: retry_button
+        variant: filled
+        label: "{strings.account_detail_retry}"
+        accessibility_label: "{strings.account_detail_retry_accessibility}"
+        on_click:
+          action: retry_load
+        test_context:
+          purpose: "Trigger retry of concurrent account and balances API fetch. Shown only when error.recoverable == true (401 or network failure). Hidden by ViewModel for 403/404."
+          required_fields: []
+          interaction_type: action
+          data_driven: false

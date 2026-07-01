@@ -1,0 +1,20 @@
+id: onboarding-consent
+name: onboarding-consent
+description: "First-run FAPI consent journey — app explains UK Open Banking, stages an account-access-consent with the required Permissions array, redirects to HSBC for PSU SCA + account selection, then exchanges the auth code for a PSU-bound access token on callback. Rejection yields no token and surfaces a clear retry."
+type: happy
+feature_ref: consent-onboarding
+release_phase: P0
+
+screens:
+  - user-onboarding
+  - login
+  - consent-callback
+
+entry_screen: user-onboarding
+
+connections:
+  - { from: user-onboarding, to: login, type: push, label: "Tap 'Connect with HSBC'" }
+  - { from: login, to: consent-callback, type: push, label: "HSBC authorisation redirect returns with auth code" }
+  - { from: login, to: user-onboarding, type: push, label: "User taps Cancel" }
+  - { from: consent-callback, to: accounts, type: push, label: "Consent Authorised — auto-navigate on success (cross-flow → account-browsing)" }
+  - { from: consent-callback, to: login, type: push, label: "PSU rejected or token exchange failed — retry" }

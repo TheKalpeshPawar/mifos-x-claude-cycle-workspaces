@@ -1,0 +1,88 @@
+name: OBReadConsentResponse1
+version: 1.0.0
+description: >
+  OBIE AIS v4.0 consent resource. Returned by POST /account-access-consents (HTTP 201)
+  and GET /account-access-consents/{ConsentId}. Authenticated with client_credentials token
+  (not PSU bearer token). Status transitions:
+  AwaitingAuthorisation → Authorised → Consumed | Rejected | Revoked | Expired.
+  ConsentId is stored locally and used to construct the FAPI authorisation redirect URL.
+source:
+  origin: rest
+  endpoint: "/account-access-consents/{ConsentId}"
+fields:
+  - name: consentId
+    type: String
+    description: "ASPSP-assigned consent identifier (primary key). Stored locally; used in FAPI redirect and all subsequent resource calls."
+    required: true
+    source_field: "Data.ConsentId"
+    example: "aac-88379-001"
+  - name: creationDateTime
+    type: DateTime
+    description: "UTC datetime the consent resource was created by the AISP."
+    required: true
+    source_field: "Data.CreationDateTime"
+  - name: status
+    type: { enum_ref: ConsentStatus }
+    description: "Current consent lifecycle status. Consent-callback verifies status==Authorised before granting access."
+    required: true
+    source_field: "Data.Status"
+  - name: statusUpdateDateTime
+    type: DateTime
+    description: "UTC datetime of the most recent status change."
+    required: true
+    source_field: "Data.StatusUpdateDateTime"
+  - name: permissions
+    type: { list_of: String }
+    description: >
+      Granted OBIE AIS permission codes, e.g. ReadAccountsDetail, ReadBalances,
+      ReadTransactionsDetail, ReadTransactionsCreditDebits, ReadBeneficiariesDetail,
+      ReadDirectDebits, ReadStandingOrdersDetail, ReadProducts, ReadParty, ReadOffers,
+      ReadScheduledPaymentsDetail, ReadStatementsDetail. Used by consent-detail screen.
+    required: true
+    source_field: "Data.Permissions"
+  - name: expirationDateTime
+    type: { optional: DateTime }
+    description: "Consent expiry datetime. HSBC sandbox caps at 90 days from creation."
+    source_field: "Data.ExpirationDateTime"
+  - name: transactionFromDateTime
+    type: { optional: DateTime }
+    description: "Historical transaction data lower bound for this consent."
+    source_field: "Data.TransactionFromDateTime"
+  - name: transactionToDateTime
+    type: { optional: DateTime }
+    description: "Historical transaction data upper bound for this consent."
+    source_field: "Data.TransactionToDateTime"
+enums:
+  - name: ConsentStatus
+    description: "OBIE AIS consent lifecycle status codes."
+    values:
+      - { id: AWAITING_AUTHORISATION, wire_value: "AwaitingAuthorisation", description: "Consent created; PSU redirect pending." }
+      - { id: AUTHORISED,             wire_value: "Authorised",             description: "PSU authorised — resource tokens may be obtained." }
+      - { id: CONSUMED,               wire_value: "Consumed",               description: "One-time consent fully exercised." }
+      - { id: REJECTED,               wire_value: "Rejected",               description: "PSU declined at ASPSP redirect." }
+      - { id: REVOKED,                wire_value: "Revoked",                description: "Consent revoked by PSU or AISP." }
+      - { id: EXPIRED,                wire_value: "Expired",                description: "Passed ExpirationDateTime." }
+used_by:
+  - feature: login
+    kind: response
+    api_id: consentCreate
+    role: body
+  - feature: consentCallback
+    kind: response
+    api_id: consentStatus
+    role: body
+  - feature: consentList
+    kind: response
+    api_id: consentStatus
+    role: body
+  - feature: consentDetail
+    kind: response
+    api_id: consentStatus
+    role: body
+capabilities_used:
+  - has_api
+tier: maximum
+tags:
+  - obie
+  - consent
+  - auth

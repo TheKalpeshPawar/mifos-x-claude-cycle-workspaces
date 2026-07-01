@@ -1,0 +1,497 @@
+screen_id: user-onboarding
+name: "Welcome to Open Banking"
+status: enriched
+quality_score: 95
+initial_state: intro
+
+status_history:
+  - { from: draft, to: enriched, at: "2026-06-29", by: "/idea-enrich" }
+  - { from: enriched, to: enriched, at: "2026-06-29", by: "/idea-enrich",
+      note: "84→95: 4-state multi-step (intro/permissions_overview/consent_explainer/ob_explainer_open), i18n {strings.*} on all text, ReadAccountsDetail added, FAPI/FCA trust chips, stepper progress, consent 90-day duration note, FCA/OBIE legal footer, OB explainer bottom sheet with 3-step FAPI walkthrough, 12 test scenarios" }
+
+business_logic:
+  kind: nav_only
+  description: "Three-step onboarding pager educating the PSU about AISP consent before initiating the FAPI 1.0 Advanced flow. Step 1 (intro): hero + headline + body copy establishes UK Open Banking as FCA-regulated and password-free; two assist chips surface the FAPI 1.0 Advanced security protocol and FCA-regulated status as trust badges. Step 2 (permissions_overview): lists all six OBIE ReadX scopes requested in OBReadConsent1 — ReadAccountsDetail, ReadBalances, ReadTransactionsDetail, ReadStandingOrdersDetail, ReadDirectDebits, ReadStatementsDetail — each in plain English, followed by a 90-day consent-duration note. Step 3 (consent_explainer): three AIS-only trust guarantees (no PISP payments, no password exposure, revoke-anytime via DELETE consent), FCA/OBIE v4.0 legal footer, and the primary CTA that navigates to the login screen where OBReadConsent1 is staged and the FAPI app-to-app redirect to HSBC begins. The ob_explainer_open overlay state renders a bottom sheet with a three-step plain-English walkthrough of the FAPI consent journey (grant permission on HSBC → authenticate via SCA → receive short-lived token via signed response). No API calls on this screen — all content is static educational copy."
+  external_library_refs: []
+  description_author: claude
+  description_authored_at: "2026-06-29T12:00:00Z"
+
+shell:
+  bottom_navigation_visible: false
+  top_app_bar_visible: false
+  fab_visible: false
+
+states: [intro, permissions_overview, consent_explainer, ob_explainer_open]
+
+components:
+
+  # ─── STEP 1: intro ────────────────────────────────────────────────
+
+  - type: stepper
+    id: step_indicator_intro
+    total_steps: 3
+    current_step: 1
+    orientation: horizontal
+    state_binding: [intro]
+    accessibility_label: "{strings.onboarding_step_indicator_intro_a11y}"
+    test_context:
+      purpose: "Shows the PSU they are on step 1 of 3 of the onboarding flow"
+      required_fields: [total_steps, current_step]
+      interaction_type: display
+      data_driven: false
+
+  - type: image
+    id: hero_illustration
+    asset: "ic_open_banking_hero"
+    content_description: "{strings.hero_illustration_description}"
+    accessibility_label: "{strings.hero_illustration_a11y}"
+    state_binding: [intro]
+    test_context:
+      purpose: "Hero illustration communicating trusted, FCA-regulated, secure bank data sharing via UK Open Banking"
+      required_fields: [asset, content_description]
+      interaction_type: display
+      data_driven: false
+
+  - type: text
+    id: intro_headline
+    value: "{strings.onboarding_intro_headline}"
+    style: headlineMedium
+    color: "on-surface"
+    state_binding: [intro]
+    accessibility_label: "{strings.onboarding_intro_headline}"
+    test_context:
+      purpose: "Step 1 headline — explains UK Open Banking as secure, regulated account data sharing"
+      required_fields: [value]
+      interaction_type: display
+      data_driven: false
+
+  - type: text
+    id: intro_body
+    value: "{strings.onboarding_intro_body}"
+    style: bodyMedium
+    color: "on-surface-variant"
+    state_binding: [intro]
+    test_context:
+      purpose: "Step 1 supporting body — FCA-regulated, read-only standard, password never shared"
+      required_fields: [value]
+      interaction_type: display
+      data_driven: false
+
+  - type: chip
+    id: fapi_security_badge
+    label: "{strings.onboarding_fapi_badge}"
+    icon: verified_user
+    variant: assist
+    state_binding: [intro]
+    accessibility_label: "{strings.onboarding_fapi_badge_a11y}"
+    test_context:
+      purpose: "Trust badge — FAPI 1.0 Advanced security protocol used for token exchange"
+      required_fields: [label, icon]
+      interaction_type: display
+      data_driven: false
+
+  - type: chip
+    id: fca_regulated_badge
+    label: "{strings.onboarding_fca_badge}"
+    icon: account_balance
+    variant: assist
+    state_binding: [intro]
+    accessibility_label: "{strings.onboarding_fca_badge_a11y}"
+    test_context:
+      purpose: "Trust badge — app is FCA-regulated under Payment Services Regulations 2017"
+      required_fields: [label, icon]
+      interaction_type: display
+      data_driven: false
+
+  - type: button
+    id: intro_next_button
+    variant: filled
+    label: "{strings.onboarding_intro_next}"
+    state_binding: [intro]
+    accessibility_label: "{strings.onboarding_intro_next}"
+    on_click:
+      action: step_next
+      target_state: permissions_overview
+    test_context:
+      purpose: "Advances PSU from intro step to permissions overview step"
+      required_fields: [on_click.action, on_click.target_state]
+      interaction_type: navigate
+      data_driven: false
+
+  # ─── STEP 2: permissions_overview ─────────────────────────────────
+
+  - type: stepper
+    id: step_indicator_permissions
+    total_steps: 3
+    current_step: 2
+    orientation: horizontal
+    state_binding: [permissions_overview]
+    accessibility_label: "{strings.onboarding_step_indicator_permissions_a11y}"
+    test_context:
+      purpose: "Shows the PSU they are on step 2 of 3"
+      required_fields: [total_steps, current_step]
+      interaction_type: display
+      data_driven: false
+
+  - type: section_header
+    id: what_we_read_header
+    label: "{strings.onboarding_what_we_read}"
+    state_binding: [permissions_overview]
+    test_context:
+      purpose: "Section heading introducing the six OBIE ReadX permission categories"
+      required_fields: [label]
+      interaction_type: display
+      data_driven: false
+
+  - type: list
+    id: permissions_list
+    state_binding: [permissions_overview]
+    scroll_direction: vertical
+    test_context:
+      purpose: "All six OBIE ReadX permission categories that will be included in OBReadConsent1"
+      required_fields: [children]
+      interaction_type: display
+      data_driven: false
+    children:
+      - type: list_item
+        id: perm_accounts
+        icon: manage_accounts
+        headline_text: "{strings.onboarding_perm_accounts}"
+        supporting_text: "{strings.onboarding_perm_accounts_detail}"
+        accessibility_label: "{strings.onboarding_perm_accounts_a11y}"
+        test_context:
+          purpose: "ReadAccountsDetail — account names, sort codes, IBANs for authorised accounts"
+          required_fields: [icon, headline_text, supporting_text]
+          interaction_type: display
+          data_driven: false
+
+      - type: list_item
+        id: perm_balances
+        icon: account_balance
+        headline_text: "{strings.onboarding_perm_balances}"
+        supporting_text: "{strings.onboarding_perm_balances_detail}"
+        accessibility_label: "{strings.onboarding_perm_balances_a11y}"
+        test_context:
+          purpose: "ReadBalances — current, savings, and credit card balances in real time"
+          required_fields: [icon, headline_text, supporting_text]
+          interaction_type: display
+          data_driven: false
+
+      - type: list_item
+        id: perm_transactions
+        icon: receipt_long
+        headline_text: "{strings.onboarding_perm_transactions}"
+        supporting_text: "{strings.onboarding_perm_transactions_detail}"
+        accessibility_label: "{strings.onboarding_perm_transactions_a11y}"
+        test_context:
+          purpose: "ReadTransactionsDetail — up to 90 days of debits and credits"
+          required_fields: [icon, headline_text, supporting_text]
+          interaction_type: display
+          data_driven: false
+
+      - type: list_item
+        id: perm_standing_orders
+        icon: autorenew
+        headline_text: "{strings.onboarding_perm_standing_orders}"
+        supporting_text: "{strings.onboarding_perm_standing_orders_detail}"
+        accessibility_label: "{strings.onboarding_perm_standing_orders_a11y}"
+        test_context:
+          purpose: "ReadStandingOrdersDetail — scheduled recurring payment mandates"
+          required_fields: [icon, headline_text, supporting_text]
+          interaction_type: display
+          data_driven: false
+
+      - type: list_item
+        id: perm_direct_debits
+        icon: subscriptions
+        headline_text: "{strings.onboarding_perm_direct_debits}"
+        supporting_text: "{strings.onboarding_perm_direct_debits_detail}"
+        accessibility_label: "{strings.onboarding_perm_direct_debits_a11y}"
+        test_context:
+          purpose: "ReadDirectDebits — active mandates authorised on the account"
+          required_fields: [icon, headline_text, supporting_text]
+          interaction_type: display
+          data_driven: false
+
+      - type: list_item
+        id: perm_statements
+        icon: description
+        headline_text: "{strings.onboarding_perm_statements}"
+        supporting_text: "{strings.onboarding_perm_statements_detail}"
+        accessibility_label: "{strings.onboarding_perm_statements_a11y}"
+        test_context:
+          purpose: "ReadStatementsDetail — monthly statement summaries and available PDF references"
+          required_fields: [icon, headline_text, supporting_text]
+          interaction_type: display
+          data_driven: false
+
+  - type: text
+    id: consent_duration_note
+    value: "{strings.onboarding_consent_duration}"
+    style: bodySmall
+    color: "on-surface-variant"
+    state_binding: [permissions_overview]
+    accessibility_label: "{strings.onboarding_consent_duration}"
+    test_context:
+      purpose: "Informs PSU that OBIE consent lasts up to 90 days and is revocable at any time"
+      required_fields: [value]
+      interaction_type: display
+      data_driven: false
+
+  - type: button
+    id: permissions_back_button
+    variant: outlined
+    label: "{strings.onboarding_step_back}"
+    state_binding: [permissions_overview]
+    accessibility_label: "{strings.onboarding_step_back_a11y}"
+    on_click:
+      action: step_back
+      target_state: intro
+    test_context:
+      purpose: "Navigate back to intro step"
+      required_fields: [on_click.action, on_click.target_state]
+      interaction_type: navigate
+      data_driven: false
+
+  - type: button
+    id: permissions_next_button
+    variant: filled
+    label: "{strings.onboarding_step_next}"
+    state_binding: [permissions_overview]
+    accessibility_label: "{strings.onboarding_step_next_a11y}"
+    on_click:
+      action: step_next
+      target_state: consent_explainer
+    test_context:
+      purpose: "Advances PSU to step 3 — trust guarantees and connect CTA"
+      required_fields: [on_click.action, on_click.target_state]
+      interaction_type: navigate
+      data_driven: false
+
+  # ─── STEP 3: consent_explainer ────────────────────────────────────
+
+  - type: stepper
+    id: step_indicator_trust
+    total_steps: 3
+    current_step: 3
+    orientation: horizontal
+    state_binding: [consent_explainer]
+    accessibility_label: "{strings.onboarding_step_indicator_trust_a11y}"
+    test_context:
+      purpose: "Shows the PSU they are on step 3 of 3"
+      required_fields: [total_steps, current_step]
+      interaction_type: display
+      data_driven: false
+
+  - type: section_header
+    id: what_we_never_do_header
+    label: "{strings.onboarding_what_we_never_do}"
+    state_binding: [consent_explainer]
+    test_context:
+      purpose: "Section heading introducing AIS-only trust guarantees"
+      required_fields: [label]
+      interaction_type: display
+      data_driven: false
+
+  - type: list
+    id: reassurance_list
+    state_binding: [consent_explainer]
+    scroll_direction: vertical
+    test_context:
+      purpose: "Three AIS-only guarantees: no PISP payments, no password exposure, revocable consent"
+      required_fields: [children]
+      interaction_type: display
+      data_driven: false
+    children:
+      - type: list_item
+        id: never_payments
+        icon: money_off
+        icon_color: "error"
+        headline_text: "{strings.onboarding_never_payments}"
+        supporting_text: "{strings.onboarding_never_payments_detail}"
+        accessibility_label: "{strings.onboarding_never_payments_a11y}"
+        test_context:
+          purpose: "AIS-only — no PISP capability, no money movement possible"
+          required_fields: [icon, icon_color, headline_text, supporting_text]
+          interaction_type: display
+          data_driven: false
+
+      - type: list_item
+        id: never_password
+        icon: lock
+        icon_color: "primary"
+        headline_text: "{strings.onboarding_never_password}"
+        supporting_text: "{strings.onboarding_never_password_detail}"
+        accessibility_label: "{strings.onboarding_never_password_a11y}"
+        test_context:
+          purpose: "FAPI app-to-app redirect — HSBC credentials never leave HSBC's secure portal"
+          required_fields: [icon, icon_color, headline_text, supporting_text]
+          interaction_type: display
+          data_driven: false
+
+      - type: list_item
+        id: never_locked_in
+        icon: cancel
+        icon_color: "primary"
+        headline_text: "{strings.onboarding_never_locked_in}"
+        supporting_text: "{strings.onboarding_never_locked_in_detail}"
+        accessibility_label: "{strings.onboarding_never_locked_in_a11y}"
+        test_context:
+          purpose: "PSU can DELETE the OBIE consent at any time via Settings → Consents"
+          required_fields: [icon, icon_color, headline_text, supporting_text]
+          interaction_type: display
+          data_driven: false
+
+  - type: divider
+    id: legal_divider
+    state_binding: [consent_explainer]
+    test_context:
+      purpose: "Visual separator between trust guarantees and FCA legal footer"
+      required_fields: []
+      interaction_type: display
+      data_driven: false
+
+  - type: text
+    id: legal_footer
+    value: "{strings.onboarding_legal_footer}"
+    style: labelSmall
+    color: "on-surface-variant"
+    state_binding: [consent_explainer]
+    accessibility_label: "{strings.onboarding_legal_footer}"
+    test_context:
+      purpose: "FCA regulation statement and OBIE v4.0 standard attribution"
+      required_fields: [value]
+      interaction_type: display
+      data_driven: false
+
+  - type: button
+    id: connect_hsbc_button
+    variant: filled
+    label: "{strings.onboarding_connect_button}"
+    icon: open_in_new
+    state_binding: [consent_explainer]
+    accessibility_label: "{strings.onboarding_connect_button_a11y}"
+    on_click:
+      action: navigate_to_login
+      target: login
+    test_context:
+      purpose: "Primary CTA — begins FAPI consent flow by navigating to login/consent-staging screen"
+      required_fields: [on_click.action, on_click.target]
+      interaction_type: navigate
+      data_driven: false
+
+  - type: button
+    id: trust_back_button
+    variant: outlined
+    label: "{strings.onboarding_step_back}"
+    state_binding: [consent_explainer]
+    accessibility_label: "{strings.onboarding_step_back_a11y}"
+    on_click:
+      action: step_back
+      target_state: permissions_overview
+    test_context:
+      purpose: "Navigate back to permissions_overview step"
+      required_fields: [on_click.action, on_click.target_state]
+      interaction_type: navigate
+      data_driven: false
+
+  - type: button
+    id: how_ob_works_button
+    variant: text
+    label: "{strings.onboarding_how_ob_works}"
+    state_binding: [consent_explainer]
+    accessibility_label: "{strings.onboarding_how_ob_works_a11y}"
+    on_click:
+      action: open_ob_explainer
+      target_state: ob_explainer_open
+    test_context:
+      purpose: "Opens the FAPI consent journey explainer bottom sheet"
+      required_fields: [on_click.action, on_click.target_state]
+      interaction_type: action
+      data_driven: false
+
+  # ─── OB Explainer bottom sheet ────────────────────────────────────
+
+  - type: bottom_sheet
+    id: ob_explainer_sheet
+    state_binding: [ob_explainer_open]
+    accessibility_label: "{strings.ob_explainer_title}"
+    test_context:
+      purpose: "Three-step plain-English walkthrough of the FAPI consent journey"
+      required_fields: [children]
+      interaction_type: display
+      data_driven: false
+    children:
+      - type: text
+        id: ob_explainer_title
+        value: "{strings.ob_explainer_title}"
+        style: titleLarge
+        color: "on-surface"
+        accessibility_label: "{strings.ob_explainer_title}"
+        test_context:
+          purpose: "Bottom sheet title"
+          required_fields: [value]
+          interaction_type: display
+          data_driven: false
+
+      - type: list_item
+        id: ob_step1
+        icon: how_to_reg
+        headline_text: "{strings.ob_explainer_step1_title}"
+        supporting_text: "{strings.ob_explainer_step1_body}"
+        accessibility_label: "{strings.ob_explainer_step1_title}"
+        test_context:
+          purpose: "FAPI Step 1 — PSU approves the OBReadConsent1 permission request on HSBC's secure portal"
+          required_fields: [icon, headline_text, supporting_text]
+          interaction_type: display
+          data_driven: false
+
+      - type: list_item
+        id: ob_step2
+        icon: login
+        headline_text: "{strings.ob_explainer_step2_title}"
+        supporting_text: "{strings.ob_explainer_step2_body}"
+        accessibility_label: "{strings.ob_explainer_step2_title}"
+        test_context:
+          purpose: "FAPI Step 2 — PSU authenticates directly on HSBC via SCA; credentials never shared"
+          required_fields: [icon, headline_text, supporting_text]
+          interaction_type: display
+          data_driven: false
+
+      - type: list_item
+        id: ob_step3
+        icon: shield
+        headline_text: "{strings.ob_explainer_step3_title}"
+        supporting_text: "{strings.ob_explainer_step3_body}"
+        accessibility_label: "{strings.ob_explainer_step3_title}"
+        test_context:
+          purpose: "FAPI Step 3 — HSBC returns a short-lived PSU access token via signed FAPI response"
+          required_fields: [icon, headline_text, supporting_text]
+          interaction_type: display
+          data_driven: false
+
+      - type: text
+        id: ob_explainer_revoke_note
+        value: "{strings.ob_explainer_revoke_note}"
+        style: bodySmall
+        color: "on-surface-variant"
+        accessibility_label: "{strings.ob_explainer_revoke_note}"
+        test_context:
+          purpose: "Revoke consent reminder within the OB explainer sheet"
+          required_fields: [value]
+          interaction_type: display
+          data_driven: false
+
+      - type: button
+        id: ob_explainer_close_button
+        variant: filled
+        label: "{strings.ob_explainer_close}"
+        accessibility_label: "{strings.ob_explainer_close_a11y}"
+        on_click:
+          action: close_ob_explainer
+          target_state: consent_explainer
+        test_context:
+          purpose: "Closes the OB explainer sheet and returns PSU to consent_explainer step"
+          required_fields: [on_click.action, on_click.target_state]
+          interaction_type: action
+          data_driven: false

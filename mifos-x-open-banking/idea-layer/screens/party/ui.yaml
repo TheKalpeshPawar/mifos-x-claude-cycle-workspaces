@@ -1,0 +1,320 @@
+screen_id: party
+name: "Account Holder"
+status: enriched
+quality_score: 93
+initial_state: loading
+
+shell:
+  bottom_navigation_visible: true
+  top_app_bar_visible: true
+  top_app_bar_title: "{strings.party.screen_title}"
+  top_app_bar_leading: back
+  top_app_bar_leading_accessibility_label: "{strings.party.nav_back}"
+  fab_visible: false
+
+business_logic:
+  kind: crud
+  description: "Calls GET /accounts/{AccountId}/party (OBReadParty2) and GET /accounts/{AccountId}/parties (OBReadParty3) in parallel via ktorfit, requiring ReadParty in the active consent. Results are merged by PartyId into a unified view of name, legal name, party type, addresses, email, and phone. A 403 PermissionNotGranted from either endpoint transitions to consent_required state (re-authorise CTA navigating to the consent-list (Manage consents) screen to reconfirm the consent). A 404 or empty 200 response transitions to empty state. Auth failure (401) and network errors surface the error state with Retry."
+  external_library_refs:
+    - "hsbc-obie-ais-v4.0:party"
+    - "ktorfit"
+  description_author: claude
+  description_authored_at: "2026-06-29T12:00:00Z"
+
+state_model:
+  vm_class: PartyViewModel
+  ui_state_sealed: PartyUiState
+  states:
+    loading: "PartyUiState.Loading"
+    content: "PartyUiState.Content(party: OBParty2)"
+    error: "PartyUiState.Error(message: String, errorCode: PartyErrorCode)"
+    empty: "PartyUiState.Empty"
+    consent_required: "PartyUiState.ConsentRequired"
+
+status_history:
+  - from: draft
+    to: enriched
+    at: "2026-06-29"
+    by: "/idea-enrich"
+
+states: [loading, content, error, empty, consent_required]
+
+components:
+
+  # ─── LOADING STATE ───────────────────────────────────────────────
+  - type: progress_indicator
+    id: loading_indicator
+    variant: circular
+    state_binding: [loading]
+    accessibility_label: "{strings.party.loading_description}"
+    test_context:
+      purpose: "Shown while parallel GET /party + GET /parties calls are in flight"
+      required_fields: []
+      interaction_type: display
+      data_driven: false
+
+  # ─── CONTENT STATE ───────────────────────────────────────────────
+  - type: card
+    id: party_header_card
+    state_binding: [content]
+    elevation: 2
+    test_context:
+      purpose: "Identity header card: OBParty2 PartyType, Name, FullLegalName"
+      required_fields: [party.PartyType, party.Name, party.FullLegalName]
+      interaction_type: display
+      data_driven: true
+    children:
+      - type: text
+        id: party_type_label
+        role: overline
+        value: "{party.PartyType}"
+        style: labelMedium
+        color: "secondary"
+        accessibility_label: "{strings.party.party_type_prefix}: {party.PartyType}"
+        test_context:
+          purpose: "OBParty2 PartyType enum (Sole, JointSole, JointMortgagor, Sole)"
+          required_fields: [party.PartyType]
+          interaction_type: display
+          data_driven: true
+      - type: text
+        id: party_name
+        role: title
+        value: "{party.Name}"
+        style: headlineMedium
+        accessibility_label: "{strings.party.name_prefix}: {party.Name}"
+        test_context:
+          purpose: "OBParty2 Name — display name of the PSU"
+          required_fields: [party.Name]
+          interaction_type: display
+          data_driven: true
+      - type: text
+        id: party_full_legal_name
+        role: subtitle
+        value: "{party.FullLegalName}"
+        style: bodyMedium
+        color: "on-surface-variant"
+        accessibility_label: "{strings.party.legal_name_prefix}: {party.FullLegalName}"
+        test_context:
+          purpose: "OBParty2 FullLegalName — legal name as registered with the bank"
+          required_fields: [party.FullLegalName]
+          interaction_type: display
+          data_driven: true
+
+  - type: section_header
+    id: contact_header
+    state_binding: [content]
+    label: "{strings.party.section_contact}"
+    test_context:
+      purpose: "Section divider for OBParty2 contact fields (email, phone, mobile)"
+      required_fields: []
+      interaction_type: display
+      data_driven: false
+
+  - type: list_item
+    id: email_row
+    state_binding: [content]
+    leading_icon: email
+    supporting_text: "{strings.party.label_email}"
+    trailing_content: "{party.EmailAddress}"
+    trailing_style: bodyMedium
+    visibility: "visible when party.EmailAddress is non-empty"
+    accessibility_label: "{strings.party.email_a11y}: {party.EmailAddress}"
+    test_context:
+      purpose: "OBParty2 EmailAddress; shown only when present"
+      required_fields: [party.EmailAddress]
+      interaction_type: display
+      data_driven: true
+
+  - type: list_item
+    id: mobile_row
+    state_binding: [content]
+    leading_icon: phone_android
+    supporting_text: "{strings.party.label_mobile}"
+    trailing_content: "{party.Mobile}"
+    trailing_style: bodyMedium
+    visibility: "visible when party.Mobile is non-empty"
+    accessibility_label: "{strings.party.mobile_a11y}: {party.Mobile}"
+    test_context:
+      purpose: "OBParty2 Mobile; E.164 format from HSBC"
+      required_fields: [party.Mobile]
+      interaction_type: display
+      data_driven: true
+
+  - type: list_item
+    id: phone_row
+    state_binding: [content]
+    leading_icon: phone
+    supporting_text: "{strings.party.label_phone}"
+    trailing_content: "{party.Phone}"
+    trailing_style: bodyMedium
+    visibility: "visible when party.Phone is non-empty"
+    accessibility_label: "{strings.party.phone_a11y}: {party.Phone}"
+    test_context:
+      purpose: "OBParty2 Phone; shown only when present"
+      required_fields: [party.Phone]
+      interaction_type: display
+      data_driven: true
+
+  - type: section_header
+    id: address_header
+    state_binding: [content]
+    label: "{strings.party.section_address}"
+    test_context:
+      purpose: "Section divider for OBParty2 Address[] array (may contain multiple types)"
+      required_fields: []
+      interaction_type: display
+      data_driven: false
+
+  - type: list
+    id: address_list
+    state_binding: [content]
+    items_source: "{party.Address}"
+    test_context:
+      purpose: "Iterates OBPostalAddress8 entries (Residential, Business, etc.)"
+      required_fields: [party.Address]
+      interaction_type: display
+      data_driven: true
+    children:
+      - type: card
+        id: address_card
+        elevation: 1
+        test_context:
+          purpose: "Single OBPostalAddress8 displayed as a card (supports multiple address types)"
+          required_fields: [item.AddressType, item.BuildingNumber, item.StreetName, item.TownName, item.PostCode, item.Country]
+          interaction_type: display
+          data_driven: true
+        children:
+          - type: text
+            id: address_type
+            role: overline
+            value: "{item.AddressType}"
+            style: labelSmall
+            color: "secondary"
+            accessibility_label: "{strings.party.address_type_prefix}: {item.AddressType}"
+            test_context:
+              purpose: "OBPostalAddress8 AddressType (Residential, Business, POBox, Correspondence)"
+              required_fields: [item.AddressType]
+              interaction_type: display
+              data_driven: true
+          - type: text
+            id: address_line_1
+            value: "{item.BuildingNumber} {item.StreetName}"
+            style: bodyMedium
+            test_context:
+              purpose: "First address line from BuildingNumber + StreetName"
+              required_fields: [item.BuildingNumber, item.StreetName]
+              interaction_type: display
+              data_driven: true
+          - type: text
+            id: address_line_2
+            value: "{item.AddressLine[0]}"
+            style: bodyMedium
+            visibility: "visible when item.AddressLine is non-empty"
+            test_context:
+              purpose: "Optional second address line (AddressLine[0]); shown when present"
+              required_fields: [item.AddressLine]
+              interaction_type: display
+              data_driven: true
+          - type: text
+            id: address_town_postcode
+            value: "{item.TownName}, {item.PostCode}"
+            style: bodyMedium
+            test_context:
+              purpose: "Town and postcode on one line"
+              required_fields: [item.TownName, item.PostCode]
+              interaction_type: display
+              data_driven: true
+          - type: text
+            id: address_country
+            value: "{item.Country}"
+            style: bodySmall
+            color: "on-surface-variant"
+            accessibility_label: "{strings.party.country_prefix}: {item.Country}"
+            test_context:
+              purpose: "ISO 3166 2-letter country code"
+              required_fields: [item.Country]
+              interaction_type: display
+              data_driven: true
+          - type: text
+            id: address_full_card
+            value: ""
+            style: bodySmall
+            visibility: screen_reader_only
+            accessibility_label: "{strings.party.full_address_a11y}: {item.BuildingNumber} {item.StreetName}, {item.AddressLine[0]}, {item.TownName}, {item.PostCode}, {item.Country}"
+            test_context:
+              purpose: "Screen-reader-only full address string for TalkBack/VoiceOver"
+              required_fields: [item.BuildingNumber, item.StreetName, item.TownName, item.PostCode, item.Country]
+              interaction_type: display
+              data_driven: true
+
+  # ─── ERROR STATE ──────────────────────────────────────────────────
+  - type: empty_state
+    id: error_state
+    variant: error
+    state_binding: [error]
+    icon: error_outline
+    title: "{strings.party.error_title}"
+    body: "{error.message}"
+    accessibility_label: "{strings.party.error_a11y}"
+    test_context:
+      purpose: "Shown on 401 token-expiry or network error from party endpoints. 403 routes to consent_required, not here."
+      required_fields: [error.message]
+      interaction_type: display
+      data_driven: true
+    children:
+      - type: button
+        id: retry_button
+        variant: filled
+        label: "{strings.party.action_retry}"
+        accessibility_label: "{strings.party.retry_a11y}"
+        test_context:
+          purpose: "Re-triggers retry_load → party_load ViewModel action"
+          required_fields: []
+          interaction_type: action
+          data_driven: false
+        on_click:
+          action: retry_load
+
+  # ─── EMPTY STATE ──────────────────────────────────────────────────
+  - type: empty_state
+    id: empty_state_view
+    variant: info
+    state_binding: [empty]
+    icon: person_off
+    title: "{strings.party.empty_title}"
+    body: "{strings.party.empty_body}"
+    accessibility_label: "{strings.party.empty_a11y}"
+    test_context:
+      purpose: "Shown when /party and /parties respond 200 but return no party records"
+      required_fields: []
+      interaction_type: display
+      data_driven: false
+
+  # ─── CONSENT REQUIRED STATE ───────────────────────────────────────
+  - type: empty_state
+    id: consent_required_view
+    variant: warning
+    state_binding: [consent_required]
+    icon: lock_person
+    title: "{strings.party.consent_title}"
+    body: "{strings.party.consent_body}"
+    accessibility_label: "{strings.party.consent_a11y}"
+    test_context:
+      purpose: "Shown when 403 PermissionNotGranted returned; ReadParty not in consent scope"
+      required_fields: []
+      interaction_type: display
+      data_driven: false
+    children:
+      - type: button
+        id: reauthorise_button
+        variant: filled
+        label: "{strings.party.action_reauthorise}"
+        accessibility_label: "{strings.party.reauthorise_a11y}"
+        test_context:
+          purpose: "Navigates user to the consent-list (Manage consents) screen to re-grant ReadParty permission"
+          required_fields: []
+          interaction_type: action
+          data_driven: false
+        on_click:
+          action: navigate
+          target: consent-list

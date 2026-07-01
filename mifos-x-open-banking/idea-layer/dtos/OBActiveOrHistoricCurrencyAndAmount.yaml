@@ -1,0 +1,72 @@
+name: OBActiveOrHistoricCurrencyAndAmount
+version: 1.0.0
+description: >
+  OBIE monetary amount type — decimal amount string + ISO 4217 currency code.
+  Used across balance types, transaction amounts, standing-order payment amounts,
+  scheduled payment amounts, and direct-debit previous payment amounts.
+  Amount is a string to preserve decimal precision without floating-point errors.
+source:
+  origin: rest
+  endpoint: "/accounts/{AccountId}/balances"
+fields:
+  - name: amount
+    type: String
+    description: "Decimal amount as string, e.g. '1234.56'. String preserves precision per OBIE spec."
+    required: true
+    source_field: "Amount"
+    example: "1234.56"
+    constraints:
+      pattern: "^\\d{1,13}\\.\\d{1,5}$"
+  - name: currency
+    type: String
+    description: "ISO 4217 3-letter currency code. Always 'GBP' for UK personal accounts; multi-currency GlobalWallet may return native currency."
+    required: true
+    source_field: "Currency"
+    example: "GBP"
+    constraints:
+      min_length: 3
+      max_length: 3
+used_by:
+  - feature: home
+    kind: response
+    api_id: selectedAccountBalances
+    role: nested
+  - feature: accounts
+    kind: response
+    api_id: balances
+    role: nested
+  - feature: accountDetail
+    kind: response
+    api_id: balances
+    role: nested
+  - feature: transactions
+    kind: response
+    api_id: transactions
+    role: nested
+  - feature: transactionDetail
+    kind: response
+    api_id: transactions
+    role: nested
+  - feature: statementDetail
+    kind: response
+    api_id: statementTxns
+    role: nested
+  - feature: directDebits
+    kind: response
+    api_id: directDebitsList
+    role: nested
+  - feature: standingOrders
+    kind: response
+    api_id: standingOrdersList
+    role: nested
+  - feature: scheduledPayments
+    kind: response
+    api_id: scheduledPaymentsList
+    role: nested
+capabilities_used:
+  - has_api
+tier: medium
+tags:
+  - obie
+  - amount
+  - monetary

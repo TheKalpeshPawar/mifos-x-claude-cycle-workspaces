@@ -1,0 +1,101 @@
+screen_id: recurring-subscriptions
+
+scenarios:
+  # ── Loading state ────────────────────────────────────────────────
+  - id: TC-RS-001
+    description: "Loading state shows shimmer skeleton while pattern-detection algorithm runs"
+    state: loading
+    given: "Screen mounted; DataStore transaction cache read is in progress"
+    when: "RecurringSubscriptionsViewModel.loadSubscriptions() has not yet resolved"
+    then:
+      - "loading_skeleton shimmer rows are visible"
+      - "No subscription list, summary card, or banner is shown"
+      - "App bar title 'Recurring Payments' is visible"
+    priority: high
+
+  # ── Content state ────────────────────────────────────────────────
+  - id: TC-RS-002
+    description: "Content state renders 7 detected subscriptions sorted by monthly cost descending"
+    state: content
+    given: >
+      Transaction cache contains: PureGym £24.99/mo, Spotify £11.99/mo,
+      Netflix £10.99/mo, Adobe Lightroom £143.88/yr, Amazon Prime £8.99/mo,
+      Apple TV+ £8.99/mo, Disney+ £7.99/mo — each with ≥2 qualifying occurrences
+    when: "Screen mounts and recurring_detect trigger completes"
+    then:
+      - "detected_notice banner is visible"
+      - "summary_amount shows '£85.93'"
+      - "summary_count shows '7 subscriptions detected'"
+      - "First row is PureGym (£24.99) — highest monthly cost"
+      - "Adobe Lightroom row shows cadence 'Annual' and amount '£143.88'"
+      - "Every row shows a 'Detected' assist chip badge"
+    priority: high
+
+  - id: TC-RS-003
+    description: "Annual cadence amount normalised to monthly equivalent in total"
+    state: content
+    given: "Transaction cache yields only Adobe Lightroom with Annual cadence: £143.88/yr"
+    when: "recurring_detect trigger completes"
+    then:
+      - "summary_amount shows '£11.99' (£143.88 ÷ 12, rounded 2dp)"
+      - "Adobe Lightroom row label shows '£143.88' (the actual charge amount)"
+      - "Cadence field reads 'Annual'"
+    priority: high
+
+  - id: TC-RS-004
+    description: "Tapping a subscription row dispatches show_merchant_transaction_history"
+    state: content
+    given: "Content state with 7 subscriptions rendered"
+    when: "User taps the Netflix subscription row"
+    then:
+      - "show_merchant_transaction_history action fires"
+      - "params.merchant = 'Netflix'"
+      - "ViewModel routes user to merchant-filtered transaction history"
+    priority: medium
+
+  - id: TC-RS-005
+    description: "Total is sum of all monthly-equivalent amounts across all cadences"
+    state: content
+    given: "7-subscription demo-data set loaded"
+    when: "Screen renders"
+    then:
+      - "summary_amount = £85.93 (24.99 + 11.99 + 10.99 + 11.99 + 8.99 + 8.99 + 7.99)"
+      - "Annual Adobe Lightroom contributes £11.99 (£143.88 / 12) to the total"
+    priority: medium
+
+  # ── Empty state ──────────────────────────────────────────────────
+  - id: TC-RS-006
+    description: "Empty state when fewer than 2 qualifying occurrences per merchant"
+    state: empty
+    given: "Transaction cache has only one occurrence per merchant (insufficient for pattern detection)"
+    when: "Screen mounts and recurring_detect trigger yields zero qualifying patterns"
+    then:
+      - "empty_state component is visible with autorenew icon"
+      - "Title 'No recurring payments detected' is shown"
+      - "Body explains patterns will appear as more transactions load"
+      - "No subscription list or summary card is visible"
+    priority: high
+
+  # ── Error state ──────────────────────────────────────────────────
+  - id: TC-RS-007
+    description: "Error state renders when DataStore read throws IOException"
+    state: error
+    given: "DataStore throws IOException during cached transaction read"
+    when: "recurring_detect trigger propagates on_error"
+    then:
+      - "error_state component is visible with error_outline icon"
+      - "Error title and descriptive body text are shown"
+      - "'Try again' outlined button is visible and tappable"
+      - "No subscription list, summary card, or loading skeleton is shown"
+    priority: high
+
+  - id: TC-RS-008
+    description: "Retry button resets to loading state and re-runs detection"
+    state: error
+    given: "Screen is in error state after a failed cache read"
+    when: "User taps the 'Try again' button"
+    then:
+      - "State transitions to loading (shimmer visible)"
+      - "loadSubscriptions() is reinvoked"
+      - "On second success: state transitions to content with correct subscription list"
+    priority: medium

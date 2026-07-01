@@ -1,0 +1,196 @@
+screen_id: scheduled-payments
+name: "{strings.sp_screen_title}"
+status: enriched
+initial_state: loading
+
+shell:
+  bottom_navigation_visible: true
+  top_app_bar_visible: true
+  top_app_bar_title: "{strings.sp_screen_title}"
+  top_app_bar_leading: back
+  fab_visible: false
+
+states: [loading, content, empty, error]
+
+business_logic:
+  kind: crud
+  description: "Calls GET /accounts/{AccountId}/scheduled-payments via ktorfit to retrieve OBReadScheduledPayment3. ViewModel maps each Data.ScheduledPayment to a UiModel: CreditorAccount.Name (payee display name); InstructedAmount.Amount + InstructedAmount.Currency formatted as currency string (e.g. GBP 842.00); ScheduledPaymentDateTime (ISO-8601) formatted as 'EEE d MMM yyyy' (e.g. Thu 31 Jul 2026); ScheduledType enum mapped to human-readable chip label: Execution → 'Execution date' (money leaves account on that date), Arrival → 'Arrival date' (funds arrive at beneficiary on that date); CreditorAccount.Identification (UK sort code + account number, e.g. 08-32-00 12001039) shown as destination account; Reference as payment narrative. Read-only under AISP consent using ReadScheduledPaymentsDetail permission. ScheduledType icon: calendar_today for Execution, arrow_downward for Arrival."
+  external_library_refs:
+    - "ktorfit"
+    - "hsbc-obie-ais-v4.0:scheduled-payments"
+  description_author: claude
+  description_authored_at: "2026-06-29T14:00:00Z"
+
+components:
+  - type: progress_indicator
+    variant: circular
+    state_binding: [loading]
+    accessibility_label: "{strings.sp_loading_a11y}"
+    test_context:
+      purpose: "Indicate async fetch of OBReadScheduledPayment3 from HSBC AIS endpoint"
+      required_fields: []
+      interaction_type: display
+      data_driven: false
+
+  - type: icon_button
+    id: back_button
+    icon: arrow_back
+    accessibility_label: "{strings.sp_back_a11y}"
+    on_click:
+      action: navigate_back
+      target: account-detail
+    test_context:
+      purpose: "Return user to account-detail screen, discarding scheduled-payments context"
+      required_fields: []
+      interaction_type: navigate
+      data_driven: false
+
+  - type: list
+    id: scheduled_payments_list
+    state_binding: [content]
+    scroll_direction: vertical
+    items_source: "{scheduledPayments}"
+    test_context:
+      purpose: "Render full OBReadScheduledPayment3 Data.ScheduledPayment array for the account"
+      required_fields: ["scheduledPayments"]
+      interaction_type: display
+      data_driven: true
+    children:
+      - type: card
+        id: scheduled_payment_card
+        elevation: 1
+        accessibility_label: "{strings.sp_card_a11y_prefix} {item.InstructedAmount.Amount} {item.InstructedAmount.Currency} {strings.sp_card_a11y_to} {item.CreditorAccount.Name}"
+        test_context:
+          purpose: "Container per scheduled payment; groups all payment fields for one future-dated instruction"
+          required_fields: ["item"]
+          interaction_type: display
+          data_driven: true
+        children:
+          - type: text
+            id: sp_payee_name
+            role: title
+            value: "{item.CreditorAccount.Name}"
+            style: titleMedium
+            i18n: skip
+            test_context:
+              purpose: "Payee name from CreditorAccount.Name in OBReadScheduledPayment3"
+              required_fields: ["item.CreditorAccount.Name"]
+              interaction_type: display
+              data_driven: true
+
+          - type: text
+            id: sp_amount
+            role: amount
+            value: "{item.InstructedAmount.Currency} {item.InstructedAmount.Amount}"
+            style: headlineSmall
+            color: error
+            i18n: skip
+            accessibility_label: "{item.InstructedAmount.Amount} {item.InstructedAmount.Currency} {strings.sp_amount_a11y_suffix}"
+            test_context:
+              purpose: "Payment amount and currency from InstructedAmount OB object; 'GBP 842.00'"
+              required_fields: ["item.InstructedAmount.Amount", "item.InstructedAmount.Currency"]
+              interaction_type: display
+              data_driven: true
+
+          - type: text
+            id: sp_scheduled_date
+            role: body
+            value: "{strings.sp_due_prefix} {item.scheduledDateFormatted}"
+            style: bodySmall
+            color: on-surface-variant
+            test_context:
+              purpose: "ISO-8601 ScheduledPaymentDateTime formatted by ViewModel as 'Due: Thu 31 Jul 2026'"
+              required_fields: ["item.scheduledDateFormatted"]
+              interaction_type: display
+              data_driven: true
+
+          - type: chip
+            id: sp_type_chip
+            variant: assist
+            label: "{item.scheduledTypeLabel}"
+            icon: "{item.scheduledTypeIcon}"
+            color: secondary-container
+            accessibility_label: "{item.scheduledTypeA11y}"
+            state_binding: [content]
+            test_context:
+              purpose: "ScheduledType chip: 'Execution date' (calendar_today) or 'Arrival date' (arrow_downward); ViewModel maps OBIE enum to label, icon, and a11y string"
+              required_fields: ["item.scheduledTypeLabel", "item.scheduledTypeIcon", "item.scheduledTypeA11y"]
+              interaction_type: display
+              data_driven: true
+
+          - type: text
+            id: sp_account_id
+            role: caption
+            value: "{strings.sp_account_prefix} {item.CreditorAccount.Identification}"
+            style: labelSmall
+            color: on-surface-variant
+            i18n: skip
+            test_context:
+              purpose: "Destination account sort code + account number from CreditorAccount.Identification (e.g. 08-32-00 12001039) so user can verify payment destination"
+              required_fields: ["item.CreditorAccount.Identification"]
+              interaction_type: display
+              data_driven: true
+
+          - type: text
+            id: sp_reference
+            role: caption
+            value: "{strings.sp_ref_prefix} {item.Reference}"
+            style: labelSmall
+            color: on-surface-variant
+            test_context:
+              purpose: "Payment reference from Reference field for user identification"
+              required_fields: ["item.Reference"]
+              interaction_type: display
+              data_driven: true
+
+  - type: empty_state
+    id: empty_scheduled_payments
+    state_binding: [empty]
+    icon: schedule
+    title: "{strings.sp_empty_title}"
+    body: "{strings.sp_empty_body}"
+    accessibility_label: "{strings.sp_empty_a11y}"
+    test_context:
+      purpose: "Zero-result state when Data.ScheduledPayment[] is empty in OBIE response"
+      required_fields: []
+      interaction_type: display
+      data_driven: false
+
+  - type: empty_state
+    id: error_state
+    variant: error
+    state_binding: [error]
+    icon: error_outline
+    title: "{strings.sp_error_title}"
+    body: "{error.message}"
+    accessibility_label: "{strings.sp_error_a11y}"
+    test_context:
+      purpose: "Surface typed API errors (401/403/429/network) with actionable message"
+      required_fields: ["error.message"]
+      interaction_type: display
+      data_driven: true
+    children:
+      - type: button
+        id: retry_button
+        variant: filled
+        label: "{strings.action_retry}"
+        accessibility_label: "{strings.sp_retry_a11y}"
+        on_click:
+          action: retry_load
+        test_context:
+          purpose: "Re-trigger LoadScheduledPayments ViewModel action after transient failure"
+          required_fields: []
+          interaction_type: action
+          data_driven: false
+
+quality_score: 92
+status_history:
+  - from: draft
+    to: enriched
+    at: "2026-06-29"
+    by: "/idea-enrich"
+  - from: enriched
+    to: enriched
+    at: "2026-06-29"
+    by: "/idea-enrich"
+    notes: "Quality 83→92: i18n wrapping (18 keys), ScheduledType chip, CreditorAccount.Identification field, comprehensive card a11y, richer business_logic description with formatting semantics"

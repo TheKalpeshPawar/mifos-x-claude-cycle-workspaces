@@ -1,0 +1,46 @@
+name: OBReadParty2
+version: 1.0.0
+description: >
+  OBIE AIS v4.0 response envelope for GET /accounts/{AccountId}/party.
+  Returns a SINGLE account holder party (Data.Party is an object, not an array).
+  Requires ReadParty permission. All name, address, phone, email, and mobile fields are PII.
+  Used by the party screen and the profile screen's connected-identity section.
+source:
+  origin: rest
+  endpoint: "/accounts/{AccountId}/party"
+fields:
+  - name: party
+    type: Json
+    description: >
+      OBParty2 record from Data.Party. Fields include:
+      PartyId (primary key), PartyNumber (optional), PartyType (Delegate | Joint | Sole, optional),
+      Name (PII, optional), FullLegalName (PII, optional), LegalStructure (optional),
+      BeneficialOwnership (Boolean, optional), AccountRole (optional),
+      EmailAddress (PII, optional), Phone (PII, optional), Mobile (PII, optional),
+      Relationships { Account { Related, Id } } (optional),
+      Address[] (PII — AddressLine[], StreetName, BuildingNumber, PostCode, TownName, Country, optional).
+    required: true
+    source_field: "Data.Party"
+  - name: links
+    type: { optional: Json }
+    source_field: "Links"
+  - name: meta
+    type: { optional: Json }
+    source_field: "Meta"
+used_by:
+  - feature: party
+    kind: response
+    api_id: party
+    role: body
+  - feature: profile
+    kind: response
+    api_id: party
+    role: body
+capabilities_used:
+  - has_api
+tier: maximum
+tags:
+  - obie
+  - party
+  - pii
+  - envelope

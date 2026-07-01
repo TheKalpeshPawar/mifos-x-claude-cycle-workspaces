@@ -1,0 +1,134 @@
+screen_id: home
+
+scenarios:
+  - id: TC-HOME-001
+    description: "Home screen loads content state for Priya's default selected account"
+    state: content
+    given: >
+      Valid PSU access token; HSBC sandbox returns 3 accounts;
+      selectedAccountId = '40051512345678' (Everyday Current);
+      /accounts/{id}/balances returns InterimAvailable £2,847.63;
+      /accounts/{id}/transactions returns 5 booked entries.
+    when: "Screen mounts"
+    then:
+      - "Account switcher strip renders 3 chips: 'Everyday Current' (selected), 'ISA Saver', 'Platinum Mastercard'"
+      - "Hero balance card shows Nickname 'Everyday Current', balance '£2,847.63', identifier '40-05-15 12345678'"
+      - "Quick actions row shows Pay (disabled), Transactions, Statements, Manage consents"
+      - "Recent transactions section shows 5 rows, most recent first: AMAZON UK, PRET A MANGER, TESCO, TFL, SALARY"
+      - "Spending snapshot card shows '£167.41' and top category 'Groceries'"
+
+  - id: TC-HOME-002
+    description: "Loading state shows shimmer skeletons during initial fetch"
+    state: loading
+    given: "Slow network; API calls in flight"
+    when: "Screen mounts"
+    then:
+      - "Hero card, actions row, and 3 transaction-row shimmers visible with pulsing animation"
+      - "No balance amount, account chip, or transaction rows rendered"
+      - "Accessibility label 'Loading your account' present"
+
+  - id: TC-HOME-003
+    description: "Account switcher re-loads content for a different account"
+    state: content
+    given: "Content state with Everyday Current selected"
+    when: "User taps 'ISA Saver' chip"
+    then:
+      - "Loading state briefly shown"
+      - "Hero balance card updates to ISA Saver nickname and ISA Saver balance (£12,450.00)"
+      - "Recent transactions update to ISA Saver transactions"
+      - "'ISA Saver' chip is now selected; 'Everyday Current' is unselected"
+
+  - id: TC-HOME-004
+    description: "Hero balance card tap navigates to account-detail"
+    state: content
+    given: "Content state, Everyday Current selected"
+    when: "User taps hero balance card"
+    then: "Navigates to account-detail screen with accountId=40051512345678"
+
+  - id: TC-HOME-005
+    description: "Transactions quick action navigates to transactions screen"
+    state: content
+    when: "User taps Transactions icon button"
+    then: "Navigates to transactions screen with accountId=40051512345678"
+
+  - id: TC-HOME-006
+    description: "'View all' link navigates to transactions screen"
+    state: content
+    when: "User taps 'View all' text button in recent transactions header"
+    then: "Navigates to transactions screen with accountId=40051512345678"
+
+  - id: TC-HOME-007
+    description: "Manage consents quick action navigates to consent-list"
+    state: content
+    when: "User taps 'Consents' (shield) icon button"
+    then: "Navigates to consent-list screen"
+
+  - id: TC-HOME-008
+    description: "Spending snapshot card navigates to spending-by-category"
+    state: content
+    when: "User taps spending snapshot card"
+    then: "Navigates to spending-by-category screen"
+
+  - id: TC-HOME-009
+    description: "Pay quick action is disabled (PISP not implemented)"
+    state: content
+    when: "Screen renders content state"
+    then:
+      - "Pay icon button is visible but disabled (enabled=false)"
+      - "Pay label renders in on-surface-variant colour"
+      - "Tapping Pay produces no navigation or action"
+
+  - id: TC-HOME-010
+    description: "Error state renders with retry CTA on 401 token expired"
+    state: error
+    given: "Access token expired; /accounts returns 401"
+    when: "Screen mounts"
+    then:
+      - "Error state renders with error_outline icon"
+      - "Title renders from {strings.home.error.title}"
+      - "Body shows 'Your session has expired. Please sign in again.'"
+      - "Retry button visible (error.recoverable=true)"
+      - "Tapping Retry re-triggers home_load"
+
+  - id: TC-HOME-011
+    description: "Error state — non-recoverable 403 hides Retry button"
+    state: error
+    given: "ReadAccountsDetail permission absent; /accounts returns 403"
+    when: "Screen mounts"
+    then:
+      - "Error state renders with 'Account access permission denied' body"
+      - "Retry button NOT visible (error.recoverable=false)"
+
+  - id: TC-HOME-012
+    description: "Empty state renders with CTA when no accounts returned"
+    state: empty
+    given: "HSBC returns OBReadAccount6 with empty Data.Account[]"
+    when: "Screen mounts"
+    then:
+      - "Empty state renders with account_balance_wallet icon"
+      - "Title and body from {strings.home.empty.*} visible"
+      - "CTA button 'Connect your bank' navigates to login"
+
+  - id: TC-HOME-013
+    description: "Tap recent transaction row navigates to transaction-detail"
+    state: content
+    when: "User taps 'AMAZON UK MARKETPLACE' row (TX-20260627-0002)"
+    then: "Navigates to transaction-detail with transactionId=TX-20260627-0002 and accountId=40051512345678"
+
+  - id: TC-HOME-014
+    description: "CreditCard account shows balance owed styling in hero card"
+    state: content
+    given: "User selects 'Platinum Mastercard' (CreditDebitIndicator=Debit) via account switcher"
+    when: "Hero card renders for Platinum Mastercard"
+    then:
+      - "Balance text renders in error colour"
+      - "Account subtype shown as 'CreditCard'"
+      - "Identification shows 'xxxx xxxx xxxx 7654'"
+
+  - id: TC-HOME-015
+    description: "Recent transactions debit amounts show in error colour, credits in primary"
+    state: content
+    when: "Recent transactions list renders"
+    then:
+      - "AMAZON UK, PRET A MANGER, TESCO, TFL rows show amount in error colour prefixed with '- £'"
+      - "SALARY ACME LTD row shows amount in primary colour prefixed with '+ £'"

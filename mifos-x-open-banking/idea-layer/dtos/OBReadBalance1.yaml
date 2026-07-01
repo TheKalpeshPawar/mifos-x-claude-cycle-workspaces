@@ -1,0 +1,45 @@
+name: OBReadBalance1
+version: 1.0.0
+description: >
+  OBIE AIS v4.0 response envelope for GET /accounts/{AccountId}/balances.
+  Data.Balance[] typically contains multiple entries (InterimAvailable, InterimBooked,
+  OpeningBooked). ViewModel applies type-preference order: InterimAvailable → InterimBooked
+  → OpeningBooked for the hero balance. Both InterimAvailable and the second-best type
+  (if present) are surfaced on the home-screen hero card (balance + available balance label).
+source:
+  origin: rest
+  endpoint: "/accounts/{AccountId}/balances"
+fields:
+  - name: balance
+    type: { list_of: { dto_ref: OBCashBalance3 } }
+    description: "Balance records from Data.Balance[]. Multiple type entries per account; ViewModel selects preferred type."
+    required: true
+    source_field: "Data.Balance"
+  - name: links
+    type: { optional: Json }
+    description: "OBIE Links envelope."
+    source_field: "Links"
+  - name: meta
+    type: { optional: Json }
+    description: "OBIE Meta envelope."
+    source_field: "Meta"
+used_by:
+  - feature: home
+    kind: response
+    api_id: selectedAccountBalances
+    role: body
+  - feature: accounts
+    kind: response
+    api_id: balances
+    role: body
+  - feature: accountDetail
+    kind: response
+    api_id: balances
+    role: body
+capabilities_used:
+  - has_api
+tier: medium
+tags:
+  - obie
+  - balance
+  - envelope

@@ -1,0 +1,146 @@
+screen_id: statements
+name: "Statements"
+status: enriched
+quality_score: 94
+initial_state: loading
+
+shell:
+  bottom_navigation_visible: true
+  top_app_bar_visible: true
+  top_app_bar_title: "{strings.statements.screen_title}"
+  top_app_bar_leading: back
+  fab_visible: false
+
+business_logic:
+  kind: crud
+  description: "Calls GET /accounts/{AccountId}/statements (OBIE OBReadStatement2, ReadStatementsDetail). Each OBStatement2 carries StatementId, StatementReference, StartDateTime, EndDateTime, and StatementAmount[]{OpeningBalance, ClosingBalance GBP}. ViewModel derives a period label ('May 2026') from StartDateTime via kotlinx-datetime, sorts descending, and exposes closingBalanceFormatted per row. Row tap navigates to statement-detail. Download icon triggers GET /statements/{StatementId}/file (PDF/CSV) dispatched to platform file handler."
+  external_library_refs:
+    - "hsbc-obie-ais-v4.0:statements"
+    - "hsbc-obie-ais-v4.0:statements-file"
+    - "ktorfit"
+    - "kotlinx-datetime"
+  description_author: claude
+  description_authored_at: "2026-06-29T12:00:00Z"
+
+status_history:
+  - from: draft
+    to: enriched
+    at: "2026-06-29"
+    by: "/idea-enrich"
+
+states: [loading, content, empty, error]
+
+components:
+  - type: skeleton
+    id: statements_skeleton
+    state_binding: [loading]
+    variant: list
+    item_count: 3
+    accessibility_label: "{strings.statements.skeleton.a11y}"
+    test_context:
+      purpose: "Shimmer placeholder (3 rows) shown while OBReadStatement2 fetch is in flight; replaced by statements_list on success"
+      required_fields: []
+      interaction_type: display
+      data_driven: false
+
+  - type: list
+    id: statements_list
+    state_binding: [content]
+    scroll_direction: vertical
+    items_source: "{statements}"
+    accessibility_label: "{strings.statements.list.a11y}"
+    test_context:
+      purpose: "Renders OBStatement2 records sorted descending by StartDateTime with period label, closing balance, and download icon"
+      required_fields: [statements]
+      interaction_type: display
+      data_driven: true
+    children:
+      - type: list_item
+        id: statement_row
+        headline: "{item.periodLabel}"
+        supporting_text: "{strings.statements.row.closing_balance_label}: {item.closingBalanceFormatted}"
+        trailing_content: "{item.startDateFormatted} – {item.endDateFormatted}"
+        trailing_style: bodySmall
+        accessibility_label: "{strings.statements.row.a11y}"
+        test_context:
+          purpose: "Single OBStatement2 row; headline = ViewModel-derived period label ('May 2026'); supporting = 'Closing balance: £2,847.63'; trailing = formatted date range; tap navigates to statement-detail"
+          required_fields:
+            - item.StatementId
+            - item.StatementReference
+            - item.periodLabel
+            - item.closingBalanceFormatted
+            - item.startDateFormatted
+            - item.endDateFormatted
+          interaction_type: navigate
+          data_driven: true
+        on_click:
+          action: navigate_statement_detail
+          target: statement-detail
+          params:
+            statementId: "{item.StatementId}"
+            accountId: "{accountId}"
+        children:
+          - type: icon_button
+            id: download_statement_button
+            icon: file_download
+            variant: standard
+            accessibility_label: "{strings.statements.row.download.a11y}"
+            test_context:
+              purpose: "Triggers download_statement for this row's StatementId; stops event propagation so row-tap does not also fire"
+              required_fields: [item.StatementId]
+              interaction_type: action
+              data_driven: true
+            on_click:
+              action: download_statement
+              params:
+                statementId: "{item.StatementId}"
+                accountId: "{accountId}"
+
+  - type: divider
+    id: statement_row_divider
+    state_binding: [content]
+    test_context:
+      purpose: "Visual separator between statement rows inside the list"
+      required_fields: []
+      interaction_type: display
+      data_driven: false
+
+  - type: empty_state
+    id: empty_statements
+    state_binding: [empty]
+    icon: description
+    title: "{strings.statements.empty.title}"
+    body: "{strings.statements.empty.body}"
+    accessibility_label: "{strings.statements.empty.title}"
+    test_context:
+      purpose: "Shown when OBReadStatement2 Data.Statement[] is empty; uses description icon (document) to signal data-type"
+      required_fields: []
+      interaction_type: display
+      data_driven: false
+
+  - type: empty_state
+    id: error_state
+    variant: error
+    state_binding: [error]
+    icon: error_outline
+    title: "{strings.statements.error.title}"
+    body: "{error.message}"
+    accessibility_label: "{strings.statements.error.title}"
+    test_context:
+      purpose: "Shown on 401/403/429/network error; error.message is localised by ViewModel from http_error_map in docs.yaml"
+      required_fields: [error.message]
+      interaction_type: display
+      data_driven: true
+    children:
+      - type: button
+        id: retry_button
+        variant: filled
+        label: "{strings.statements.retry.label}"
+        accessibility_label: "{strings.statements.retry.a11y}"
+        test_context:
+          purpose: "Re-triggers retry_load which delegates to statementsLoad(accountId)"
+          required_fields: []
+          interaction_type: action
+          data_driven: false
+        on_click:
+          action: retry_load

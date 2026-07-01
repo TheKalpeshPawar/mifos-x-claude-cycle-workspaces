@@ -1,0 +1,45 @@
+name: OBReadStatement2
+version: 1.0.0
+description: >
+  OBIE AIS v4.0 response envelope for GET /accounts/{AccountId}/statements (list) and
+  GET /accounts/{AccountId}/statements/{StatementId} (single).
+  With ReadStatementsDetail permission, each OBStatement2 record includes
+  StatementAmount (opening + closing balances), StatementFee, and StatementInterest arrays.
+source:
+  origin: rest
+  endpoint: "/accounts/{AccountId}/statements"
+fields:
+  - name: statement
+    type: { list_of: Json }
+    description: >
+      OBStatement2 records from Data.Statement[]. Each entry contains:
+      StatementId (primary key), AccountId, StartDateTime, EndDateTime, CreationDateTime,
+      StatementDescription[], StatementAmount[{ CreditDebitIndicator, Amount, Type }]
+      (types include Opening Balance, Closing Balance), StatementFee[],
+      StatementInterest[], StatementDateTime[], StatementRate[], StatementValue[].
+    required: true
+    source_field: "Data.Statement"
+  - name: links
+    type: { optional: Json }
+    description: "OBIE Links envelope."
+    source_field: "Links"
+  - name: meta
+    type: { optional: Json }
+    description: "OBIE Meta envelope."
+    source_field: "Meta"
+used_by:
+  - feature: statements
+    kind: response
+    api_id: statements
+    role: body
+  - feature: statementDetail
+    kind: response
+    api_id: statementDetail
+    role: body
+capabilities_used:
+  - has_api
+tier: medium
+tags:
+  - obie
+  - statement
+  - envelope

@@ -1,0 +1,108 @@
+# api_manifest.yaml — HSBC UK Open Banking AIS v4.0 (client contracts)
+# Imported by /idea-import-api 2026-06-29 from account-info-4.0-personal.yaml.
+# Reconciled by /idea sync STEP 4 on 2026-06-30 — all 24 screens' api.yaml consumers verified; ATM Open Data entry added.
+# External API consumer — these are Ktorfit client contracts, not an owned backend.
+
+schema_version: "1.0"
+
+api:
+  id: API-001
+  name: "HSBC UK Open Banking — Account & Transaction (AIS)"
+  standard: obie-uk-open-banking
+  version: "4.0"
+  brand: uk-personal
+  owned: false
+  role: aisp
+  source_spec: /home/kalpesh/OpenBankingProject/specs/hsbc-sandbox/openapi/account-info-4.0-personal.yaml
+
+base_urls:
+  resource: "https://sandbox.ob.hsbc.co.uk/mock/obie/open-banking/v4.0/aisp"
+  oauth2:   "https://sandbox.ob.hsbc.co.uk/mock/obie/open-banking/v1.1/oauth2"
+  dcr:      "https://sandbox.ob.hsbc.co.uk/mock/obie/open-banking/v3.2/oauth2"
+
+auth:
+  scheme: bearer
+  security_profile: fapi-1.0-advanced
+  transport: mtls
+  client_auth: private_key_jwt
+  required_headers: ["Authorization", "x-fapi-interaction-id", "x-fapi-auth-date"]
+  consent_token: client_credentials   # consent create/status/delete
+  resource_token: authorization_code   # PSU-bound resource reads
+
+stats:
+  total_endpoints: 20
+  by_method: { GET: 17, POST: 2, DELETE: 1 }
+  groups: 7
+  last_reconciled: "2026-06-30"
+
+endpoint_groups:
+  - id: consent
+    label: "Account access consent"
+    primary_flow: onboarding-consent
+    count: 3
+  - id: accounts
+    label: "Accounts & balances"
+    primary_flow: account-browsing
+    count: 3
+  - id: transactions
+    label: "Transactions"
+    primary_flow: transaction-review
+    count: 1
+  - id: payments-context
+    label: "Beneficiaries, standing orders, direct debits, scheduled payments"
+    primary_flow: recurring-and-statements
+    count: 4
+  - id: statements
+    label: "Statements"
+    primary_flow: recurring-and-statements
+    count: 4
+  - id: account-extras
+    label: "Product, party, parties, offers"
+    primary_flow: account-browsing
+    count: 4
+  - id: open-data
+    label: "HSBC Open Data (public — no AIS consent)"
+    primary_flow: account-browsing
+    count: 1
+    base_url_override: "https://api.hsbc.com/v2.0/uk/open-banking"
+    auth_override: none
+
+endpoints:
+  - { id: consent-create,      group: consent,          method: POST,   path: "/account-access-consents",                                   request_dto: OBReadConsent1,        response_dto: OBReadConsentResponse1, token: client_credentials, consumers: [login, consent-callback] }
+  - { id: consent-status,      group: consent,          method: GET,    path: "/account-access-consents/{ConsentId}",                       response_dto: OBReadConsentResponse1, token: client_credentials, consumers: [consent-callback, consent-detail] }
+  - { id: consent-revoke,      group: consent,          method: DELETE, path: "/account-access-consents/{ConsentId}",                       token: client_credentials, consumers: [consent-detail] }
+  - { id: accounts-list,       group: accounts,         method: GET,    path: "/accounts",                                                  response_dto: OBReadAccount6,       permission: ReadAccountsDetail, consumers: [accounts] }
+  - { id: account-detail,      group: accounts,         method: GET,    path: "/accounts/{AccountId}",                                      response_dto: OBReadAccount6,       permission: ReadAccountsDetail, consumers: [account-detail] }
+  - { id: balances,            group: accounts,         method: GET,    path: "/accounts/{AccountId}/balances",                             response_dto: OBReadBalance1,       permission: ReadBalances, consumers: [account-detail, accounts] }
+  - { id: transactions,        group: transactions,     method: GET,    path: "/accounts/{AccountId}/transactions",                         response_dto: OBReadTransaction6,   permission: ReadTransactionsDetail, consumers: [transactions, transaction-detail] }
+  - { id: beneficiaries,       group: payments-context, method: GET,    path: "/accounts/{AccountId}/beneficiaries",                        response_dto: OBReadBeneficiary5,   permission: ReadBeneficiariesDetail, consumers: [beneficiaries] }
+  - { id: standing-orders,     group: payments-context, method: GET,    path: "/accounts/{AccountId}/standing-orders",                      response_dto: OBReadStandingOrder6, permission: ReadStandingOrdersDetail, consumers: [standing-orders] }
+  - { id: direct-debits,       group: payments-context, method: GET,    path: "/accounts/{AccountId}/direct-debits",                        response_dto: OBReadDirectDebit2,   permission: ReadDirectDebits, consumers: [direct-debits] }
+  - { id: scheduled-payments,  group: payments-context, method: GET,    path: "/accounts/{AccountId}/scheduled-payments",                   response_dto: OBReadScheduledPayment3, permission: ReadScheduledPaymentsDetail, consumers: [scheduled-payments] }
+  - { id: statements,          group: statements,       method: GET,    path: "/accounts/{AccountId}/statements",                           response_dto: OBReadStatement2,     permission: ReadStatementsDetail, consumers: [statements] }
+  - { id: statement-detail,    group: statements,       method: GET,    path: "/accounts/{AccountId}/statements/{StatementId}",             response_dto: OBReadStatement2,     permission: ReadStatementsDetail, consumers: [statement-detail] }
+  - { id: statement-txns,      group: statements,       method: GET,    path: "/accounts/{AccountId}/statements/{StatementId}/transactions", response_dto: OBReadTransaction6,   permission: ReadTransactionsDetail, consumers: [statement-detail] }
+  - { id: statement-file,      group: statements,       method: GET,    path: "/accounts/{AccountId}/statements/{StatementId}/file",        response_dto: null,                 permission: ReadStatementsDetail, consumers: [statement-detail], produces: "application/pdf" }
+  - { id: product,             group: account-extras,   method: GET,    path: "/accounts/{AccountId}/product",                              response_dto: OBReadProduct2,       permission: ReadProducts, consumers: [product] }
+  - { id: party,               group: account-extras,   method: GET,    path: "/accounts/{AccountId}/party",                                response_dto: OBReadParty2,         permission: ReadParty, consumers: [party, profile] }
+  - { id: parties,             group: account-extras,   method: GET,    path: "/accounts/{AccountId}/parties",                              response_dto: OBReadParty3,         permission: ReadParty, consumers: [party] }
+  - { id: offers,              group: account-extras,   method: GET,    path: "/accounts/{AccountId}/offers",                               response_dto: OBReadOffer1,         permission: ReadOffers, consumers: [accounts] }
+  # Open Data endpoint — separate base_url, no auth, no AIS consent required
+  - { id: atms,                group: open-data,        method: GET,    path: "/atms",                                                      response_dto: OBReadATMResponse1,   token: none, consumers: [atm-locator], note: "HSBC Open Data public endpoint; 15s timeout + retry; SLA not guaranteed" }
+
+dtos:
+  - OBReadATMResponse1
+  - OBReadConsent1
+  - OBReadConsentResponse1
+  - OBReadAccount6
+  - OBReadBalance1
+  - OBReadTransaction6
+  - OBReadBeneficiary5
+  - OBReadStandingOrder6
+  - OBReadDirectDebit2
+  - OBReadScheduledPayment3
+  - OBReadStatement2
+  - OBReadProduct2
+  - OBReadParty2
+  - OBReadParty3
+  - OBReadOffer1

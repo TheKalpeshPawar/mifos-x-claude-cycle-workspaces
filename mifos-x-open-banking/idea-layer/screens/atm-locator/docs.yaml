@@ -1,0 +1,118 @@
+feature: atm-locator
+status: enriched
+cluster: account-extras
+acceptance_refs: [FR-010]
+scaffolded_by: "/idea-heal"
+archetype: index_list
+description: "Find nearby HSBC ATMs using the HSBC Open Data public endpoint (unauthenticated — no AIS consent required). Shows ATM name, address, distance, opening hours, and conditional wheelchair/cash-deposit chips. Includes service filter chips (24h, Wheelchair, Cash deposit) and tapping a card opens native maps for directions. Not part of the OBIE AIS surface."
+has_ui: true
+has_server: false
+
+metadata:
+  category: crud
+  implementation_ready: true
+  impl_ready_at: "2026-06-29"
+  impl_ready_schema: "v2"
+  i18n_coverage: true
+  quality_score: 89
+
+contracts:
+  - id: HSBC-OPEN-DATA-ATMS
+    type: public_api
+    endpoint: "GET /atms"
+    base_url: "https://api.hsbc.com/v2.0/uk/open-banking"
+    response_dto: OBReadATMResponse1
+    auth: none
+    sla_note: "Public Open Data endpoint; no SLA guarantee; use 15s timeout + retry."
+    obie_spec_ref: "OBIE Open Data API Specification v2.4"
+
+libraries:
+  - capability: rest-client
+    library: ktorfit
+    version: latest
+    targets: [android, ios, desktop, web]
+  - capability: maps-deeplink
+    library: expect-actual
+    version: "platform-native"
+    targets: [android, ios]
+    note: "geo:/maps:// URL scheme intent; no third-party maps SDK required."
+
+vm_actions:
+  - name: atms_load
+    signature: "suspend fun atmsLoad()"
+    state_mutations:
+      - "uiState = AtmLocatorUiState.Loading"
+      - "allAtms = response.data[0].atm.map { it.toDisplayItem() }"
+      - "filteredAtms = allAtms.applyPredicates(filterState)"
+      - "uiState = if (filteredAtms.isEmpty()) Empty else Content(filteredAtms)"
+      - "uiState = AtmLocatorUiState.Error(message)"
+    side_effects:
+      - "GET /atms (HSBC Open Data, unauthenticated, no Bearer token)"
+    error_handling:
+      network: "emit Error('Could not reach HSBC Open Data. Check your connection.')"
+      http_5xx: "emit Error('HSBC Open Data service unavailable. Please try again.')"
+
+  - name: search_atms
+    signature: "fun searchAtms(query: String)"
+    state_mutations:
+      - "searchQuery = query"
+      - "filteredAtms = allAtms.applyPredicates(filterState.copy(searchQuery = query))"
+      - "uiState = if (filteredAtms.isEmpty()) Empty else Content(filteredAtms)"
+    side_effects: []
+    note: "Client-side only; does NOT re-call the API."
+
+  - name: toggle_filter_24h
+    signature: "fun toggleFilter24h()"
+    state_mutations:
+      - "filterState = filterState.copy(is24h = !filterState.is24h)"
+      - "filteredAtms = allAtms.applyPredicates(filterState)"
+      - "uiState = if (filteredAtms.isEmpty()) Empty else Content(filteredAtms)"
+    side_effects: []
+
+  - name: toggle_filter_wheelchair
+    signature: "fun toggleFilterWheelchair()"
+    state_mutations:
+      - "filterState = filterState.copy(hasWheelchairAccess = !filterState.hasWheelchairAccess)"
+      - "filteredAtms = allAtms.applyPredicates(filterState)"
+      - "uiState = if (filteredAtms.isEmpty()) Empty else Content(filteredAtms)"
+    side_effects: []
+
+  - name: toggle_filter_deposit
+    signature: "fun toggleFilterDeposit()"
+    state_mutations:
+      - "filterState = filterState.copy(hasCashDeposit = !filterState.hasCashDeposit)"
+      - "filteredAtms = allAtms.applyPredicates(filterState)"
+      - "uiState = if (filteredAtms.isEmpty()) Empty else Content(filteredAtms)"
+    side_effects: []
+
+  - name: open_atm_directions
+    signature: "fun openAtmDirections(atm: AtmDisplayItem)"
+    state_mutations: []
+    side_effects:
+      - "Fire platform geo:/maps:// deep-link intent (expect/actual) with atm.Latitude, atm.Longitude, atm.Name"
+    note: "No ViewModel state change; navigates to OS-native Maps app."
+
+  - name: retry_load
+    signature: "suspend fun retryLoad()"
+    state_mutations:
+      - "filterState = FilterState.default"
+      - "delegates to atmsLoad()"
+    side_effects: []
+
+error_cases:
+  - code: NETWORK_ERROR
+    description: "Device offline; HSBC Open Data endpoint unreachable."
+    user_message: "Could not reach HSBC Open Data. Check your connection."
+  - code: HTTP_5XX
+    description: "HSBC Open Data service temporarily unavailable."
+    user_message: "HSBC Open Data service unavailable. Please try again."
+  - code: EMPTY_RESULT
+    description: "Active filter predicates yield zero matches from allAtms."
+    ui_state: empty
+
+test_fixtures:
+  source: "idea-layer/screens/atm-locator/tests.yaml"
+  scenario_count: 9
+  priority_distribution:
+    critical: 3
+    normal: 6

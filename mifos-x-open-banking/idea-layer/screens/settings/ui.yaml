@@ -1,0 +1,389 @@
+screen_id: settings
+name: "{strings.settings.title}"
+status: enriched
+initial_state: loading
+quality_score: 94
+
+shell:
+  bottom_navigation_visible: true
+  top_app_bar_visible: true
+  top_app_bar_title: "{strings.settings.title}"
+  top_app_bar_leading: null
+  fab_visible: false
+
+business_logic:
+  kind: nav_only
+  description: "Client-side settings hub persisting theme, biometric lock, session timeout, and notification preferences to DataStore (androidx.datastore:datastore-preferences) via kotlinx-serialization key-value storage. SettingsViewModel collects the preferences Flow and emits Loading until the first emission, then Content — no network calls. Toggles apply reactively through StateFlow with coroutine-scoped atomic DataStore writes. Navigation rows route to consent-list and profile. Clear-local-data action shows a confirmation bottom-sheet before erasing Room/SQLDelight cached account+transaction rows and resetting DataStore cached-at timestamps, fulfilling GDPR local-erasure obligations."
+  external_library_refs:
+    - "compose-settings"
+    - "kotlinx-serialization"
+    - "androidx.datastore"
+  description_author: claude
+  description_authored_at: "2026-06-29T12:00:00Z"
+
+states: [loading, content]
+
+components:
+  # ── Loading Skeleton ─────────────────────────────────────────────────
+  - type: skeleton
+    id: settings_loading_skeleton
+    state_binding: [loading]
+    variant: list
+    rows: 8
+    accessibility_label: "{strings.settings.loading.a11y}"
+    test_context:
+      purpose: "Full-screen shimmer skeleton while DataStore initialises on first composition; transitions to content immediately on first Content emission"
+      required_fields: []
+      interaction_type: display
+      data_driven: false
+
+  # ── Appearance ──────────────────────────────────────────────────────
+  - type: section_header
+    id: appearance_header
+    state_binding: [content]
+    label: "{strings.settings.section.appearance}"
+    accessibility_label: "{strings.settings.section.appearance.a11y}"
+    test_context:
+      purpose: "Section label separating appearance controls from other setting groups"
+      required_fields: []
+      interaction_type: display
+      data_driven: false
+
+  - type: list
+    id: appearance_list
+    state_binding: [content]
+    test_context:
+      purpose: "Container for appearance preference rows"
+      required_fields: []
+      interaction_type: display
+      data_driven: false
+    children:
+      - type: list_item
+        id: theme_row
+        label: "{strings.settings.theme.label}"
+        supporting_text: "{settings.theme}"
+        test_context:
+          purpose: "Displays current theme value from DataStore and hosts theme picker; supporting_text must reflect live StateFlow value"
+          required_fields: [settings.theme]
+          interaction_type: input
+          data_driven: true
+        trailing_content:
+          type: dropdown
+          id: theme_dropdown
+          options:
+            - "{strings.settings.theme.option_light}"
+            - "{strings.settings.theme.option_dark}"
+            - "{strings.settings.theme.option_system}"
+          value: "{settings.theme}"
+          accessibility_label: "{strings.settings.theme.select_a11y}"
+          test_context:
+            purpose: "Picker for app colour theme; selection persists to DataStore atomically; dynamic theme applies on next recomposition"
+            required_fields: [settings.theme]
+            interaction_type: input
+            data_driven: true
+          on_click:
+            action: update_theme
+
+  # ── Security ─────────────────────────────────────────────────────────
+  - type: section_header
+    id: security_header
+    state_binding: [content]
+    label: "{strings.settings.section.security}"
+    accessibility_label: "{strings.settings.section.security.a11y}"
+    test_context:
+      purpose: "Section label separating security preference controls"
+      required_fields: []
+      interaction_type: display
+      data_driven: false
+
+  - type: list
+    id: security_list
+    state_binding: [content]
+    test_context:
+      purpose: "Container for security preference rows"
+      required_fields: []
+      interaction_type: display
+      data_driven: false
+    children:
+      - type: list_item
+        id: biometric_row
+        label: "{strings.settings.biometric_lock.label}"
+        supporting_text: "{strings.settings.biometric_lock.supporting}"
+        test_context:
+          purpose: "Hosts biometric lock toggle; if device lacks enrolled biometrics shows informational dialog; verifies on/off state reflects DataStore"
+          required_fields: [settings.biometric_lock_enabled]
+          interaction_type: action
+          data_driven: true
+        trailing_content:
+          type: switch
+          id: biometric_switch
+          value: "{settings.biometric_lock_enabled}"
+          accessibility_label: "{strings.settings.biometric_lock.toggle_a11y}"
+          test_context:
+            purpose: "Boolean toggle for biometric gate on app open; verify persistence survives process death; verify graceful handling when no biometric hardware present"
+            required_fields: [settings.biometric_lock_enabled]
+            interaction_type: action
+            data_driven: true
+          on_click:
+            action: toggle_biometric_lock
+
+      - type: list_item
+        id: session_timeout_row
+        label: "{strings.settings.session_timeout.label}"
+        supporting_text: "{settings.session_timeout}"
+        test_context:
+          purpose: "Displays current session timeout value from DataStore and hosts picker; value must match StateFlow"
+          required_fields: [settings.session_timeout]
+          interaction_type: input
+          data_driven: true
+        trailing_content:
+          type: dropdown
+          id: session_dropdown
+          options:
+            - "{strings.settings.session_timeout.option_2m}"
+            - "{strings.settings.session_timeout.option_5m}"
+            - "{strings.settings.session_timeout.option_10m}"
+            - "{strings.settings.session_timeout.option_30m}"
+          value: "{settings.session_timeout}"
+          accessibility_label: "{strings.settings.session_timeout.select_a11y}"
+          test_context:
+            purpose: "Picker for inactivity session-timeout; only options from whitelist accepted; selection persisted immediately to DataStore"
+            required_fields: [settings.session_timeout]
+            interaction_type: input
+            data_driven: true
+          on_click:
+            action: update_session_timeout
+
+  # ── Notifications ────────────────────────────────────────────────────
+  - type: section_header
+    id: notifications_header
+    state_binding: [content]
+    label: "{strings.settings.section.notifications}"
+    accessibility_label: "{strings.settings.section.notifications.a11y}"
+    test_context:
+      purpose: "Section label separating notification toggle controls"
+      required_fields: []
+      interaction_type: display
+      data_driven: false
+
+  - type: list
+    id: notifications_list
+    state_binding: [content]
+    test_context:
+      purpose: "Container for notification toggle rows; both controlled by DataStore flags"
+      required_fields: []
+      interaction_type: display
+      data_driven: false
+    children:
+      - type: list_item
+        id: consent_expiry_notif_row
+        label: "{strings.settings.consent_expiry_notif.label}"
+        supporting_text: "{strings.settings.consent_expiry_notif.supporting}"
+        test_context:
+          purpose: "Toggle for consent-expiry reminders; ensures PSU is alerted before Open Banking consent lapses — OBIE-mandated awareness"
+          required_fields: [settings.notify_consent_expiry]
+          interaction_type: action
+          data_driven: true
+        trailing_content:
+          type: switch
+          id: consent_expiry_switch
+          value: "{settings.notify_consent_expiry}"
+          accessibility_label: "{strings.settings.consent_expiry_notif.toggle_a11y}"
+          test_context:
+            purpose: "Persists notify_consent_expiry preference; test on-to-off and off-to-on transitions; verify toggle state readable by TalkBack"
+            required_fields: [settings.notify_consent_expiry]
+            interaction_type: action
+            data_driven: true
+          on_click:
+            action: toggle_consent_expiry_notification
+
+      - type: list_item
+        id: security_alerts_notif_row
+        label: "{strings.settings.security_alerts_notif.label}"
+        supporting_text: "{strings.settings.security_alerts_notif.supporting}"
+        test_context:
+          purpose: "Toggle for security-alert notifications; regulated banking security-visibility requirement per OBIE security standards"
+          required_fields: [settings.notify_security_alerts]
+          interaction_type: action
+          data_driven: true
+        trailing_content:
+          type: switch
+          id: security_alerts_switch
+          value: "{settings.notify_security_alerts}"
+          accessibility_label: "{strings.settings.security_alerts_notif.toggle_a11y}"
+          test_context:
+            purpose: "Persists notify_security_alerts flag to DataStore; verify state survives process death and app restart"
+            required_fields: [settings.notify_security_alerts]
+            interaction_type: action
+            data_driven: true
+          on_click:
+            action: toggle_security_alerts_notification
+
+  # ── Account ──────────────────────────────────────────────────────────
+  - type: section_header
+    id: account_header
+    state_binding: [content]
+    label: "{strings.settings.section.account}"
+    accessibility_label: "{strings.settings.section.account.a11y}"
+    test_context:
+      purpose: "Section label for account management and data-control navigation rows"
+      required_fields: []
+      interaction_type: display
+      data_driven: false
+
+  - type: list
+    id: account_links_list
+    state_binding: [content]
+    test_context:
+      purpose: "Container for account-management navigation rows and destructive data-erasure action"
+      required_fields: []
+      interaction_type: display
+      data_driven: false
+    children:
+      - type: list_item
+        id: manage_consents_row
+        label: "{strings.settings.manage_consents.label}"
+        supporting_text: "{strings.settings.manage_consents.supporting}"
+        icon: policy
+        trailing_content:
+          type: icon
+          icon: chevron_right
+        accessibility_label: "{strings.settings.manage_consents.a11y}"
+        test_context:
+          purpose: "Navigation entry to consent-list; verify chevron visible and tap triggers navigation event to consent-list route"
+          required_fields: []
+          interaction_type: navigate
+          data_driven: false
+        on_click:
+          action: navigate_consent_list
+          target: consent-list
+
+      - type: list_item
+        id: profile_row
+        label: "{strings.settings.profile.label}"
+        supporting_text: "{strings.settings.profile.supporting}"
+        icon: account_circle
+        trailing_content:
+          type: icon
+          icon: chevron_right
+        accessibility_label: "{strings.settings.profile.a11y}"
+        test_context:
+          purpose: "Navigation entry to profile screen; verify label, supporting text, and tap triggers navigation to profile route"
+          required_fields: []
+          interaction_type: navigate
+          data_driven: false
+        on_click:
+          action: navigate_profile
+          target: profile
+
+      - type: list_item
+        id: clear_local_data_row
+        label: "{strings.settings.clear_local_data.label}"
+        supporting_text: "{strings.settings.clear_local_data.supporting}"
+        icon: delete_sweep
+        trailing_content:
+          type: icon
+          icon: chevron_right
+        accessibility_label: "{strings.settings.clear_local_data.a11y}"
+        test_context:
+          purpose: "Triggers a destructive-action bottom-sheet confirmation before erasing locally cached account and transaction data; satisfies GDPR right-to-erasure for locally held cache; consent authorisations in Open Banking are NOT affected"
+          required_fields: []
+          interaction_type: action
+          data_driven: false
+        on_click:
+          action: clear_local_data_confirm
+
+  # ── About & Legal ────────────────────────────────────────────────────
+  - type: section_header
+    id: about_header
+    state_binding: [content]
+    label: "{strings.settings.section.about_legal}"
+    accessibility_label: "{strings.settings.section.about_legal.a11y}"
+    test_context:
+      purpose: "Section label separating legal and informational rows"
+      required_fields: []
+      interaction_type: display
+      data_driven: false
+
+  - type: list
+    id: about_list
+    state_binding: [content]
+    test_context:
+      purpose: "Container for legal navigation rows and static version display"
+      required_fields: []
+      interaction_type: display
+      data_driven: false
+    children:
+      - type: list_item
+        id: terms_row
+        label: "{strings.settings.terms.label}"
+        icon: article
+        trailing_content:
+          type: icon
+          icon: open_in_new
+        accessibility_label: "{strings.settings.terms.a11y}"
+        test_context:
+          purpose: "Opens OBIE ToS URL in system browser; verify open_in_new icon present and correct URL is fired via platform intent"
+          required_fields: []
+          interaction_type: action
+          data_driven: false
+        on_click:
+          action: open_external_url
+          params:
+            url: "https://www.openbanking.org.uk/customer-hub/terms-and-conditions/"
+
+      - type: list_item
+        id: privacy_row
+        label: "{strings.settings.privacy.label}"
+        icon: privacy_tip
+        trailing_content:
+          type: icon
+          icon: open_in_new
+        accessibility_label: "{strings.settings.privacy.a11y}"
+        test_context:
+          purpose: "Opens OBIE Privacy Policy URL in system browser; verify open_in_new icon and correct URL fired"
+          required_fields: []
+          interaction_type: action
+          data_driven: false
+        on_click:
+          action: open_external_url
+          params:
+            url: "https://www.openbanking.org.uk/privacy-policy/"
+
+      - type: list_item
+        id: licences_row
+        label: "{strings.settings.licences.label}"
+        icon: info_outline
+        trailing_content:
+          type: icon
+          icon: chevron_right
+        accessibility_label: "{strings.settings.licences.a11y}"
+        test_context:
+          purpose: "Opens in-app OSS licences destination (AboutLibraries); verify chevron visible and navigation event fires"
+          required_fields: []
+          interaction_type: action
+          data_driven: false
+        on_click:
+          action: open_oss_licences
+
+      - type: list_item
+        id: app_version_row
+        label: "{strings.settings.app_version.label}"
+        supporting_text: "{settings.app_version}"
+        accessibility_label: "{strings.settings.app_version.a11y}"
+        test_context:
+          purpose: "Displays build version string from BuildConfig.VERSION_NAME + VERSION_CODE; verify supporting_text non-empty and no tap target registered"
+          required_fields: [settings.app_version]
+          interaction_type: display
+          data_driven: true
+
+status_history:
+  - from: draft
+    to: enriched
+    at: "2026-06-29"
+    by: "/idea-enrich"
+  - from: enriched
+    to: enriched
+    at: "2026-06-29"
+    by: "/idea-enrich"
+    note: "Added loading state + skeleton, full i18n wrapping (53 string keys), section-header accessibility_label, clear_local_data_row (GDPR), dynamic app_version binding, enriched dropdown options i18n, business_logic expanded with DataStore + erasure detail"

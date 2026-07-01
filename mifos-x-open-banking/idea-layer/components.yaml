@@ -1,0 +1,122 @@
+# Tier-3 Project Components — mifos-x-open-banking
+#
+# Domain-specific components for the UK Open Banking AISP reference app.
+# Each entry extends a framework primitive or pattern, so it inherits a renderer.
+# Loaded after the framework registry (primitives + registry/*.yaml).
+#
+# Registered during /idea sync enrichment reconciliation (2026-06-29). These three
+# types are used across enriched screens, are NOT framework primitives or patterns,
+# and each needs a renderer via `extends`. (All other non-primitive types used by
+# this project — empty_state, chip_group, error_state, banner, stat_block,
+# segmented_button, stepper, search_bar, bottom_sheet, text_button, outlined_button,
+# filled_button, progress_linear — are valid framework Tier-2 patterns and must NOT
+# be redefined here, or they would override the framework renderer.)
+#
+# NOTE: the `name` field mirrors `type` because the idea-graph-audit allow-list
+# (.claude-runtime/lib/idea-graph-audit/layer0.ts) reads `components[].name`.
+#
+# Conforms to ../../templates/specialized/idea-layer/COMPONENT_REGISTRY.schema.yaml
+
+components:
+
+  # ────────────────────────────────────────────────────────────────
+  # Section Header — small heading label above a grouped block.
+  # Used 28× to label balances / details / explore / fees / interest sections.
+  # ────────────────────────────────────────────────────────────────
+  - name: section_header
+    type: section_header
+    tier: project
+    extends: text
+    category: typography
+    description: >
+      Compact section title (M3 titleSmall/labelLarge) rendered above a grouped
+      list or card cluster. Provides a labelled landmark for screen-reader
+      navigation between sections.
+    a11y:
+      role: heading
+      semantic_html: h2
+      label_source: "{value}"
+      contrast_required: true
+    default_style:
+      background: transparent
+      padding: "16dp 0dp 8dp 0dp"
+      corner_radius: radius.none
+      elevation: elevation.level0
+      text_color: onSurfaceVariant
+    supported_states: [idle]
+    properties_schema:
+      type: object
+      required: [value]
+      properties:
+        value: { type: string }
+        style: { type: string, default: titleSmall }
+
+  # ────────────────────────────────────────────────────────────────
+  # Chip Row — horizontally scrollable single-line chip strip (no wrap).
+  # Used as the account-detail "Explore" navigation strip.
+  # ────────────────────────────────────────────────────────────────
+  - name: chip_row
+    type: chip_row
+    tier: project
+    extends: chip_group
+    category: navigation
+    description: >
+      Single-line, horizontally scrolling row of chips (no wrap). Used for inline
+      navigation/filter strips where a wrapping chip_group would push content
+      vertically. Children are chips.
+    a11y:
+      role: group
+      semantic_html: div
+      label_source: "{accessibility_label}"
+      contrast_required: false
+    default_style:
+      background: transparent
+      padding: "4dp 0dp"
+      corner_radius: radius.none
+      elevation: elevation.level0
+    supported_states: [idle]
+    properties_schema:
+      type: object
+      properties:
+        accessibility_label: { type: string }
+        scroll_direction: { type: string, default: horizontal }
+
+  # ────────────────────────────────────────────────────────────────
+  # Bar Chart — dual-bar income vs spend visualization.
+  # Used on pfm-dashboard for the per-period income/spend comparison.
+  # ────────────────────────────────────────────────────────────────
+  - name: bar_chart
+    type: bar_chart
+    tier: project
+    extends: box
+    category: data_display
+    description: >
+      Simple categorical bar chart container for the PFM income-vs-spend overview.
+      Renders one or more labelled bars with value-proportional heights. Decorative
+      bars are aria-hidden; the accessible summary is provided via label_source.
+    a11y:
+      role: img
+      semantic_html: figure
+      label_source: "{accessibility_label}"
+      contrast_required: true
+    default_style:
+      background: surfaceContainerLow
+      corner_radius: radius.md
+      padding: spacing.md
+      elevation: elevation.level0
+    supported_states: [idle, loading, empty]
+    state_styles:
+      loading: { opacity: opacity.loading }
+    properties_schema:
+      type: object
+      required: [series]
+      properties:
+        accessibility_label: { type: string }
+        series:
+          type: array
+          items:
+            type: object
+            properties:
+              label: { type: string }
+              value: { type: number }
+              color: { type: string }

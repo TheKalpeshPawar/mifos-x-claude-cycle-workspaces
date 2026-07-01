@@ -1,0 +1,84 @@
+screen_id: spending-by-category
+
+scenarios:
+  - id: TC-SBC-001
+    description: "Loading skeleton renders while category aggregation is in progress"
+    state: loading
+    given: "Screen just mounted; viewModelScope coroutine computing category groups"
+    when: "UiState is Loading"
+    then:
+      - "Period selector chip group visible and interactive (chips remain tappable during load)"
+      - "Skeleton placeholder with 5 shimmer shapes renders in content area"
+      - "No category list rows visible"
+      - "No spend summary card visible"
+      - "Accessibility: skeleton container labelled 'Loading spending analysis'"
+
+  - id: TC-SBC-002
+    description: "Category breakdown renders correctly for This Month (June 2026)"
+    state: content
+    given: "Priya Sharma transactions cached for June 2026 (19 debit transactions)"
+    when: "Screen mounts with default period 'This month'"
+    then:
+      - "Total spend summary card shows 'Total Spend — June 2026' and '£1,840.00'"
+      - "5 categories listed in descending order: Bills £1,356.00 (73.7%), Groceries £198.00 (10.8%), Dining £88.00 (4.8%), Subscriptions £63.00 (3.4%), Transport £41.00 (2.2%)"
+      - "Bills row progress bar width ≈ 73.7% of full width (value 0.737)"
+      - "Each row shows transaction count (Bills: 4 tx, Transport: 8 tx)"
+      - "Period selector shows 'This month' chip selected"
+
+  - id: TC-SBC-003
+    description: "Tapping a category row navigates to transactions filtered by that category"
+    state: content
+    given: "Content state rendered for June 2026"
+    when: "User taps 'Dining' category row"
+    then:
+      - "Navigation emitted to transactions screen"
+      - "params.category = 'Dining'"
+      - "Accessibility: row action navigates on Enter/Space"
+
+  - id: TC-SBC-004
+    description: "Selecting Last Month period recomputes categories from May 2026 data"
+    state: content
+    given: "Content state rendered for June 2026; May 2026 transactions in cache"
+    when: "User taps 'Last month' chip"
+    then:
+      - "Loading state briefly shown while recompute runs"
+      - "Period label updates to 'May 2026'"
+      - "Total spend updates to £1,851.00"
+      - "6 categories now listed (Entertainment category appears)"
+      - "'This month' chip deselected; 'Last month' chip now selected"
+
+  - id: TC-SBC-005
+    description: "Selecting 3 Months period aggregates Apr–Jun 2026 across all cached transactions"
+    state: content
+    given: "Content state rendered; 3 months of Priya Sharma transactions cached"
+    when: "User taps '3 months' chip"
+    then:
+      - "Period label updates to 'Apr–Jun 2026'"
+      - "Total spend updates to £5,388.00"
+      - "7 categories listed including Bills, Groceries, Dining, Entertainment, Subscriptions, Transport, Other"
+      - "Bills still highest at 75.2% (£4,052.00)"
+
+  - id: TC-SBC-006
+    description: "Empty state renders when no transactions exist for selected period"
+    state: empty
+    given: "User selects '3 months' but no transactions cached for that window"
+    when: "Aggregation returns zero categories"
+    then:
+      - "Empty state renders with pie_chart icon"
+      - "Title shows 'No spending data'"
+      - "Body shows 'No transactions found for the selected period.'"
+      - "Period selector chips remain visible and interactive"
+      - "No category rows or spend summary card visible"
+
+  - id: TC-SBC-007
+    description: "Error state renders with retry button when aggregation fails"
+    state: error
+    given: "Room query throws an exception during category aggregation"
+    when: "UiState transitions to Error"
+    then:
+      - "Error state renders with warning_amber icon"
+      - "Title shows 'Unable to load spending'"
+      - "Body explains the error and invites retry"
+      - "Retry button visible and tappable"
+      - "Accessibility: error container labelled 'Unable to compute spending breakdown. Tap Retry to try again.'"
+      - "Tapping Retry re-triggers category_spend_compute for current selected period"

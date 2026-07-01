@@ -1,0 +1,410 @@
+<!doctype html>
+<!-- render-hash: b8d3f1c9e7a5 -->
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
+  <title>Accounts — Loading</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;500&family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200" rel="stylesheet">
+  <style>
+    /* ── Design tokens (all hex here — RV-001) ── */
+    :root {
+      --md-sys-color-primary: #266489;
+      --md-sys-color-on-primary: #FFFFFF;
+      --md-sys-color-primary-container: #C9E6FF;
+      --md-sys-color-on-primary-container: #004B6F;
+      --md-sys-color-secondary: #50606E;
+      --md-sys-color-secondary-container: #D3E5F5;
+      --md-sys-color-on-secondary-container: #384956;
+      --md-sys-color-background: #F7F9FF;
+      --md-sys-color-on-background: #181C20;
+      --md-sys-color-surface: #F7F9FF;
+      --md-sys-color-on-surface: #181C20;
+      --md-sys-color-on-surface-variant: #41474D;
+      --md-sys-color-outline: #72787E;
+      --md-sys-color-outline-variant: #C1C7CE;
+      --md-sys-color-surface-container-low: #F1F4F9;
+      --md-sys-color-surface-container: #EBEEF3;
+      --md-sys-color-surface-container-high: #E5E8ED;
+      --md-sys-color-surface-container-highest: #E0E3E8;
+      --sp-xxs: 2px;
+      --sp-xs: 4px;
+      --sp-sm: 8px;
+      --sp-md: 16px;
+      --sp-lg: 24px;
+      --radius-sm: 8px;
+      --radius-md: 12px;
+      --radius-xl: 28px;
+      --radius-full: 9999px;
+      --font-brand: 'Roboto', system-ui, sans-serif;
+      --top-bar-height: 64px;
+      --bottom-nav-height: 80px;
+      /* Shimmer pulse colours */
+      --shimmer-base: #E5E8ED;
+      --shimmer-highlight: #F1F4F9;
+    }
+
+    @media (prefers-color-scheme: dark) {
+      :root {
+        --md-sys-color-primary: #95CDF7;
+        --md-sys-color-on-primary: #00344E;
+        --md-sys-color-primary-container: #004B6F;
+        --md-sys-color-on-primary-container: #C9E6FF;
+        --md-sys-color-secondary: #B7C9D9;
+        --md-sys-color-secondary-container: #384956;
+        --md-sys-color-on-secondary-container: #D3E5F5;
+        --md-sys-color-background: #101417;
+        --md-sys-color-on-background: #E0E3E8;
+        --md-sys-color-surface: #101417;
+        --md-sys-color-on-surface: #E0E3E8;
+        --md-sys-color-on-surface-variant: #C1C7CE;
+        --md-sys-color-outline: #8B9198;
+        --md-sys-color-outline-variant: #41474D;
+        --md-sys-color-surface-container-low: #181C20;
+        --md-sys-color-surface-container: #1C2024;
+        --md-sys-color-surface-container-high: #262A2E;
+        --md-sys-color-surface-container-highest: #313539;
+        --shimmer-base: #262A2E;
+        --shimmer-highlight: #313539;
+      }
+    }
+
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    html, body {
+      height: 100%;
+      font-family: var(--font-brand);
+      background-color: var(--md-sys-color-background);
+      color: var(--md-sys-color-on-surface);
+      -webkit-font-smoothing: antialiased;
+    }
+
+    .material-symbols-outlined {
+      font-family: 'Material Symbols Outlined';
+      font-weight: normal;
+      font-style: normal;
+      font-size: 24px;
+      line-height: 1;
+      text-transform: none;
+      display: inline-block;
+      white-space: nowrap;
+      word-wrap: normal;
+      direction: ltr;
+      -webkit-font-smoothing: antialiased;
+      font-variation-settings: 'FILL' 0, 'wght' 300, 'GRAD' 0, 'opsz' 24;
+      vertical-align: middle;
+      user-select: none;
+    }
+
+    /* ── App shell ── */
+    .app-shell {
+      display: flex;
+      flex-direction: column;
+      height: 100vh;
+      max-width: 430px;
+      margin: 0 auto;
+      background-color: var(--md-sys-color-background);
+      overflow: hidden;
+    }
+
+    .top-app-bar {
+      position: sticky;
+      top: 0;
+      z-index: 10;
+      background-color: var(--md-sys-color-surface);
+      height: var(--top-bar-height);
+      display: flex;
+      align-items: center;
+      padding: 0 var(--sp-md);
+      flex-shrink: 0;
+      border-bottom: 1px solid var(--md-sys-color-outline-variant);
+    }
+
+    .top-app-bar__title {
+      font-size: 22px;
+      line-height: 28px;
+      font-weight: 400;
+      color: var(--md-sys-color-on-surface);
+    }
+
+    .screen-content {
+      flex: 1;
+      overflow-y: auto;
+      overflow-x: hidden;
+      padding-bottom: calc(var(--bottom-nav-height) + var(--sp-sm));
+      -webkit-overflow-scrolling: touch;
+    }
+
+    /* ── Shimmer animation ── */
+    @keyframes shimmer-sweep {
+      0%   { background-position: -200% center; }
+      100% { background-position:  200% center; }
+    }
+
+    .shimmer-card {
+      background-color: var(--md-sys-color-surface-container-low);
+      border-radius: var(--radius-md);
+      border: 1px solid var(--md-sys-color-outline-variant);
+      padding: var(--sp-md);
+      display: flex;
+      flex-direction: row;
+      align-items: center;
+      gap: var(--sp-md);
+      min-height: 96px;
+      margin: 0 var(--sp-md);
+    }
+
+    .shimmer-card + .shimmer-card {
+      margin-top: var(--sp-sm);
+    }
+
+    .shimmer {
+      background: linear-gradient(
+        90deg,
+        var(--shimmer-base) 25%,
+        var(--shimmer-highlight) 50%,
+        var(--shimmer-base) 75%
+      );
+      background-size: 200% 100%;
+      animation: shimmer-sweep 1.6s ease-in-out infinite;
+      border-radius: var(--radius-sm);
+    }
+
+    .shimmer-icon {
+      width: 40px;
+      height: 40px;
+      border-radius: var(--radius-full);
+      flex-shrink: 0;
+    }
+
+    .shimmer-text-col {
+      display: flex;
+      flex-direction: column;
+      gap: var(--sp-xs);
+      flex: 1;
+      min-width: 0;
+    }
+
+    .shimmer-line-sm {
+      height: 11px;
+      border-radius: var(--radius-sm);
+      width: 30%;
+    }
+
+    .shimmer-line-md {
+      height: 16px;
+      border-radius: var(--radius-sm);
+      width: 55%;
+    }
+
+    .shimmer-line-lg {
+      height: 12px;
+      border-radius: var(--radius-sm);
+      width: 45%;
+    }
+
+    .shimmer-balance-col {
+      display: flex;
+      flex-direction: column;
+      align-items: flex-end;
+      gap: var(--sp-xs);
+      flex-shrink: 0;
+    }
+
+    .shimmer-balance {
+      height: 20px;
+      width: 72px;
+      border-radius: var(--radius-sm);
+    }
+
+    /* Skeleton wrapper padding */
+    .skeleton-stack {
+      display: flex;
+      flex-direction: column;
+      padding: var(--sp-lg) 0 0;
+    }
+
+    /* ── Bottom navigation ── */
+    .bottom-nav {
+      position: fixed;
+      bottom: 0;
+      left: 50%;
+      transform: translateX(-50%);
+      width: 100%;
+      max-width: 430px;
+      height: var(--bottom-nav-height);
+      background-color: var(--md-sys-color-surface-container);
+      display: flex;
+      flex-direction: row;
+      align-items: stretch;
+      border-top: 1px solid var(--md-sys-color-outline-variant);
+      z-index: 20;
+    }
+
+    .nav-item {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: flex-start;
+      padding-top: 12px;
+      flex: 1;
+      cursor: pointer;
+      text-decoration: none;
+      gap: 4px;
+      min-width: 0;
+      -webkit-tap-highlight-color: transparent;
+    }
+
+    .nav-item__indicator {
+      width: 64px;
+      height: 32px;
+      border-radius: var(--radius-full);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .nav-item--active .nav-item__indicator {
+      background-color: var(--md-sys-color-secondary-container);
+    }
+
+    .nav-item__icon {
+      font-size: 24px;
+      color: var(--md-sys-color-on-surface-variant);
+      font-variation-settings: 'FILL' 0, 'wght' 300, 'GRAD' 0, 'opsz' 24;
+    }
+
+    .nav-item--active .nav-item__icon {
+      color: var(--md-sys-color-on-secondary-container);
+      font-variation-settings: 'FILL' 1, 'wght' 600, 'GRAD' 0, 'opsz' 24;
+    }
+
+    .nav-item__label {
+      font-size: 12px;
+      line-height: 16px;
+      font-weight: 500;
+      color: var(--md-sys-color-on-surface-variant);
+    }
+
+    .nav-item--active .nav-item__label {
+      color: var(--md-sys-color-on-surface);
+    }
+  </style>
+</head>
+<body>
+  <div class="app-shell" role="application">
+
+    <!-- Top app bar -->
+    <header class="top-app-bar" role="banner" data-component-type="top_app_bar" data-component-id="top_bar">
+      <h1 class="top-app-bar__title">Accounts</h1>
+    </header>
+
+    <!-- Loading content: 3 shimmer skeleton cards -->
+    <main class="screen-content"
+          id="main-content"
+          role="main"
+          aria-busy="true"
+          aria-label="Loading your accounts">
+
+      <div class="skeleton-stack"
+           data-component-type="stack"
+           data-component-id="loading_skeleton"
+           data-component-variant="loading">
+
+        <!-- Skeleton card 1 -->
+        <article class="shimmer-card" aria-hidden="true">
+          <div class="shimmer shimmer-icon"></div>
+          <div class="shimmer-text-col">
+            <div class="shimmer shimmer-line-sm"></div>
+            <div class="shimmer shimmer-line-md"></div>
+            <div class="shimmer shimmer-line-lg"></div>
+          </div>
+          <div class="shimmer-balance-col">
+            <div class="shimmer shimmer-balance"></div>
+          </div>
+        </article>
+
+        <!-- Skeleton card 2 -->
+        <article class="shimmer-card" aria-hidden="true">
+          <div class="shimmer shimmer-icon"></div>
+          <div class="shimmer-text-col">
+            <div class="shimmer shimmer-line-sm" style="width:25%"></div>
+            <div class="shimmer shimmer-line-md" style="width:40%"></div>
+            <div class="shimmer shimmer-line-lg" style="width:50%"></div>
+          </div>
+          <div class="shimmer-balance-col">
+            <div class="shimmer shimmer-balance" style="width:80px"></div>
+          </div>
+        </article>
+
+        <!-- Skeleton card 3 -->
+        <article class="shimmer-card" aria-hidden="true">
+          <div class="shimmer shimmer-icon"></div>
+          <div class="shimmer-text-col">
+            <div class="shimmer shimmer-line-sm" style="width:28%"></div>
+            <div class="shimmer shimmer-line-md" style="width:60%"></div>
+            <div class="shimmer shimmer-line-lg" style="width:38%"></div>
+          </div>
+          <div class="shimmer-balance-col">
+            <div class="shimmer shimmer-balance" style="width:64px"></div>
+          </div>
+        </article>
+
+      </div>
+
+      <!-- Screen-reader progress announcement -->
+      <p role="status" aria-live="polite" style="position:absolute;width:1px;height:1px;padding:0;overflow:hidden;clip:rect(0,0,0,0);white-space:nowrap;border:0">
+        Loading your accounts
+      </p>
+    </main>
+
+    <!-- Bottom navigation -->
+    <nav class="bottom-nav"
+         aria-label="Main navigation"
+         data-component-type="bottom_nav"
+         data-component-id="bottom_nav">
+      <a class="nav-item"
+         href="#"
+         aria-label="Home"
+         data-nav-to="home">
+        <div class="nav-item__indicator" aria-hidden="true">
+          <span class="material-symbols-outlined nav-item__icon">home</span>
+        </div>
+        <span class="nav-item__label">Home</span>
+      </a>
+      <a class="nav-item nav-item--active"
+         href="#"
+         aria-label="Accounts"
+         aria-current="page"
+         data-nav-to="accounts">
+        <div class="nav-item__indicator" aria-hidden="true">
+          <span class="material-symbols-outlined nav-item__icon">account_balance</span>
+        </div>
+        <span class="nav-item__label">Accounts</span>
+      </a>
+      <a class="nav-item"
+         href="#"
+         aria-label="Transactions"
+         data-nav-to="transactions">
+        <div class="nav-item__indicator" aria-hidden="true">
+          <span class="material-symbols-outlined nav-item__icon">receipt_long</span>
+        </div>
+        <span class="nav-item__label">Transactions</span>
+      </a>
+      <a class="nav-item"
+         href="#"
+         aria-label="More"
+         data-nav-to="settings">
+        <div class="nav-item__indicator" aria-hidden="true">
+          <span class="material-symbols-outlined nav-item__icon">more_horiz</span>
+        </div>
+        <span class="nav-item__label">More</span>
+      </a>
+    </nav>
+
+  </div>
+  <script src="../../../preview/_shared/preview-runtime.js"></script>
+</body>
+</html>

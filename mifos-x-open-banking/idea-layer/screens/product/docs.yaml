@@ -1,0 +1,69 @@
+feature: product
+status: enriched
+cluster: account-extras
+acceptance_refs: [FR-007]
+scaffolded_by: "/idea-heal"
+archetype: detail_screen
+description: "Product terms for a PCA or BCA account. Displays product name/type header, monthly maximum charge, credit interest AER tiers (with ApplicationFrequency and band range), overdraft EAR tiers by type, and feature list. Handles empty product data (account types without OBProduct2 entries, e.g. GlobalMoney) as a dedicated informational empty state separate from network errors. Backed by the OBIE GET /accounts/{AccountId}/product endpoint returning OBReadProduct2."
+has_ui: true
+has_server: false
+
+metadata:
+  category: crud
+  implementation_ready: true
+  impl_ready_at: "2026-06-29"
+  impl_ready_schema: "v2"
+  i18n_coverage: true
+  i18n_key_count: 23
+  state_count: 4
+
+contracts: []
+
+libraries:
+  - capability: rest-client
+    library: ktorfit
+    version: latest
+    targets: [android, ios, desktop, web]
+
+vm_actions:
+  - name: product_load
+    signature: "suspend fun productLoad(accountId: String)"
+    state_mutations:
+      - "uiState = ProductUiState.Loading"
+      - "uiState = ProductUiState.Content(product)  // OBProduct2 non-null PCA or BCA"
+      - "uiState = ProductUiState.Empty              // OBReadProduct2.Data is empty or PCA/BCA null"
+      - "uiState = ProductUiState.Error(message)"
+    side_effects:
+      - "GET /accounts/{accountId}/product → OBReadProduct2"
+    error_handling:
+      http_401: "emit Error('Session expired. Please re-authenticate.')"
+      http_403: "emit Error('Consent does not include ReadProducts.')"
+      http_404: "emit Error('No product data available for this account.')"
+      network: "emit Error(e.localizedMessage)"
+    empty_handling: "If OBReadProduct2.Data is empty list OR product.PCA == null AND product.BCA == null → emit Empty"
+
+  - name: retry_load
+    signature: "suspend fun retryLoad(accountId: String)"
+    state_mutations:
+      - "delegates to productLoad(accountId)"
+    side_effects: []
+    error_handling: {}
+
+error_cases:
+  - code: HTTP_401
+    description: "PSU access token expired; re-authentication required."
+  - code: HTTP_403
+    description: "Consent scope does not include ReadProducts permission."
+  - code: HTTP_404
+    description: "No OBProduct2 record associated with this AccountId."
+  - code: NETWORK_ERROR
+    description: "Device offline or AIS endpoint unreachable."
+  - code: EMPTY_DATA
+    description: "OBReadProduct2 returned 200 but Data[] is empty or account type (GlobalMoney, Savings, CreditCard) has no PCA/BCA entry — not an error, rendered as informational empty state."
+
+test_fixtures:
+  source: "idea-layer/screens/product/tests.yaml"
+  scenario_count: 7
+  priority_distribution:
+    critical: 3
+    normal: 4

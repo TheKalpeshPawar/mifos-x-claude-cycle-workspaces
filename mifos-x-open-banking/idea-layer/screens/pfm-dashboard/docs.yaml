@@ -1,0 +1,111 @@
+feature: pfm
+status: enriched
+cluster: pfm
+acceptance_refs: [FR-011]
+scaffolded_by: "/idea-heal"
+archetype: dashboard
+description: "PFM overview derived client-side from AIS transaction data. Shows net worth with per-account breakdown across all accounts, period-scoped spending vs income (7d/30d/3m), top spending categories with % progress bars, rule-based insight cards, and quick navigation chips. No external API beyond AIS transactions cached locally."
+has_ui: true
+has_server: false
+
+metadata:
+  category: calculation
+  implementation_ready: true
+  impl_ready_at: "2026-06-29T12:00:00Z"
+  impl_ready_schema: "v2"
+
+contracts: []
+
+libraries:
+  - capability: date-time
+    library: kotlinx-datetime
+    version: "latest"
+    targets: [android, ios, desktop, web]
+  - capability: async-computation
+    library: kotlinx-coroutines
+    version: "latest"
+    targets: [android, ios, desktop, web]
+
+vm_actions:
+  - name: loadFinancesOverview
+    signature: "suspend fun loadFinancesOverview(period: PfmPeriod = PfmPeriod.DAYS_30)"
+    state_mutations:
+      - uiState (loading → content | empty | error)
+      - netWorth
+      - accountBreakdown
+      - periodIncome
+      - periodSpend
+      - netCashflow
+      - topCategories
+      - insights
+    side_effects:
+      - "Reads cached account balances from local Room/SQLDelight store"
+      - "Reads cached transactions; windows to selected period via kotlinx-datetime Clock.System.now()"
+      - "Runs parallel coroutines: balance sum, period aggregation (income/spend), category grouping with %, insight rules"
+      - "Insight rules: category-up-vs-prior-period (>10% delta), savings-rate-positive (≥20%), category-down-positive"
+    error_handling:
+      on_empty_cache: "Transition to empty state"
+      on_exception: "Transition to error state; log exception"
+
+  - name: selectPeriod
+    signature: "fun selectPeriod(period: PfmPeriod)"
+    state_mutations:
+      - selectedPeriod
+      - uiState (content → loading → content | error)
+    side_effects:
+      - "Updates selected period in ViewModel state"
+      - "Re-triggers loadFinancesOverview with new period — net_worth unchanged, period metrics recomputed"
+    error_handling: {}
+
+  - name: reloadFinances
+    signature: "suspend fun reloadFinances()"
+    state_mutations:
+      - uiState (error → loading → content | empty | error)
+    side_effects:
+      - "Retry trigger from error state; re-dispatches loadFinancesOverview(selectedPeriod)"
+    error_handling:
+      on_exception: "Stay in error state; log retry attempt"
+
+  - name: navigateSpendingByCategory
+    signature: "fun navigateSpendingByCategory(category: String? = null)"
+    state_mutations: []
+    side_effects:
+      - "Emits navigation event to spending-by-category with optional category filter param"
+    error_handling: {}
+
+  - name: navigateBudgets
+    signature: "fun navigateBudgets()"
+    state_mutations: []
+    side_effects:
+      - "Emits navigation event to budgets route"
+    error_handling: {}
+
+  - name: navigateRecurringSubscriptions
+    signature: "fun navigateRecurringSubscriptions()"
+    state_mutations: []
+    side_effects:
+      - "Emits navigation event to recurring-subscriptions route"
+    error_handling: {}
+
+error_cases:
+  - id: EC-PFM-001
+    trigger: "No transactions in local cache after account sync"
+    handling: "Transition to empty state with instructional message; no retry button"
+  - id: EC-PFM-002
+    trigger: "Exception thrown during Room/SQLDelight read or aggregation computation"
+    handling: "Transition to error state; render error_state component with retry button; log exception via Kermit"
+
+test_fixtures:
+  source: "Fake cached transactions (last 30 days, 3 HSBC sandbox accounts — Priya Sharma anchor data)"
+  scenario_count: 10
+  priority_distribution:
+    high: 4
+    medium: 4
+    low: 2
+  period_fixtures:
+    - period: "7d"
+      note: "7-day window — reduced transaction count; validates shorter-period computation"
+    - period: "30d"
+      note: "Primary fixture — full month data"
+    - period: "3m"
+      note: "3-month window — validates aggregation across month boundaries"

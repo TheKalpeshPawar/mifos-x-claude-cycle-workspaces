@@ -1,0 +1,472 @@
+screen_id: home
+name: "{strings.home.screen.title}"
+status: enriched
+quality_score: 91
+initial_state: loading
+i18n: true
+
+status_history:
+  - { from: draft, to: enriched, at: "2026-06-30", by: "/idea-add (create + enrich)" }
+
+business_logic:
+  kind: aggregate
+  description: >
+    Aggregates selected-account data by firing GET /accounts (hsbc-obie-ais-v4.0:accounts)
+    to populate the account-switcher list, then in a coroutineScope async/awaitAll fetches
+    GET /accounts/{AccountId}/balances (hsbc-obie-ais-v4.0:balances) and
+    GET /accounts/{AccountId}/transactions with limit=5 (hsbc-obie-ais-v4.0:transactions)
+    in parallel for the selected account; persists selectedAccountId in DataStore so the
+    selection survives app restarts; derives InterimAvailable balance and available balance
+    from OBCashBalance3 list; derives spending snapshot from cached PFM Room data (no
+    extra API call). Transitions to empty state when no accounts are authorised or no
+    active consent exists.
+  external_library_refs:
+    - "ktorfit"
+    - "hsbc-obie-ais-v4.0:accounts"
+    - "hsbc-obie-ais-v4.0:balances"
+    - "hsbc-obie-ais-v4.0:transactions"
+  description_author: claude
+  description_authored_at: "2026-06-30T00:00:00Z"
+
+shell:
+  bottom_navigation_visible: true
+  top_app_bar_visible: false
+  fab_visible: false
+
+# ─────────────────────────────────────────────────────────────────────
+# STATES — full coverage required
+# ─────────────────────────────────────────────────────────────────────
+states: [loading, content, empty, error]
+
+components:
+
+  # ══════════════════════════════════════════════════════════════════
+  # LOADING STATE — skeleton placeholders
+  # ══════════════════════════════════════════════════════════════════
+
+  - type: stack
+    id: loading_skeleton
+    state_binding: [loading]
+    direction: vertical
+    gap: spacing.md
+    padding: { top: spacing.xl, horizontal: spacing.md, bottom: spacing.md }
+    accessibility_label: "{strings.home.loading.description}"
+    children:
+      # hero card skeleton
+      - type: shimmer
+        id: skeleton_hero
+        variant: card
+        height: "180dp"
+        corner_radius: radius.lg
+      # quick-actions row skeleton
+      - type: shimmer
+        id: skeleton_actions
+        variant: card
+        height: "80dp"
+        corner_radius: radius.md
+      # section header skeleton
+      - type: shimmer
+        id: skeleton_tx_header
+        variant: text
+        height: "20dp"
+        width: "140dp"
+      # transaction row skeletons
+      - type: shimmer
+        id: skeleton_tx_1
+        variant: card
+        height: "64dp"
+        corner_radius: radius.sm
+      - type: shimmer
+        id: skeleton_tx_2
+        variant: card
+        height: "64dp"
+        corner_radius: radius.sm
+      - type: shimmer
+        id: skeleton_tx_3
+        variant: card
+        height: "64dp"
+        corner_radius: radius.sm
+
+  # ══════════════════════════════════════════════════════════════════
+  # CONTENT STATE
+  # ══════════════════════════════════════════════════════════════════
+
+  # ── Account switcher strip ─────────────────────────────────────────
+  - type: chip_row
+    id: account_switcher
+    state_binding: [content]
+    accessibility_label: "{strings.home.switcher.accessibility}"
+    scroll_direction: horizontal
+    padding: { top: spacing.md, horizontal: spacing.md, bottom: spacing.xs }
+    items_source: "{allAccounts}"
+    children:
+      - type: chip
+        id: account_chip
+        label: "{item.Nickname}"
+        selected_when: "{item.AccountId == selectedAccountId}"
+        accessibility_label: "{strings.home.switcher.chip.accessibility}"
+        on_click:
+          action: select_account
+          params:
+            accountId: "{item.AccountId}"
+
+  # ── Hero balance card ──────────────────────────────────────────────
+  - type: card
+    id: hero_balance_card
+    state_binding: [content]
+    elevation: 2
+    corner_radius: radius.lg
+    padding: spacing.lg
+    background: "primaryContainer"
+    margin: { horizontal: spacing.md, bottom: spacing.md }
+    accessibility_label: "{strings.home.hero.card.accessibility}"
+    on_click:
+      action: navigate_account_detail
+      target: account-detail
+      params:
+        accountId: "{selectedAccountId}"
+    children:
+      - type: stack
+        direction: vertical
+        gap: spacing.sm
+        children:
+          # Row 1: account subtype + account type icon
+          - type: stack
+            direction: horizontal
+            alignment: center_vertical
+            children:
+              - type: text
+                id: hero_account_subtype
+                value: "{selectedAccount.AccountSubType}"
+                style: labelMedium
+                color: "onPrimaryContainer"
+                weight: 1
+                accessibility_label: "{strings.home.hero.subtype.accessibility}"
+              - type: icon
+                id: hero_account_icon
+                name: "{selectedAccount.accountTypeIcon}"
+                size: icon.md
+                color: "onPrimaryContainer"
+                decorative: true
+          # Row 2: account nickname
+          - type: text
+            id: hero_nickname
+            value: "{selectedAccount.Nickname}"
+            style: titleLarge
+            color: "onPrimaryContainer"
+          # Row 3: big balance (InterimAvailable)
+          - type: text
+            id: hero_balance
+            value: "{selectedAccountBalance.Amount.Amount | formatCurrency(GBP)}"
+            style: displaySmall
+            color: "onPrimaryContainer"
+            accessibility_label: "{strings.home.hero.balance.accessibility}"
+          # Row 4: available balance label + value
+          - type: stack
+            direction: horizontal
+            alignment: center_vertical
+            gap: spacing.xs
+            children:
+              - type: text
+                id: hero_available_label
+                value: "{strings.home.hero.available_label}"
+                style: bodySmall
+                color: "onPrimaryContainer"
+              - type: text
+                id: hero_available_amount
+                value: "{availableBalance.Amount.Amount | formatCurrency(GBP)}"
+                style: bodySmall
+                color: "onPrimaryContainer"
+                accessibility_label: "{strings.home.hero.available.accessibility}"
+          # Row 5: masked account identifier
+          - type: text
+            id: hero_identification
+            value: "{selectedAccount.Account[0].Identification}"
+            style: bodySmall
+            color: "onPrimaryContainer"
+            accessibility_label: "{strings.home.hero.identification.accessibility}"
+
+  # ── Quick actions row ──────────────────────────────────────────────
+  - type: card
+    id: quick_actions_card
+    state_binding: [content]
+    elevation: 1
+    corner_radius: radius.md
+    padding: spacing.md
+    margin: { horizontal: spacing.md, bottom: spacing.md }
+    accessibility_label: "{strings.home.quick_actions.accessibility}"
+    children:
+      - type: stack
+        direction: horizontal
+        alignment: center_vertical
+        gap: spacing.xs
+        children:
+          # Pay (PISP — future, disabled)
+          - type: stack
+            id: action_pay
+            direction: vertical
+            alignment: center_horizontal
+            gap: spacing.xxs
+            weight: 1
+            accessibility_label: "{strings.home.action.pay.accessibility}"
+            children:
+              - type: icon_button
+                id: pay_button
+                icon: send
+                variant: tonal
+                enabled: false
+                accessibility_label: "{strings.home.action.pay.accessibility}"
+                on_click:
+                  action: noop
+                  params:
+                    reason: "pisp_not_implemented"
+              - type: text
+                value: "{strings.home.action.pay.label}"
+                style: labelSmall
+                color: "on-surface-variant"
+                alignment: center
+          # Transactions
+          - type: stack
+            id: action_transactions
+            direction: vertical
+            alignment: center_horizontal
+            gap: spacing.xxs
+            weight: 1
+            children:
+              - type: icon_button
+                id: transactions_button
+                icon: receipt_long
+                variant: tonal
+                accessibility_label: "{strings.home.action.transactions.accessibility}"
+                on_click:
+                  action: navigate_transactions
+                  target: transactions
+                  params:
+                    accountId: "{selectedAccountId}"
+              - type: text
+                value: "{strings.home.action.transactions.label}"
+                style: labelSmall
+                color: "on-surface-variant"
+                alignment: center
+          # Statements
+          - type: stack
+            id: action_statements
+            direction: vertical
+            alignment: center_horizontal
+            gap: spacing.xxs
+            weight: 1
+            children:
+              - type: icon_button
+                id: statements_button
+                icon: description
+                variant: tonal
+                accessibility_label: "{strings.home.action.statements.accessibility}"
+                on_click:
+                  action: navigate_statements
+                  target: statements
+                  params:
+                    accountId: "{selectedAccountId}"
+              - type: text
+                value: "{strings.home.action.statements.label}"
+                style: labelSmall
+                color: "on-surface-variant"
+                alignment: center
+          # Manage consents
+          - type: stack
+            id: action_consents
+            direction: vertical
+            alignment: center_horizontal
+            gap: spacing.xxs
+            weight: 1
+            children:
+              - type: icon_button
+                id: consents_button
+                icon: shield
+                variant: tonal
+                accessibility_label: "{strings.home.action.consents.accessibility}"
+                on_click:
+                  action: navigate_consent_list
+                  target: consent-list
+              - type: text
+                value: "{strings.home.action.consents.label}"
+                style: labelSmall
+                color: "on-surface-variant"
+                alignment: center
+
+  # ── Recent transactions section ────────────────────────────────────
+  - type: stack
+    id: recent_transactions_section
+    state_binding: [content]
+    direction: vertical
+    gap: spacing.xs
+    padding: { horizontal: spacing.md, bottom: spacing.md }
+    children:
+      # Section header + "View all" link
+      - type: stack
+        direction: horizontal
+        alignment: center_vertical
+        children:
+          - type: section_header
+            id: recent_tx_header
+            value: "{strings.home.recent_transactions.title}"
+            style: titleSmall
+            weight: 1
+          - type: text_button
+            id: view_all_transactions_link
+            label: "{strings.home.recent_transactions.view_all}"
+            accessibility_label: "{strings.home.recent_transactions.view_all.accessibility}"
+            on_click:
+              action: navigate_transactions
+              target: transactions
+              params:
+                accountId: "{selectedAccountId}"
+      # Transaction list (most recent 5)
+      - type: list
+        id: recent_transactions_list
+        items_source: "{recentTransactions}"
+        scroll_direction: none
+        gap: spacing.xxs
+        accessibility_label: "{strings.home.recent_transactions.list.accessibility}"
+        children:
+          - type: card
+            id: recent_tx_row
+            elevation: 0
+            corner_radius: radius.sm
+            padding: { vertical: spacing.sm, horizontal: spacing.md }
+            accessibility_label: "{strings.home.recent_transactions.row.accessibility}"
+            children:
+              - type: stack
+                direction: horizontal
+                alignment: center_vertical
+                gap: spacing.md
+                children:
+                  # Category icon
+                  - type: icon
+                    id: tx_category_icon
+                    name: "{item.categoryIcon}"
+                    size: icon.md
+                    color: "secondary"
+                    decorative: true
+                  # Description + date
+                  - type: stack
+                    direction: vertical
+                    gap: spacing.xxs
+                    weight: 1
+                    children:
+                      - type: text
+                        id: tx_description
+                        value: "{item.TransactionInformation}"
+                        style: bodyMedium
+                        max_lines: 1
+                        overflow: ellipsis
+                      - type: text
+                        id: tx_date
+                        value: "{item.BookingDateTime | formatDate(dd MMM)}"
+                        style: bodySmall
+                        color: "on-surface-variant"
+                  # Amount + credit/debit indicator
+                  - type: text
+                    id: tx_amount
+                    value: "{item.amountFormatted}"
+                    style: bodyMedium
+                    color: "{item.amountColor}"
+                    alignment: end
+                    accessibility_label: "{strings.home.recent_transactions.amount.accessibility}"
+            on_click:
+              action: navigate_transaction_detail
+              target: transaction-detail
+              params:
+                transactionId: "{item.TransactionId}"
+                accountId: "{item.AccountId}"
+
+  # ── Spending snapshot card ─────────────────────────────────────────
+  - type: card
+    id: spending_snapshot_card
+    state_binding: [content]
+    elevation: 1
+    corner_radius: radius.md
+    padding: spacing.md
+    margin: { horizontal: spacing.md, bottom: spacing.xl }
+    accessibility_label: "{strings.home.spending_snapshot.accessibility}"
+    on_click:
+      action: navigate_spending
+      target: spending-by-category
+    children:
+      - type: stack
+        direction: horizontal
+        alignment: center_vertical
+        gap: spacing.md
+        children:
+          - type: stack
+            direction: vertical
+            gap: spacing.xxs
+            weight: 1
+            children:
+              - type: section_header
+                id: spending_snapshot_header
+                value: "{strings.home.spending_snapshot.title}"
+                style: titleSmall
+              - type: text
+                id: spending_this_month
+                value: "{strings.home.spending_snapshot.this_month_label}"
+                style: bodySmall
+                color: "on-surface-variant"
+              - type: text
+                id: spending_amount
+                value: "{spendThisMonth}"
+                style: headlineMedium
+                color: "error"
+                accessibility_label: "{strings.home.spending_snapshot.amount.accessibility}"
+              - type: text
+                id: spending_top_category
+                value: "{strings.home.spending_snapshot.top_category}"
+                style: bodySmall
+                color: "on-surface-variant"
+          - type: icon
+            id: spending_chevron
+            name: chevron_right
+            size: icon.md
+            color: "on-surface-variant"
+            accessibility_label: "{strings.home.spending_snapshot.cta.accessibility}"
+
+  # ══════════════════════════════════════════════════════════════════
+  # EMPTY STATE
+  # ══════════════════════════════════════════════════════════════════
+
+  - type: empty_state
+    id: empty_home
+    state_binding: [empty]
+    icon: account_balance_wallet
+    title: "{strings.home.empty.title}"
+    body: "{strings.home.empty.body}"
+    accessibility_label: "{strings.home.empty.title}"
+    children:
+      - type: button
+        id: connect_bank_button
+        variant: filled
+        label: "{strings.home.empty.cta}"
+        accessibility_label: "{strings.home.empty.cta.accessibility}"
+        on_click:
+          action: navigate_login
+          target: login
+
+  # ══════════════════════════════════════════════════════════════════
+  # ERROR STATE
+  # ══════════════════════════════════════════════════════════════════
+
+  - type: error_state
+    id: error_home
+    state_binding: [error]
+    icon: error_outline
+    title: "{strings.home.error.title}"
+    body: "{error.userMessage}"
+    accessibility_label: "{strings.home.error.title}"
+    children:
+      - type: button
+        id: retry_button
+        variant: filled
+        label: "{strings.home.error.retry_button}"
+        accessibility_label: "{strings.home.error.retry.accessibility}"
+        visible_when: "{error.recoverable}"
+        on_click:
+          action: retry_load

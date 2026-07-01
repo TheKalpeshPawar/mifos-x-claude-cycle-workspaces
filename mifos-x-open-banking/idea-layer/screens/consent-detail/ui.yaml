@@ -1,0 +1,380 @@
+screen_id: consent-detail
+name: "HSBC Connection Detail"
+status: enriched
+quality_score: 95
+initial_state: loading
+
+status_history:
+  - { from: draft, to: enriched, at: "2026-06-29", by: "/idea-enrich" }
+  - { from: enriched, to: enriched, at: "2026-06-29", by: "/idea-enrich#quality-push-95" }
+
+business_logic:
+  kind: composite
+  description: "Fetches OBReadConsentResponse1 from hsbc-obie-ais-v4.0:account-access-consents/{ConsentId} via ktorfit, maps Data.Permissions[] to human-readable PermissionDetail labels (PermissionsMapper), and renders a color-coded OBIE Status chip (primary=Authorised, warning=Expired/AwaitingAuthorisation, error=Revoked/Rejected). ViewModel computes expiryWarningDays from ExpirationDateTime: when ≤7 days, surfaces an expiry warning banner. Revoke is a guarded two-step: ConfirmRevoke transitions to RevokeConfirm (dialog), ExecuteRevoke dispatches DELETE /account-access-consents/{ConsentId}; 204 triggers local PSU token + ConsentId clearance then navigates to consent-list; 404 is idempotently treated as already-revoked (same cleanup path, no error shown)."
+  external_library_refs:
+    - "hsbc-obie-ais-v4.0:account-access-consents"
+    - "ktorfit"
+  description_author: claude
+  description_authored_at: "2026-06-29T12:00:00Z"
+
+# ── ViewModel State Machine ─────────────────────────────────────────
+state_model:
+  _version: v3
+  class: ConsentDetailUiState
+  sealed: true
+  states:
+    - name: Loading
+      fields: []
+    - name: Content
+      fields:
+        - name: consent
+          type: OBReadConsentResponse1
+        - name: permissionsDetail
+          type: "List<PermissionDetail>"
+        - name: expiryWarningDays
+          type: "Int?"
+          nullable: true
+          note: "Non-null when ExpirationDateTime is within 7 calendar days; null otherwise. Drives expiry_warning_banner visibility."
+    - name: RevokeConfirm
+      fields:
+        - name: consent
+          type: OBReadConsentResponse1
+    - name: Revoking
+      fields:
+        - name: consent
+          type: OBReadConsentResponse1
+    - name: Error
+      fields:
+        - name: message
+          type: String
+        - name: errorCode
+          type: ConsentDetailErrorCode
+          note: "Enum: ConsentNotFound | ConsentRevoked | ConsentExpired | TokenExpired | NetworkError | RevokeServerError"
+
+# ── Shell ───────────────────────────────────────────────────────────
+shell:
+  bottom_navigation_visible: true
+  top_app_bar_visible: true
+  top_app_bar_title: "{strings.consent_detail.top_bar_title}"
+  top_app_bar_leading: back
+  fab_visible: false
+
+# ── States ──────────────────────────────────────────────────────────
+states: [loading, content, revoke_confirm, revoking, error]
+
+# ── Components ──────────────────────────────────────────────────────
+components:
+
+  # ── Loading state ──────────────────────────────────────────────────
+  - type: progress_indicator
+    id: load_progress
+    variant: circular
+    state_binding: [loading]
+    accessibility_label: "{strings.consent_detail.loading_a11y}"
+    test_context:
+      purpose: "Circular progress shown while GET /account-access-consents/{ConsentId} is in flight"
+      required_fields: [variant]
+      interaction_type: display
+      data_driven: false
+
+  # ── Revoking state ─────────────────────────────────────────────────
+  - type: progress_indicator
+    id: revoke_progress
+    variant: circular
+    label: "{strings.consent_detail.revoking_label}"
+    state_binding: [revoking]
+    accessibility_label: "{strings.consent_detail.revoking_a11y}"
+    test_context:
+      purpose: "Labelled progress indicator while DELETE /account-access-consents/{ConsentId} is in-flight — prevents double-tap; no consent content shown"
+      required_fields: [variant, label]
+      interaction_type: display
+      data_driven: false
+
+  # ── Status header card ─────────────────────────────────────────────
+  - type: card
+    id: status_header_card
+    state_binding: [content, revoke_confirm]
+    elevation: 2
+    test_context:
+      purpose: "Elevated header card combining HSBC brand identity, color-coded OBIE Status chip, and ConsentId label"
+      required_fields: [children]
+      interaction_type: display
+      data_driven: true
+    children:
+      - type: row
+        id: bank_identity_row
+        test_context:
+          purpose: "Row pairing HSBC logo with the live OBIE Status chip from Data.Status"
+          required_fields: [children]
+          interaction_type: display
+          data_driven: false
+        children:
+          - type: image
+            id: bank_logo
+            asset: "ic_hsbc_logo"
+            content_description: "{strings.consent_detail.bank_logo_description}"
+            accessibility_label: "{strings.consent_detail.bank_logo_a11y}"
+            test_context:
+              purpose: "HSBC brand mark establishing which bank's consent is being viewed"
+              required_fields: [asset, content_description]
+              interaction_type: display
+              data_driven: false
+          - type: chip
+            id: status_chip
+            label: "{consent.Data.Status}"
+            variant: assist
+            icon: check_circle
+            color_map:
+              Authorised: "primary"
+              AwaitingAuthorisation: "tertiary"
+              Rejected: "error"
+              Revoked: "error"
+              Expired: "warning"
+            accessibility_label: "{strings.consent_detail.status_chip_a11y}"
+            test_context:
+              purpose: "Color-coded OBIE Status chip: primary=Authorised, tertiary=AwaitingAuthorisation, warning=Expired, error=Revoked/Rejected — from OBReadConsentResponse1.Data.Status"
+              required_fields: [label, color_map]
+              interaction_type: display
+              data_driven: true
+      - type: text
+        id: consent_id_label
+        value: "{strings.consent_detail.consent_id_prefix}: {consent.Data.ConsentId}"
+        style: labelSmall
+        color: "on-surface-variant"
+        accessibility_label: "{strings.consent_detail.consent_id_a11y}"
+        test_context:
+          purpose: "ConsentId from Data.ConsentId — aids debugging and user reference for OBIE transparency"
+          required_fields: [value]
+          interaction_type: display
+          data_driven: true
+
+  # ── Expiry warning banner ──────────────────────────────────────────
+  # Visible only when ViewModel.expiryWarningDays != null (i.e. ≤7 days to expiry)
+  - type: card
+    id: expiry_warning_banner
+    color: "warning-container"
+    state_binding: [content, revoke_confirm]
+    visible_when: "expiryWarningDays != null"
+    test_context:
+      purpose: "Inline warning banner shown when ExpirationDateTime is within 7 days — prompts PSU to reconfirm via the 90-day OBIE flow before losing access"
+      required_fields: [visible_when, children]
+      interaction_type: display
+      data_driven: true
+    children:
+      - type: row
+        id: expiry_warning_row
+        children:
+          - type: icon
+            id: expiry_warning_icon
+            asset: access_time
+            color: "on-warning-container"
+            accessibility_label: ""
+            i18n: skip
+          - type: text
+            id: expiry_warning_text
+            value: "{strings.consent_detail.expiry_warning}"
+            color: "on-warning-container"
+            style: bodySmall
+            accessibility_label: "{strings.consent_detail.expiry_warning}"
+
+  # ── Dates section ──────────────────────────────────────────────────
+  - type: section_header
+    id: dates_header
+    label: "{strings.consent_detail.section.access_period}"
+    state_binding: [content, revoke_confirm]
+    test_context:
+      purpose: "Section heading for the four OBIE date fields: creation, expiry, transaction-from, and transaction-to"
+      required_fields: [label]
+      interaction_type: display
+      data_driven: false
+
+  - type: list
+    id: dates_list
+    state_binding: [content, revoke_confirm]
+    scroll_direction: vertical
+    test_context:
+      purpose: "Displays four OBIE datetime fields mapped from OBReadConsentResponse1.Data"
+      required_fields: [children]
+      interaction_type: display
+      data_driven: true
+    children:
+      - type: list_item
+        id: created_date_row
+        icon: event
+        headline_text: "{strings.consent_detail.label.connected_on}"
+        supporting_text: "{consent.Data.CreationDateTime}"
+        accessibility_label: "{strings.consent_detail.label.connected_on}: {consent.Data.CreationDateTime}"
+        test_context:
+          purpose: "ISO-8601 timestamp from Data.CreationDateTime showing when the PSU authorised the consent"
+          required_fields: [headline_text, supporting_text]
+          interaction_type: display
+          data_driven: true
+      - type: list_item
+        id: expiry_date_row
+        icon: event_busy
+        headline_text: "{strings.consent_detail.label.expires_on}"
+        supporting_text: "{consent.Data.ExpirationDateTime}"
+        accessibility_label: "{strings.consent_detail.label.expires_on}: {consent.Data.ExpirationDateTime}"
+        test_context:
+          purpose: "ISO-8601 expiry timestamp from Data.ExpirationDateTime; 90-day OBIE reconfirmation window"
+          required_fields: [headline_text, supporting_text]
+          interaction_type: display
+          data_driven: true
+      - type: list_item
+        id: transaction_from_row
+        icon: history
+        headline_text: "{strings.consent_detail.label.transaction_from}"
+        supporting_text: "{consent.Data.TransactionFromDateTime}"
+        accessibility_label: "{strings.consent_detail.label.transaction_from}: {consent.Data.TransactionFromDateTime}"
+        test_context:
+          purpose: "ISO-8601 date from Data.TransactionFromDateTime defining the start of the historical transaction window"
+          required_fields: [headline_text, supporting_text]
+          interaction_type: display
+          data_driven: true
+      - type: list_item
+        id: transaction_to_row
+        icon: event_available
+        headline_text: "{strings.consent_detail.label.transaction_to}"
+        supporting_text: "{consent.Data.TransactionToDateTime}"
+        accessibility_label: "{strings.consent_detail.label.transaction_to}: {consent.Data.TransactionToDateTime}"
+        test_context:
+          purpose: "ISO-8601 date from Data.TransactionToDateTime defining the end of the historical transaction window — present in OBIE spec and demo-data but was previously missing from UI"
+          required_fields: [headline_text, supporting_text]
+          interaction_type: display
+          data_driven: true
+
+  # ── Reconfirm CTA ─────────────────────────────────────────────────
+  - type: button
+    id: reconfirm_button
+    variant: tonal
+    label: "{strings.consent_detail.reconfirm_button}"
+    icon: refresh
+    state_binding: [content]
+    accessibility_label: "{strings.consent_detail.reconfirm_button_a11y}"
+    on_click:
+      action: navigate_reconfirm
+      target: login
+    test_context:
+      purpose: "Tonal CTA for OBIE 90-day reconfirmation — navigates to login to re-run the FAPI authorize flow"
+      required_fields: [on_click.action, on_click.target]
+      interaction_type: navigate
+      data_driven: false
+
+  # ── Permissions section ────────────────────────────────────────────
+  - type: section_header
+    id: permissions_header
+    label: "{strings.consent_detail.section.data_shared}"
+    state_binding: [content, revoke_confirm]
+    test_context:
+      purpose: "Section heading for the list of 11 OBIE permissions mapped from Data.Permissions[]"
+      required_fields: [label]
+      interaction_type: display
+      data_driven: false
+
+  - type: list
+    id: permissions_list
+    state_binding: [content, revoke_confirm]
+    scroll_direction: vertical
+    items_source: "{consent.permissions_detail}"
+    test_context:
+      purpose: "Dynamic list of human-readable OBIE permission rows mapped from Data.Permissions[] — 11 rows for full AISP scope"
+      required_fields: [items_source]
+      interaction_type: display
+      data_driven: true
+    children:
+      - type: list_item
+        id: permission_row
+        icon: check_circle_outline
+        icon_color: "primary"
+        headline_text: "{item.label}"
+        supporting_text: "{item.description}"
+        accessibility_label: "{item.label}: {item.description}"
+        test_context:
+          purpose: "Individual OBIE permission row with human-readable label and description for each Data.Permissions[] entry"
+          required_fields: [headline_text, supporting_text]
+          interaction_type: display
+          data_driven: true
+
+  # ── Revoke button ──────────────────────────────────────────────────
+  - type: button
+    id: revoke_button
+    variant: outlined
+    label: "{strings.consent_detail.revoke_button}"
+    icon: link_off
+    color: "error"
+    state_binding: [content]
+    accessibility_label: "{strings.consent_detail.revoke_button_a11y}"
+    on_click:
+      action: confirm_revoke
+    test_context:
+      purpose: "Destructive action button that transitions to the revoke_confirm dialog state — does NOT call DELETE immediately"
+      required_fields: [on_click.action, color]
+      interaction_type: action
+      data_driven: false
+
+  # ── Revoke confirm dialog ──────────────────────────────────────────
+  - type: dialog
+    id: revoke_confirm_dialog
+    state_binding: [revoke_confirm]
+    title: "{strings.consent_detail.revoke_dialog.title}"
+    body: "{strings.consent_detail.revoke_dialog.body}"
+    accessibility_label: "{strings.consent_detail.revoke_dialog.a11y}"
+    test_context:
+      purpose: "Destructive action gate dialog shown before calling DELETE /account-access-consents/{ConsentId}"
+      required_fields: [title, body]
+      interaction_type: display
+      data_driven: false
+    children:
+      - type: button
+        id: dialog_cancel_button
+        variant: text
+        label: "{strings.consent_detail.revoke_dialog.cancel}"
+        accessibility_label: "{strings.consent_detail.revoke_dialog.cancel_a11y}"
+        on_click:
+          action: dismiss_revoke_confirm
+        test_context:
+          purpose: "Cancel CTA — dismisses the confirmation dialog and returns to the content state without any API call"
+          required_fields: [on_click.action]
+          interaction_type: action
+          data_driven: false
+      - type: button
+        id: dialog_confirm_button
+        variant: filled
+        label: "{strings.consent_detail.revoke_dialog.confirm}"
+        color: "error"
+        accessibility_label: "{strings.consent_detail.revoke_dialog.confirm_a11y}"
+        on_click:
+          action: execute_revoke
+        test_context:
+          purpose: "Confirm CTA — dispatches ExecuteRevoke action; 204 clears local PSU token and ConsentId then navigates to consent-list; 404 treated as already-revoked (same cleanup)"
+          required_fields: [on_click.action, color]
+          interaction_type: action
+          data_driven: false
+
+  # ── Error state ────────────────────────────────────────────────────
+  - type: empty_state
+    id: error_state
+    variant: error
+    state_binding: [error]
+    icon: error_outline
+    title: "{strings.consent_detail.error.title}"
+    body: "{error.message}"
+    accessibility_label: "{strings.consent_detail.error.a11y}"
+    test_context:
+      purpose: "Error state for GET failure (401, 404, network) or ExecuteRevoke failure — body shows error.message derived from ConsentDetailErrorCode"
+      required_fields: [icon, title, body]
+      interaction_type: display
+      data_driven: true
+    children:
+      - type: button
+        id: retry_button
+        variant: filled
+        label: "{strings.consent_detail.error.retry}"
+        accessibility_label: "{strings.consent_detail.error.retry_a11y}"
+        on_click:
+          action: retry_load
+        test_context:
+          purpose: "Retry CTA — re-triggers GET /account-access-consents/{ConsentId} after a transient load or revoke failure"
+          required_fields: [on_click.action]
+          interaction_type: action
+          data_driven: false

@@ -1,0 +1,53 @@
+name: OAuthTokenResponse
+version: 1.0.0
+description: >
+  FAPI-1.0-Advanced authorization_code token exchange response from POST /oauth2/token.
+  Issued after successful PSU authorisation at HSBC redirect page. Contains the PSU bearer
+  access_token used for all AIS resource endpoints. Stored in EncryptedSharedPreferences.
+  ViewModel schedules proactive refresh at 80% of expiresIn.
+source:
+  origin: rest
+  endpoint: "/oauth2/token"
+fields:
+  - name: accessToken
+    type: String
+    description: "PSU bearer access token. Used as Authorization: Bearer header for all AIS resource calls. Store in EncryptedSharedPreferences — never log."
+    required: true
+    source_field: "access_token"
+  - name: tokenType
+    type: String
+    description: "OAuth2 token type. Always 'Bearer' for FAPI-1.0-Advanced flows."
+    required: true
+    source_field: "token_type"
+    example: "Bearer"
+  - name: expiresIn
+    type: Int
+    description: "Token lifetime in seconds from issuance. ViewModel schedules proactive refresh at 80% (e.g. 2880s for a 1h token)."
+    required: true
+    source_field: "expires_in"
+    example: 3600
+  - name: refreshToken
+    type: { optional: String }
+    description: "Refresh token for silent renewal. HSBC may omit — treat as nullable. Store in EncryptedSharedPreferences if present."
+    source_field: "refresh_token"
+  - name: scope
+    type: { optional: String }
+    description: "Space-delimited OAuth2 scopes granted. Informational only — effective permissions resolved via consent resource."
+    source_field: "scope"
+    example: "openid accounts"
+  - name: idToken
+    type: { optional: String }
+    description: "OIDC ID token (FAPI-1.0-Advanced may include). Contains sub (PSU identifier). Validate signature before trusting."
+    source_field: "id_token"
+used_by:
+  - feature: consentCallback
+    kind: response
+    api_id: fapiTokenExchange
+    role: body
+capabilities_used:
+  - has_api
+tier: maximum
+tags:
+  - oauth2
+  - fapi
+  - auth

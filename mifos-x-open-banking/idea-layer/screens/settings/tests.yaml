@@ -1,0 +1,96 @@
+screen_id: settings
+
+scenarios:
+  - id: TC-SET-001
+    description: "Loading skeleton renders before DataStore emits first value"
+    state: loading
+    given: "SettingsViewModel is initialising; DataStore flow has not yet emitted"
+    when: "Screen mounts"
+    then:
+      - "Shimmer skeleton is visible covering all sections"
+      - "No setting rows are rendered"
+      - "Top app bar title is present"
+
+  - id: TC-SET-002
+    description: "Settings screen renders all sections with current preference values"
+    state: content
+    given: "DataStore returns saved preferences (theme=System, biometric=On, session=5 minutes, both notifications=On)"
+    when: "DataStore flow emits first Settings object"
+    then:
+      - "Skeleton disappears; content sections animate in"
+      - "Appearance section shows Theme row with supporting_text 'System'"
+      - "Security section shows Biometric App Lock switch set to On"
+      - "Security section shows Session Timeout row with supporting_text '5 minutes'"
+      - "Notifications section shows Consent Expiry Reminders switch set to On"
+      - "Notifications section shows Security Alerts switch set to On"
+      - "Account section shows Manage Consents, Profile, and Clear Local Data rows"
+      - "About & Legal section shows Terms, Privacy, Licences and App Version rows"
+      - "App Version supporting_text is non-empty"
+
+  - id: TC-SET-003
+    description: "Tapping Manage Consents navigates to consent-list"
+    state: content
+    when: "User taps 'Manage Consents' row"
+    then: "Navigation event emitted to consent-list route; chevron icon is visible"
+
+  - id: TC-SET-004
+    description: "Tapping Profile navigates to profile"
+    state: content
+    when: "User taps 'Profile' row"
+    then: "Navigation event emitted to profile route"
+
+  - id: TC-SET-005
+    description: "Toggling Biometric App Lock persists new value"
+    state: content
+    when: "User taps Biometric App Lock switch (On → Off)"
+    then:
+      - "Switch flips to Off immediately"
+      - "DataStore is updated with biometric_lock_enabled=false"
+      - "Preference survives app restart"
+
+  - id: TC-SET-006
+    description: "Selecting Dark theme applies immediately"
+    state: content
+    when: "User selects 'Dark' from Theme dropdown"
+    then:
+      - "App theme changes to dark on next recomposition"
+      - "Theme row supporting_text updates to 'Dark'"
+      - "Preference persisted atomically to DataStore"
+
+  - id: TC-SET-007
+    description: "Toggling Consent Expiry Reminders off persists and survives restart"
+    state: content
+    when: "User taps Consent Expiry Reminders switch (On → Off)"
+    then:
+      - "Switch flips to Off immediately"
+      - "DataStore is updated with notify_consent_expiry=false"
+      - "State survives process death"
+
+  - id: TC-SET-008
+    description: "Clear Local Data shows confirmation bottom-sheet and clears cache on confirm"
+    state: content
+    when: "User taps 'Clear Local Data' row, then taps 'Clear' in the confirmation bottom-sheet"
+    then:
+      - "Confirmation bottom-sheet appears with title and warning body"
+      - "On 'Clear': Room/SQLDelight cached rows are deleted"
+      - "DataStore cached-at timestamps are reset"
+      - "Open Banking consent authorisations are NOT affected"
+      - "Success snackbar shown after erasure completes"
+
+  - id: TC-SET-009
+    description: "Biometric toggle gracefully handles unavailable hardware"
+    state: content
+    given: "Device has no enrolled biometrics"
+    when: "User taps Biometric App Lock switch"
+    then:
+      - "Informational dialog shown explaining biometric unavailability"
+      - "Switch remains Off"
+      - "No crash or unhandled exception"
+
+  - id: TC-SET-010
+    description: "Session timeout picker accepts only whitelisted durations"
+    state: content
+    when: "User opens Session Timeout dropdown"
+    then:
+      - "Exactly four options shown: 2 minutes, 5 minutes, 10 minutes, 30 minutes"
+      - "Selecting '10 minutes' persists to DataStore and updates supporting_text"

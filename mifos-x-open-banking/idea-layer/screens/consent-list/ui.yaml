@@ -1,0 +1,364 @@
+screen_id: consent-list
+name: "{strings.consent_list_title}"
+status: enriched
+quality_score: 95
+initial_state: loading
+
+status_history:
+  - { from: draft, to: enriched, at: "2026-06-29", by: "/idea-enrich" }
+  - { from: enriched, to: enriched, at: "2026-06-29", by: "/idea-enrich (quality-push)", notes: "i18n wrapping (28 keys), reconfirm banner + urgency chip, active/history section split with divider, error_auth state for 401, 3-fixture demo data, 8-scenario tests" }
+
+business_logic:
+  kind: crud
+  description: "Loads locally-stored ConsentId(s) and fetches current status from hsbc-obie-ais-v4.0:account-access-consents/{ConsentId} via ktorfit. Partitions results into active (Authorised) and history (Expired/Revoked) sections rendered in separate list segments with a divider. Computes days_until_expiry from Data.ExpirationDateTime — when ≤ 14 days a reconfirm urgency chip renders on the card and a banner appears at the top of the screen (OBIE 90-day PSU reconfirmation requirement, FR-008). HTTP 401 transitions to the dedicated error_auth state with a 'Sign in again' CTA rather than the generic retry flow. Card tap navigates to consent-detail with ConsentId as route parameter."
+  external_library_refs:
+    - "hsbc-obie-ais-v4.0:account-access-consents"
+    - "ktorfit"
+  description_author: claude
+  description_authored_at: "2026-06-29T12:00:00Z"
+
+shell:
+  bottom_navigation_visible: true
+  top_app_bar_visible: true
+  top_app_bar_title: "{strings.consent_list_title}"
+  fab_visible: false
+
+states: [loading, content, empty, error, error_auth]
+
+components:
+
+  # ── LOADING STATE ─────────────────────────────────────────────────────────
+  - type: progress_indicator
+    variant: circular
+    state_binding: [loading]
+    accessibility_label: "{strings.consent_list_loading}"
+    test_context:
+      purpose: "Circular progress shown while GET /account-access-consents/{ConsentId} is in flight"
+      required_fields: [variant]
+      interaction_type: display
+      data_driven: false
+
+  # ── CONTENT: reconfirm banner (only when a near-expiry consent exists) ─────
+  - type: banner
+    id: reconfirm_banner
+    state_binding: [content]
+    visible_when: "{has_near_expiry_consents}"
+    icon: warning_amber
+    title: "{strings.consent_list_reconfirm_banner_title}"
+    body: "{strings.consent_list_reconfirm_banner_body}"
+    color: "error-container"
+    accessibility_label: "{strings.consent_list_reconfirm_banner_title}"
+    test_context:
+      purpose: "Warning banner at top of content area when at least one active consent has days_until_expiry ≤ 14 — prompts PSU reconfirmation per OBIE 90-day rule (FR-008)"
+      required_fields: [visible_when, title, body]
+      interaction_type: display
+      data_driven: true
+
+  # ── CONTENT: Active section label ──────────────────────────────────────────
+  - type: text
+    id: active_section_label
+    state_binding: [content]
+    visible_when: "{has_active_consents}"
+    value: "{strings.consent_list_section_active}"
+    style: labelLarge
+    color: "on-surface-variant"
+    accessibility_label: "{strings.consent_list_section_active}"
+    test_context:
+      purpose: "Section label rendered above the list of Authorised consent cards"
+      required_fields: [value, visible_when]
+      interaction_type: display
+      data_driven: false
+
+  # ── CONTENT: Active consents list ──────────────────────────────────────────
+  - type: list
+    id: active_consents_list
+    state_binding: [content]
+    visible_when: "{has_active_consents}"
+    scroll_direction: vertical
+    items_source: "{active_consents}"
+    test_context:
+      purpose: "Vertical list of Authorised consent cards, partitioned from history by the ViewModel"
+      required_fields: [items_source, visible_when]
+      interaction_type: display
+      data_driven: true
+    children:
+      - type: card
+        id: consent_card
+        elevation: 1
+        on_click:
+          action: navigate_consent_detail
+          target: consent-detail
+          params:
+            consentId: "{item.Data.ConsentId}"
+        accessibility_label: "{strings.consent_list_card_hint}"
+        test_context:
+          purpose: "Tappable consent card — HSBC logo, OBIE status chip, optional reconfirm chip, permission count, expiry countdown, connection date"
+          required_fields: [on_click.action, on_click.target, on_click.params.consentId]
+          interaction_type: navigate
+          data_driven: true
+        children:
+          - type: row
+            id: consent_card_header_row
+            test_context:
+              purpose: "Row combining HSBC logo with OBIE status chip at card top"
+              required_fields: [children]
+              interaction_type: display
+              data_driven: false
+            children:
+              - type: image
+                id: bank_logo
+                asset: "ic_hsbc_logo"
+                content_description: "{strings.consent_list_bank_logo_desc}"
+                accessibility_label: "HSBC"
+                test_context:
+                  purpose: "HSBC brand mark identifying the connected bank on the consent card"
+                  required_fields: [asset, content_description]
+                  interaction_type: display
+                  data_driven: false
+              - type: chip
+                id: status_chip
+                label: "{item.Data.Status}"
+                variant: assist
+                icon: "{item.status_icon}"
+                color: "{item.status_color}"
+                accessibility_label: "{strings.consent_list_status_prefix} {item.Data.Status}"
+                test_context:
+                  purpose: "OBIE Status chip (Authorised) colour-coded from OBReadConsentResponse1.Data.Status"
+                  required_fields: [label, color, accessibility_label]
+                  interaction_type: display
+                  data_driven: true
+
+          # Reconfirm urgency chip — only appears when days_until_expiry ≤ 14
+          - type: chip
+            id: reconfirm_urgency_chip
+            label: "{strings.consent_list_reconfirm_chip}"
+            variant: assist
+            icon: "warning_amber"
+            color: "error"
+            visible_when: "{item.days_until_expiry <= 14}"
+            accessibility_label: "{strings.consent_list_reconfirm_chip}"
+            test_context:
+              purpose: "Urgency chip on card when consent expiry is within 14 days — PSU should navigate to consent-detail to reconfirm per OBIE 90-day rule"
+              required_fields: [label, visible_when]
+              interaction_type: display
+              data_driven: true
+
+          - type: text
+            id: permission_summary
+            value: "{strings.consent_list_permissions}"
+            style: bodyMedium
+            color: "on-surface"
+            test_context:
+              purpose: "Count of OBIE permissions granted — e.g. '11 data types shared' for a full consent"
+              required_fields: [value]
+              interaction_type: display
+              data_driven: true
+
+          - type: text
+            id: expiry_countdown
+            value: "{strings.consent_list_expires_in}"
+            style: labelMedium
+            color: "{item.expiry_color}"
+            test_context:
+              purpose: "Days-until-expiry from Data.ExpirationDateTime; renders in error colour when ≤ 14 days to signal urgency"
+              required_fields: [value, color]
+              interaction_type: display
+              data_driven: true
+
+          - type: text
+            id: granted_since
+            value: "{strings.consent_list_connected_on}"
+            style: labelSmall
+            color: "on-surface-variant"
+            test_context:
+              purpose: "Human-readable connection date formatted from OBReadConsentResponse1.Data.CreationDateTime (e.g. '28 Jun 2026')"
+              required_fields: [value]
+              interaction_type: display
+              data_driven: true
+
+  # ── CONTENT: Divider between active and history sections ───────────────────
+  - type: divider
+    id: section_divider
+    state_binding: [content]
+    visible_when: "{has_active_consents && has_history_consents}"
+    test_context:
+      purpose: "Horizontal rule separating active (Authorised) consents from historical (Expired/Revoked) consents"
+      required_fields: []
+      interaction_type: display
+      data_driven: false
+
+  # ── CONTENT: History section label ────────────────────────────────────────
+  - type: text
+    id: history_section_label
+    state_binding: [content]
+    visible_when: "{has_history_consents}"
+    value: "{strings.consent_list_section_history}"
+    style: labelLarge
+    color: "on-surface-variant"
+    accessibility_label: "{strings.consent_list_section_history}"
+    test_context:
+      purpose: "Section label rendered above expired and revoked consent cards"
+      required_fields: [value, visible_when]
+      interaction_type: display
+      data_driven: false
+
+  # ── CONTENT: History consents list ────────────────────────────────────────
+  - type: list
+    id: history_consents_list
+    state_binding: [content]
+    visible_when: "{has_history_consents}"
+    scroll_direction: vertical
+    items_source: "{history_consents}"
+    test_context:
+      purpose: "Vertical list of Expired/Revoked consent cards below the section divider"
+      required_fields: [items_source, visible_when]
+      interaction_type: display
+      data_driven: true
+    children:
+      - type: card
+        id: history_consent_card
+        elevation: 0
+        on_click:
+          action: navigate_consent_detail
+          target: consent-detail
+          params:
+            consentId: "{item.Data.ConsentId}"
+        accessibility_label: "{strings.consent_list_card_hint}"
+        test_context:
+          purpose: "Flat tappable card for Expired/Revoked consent showing muted status chip and expiry date"
+          required_fields: [on_click.action, on_click.target]
+          interaction_type: navigate
+          data_driven: true
+        children:
+          - type: row
+            id: history_card_header_row
+            children:
+              - type: image
+                id: bank_logo_history
+                asset: "ic_hsbc_logo"
+                content_description: "{strings.consent_list_bank_logo_desc}"
+                accessibility_label: "HSBC"
+                test_context:
+                  purpose: "HSBC brand mark on history consent card"
+                  required_fields: [asset, content_description]
+                  interaction_type: display
+                  data_driven: false
+              - type: chip
+                id: history_status_chip
+                label: "{item.Data.Status}"
+                variant: assist
+                icon: "{item.status_icon}"
+                color: "{item.status_color}"
+                accessibility_label: "{strings.consent_list_status_prefix} {item.Data.Status}"
+                test_context:
+                  purpose: "Muted Expired or Revoked status chip on history consent card"
+                  required_fields: [label, color]
+                  interaction_type: display
+                  data_driven: true
+
+          - type: text
+            id: history_expiry_label
+            value: "{strings.consent_list_expired_on}"
+            style: labelMedium
+            color: "on-surface-variant"
+            test_context:
+              purpose: "Human-readable date when the consent expired or was revoked"
+              required_fields: [value]
+              interaction_type: display
+              data_driven: true
+
+          - type: text
+            id: history_connected_on
+            value: "{strings.consent_list_connected_on}"
+            style: labelSmall
+            color: "on-surface-variant"
+            test_context:
+              purpose: "Original connection date for the now-expired consent"
+              required_fields: [value]
+              interaction_type: display
+              data_driven: true
+
+  # ── EMPTY STATE ────────────────────────────────────────────────────────────
+  - type: empty_state
+    id: empty_state
+    state_binding: [empty]
+    icon: link_off
+    title: "{strings.consent_list_empty_title}"
+    body: "{strings.consent_list_empty_body}"
+    accessibility_label: "{strings.consent_list_empty_a11y}"
+    test_context:
+      purpose: "Empty state when no ConsentIds exist in local store or all consents cleared"
+      required_fields: [icon, title, body]
+      interaction_type: display
+      data_driven: false
+    children:
+      - type: button
+        id: connect_button
+        variant: filled
+        label: "{strings.consent_list_connect}"
+        accessibility_label: "{strings.consent_list_connect_a11y}"
+        on_click:
+          action: navigate_connect
+          target: user-onboarding
+        test_context:
+          purpose: "CTA navigating to user-onboarding to begin a fresh FAPI consent flow"
+          required_fields: [on_click.action, on_click.target]
+          interaction_type: navigate
+          data_driven: false
+
+  # ── ERROR STATE (network / 500) ───────────────────────────────────────────
+  - type: empty_state
+    id: error_state
+    variant: error
+    state_binding: [error]
+    icon: error_outline
+    title: "{strings.consent_list_error_title}"
+    body: "{error.message}"
+    accessibility_label: "{strings.consent_list_error_a11y}"
+    test_context:
+      purpose: "Generic error state for network failures or 500 from GET /account-access-consents/{ConsentId}"
+      required_fields: [icon, title]
+      interaction_type: display
+      data_driven: true
+    children:
+      - type: button
+        id: retry_button
+        variant: filled
+        label: "{strings.consent_list_retry}"
+        accessibility_label: "{strings.consent_list_retry_a11y}"
+        on_click:
+          action: retry_load
+        test_context:
+          purpose: "Retry CTA re-triggering consent-status fetch after transient network or server failure"
+          required_fields: [on_click.action]
+          interaction_type: action
+          data_driven: false
+
+  # ── ERROR STATE (401 auth — dedicated, not generic retry) ─────────────────
+  - type: empty_state
+    id: auth_error_state
+    variant: error
+    state_binding: [error_auth]
+    icon: lock_open
+    title: "{strings.consent_list_auth_error_title}"
+    body: "{strings.consent_list_auth_error_body}"
+    accessibility_label: "{strings.consent_list_auth_error_a11y}"
+    test_context:
+      purpose: "Targeted 401 error state — PSU access token expired; avoids misleading 'Retry' CTA by offering 'Sign in again' which re-initiates the FAPI OAuth flow"
+      required_fields: [icon, title, body]
+      interaction_type: display
+      data_driven: false
+    children:
+      - type: button
+        id: reauth_button
+        variant: filled
+        label: "{strings.consent_list_reauth}"
+        accessibility_label: "{strings.consent_list_reauth_a11y}"
+        on_click:
+          action: navigate_reauth
+          target: login
+        test_context:
+          purpose: "Re-authentication CTA navigating PSU to the login screen to renew their OAuth session"
+          required_fields: [on_click.action, on_click.target]
+          interaction_type: navigate
+          data_driven: false

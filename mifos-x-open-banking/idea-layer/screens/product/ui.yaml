@@ -1,0 +1,277 @@
+screen_id: product
+name: "Product Terms"
+status: enriched
+quality_score: 93
+initial_state: loading
+
+shell:
+  bottom_navigation_visible: true
+  top_app_bar_visible: true
+  top_app_bar_title: "{strings.product_terms_title}"
+  top_app_bar_leading: back
+  fab_visible: false
+
+business_logic:
+  kind: crud
+  description: "Calls GET /accounts/{AccountId}/product (OBIE OBReadProduct2) to retrieve the PCA or BCA product definition associated with the account. Parses OBProduct2.PCA for credit interest tier bands (AER, ApplicationFrequency, TierValueMinimum/BandLimit range), overdraft tier bands (EAR, OverdraftType), monthly maximum charge, and features list. Handles empty response (account types without OBProduct2 entries, e.g. GlobalMoney, Savings, CreditCard) as a distinct empty state separate from error. Requires ReadProducts permission in the active consent. Read-only display with no mutations."
+  external_library_refs:
+    - "hsbc-obie-ais-v4.0:product"
+    - "ktorfit"
+  description_author: claude
+  description_authored_at: "2026-06-29T12:00:00Z"
+
+status_history:
+  - from: draft
+    to: enriched
+    at: "2026-06-29"
+    by: "/idea-enrich"
+  - from: enriched
+    to: enriched
+    at: "2026-06-29"
+    by: "/idea-enrich (quality pass 2 — i18n + empty state + tier enrichment)"
+
+states: [loading, content, empty, error]
+
+components:
+  # ── LOADING ──────────────────────────────────────────────────────────────────
+  - type: progress_indicator
+    variant: circular
+    state_binding: [loading]
+    accessibility_label: "{strings.product_loading_a11y}"
+    test_context:
+      purpose: "Shown while OBReadProduct2 fetch is in flight from GET /accounts/{id}/product"
+      required_fields: []
+      interaction_type: display
+      data_driven: false
+
+  # ── CONTENT: product header card ─────────────────────────────────────────────
+  - type: card
+    id: product_header_card
+    state_binding: [content]
+    elevation: 2
+    test_context:
+      purpose: "Product identity card: OBProduct2 ProductName, ProductType enum, and ProductId"
+      required_fields: [product.ProductName, product.ProductType, product.ProductId]
+      interaction_type: display
+      data_driven: true
+    children:
+      - type: text
+        id: product_type_label
+        role: overline
+        value: "{product.ProductType}"
+        i18n: skip  # fully dynamic — OBProduct2 enum value (PCA / BCA / Other)
+        style: labelMedium
+        color: "secondary"
+        test_context:
+          purpose: "OBProduct2 ProductType enum (e.g. PCA = PersonalCurrentAccount, BCA = BusinessCurrentAccount)"
+          required_fields: [product.ProductType]
+          interaction_type: display
+          data_driven: true
+      - type: text
+        id: product_name
+        role: title
+        value: "{product.ProductName}"
+        i18n: skip  # fully dynamic — e.g. "HSBC Advance Account"
+        style: headlineMedium
+        test_context:
+          purpose: "Human-readable product name from OBProduct2 (e.g. HSBC Advance Account)"
+          required_fields: [product.ProductName]
+          interaction_type: display
+          data_driven: true
+      - type: text
+        id: product_id
+        role: caption
+        value: "{strings.product_id_label}"
+        style: labelSmall
+        color: "on-surface-variant"
+        test_context:
+          purpose: "OBProduct2 ProductId for reference; i18n key value: 'Product ID: {product.ProductId}'"
+          required_fields: [product.ProductId]
+          interaction_type: display
+          data_driven: true
+
+  # ── CONTENT: Fees section ─────────────────────────────────────────────────────
+  - type: section_header
+    id: fees_header
+    state_binding: [content]
+    label: "{strings.product_section_fees}"
+    test_context:
+      purpose: "Section divider for PCA ProductDetails fee fields"
+      required_fields: []
+      interaction_type: display
+      data_driven: false
+
+  - type: list_item
+    id: monthly_max_charge_row
+    state_binding: [content]
+    supporting_text: "{strings.product_monthly_max_charge_label}"
+    trailing_content: "{strings.product_monthly_max_charge_amount}"
+    trailing_style: titleMedium
+    accessibility_label: "{strings.product_monthly_max_charge_a11y}"
+    test_context:
+      purpose: "OBPCAProductDetails1 MonthlyMaximumCharge; £0.00 for fee-free accounts. i18n trailing: '£{product.PCA.ProductDetails.MonthlyMaximumCharge}'"
+      required_fields: [product.PCA.ProductDetails.MonthlyMaximumCharge]
+      interaction_type: display
+      data_driven: true
+
+  # ── CONTENT: Credit Interest section ──────────────────────────────────────────
+  - type: section_header
+    id: credit_interest_header
+    state_binding: [content]
+    label: "{strings.product_section_credit_interest}"
+    test_context:
+      purpose: "Section divider for OBCreditInterest1 TierBandSet[] entries"
+      required_fields: []
+      interaction_type: display
+      data_driven: false
+
+  - type: list
+    id: credit_interest_list
+    state_binding: [content]
+    items_source: "{product.PCA.CreditInterest.TierBandSet}"
+    test_context:
+      purpose: "Iterates OBTierBandSet1 groups; each group has a TierBandMethod (Tiered or Whole) and one or more TierBand entries"
+      required_fields: [product.PCA.CreditInterest.TierBandSet]
+      interaction_type: display
+      data_driven: true
+    children:
+      - type: list
+        id: tier_band_list
+        items_source: "{item.TierBand}"
+        test_context:
+          purpose: "Iterates OBTierBand1 entries within each TierBandSet; each row shows band limit range + AER + ApplicationFrequency"
+          required_fields: [item.TierBand]
+          interaction_type: display
+          data_driven: true
+        children:
+          - type: list_item
+            id: tier_band_row
+            supporting_text: "{strings.product_tier_band_info}"
+            trailing_content: "{strings.product_tier_aer}"
+            trailing_style: titleMedium
+            accessibility_label: "{strings.product_credit_band_a11y}"
+            test_context:
+              purpose: "Single AER tier. supporting_text i18n value: 'Up to {item.BandLimit} · paid {item.ApplicationFrequency}'. trailing i18n value: '{item.AER}% AER'. Template vars: {item.TierValueMinimum}, {item.BandLimit}, {item.AER}, {item.ApplicationFrequency}"
+              required_fields: [item.BandLimit, item.AER, item.ApplicationFrequency]
+              interaction_type: display
+              data_driven: true
+
+  # ── CONTENT: Overdraft section ────────────────────────────────────────────────
+  - type: section_header
+    id: overdraft_header
+    state_binding: [content]
+    label: "{strings.product_section_overdraft}"
+    test_context:
+      purpose: "Section divider for OBOverdraft1 OverdraftTierBandSet[] entries"
+      required_fields: []
+      interaction_type: display
+      data_driven: false
+
+  - type: list
+    id: overdraft_list
+    state_binding: [content]
+    items_source: "{product.PCA.Overdraft.OverdraftTierBandSet}"
+    test_context:
+      purpose: "Iterates OBOverdraftTierbandSet1 groups for arranged and unarranged overdraft"
+      required_fields: [product.PCA.Overdraft.OverdraftTierBandSet]
+      interaction_type: display
+      data_driven: true
+    children:
+      - type: list
+        id: overdraft_tier_list
+        items_source: "{item.OverdraftTierBand}"
+        test_context:
+          purpose: "Iterates OBOverdraftTierBand1 entries; OverdraftType distinguishes Arranged vs Unarranged"
+          required_fields: [item.OverdraftTierBand]
+          interaction_type: display
+          data_driven: true
+        children:
+          - type: list_item
+            id: overdraft_tier_row
+            supporting_text: "{strings.product_overdraft_type_label}"
+            trailing_content: "{strings.product_overdraft_ear}"
+            trailing_style: titleMedium
+            accessibility_label: "{strings.product_overdraft_band_a11y}"
+            test_context:
+              purpose: "Single EAR tier. supporting_text i18n value: '{item.OverdraftType} overdraft'. trailing i18n value: '{item.EAR}% EAR'. Template vars: {item.OverdraftType}, {item.EAR}"
+              required_fields: [item.OverdraftType, item.EAR]
+              interaction_type: display
+              data_driven: true
+
+  # ── CONTENT: Features section ─────────────────────────────────────────────────
+  - type: section_header
+    id: features_header
+    state_binding: [content]
+    label: "{strings.product_section_features}"
+    test_context:
+      purpose: "Section divider for PCA ProductDetails.Features string array"
+      required_fields: []
+      interaction_type: display
+      data_driven: false
+
+  - type: list
+    id: features_list
+    state_binding: [content]
+    items_source: "{product.PCA.ProductDetails.Features}"
+    test_context:
+      purpose: "Renders marketing/capability feature strings associated with the PCA product"
+      required_fields: [product.PCA.ProductDetails.Features]
+      interaction_type: display
+      data_driven: true
+    children:
+      - type: list_item
+        id: feature_row
+        leading_icon: check_circle
+        leading_icon_color: "primary"
+        supporting_text: "{item}"
+        i18n: skip  # fully dynamic — feature strings are data from OBProduct2
+        accessibility_label: "{strings.product_feature_a11y}"
+        test_context:
+          purpose: "Single feature string with affirming check_circle icon; supporting_text is dynamic data (i18n:skip); a11y label i18n value: 'Feature: {item}'"
+          required_fields: [item]
+          interaction_type: display
+          data_driven: true
+
+  # ── EMPTY: no product data for account ───────────────────────────────────────
+  - type: empty_state
+    id: empty_product_state
+    variant: informational
+    state_binding: [empty]
+    icon: info_outline
+    title: "{strings.product_empty_title}"
+    body: "{strings.product_empty_body}"
+    accessibility_label: "{strings.product_empty_a11y}"
+    test_context:
+      purpose: "Shown when OBReadProduct2 Data is empty or account type (GlobalMoney, Savings, CreditCard) has no OBProduct2 entry. Informational — not an error."
+      required_fields: []
+      interaction_type: display
+      data_driven: false
+
+  # ── ERROR ─────────────────────────────────────────────────────────────────────
+  - type: empty_state
+    id: error_state
+    variant: error
+    state_binding: [error]
+    icon: error_outline
+    title: "{strings.product_error_title}"
+    body: "{error.message}"
+    i18n_body: skip  # dynamic error message from ViewModel
+    accessibility_label: "{strings.product_error_a11y}"
+    test_context:
+      purpose: "Shown on 401/403/404/network error from GET /accounts/{id}/product. Body is dynamic error message."
+      required_fields: [error.message]
+      interaction_type: display
+      data_driven: true
+    children:
+      - type: button
+        id: retry_button
+        variant: filled
+        label: "{strings.product_retry_button}"
+        accessibility_label: "{strings.product_retry_a11y}"
+        test_context:
+          purpose: "Re-triggers retry_load → product_load ViewModel action"
+          required_fields: []
+          interaction_type: action
+          data_driven: false
+        on_click:
+          action: retry_load

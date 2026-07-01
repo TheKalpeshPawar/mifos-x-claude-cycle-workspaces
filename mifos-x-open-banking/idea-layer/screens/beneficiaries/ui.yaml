@@ -1,0 +1,175 @@
+screen_id: beneficiaries
+name: "{strings.beneficiaries.screen_title}"
+status: enriched
+initial_state: loading
+
+shell:
+  bottom_navigation_visible: true
+  top_app_bar_visible: true
+  top_app_bar_title: "{strings.beneficiaries.screen_title}"
+  top_app_bar_leading: back
+  fab_visible: false
+
+states: [loading, content, empty, error]
+
+business_logic:
+  kind: crud
+  description: "Calls GET /accounts/{AccountId}/beneficiaries via ktorfit to retrieve OBReadBeneficiary5. Maps each Data.Beneficiary using CreditorAccount.SchemeName (mapped to a human-readable label: UK.OBIE.SortCodeAccountNumber→Sort Code, UK.OBIE.IBAN→IBAN, UK.OBIE.Paym→Paym), Identification, Name, and Reference into list rows. An avatar with initials is derived from CreditorAccount.Name for visual identity. Supports client-side search filtering by Name or Reference (no extra API call). Surfaces typed errors: TokenExpired 401 (retry CTA re-fetches), ConsentRevoked 403 (View Consents CTA navigates to consent-list), RateLimited 429 (retry with back-off), NetworkError (retry). On empty list shows no-payees state."
+  external_library_refs:
+    - "ktorfit"
+    - "hsbc-obie-ais-v4.0:beneficiaries"
+  description_author: claude
+  description_authored_at: "2026-06-29T12:00:00Z"
+
+components:
+  - type: progress_indicator
+    variant: circular
+    state_binding: [loading]
+    accessibility_label: "{strings.beneficiaries.loading_label}"
+    test_context:
+      purpose: "Indicate async fetch of OBReadBeneficiary5 from HSBC AIS endpoint"
+      required_fields: []
+      interaction_type: display
+      data_driven: false
+
+  - type: icon_button
+    id: back_button
+    icon: arrow_back
+    accessibility_label: "{strings.beneficiaries.back_label}"
+    on_click:
+      action: navigate_back
+      target: account-detail
+    test_context:
+      purpose: "Return user to account-detail screen"
+      required_fields: []
+      interaction_type: navigate
+      data_driven: false
+
+  - type: search_bar
+    id: beneficiary_search
+    state_binding: [content]
+    placeholder: "{strings.beneficiaries.search_placeholder}"
+    accessibility_label: "{strings.beneficiaries.search_placeholder}"
+    on_change:
+      action: filter_beneficiaries
+      param: query
+    test_context:
+      purpose: "Client-side filter of beneficiaries by CreditorAccount.Name or Reference — no API call"
+      required_fields: []
+      interaction_type: action
+      data_driven: false
+
+  - type: list
+    id: beneficiaries_list
+    state_binding: [content]
+    scroll_direction: vertical
+    items_source: "{beneficiaries_filtered}"
+    accessibility_label: "{strings.beneficiaries.list_label}"
+    test_context:
+      purpose: "Render filtered OBReadBeneficiary5 Data.Beneficiary array for the account"
+      required_fields: ["beneficiaries_filtered"]
+      interaction_type: display
+      data_driven: true
+    children:
+      - type: list_item
+        id: beneficiary_row
+        variant: two_line
+        leading:
+          type: avatar
+          id: beneficiary_avatar
+          variant: sm
+          initials: "{item.CreditorAccount.Name | initials}"
+          color_seed: "{item.BeneficiaryId}"
+          accessibility_label: ""
+          aria_hidden: true
+        headline: "{item.CreditorAccount.Name}"
+        supporting_text: "{item.CreditorAccount.SchemeName | schemeShortLabel} · {item.CreditorAccount.Identification}"
+        trailing_content: "{item.Reference}"
+        trailing_style: labelSmall
+        accessibility_label: "{strings.beneficiaries.row_accessibility_label}"
+        test_context:
+          purpose: "Show one beneficiary: initials avatar, creditor name headline, scheme-type·identifier as supporting, payment reference as trailing label"
+          required_fields: ["item.CreditorAccount.Name", "item.CreditorAccount.Identification", "item.CreditorAccount.SchemeName", "item.Reference", "item.BeneficiaryId"]
+          interaction_type: display
+          data_driven: true
+
+  - type: empty_state
+    id: search_no_results
+    state_binding: [content]
+    visibility_condition: "{beneficiaries_filtered | isEmpty}"
+    icon: search_off
+    title: "{strings.beneficiaries.search_empty_title}"
+    body: "{strings.beneficiaries.search_empty_body}"
+    accessibility_label: "{strings.beneficiaries.search_empty_title}"
+    test_context:
+      purpose: "Shown within content state when search query matches zero beneficiaries"
+      required_fields: ["beneficiaries_filtered"]
+      interaction_type: display
+      data_driven: true
+
+  - type: empty_state
+    id: empty_beneficiaries
+    state_binding: [empty]
+    icon: people_outline
+    title: "{strings.beneficiaries.empty_title}"
+    body: "{strings.beneficiaries.empty_body}"
+    accessibility_label: "{strings.beneficiaries.empty_title}"
+    test_context:
+      purpose: "Zero-result state when Data.Beneficiary[] is empty in OBIE response"
+      required_fields: []
+      interaction_type: display
+      data_driven: false
+
+  - type: empty_state
+    id: error_state
+    variant: error
+    state_binding: [error]
+    icon: error_outline
+    title: "{strings.beneficiaries.error_title}"
+    body: "{error.message}"
+    accessibility_label: "{strings.beneficiaries.error_title}"
+    test_context:
+      purpose: "Surface typed API errors with differentiated recovery CTAs: Retry for 401/429/network, View Consents for 403"
+      required_fields: ["error.message", "error.type"]
+      interaction_type: display
+      data_driven: true
+    children:
+      - type: button
+        id: retry_button
+        variant: filled
+        label: "{strings.beneficiaries.retry}"
+        visibility_condition: "{error.type | isRetryable}"
+        accessibility_label: "{strings.beneficiaries.retry_a11y}"
+        on_click:
+          action: retry_load
+        test_context:
+          purpose: "Re-trigger LoadBeneficiaries after transient failure (401 TokenExpired, 429 RateLimited, NetworkError)"
+          required_fields: []
+          interaction_type: action
+          data_driven: false
+      - type: button
+        id: view_consents_button
+        variant: tonal
+        label: "{strings.beneficiaries.view_consents}"
+        visibility_condition: "{error.type | isConsentRevoked}"
+        accessibility_label: "{strings.beneficiaries.view_consents_a11y}"
+        on_click:
+          action: navigate
+          target: consent-list
+        test_context:
+          purpose: "Route to consent-list when consent is revoked (HTTP 403 ConsentRevoked)"
+          required_fields: []
+          interaction_type: navigate
+          data_driven: false
+
+quality_score: 93
+status_history:
+  - from: draft
+    to: enriched
+    at: "2026-06-29"
+    by: "/idea-enrich"
+  - from: enriched
+    to: enriched
+    at: "2026-06-29"
+    by: "/idea-enrich"
+    note: "Quality lift: i18n strings (14 keys), search_bar + client-side filter, avatar initials in list rows, scheme-type label in supporting_text, dual error CTA (Retry vs View Consents), search_no_results empty state, enriched business_logic description."

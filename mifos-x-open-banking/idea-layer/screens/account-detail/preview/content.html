@@ -1,0 +1,712 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
+  <title>Account Detail — Content</title>
+  <!-- Roboto + Roboto Mono (M3 default; mono for amounts/account numbers) -->
+  <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;500&family=Roboto+Mono:wght@400;500&display=swap" rel="stylesheet">
+  <!-- Material Symbols Outlined v2024 -->
+  <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@24,400,0,0&display=block" rel="stylesheet">
+  <style>
+    /* ── Design tokens: mifos-x-open-banking Trust Blue (light + dark) ───── */
+    :root {
+      --primary:              #266489;
+      --on-primary:           #FFFFFF;
+      --primary-container:    #C9E6FF;
+      --on-primary-container: #004B6F;
+      --secondary:            #50606E;
+      --on-secondary:         #FFFFFF;
+      --error:                #BA1A1A;
+      --background:           #F7F9FF;
+      --on-background:        #181C20;
+      --surface:              #F7F9FF;
+      --on-surface:           #181C20;
+      --surface-variant:      #DDE3EA;
+      --on-surface-variant:   #41474D;
+      --surface-container:    #EBEEF3;
+      --surface-container-low: #F1F4F9;
+      --surface-container-high: #E5E8ED;
+      --outline:              #72787E;
+      --outline-variant:      #C1C7CE;
+      /* Shape */
+      --radius-sm:    8px;
+      --radius-md:   12px;
+      --radius-lg:   16px;
+      --radius-full: 9999px;
+      --screen-pad:  16px;
+      --top-bar-h:   64px;
+      --bottom-nav-h: 80px;
+    }
+    @media (prefers-color-scheme: dark) {
+      :root {
+        --primary:              #95CDF7;
+        --on-primary:           #00344E;
+        --primary-container:    #004B6F;
+        --on-primary-container: #C9E6FF;
+        --secondary:            #B7C9D9;
+        --error:                #FFB4AB;
+        --background:           #101417;
+        --on-background:        #E0E3E8;
+        --surface:              #101417;
+        --on-surface:           #E0E3E8;
+        --surface-variant:      #41474D;
+        --on-surface-variant:   #C1C7CE;
+        --surface-container:    #1C2024;
+        --surface-container-low: #181C20;
+        --surface-container-high: #262A2E;
+        --outline:              #8B9198;
+        --outline-variant:      #41474D;
+      }
+    }
+
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      font-family: 'Roboto', sans-serif;
+      background: var(--background);
+      color: var(--on-surface);
+      height: 100vh;
+      overflow: hidden;
+      display: flex;
+      flex-direction: column;
+    }
+
+    /* ── Material Symbols ── */
+    .material-symbols-outlined {
+      font-family: 'Material Symbols Outlined';
+      font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+      font-size: 24px;
+      line-height: 1;
+      user-select: none;
+      display: inline-block;
+    }
+
+    /* ── Top App Bar ─────────────────────────────────────────────────── */
+    .top-app-bar {
+      height: var(--top-bar-h);
+      background: var(--surface);
+      border-bottom: 1px solid var(--outline-variant);
+      display: flex;
+      align-items: center;
+      padding: 0 4px;
+      flex-shrink: 0;
+    }
+
+    .icon-btn {
+      width: 48px;
+      height: 48px;
+      border-radius: var(--radius-full);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+      color: var(--on-surface);
+      background: none;
+      border: none;
+      flex-shrink: 0;
+      transition: background 150ms;
+    }
+    .icon-btn:hover  { background: rgba(24,28,32,0.08); }
+    .icon-btn:active { background: rgba(24,28,32,0.12); }
+    @media (prefers-color-scheme: dark) {
+      .icon-btn:hover  { background: rgba(224,227,232,0.08); }
+      .icon-btn:active { background: rgba(224,227,232,0.12); }
+    }
+
+    .top-bar-title {
+      font-size: 22px;
+      line-height: 28px;
+      font-weight: 400;
+      color: var(--on-surface);
+      flex: 1;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+      margin-left: 4px;
+    }
+
+    /* ── Content area ────────────────────────────────────────────────── */
+    .content-area {
+      flex: 1;
+      overflow-y: auto;
+      overflow-x: hidden;
+      padding: var(--screen-pad);
+      padding-bottom: calc(var(--bottom-nav-h) + 16px);
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+    }
+
+    /* ── M3 Card (surface-container, elevation 1 via tonal surface) ── */
+    .card {
+      background: var(--surface-container);
+      border-radius: var(--radius-md);
+      padding: 16px;
+    }
+
+    /* ── M3 Outlined Card ──────────────────────────────────────────── */
+    .card-outlined {
+      background: transparent;
+      border: 1px solid var(--outline-variant);
+      border-radius: var(--radius-md);
+      padding: 10px 16px;
+    }
+
+    /* ── Account header fields ─────────────────────────────────────── */
+    .acct-subtype {
+      font-size: 12px;
+      line-height: 16px;
+      font-weight: 500;
+      color: var(--secondary);
+      text-transform: uppercase;
+      letter-spacing: 0.6px;
+      margin-bottom: 4px;
+    }
+
+    .acct-nickname {
+      font-size: 28px;
+      line-height: 36px;
+      font-weight: 400;
+      color: var(--on-surface);
+      margin-bottom: 6px;
+    }
+
+    .acct-id {
+      font-family: 'Roboto Mono', monospace;
+      font-size: 14px;
+      line-height: 20px;
+      font-weight: 400;
+      color: var(--on-surface-variant);
+      letter-spacing: 0.3px;
+      margin-bottom: 8px;
+    }
+
+    .acct-meta-row {
+      display: flex;
+      align-items: center;
+      flex-wrap: wrap;
+      gap: 8px;
+      margin-bottom: 8px;
+    }
+
+    .acct-badge {
+      font-size: 11px;
+      line-height: 16px;
+      font-weight: 500;
+      color: var(--on-surface-variant);
+      background: var(--surface-container-high);
+      border-radius: var(--radius-sm);
+      padding: 2px 8px;
+    }
+
+    .acct-badge.mono {
+      font-family: 'Roboto Mono', monospace;
+      font-size: 10px;
+      letter-spacing: 0.2px;
+    }
+
+    .acct-last-updated {
+      font-size: 11px;
+      line-height: 16px;
+      font-weight: 500;
+      color: var(--on-surface-variant);
+    }
+
+    /* ── Open Banking trust badge ──────────────────────────────────── */
+    .ob-inner {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+    .ob-dot {
+      width: 8px;
+      height: 8px;
+      background: var(--primary);
+      border-radius: 50%;
+      flex-shrink: 0;
+    }
+    .ob-label {
+      font-size: 11px;
+      line-height: 16px;
+      font-weight: 500;
+      color: var(--primary);
+    }
+
+    /* ── Section header ─────────────────────────────────────────────── */
+    .section-header {
+      font-size: 14px;
+      line-height: 20px;
+      font-weight: 500;
+      color: var(--on-surface-variant);
+      padding: 8px 0 4px 0;
+    }
+
+    /* ── Balance list ──────────────────────────────────────────────── */
+    .balance-list {
+      background: var(--surface-container);
+      border-radius: var(--radius-md);
+      overflow: hidden;
+    }
+
+    .balance-row {
+      display: flex;
+      align-items: center;
+      min-height: 56px;
+      padding: 14px 16px;
+      border-bottom: 1px solid var(--outline-variant);
+    }
+    .balance-row:last-child { border-bottom: none; }
+
+    .balance-type {
+      flex: 1;
+      font-size: 16px;
+      line-height: 24px;
+      font-weight: 400;
+      color: var(--on-surface);
+    }
+
+    .balance-amount {
+      font-family: 'Roboto Mono', monospace;
+      font-size: 16px;
+      line-height: 24px;
+      font-weight: 500;
+      color: var(--primary);
+    }
+
+    /* ── Chip row ───────────────────────────────────────────────────── */
+    .chip-row {
+      display: flex;
+      gap: 8px;
+      overflow-x: auto;
+      padding: 2px 0 6px 0;
+      scrollbar-width: none;
+    }
+    .chip-row::-webkit-scrollbar { display: none; }
+
+    .chip {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      padding: 8px 16px 8px 12px;
+      border: 1px solid var(--outline);
+      border-radius: var(--radius-full);
+      cursor: pointer;
+      white-space: nowrap;
+      background: transparent;
+      color: var(--on-surface);
+      font-family: 'Roboto', sans-serif;
+      font-size: 14px;
+      font-weight: 500;
+      flex-shrink: 0;
+      transition: background 150ms;
+      text-decoration: none;
+      min-height: 32px;
+    }
+    .chip:hover  { background: rgba(38,100,137,0.08); }
+    .chip:active { background: rgba(38,100,137,0.12); }
+    .chip .material-symbols-outlined {
+      font-size: 18px;
+      color: var(--primary);
+      font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 20;
+    }
+
+    /* ── Bottom Navigation ─────────────────────────────────────────── */
+    .bottom-nav {
+      height: var(--bottom-nav-h);
+      background: var(--surface-container);
+      border-top: 1px solid var(--outline-variant);
+      display: flex;
+      align-items: stretch;
+      flex-shrink: 0;
+      position: fixed;
+      bottom: 0;
+      left: 0;
+      right: 0;
+    }
+
+    .nav-item {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: 4px;
+      cursor: pointer;
+      color: var(--on-surface-variant);
+      padding: 8px 0 12px 0;
+      text-decoration: none;
+    }
+    /* account-detail is a pushed sub-screen — NO active tab per M3 nav spec */
+    .nav-label {
+      font-size: 12px;
+      line-height: 16px;
+      font-weight: 500;
+    }
+
+    /* Active indicator pill — transparent on all tabs (no active tab) */
+    .nav-indicator {
+      width: 64px;
+      height: 32px;
+      background: transparent;
+      border-radius: var(--radius-full);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+  </style>
+</head>
+<body>
+
+  <!-- ═══ TOP APP BAR ════════════════════════════════════════════════════ -->
+  <header class="top-app-bar" role="banner">
+    <button class="icon-btn"
+            type="button"
+            aria-label="Navigate back to accounts list"
+            data-component-id="back_button"
+            data-component-type="icon_button"
+            data-nav-to="accounts"
+            data-nav-type="pop">
+      <span class="material-symbols-outlined" aria-hidden="true">arrow_back</span>
+    </button>
+    <h1 class="top-bar-title">Everyday Current</h1>
+  </header>
+
+  <!-- ═══ SCROLLABLE CONTENT ═════════════════════════════════════════════ -->
+  <main class="content-area" role="main">
+
+    <!-- Account header card -->
+    <div class="card"
+         role="region"
+         aria-label="Account details"
+         data-component-type="card"
+         data-component-id="account_header_card"
+         data-component-variant="elevated">
+
+      <p class="acct-subtype"
+         data-component-type="text"
+         data-component-id="account_subtype_label"
+         aria-label="Account type">CurrentAccount</p>
+
+      <p class="acct-nickname"
+         data-component-type="text"
+         data-component-id="account_nickname">Everyday Current</p>
+
+      <p class="acct-id"
+         data-component-type="text"
+         data-component-id="account_identification"
+         aria-label="Account number">40-05-15 12345678</p>
+
+      <div class="acct-meta-row">
+        <span class="acct-badge"
+              data-component-type="text"
+              data-component-id="account_currency">GBP</span>
+        <span class="acct-badge mono"
+              data-component-type="text"
+              data-component-id="account_servicer">MIDLGB2105V</span>
+      </div>
+
+      <p class="acct-last-updated"
+         data-component-type="text"
+         data-component-id="account_last_updated">Last updated 28 Jun 2026, 18:30 UTC</p>
+    </div>
+
+    <!-- Open Banking trust badge -->
+    <div class="card-outlined"
+         role="note"
+         aria-label="This account data is secured via regulated UK Open Banking"
+         data-component-type="card"
+         data-component-id="open_banking_badge"
+         data-component-variant="outlined">
+      <div class="ob-inner">
+        <div class="ob-dot" aria-hidden="true"></div>
+        <span class="ob-label"
+              data-component-type="text"
+              data-component-id="open_banking_badge_text">Secured via UK Open Banking</span>
+      </div>
+    </div>
+
+    <!-- Balances section header -->
+    <h2 class="section-header"
+        data-component-type="section_header"
+        data-component-id="balances_header"
+        aria-label="Account balances section">Balances</h2>
+
+    <!-- Balances list — 3 OBCashBalance3 rows from demo-data.yaml -->
+    <div class="balance-list"
+         role="list"
+         aria-label="Balance types list"
+         data-component-type="list"
+         data-component-id="balances_list">
+
+      <div class="balance-row"
+           role="listitem"
+           aria-label="InterimAvailable balance: 2847.63 GBP"
+           data-component-type="list_item"
+           data-component-id="balance_row_interimavailable">
+        <span class="balance-type">InterimAvailable</span>
+        <span class="balance-amount">2,847.63 GBP</span>
+      </div>
+
+      <div class="balance-row"
+           role="listitem"
+           aria-label="InterimBooked balance: 2810.04 GBP"
+           data-component-type="list_item"
+           data-component-id="balance_row_interimbooked">
+        <span class="balance-type">InterimBooked</span>
+        <span class="balance-amount">2,810.04 GBP</span>
+      </div>
+
+      <div class="balance-row"
+           role="listitem"
+           aria-label="OpeningBooked balance: 3150.00 GBP"
+           data-component-type="list_item"
+           data-component-id="balance_row_openingbooked">
+        <span class="balance-type">OpeningBooked</span>
+        <span class="balance-amount">3,150.00 GBP</span>
+      </div>
+
+    </div>
+
+    <!-- Explore section header -->
+    <h2 class="section-header"
+        data-component-type="section_header"
+        data-component-id="actions_header"
+        aria-label="Account navigation options">Explore</h2>
+
+    <!-- Action chips row — 7 chips including new Nearby ATMs -->
+    <div class="chip-row"
+         role="group"
+         aria-label="Navigate to account sub-screens"
+         data-component-type="chip_row"
+         data-component-id="action_chips">
+
+      <span class="chip"
+            role="button"
+            tabindex="0"
+            aria-label="View transactions for this account"
+            data-component-type="chip"
+            data-component-id="chip_transactions"
+            data-nav-to="transactions"
+            data-nav-params='{"accountId":"40051512345678"}'>
+        <span class="material-symbols-outlined" aria-hidden="true">receipt_long</span>
+        Transactions
+      </span>
+
+      <span class="chip"
+            role="button"
+            tabindex="0"
+            aria-label="View statements for this account"
+            data-component-type="chip"
+            data-component-id="chip_statements"
+            data-nav-to="statements"
+            data-nav-params='{"accountId":"40051512345678"}'>
+        <span class="material-symbols-outlined" aria-hidden="true">description</span>
+        Statements
+      </span>
+
+      <span class="chip"
+            role="button"
+            tabindex="0"
+            aria-label="View standing orders for this account"
+            data-component-type="chip"
+            data-component-id="chip_standing_orders"
+            data-nav-to="standing-orders"
+            data-nav-params='{"accountId":"40051512345678"}'>
+        <span class="material-symbols-outlined" aria-hidden="true">autorenew</span>
+        Standing Orders
+      </span>
+
+      <span class="chip"
+            role="button"
+            tabindex="0"
+            aria-label="View direct debits for this account"
+            data-component-type="chip"
+            data-component-id="chip_direct_debits"
+            data-nav-to="direct-debits"
+            data-nav-params='{"accountId":"40051512345678"}'>
+        <span class="material-symbols-outlined" aria-hidden="true">subscriptions</span>
+        Direct Debits
+      </span>
+
+      <span class="chip"
+            role="button"
+            tabindex="0"
+            aria-label="View scheduled payments for this account"
+            data-component-type="chip"
+            data-component-id="chip_scheduled_payments"
+            data-nav-to="scheduled-payments"
+            data-nav-params='{"accountId":"40051512345678"}'>
+        <span class="material-symbols-outlined" aria-hidden="true">schedule</span>
+        Scheduled
+      </span>
+
+      <span class="chip"
+            role="button"
+            tabindex="0"
+            aria-label="View beneficiaries for this account"
+            data-component-type="chip"
+            data-component-id="chip_beneficiaries"
+            data-nav-to="beneficiaries"
+            data-nav-params='{"accountId":"40051512345678"}'>
+        <span class="material-symbols-outlined" aria-hidden="true">people</span>
+        Beneficiaries
+      </span>
+
+      <!-- NEW: Nearby ATMs chip — added 2026-06-30 -->
+      <span class="chip"
+            role="button"
+            tabindex="0"
+            aria-label="Find nearby ATMs and branches for this account"
+            data-component-type="chip"
+            data-component-id="chip_atm_locator"
+            data-nav-to="atm-locator"
+            data-nav-params='{"accountId":"40051512345678"}'>
+        <span class="material-symbols-outlined" aria-hidden="true">atm</span>
+        Nearby ATMs
+      </span>
+
+    </div>
+
+  </main>
+
+  <!-- ═══ BOTTOM NAVIGATION — 4 tabs (Home · Accounts · Transactions · More) ═══
+       account-detail is a pushed sub-screen of Accounts; no active tab per M3 spec. -->
+  <nav class="bottom-nav" role="navigation" aria-label="Main navigation">
+
+    <span class="nav-item"
+          role="link"
+          tabindex="0"
+          aria-label="Home"
+          data-nav-to="home"
+          data-nav-type="tab">
+      <span class="nav-indicator">
+        <span class="material-symbols-outlined" aria-hidden="true">home</span>
+      </span>
+      <span class="nav-label">Home</span>
+    </span>
+
+    <span class="nav-item"
+          role="link"
+          tabindex="0"
+          aria-label="Accounts"
+          data-nav-to="accounts"
+          data-nav-type="tab">
+      <span class="nav-indicator">
+        <span class="material-symbols-outlined" aria-hidden="true">account_balance</span>
+      </span>
+      <span class="nav-label">Accounts</span>
+    </span>
+
+    <span class="nav-item"
+          role="link"
+          tabindex="0"
+          aria-label="Transactions"
+          data-nav-to="transactions"
+          data-nav-type="tab">
+      <span class="nav-indicator">
+        <span class="material-symbols-outlined" aria-hidden="true">receipt_long</span>
+      </span>
+      <span class="nav-label">Transactions</span>
+    </span>
+
+    <span class="nav-item"
+          role="link"
+          tabindex="0"
+          aria-label="More"
+          data-nav-to="settings"
+          data-nav-type="tab">
+      <span class="nav-indicator">
+        <span class="material-symbols-outlined" aria-hidden="true">more_horiz</span>
+      </span>
+      <span class="nav-label">More</span>
+    </span>
+
+  </nav>
+
+  <!-- ═══ PREVIEW RUNTIME (preview-runtime.js v1.3.0 — RULE-PROTO-CLICK-002) ═ -->
+  <script>
+  /* preview-runtime.js v1.3.0 — RULE-PROTO-CLICK-002 */
+  (function () {
+    'use strict';
+    if (window.__previewRuntimeInstalled) return;
+    window.__previewRuntimeInstalled = true;
+    function getNavTarget(el) {
+      return el.getAttribute('data-nav-to') || el.getAttribute('data-pdb-nav') || el.getAttribute('data-od-nav') || '';
+    }
+    function getNavType(el) {
+      var t = el.getAttribute('data-nav-type');
+      return (t === 'pop' || t === 'tab' || t === 'replace' || t === 'push') ? t : 'push';
+    }
+    function getNavParams(el) {
+      var raw = el.getAttribute('data-nav-params') || el.getAttribute('data-od-params') || el.getAttribute('data-pdb-params') || '';
+      if (!raw) return null;
+      try { return JSON.parse(raw); } catch (e) { console.warn('[preview-runtime] data-nav-params not JSON:', raw); return null; }
+    }
+    function postNavigate(payload) {
+      if (window.parent && window.parent !== window) {
+        try { window.parent.postMessage(payload, '*'); return; } catch (e) {}
+      }
+      if (window.location && /^https?:|^file:/.test(window.location.protocol)) {
+        try {
+          var url = new URL(window.location.href);
+          url.searchParams.set('screen', payload.to);
+          if (payload.navType && payload.navType !== 'push') url.searchParams.set('navType', payload.navType);
+          window.location.href = url.toString(); return;
+        } catch (e) {}
+      }
+      console.log('[preview-runtime] proto:navigate', payload);
+    }
+    function getElPath(el) {
+      var path = [], cur = el;
+      while (cur && cur.nodeType === 1 && cur.tagName !== 'BODY' && path.length < 5) {
+        var tag = cur.tagName.toLowerCase();
+        var id = cur.id ? '#' + cur.id : '';
+        var cls = cur.className && typeof cur.className === 'string' ? '.' + cur.className.split(/\s+/).slice(0, 2).join('.') : '';
+        path.unshift(tag + id + cls); cur = cur.parentElement;
+      }
+      return path.join(' > ');
+    }
+    function postAction(actionName, params, el) {
+      var payload = { type: 'pdb:action', action: actionName, params: params, el: getElPath(el), timestamp: Date.now() };
+      try { if (window.parent && window.parent !== window) { window.parent.postMessage(payload, '*'); return; } } catch (_) {}
+      console.log('[preview-runtime] pdb:action', payload);
+    }
+    document.addEventListener('click', function (ev) {
+      var t = ev.target;
+      if (!(t instanceof Element)) return;
+      var navEl = t.closest('[data-nav-to],[data-pdb-nav],[data-od-nav]');
+      if (navEl) {
+        var to = getNavTarget(navEl); if (!to) return;
+        ev.preventDefault(); ev.stopPropagation();
+        postNavigate({ type: 'proto:navigate', to: to, navType: getNavType(navEl), actionId: navEl.getAttribute('data-action-id') || null, params: getNavParams(navEl) });
+        return;
+      }
+      var actionEl = t.closest('[data-action]');
+      if (actionEl) {
+        var actionName = actionEl.getAttribute('data-action'); if (!actionName) return;
+        var params = null; try { var r = actionEl.getAttribute('data-action-params'); if (r) params = JSON.parse(r); } catch (_) {}
+        ev.preventDefault(); ev.stopPropagation(); postAction(actionName, params, actionEl);
+      }
+    }, true);
+    document.addEventListener('keydown', function (ev) {
+      if (ev.key !== 'Enter' && ev.key !== ' ') return;
+      var t = ev.target; if (!(t instanceof Element)) return;
+      var navEl = t.closest('[data-nav-to],[data-pdb-nav],[data-od-nav]');
+      if (navEl) {
+        var to = getNavTarget(navEl); if (!to) return; ev.preventDefault();
+        postNavigate({ type: 'proto:navigate', to: to, navType: getNavType(navEl), actionId: navEl.getAttribute('data-action-id') || null, params: getNavParams(navEl) });
+        return;
+      }
+      var actionEl = t.closest('[data-action]');
+      if (actionEl) {
+        var actionName = actionEl.getAttribute('data-action'); if (!actionName) return;
+        var params = null; try { var r = actionEl.getAttribute('data-action-params'); if (r) params = JSON.parse(r); } catch (_) {}
+        ev.preventDefault(); postAction(actionName, params, actionEl);
+      }
+    }, true);
+  })();
+  </script>
+
+</body>
+</html>

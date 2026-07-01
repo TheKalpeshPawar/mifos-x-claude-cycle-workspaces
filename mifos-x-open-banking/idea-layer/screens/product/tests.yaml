@@ -1,0 +1,83 @@
+screen_id: product
+
+scenarios:
+  - id: TC-PROD-001
+    description: "Product terms load and render all sections for HSBC Advance Account (tiered credit interest)"
+    state: content
+    priority: critical
+    given: "Valid PSU access token; HSBC sandbox returns OBReadProduct2 for account 40051512345678 with two credit interest tiers"
+    when: "Screen mounts with accountId=40051512345678"
+    then:
+      - "Product header card shows 'HSBC Advance Account' and type label 'PCA'"
+      - "Product ID caption rendered"
+      - "Fees section: Monthly Maximum Charge shows £0.00"
+      - "Credit Interest section: first tier shows 'Up to £1,000 · paid Monthly' with '0.00% AER'"
+      - "Credit Interest section: second tier shows 'Up to £10,000 · paid Monthly' with '0.15% AER'"
+      - "Overdraft section: Arranged overdraft row shows 39.9% EAR"
+      - "Overdraft section: Unarranged overdraft row shows 49.9% EAR"
+      - "Features section: 6 feature rows each with check_circle icon"
+      - "All section headers and labels render in i18n-resolved text"
+
+  - id: TC-PROD-002
+    description: "Loading state shown while product endpoint is in flight"
+    state: loading
+    priority: critical
+    given: "Slow network; API call in flight"
+    when: "Screen mounts"
+    then:
+      - "Circular progress indicator visible with accessibility label 'Loading product terms'"
+      - "Product sections not rendered"
+      - "Error and empty states not visible"
+
+  - id: TC-PROD-003
+    description: "Error state with Retry button on 403 ReadProducts permission missing"
+    state: error
+    priority: critical
+    given: "Consent does not include ReadProducts; GET /accounts/{id}/product returns 403"
+    when: "Screen mounts"
+    then:
+      - "Error empty_state renders with error_outline icon"
+      - "Title shows 'Could not load product terms'"
+      - "Body shows ViewModel error message: 'Consent does not include ReadProducts.'"
+      - "Retry button visible with label 'Retry'"
+      - "Tapping Retry dispatches retry_load action → re-triggers product_load"
+
+  - id: TC-PROD-004
+    description: "Error state on 401 — access token expired"
+    state: error
+    priority: normal
+    given: "PSU access token has expired; endpoint returns 401"
+    when: "Screen mounts"
+    then:
+      - "Error state renders with message 'Session expired. Please re-authenticate.'"
+      - "Retry button visible"
+
+  - id: TC-PROD-005
+    description: "Empty state for account type with no OBProduct2 entry"
+    state: empty
+    priority: normal
+    given: "Valid PSU access token; account is GlobalMoney type; OBReadProduct2 Data array is empty"
+    when: "Screen mounts"
+    then:
+      - "Empty state renders with info_outline icon (informational variant, not error)"
+      - "Title shows 'No product information'"
+      - "Body shows 'No product data is available for this account.'"
+      - "No Retry button (this is not a retriable error)"
+      - "Product sections (Fees, Credit Interest, Overdraft, Features) not rendered"
+
+  - id: TC-PROD-006
+    description: "Error state on 404 — no product record for AccountId"
+    state: error
+    priority: normal
+    given: "AccountId does not have an associated OBProduct2 record; endpoint returns 404"
+    when: "Screen mounts"
+    then:
+      - "Error state renders with message 'No product data available for this account.'"
+      - "Retry button visible"
+
+  - id: TC-PROD-007
+    description: "Back navigation returns to account-detail"
+    state: content
+    priority: normal
+    when: "User taps back navigation arrow in top app bar"
+    then: "Navigates back to account-detail screen; accountId preserved in back-stack"

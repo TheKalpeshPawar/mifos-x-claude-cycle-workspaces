@@ -1,0 +1,496 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Dev Status — mifos-x-open-banking</title>
+  <style>
+    :root {
+      --primary: #1a237e;
+      --primary-light: #3949ab;
+      --surface: #fafafa;
+      --surface-variant: #f0f0f0;
+      --on-surface: #212121;
+      --on-surface-variant: #616161;
+      --success: #2e7d32;
+      --success-bg: #e8f5e9;
+      --warning: #e65100;
+      --warning-bg: #fff3e0;
+      --pending-bg: #f5f5f5;
+      --border: #e0e0e0;
+      --chip-p0: #1a237e;
+      --chip-p1: #4a148c;
+      --chip-p2: #880e4f;
+      --font: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      font-family: var(--font);
+      background: var(--surface);
+      color: var(--on-surface);
+      line-height: 1.5;
+      padding: 24px;
+    }
+    .header {
+      background: var(--primary);
+      color: #fff;
+      border-radius: 12px;
+      padding: 24px 28px;
+      margin-bottom: 24px;
+    }
+    .header h1 { font-size: 22px; font-weight: 600; margin-bottom: 4px; }
+    .header .meta { font-size: 13px; opacity: 0.8; }
+    .grid { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; margin-bottom: 24px; }
+    @media (max-width: 900px) { .grid { grid-template-columns: 1fr; } }
+    .card {
+      background: #fff;
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      padding: 20px;
+    }
+    .card h2 {
+      font-size: 15px;
+      font-weight: 600;
+      color: var(--primary);
+      margin-bottom: 14px;
+      padding-bottom: 8px;
+      border-bottom: 1px solid var(--border);
+    }
+    .pipeline-row {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      padding: 8px 0;
+      border-bottom: 1px solid var(--surface-variant);
+    }
+    .pipeline-row:last-child { border-bottom: none; }
+    .badge {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      width: 24px;
+      height: 24px;
+      border-radius: 50%;
+      font-size: 13px;
+      flex-shrink: 0;
+    }
+    .badge.done { background: var(--success-bg); color: var(--success); }
+    .badge.pending { background: var(--surface-variant); color: var(--on-surface-variant); }
+    .stage-name { font-size: 14px; font-weight: 500; flex: 1; }
+    .stage-note { font-size: 12px; color: var(--on-surface-variant); }
+    .progress-bar-wrap { margin: 16px 0 8px; }
+    .progress-label { font-size: 13px; color: var(--on-surface-variant); margin-bottom: 6px; display: flex; justify-content: space-between; }
+    .progress-bar { height: 8px; background: var(--surface-variant); border-radius: 4px; overflow: hidden; }
+    .progress-fill { height: 100%; background: var(--primary-light); border-radius: 4px; }
+    table { width: 100%; border-collapse: collapse; font-size: 13px; }
+    th { text-align: left; padding: 8px 10px; background: var(--surface-variant); color: var(--on-surface-variant); font-weight: 600; font-size: 11px; text-transform: uppercase; letter-spacing: 0.5px; }
+    td { padding: 8px 10px; border-bottom: 1px solid var(--surface-variant); vertical-align: middle; }
+    tr:last-child td { border-bottom: none; }
+    tr:hover td { background: #f8f9ff; }
+    .chip {
+      display: inline-block;
+      padding: 2px 8px;
+      border-radius: 12px;
+      font-size: 11px;
+      font-weight: 600;
+      color: #fff;
+    }
+    .chip.p0 { background: var(--chip-p0); }
+    .chip.p1 { background: var(--chip-p1); }
+    .chip.p2 { background: var(--chip-p2); }
+    .status-enriched {
+      display: inline-block;
+      padding: 2px 8px;
+      border-radius: 10px;
+      font-size: 11px;
+      font-weight: 600;
+      background: var(--success-bg);
+      color: var(--success);
+    }
+    .status-pending {
+      display: inline-block;
+      padding: 2px 8px;
+      border-radius: 10px;
+      font-size: 11px;
+      font-weight: 600;
+      background: var(--pending-bg);
+      color: var(--on-surface-variant);
+    }
+    .check { color: var(--success); font-size: 15px; }
+    .dash { color: var(--on-surface-variant); }
+    .full-card { grid-column: 1 / -1; }
+    .stat-row { display: flex; gap: 16px; flex-wrap: wrap; margin-top: 12px; }
+    .stat { background: var(--surface-variant); border-radius: 8px; padding: 12px 16px; flex: 1; min-width: 100px; text-align: center; }
+    .stat .num { font-size: 28px; font-weight: 700; color: var(--primary); }
+    .stat .lbl { font-size: 12px; color: var(--on-surface-variant); margin-top: 2px; }
+    .flow-chip {
+      display: inline-block;
+      padding: 2px 8px;
+      border-radius: 10px;
+      font-size: 11px;
+      font-weight: 500;
+      background: #e8eaf6;
+      color: var(--primary);
+      margin-right: 4px;
+    }
+    .next-steps li { font-size: 14px; padding: 6px 0; color: var(--on-surface); }
+    .next-steps li::marker { color: var(--primary); }
+    footer { text-align: center; color: var(--on-surface-variant); font-size: 12px; margin-top: 32px; }
+  </style>
+</head>
+<body>
+
+<div class="header">
+  <h1>Development Status — mifos-x-open-banking</h1>
+  <div class="meta">UK Open Banking AISP · Generated 2026-06-30 by /idea sync STEP 4</div>
+</div>
+
+<!-- Stats row -->
+<div class="grid">
+  <div class="card">
+    <h2>Pipeline Progress</h2>
+    <div class="progress-bar-wrap">
+      <div class="progress-label">
+        <span>4 of 7 stages complete</span>
+        <span>57%</span>
+      </div>
+      <div class="progress-bar"><div class="progress-fill" style="width:57%"></div></div>
+    </div>
+    <div class="pipeline-row">
+      <span class="badge done">✓</span>
+      <span class="stage-name">/idea init</span>
+      <span class="stage-note">Bootstrap complete</span>
+    </div>
+    <div class="pipeline-row">
+      <span class="badge done">✓</span>
+      <span class="stage-name">/idea setup-flows</span>
+      <span class="stage-note">8 flows created</span>
+    </div>
+    <div class="pipeline-row">
+      <span class="badge done">✓</span>
+      <span class="stage-name">/idea-add / idea-heal</span>
+      <span class="stage-note">24 screens scaffolded</span>
+    </div>
+    <div class="pipeline-row">
+      <span class="badge done">✓</span>
+      <span class="stage-name">/idea-enrich</span>
+      <span class="stage-note">All 24 enriched + impl_ready</span>
+    </div>
+    <div class="pipeline-row">
+      <span class="badge pending">○</span>
+      <span class="stage-name">/idea-export</span>
+      <span class="stage-note">Pending</span>
+    </div>
+    <div class="pipeline-row">
+      <span class="badge pending">○</span>
+      <span class="stage-name">/idea approve</span>
+      <span class="stage-note">Human gate — pending</span>
+    </div>
+    <div class="pipeline-row">
+      <span class="badge pending">○</span>
+      <span class="stage-name">/implement</span>
+      <span class="stage-note">Awaiting approve gate</span>
+    </div>
+  </div>
+
+  <div class="card">
+    <h2>Summary Metrics</h2>
+    <div class="stat-row">
+      <div class="stat"><div class="num">24</div><div class="lbl">Total Screens</div></div>
+      <div class="stat"><div class="num">8</div><div class="lbl">Flows</div></div>
+      <div class="stat"><div class="num">19</div><div class="lbl">AIS Endpoints</div></div>
+    </div>
+    <div class="stat-row">
+      <div class="stat"><div class="num">24</div><div class="lbl">Enriched</div></div>
+      <div class="stat"><div class="num">24</div><div class="lbl">Impl Ready</div></div>
+      <div class="stat"><div class="num">~190</div><div class="lbl">Test Scenarios</div></div>
+    </div>
+    <div class="stat-row">
+      <div class="stat"><div class="num">14</div><div class="lbl">P0 Screens</div></div>
+      <div class="stat"><div class="num">6</div><div class="lbl">P1 Screens</div></div>
+      <div class="stat"><div class="num">4</div><div class="lbl">P2 Screens</div></div>
+    </div>
+  </div>
+</div>
+
+<!-- Screen table -->
+<div class="card full-card" style="margin-bottom: 20px;">
+  <h2>Screen Status — P0 Core (14 screens)</h2>
+  <table>
+    <thead>
+      <tr>
+        <th>Screen</th>
+        <th>Cluster</th>
+        <th>Status</th>
+        <th>Quality</th>
+        <th>Impl Ready</th>
+        <th>Archetype</th>
+        <th>Flow</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td><code>user-onboarding</code></td>
+        <td>consent</td>
+        <td><span class="status-enriched">enriched</span></td>
+        <td><span class="dash">—</span></td>
+        <td><span class="check">✓</span></td>
+        <td>onboarding</td>
+        <td><span class="flow-chip">onboarding-consent</span></td>
+      </tr>
+      <tr>
+        <td><code>login</code></td>
+        <td>consent</td>
+        <td><span class="status-enriched">enriched</span></td>
+        <td><span class="dash">—</span></td>
+        <td><span class="check">✓</span></td>
+        <td>login</td>
+        <td><span class="flow-chip">onboarding-consent</span></td>
+      </tr>
+      <tr>
+        <td><code>consent-callback</code></td>
+        <td>consent</td>
+        <td><span class="status-enriched">enriched</span></td>
+        <td><span class="dash">—</span></td>
+        <td><span class="check">✓</span></td>
+        <td>empty_state</td>
+        <td><span class="flow-chip">onboarding-consent</span></td>
+      </tr>
+      <tr>
+        <td><code>accounts</code></td>
+        <td>account</td>
+        <td><span class="status-enriched">enriched</span></td>
+        <td><span class="dash">—</span></td>
+        <td><span class="check">✓</span></td>
+        <td>index_list</td>
+        <td><span class="flow-chip">account-browsing</span></td>
+      </tr>
+      <tr>
+        <td><code>account-detail</code></td>
+        <td>account</td>
+        <td><span class="status-enriched">enriched</span></td>
+        <td><strong>94</strong></td>
+        <td><span class="check">✓</span></td>
+        <td>detail_screen</td>
+        <td><span class="flow-chip">account-browsing</span></td>
+      </tr>
+      <tr>
+        <td><code>product</code></td>
+        <td>account-extras</td>
+        <td><span class="status-enriched">enriched</span></td>
+        <td><span class="dash">—</span></td>
+        <td><span class="check">✓</span></td>
+        <td>detail_screen</td>
+        <td><span class="flow-chip">account-browsing</span></td>
+      </tr>
+      <tr>
+        <td><code>party</code></td>
+        <td>account-extras</td>
+        <td><span class="status-enriched">enriched</span></td>
+        <td><span class="dash">—</span></td>
+        <td><span class="check">✓</span></td>
+        <td>detail_screen</td>
+        <td><span class="flow-chip">account-browsing</span></td>
+      </tr>
+      <tr>
+        <td><code>atm-locator</code></td>
+        <td>account-extras</td>
+        <td><span class="status-enriched">enriched</span></td>
+        <td><strong>89</strong></td>
+        <td><span class="check">✓</span></td>
+        <td>index_list</td>
+        <td><span class="flow-chip">account-browsing</span></td>
+      </tr>
+      <tr>
+        <td><code>transactions</code></td>
+        <td>transactions</td>
+        <td><span class="status-enriched">enriched</span></td>
+        <td><span class="dash">—</span></td>
+        <td><span class="check">✓</span></td>
+        <td>index_list</td>
+        <td><span class="flow-chip">transaction-review</span></td>
+      </tr>
+      <tr>
+        <td><code>transaction-detail</code></td>
+        <td>transactions</td>
+        <td><span class="status-enriched">enriched</span></td>
+        <td><strong>94</strong></td>
+        <td><span class="check">✓</span></td>
+        <td>detail_screen</td>
+        <td><span class="flow-chip">transaction-review</span></td>
+      </tr>
+      <tr>
+        <td><code>consent-list</code></td>
+        <td>consent</td>
+        <td><span class="status-enriched">enriched</span></td>
+        <td><span class="dash">—</span></td>
+        <td><span class="check">✓</span></td>
+        <td>index_list</td>
+        <td><span class="flow-chip">consent-management</span></td>
+      </tr>
+      <tr>
+        <td><code>consent-detail</code></td>
+        <td>consent</td>
+        <td><span class="status-enriched">enriched</span></td>
+        <td><span class="dash">—</span></td>
+        <td><span class="check">✓</span></td>
+        <td>detail_screen</td>
+        <td><span class="flow-chip">consent-management</span></td>
+      </tr>
+      <tr>
+        <td><code>settings</code></td>
+        <td>settings</td>
+        <td><span class="status-enriched">enriched</span></td>
+        <td><span class="dash">—</span></td>
+        <td><span class="check">✓</span></td>
+        <td>settings</td>
+        <td><span class="flow-chip">settings-and-profile</span></td>
+      </tr>
+      <tr>
+        <td><code>profile</code></td>
+        <td>settings</td>
+        <td><span class="status-enriched">enriched</span></td>
+        <td><span class="dash">—</span></td>
+        <td><span class="check">✓</span></td>
+        <td>detail_screen</td>
+        <td><span class="flow-chip">settings-and-profile</span></td>
+      </tr>
+    </tbody>
+  </table>
+</div>
+
+<div class="card full-card" style="margin-bottom: 20px;">
+  <h2>Screen Status — P1 Payments Context (6 screens)</h2>
+  <table>
+    <thead>
+      <tr>
+        <th>Screen</th>
+        <th>Cluster</th>
+        <th>Status</th>
+        <th>Quality</th>
+        <th>Impl Ready</th>
+        <th>Archetype</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td><code>standing-orders</code></td>
+        <td>payments-context</td>
+        <td><span class="status-enriched">enriched</span></td>
+        <td><span class="dash">—</span></td>
+        <td><span class="check">✓</span></td>
+        <td>index_list</td>
+      </tr>
+      <tr>
+        <td><code>direct-debits</code></td>
+        <td>payments-context</td>
+        <td><span class="status-enriched">enriched</span></td>
+        <td><span class="dash">—</span></td>
+        <td><span class="check">✓</span></td>
+        <td>index_list</td>
+      </tr>
+      <tr>
+        <td><code>scheduled-payments</code></td>
+        <td>payments-context</td>
+        <td><span class="status-enriched">enriched</span></td>
+        <td><span class="dash">—</span></td>
+        <td><span class="check">✓</span></td>
+        <td>index_list</td>
+      </tr>
+      <tr>
+        <td><code>beneficiaries</code></td>
+        <td>payments-context</td>
+        <td><span class="status-enriched">enriched</span></td>
+        <td><span class="dash">—</span></td>
+        <td><span class="check">✓</span></td>
+        <td>index_list</td>
+      </tr>
+      <tr>
+        <td><code>statements</code></td>
+        <td>statements</td>
+        <td><span class="status-enriched">enriched</span></td>
+        <td><span class="dash">—</span></td>
+        <td><span class="check">✓</span></td>
+        <td>index_list</td>
+      </tr>
+      <tr>
+        <td><code>statement-detail</code></td>
+        <td>statements</td>
+        <td><span class="status-enriched">enriched</span></td>
+        <td><span class="dash">—</span></td>
+        <td><span class="check">✓</span></td>
+        <td>detail_screen</td>
+      </tr>
+    </tbody>
+  </table>
+</div>
+
+<div class="card full-card" style="margin-bottom: 20px;">
+  <h2>Screen Status — P2 PFM (4 screens)</h2>
+  <table>
+    <thead>
+      <tr>
+        <th>Screen</th>
+        <th>Cluster</th>
+        <th>Status</th>
+        <th>Quality</th>
+        <th>Impl Ready</th>
+        <th>Archetype</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td><code>pfm-dashboard</code></td>
+        <td>pfm</td>
+        <td><span class="status-enriched">enriched</span></td>
+        <td><span class="dash">—</span></td>
+        <td><span class="check">✓</span></td>
+        <td>dashboard</td>
+      </tr>
+      <tr>
+        <td><code>spending-by-category</code></td>
+        <td>pfm</td>
+        <td><span class="status-enriched">enriched</span></td>
+        <td><span class="dash">—</span></td>
+        <td><span class="check">✓</span></td>
+        <td>dashboard</td>
+      </tr>
+      <tr>
+        <td><code>budgets</code></td>
+        <td>pfm</td>
+        <td><span class="status-enriched">enriched</span></td>
+        <td><span class="dash">—</span></td>
+        <td><span class="check">✓</span></td>
+        <td>form</td>
+      </tr>
+      <tr>
+        <td><code>recurring-subscriptions</code></td>
+        <td>pfm</td>
+        <td><span class="status-enriched">enriched</span></td>
+        <td><span class="dash">—</span></td>
+        <td><span class="check">✓</span></td>
+        <td>index_list</td>
+      </tr>
+    </tbody>
+  </table>
+</div>
+
+<!-- Next steps -->
+<div class="card full-card">
+  <h2>Next Steps</h2>
+  <ol class="next-steps" style="margin-left: 20px;">
+    <li><strong>/idea-export</strong> — generate exports/, mockups/, and EXPORT_MATRIX</li>
+    <li><strong>/idea approve</strong> — human gate before implementation begins</li>
+    <li><strong>/kmp-implement</strong> — start with P0 screens (14 screens, FAPI + AIS core)</li>
+    <li><strong>/ci</strong> — run coherence gates after each P0 implementation batch</li>
+    <li><strong>/kmp-implement</strong> P1 — recurring-and-statements (6 screens)</li>
+    <li><strong>/kmp-implement</strong> P2 — pfm-review (4 screens, client-side analytics only)</li>
+  </ol>
+</div>
+
+<footer>
+  mifos-x-open-banking · Dev Status Dashboard · Generated 2026-06-30 · /idea sync STEP 4
+</footer>
+
+</body>
+</html>

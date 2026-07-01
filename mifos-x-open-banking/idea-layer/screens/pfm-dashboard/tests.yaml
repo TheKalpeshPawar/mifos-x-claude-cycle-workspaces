@@ -1,0 +1,93 @@
+screen_id: pfm-dashboard
+
+scenarios:
+  - id: TC-PFM-001
+    description: "Dashboard renders net worth card, spending vs income chart, and top categories in content state"
+    state: content
+    given: "Transactions and balances cached from all 3 HSBC sandbox accounts for last 30 days"
+    when: "Screen mounts and pfm_compute completes"
+    then:
+      - "Net worth card shows £14,955.45"
+      - "Account breakdown rows: Everyday Current £2,847.63 / ISA Saver £12,450.00 / Platinum Mastercard −£342.18"
+      - "Income bar shows £2,400; Spend bar shows £1,840 in error colour"
+      - "Net cashflow label shows '+£560.00 saved this period'"
+      - "Top categories list shows Bills £1,356 (73.7%), Groceries £198 (10.8%), Dining £88 (4.8%)"
+      - "Each category row has a progress_linear bar proportional to percentage_of_spend"
+      - "Three insight cards visible: dining-up, savings-rate, transport-down"
+      - "Quick-access chips: By Category, Budgets, Subscriptions all visible and tappable"
+      - "Period selector shows 30D as selected option"
+
+  - id: TC-PFM-002
+    description: "Loading state shows shimmer while PFM coroutines compute"
+    state: loading
+    given: "Screen just mounted and pfm_compute coroutines are running"
+    when: "Screen is in loading state"
+    then:
+      - "Shimmer component visible with 4 placeholder rows"
+      - "No content, error, or empty components visible"
+      - "Screen is accessible (loading shimmer has accessibility_label)"
+
+  - id: TC-PFM-003
+    description: "Empty state shown when no transactions in local cache"
+    state: empty
+    given: "Transaction cache is empty (accounts exist but no transactions fetched yet)"
+    when: "Screen mounts and pfm_compute returns empty result"
+    then:
+      - "empty_state_view renders with bar_chart icon"
+      - "Title and body text are non-empty"
+      - "No content components (net worth, chart, categories) visible"
+
+  - id: TC-PFM-004
+    description: "Error state shown when computation fails, with retry action"
+    state: error
+    given: "Local cache read throws an exception during pfm_compute"
+    when: "Screen mounts and pfm_compute transitions to error state"
+    then:
+      - "error_view renders with warning_amber icon"
+      - "Error title and body text are non-empty"
+      - "Retry button visible; tapping it dispatches reload_finances action"
+      - "No content or empty components visible"
+
+  - id: TC-PFM-005
+    description: "Tapping a category row navigates to spending-by-category with category param"
+    state: content
+    when: "User taps 'Bills' row in top categories list"
+    then: "Navigates to spending-by-category with params.category = 'Bills'"
+
+  - id: TC-PFM-006
+    description: "Tapping Budgets chip navigates to budgets screen"
+    state: content
+    when: "User taps 'Budgets' chip in quick-access chip group"
+    then: "Navigates to budgets screen"
+
+  - id: TC-PFM-007
+    description: "Tapping Subscriptions chip navigates to recurring-subscriptions"
+    state: content
+    when: "User taps 'Subscriptions' chip in quick-access chip group"
+    then: "Navigates to recurring-subscriptions screen"
+
+  - id: TC-PFM-008
+    description: "Switching period selector re-computes spending and income for new window"
+    state: content
+    when: "User taps '7D' segment on the period selector"
+    then:
+      - "select_period action dispatched with period='7d'"
+      - "Screen briefly shows loading shimmer during re-computation"
+      - "Income and spend bars update to reflect 7-day window data"
+      - "Top categories and insights refresh to match new period"
+      - "Period selector shows 7D as selected"
+
+  - id: TC-PFM-009
+    description: "View all categories button navigates to spending-by-category with no filter"
+    state: content
+    when: "User taps 'View all categories' text button"
+    then: "Navigates to spending-by-category with no category filter param"
+
+  - id: TC-PFM-010
+    description: "Net cashflow label shows overspent sign when spend exceeds income"
+    state: content
+    given: "Demo scenario where period_spend > period_income"
+    when: "pfm_compute completes with negative net cashflow"
+    then:
+      - "net_cashflow_label shows '−£X overspent this period' with error colour"
+      - "Bar chart spend bar visually taller than income bar"

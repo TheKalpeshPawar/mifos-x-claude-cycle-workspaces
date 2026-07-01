@@ -1,0 +1,256 @@
+screen_id: atm-locator
+name: "{strings.atm_locator_title}"
+status: enriched
+quality_score: 89
+initial_state: loading
+
+shell:
+  bottom_navigation_visible: true
+  top_app_bar_visible: true
+  top_app_bar_title: "{strings.atm_locator_title}"
+  top_app_bar_leading: back
+  fab_visible: false
+
+business_logic:
+  kind: crud
+  description: "Calls HSBC Open Data GET /atms (unauthenticated, Ktorfit, 15s timeout). ViewModel stores full ATM list in allAtms, applies three client-side predicates in composition: text search on Name + PostCode, service flags (is24h / hasWheelchairAccess / hasCashDeposit toggled by filter chips), and distance sort via GPS expect/actual with postcode-centroid fallback. The resulting filteredAtms stream drives the list. Card tap emits geo:/maps:// deep-link for directions. No OBIE consent scope or FAPI auth flow involved."
+  external_library_refs:
+    - "hsbc-open-data:atms"
+    - "ktorfit"
+  description_author: claude
+  description_authored_at: "2026-06-29T12:00:00Z"
+
+i18n_coverage: true
+
+status_history:
+  - from: draft
+    to: enriched
+    at: "2026-06-29"
+    by: "/idea-enrich"
+  - from: enriched
+    to: enriched
+    at: "2026-06-29"
+    by: "/idea-enrich (quality push 80→89)"
+    quality_before: 80
+    quality_after: 89
+    changes:
+      - "i18n: all static strings wrapped in {strings.atm_locator_*}"
+      - "chip_row → chip_group (registry compliance)"
+      - "added service_filters chip_group and result_count text"
+      - "atm_card on_click → open_atm_directions action"
+      - "button → filled_button"
+      - "items_source → filteredAtms; PostalAddress field name fix"
+      - "conditional chip visibility via HasWheelchairAccess / HasCashDeposit"
+      - "business_logic description enriched to 388 chars"
+
+states: [loading, content, empty, error]
+
+components:
+  - type: text_field
+    id: location_search
+    label: "{strings.atm_locator_search_label}"
+    placeholder: "{strings.atm_locator_search_placeholder}"
+    leading_icon: search
+    trailing_icon: clear
+    state_binding: [loading, content, empty, error]
+    accessibility_label: "{strings.atm_locator_search_a11y}"
+    test_context:
+      purpose: "User input driving search_atms; filters filteredAtms client-side by Name + PostCode substring"
+      required_fields: []
+      interaction_type: input
+      data_driven: false
+    on_click:
+      action: search_atms
+
+  - type: chip_group
+    id: service_filters
+    scroll_direction: horizontal
+    state_binding: [content, empty]
+    accessibility_label: "{strings.atm_locator_filters_a11y}"
+    test_context:
+      purpose: "Filter chips toggling is24h / hasWheelchairAccess / hasCashDeposit predicates in the ViewModel"
+      required_fields: []
+      interaction_type: filter
+      data_driven: false
+    children:
+      - type: chip
+        id: filter_24h
+        label: "{strings.atm_locator_filter_24h}"
+        variant: filter
+        accessibility_label: "{strings.atm_locator_filter_24h_a11y}"
+        on_click:
+          action: toggle_filter_24h
+      - type: chip
+        id: filter_wheelchair
+        label: "{strings.atm_locator_filter_wheelchair}"
+        variant: filter
+        accessibility_label: "{strings.atm_locator_filter_wheelchair_a11y}"
+        on_click:
+          action: toggle_filter_wheelchair
+      - type: chip
+        id: filter_deposit
+        label: "{strings.atm_locator_filter_deposit}"
+        variant: filter
+        accessibility_label: "{strings.atm_locator_filter_deposit_a11y}"
+        on_click:
+          action: toggle_filter_deposit
+
+  - type: text
+    id: result_count
+    value: "{strings.atm_locator_results_count}"
+    variant: label_medium
+    color: on_surface_variant
+    state_binding: [content]
+    accessibility_label: "{strings.atm_locator_results_count}"
+    params:
+      count: "{filteredAtms.size}"
+    test_context:
+      purpose: "Dynamic result count (e.g. '4 ATMs found') driven by filteredAtms.size"
+      required_fields: [filteredAtms.size]
+      interaction_type: display
+      data_driven: true
+
+  - type: progress_indicator
+    variant: linear
+    state_binding: [loading]
+    accessibility_label: "{strings.atm_locator_progress_a11y}"
+    test_context:
+      purpose: "Linear progress bar shown while HSBC Open Data ATM fetch is in flight (unauthenticated)"
+      required_fields: []
+      interaction_type: display
+      data_driven: false
+
+  - type: list
+    id: atm_list
+    state_binding: [content]
+    scroll_direction: vertical
+    items_source: "{filteredAtms}"
+    accessibility_label: "{strings.atm_locator_list_a11y}"
+    test_context:
+      purpose: "Result list from HSBC Open Data /atms after search + service-filter predicates applied"
+      required_fields: [filteredAtms]
+      interaction_type: display
+      data_driven: true
+    children:
+      - type: card
+        id: atm_card
+        elevation: 1
+        test_context:
+          purpose: "Single ATM record card: name, address, distance, conditional service/accessibility chips"
+          required_fields: [item.Name, item.PostalAddress, item.Distance]
+          interaction_type: tap
+          data_driven: true
+        on_click:
+          action: open_atm_directions
+        children:
+          - type: text
+            id: atm_name
+            variant: title_medium
+            value: "{item.Name}"
+            accessibility_label: "{item.Name}"
+            test_context:
+              purpose: "HSBC Open Data ATM name (e.g. 'Camden Town')"
+              required_fields: [item.Name]
+              interaction_type: display
+              data_driven: true
+          - type: text
+            id: atm_address
+            variant: body_small
+            value: "{item.PostalAddress}"
+            color: on_surface_variant
+            test_context:
+              purpose: "Formatted PostalAddress from Open Data ATM record (street + postcode)"
+              required_fields: [item.PostalAddress]
+              interaction_type: display
+              data_driven: true
+          - type: text
+            id: atm_distance
+            variant: label_small
+            value: "{item.Distance}"
+            color: secondary
+            test_context:
+              purpose: "Distance string (e.g. '0.3 miles') from GPS or postcode centroid; optional"
+              required_fields: [item.Distance]
+              interaction_type: display
+              data_driven: true
+          - type: chip_group
+            id: atm_service_chips
+            scroll_direction: horizontal
+            accessibility_label: "{strings.atm_locator_services_a11y}"
+            test_context:
+              purpose: "Service/accessibility chip group: opening hours always shown; wheelchair + cash deposit shown conditionally"
+              required_fields: [item.OpeningHours]
+              interaction_type: display
+              data_driven: true
+            children:
+              - type: chip
+                id: chip_hours
+                label: "{item.OpeningHours}"
+                icon: access_time
+                accessibility_label: "{strings.atm_locator_hours_a11y}"
+                test_context:
+                  purpose: "Opening hours chip — always shown (e.g. '24 hours' or 'Mon–Sat 08:00–20:00')"
+                  required_fields: [item.OpeningHours]
+                  interaction_type: display
+                  data_driven: true
+              - type: chip
+                id: chip_wheelchair
+                label: "{strings.atm_locator_wheelchair_chip}"
+                icon: accessible
+                visible_when: "{item.HasWheelchairAccess}"
+                accessibility_label: "{strings.atm_locator_wheelchair_a11y}"
+                test_context:
+                  purpose: "Wheelchair accessible chip — shown only when HasWheelchairAccess == true"
+                  required_fields: [item.HasWheelchairAccess]
+                  interaction_type: display
+                  data_driven: true
+              - type: chip
+                id: chip_deposit
+                label: "{strings.atm_locator_deposit_chip}"
+                icon: savings
+                visible_when: "{item.HasCashDeposit}"
+                accessibility_label: "{strings.atm_locator_deposit_a11y}"
+                test_context:
+                  purpose: "Cash deposit chip — shown only when HasCashDeposit == true"
+                  required_fields: [item.HasCashDeposit]
+                  interaction_type: display
+                  data_driven: true
+
+  - type: empty_state
+    id: empty_atms
+    state_binding: [empty]
+    icon: location_off
+    title: "{strings.atm_locator_empty_title}"
+    body: "{strings.atm_locator_empty_body}"
+    accessibility_label: "{strings.atm_locator_empty_a11y}"
+    test_context:
+      purpose: "Shown when HSBC Open Data returns no ATMs or active filter predicates yield zero matches"
+      required_fields: []
+      interaction_type: display
+      data_driven: false
+
+  - type: empty_state
+    id: error_state
+    variant: error
+    state_binding: [error]
+    icon: error_outline
+    title: "{strings.atm_locator_error_title}"
+    body: "{error.message}"
+    accessibility_label: "{strings.atm_locator_error_a11y}"
+    test_context:
+      purpose: "Network error fetching HSBC Open Data; no auth failure possible (unauthenticated endpoint)"
+      required_fields: [error.message]
+      interaction_type: display
+      data_driven: true
+    children:
+      - type: filled_button
+        id: retry_button
+        label: "{strings.atm_locator_retry}"
+        accessibility_label: "{strings.atm_locator_retry_a11y}"
+        test_context:
+          purpose: "Re-triggers atms_load ViewModel action"
+          required_fields: []
+          interaction_type: action
+          data_driven: false
+        on_click:
+          action: retry_load

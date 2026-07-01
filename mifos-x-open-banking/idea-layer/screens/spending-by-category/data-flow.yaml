@@ -1,0 +1,33 @@
+screen_id: spending-by-category
+
+on_mount:
+  - trigger: category_spend_compute
+    description: "Client-derived spend aggregation for the default period (this month). Produces UiState: loading → content | empty | error."
+    steps:
+      - client_derived:
+          description: >
+            Emit UiState.Loading immediately.
+            Filter cached Room transactions for CreditDebitIndicator=Debit and the selected
+            kotlinx-datetime LocalDate range (default: first day of current month to today).
+            Group by auto-assigned category tag (resolved from MerchantCategory or
+            ProprietaryBankTransactionCode via a local MCC-to-category mapping).
+            For each group compute: totalAmount (sum of Amount.Amount), transactionCount,
+            percentageOfTotal (rounded to 1 d.p.), fraction (0.0–1.0) for the progress bar.
+            Sort descending by totalAmount.
+            If result list is empty → UiState.Empty.
+            If Room throws → UiState.Error.
+          store_as: categories
+    on_success: content
+    on_empty: empty
+    on_error: error
+
+on_user_action:
+  - trigger: select_period
+    description: "Re-filter cached transactions for the newly selected period window and recompute category groups. Transitions through loading state before resolving to content | empty | error."
+    re_runs: [category_spend_compute]
+    params:
+      period: "SpendingPeriod enum (this_month | last_month | 3_months)"
+
+  - trigger: retry_compute
+    description: "Re-triggers category_spend_compute with the currently selected period after an error state."
+    re_runs: [category_spend_compute]

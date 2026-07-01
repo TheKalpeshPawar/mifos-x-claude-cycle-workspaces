@@ -1,0 +1,331 @@
+screen_id: statement-detail
+name: "Statement Detail"
+status: enriched
+quality_score: 93
+initial_state: loading
+
+shell:
+  bottom_navigation_visible: true
+  top_app_bar_visible: true
+  top_app_bar_title: "{statement.StatementReference}"
+  top_app_bar_title_fallback: "{strings.stmt_detail.screen_title}"
+  top_app_bar_leading: back
+  fab_visible: false
+
+business_logic:
+  kind: composite
+  description: "Parallel fetch via ktorfit: GET statements/{StatementId} (OBStatement2), GET statements/{StatementId}/transactions (OBReadTransaction6), and GET statements/{StatementId}/file (application/pdf). Statement amounts, fees, and interest render from OBStatement2. PDF streams via ktor-client-download and hands off to the platform share/save sheet. A separate downloadState (Idle|Downloading|Downloaded|DownloadError) drives inline progress indicator and snackbar feedback without blocking the main content state. Empty state fires when statementTransactions returns an empty array — valid OBIE edge case for new accounts."
+  external_library_refs:
+    - "hsbc-obie-ais-v4.0:statements"
+    - "ktor-client-download"
+    - "ktorfit"
+  description_author: claude
+  description_authored_at: "2026-06-29T14:00:00Z"
+
+status_history:
+  - from: draft
+    to: enriched
+    at: "2026-06-29"
+    by: "/idea-enrich"
+
+states: [loading, content, empty, error]
+
+components:
+
+  # ── Loading ──────────────────────────────────────────────────────────────────
+  - type: progress_indicator
+    variant: circular
+    state_binding: [loading]
+    accessibility_label: "{strings.stmt_detail.loading}"
+    test_context:
+      purpose: "Full-screen loading indicator while parallel fetch of OBStatement2 + OBReadTransaction6 is in flight"
+      required_fields: []
+      interaction_type: display
+      data_driven: false
+
+  # ── Period header card ───────────────────────────────────────────────────────
+  - type: card
+    id: statement_header_card
+    state_binding: [content, empty]
+    elevation: 2
+    test_context:
+      purpose: "Period header card showing statement identity fields from OBStatement2"
+      required_fields: [statement.StatementReference, statement.StartDateTime, statement.EndDateTime, statement.Type, statement.CreationDateTime]
+      interaction_type: display
+      data_driven: true
+    children:
+      - type: text
+        id: statement_reference
+        role: overline
+        value: "{statement.StatementReference}"
+        style: labelMedium
+        color: "secondary"
+        test_context:
+          purpose: "Human-readable statement reference (e.g. MAY-2026-STMT)"
+          required_fields: [statement.StatementReference]
+          interaction_type: display
+          data_driven: true
+      - type: text
+        id: statement_period
+        role: title
+        value: "{statement.StartDateTime} – {statement.EndDateTime}"
+        style: titleMedium
+        test_context:
+          purpose: "Statement period range in ISO-8601; formatted by ViewModel to 'dd MMM yyyy – dd MMM yyyy'"
+          required_fields: [statement.StartDateTime, statement.EndDateTime]
+          interaction_type: display
+          data_driven: true
+      - type: text
+        id: statement_type
+        role: body
+        value: "{statement.Type}"
+        style: bodySmall
+        color: "on-surface-variant"
+        test_context:
+          purpose: "OBStatement2 Type field (e.g. RegularPeriodic)"
+          required_fields: [statement.Type]
+          interaction_type: display
+          data_driven: true
+      - type: text
+        id: statement_created
+        role: caption
+        value: "{strings.stmt_detail.created_prefix} {statement.CreationDateTime}"
+        style: labelSmall
+        color: "on-surface-variant"
+        test_context:
+          purpose: "Localized 'Created' prefix followed by statement generation timestamp from HSBC AIS"
+          required_fields: [statement.CreationDateTime]
+          interaction_type: display
+          data_driven: true
+
+  # ── Balances ─────────────────────────────────────────────────────────────────
+  - type: section_header
+    id: balances_header
+    state_binding: [content, empty]
+    label: "{strings.stmt_detail.section.balances}"
+    accessibility_label: "{strings.stmt_detail.section.balances}"
+    test_context:
+      purpose: "Section divider for OBStatement2.StatementAmount[] (OpeningBalance, ClosingBalance)"
+      required_fields: []
+      interaction_type: display
+      data_driven: false
+
+  - type: list
+    id: balances_list
+    state_binding: [content, empty]
+    items_source: "{statement.StatementAmount}"
+    test_context:
+      purpose: "Renders OBStatementAmount2 entries (Type, CreditDebitIndicator, Amount)"
+      required_fields: [statement.StatementAmount]
+      interaction_type: display
+      data_driven: true
+    children:
+      - type: list_item
+        id: balance_row
+        supporting_text: "{item.Type}"
+        trailing_content: "{item.CreditDebitIndicator == 'Credit' ? '' : '-'}{item.Amount.Amount} {item.Amount.Currency}"
+        trailing_style: titleMedium
+        trailing_color: "{item.CreditDebitIndicator == 'Credit' ? 'tertiary' : 'error'}"
+        accessibility_label: "{item.Type}: {item.Amount.Amount} {item.Amount.Currency} {item.CreditDebitIndicator}"
+        test_context:
+          purpose: "Single balance entry; sign and color derived from CreditDebitIndicator (Credit=green, Debit=red)"
+          required_fields: [item.Type, item.CreditDebitIndicator, item.Amount.Amount, item.Amount.Currency]
+          interaction_type: display
+          data_driven: true
+
+  # ── Fees ─────────────────────────────────────────────────────────────────────
+  - type: section_header
+    id: fees_header
+    state_binding: [content, empty]
+    label: "{strings.stmt_detail.section.fees}"
+    accessibility_label: "{strings.stmt_detail.section.fees}"
+    visible_when: "statement.StatementFee.length > 0"
+    test_context:
+      purpose: "Section divider for OBStatement2.StatementFee[]; hidden when array is empty"
+      required_fields: []
+      interaction_type: display
+      data_driven: false
+
+  - type: list
+    id: fees_list
+    state_binding: [content, empty]
+    items_source: "{statement.StatementFee}"
+    visible_when: "statement.StatementFee.length > 0"
+    test_context:
+      purpose: "Renders OBStatementFee1 entries when present (Description, Amount)"
+      required_fields: [statement.StatementFee]
+      interaction_type: display
+      data_driven: true
+    children:
+      - type: list_item
+        id: fee_row
+        supporting_text: "{item.Description}"
+        trailing_content: "{item.Amount.Amount} {item.Amount.Currency}"
+        trailing_style: bodyMedium
+        accessibility_label: "{strings.stmt_detail.a11y.fee_prefix} {item.Description}: {item.Amount.Amount} {item.Amount.Currency}"
+        test_context:
+          purpose: "Single fee entry from OBStatementFee1 (e.g. Monthly maintenance fee £0.00)"
+          required_fields: [item.Description, item.Amount.Amount, item.Amount.Currency]
+          interaction_type: display
+          data_driven: true
+
+  # ── Interest ──────────────────────────────────────────────────────────────────
+  - type: section_header
+    id: interest_header
+    state_binding: [content, empty]
+    label: "{strings.stmt_detail.section.interest}"
+    accessibility_label: "{strings.stmt_detail.section.interest}"
+    visible_when: "statement.StatementInterest.length > 0"
+    test_context:
+      purpose: "Section divider for OBStatement2.StatementInterest[]; hidden when array is empty"
+      required_fields: []
+      interaction_type: display
+      data_driven: false
+
+  - type: list
+    id: interest_list
+    state_binding: [content, empty]
+    items_source: "{statement.StatementInterest}"
+    visible_when: "statement.StatementInterest.length > 0"
+    test_context:
+      purpose: "Renders OBStatementInterest1 entries (Description, Amount)"
+      required_fields: [statement.StatementInterest]
+      interaction_type: display
+      data_driven: true
+    children:
+      - type: list_item
+        id: interest_row
+        supporting_text: "{item.Description}"
+        trailing_content: "{item.Amount.Amount} {item.Amount.Currency}"
+        trailing_style: bodyMedium
+        trailing_color: "{item.CreditDebitIndicator == 'Credit' ? 'tertiary' : 'error'}"
+        accessibility_label: "{strings.stmt_detail.a11y.interest_prefix} {item.Description}: {item.Amount.Amount} {item.Amount.Currency}"
+        test_context:
+          purpose: "Single interest entry (e.g. In-credit interest £0.21)"
+          required_fields: [item.Description, item.Amount.Amount, item.Amount.Currency]
+          interaction_type: display
+          data_driven: true
+
+  # ── Transactions ──────────────────────────────────────────────────────────────
+  - type: section_header
+    id: transactions_header
+    state_binding: [content, empty]
+    label: "{strings.stmt_detail.section.transactions}"
+    accessibility_label: "{strings.stmt_detail.section.transactions}"
+    test_context:
+      purpose: "Section divider for statement transactions from OBReadTransaction6"
+      required_fields: []
+      interaction_type: display
+      data_driven: false
+
+  - type: list
+    id: statement_txns_list
+    state_binding: [content]
+    scroll_direction: vertical
+    items_source: "{statementTransactions}"
+    test_context:
+      purpose: "Scrollable list of OBTransaction6 entries within the statement period"
+      required_fields: [statementTransactions]
+      interaction_type: display
+      data_driven: true
+    children:
+      - type: list_item
+        id: statement_txn_row
+        overline: "{item.BookingDateTime}"
+        supporting_text: "{item.TransactionInformation}"
+        trailing_content: "{item.CreditDebitIndicator == 'Credit' ? '+' : '-'}{item.Amount.Amount} {item.Amount.Currency}"
+        trailing_style: titleSmall
+        trailing_color: "{item.CreditDebitIndicator == 'Credit' ? 'tertiary' : 'error'}"
+        accessibility_label: "{item.TransactionInformation} {item.CreditDebitIndicator} {item.Amount.Amount} {item.Amount.Currency} {strings.stmt_detail.a11y.on_date} {item.BookingDateTime}"
+        test_context:
+          purpose: "Single OBTransaction6 row; overline=date, credit=tertiary/green, debit=error/red"
+          required_fields: [item.TransactionInformation, item.CreditDebitIndicator, item.Amount.Amount, item.Amount.Currency, item.BookingDateTime]
+          interaction_type: display
+          data_driven: true
+
+  # ── Empty transactions state ───────────────────────────────────────────────────
+  - type: empty_state
+    id: empty_txns_state
+    state_binding: [empty]
+    icon: receipt_long
+    title: "{strings.stmt_detail.empty_txns.title}"
+    body: "{strings.stmt_detail.empty_txns.body}"
+    accessibility_label: "{strings.stmt_detail.empty_txns.title}"
+    test_context:
+      purpose: "Shown when statementTransactions returns empty array — valid for new or inactive accounts in the period"
+      required_fields: []
+      interaction_type: display
+      data_driven: false
+
+  # ── Download PDF button ────────────────────────────────────────────────────────
+  - type: button
+    id: download_pdf_button
+    variant: outlined
+    label: "{strings.stmt_detail.action.download_pdf}"
+    icon: download
+    state_binding: [content, empty]
+    enabled_when: "downloadState != Downloading"
+    accessibility_label: "{strings.stmt_detail.a11y.download_pdf}"
+    test_context:
+      purpose: "Triggers download_statement_pdf; calls GET statement-file (Accept: application/pdf) via ktor-client-download; disabled while Downloading"
+      required_fields: []
+      interaction_type: action
+      data_driven: false
+    on_click:
+      action: download_statement_pdf
+
+  # ── Download in-progress indicator ────────────────────────────────────────────
+  - type: progress_indicator
+    id: download_progress
+    variant: linear
+    state_binding: [content, empty]
+    visible_when: "downloadState == Downloading"
+    accessibility_label: "{strings.stmt_detail.downloading}"
+    test_context:
+      purpose: "Indeterminate linear progress shown beneath Download PDF button while ktor streams the PDF binary"
+      required_fields: []
+      interaction_type: display
+      data_driven: false
+
+  # ── Download result snackbar ───────────────────────────────────────────────────
+  - type: snackbar
+    id: download_result_snackbar
+    state_binding: [content, empty]
+    visible_when: "downloadState == Downloaded || downloadState == DownloadError"
+    message_success: "{strings.stmt_detail.download_success}"
+    message_error: "{strings.stmt_detail.download_error}"
+    auto_dismiss_ms: 4000
+    accessibility_label: "{strings.stmt_detail.download_success}"
+    test_context:
+      purpose: "Transient snackbar confirming PDF saved to device or reporting download error after ktor-client-download completes"
+      required_fields: [downloadState]
+      interaction_type: display
+      data_driven: true
+
+  # ── Error state ────────────────────────────────────────────────────────────────
+  - type: empty_state
+    id: error_state
+    variant: error
+    state_binding: [error]
+    icon: error_outline
+    title: "{strings.stmt_detail.error.title}"
+    body: "{error.message}"
+    accessibility_label: "{strings.stmt_detail.error.a11y}"
+    test_context:
+      purpose: "Full-screen error shown on 401/403/404/network error from statement or statement-transactions endpoints"
+      required_fields: [error.message]
+      interaction_type: display
+      data_driven: true
+    children:
+      - type: button
+        id: retry_button
+        variant: filled
+        label: "{strings.stmt_detail.action.retry}"
+        accessibility_label: "{strings.stmt_detail.a11y.retry}"
+        test_context:
+          purpose: "Re-triggers retry_load which delegates to statementDetailLoad"
+          required_fields: []
+          interaction_type: action
+          data_driven: false
+        on_click:
+          action: retry_load

@@ -1,0 +1,185 @@
+screen_id: recurring-subscriptions
+name: "Recurring Payments"
+status: enriched
+initial_state: loading
+quality_score: 94
+
+shell:
+  bottom_navigation_visible: true
+  top_app_bar_visible: true
+  top_app_bar_title: "{strings.recurring_subscriptions.title}"
+  top_app_bar_leading: back
+  fab_visible: false
+
+business_logic:
+  kind: calculation
+  description: "Detects recurring payments in cached AIS transactions using kotlinx-datetime period comparisons. Groups by normalised merchant name, identifies weekly/fortnightly/monthly/annual intervals (>= 2 occurrences, ±5 day tolerance), and projects next date by adding the detected interval to the most recent transaction. Monthly cost normalises cadences to 30-day equivalent (annual amount / 12). No network calls; reads from the local DataStore transaction cache written by the transactions feature."
+  external_library_refs:
+    - "kotlinx-datetime"
+  description_author: claude
+  description_authored_at: "2026-06-29T12:00:00Z"
+
+states: [loading, content, empty, error]
+
+components:
+  # ── Loading skeleton ─────────────────────────────────────────────
+  - type: shimmer
+    id: loading_skeleton
+    state_binding: [loading]
+    rows: 5
+    accessibility_label: "{strings.recurring_subscriptions.loading_desc}"
+    test_context:
+      purpose: "Placeholder shimmer while recurring-pattern algorithm runs over cached transactions"
+      required_fields: []
+      interaction_type: display
+      data_driven: false
+
+  # ── Detected notice banner ───────────────────────────────────────
+  - type: banner
+    id: detected_notice
+    state_binding: [content]
+    message: "{strings.recurring_subscriptions.detected_notice}"
+    icon: info_outline
+    accessibility_label: "{strings.recurring_subscriptions.detected_notice_a11y}"
+    test_context:
+      purpose: "Informs user these are in-app detections, distinct from bank-registered standing orders and direct debits"
+      required_fields: []
+      interaction_type: display
+      data_driven: false
+
+  # ── Summary header card ──────────────────────────────────────────
+  - type: card
+    id: summary_card
+    state_binding: [content]
+    elevation: 1
+    test_context:
+      purpose: "Summary of total monthly cost and detected subscription count; verify computed values"
+      required_fields: [summary.total_monthly, summary.count]
+      interaction_type: display
+      data_driven: true
+    children:
+      - type: text
+        id: summary_label
+        value: "{strings.recurring_subscriptions.summary_label}"
+        style: labelMedium
+        color: "secondary"
+        test_context:
+          purpose: "Static label for total monthly cost metric"
+          required_fields: []
+          interaction_type: display
+          data_driven: false
+
+      - type: text
+        id: summary_amount
+        value: "£{summary.total_monthly}"
+        style: headlineMedium
+        color: "error"
+        i18n: skip
+        i18n_skip_reason: "currency_format_gbp — GBP symbol is locale-fixed for this UK-only AISP app"
+        accessibility_label: "{strings.recurring_subscriptions.summary_amount_a11y}"
+        test_context:
+          purpose: "GBP total normalised to monthly cadence across all detected subscriptions"
+          required_fields: [summary.total_monthly]
+          interaction_type: display
+          data_driven: true
+
+      - type: text
+        id: summary_count
+        value: "{summary.count} {strings.recurring_subscriptions.subscriptions_suffix}"
+        style: bodySmall
+        color: "on-surface-variant"
+        test_context:
+          purpose: "Count of detected recurring patterns; verify matches length of subscriptions list"
+          required_fields: [summary.count]
+          interaction_type: display
+          data_driven: true
+
+  # ── Subscriptions list ───────────────────────────────────────────
+  - type: list
+    id: subscriptions_list
+    state_binding: [content]
+    items_source: "{subscriptions}"
+    test_context:
+      purpose: "List of detected recurring payment entries, sorted by monthly cost descending"
+      required_fields: [subscriptions]
+      interaction_type: action
+      data_driven: true
+    children:
+      - type: list_item
+        id: subscription_row
+        label: "{item.merchant}"
+        supporting_text: "{item.cadence} · {strings.recurring_subscriptions.next_prefix} {item.next_date}"
+        trailing_content: "£{item.amount}"
+        icon: autorenew
+        accessibility_label: "{item.merchant}: £{item.amount} {item.cadence}, {strings.recurring_subscriptions.next_prefix} {item.next_date}"
+        on_click:
+          action: show_merchant_transaction_history
+          params:
+            merchant: "{item.merchant}"
+        test_context:
+          purpose: "Subscription row; tap drills into merchant-filtered transaction history"
+          required_fields: [item.merchant, item.cadence, item.next_date, item.amount]
+          interaction_type: action
+          data_driven: true
+        children:
+          - type: chip
+            id: detected_badge
+            label: "{strings.recurring_subscriptions.detected_badge}"
+            variant: assist
+            accessibility_label: "{strings.recurring_subscriptions.detected_badge_a11y}"
+            test_context:
+              purpose: "Visual badge indicating pattern was detected in-app, not sourced from bank API"
+              required_fields: []
+              interaction_type: display
+              data_driven: false
+
+  # ── Empty state ──────────────────────────────────────────────────
+  - type: empty_state
+    id: empty_state
+    state_binding: [empty]
+    icon: autorenew
+    title: "{strings.recurring_subscriptions.empty_title}"
+    body: "{strings.recurring_subscriptions.empty_body}"
+    accessibility_label: "{strings.recurring_subscriptions.empty_a11y}"
+    test_context:
+      purpose: "Empty state when recurrence algorithm finds no qualifying patterns (< 2 occurrences)"
+      required_fields: []
+      interaction_type: display
+      data_driven: false
+
+  # ── Error state ──────────────────────────────────────────────────
+  - type: error_state
+    id: error_state
+    state_binding: [error]
+    icon: error_outline
+    title: "{strings.recurring_subscriptions.error_title}"
+    body: "{strings.recurring_subscriptions.error_body}"
+    accessibility_label: "{strings.recurring_subscriptions.error_a11y}"
+    test_context:
+      purpose: "Error state when DataStore read or deserialisation fails; user can retry"
+      required_fields: []
+      interaction_type: action
+      data_driven: false
+    children:
+      - type: outlined_button
+        id: retry_button
+        label: "{strings.recurring_subscriptions.retry}"
+        accessibility_label: "{strings.recurring_subscriptions.retry_a11y}"
+        on_click:
+          action: retry_load_subscriptions
+        test_context:
+          purpose: "Triggers a fresh loadSubscriptions() call; transitions back to loading state"
+          required_fields: []
+          interaction_type: action
+          data_driven: false
+
+status_history:
+  - from: draft
+    to: enriched
+    at: "2026-06-29"
+    by: "/idea-enrich"
+  - from: enriched
+    to: enriched
+    at: "2026-06-29"
+    by: "/idea-enrich (quality push)"
+    note: "Added loading/error states, full i18n wrapping, on_click drill-through, shimmer skeleton, error_state with retry"

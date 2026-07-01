@@ -1,0 +1,227 @@
+screen_id: accounts
+name: "Accounts"
+status: enriched
+quality_score: 94
+initial_state: loading
+i18n: true
+
+status_history:
+  - { from: draft, to: enriched, at: "2026-06-29", by: "/idea-enrich" }
+  - { from: enriched, to: enriched, at: "2026-06-29", by: "/idea-enrich (quality push)", quality_before: 88, quality_after: 94 }
+
+business_logic:
+  kind: crud
+  description: "Lists authorised accounts via GET /accounts (hsbc-obie-ais-v4.0:accounts) and fans out parallel balance fetches per AccountId via GET /accounts/{AccountId}/balances (hsbc-obie-ais-v4.0:balances) using ktorfit suspend functions with kotlin.coroutines:async/awaitAll. Merges OBReadAccount6 + OBReadBalance1 into AccountWithBalance rows (Nickname, AccountSubType, Currency, InterimAvailable OBCashBalance3 Amount). Checks cached consent ExpirationDateTime: if < 30 days remaining, transitions to consent_expiring state surfacing reconfirmation banner. CreditCard accounts with CreditDebitIndicator=Debit render balance in error colour with 'Balance owed' badge. GlobalMoney/GlobalWallet cards render ISO currency code. Chip group filters AccountWithBalance list by AccountSubType client-side with no API round-trip. Total net balance across GBP accounts displayed in stat_block at top of content. Card tap navigates to account-detail with AccountId."
+  external_library_refs:
+    - "ktorfit"
+    - "hsbc-obie-ais-v4.0:accounts"
+    - "hsbc-obie-ais-v4.0:balances"
+    - "kotlin.coroutines:async/awaitAll"
+  description_author: claude
+  description_authored_at: "2026-06-29T12:00:00Z"
+
+shell:
+  bottom_navigation_visible: true
+  top_app_bar_visible: true
+  top_app_bar_title: "{strings.accounts.screen.title}"
+  fab_visible: false
+
+states: [loading, content, consent_expiring, empty, error]
+
+components:
+
+  # ── LOADING STATE — shimmer card placeholders ──────────────────────
+  - type: stack
+    id: loading_skeleton
+    state_binding: [loading]
+    direction: vertical
+    gap: spacing.sm
+    padding: spacing.md
+    accessibility_label: "{strings.accounts.loading.description}"
+    children:
+      - type: shimmer
+        id: skeleton_card_1
+        variant: card
+        height: "96dp"
+        corner_radius: radius.md
+      - type: shimmer
+        id: skeleton_card_2
+        variant: card
+        height: "96dp"
+        corner_radius: radius.md
+      - type: shimmer
+        id: skeleton_card_3
+        variant: card
+        height: "96dp"
+        corner_radius: radius.md
+
+  # ── CONTENT: total balance summary ────────────────────────────────
+  - type: stat_block
+    id: total_balance_summary
+    state_binding: [content, consent_expiring]
+    label: "{strings.accounts.total_balance.label}"
+    value: "{totalBalanceFormatted}"
+    value_style: headlineLarge
+    sublabel: "{strings.accounts.total_balance.account_count}"
+    padding: { top: spacing.md, horizontal: spacing.md, bottom: spacing.xs }
+    accessibility_label: "{strings.accounts.total_balance.label}"
+
+  # ── CONTENT: account type filter chips ────────────────────────────
+  - type: chip_group
+    id: account_type_filter
+    state_binding: [content, consent_expiring]
+    selection_mode: single
+    scroll_direction: horizontal
+    padding: { horizontal: spacing.md, bottom: spacing.sm }
+    accessibility_label: "{strings.accounts.filter.label}"
+    chips:
+      - id: filter_all
+        label: "{strings.accounts.filter.all_label}"
+        selected_by_default: true
+        on_click:
+          action: filter_accounts
+          params:
+            subtype: null
+      - id: filter_current
+        label: "{strings.accounts.filter.current_label}"
+        on_click:
+          action: filter_accounts
+          params:
+            subtype: "CurrentAccount"
+      - id: filter_savings
+        label: "{strings.accounts.filter.savings_label}"
+        on_click:
+          action: filter_accounts
+          params:
+            subtype: "Savings"
+      - id: filter_credit
+        label: "{strings.accounts.filter.credit_label}"
+        on_click:
+          action: filter_accounts
+          params:
+            subtype: "CreditCard"
+      - id: filter_global
+        label: "{strings.accounts.filter.global_label}"
+        on_click:
+          action: filter_accounts
+          params:
+            subtype: "GlobalMoney,GlobalWallet"
+
+  # ── CONTENT: account list ─────────────────────────────────────────
+  - type: list
+    id: accounts_list
+    state_binding: [content, consent_expiring]
+    scroll_direction: vertical
+    padding: { horizontal: spacing.md }
+    gap: spacing.sm
+    items_source: "{filteredAccounts}"
+    children:
+      - type: card
+        id: account_card
+        elevation: 1
+        padding: spacing.md
+        corner_radius: radius.md
+        accessibility_label: "{strings.accounts.card.accessibility.account_card}"
+        children:
+          - type: stack
+            direction: horizontal
+            alignment: center_vertical
+            gap: spacing.md
+            children:
+              - type: icon
+                id: account_type_icon
+                name: "{item.accountTypeIcon}"
+                size: icon.lg
+                color: "primary"
+                decorative: true
+              - type: stack
+                id: account_text_column
+                direction: vertical
+                gap: spacing.xs
+                weight: 1
+                children:
+                  - type: text
+                    id: account_subtype
+                    value: "{item.AccountSubType}"
+                    style: labelSmall
+                    color: "secondary"
+                  - type: text
+                    id: account_nickname
+                    value: "{item.Nickname}"
+                    style: titleMedium
+                  - type: text
+                    id: account_number
+                    value: "{item.Account.Identification}"
+                    style: bodySmall
+                    color: "on-surface-variant"
+                    accessibility_label: "{strings.accounts.card.account_number.label}"
+              - type: stack
+                id: balance_column
+                direction: vertical
+                alignment: end
+                gap: spacing.xxs
+                children:
+                  - type: text
+                    id: balance_amount
+                    value: "{item.balanceFormatted}"
+                    style: headlineSmall
+                    color: "{item.balanceColor}"
+                    alignment: end
+                  - type: badge
+                    id: balance_type_badge
+                    label: "{item.balanceTypeLabel}"
+                    variant: tonal
+                    visible_when: "{item.showBalanceBadge}"
+        on_click:
+          action: navigate_account_detail
+          target: account-detail
+          params:
+            accountId: "{item.AccountId}"
+
+  # ── CONSENT EXPIRING: warning banner ──────────────────────────────
+  - type: banner
+    id: consent_expiry_banner
+    state_binding: [consent_expiring]
+    variant: warning
+    icon: warning_amber
+    title: "{strings.accounts.consent_expiring.banner_title}"
+    body: "{strings.accounts.consent_expiring.banner_body}"
+    accessibility_label: "{strings.accounts.consent_expiring.banner_title}"
+    sticky: bottom
+    actions:
+      - type: button
+        id: reconfirm_button
+        variant: text
+        label: "{strings.accounts.consent_expiring.action_label}"
+        accessibility_label: "{strings.accounts.consent_expiring.action_label}"
+        on_click:
+          action: navigate_reconfirm_consent
+          target: consent-detail
+          params:
+            consentId: "{activeConsentId}"
+
+  # ── EMPTY STATE ────────────────────────────────────────────────────
+  - type: empty_state
+    id: empty_accounts
+    state_binding: [empty]
+    icon: account_balance_wallet
+    title: "{strings.accounts.empty.title}"
+    body: "{strings.accounts.empty.body}"
+    accessibility_label: "{strings.accounts.empty.title}"
+
+  # ── ERROR STATE ────────────────────────────────────────────────────
+  - type: error_state
+    id: error_accounts
+    state_binding: [error]
+    icon: error_outline
+    title: "{strings.accounts.error.title}"
+    body: "{error.userMessage}"
+    accessibility_label: "{strings.accounts.error.title}"
+    children:
+      - type: button
+        id: retry_button
+        variant: filled
+        label: "{strings.accounts.error.retry_button}"
+        accessibility_label: "{strings.accounts.error.accessibility.retry}"
+        on_click:
+          action: retry_load

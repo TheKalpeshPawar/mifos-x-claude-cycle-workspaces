@@ -1,0 +1,81 @@
+feature: party
+status: enriched
+cluster: account-extras
+acceptance_refs: [FR-007]
+scaffolded_by: "/idea-heal"
+enriched_by: "/idea-enrich"
+enriched_at: "2026-06-29"
+archetype: detail_screen
+description: "Account holder / PSU details screen, gated by ReadParty permission. Shows name, full legal name, party type (Sole/JointSole), one or more OBPostalAddress8 entries, email, phone, and mobile. Calls both /party (OBReadParty2) and /parties (OBReadParty3) in parallel via ktorfit and merges results by PartyId. Five distinct states: loading (in-flight), content (merged party rendered), empty (200 but no party records), error (401/network — Retry CTA), consent_required (403 PermissionNotGranted — Re-authorise CTA navigating to the consent-list (Manage consents) screen to reconfirm the consent)."
+has_ui: true
+has_server: false
+
+metadata:
+  category: crud
+  implementation_ready: true
+  impl_ready_at: "2026-06-29"
+  impl_ready_schema: "v2"
+
+contracts: []
+
+libraries:
+  - capability: rest-client
+    library: ktorfit
+    version: latest
+    targets: [android, ios, desktop, web]
+
+vm_actions:
+  - name: party_load
+    signature: "suspend fun partyLoad(accountId: String)"
+    state_mutations:
+      - "uiState = PartyUiState.Loading"
+      - "uiState = PartyUiState.Content(party)"
+      - "uiState = PartyUiState.Error(message, PartyErrorCode.AUTH)"
+      - "uiState = PartyUiState.Error(message, PartyErrorCode.NETWORK)"
+      - "uiState = PartyUiState.Empty"
+      - "uiState = PartyUiState.ConsentRequired"
+    side_effects:
+      - "GET /accounts/{accountId}/party → OBReadParty2 (parallel)"
+      - "GET /accounts/{accountId}/parties → OBReadParty3 (parallel)"
+      - "Merge results by PartyId into unified OBParty2; pick first on conflict"
+    error_handling:
+      http_401: "emit PartyUiState.Error('Session expired. Please re-authenticate.', PartyErrorCode.AUTH)"
+      http_403: "emit PartyUiState.ConsentRequired"
+      http_404: "emit PartyUiState.Empty"
+      http_200_empty: "emit PartyUiState.Empty when Data.Party absent and Data.Party[] is empty"
+      network: "emit PartyUiState.Error(e.localizedMessage, PartyErrorCode.NETWORK)"
+
+  - name: retry_load
+    signature: "suspend fun retryLoad(accountId: String)"
+    state_mutations:
+      - "delegates to partyLoad(accountId)"
+    side_effects: []
+    error_handling: {}
+
+  - name: reauthorise
+    signature: "fun navigateToConsent()"
+    state_mutations: []
+    side_effects:
+      - "Navigate to consent-list (Manage consents) screen"
+    error_handling: {}
+
+error_cases:
+  - code: HTTP_401
+    description: "PSU access token expired; re-authentication required."
+  - code: HTTP_403_PERMISSION_NOT_GRANTED
+    description: "Consent scope does not include ReadParty; guide user to re-consent flow via the consent-list (Manage consents) screen."
+  - code: HTTP_404
+    description: "No OBParty2/OBParty3 data associated with this AccountId."
+  - code: HTTP_200_EMPTY
+    description: "HSBC returned 200 but OBReadParty2.Data.Party is absent and OBReadParty3.Data.Party[] is empty."
+  - code: NETWORK_ERROR
+    description: "Device offline or AIS endpoint unreachable."
+  - code: MERGE_CONFLICT
+    description: "Parallel party + parties responses return conflicting PartyId; surface first result per pick_first: true."
+
+test_fixtures:
+  source: "idea-layer/screens/party/tests.yaml"
+  scenario_count: 6
+  priority_distribution:
+    critical: 4
+    normal: 2

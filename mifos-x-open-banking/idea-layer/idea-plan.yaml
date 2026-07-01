@@ -1,0 +1,686 @@
+# idea-plan.yaml — mifos-x-open-banking
+# UK Open Banking AISP reference app (Compose Multiplatform, HSBC UK sandbox).
+# Authored 2026-06-29 from a clean slate, grounded in: HSBC AIS endpoint catalogue,
+# OBIE/UK Open Banking standards research, and the verified de-templated KMP source.
+# First draft for review — refine via /idea-plan (MATRIX MODE) then /idea sync.
+
+_schema_version: "1.1"
+_wizard_state:
+  current_phase: 15
+  completed_phases: [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15]
+  skipped_phases: []
+_tags: [§identity, §domain, §repository, §branding, §vision, §personas, §requirements, §features, §screens, §flows, §api_surface, §design_tokens, §technical_decisions, §layers, §release_plan, §release_phases]
+_overall_quality: 74
+_creation_mode: wizard
+_source_url: https://github.com/openMF/mifos-x-open-banking.git
+_api_sources:
+  - id: API-001
+    type: openapi
+    url: https://github.com/openMF/mifos-x-open-banking
+    spec_url: /home/kalpesh/OpenBankingProject/specs/hsbc-sandbox/openapi/account-info-4.0-personal.yaml
+    name: HSBC UK Open Banking — Account & Transaction API (AIS)
+    version: "4.0"
+    auth_schemes: [oauth2-fapi-1.0-advanced, mtls, private_key_jwt]
+    local_path: /home/kalpesh/OpenBankingProject/specs/hsbc-sandbox/openapi/account-info-4.0-personal.yaml
+  - id: API-002
+    type: openapi
+    url: /home/kalpesh/OpenBankingProject/specs/hsbc-sandbox/openapi/dcr-uk.yaml
+    spec_url: /home/kalpesh/OpenBankingProject/specs/hsbc-sandbox/openapi/dcr-uk.yaml
+    name: HSBC UK Open Banking — Dynamic Client Registration (DCR)
+    version: "3.2.1"
+    auth_schemes: [private_key_jwt, jws-ssa]
+    local_path: /home/kalpesh/OpenBankingProject/specs/hsbc-sandbox/openapi/dcr-uk.yaml
+_auto_approved: false
+_context_resources:
+  - id: CR-001
+    type: text
+    source: /home/kalpesh/OpenBankingProject/HSBC_Sandbox/docs/00-HOW-TO-USE-THE-SANDBOX.md
+    local_path: external/HSBC_Sandbox/docs/00-HOW-TO-USE-THE-SANDBOX.md
+    label: HSBC sandbox onboarding + FAPI auth model
+    intent: specification
+    relevant_to: [§api_surface, §technical_decisions, §flows]
+  - id: CR-002
+    type: text
+    source: /home/kalpesh/OpenBankingProject/HSBC_Sandbox/docs/01-account-information-sharing.md
+    local_path: external/HSBC_Sandbox/docs/01-account-information-sharing.md
+    label: HSBC AIS endpoint catalogue (v4.0)
+    intent: specification
+    relevant_to: [§api_surface, §features, §requirements]
+
+# ═══════════════════════════════════════════════════════════════════
+# DESIGN READ
+# ═══════════════════════════════════════════════════════════════════
+design_read:
+  _schema_version: "1.0"
+  reading: "Trustworthy UK Open Banking account-information app; calm, secure, data-legible retail banking; minimalist Material 3, accessibility-first regulated fintech."
+  page_kind: consumer-mobile
+  audience: "UK retail bank customers (PSUs) sharing account data, plus Open Banking developers/reviewers evaluating full AISP capability."
+  vibe_language: "trustworthy, calm, secure, clear, minimalist, data-legible, regulated"
+  aesthetic_family: minimalist-ui
+  dials:
+    variance: 3
+    motion: 2
+    density: 5
+  brand_constraints:
+    accent_color: "#266489"
+    typography: "Roboto"
+    theme: auto
+    radius_system: soft
+  quiet_constraints: [accessibility-first, regulated-industry]
+  _last_inferred_at: "2026-06-29T00:00:00Z"
+  _signal_sources: [PROJECT_CONFIG.yaml, "idea-plan.identity.one_liner", "OB-standards research", "HSBC AIS catalogue", "material-theme/ui/theme (Material Theme Builder export — seed primary #266489)"]
+
+# ═══════════════════════════════════════════════════════════════════
+# SECTIONS
+# ═══════════════════════════════════════════════════════════════════
+sections:
+
+  identity:
+    _tag: "§identity"
+    _status: draft
+    _quality_score: 90
+    _source: wizard
+    content:
+      name: mifos-x-open-banking
+      slug: mifos-x-open-banking
+      workspace: mifos-x
+      project_type: kmp
+      one_liner: "UK Open Banking AISP reference app — read account & transaction data from the HSBC sandbox via the OBIE standard."
+      package_name: org.mifosx.openbanking
+
+  domain:
+    _tag: "§domain"
+    _status: draft
+    _quality_score: 85
+    _source: wizard
+    content:
+      classification: fintech
+      sub_categories: [open-banking, account-information, aisp, personal-finance]
+      competitor_refs:
+        - name: Emma
+          strengths: [multi-bank aggregation, clean UX]
+        - name: Money Dashboard
+          strengths: [categorisation, PFM]
+        - name: Yolt
+          strengths: [consent-first AIS, smart insights]
+
+  repository:
+    _tag: "§repository"
+    _status: draft
+    _quality_score: 88
+    _source: wizard
+    content:
+      repo_strategy: existing
+      git_url: https://github.com/openMF/mifos-x-open-banking.git
+      branch: dev
+      fork_workflow: true
+      license: "MPL-2.0"
+
+  branding:
+    _tag: "§branding"
+    _status: draft
+    _quality_score: 70
+    _source: wizard
+    content:
+      app_name_display: "Open Banking"
+      logo_path: null
+      primary_color: "#266489"
+      accent_color: "#64597B"
+      app_icon_style: rounded
+
+  vision:
+    _tag: "§vision"
+    _status: draft
+    _quality_score: 80
+    _source: wizard
+    content:
+      elevator_pitch: "A reference Account Information app that shows the full power of UK Open Banking — with your consent, securely read every account, balance, transaction, standing order and direct debit from your bank, with no passwords shared."
+      problem_statement: "Bank account data is locked inside each bank's own app, and the only way to share it used to be insecure password sharing. UK Open Banking provides a regulated, consent-based, API-first alternative — but few apps demonstrate the standard's full AISP surface end to end."
+      target_users:
+        - "UK retail bank customers (PSUs) who want to view and share their account information securely."
+        - "Open Banking / fintech developers and reviewers evaluating a complete, standards-strict AISP implementation."
+      success_metrics:
+        - "Every HSBC sandbox AIS resource (accounts, balances, transactions, beneficiaries, standing-orders, direct-debits, scheduled-payments, statements, product, party) is reachable and renders real sandbox data."
+        - "End-to-end FAPI consent journey (DCR → create consent → app-to-app authorize → token → resource) completes against the live HSBC sandbox."
+        - "Consent dashboard supports revoke + 90-day reconfirmation."
+      solution_statement: "A Kotlin Multiplatform (Compose) AISP client that performs the OBIE FAPI 1.0 Advanced consent journey against HSBC and surfaces the complete Account & Transaction API as clear, accessible screens — read-only, no money movement."
+      value_propositions:
+        - "Complete UK Open Banking AISP coverage in one reference app."
+        - "Standards-strict: OBIE Read/Write v4.0 + FAPI 1.0 Advanced security."
+        - "Consent-first and transparent — clear permissions, expiry, and revocation."
+        - "Cross-platform: Android, iOS, Desktop, Web from one codebase."
+      scope:
+        in_scope:
+          - "AISP read-only account information across all HSBC sandbox AIS resources."
+          - "Full FAPI consent journey + consent lifecycle management (dashboard, revoke, 90-day reconfirm)."
+          - "Multi-currency account display (Global Money / Global Wallet)."
+          - "ATM locator via HSBC Open Data (no auth)."
+        out_of_scope:
+          - "Payment initiation (PISP) — any money movement, new standing orders, beneficiary edits."
+          - "Confirmation of Funds (CBPII)."
+          - "Field-officer / agent-banking surfaces (removed — consumer-only app)."
+          - "Production TPP enrolment (sandbox only; production hosts are TBD)."
+      constraints:
+        technical:
+          - "Mutual TLS (mTLS) with HSBC-issued sandbox certs — platform-specific TLS config (expect/actual)."
+          - "FAPI 1.0 Advanced: signed request object, PKCE S256, private_key_jwt client auth, app-to-app redirect."
+          - "Read-only — AIS GETs require no detached x-jws-signature."
+        business:
+          - "Credentials never hardcoded (RULE-CREDS-LIFECYCLE-001); env-var / gitignored materials only."
+          - "GDPR / consent transparency per OBIE Customer Experience Guidelines."
+        assumptions:
+          - "Developer has HSBC sandbox certs + client_id + SSA at /home/kalpesh/OpenBankingProject/HSBC_Sandbox/."
+          - "Target brand: HSBC UK Personal, OBIE v4.0."
+      known_limitations:
+        - description: "Sandbox account subtypes limited to CurrentAccount, Savings, CreditCard, Global Money, Global Wallet (no loans/FD)."
+          planned_version: null
+        - description: "Offers endpoint is M&S-Bank-only in the sandbox — feature-flagged."
+          planned_version: "0.3.0"
+
+  personas:
+    _tag: "§personas"
+    _status: draft
+    _quality_score: 78
+    _source: wizard
+    content:
+      personas:
+        - name: Priya
+          role: Retail bank customer (PSU)
+          jobs_to_be_done:
+            - "See all my balances and recent transactions in one place."
+            - "Understand and control exactly what data I'm sharing, and revoke it anytime."
+          pain_points:
+            - "Juggling multiple banking apps."
+            - "Not knowing what a third party can see."
+          goals:
+            - "A clear, trustworthy view of my money."
+            - "Confidence that sharing is secure and reversible."
+        - name: Sam
+          role: Open Banking developer / reviewer
+          jobs_to_be_done:
+            - "Evaluate a complete, standards-strict AISP implementation against the HSBC sandbox."
+            - "See the full FAPI consent journey and every AIS resource working end to end."
+          pain_points:
+            - "Most demos cover only accounts + balances."
+            - "FAPI security details (mTLS, JWS, PKCE) are hard to get right."
+          goals:
+            - "A reference that proves the full UK Open Banking AISP surface."
+
+  requirements:
+    _tag: "§requirements"
+    _status: draft
+    _quality_score: 75
+    _source: wizard
+    content:
+      functional_requirements:
+        - id: FR-001
+          description: "Perform Dynamic Client Registration (DCR) once per brand using the signed SSA to obtain client credentials."
+          priority: must
+          acceptance_criteria: ["POST /register with PS256-signed JWS returns a client_id stored securely."]
+        - id: FR-002
+          description: "Run the FAPI consent journey: client_credentials token → create account-access-consent → app-to-app authorize (auth code + PKCE + signed request object) → token exchange."
+          priority: must
+          acceptance_criteria: ["Consent reaches Authorised; PSU-bound access token + refresh token obtained against the HSBC sandbox."]
+        - id: FR-003
+          description: "List authorised accounts and show account detail."
+          priority: must
+          acceptance_criteria: ["GET /accounts and GET /accounts/{id} render real sandbox data."]
+        - id: FR-004
+          description: "Show balances per account."
+          priority: must
+        - id: FR-005
+          description: "Show transactions with date and credit/debit filtering, plus transaction detail."
+          priority: must
+        - id: FR-006
+          description: "Show beneficiaries, standing orders, direct debits, scheduled payments (read-only)."
+          priority: should
+        - id: FR-007
+          description: "Show statements (list + detail) and account product information and party (account holder) details."
+          priority: should
+        - id: FR-008
+          description: "Provide a consent dashboard: active consents, granted permissions, expiry, revoke, and 90-day reconfirmation."
+          priority: must
+          acceptance_criteria: ["DELETE /account-access-consents/{id} revokes; reconfirm re-runs authorize before 90 days."]
+        - id: FR-009
+          description: "Display multi-currency accounts (Global Money / Global Wallet)."
+          priority: could
+        - id: FR-010
+          description: "ATM locator via HSBC Open Data (unauthenticated)."
+          priority: could
+        - id: FR-011
+          description: "Client-side personal finance management derived from AIS transactions: categorization, spending-by-category, monthly budgets, recurring/subscription detection, income-vs-expense, and net worth. No payment initiation; no additional API."
+          priority: should
+          acceptance_criteria: ["Transactions are categorized and summarized in-app; budgets track against category spend; recurring payments are detected from transaction patterns."]
+      third_party_services:
+        - name: HSBC UK Open Banking sandbox
+          purpose: "Account & Transaction (AIS) API — the data source."
+          integration_type: api
+        - name: Firebase
+          purpose: "Crash + performance observability only."
+          integration_type: sdk
+
+  features:
+    _tag: "§features"
+    _status: draft
+    _quality_score: 82
+    _source: wizard
+    content:
+      features:
+        - name: consent-onboarding
+          priority: must
+          description: "User onboarding → OAuth login with HSBC. The app stages an account-access-consent (Permissions array); the PSU authenticates, approves the permission set and selects accounts on HSBC's portal; callback → token. No in-app bank picker (HSBC only) and no in-app permission toggles (approval is on the bank)."
+          acceptance_criteria: ["Consent created with explicit permission list; PSU authenticates + approves on HSBC; token obtained on accept; rejection yields no token and surfaces a clear retry."]
+          requirement_refs: [FR-001, FR-002]
+        - name: consent-dashboard
+          priority: must
+          description: "Active consents, granted permissions, expiry, revoke, and 90-day reconfirmation."
+          acceptance_criteria: ["Revoke calls DELETE consent; reconfirm re-runs authorize."]
+          requirement_refs: [FR-008]
+        - name: home
+          priority: must
+          description: "Home landing tab (bottom-nav order 0) showing the currently selected account — hero balance card, quick actions (Transactions, Statements, Manage consents), recent transactions, and a spending snapshot. An account switcher changes the selected account, which drives the whole screen. Aggregates AIS accounts/balances/transactions client-side; no new endpoint. Consents are surfaced here (and in Settings) since they were removed from the bottom-nav rail."
+          requirement_refs: [FR-003, FR-004, FR-005]
+          dependencies: [accounts, balances, transactions]
+        - name: accounts
+          priority: must
+          description: "List of authorised accounts + account detail."
+          requirement_refs: [FR-003]
+        - name: balances
+          priority: must
+          description: "Current/available balances per account."
+          requirement_refs: [FR-004]
+          dependencies: [accounts]
+        - name: transactions
+          priority: must
+          description: "Transaction history with date + credit/debit filters, search, and per-transaction detail; transactions carry a category tag (auto-categorized) that feeds the PFM feature."
+          requirement_refs: [FR-005, FR-011]
+          dependencies: [accounts]
+        - name: beneficiaries
+          priority: should
+          description: "Saved payees (read-only)."
+          requirement_refs: [FR-006]
+          dependencies: [accounts]
+        - name: standing-orders
+          priority: should
+          description: "Recurring outbound orders (read-only)."
+          requirement_refs: [FR-006]
+          dependencies: [accounts]
+        - name: direct-debits
+          priority: should
+          description: "Direct-debit mandates (read-only)."
+          requirement_refs: [FR-006]
+          dependencies: [accounts]
+        - name: scheduled-payments
+          priority: should
+          description: "Future-dated one-off payments (read-only)."
+          requirement_refs: [FR-006]
+          dependencies: [accounts]
+        - name: statements
+          priority: should
+          description: "Statement list + statement detail."
+          requirement_refs: [FR-007]
+          dependencies: [accounts]
+        - name: product
+          priority: could
+          description: "Account product terms (fees/rates) for BCA/PCA accounts."
+          requirement_refs: [FR-007]
+          dependencies: [accounts]
+        - name: party
+          priority: could
+          description: "Account holder / PSU party details."
+          requirement_refs: [FR-007]
+          dependencies: [accounts]
+        - name: multi-currency
+          priority: could
+          description: "Global Money / Global Wallet multi-currency balances."
+          requirement_refs: [FR-009]
+          dependencies: [accounts]
+        - name: atm-locator
+          priority: could
+          description: "Find ATMs via HSBC Open Data (no auth)."
+          requirement_refs: [FR-010]
+        - name: offers
+          priority: could
+          description: "Account offers (overdrafts, balance transfers) — available in the HSBC UK Personal v4.0 AIS spec."
+          requirement_refs: [FR-007]
+          dependencies: [accounts]
+        - name: settings
+          priority: should
+          description: "App settings: appearance (light/dark), security (biometric app-lock + session), notifications, about & legal (terms / privacy / licenses), and a shortcut to consent management."
+          dependencies: [consent-dashboard]
+        - name: profile
+          priority: could
+          description: "User profile: connected identity (from the account party), active connection / consent summary, and sign-out (clears tokens + consent)."
+          requirement_refs: [FR-007]
+          dependencies: [accounts, consent-dashboard]
+        - name: pfm
+          priority: should
+          description: "Personal finance management derived in-app from AIS transaction data — spend categorization, spending-by-category breakdowns, monthly budgets, income-vs-expense, total balance / net worth across accounts, recurring & subscription detection, and spending insight cards. Modelled on Tink's expense/income/risk analytics; computed client-side (no PISP, no extra endpoint)."
+          requirement_refs: [FR-011]
+          dependencies: [accounts, balances, transactions]
+
+  screens:
+    _tag: "§screens"
+    _status: draft
+    _quality_score: 72
+    _source: wizard
+    content:
+      screens:
+        - name: user-onboarding
+          archetype: onboarding
+          feature_refs: [consent-onboarding]
+          description: "Intro to the app + UK Open Banking — what account data is requested and why, before connecting. No bank picker (HSBC only)."
+        - name: login
+          archetype: login
+          feature_refs: [consent-onboarding]
+          description: "Start OAuth with HSBC. The app stages an account-access-consent (Permissions array), then app-to-app redirects to HSBC where the PSU authenticates (SCA), approves the requested permission set and selects which accounts to share. Permission approval happens on HSBC's portal, not in-app."
+        - name: consent-callback
+          archetype: empty_state
+          feature_refs: [consent-onboarding]
+          description: "Return leg from the bank's app-to-app authorize; exchanges code for token."
+        - name: consent-list
+          archetype: index_list
+          feature_refs: [consent-dashboard]
+          description: "Active consents with status and expiry."
+        - name: consent-detail
+          archetype: detail_screen
+          feature_refs: [consent-dashboard]
+          description: "Granted permissions, expiry, revoke, reconfirm."
+        - name: home
+          archetype: dashboard
+          feature_refs: [home, accounts, balances, transactions]
+          description: "Home landing — currently selected account hero balance, quick actions, recent transactions, spending snapshot, account switcher."
+        - name: accounts
+          archetype: index_list
+          feature_refs: [accounts, multi-currency]
+          description: "Authorised accounts with balance preview."
+        - name: account-detail
+          archetype: detail_screen
+          feature_refs: [accounts, balances]
+          description: "Account info + balances + entry points to transactions/statements/recurring."
+        - name: transactions
+          archetype: index_list
+          feature_refs: [transactions]
+          description: "Transaction history with date + credit/debit filters."
+        - name: transaction-detail
+          archetype: detail_screen
+          feature_refs: [transactions]
+          description: "Single transaction details."
+        - name: beneficiaries
+          archetype: index_list
+          feature_refs: [beneficiaries]
+          description: "Saved payees on the account (read-only) — name, account identifier and reference."
+        - name: standing-orders
+          archetype: index_list
+          feature_refs: [standing-orders]
+          description: "Recurring outbound orders — amount, frequency, next payment date and payee (read-only)."
+        - name: direct-debits
+          archetype: index_list
+          feature_refs: [direct-debits]
+          description: "Direct-debit mandates — originator, status and most-recent amount (read-only)."
+        - name: scheduled-payments
+          archetype: index_list
+          feature_refs: [scheduled-payments]
+          description: "Future-dated one-off payments — amount, execution date and payee (read-only)."
+        - name: statements
+          archetype: index_list
+          feature_refs: [statements]
+          description: "Statement list for the account — period, type and available dates."
+        - name: statement-detail
+          archetype: detail_screen
+          feature_refs: [statements]
+          description: "Single statement — period, opening/closing balances and statement transactions."
+        - name: product
+          archetype: detail_screen
+          feature_refs: [product]
+          description: "Account product terms — fees, rates and features (BCA/PCA accounts)."
+        - name: party
+          archetype: detail_screen
+          feature_refs: [party]
+          description: "Account holder / PSU details — name, address and contact (gated by ReadParty)."
+        - name: atm-locator
+          archetype: index_list
+          feature_refs: [atm-locator]
+          description: "Nearby HSBC ATMs via Open Data (no auth) — location, services and accessibility."
+        - name: settings
+          archetype: settings
+          feature_refs: [settings]
+          description: "Settings hub — appearance, security (biometric lock), notifications, about & legal, and manage consents."
+        - name: profile
+          archetype: detail_screen
+          feature_refs: [profile]
+          description: "User profile — connected identity (party), active consents summary, and sign out."
+        - name: pfm-dashboard
+          archetype: dashboard
+          feature_refs: [pfm]
+          description: "PFM overview — total balance / net worth across accounts, this-month spending vs income, top spending categories and insight cards."
+        - name: spending-by-category
+          archetype: dashboard
+          feature_refs: [pfm]
+          description: "Spending broken down by category for the period, with drill-down into a category's transactions."
+        - name: budgets
+          archetype: form
+          feature_refs: [pfm]
+          description: "Set and track monthly budgets per category with progress indicators and over-budget alerts."
+        - name: recurring-subscriptions
+          archetype: index_list
+          feature_refs: [pfm]
+          description: "Recurring payments & subscriptions detected from transaction patterns — distinct from bank-side standing orders / direct debits."
+
+  flows:
+    _tag: "§flows"
+    _status: draft
+    _quality_score: 74
+    _source: wizard
+    content:
+      flows:
+        - name: onboarding-consent
+          type: happy
+          feature_ref: consent-onboarding
+          steps:
+            - "Splash → user onboarding (what Open Banking is + what data is requested)"
+            - "Login — start OAuth with HSBC"
+            - "App stages an account-access-consent with the requested Permissions array"
+            - "App-to-app redirect to HSBC: PSU authenticates (SCA), approves the requested permission set, selects accounts to share"
+            - "Callback exchanges authorization code for PSU access token (rejection → error, no token, no data access)"
+            - "Land on Accounts"
+        - name: account-browsing
+          type: happy
+          feature_ref: accounts
+          steps: ["Accounts list", "Open account detail", "View balances", "Open transactions / statements / recurring"]
+        - name: transaction-review
+          type: happy
+          feature_ref: transactions
+          steps: ["Transactions list", "Apply date / credit-debit filter", "Open transaction detail"]
+        - name: consent-management
+          type: happy
+          feature_ref: consent-dashboard
+          steps: ["More → Consents", "Open consent detail", "Revoke or reconfirm before 90 days"]
+        - name: recurring-and-statements
+          type: happy
+          feature_ref: standing-orders
+          steps: ["Account detail", "Standing orders / Direct debits / Scheduled payments", "Statements → statement detail"]
+        - name: consent-expired
+          type: error
+          feature_ref: consent-dashboard
+          steps: ["Resource call returns consent expired/revoked", "Prompt re-consent", "Re-run onboarding-consent"]
+        - name: settings-and-profile
+          type: happy
+          feature_ref: settings
+          steps: ["More tab", "Open Settings (appearance, security, notifications, about & legal)", "Open Profile (connected identity, sign out)", "Shortcut to Consents"]
+        - name: pfm-review
+          type: happy
+          feature_ref: pfm
+          steps: ["Home / More → PFM dashboard", "Open spending-by-category → drill into a category's transactions", "Set or review monthly budgets", "Review detected recurring subscriptions"]
+
+  api_surface:
+    _tag: "§api_surface"
+    _status: draft
+    _quality_score: 80
+    _source: wizard
+    content:
+      external_api_ref: API-001
+      endpoints:
+        - { path: /account-access-consents, method: POST, description: "Create account-access-consent (permissions + expiry).", auth_required: true, source: external_api, source_ref: API-001 }
+        - { path: "/account-access-consents/{ConsentId}", method: GET, description: "Consent status.", auth_required: true, source: external_api, source_ref: API-001 }
+        - { path: "/account-access-consents/{ConsentId}", method: DELETE, description: "Revoke consent.", auth_required: true, source: external_api, source_ref: API-001 }
+        - { path: /accounts, method: GET, description: "List authorised accounts.", auth_required: true, source: external_api, source_ref: API-001 }
+        - { path: "/accounts/{AccountId}", method: GET, description: "Account detail.", auth_required: true, source: external_api, source_ref: API-001 }
+        - { path: "/accounts/{AccountId}/balances", method: GET, description: "Account balances.", auth_required: true, source: external_api, source_ref: API-001 }
+        - { path: "/accounts/{AccountId}/transactions", method: GET, description: "Transactions (date/credit-debit filters).", auth_required: true, source: external_api, source_ref: API-001 }
+        - { path: "/accounts/{AccountId}/beneficiaries", method: GET, description: "Beneficiaries.", auth_required: true, source: external_api, source_ref: API-001 }
+        - { path: "/accounts/{AccountId}/standing-orders", method: GET, description: "Standing orders.", auth_required: true, source: external_api, source_ref: API-001 }
+        - { path: "/accounts/{AccountId}/direct-debits", method: GET, description: "Direct debits.", auth_required: true, source: external_api, source_ref: API-001 }
+        - { path: "/accounts/{AccountId}/scheduled-payments", method: GET, description: "Scheduled payments.", auth_required: true, source: external_api, source_ref: API-001 }
+        - { path: "/accounts/{AccountId}/statements", method: GET, description: "Statements list.", auth_required: true, source: external_api, source_ref: API-001 }
+        - { path: "/accounts/{AccountId}/statements/{StatementId}", method: GET, description: "Statement detail.", auth_required: true, source: external_api, source_ref: API-001 }
+        - { path: "/accounts/{AccountId}/statements/{StatementId}/transactions", method: GET, description: "Transactions within a single statement.", auth_required: true, source: external_api, source_ref: API-001 }
+        - { path: "/accounts/{AccountId}/statements/{StatementId}/file", method: GET, description: "Statement file / PDF download.", auth_required: true, source: external_api, source_ref: API-001 }
+        - { path: "/accounts/{AccountId}/product", method: GET, description: "Account product.", auth_required: true, source: external_api, source_ref: API-001 }
+        - { path: "/accounts/{AccountId}/party", method: GET, description: "Account holder — single party (OBReadParty2).", auth_required: true, source: external_api, source_ref: API-001 }
+        - { path: "/accounts/{AccountId}/parties", method: GET, description: "Account owner(s)/holder(s)/operator(s) — multiple parties (OBReadParty3).", auth_required: true, source: external_api, source_ref: API-001 }
+        - { path: "/accounts/{AccountId}/offers", method: GET, description: "Account offers, e.g. overdrafts / balance transfers (present in the UK Personal v4.0 spec).", auth_required: true, source: external_api, source_ref: API-001 }
+        - { path: /oauth2/token, method: POST, description: "Token endpoint — OAuth2 v1.1 (client_credentials + authorization_code; private_key_jwt). From the OIDC well-known config, not the AIS swagger.", auth_required: false, source: external_api, source_ref: null }
+        - { path: /oauth2/authorize, method: GET, description: "PSU authorisation — OAuth2 v1.1 (signed request object, PKCE, app-to-app). From the OIDC well-known config, not the AIS swagger.", auth_required: false, source: external_api, source_ref: null }
+        - { path: /register, method: POST, description: "Dynamic Client Registration — DCR v3.2.1, signed SSA (separate dcr-uk.yaml spec).", auth_required: false, source: external_api, source_ref: API-002 }
+      api_gap_analysis:
+        total_features: 18
+        api_covered: 15
+        coverage_percent: 83.3
+        gaps:
+          - feature: atm-locator
+            needed_endpoints: ["/atms (HSBC Open Data, unauthenticated)"]
+            gap_strategy: third_party
+            notes: "Open Data product-public endpoint, separate from the AIS surface."
+          - feature: settings
+            needed_endpoints: []
+            gap_strategy: client_only
+            notes: "App settings are local/client-only — no external API required."
+          - feature: pfm
+            needed_endpoints: []
+            gap_strategy: client_only
+            notes: "PFM analytics are computed in-app from AIS transaction data — no external endpoint."
+
+  design_tokens:
+    _tag: "§design_tokens"
+    _status: draft
+    _quality_score: 70
+    _source: wizard
+    content:
+      color_palette:
+        primary: "#266489"
+        secondary: "#50606E"
+        tertiary: "#64597B"
+        surface: "#F7F9FF"
+        background: "#F7F9FF"
+        error: "#BA1A1A"
+      typography:
+        font_family: "Roboto"
+        scale: default
+      spacing_preference: comfortable
+      density: comfortable
+
+  technical_decisions:
+    _tag: "§technical_decisions"
+    _status: draft
+    _quality_score: 88
+    _source: wizard
+    content:
+      architecture: "MVI (stream-first: BaseViewModel<S,E,A> + ScreenDataStream + Store5)"
+      di_framework: koin
+      state_management: compose-state
+      navigation: androidx-navigation
+      backend_provider: rest
+      platform_targets: [android, ios, desktop, web]
+      kmp_arch: "stream-first@latest"
+
+  layers:
+    _tag: "§layers"
+    _status: draft
+    _quality_score: 85
+    _source: wizard
+    content:
+      enabled: [idea, design-spec, server, client, feature, infrastructure, platform, testing, release]
+      disabled: []
+      auto_derived: true
+      suggestion_source: source_analysis
+      layer_rationale:
+        server:
+          status: enabled
+          reason: "Holds CLIENT contracts for the external HSBC AIS API (Ktorfit interfaces) — no owned DB."
+          can_enable_later: true
+        platform:
+          status: enabled
+          reason: "expect/actual for mTLS, secure storage, and app-to-app redirect handling."
+
+  release_plan:
+    _tag: "§release_plan"
+    _status: draft
+    _quality_score: 72
+    _source: wizard
+    content:
+      milestones:
+        - version: "0.1.0"
+          features: [consent-onboarding, consent-dashboard, accounts, balances, transactions]
+        - version: "0.2.0"
+          features: [beneficiaries, standing-orders, direct-debits, scheduled-payments]
+        - version: "0.3.0"
+          features: [statements, product, party, multi-currency, atm-locator, offers]
+      epic_breakdown:
+        - epic_name: "FAPI consent + core account information"
+          features: [consent-onboarding, consent-dashboard, accounts, balances, transactions]
+          milestone_ref: "0.1.0"
+        - epic_name: "Payments-context read surfaces"
+          features: [beneficiaries, standing-orders, direct-debits, scheduled-payments]
+          milestone_ref: "0.2.0"
+        - epic_name: "Statements, product, party & extras"
+          features: [statements, product, party, multi-currency, atm-locator, offers]
+          milestone_ref: "0.3.0"
+
+  release_phases:
+    _tag: "§release_phases"
+    _status: draft
+    _quality_score: 70
+    _source: wizard
+    content:
+      phases:
+        - id: P0
+          label: "MVP — Consent + core account information"
+          flows: [onboarding-consent, account-browsing, transaction-review, consent-management, settings-and-profile, consent-expired]
+          target_features: [consent-onboarding, consent-dashboard, accounts, balances, transactions, settings, profile]
+          status: planned
+          derived_by: claude-subagent
+        - id: P1
+          label: "Payments-context read surfaces"
+          flows: [recurring-and-statements]
+          target_features: [beneficiaries, standing-orders, direct-debits, scheduled-payments]
+          status: planned
+          dependencies: [P0]
+          derived_by: claude-subagent
+        - id: P2
+          label: "Statements, product, party, PFM & extras"
+          flows: [pfm-review]
+          target_features: [statements, product, party, multi-currency, atm-locator, offers, pfm]
+          status: planned
+          dependencies: [P1]
+          derived_by: claude-subagent
+
+# ═══════════════════════════════════════════════════════════════════
+# SHIP GATE
+# ═══════════════════════════════════════════════════════════════════
+ship_gate:
+  requires_converge: true
+  requires_smoke_run: false
+  coverage_threshold: 80
+  max_staleness_hours: 24
+  requires_behavior_verification: true
+  permission_codegen_platforms: [android, ios]
+
+# ═══════════════════════════════════════════════════════════════════
+# /idea-agent CONFIGURATION
+# ═══════════════════════════════════════════════════════════════════
+agent:
+  approve_quality_threshold: 95
+  max_token_budget: null
+  max_iterations: 100
+  t3_self_heal_enabled: true
