@@ -40,7 +40,7 @@ Palette: surface #101417, onSurface #E0E3E8, primary #95CDF7, onPrimary #00344E,
 
 **Component 3 - Card** (full-width minus 32dp, 96dp, #1C2024 radius 12dp): HSBC logo 40dp circle at 0.6 opacity greyscale; Chip "Revoking..." outlined #8B9198 label #C1C7CE with circular progress_indicator 16dp inside chip right of label; "aac-fb2c4e8a-7d31-4c9e-9f2a-1b3c5d7e9f01" 12sp #8B9198 truncated.
 
-**Component 4 - List** (full-width minus 32dp, opacity 0.4, non-interactive): "Data shared" section label 12sp #8B9198; 11 permission rows at reduced opacity showing check_circle_outline rows from the content state, visually signalling which access is being removed.
+**Component 4 - List** (full-width minus 32dp, opacity 0.4, non-interactive): "Data shared" section label 12sp #8B9198; 10 permission rows at reduced opacity showing check_circle_outline rows from the content state, visually signalling which access is being removed.
 
 **Component 5 - Button** (full-width minus 32dp, 48dp): tonal "Revoke access" disabled state; container #313539 label #8B9198 radius 24dp; loading prevents re-tap.
 

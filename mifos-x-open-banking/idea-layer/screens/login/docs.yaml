@@ -8,7 +8,7 @@ acceptance_refs:
 scaffolded_by: /idea-heal
 archetype: login
 description: >-
-  OAuth/FAPI initiation screen. Displays the 11 OBIE read permissions being staged in OBReadConsent1 so the PSU
+  OAuth/FAPI initiation screen. Displays the 10 OBIE read permissions being staged in OBReadConsent1 so the PSU
   understands what HSBC will ask them to approve. On 'Continue to HSBC', the app POSTs consent-create
   (client_credentials grant), builds a PS256-signed FAPI 1.0 Advanced /authorize URL with PKCE S256, and launches an
   app-to-app redirect to HSBC for SCA and account selection. Screen transitions to the authorising holding state once
@@ -55,7 +55,7 @@ vm_actions:
       - uiState=Error(user_message)
     side_effects:
       - >-
-        ConsentService.createConsent(OBReadConsent1 with 11 Permissions, ExpirationDateTime, TransactionFromDateTime,
+        ConsentService.createConsent(OBReadConsent1 with 10 Permissions, ExpirationDateTime, TransactionFromDateTime,
         TransactionToDateTime)
       - LocalStorage.storeConsentId(staged_consent.Data.ConsentId)
       - PkceGenerator.generateVerifier() → pkce_verifier
@@ -98,7 +98,7 @@ capability_completeness:
   CC2_destructive_action_safety: "No destructive user actions. Cancel navigates back without side-effects. The consent-create POST is server-side only; if the PSU abandons in the loading state, the staged consent remains AwaitingAuthorisation on HSBC and expires per ExpirationDateTime without requiring app-side cleanup (OBIE-compliant behaviour)."
   CC3_nav_callback_wiring: "Cancel → user-onboarding via Navigator.navigateBack(). Empty-state Go Back → user-onboarding. Post-FAPI-redirect return → consent-callback screen via OS deep-link registered in AndroidManifest under the TPP redirect_uri scheme; not an in-app NavController transition."
   CC4_user_data_export: "No user-generated data created. ConsentId and PKCE verifier are AISP infrastructure values, not user content. Not subject to GDPR Article 20 data portability — no export mechanism required."
-  CC5_permission_visibility: "Full OBReadConsent1.Permissions list (11 OBIE read scopes) is rendered in permissions_list with per-row human-readable label and description. PSU reviews every scope before tapping 'Continue to HSBC'. No additional OS runtime permissions are required for this screen."
+  CC5_permission_visibility: "Full OBReadConsent1.Permissions list (10 OBIE read scopes) is rendered in permissions_list with per-row human-readable label and description. PSU reviews every scope before tapping 'Continue to HSBC'. No additional OS runtime permissions are required for this screen."
   CC6_storage_budget_awareness: "ConsentId: 36-char UUID. PKCE verifier: 43-char base64url string. Total LocalStorage footprint: <500 bytes. OBReadConsent1 request payload (~300 bytes JSON) is not cached locally; it is sent in-flight and discarded after a 201 response."
   CC7_network_data_policy: "Single authenticated POST to /account-access-consents using a client_credentials bearer token (no PSU token at consent-create stage). Response contains ConsentId only — no PSU account data. Response is consumed transiently to extract ConsentId and then garbage-collected; not persisted to disk. Ktorfit timeout: 15 seconds."
   CC8_cache_lifecycle: "ConsentId and PKCE verifier persist for the 90-day OBIE consent window. Both are cleared by the consent-callback screen on successful authorisation exchange, or by the consent-detail revoke flow. A subsequent consent-create (re-authorisation flow) overwrites the stored ConsentId."

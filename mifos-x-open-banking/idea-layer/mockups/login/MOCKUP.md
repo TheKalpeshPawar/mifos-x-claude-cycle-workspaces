@@ -51,7 +51,6 @@ Canvas: 393×852dp · Top app bar with back arrow · No bottom nav · Material 3
 │  ✓ Read beneficiaries                       │
 │  ✓ Read statements                          │
 │  ✓ Read party details                       │
-│  ✓ Read offers                              │
 │  ✓ Read products                            │
 │                                              │
 │  Your consent is valid for 90 days and      │  ← consent_validity_note bodySmall #41474D
@@ -76,7 +75,7 @@ hsbc_explainer_card/ (card elevation 1, padding 16dp, radius 12dp)
 │  ├── card_divider       (divider)
 │  └── security_notice    (labelSmall #41474D, icon lock_outline): "FAPI 1.0 Advanced…"
 permissions_header/ (section_header labelLarge): "Permissions requested"
-permissions_list/ (list vertical, items=requested_permissions, 11 rows)
+permissions_list/ (list vertical, items=requested_permissions, 10 rows)
 │  └── permission_row × 11 (list_item, icon check_circle_outline #266489)
 │       ├── headline_text:  "Read account details" … "Read products"
 │       └── supporting_text: human-readable description per OBIE scope

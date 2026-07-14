@@ -1,23 +1,26 @@
 schema_version: "1.0"
-last_run: "2026-07-14T00:00:00Z"
+last_run: "2026-07-14T12:30:00Z"
 last_run_by: "claude"
 command: "/idea verify --quiet --output idea-layer/state/CAPABILITY_GAPS.yaml"
 project: "mifos-x/mifos-x-open-banking"
 features_evaluated: 25
 overall: "warn"
 summary:
-  total_findings: 17
-  open_findings: 15
+  total_findings: 19
+  open_findings: 17
   closed_findings: 2
   by_gap_class:
     fail: 0
-    warn: 11
-    advisory: 4
+    warn: 12
+    advisory: 5
   stitch_findings: 5
   capability_completeness_findings: 10
   render_findings: 0
   deferred_findings: 0
+  i18n_findings: 1
+  quality_findings: 1
   last_close: "2026-07-14 — budgets CC1+CC8 closed by /idea-enrich"
+  last_fix: "2026-07-14 — IC-1 auto-fixed: screen.login.permissions.list.a11y updated 11→10 after ReadOffers removal"
 
 findings:
 
@@ -301,5 +304,44 @@ findings:
         /idea-export-stitch direct-debits home
       budgets and login screens already exist — re-run to restore INDEX entries:
         /idea-export-stitch budgets login
+
+  # ── IC-1: i18n stale permission count ────────────────────────────────────
+
+  - feature_id: "login"
+    sub_check: IC-1
+    category: i18n_completeness
+    gap_class: warn
+    status: closed
+    closed_at: "2026-07-14"
+    closed_by: "/idea verify auto-heal"
+    evidence: >
+      _strings/strings.yaml line 290 contained a hardcoded count in the
+      accessibility label: screen.login.permissions.list.a11y = "List of 11 data
+      types being requested from your HSBC account". This count was stale
+      after ReadOffers consent scope was removed (permissions 11→10). The
+      login/ui.yaml test_context had already been updated to say "(10 rows
+      expected)" but the string value was not updated in the same pass.
+    resolution: >
+      Updated _strings/strings.yaml: "List of 11 data types" → "List of 10 data
+      types being requested from your HSBC account". Auto-fixed by /idea verify
+      per RULE-IDEA-I18N-COMPLETENESS-001 IC-1.
+
+  # ── QS-1: quality score below 95 threshold ───────────────────────────────
+
+  - feature_id: "recurring-subscriptions"
+    sub_check: QS-1
+    category: quality_score
+    gap_class: advisory
+    evidence: >
+      recurring-subscriptions/ui.yaml has quality_score: 94, below the project
+      target of ≥95 established by the enrichment pass (context: "enriched all
+      25 screens to >=95 quality"). All other 24 screens are at ≥95. The
+      docs.yaml shows score: 96 (from /idea-heal run) which differs from the
+      ui.yaml quality_score field — likely the ui.yaml was not re-enriched after
+      the heal pass added missing state coverage (loading/error/empty states).
+    suggested_fix: |
+      Run: /idea-enrich recurring-subscriptions
+      This should push quality_score from 94 to ≥95 given the screen already
+      has correct state coverage, a11y labels, i18n keys, and business_logic.kind.
 
 closed: []

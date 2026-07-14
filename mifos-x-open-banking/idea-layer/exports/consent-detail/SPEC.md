@@ -17,7 +17,7 @@
 
 | Screen | ViewModel | States | Description |
 |--------|-----------|--------|-------------|
-| HSBC Connection Detail | ConsentDetailViewModel | loading, content, revoke_confirm, revoking, error | Full consent detail: color-coded OBIE status chip, 11 OBIE permissions with human-readable labels, four date fields, 7-day expiry warning banner, 90-day reconfirm CTA, and two-step guarded revoke action. |
+| HSBC Connection Detail | ConsentDetailViewModel | loading, content, revoke_confirm, revoking, error | Full consent detail: color-coded OBIE status chip, 10 OBIE permissions with human-readable labels, four date fields, 7-day expiry warning banner, 90-day reconfirm CTA, and two-step guarded revoke action. |
 
 ## State Model
 
@@ -74,7 +74,7 @@
 
 | ID | Scenario | Priority |
 |----|----------|----------|
-| TC-CDETAIL-001 | Content state renders status header, 11 permissions, all four dates, and CTAs | high |
+| TC-CDETAIL-001 | Content state renders status header, 10 permissions, all four dates, and CTAs | high |
 | TC-CDETAIL-002 | Loading state shown while consent-status GET is in flight | high |
 | TC-CDETAIL-003 | Tapping 'Revoke access' transitions to revoke_confirm state with dialog | high |
 | TC-CDETAIL-004 | Tapping 'Keep access' in dialog returns to content state without API call | medium |

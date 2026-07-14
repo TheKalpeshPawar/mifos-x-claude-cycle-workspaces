@@ -17,7 +17,7 @@
 
 | Screen | ViewModel | States | Description |
 |--------|-----------|--------|-------------|
-| Connect with HSBC | ConsentOnboardingViewModel | content, loading, authorising, error | OAuth/FAPI initiation screen. Stages OBReadConsent1 (11 OBIE read scopes), builds PS256-signed FAPI 1.0 Advanced /authorize URL with PKCE S256, launches app-to-app redirect to HSBC for SCA and account selection. |
+| Connect with HSBC | ConsentOnboardingViewModel | content, loading, authorising, error | OAuth/FAPI initiation screen. Stages OBReadConsent1 (10 OBIE read scopes), builds PS256-signed FAPI 1.0 Advanced /authorize URL with PKCE S256, launches app-to-app redirect to HSBC for SCA and account selection. |
 
 ## App-Shell
 
@@ -70,7 +70,7 @@
 
 | ID | Scenario | Priority |
 |----|----------|----------|
-| TC-LOGIN-001 | Content state renders all 11 OBIE read permissions and consent validity | high |
+| TC-LOGIN-001 | Content state renders all 10 OBIE read permissions and consent validity | high |
 | TC-LOGIN-002 | Loading state shown while consent-create POST is in flight | high |
 | TC-LOGIN-003 | Error state shown on consent-create failure with user-friendly message | high |
 | TC-LOGIN-004 | Cancel navigates back to onboarding | medium |

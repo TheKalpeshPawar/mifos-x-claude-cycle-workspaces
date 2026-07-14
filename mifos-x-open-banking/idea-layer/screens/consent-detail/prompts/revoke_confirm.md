@@ -40,7 +40,7 @@ Palette: surface #101417, onSurface #E0E3E8, primary #95CDF7, onPrimary #00344E,
 
 **Component 3 - Card** (dialog, full-width minus 48dp, 224dp, #262A2E radius 16dp, elevation 4, centred vertically in viewport above scrim): Outfit Medium 18sp "Revoke HSBC access?" #E0E3E8 padded 24dp top and sides; Outfit Regular 14sp "This will immediately remove this consent. Account data will stop refreshing and cannot be recovered without re-authorising." #C1C7CE 8dp below headline; 24dp gap; bottom row two Buttons 8dp apart: outlined "Cancel" Outfit Medium 14sp #95CDF7 border #95CDF7 radius 24dp, filled "Revoke" Outfit Medium 14sp #00344E on #FFB4AB container radius 24dp.
 
-**Component 4 - List** (full-width minus 32dp, beneath scrim at 0.4 opacity, non-interactive): "Data shared" label and 11 permission rows visible but dimmed, reinforcing what access will be removed.
+**Component 4 - List** (full-width minus 32dp, beneath scrim at 0.4 opacity, non-interactive): "Data shared" label and 10 permission rows visible but dimmed, reinforcing what access will be removed.
 
 Do not use em-dash anywhere in labels or body copy. Do not make any headline longer than 3 lines or any subtitle longer than 25 words. Do not break the dark #101417 surface theme between sections by introducing light containers or white backgrounds. Do not place light-coloured text on a light-coloured button, or dark text on a dark button.
 

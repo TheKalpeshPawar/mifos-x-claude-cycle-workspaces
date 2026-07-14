@@ -1,6 +1,6 @@
 # DTO Registry Index — mifos-x-open-banking
 
-> Auto-maintained by `/idea generate-dtos`. Last generated: 2026-06-30.
+> Auto-maintained by `/idea generate-dtos`. Last generated: 2026-07-14.
 > Source: HSBC UK Open Banking AIS v4.0 + HSBC Open Data public API.
 > Standard: OBIE (Open Banking Implementation Entity) UK.
 
@@ -18,7 +18,6 @@
 | OBReadConsent1 | 1.0.0 | rest | maximum | 1 (login) | Request body for POST /account-access-consents |
 | OBReadConsentResponse1 | 1.0.0 | rest | maximum | 4 (login, consentCallback, consentList, consentDetail) | Consent resource; status lifecycle |
 | OBReadDirectDebit2 | 1.0.0 | rest | medium | 1 (directDebits) | Envelope — GET /accounts/{AccountId}/direct-debits |
-| OBReadOffer1 | 1.0.0 | rest | medium | 1 (accounts) | Envelope — GET /accounts/{AccountId}/offers |
 | OBReadParty2 | 1.0.0 | rest | maximum | 2 (party, profile) | Envelope — GET /accounts/{AccountId}/party; PII |
 | OBReadParty3 | 1.0.0 | rest | maximum | 1 (party) | Envelope — GET /accounts/{AccountId}/parties; PII |
 | OBReadProduct2 | 1.0.0 | rest | medium | 1 (product) | Envelope — GET /accounts/{AccountId}/product |
@@ -31,9 +30,9 @@
 
 ## Summary
 
-- **Total DTOs:** 22
-- **New this run:** 22 (first generation — no prior registry)
-- **OBIE AIS v4.0 envelope types:** 16
+- **Total DTOs:** 21
+- **This run (2026-07-14):** new=0 / removed=1 (OBReadOffer1 — offers capability dropped) / unchanged=21 — all api.yaml files reconcile cleanly
+- **OBIE AIS v4.0 envelope types:** 15
 - **OBIE inner / item types:** 5 (OBAccount6, OBCashAccount3, OBCashBalance3, OBActiveOrHistoricCurrencyAndAmount, OBTransaction6)
 - **Client synthetic types:** 1 (AtmDisplayItem)
 - **PII-tagged DTOs:** OBCashAccount3, OBReadBeneficiary5, OBReadParty2, OBReadParty3, OBTransaction6, OAuthTokenResponse

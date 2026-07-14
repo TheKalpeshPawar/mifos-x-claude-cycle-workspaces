@@ -46,7 +46,7 @@ Canvas: 393×852dp · Top app bar with back arrow · Bottom nav · Material 3 li
 │                                              │
 │  Permissions granted                         │  ← permissions_header section labelLarge
 │                                              │
-│  ✓ Read account details                     │  ← permissions_list (11 rows)
+│  ✓ Read account details                     │  ← permissions_list (10 rows)
 │  ✓ Read balances                            │    icon check_circle_outline #266489
 │  ✓ Read transactions                        │    headline bodyMedium #181C20
 │  ✓ Read standing orders                     │    supporting bodySmall #41474D
@@ -55,7 +55,6 @@ Canvas: 393×852dp · Top app bar with back arrow · Bottom nav · Material 3 li
 │  ✓ Read beneficiaries                       │
 │  ✓ Read statements                          │
 │  ✓ Read party details                       │
-│  ✓ Read offers                              │
 │  ✓ Read products                            │
 │                                              │
 │         [  Revoke access  ]                 │  ← revoke_button tonal error #BA1A1A
@@ -80,7 +79,7 @@ expiry_warning_banner/ (visible_when expiryWarningDays non-null)
 │  ├── icon warning_amber #BA1A1A
 │  └── body: "Expires in {expiryWarningDays} days. Reconfirm to keep accounts connected."
 permissions_header/ (section_header labelLarge #41474D): "Permissions granted"
-permissions_list/ (list vertical items=permissionsDetail, 11 rows)
+permissions_list/ (list vertical items=permissionsDetail, 10 rows)
 │  └── permission_row (list_item icon check_circle_outline #266489)
 │       ├── headline_text: "Read account details" … "Read products"
 │       └── supporting_text: OBIE scope description
