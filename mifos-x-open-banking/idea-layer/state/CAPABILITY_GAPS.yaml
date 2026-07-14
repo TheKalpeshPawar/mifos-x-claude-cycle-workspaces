@@ -1,25 +1,26 @@
 schema_version: "1.0"
-last_run: "2026-07-14T12:30:00Z"
+last_run: "2026-07-14T16:00:00Z"
 last_run_by: "claude"
-command: "/idea verify --quiet --output idea-layer/state/CAPABILITY_GAPS.yaml"
+command: "/idea verify --rule RULE-DTO-REGISTRY-001"
 project: "mifos-x/mifos-x-open-banking"
 features_evaluated: 25
 overall: "warn"
 summary:
   total_findings: 19
-  open_findings: 17
-  closed_findings: 2
+  open_findings: 16
+  closed_findings: 3
   by_gap_class:
     fail: 0
     warn: 12
     advisory: 5
+  dto_findings: 0
   stitch_findings: 5
   capability_completeness_findings: 10
   render_findings: 0
   deferred_findings: 0
   i18n_findings: 1
   quality_findings: 1
-  last_close: "2026-07-14 — budgets CC1+CC8 closed by /idea-enrich"
+  last_close: "2026-07-14 — D6 OBReadATMResponse1 closed: /atms endpoint now in server/apis/open-data.yaml"
   last_fix: "2026-07-14 — IC-1 auto-fixed: screen.login.permissions.list.a11y updated 11→10 after ReadOffers removal"
 
 findings:
@@ -343,5 +344,30 @@ findings:
       Run: /idea-enrich recurring-subscriptions
       This should push quality_score from 94 to ≥95 given the screen already
       has correct state coverage, a11y labels, i18n keys, and business_logic.kind.
+
+  # ── D6: DTO origin drift ─────────────────────────────────────────────────
+
+  - feature_id: "atm-locator"
+    sub_check: D6-ORIGIN-MATCHES-SERVER
+    category: dto_registry
+    gap_class: fail
+    rule: RULE-DTO-REGISTRY-001
+    error_code: DTO_ORIGIN_DRIFT
+    detected_at: "2026-07-14T15:00:00Z"
+    status: closed
+    closed_at: "2026-07-14T16:00:00Z"
+    closed_by: "/idea verify --rule RULE-DTO-REGISTRY-001"
+    evidence: >
+      OBReadATMResponse1 declares source.origin: rest with endpoint: "/atms",
+      but this endpoint did not exist in idea-layer/server/apis/account-information.yaml
+      (OBIE AIS v4.0). The /atms endpoint belongs to the HSBC ATM Open Data
+      public API (base: https://api.hsbc.com/v2.0/uk/open-banking) — a separate,
+      unauthenticated product not covered by the AIS spec.
+    resolution: >
+      Created idea-layer/server/apis/open-data.yaml (API-002, group open-data).
+      Declares GET /atms endpoint (id: atms, response_dto: OBReadATMResponse1,
+      auth: none, base: https://api.hsbc.com/open-banking/v2.2). D6 now resolves
+      OBReadATMResponse1's /atms endpoint against server/apis/open-data.yaml. PASS.
+      OBReadATMResponse1.yaml already had owned: false; no DTO edit required.
 
 closed: []

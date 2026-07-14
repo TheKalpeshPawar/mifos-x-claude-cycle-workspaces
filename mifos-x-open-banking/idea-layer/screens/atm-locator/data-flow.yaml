@@ -12,8 +12,28 @@ on_mount:
         sort_by: distance_asc
     on_loading: loading
     on_success: content
-    on_empty: empty
-    on_error: error
+    on_empty: empty     # API returned data[].atm empty list — distinct from active-filter empty
+    on_error:
+      # Typed error routing reflecting api.yaml errors block (enriched 2026-07-14)
+      error_type_routing:
+        - type: IOException
+          trigger: "Ktorfit read/connect timeout (15s) or device offline"
+          error_id: NetworkTimeout
+          userMessage: "Could not reach HSBC Open Data. Check your connection."
+          isRetriable: true
+          state: error
+        - type: "HttpException(5xx)"
+          trigger: "HSBC Open Data returns HTTP 500-599"
+          error_id: ServiceUnavailable
+          userMessage: "HSBC Open Data service unavailable. Please try again."
+          isRetriable: true
+          state: error
+        - type: "HttpException(4xx)"
+          trigger: "Unexpected HTTP 400-499 from public endpoint (no auth — 401/403 not expected)"
+          error_id: UnexpectedClientError
+          userMessage: "Unexpected error from HSBC Open Data."
+          isRetriable: false
+          state: error
 
 on_user_action:
   - trigger: search_atms

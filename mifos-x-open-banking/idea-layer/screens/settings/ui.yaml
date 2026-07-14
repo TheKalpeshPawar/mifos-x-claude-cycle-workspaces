@@ -14,15 +14,15 @@ shell:
 
 business_logic:
   kind: nav_only
-  description: "Client-side settings hub persisting theme, biometric lock, session timeout, and notification preferences to DataStore (androidx.datastore:datastore-preferences) via kotlinx-serialization key-value storage. SettingsViewModel collects the preferences Flow and emits Loading until the first emission, then Content — no network calls. Toggles apply reactively through StateFlow with coroutine-scoped atomic DataStore writes. Navigation rows route to consent-list and profile. Clear-local-data action shows a confirmation bottom-sheet before erasing Room/SQLDelight cached account+transaction rows and resetting DataStore cached-at timestamps, fulfilling GDPR local-erasure obligations."
+  description: "Settings hub persisting theme, biometric-lock, session-timeout and notifications to DataStore (kotlinx-serialization). SettingsViewModel emits Loading→Content; no network. clear_confirm state gates erasure via bottom-sheet: dismiss_clear_local_data returns to content; execute_clear_local_data wipes Room/SQLDelight cache + DataStore cached-at timestamps; Open Banking consents unaffected."
   external_library_refs:
     - "compose-settings"
     - "kotlinx-serialization"
     - "androidx.datastore"
   description_author: claude
-  description_authored_at: "2026-06-29T12:00:00Z"
+  description_authored_at: "2026-07-14T20:00:00Z"
 
-states: [loading, content, empty, error]
+states: [loading, content, empty, error, clear_confirm]
 
 components:
   # ── Loading Skeleton ─────────────────────────────────────────────────
@@ -41,7 +41,7 @@ components:
   # ── Appearance ──────────────────────────────────────────────────────
   - type: section_header
     id: appearance_header
-    state_binding: [content]
+    state_binding: [content, clear_confirm]
     label: "{strings.settings.section.appearance}"
     accessibility_label: "{strings.settings.section.appearance.a11y}"
     test_context:
@@ -52,7 +52,7 @@ components:
 
   - type: list
     id: appearance_list
-    state_binding: [content]
+    state_binding: [content, clear_confirm]
     test_context:
       purpose: "Container for appearance preference rows"
       required_fields: []
@@ -88,7 +88,7 @@ components:
   # ── Security ─────────────────────────────────────────────────────────
   - type: section_header
     id: security_header
-    state_binding: [content]
+    state_binding: [content, clear_confirm]
     label: "{strings.settings.section.security}"
     accessibility_label: "{strings.settings.section.security.a11y}"
     test_context:
@@ -99,7 +99,7 @@ components:
 
   - type: list
     id: security_list
-    state_binding: [content]
+    state_binding: [content, clear_confirm]
     test_context:
       purpose: "Container for security preference rows"
       required_fields: []
@@ -158,7 +158,7 @@ components:
   # ── Notifications ────────────────────────────────────────────────────
   - type: section_header
     id: notifications_header
-    state_binding: [content]
+    state_binding: [content, clear_confirm]
     label: "{strings.settings.section.notifications}"
     accessibility_label: "{strings.settings.section.notifications.a11y}"
     test_context:
@@ -169,7 +169,7 @@ components:
 
   - type: list
     id: notifications_list
-    state_binding: [content]
+    state_binding: [content, clear_confirm]
     test_context:
       purpose: "Container for notification toggle rows; both controlled by DataStore flags"
       required_fields: []
@@ -223,7 +223,7 @@ components:
   # ── Account ──────────────────────────────────────────────────────────
   - type: section_header
     id: account_header
-    state_binding: [content]
+    state_binding: [content, clear_confirm]
     label: "{strings.settings.section.account}"
     accessibility_label: "{strings.settings.section.account.a11y}"
     test_context:
@@ -234,7 +234,7 @@ components:
 
   - type: list
     id: account_links_list
-    state_binding: [content]
+    state_binding: [content, clear_confirm]
     test_context:
       purpose: "Container for account-management navigation rows and destructive data-erasure action"
       required_fields: []
@@ -297,7 +297,7 @@ components:
   # ── About & Legal ────────────────────────────────────────────────────
   - type: section_header
     id: about_header
-    state_binding: [content]
+    state_binding: [content, clear_confirm]
     label: "{strings.settings.section.about_legal}"
     accessibility_label: "{strings.settings.section.about_legal.a11y}"
     test_context:
@@ -308,7 +308,7 @@ components:
 
   - type: list
     id: about_list
-    state_binding: [content]
+    state_binding: [content, clear_confirm]
     test_context:
       purpose: "Container for legal navigation rows and static version display"
       required_fields: []
@@ -378,6 +378,45 @@ components:
           interaction_type: display
           data_driven: true
 
+  # ── Clear local data confirmation ────────────────────────────────────
+  - type: bottom_sheet
+    id: clear_local_data_sheet
+    state_binding: [clear_confirm]
+    title: "{strings.settings.clear_local_data.dialog_title}"
+    body: "{strings.settings.clear_local_data.dialog_body}"
+    accessibility_label: "{strings.settings.clear_local_data.a11y}"
+    test_context:
+      purpose: "Destructive-action confirmation bottom-sheet; appears only in clear_confirm state; triggered by clear_local_data_confirm. Clear erases Room/SQLDelight cached account+transaction rows and resets DataStore cached-at timestamps; consent authorisations in Open Banking are NOT affected."
+      required_fields: []
+      interaction_type: action
+      data_driven: false
+    children:
+      - type: button
+        id: cancel_clear_local_data_button
+        variant: text
+        label: "{strings.settings.clear_local_data.dialog_cancel}"
+        accessibility_label: "{strings.settings.clear_local_data.dialog_cancel}"
+        test_context:
+          purpose: "Dismisses the confirmation sheet and returns to content state; no data erased."
+          required_fields: []
+          interaction_type: action
+          data_driven: false
+        on_click:
+          action: dismiss_clear_local_data
+      - type: button
+        id: confirm_clear_local_data_button
+        variant: filled
+        label: "{strings.settings.clear_local_data.dialog_confirm}"
+        color: error
+        accessibility_label: "{strings.settings.clear_local_data.dialog_confirm}"
+        test_context:
+          purpose: "Confirms erasure: clears cached account+transaction rows and resets DataStore cached-at timestamps; Open Banking consent authorisations are NOT affected."
+          required_fields: []
+          interaction_type: action
+          data_driven: false
+        on_click:
+          action: execute_clear_local_data
+
   # ── Empty state ──────────────────────────────────────────────────────
   - type: empty_state
     id: settings_empty_state
@@ -441,3 +480,8 @@ status_history:
     at: "2026-07-14"
     by: "/idea-enrich"
     note: "ENRICH-95: fixed I18n completeness (settings.error.a11y missing key); aligned data-flow.yaml with ui.yaml error/empty states + added retry_load_settings action; added error_case for DataStore mount IOException; added TC-SET-013/014 covering error and empty states; corrected scenario_count 10→14"
+  - from: enriched
+    to: enriched
+    at: "2026-07-14"
+    by: "/idea enrich"
+    note: "ENRICH-95 round-2: trimmed business_logic.description to ≤400 chars with clear_confirm action names explicit; added TC-SET-015/016/017 (clear_confirm state machine); added dismissClearLocalData + executeClearLocalData vm_actions to docs.yaml; scenario_count→17"

@@ -14,7 +14,7 @@ has_server: false
 metadata:
   category: settings
   implementation_ready: true
-  impl_ready_at: '2026-06-29T12:00:00Z'
+  impl_ready_at: '2026-07-14T20:00:00Z'
   impl_ready_schema: v2
 contracts: []
 libraries:
@@ -84,20 +84,30 @@ vm_actions:
     error_handling: {}
   - name: clearLocalDataConfirm
     signature: fun clearLocalDataConfirm()
-    state_mutations: []
+    state_mutations:
+      - state = clear_confirm
     side_effects:
-      - Emits ShowClearDataConfirmation event; SettingsScreen observes and opens bottom-sheet
+      - Emits ShowClearDataConfirmation event; SettingsScreen observes, sets state to clear_confirm, and reveals clear_local_data_sheet
     error_handling: {}
-  - name: clearLocalData
-    signature: suspend fun clearLocalData()
-    state_mutations: []
+  - name: dismissClearLocalData
+    signature: fun dismissClearLocalData()
+    state_mutations:
+      - state = content
     side_effects:
-      - Deletes all locally cached account and transaction rows from Room/SQLDelight
-      - Resets DataStore cached-at timestamp keys to null
+      - Dismisses clear_local_data_sheet bottom-sheet; screen returns to content state; no data erased
+    error_handling: {}
+  - name: executeClearLocalData
+    signature: suspend fun executeClearLocalData()
+    state_mutations:
+      - state = content
+    side_effects:
+      - Deletes all locally cached account and transaction rows from Room/SQLDelight (transactional delete)
+      - Resets DataStore cached-at timestamp keys to null (only after Room delete succeeds)
       - Emits LocalDataCleared event; UI shows success snackbar
-      - Open Banking consent authorisations in the server are NOT affected
+      - Open Banking consent authorisations on the server are NOT affected
     error_handling:
-      on_error: show_error_snackbar_with_retry
+      on_room_delete_failure: show_error_snackbar_with_retry
+      on_error: DataStore timestamps NOT reset until Room deletion succeeds (transactional ordering)
   - name: openExternalUrl
     signature: 'fun openExternalUrl(url: String)'
     state_mutations: []
@@ -140,7 +150,7 @@ error_cases:
     severity: error
 test_fixtures:
   source: FakeSettingsDataStore in-memory preferences; FakeLocalCacheRepository
-  scenario_count: 14
+  scenario_count: 17
   priority_distribution:
     high: 7
     medium: 5

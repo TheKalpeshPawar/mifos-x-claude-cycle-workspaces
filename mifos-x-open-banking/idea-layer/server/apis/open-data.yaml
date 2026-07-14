@@ -1,0 +1,41 @@
+# apis/open-data.yaml — HSBC Open Data API (public, unauthenticated reference data).
+# Distinct product from the consent-based AIS spec (account-information.yaml / API-001).
+# Live host confirmed 2026-07-14: GET https://api.hsbc.com/open-banking/v2.2/atms -> 200, 1221 ATMs.
+# Scope: ATM locator only — atm-locator is the sole feature consuming Open Data today.
+# Also live at the same base (all HTTP 200, no consuming feature yet — intentionally omitted):
+#   /branches, /personal-current-accounts, /business-current-accounts,
+#   /unsecured-sme-loans, /commercial-credit-cards.
+
+schema_version: "1.0"
+api_ref: API-002
+group: open-data
+
+common:
+  base_url: "https://api.hsbc.com/open-banking/v2.2"
+  auth: none                    # unauthenticated GET — no OAuth, no AIS consent, no TPP role
+  required_headers: ["Accept"]
+  accept_media_type: "application/prs.openbanking.opendata.v2.2+json"   # else HTTP 406
+  response_envelope: { meta: ["LastUpdated", "TotalResults", "Agreement", "License", "TermsOfUse"], data: "<array>" }
+  error_codes: [400, 404, 406, 429, 500]
+  notes: >
+    OBIE Open Data v2.2 as served live by HSBC. The reference swaggers on disk are v2.3/v2.4,
+    but the live host serves v2.2 (v2.3/v2.4 paths return 404). Data refreshed ~daily;
+    SLA not guaranteed. 15s timeout + retry recommended.
+
+flows:
+
+  reference-data:
+    endpoints:
+      - id: atms
+        method: GET
+        path: "/atms"
+        token: none
+        requires_auth: false
+        permission: null
+        response_dto: OBReadATMResponse1
+        returns_notes: >
+          meta + data[].Brand[].ATM[] — 1221 ATMs as of 2026-07-13. Each ATM: Identification,
+          SupportedLanguages[], ATMServices[], Accessibility[], SupportedCurrencies[],
+          MinimumPossibleAmount, Location.PostalAddress + GeoLocation. Projected client-side to
+          synthetic AtmDisplayItem for map-pin rendering.
+        consumers: [atm-locator]

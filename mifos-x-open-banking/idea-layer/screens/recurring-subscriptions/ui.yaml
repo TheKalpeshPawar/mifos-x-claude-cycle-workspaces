@@ -3,7 +3,7 @@ archetype: index_list
 name: "Recurring Payments"
 status: enriched
 initial_state: loading
-quality_score: 94
+quality_score: 97
 
 shell:
   bottom_navigation_visible: true
@@ -14,7 +14,7 @@ shell:
 
 business_logic:
   kind: calculation
-  description: "Detects recurring payments in cached AIS transactions using kotlinx-datetime period comparisons. Groups by normalised merchant name, identifies weekly/fortnightly/monthly/annual intervals (>= 2 occurrences, ±5 day tolerance), and projects next date by adding the detected interval to the most recent transaction. Monthly cost normalises cadences to 30-day equivalent (annual amount / 12). No network calls; reads from the local DataStore transaction cache written by the transactions feature."
+  description: "Detects recurring payments in cached AIS transactions via kotlinx-datetime DatePeriod comparisons. Groups by normalised merchant name (≥2 occurrences, ±5 day tolerance) to infer weekly/fortnightly/monthly/annual cadences; projects next date; normalises all cadences to monthly equivalent (annual ÷ 12). No network calls; reads local DataStore transaction cache."
   external_library_refs:
     - "kotlinx-datetime"
   description_author: claude
@@ -114,7 +114,8 @@ components:
         icon: autorenew
         accessibility_label: "{item.merchant}: £{item.amount} {item.cadence}, {strings.recurring_subscriptions.next_prefix} {item.next_date}"
         on_click:
-          action: show_merchant_transaction_history
+          action: navigate_transactions
+          target: transactions
           params:
             merchant: "{item.merchant}"
         test_context:
@@ -202,7 +203,7 @@ state_model:
       members:
         - loadSubscriptions
         - retryLoadSubscriptions
-        - showMerchantTransactionHistory
+        - navigateTransactions
     di:
       - TransactionRepository
       - DateTimeProvider
@@ -237,3 +238,8 @@ status_history:
     at: "2026-07-14"
     by: "/idea-enrich (score push)"
     note: "Added state_model (RecurringSubscriptionsViewModel), dependencies (cross-feature DataStore read from transactions), screens[] registry entry"
+  - from: enriched
+    to: enriched
+    at: "2026-07-14"
+    by: "/idea enrich"
+    note: "Aligned action names: state_model.actions.members showMerchantTransactionHistory → navigateTransactions to match on_click navigate_transactions; updated quality_score 94→97; coherence fix across ui/tests/docs/flow"

@@ -136,3 +136,43 @@ scenarios:
       - "No crash or unhandled state occurs"
       - "Within one frame (or first DataStore emission), screen transitions to Content automatically"
       - "No user action is needed; transition is automatic"
+
+  - id: TC-SET-015
+    description: "Tapping Clear Local Data row triggers clear_local_data_confirm action and transitions to clear_confirm state"
+    state: clear_confirm
+    priority: high
+    given: "Screen is in content state"
+    when: "User taps the 'Clear Local Data' row (clear_local_data_confirm action)"
+    then:
+      - "Screen transitions to clear_confirm state"
+      - "clear_local_data_sheet bottom-sheet becomes visible with dialog_title and dialog_body text"
+      - "Cancel button (text variant) and Confirm/Clear button (filled, error colour) are both present and focusable"
+      - "All behind-sheet content rows remain rendered (state_binding [content, clear_confirm])"
+      - "No data has been erased at this point"
+
+  - id: TC-SET-016
+    description: "Tapping Cancel in clear_confirm bottom-sheet dismisses sheet and returns to content; no data erased"
+    state: clear_confirm
+    priority: medium
+    given: "Screen is in clear_confirm state; clear_local_data_sheet is visible"
+    when: "User taps the Cancel button (dismiss_clear_local_data action)"
+    then:
+      - "Bottom-sheet animates out; screen returns to content state"
+      - "No Room/SQLDelight cache rows are deleted"
+      - "No DataStore cached-at timestamps are reset"
+      - "Open Banking consent authorisations are unaffected"
+      - "All settings rows remain as they were before the sheet appeared"
+
+  - id: TC-SET-017
+    description: "Tapping Confirm in clear_confirm bottom-sheet executes cache erasure; consent authorisations unaffected"
+    state: clear_confirm
+    priority: high
+    given: "Screen is in clear_confirm state; clear_local_data_sheet is visible; device has locally cached account and transaction rows"
+    when: "User taps the Confirm/Clear button (execute_clear_local_data action)"
+    then:
+      - "Bottom-sheet dismisses; screen transitions back to content state"
+      - "All locally cached account and transaction rows are deleted from Room/SQLDelight"
+      - "DataStore cached-at timestamp keys are reset to null"
+      - "Open Banking consent authorisations on the server are NOT deleted or modified"
+      - "Success snackbar is displayed confirming erasure completion"
+      - "On Room/SQLDelight delete failure (IOException): error snackbar with Retry is shown; DataStore timestamps are NOT reset (transactional ordering preserved)"

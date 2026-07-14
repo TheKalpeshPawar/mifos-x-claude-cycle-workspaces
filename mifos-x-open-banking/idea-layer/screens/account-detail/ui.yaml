@@ -14,16 +14,21 @@ status_history:
     to: enriched
     at: "2026-06-29"
     by: "/idea-enrich (quality push — i18n, empty state, a11y, consent badge)"
+  - from: enriched
+    to: enriched
+    at: "2026-07-14"
+    by: "/idea enrich"
 
 business_logic:
   kind: crud
-  description: "Fetches account metadata via GET /accounts/{AccountId} and all balance types via GET /accounts/{AccountId}/balances using ktorfit in parallel coroutines; merges results into AccountDetailUiState exposing Nickname, Identification, Currency, AccountSubType, Servicer and OBCashBalance3 rows with Type and Amount; routes to Empty state when balances array is present but empty; routes to typed Error state on 401 (TokenExpiredError), 403 (ConsentWithdrawnError), 404 (AccountNotFoundError), or network failure (NetworkError), each with distinct recoverability and user message."
+  description: "Fetches account metadata and balances in parallel via ktorfit (GET /accounts/{id} + GET /accounts/{id}/balances); produces AccountDetailUiState (Loading/Content/Empty/Error) with typed error handling (401/403/404/network). Chip row navigates to transactions, statements, standing-orders, direct-debits, scheduled-payments, beneficiaries, atm-locator, product, and party, each scoped by accountId."
   external_library_refs:
     - "ktorfit"
     - "hsbc-obie-ais-v4.0:accounts"
     - "hsbc-obie-ais-v4.0:balances"
   description_author: claude
-  description_authored_at: "2026-06-29T12:00:00Z"
+  description_authored_at: "2026-07-14T20:00:00Z"
+  description_hash: machine-authored
 
 # ─────────────────────────────────────────────────────────────────────
 # STATE MODEL — AccountDetailViewModel contract
@@ -63,6 +68,9 @@ state_model:
         - navigateDirectDebits     # push direct-debits route with accountId
         - navigateScheduledPayments # push scheduled-payments route with accountId
         - navigateBeneficiaries    # push beneficiaries route with accountId
+        - navigateAtmLocator       # push atm-locator route with accountId
+        - navigateProduct          # push product route with accountId
+        - navigateParty            # push party route with accountId
     di:
       - AccountDetailRepository    # wraps ktorfit GET /accounts + GET /accounts/balances calls
       - NavigationController       # KMP navigation abstraction for route push/pop
@@ -71,7 +79,7 @@ state_model:
 # DESIGN READ context: trustworthy, calm, secure, data-legible.
 # Density dial = 5 → 6–9 top-level components target.
 # quiet_constraints: accessibility-first → ≤4 interactive elements per
-# state. Content state has 8 chip interactions: waivered as sub-items
+# state. Content state has 9 chip interactions: waivered as sub-items
 # inside a single chip_row interactive group per M3 accessibility spec.
 # ─────────────────────────────────────────────────────────────────────
 
@@ -407,6 +415,38 @@ components:
         accessibility_label: "{strings.account_detail.nav_chip_atm_accessibility}"
         test_context:
           purpose: "Navigate to ATM / branch locator scoped to this account's sort-code area."
+          required_fields: [account.AccountId]
+          interaction_type: navigate
+          data_driven: true
+
+      - type: chip
+        id: chip_product
+        label: "{strings.nav_chip_product}"
+        icon: description
+        on_click:
+          action: navigate_product
+          target: product
+          params:
+            accountId: "{account.AccountId}"
+        accessibility_label: "{strings.nav_chip_product_accessibility}"
+        test_context:
+          purpose: "Navigate to the account's product terms & features (GET /accounts/{AccountId}/product)."
+          required_fields: [account.AccountId]
+          interaction_type: navigate
+          data_driven: true
+
+      - type: chip
+        id: chip_party
+        label: "{strings.nav_chip_party}"
+        icon: person
+        on_click:
+          action: navigate_party
+          target: party
+          params:
+            accountId: "{account.AccountId}"
+        accessibility_label: "{strings.nav_chip_party_accessibility}"
+        test_context:
+          purpose: "Navigate to the account holder / party details (GET /accounts/{AccountId}/party)."
           required_fields: [account.AccountId]
           interaction_type: navigate
           data_driven: true

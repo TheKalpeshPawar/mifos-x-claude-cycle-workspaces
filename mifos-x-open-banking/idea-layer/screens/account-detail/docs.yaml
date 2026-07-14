@@ -10,8 +10,9 @@ archetype: detail_screen
 description: >-
   Single account detail — account metadata (Nickname, Identification, Currency, AccountSubType, Servicer), all balance
   types from OBCashBalance3, an Open Banking trust badge, and entry-point action chips to transactions, statements,
-  standing orders, direct debits, scheduled payments, and beneficiaries. Empty state handles zero-balance accounts (e.g.
-  Global Wallet). Error state is typed by HTTP code (401/403/404/network) with per-error recoverability.
+  standing orders, direct debits, scheduled payments, beneficiaries, ATM locator, product, and party. Empty state
+  handles zero-balance accounts (e.g. Global Wallet). Error state is typed by HTTP code (401/403/404/network) with
+  per-error recoverability.
 has_ui: true
 has_server: false
 has_tests: true
@@ -35,6 +36,11 @@ metadata:
     - tests.yaml expanded from 8 to 15 scenarios covering all 4 states + all chip navigations
     - state_model block added (AccountDetailViewModel — screen_state sealed class, 5 error types, 9 actions, 2 DI entries) — closes QUALITY_FORMULA Cat 10
     - TC-ACCTDTL-005 updated from "6" to "7 chips" with chip_atm_locator assertion (ATM chip added 2026-06-30)
+    - chip_product (navigate_product → product) and chip_party (navigate_party → party) added to action_chips row (2026-07-14)
+    - TC-ACCTDTL-005 updated from "7" to "9 chips" with chip_product and chip_party assertions
+    - TC-ACCTDTL-019 (Product chip nav) and TC-ACCTDTL-020 (Party chip nav) added to tests.yaml
+    - NavigateAtmLocator, NavigateProduct, NavigateParty vm_actions added to docs.yaml
+    - business_logic.description refreshed to include product/party nav and trimmed to <400 chars
 contracts: []
 libraries:
   - capability: rest-client
@@ -111,6 +117,24 @@ vm_actions:
     side_effects:
       - Push beneficiaries route with accountId param
     error_handling: {}
+  - name: NavigateAtmLocator
+    signature: 'fun navigateAtmLocator(accountId: String)'
+    state_mutations: []
+    side_effects:
+      - Push atm-locator route with accountId param
+    error_handling: {}
+  - name: NavigateProduct
+    signature: 'fun navigateProduct(accountId: String)'
+    state_mutations: []
+    side_effects:
+      - Push product route with accountId param; triggers GET /accounts/{accountId}/product on product screen mount
+    error_handling: {}
+  - name: NavigateParty
+    signature: 'fun navigateParty(accountId: String)'
+    state_mutations: []
+    side_effects:
+      - Push party route with accountId param; triggers GET /accounts/{accountId}/party on party screen mount
+    error_handling: {}
 error_cases:
   - id: TokenExpiredError
     http_status: 401
@@ -141,11 +165,12 @@ test_fixtures:
   source: >-
     HSBC sandbox — account 40051512345678 CurrentAccount (3 balance types: InterimAvailable, InterimBooked,
     OpeningBooked) + 40051599999999 GlobalWallet (zero balances empty scenario)
-  scenario_count: 15
+  scenario_count: 20
   priority_distribution:
-    critical: 4
-    high: 6
-    medium: 5
+    critical: 5
+    high: 7
+    medium: 7
+    low: 1
 status_history:
   - from: enriched
     to: designed
