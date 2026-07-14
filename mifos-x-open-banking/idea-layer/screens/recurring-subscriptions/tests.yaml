@@ -99,3 +99,42 @@ scenarios:
       - "loadSubscriptions() is reinvoked"
       - "On second success: state transitions to content with correct subscription list"
     priority: medium
+
+  # ── Cadence normalisation edge cases ─────────────────────────────
+  - id: TC-RS-009
+    description: "Weekly cadence amount normalised to monthly equivalent in summary total"
+    state: content
+    given: "Transaction cache yields Gym Membership with Weekly cadence at £10.00 per week (≥2 occurrences within ±5 day tolerance)"
+    when: "recurring_detect trigger completes"
+    then:
+      - "summary_amount shows '£43.33' (£10.00 × 52 / 12, rounded to 2dp)"
+      - "Gym Membership row trailing_content shows '£10.00' (per-occurrence charge, not normalised)"
+      - "supporting_text cadence segment reads 'Weekly'"
+    priority: high
+
+  - id: TC-RS-010
+    description: "Fortnightly cadence amount normalised to monthly equivalent in summary total"
+    state: content
+    given: "Transaction cache yields Council Tax payment with Fortnightly cadence at £25.00 per fortnight (≥2 occurrences within ±5 day tolerance)"
+    when: "recurring_detect trigger completes"
+    then:
+      - "summary_amount shows '£54.17' (£25.00 × 26 / 12, rounded to 2dp)"
+      - "Council Tax row trailing_content shows '£25.00'"
+      - "supporting_text cadence segment reads 'Fortnightly'"
+    priority: medium
+
+  # ── Merchant name normalisation ───────────────────────────────────
+  - id: TC-RS-011
+    description: "Merchant normalisation merges legal-suffix variants into single subscription row"
+    state: content
+    given: >
+      Transaction cache contains monthly payments for:
+      'NETFLIX.COM UK LTD' (2 occurrences), 'Netflix UK Ltd' (1 occurrence),
+      'NETFLIX INC' (1 occurrence) — all within ±5 day monthly window
+    when: "recurring_detect trigger applies lower-case + strip-legal-suffix + collapse-whitespace normalisation"
+    then:
+      - "subscriptions_list contains exactly 1 Netflix entry (not 3 separate rows)"
+      - "row label shows normalised name 'Netflix' (or closest clean form)"
+      - "Cadence reads 'Monthly' based on 4 merged occurrences"
+      - "detected_badge chip is visible on the merged row"
+    priority: high

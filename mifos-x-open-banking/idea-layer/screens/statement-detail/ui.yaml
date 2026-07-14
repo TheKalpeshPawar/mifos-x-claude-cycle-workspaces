@@ -1,8 +1,53 @@
 screen_id: statement-detail
+archetype: detail_screen
 name: "Statement Detail"
 status: enriched
-quality_score: 93
+quality_score: 95
 initial_state: loading
+
+# ── ViewModel State Machine ─────────────────────────────────────────
+state_model:
+  _version: v3
+  class: StatementDetailUiState
+  sealed: true
+  states:
+    - name: Loading
+      fields: []
+    - name: Content
+      fields:
+        - name: statement
+          type: OBStatement2
+        - name: statementTransactions
+          type: "List<OBTransaction6>"
+          note: "Non-empty; empty array produces Empty state instead"
+    - name: Empty
+      fields:
+        - name: statement
+          type: OBStatement2
+          note: "Statement loaded but statementTransactions array is empty (valid OBIE edge case)"
+    - name: Error
+      fields:
+        - name: message
+          type: String
+        - name: errorCode
+          type: StatementDetailErrorCode
+          note: "Enum: StatementNotFound | ConsentMissingReadStatements | SessionExpired | NetworkError"
+  secondary_state:
+    - class: DownloadState
+      sealed: true
+      states:
+        - name: Idle
+          fields: []
+        - name: Downloading
+          fields: []
+        - name: Downloaded
+          fields:
+            - name: uri
+              type: URI
+        - name: DownloadError
+          fields:
+            - name: message
+              type: String
 
 shell:
   bottom_navigation_visible: true
@@ -48,6 +93,7 @@ components:
     id: statement_header_card
     state_binding: [content, empty]
     elevation: 2
+    accessibility_label: "{strings.stmt_detail.a11y.header_card}"
     test_context:
       purpose: "Period header card showing statement identity fields from OBStatement2"
       required_fields: [statement.StatementReference, statement.StartDateTime, statement.EndDateTime, statement.Type, statement.CreationDateTime]
@@ -114,6 +160,7 @@ components:
     id: balances_list
     state_binding: [content, empty]
     items_source: "{statement.StatementAmount}"
+    accessibility_label: "{strings.stmt_detail.a11y.balances_list}"
     test_context:
       purpose: "Renders OBStatementAmount2 entries (Type, CreditDebitIndicator, Amount)"
       required_fields: [statement.StatementAmount]
@@ -151,6 +198,7 @@ components:
     state_binding: [content, empty]
     items_source: "{statement.StatementFee}"
     visible_when: "statement.StatementFee.length > 0"
+    accessibility_label: "{strings.stmt_detail.a11y.fees_list}"
     test_context:
       purpose: "Renders OBStatementFee1 entries when present (Description, Amount)"
       required_fields: [statement.StatementFee]
@@ -187,6 +235,7 @@ components:
     state_binding: [content, empty]
     items_source: "{statement.StatementInterest}"
     visible_when: "statement.StatementInterest.length > 0"
+    accessibility_label: "{strings.stmt_detail.a11y.interest_list}"
     test_context:
       purpose: "Renders OBStatementInterest1 entries (Description, Amount)"
       required_fields: [statement.StatementInterest]
@@ -223,6 +272,7 @@ components:
     state_binding: [content]
     scroll_direction: vertical
     items_source: "{statementTransactions}"
+    accessibility_label: "{strings.stmt_detail.a11y.transactions_list}"
     test_context:
       purpose: "Scrollable list of OBTransaction6 entries within the statement period"
       required_fields: [statementTransactions]
@@ -237,10 +287,16 @@ components:
         trailing_style: titleSmall
         trailing_color: "{item.CreditDebitIndicator == 'Credit' ? 'tertiary' : 'error'}"
         accessibility_label: "{item.TransactionInformation} {item.CreditDebitIndicator} {item.Amount.Amount} {item.Amount.Currency} {strings.stmt_detail.a11y.on_date} {item.BookingDateTime}"
+        on_click:
+          action: navigate_transaction_detail
+          target: transaction-detail
+          params:
+            transactionId: "{item.TransactionId}"
+            accountId: "{item.AccountId}"
         test_context:
-          purpose: "Single OBTransaction6 row; overline=date, credit=tertiary/green, debit=error/red"
-          required_fields: [item.TransactionInformation, item.CreditDebitIndicator, item.Amount.Amount, item.Amount.Currency, item.BookingDateTime]
-          interaction_type: display
+          purpose: "Tappable OBTransaction6 row within statement period; overline=date, credit=tertiary/green, debit=error/red; navigates to transaction-detail"
+          required_fields: [item.TransactionId, item.AccountId, item.TransactionInformation, item.CreditDebitIndicator, item.Amount.Amount, item.Amount.Currency, item.BookingDateTime]
+          interaction_type: action
           data_driven: true
 
   # ── Empty transactions state ───────────────────────────────────────────────────

@@ -132,3 +132,34 @@ scenarios:
     then:
       - "AMAZON UK, PRET A MANGER, TESCO, TFL rows show amount in error colour prefixed with '- £'"
       - "SALARY ACME LTD row shows amount in primary colour prefixed with '+ £'"
+
+  - id: TC-HOME-016
+    description: "Statements quick action navigates to statements screen"
+    state: content
+    given: "Content state loaded for account 40051512345678"
+    when: "User taps 'Statements' icon button in quick actions row"
+    then: "Navigates to statements screen with accountId=40051512345678"
+
+  - id: TC-HOME-017
+    description: "503 from HSBC sandbox surfaces recoverable error state with retry"
+    state: error
+    given: "HSBC sandbox returns 503 Service Unavailable on GET /accounts"
+    when: "Screen mounts"
+    then:
+      - "Error state renders with error_outline icon"
+      - "Body shows 'Unable to load your account. Please retry.'"
+      - "Retry button visible (error.recoverable=true)"
+      - "Tapping Retry re-triggers home_load from beginning"
+    priority: medium
+
+  - id: TC-HOME-018
+    description: "selectedAccountId persists across app restarts via DataStore"
+    state: content
+    given: "User previously selected 'ISA Saver' (AccountId=40051589012345); app is restarted"
+    when: "Home screen mounts after cold restart"
+    then:
+      - "Loading state shown briefly"
+      - "Hero balance card renders ISA Saver (not default first account)"
+      - "'ISA Saver' chip is selected in account switcher strip"
+      - "No prompt or account-selection step required"
+    priority: medium

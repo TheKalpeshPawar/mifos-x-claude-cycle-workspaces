@@ -2,16 +2,22 @@ screen_id: product
 
 on_mount:
   - trigger: product_load
-    description: "Load product terms for the given accountId."
+    description: "Load product terms for the given accountId. Transitions to empty state if OBReadProduct2.Data is empty or both PCA and BCA fields are null (e.g. GlobalMoney, Savings, CreditCard account types)."
     steps:
       - call: product
         path_params:
           AccountId: "{accountId}"
         store_as: product
     on_loading: loading
-    on_success: content
-    on_error: error
+    on_success: content    # OBReadProduct2.Data non-empty AND PCA/BCA non-null
+    on_empty: empty        # OBReadProduct2.Data empty list OR (product.PCA == null AND product.BCA == null)
+    on_error: error        # HTTP 401 / 403 / 404 / network error
 
 on_user_action:
   - trigger: retry_load
     re_runs: [product_load]
+
+cache_strategy: none
+# Product terms data sourced directly from OBIE GET /accounts/{AccountId}/product on every mount.
+# No local caching: product terms can be updated by the bank; stale cached data could mislead PSU
+# about current charges. Network calls are lightweight (single OBReadProduct2 response).

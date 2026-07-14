@@ -81,3 +81,29 @@ scenarios:
     priority: normal
     when: "User taps back navigation arrow in top app bar"
     then: "Navigates back to account-detail screen; accountId preserved in back-stack"
+
+  - id: TC-PROD-008
+    description: "BCA account type renders product terms from product.BCA path"
+    state: content
+    priority: normal
+    given: "Valid PSU access token; HSBC sandbox returns OBReadProduct2 for a Business Current Account (BCA) with product.BCA non-null, product.PCA null"
+    when: "Screen mounts with accountId referencing a BCA"
+    then:
+      - "Product header card shows BCA ProductName and type label 'BCA'"
+      - "ProductType overline reads 'BCA' (dynamic data, i18n:skip)"
+      - "Fee, Credit Interest, Overdraft, and Features sections render from product.BCA.* paths"
+      - "Empty state is NOT shown (BCA product data present)"
+      - "Error state is NOT shown"
+
+  - id: TC-PROD-009
+    description: "Error state on network failure (device offline)"
+    state: error
+    priority: normal
+    given: "Device is offline; GET /accounts/{id}/product throws IOException or similar network exception"
+    when: "Screen mounts"
+    then:
+      - "Error empty_state renders with error_outline icon"
+      - "Title shows 'Could not load product terms'"
+      - "Body shows localised network error message from ViewModel"
+      - "Retry button visible with label 'Retry'"
+      - "Tapping Retry re-dispatches product_load; if connection restored, transitions to content or empty state"

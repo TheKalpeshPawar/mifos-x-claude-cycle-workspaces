@@ -38,3 +38,21 @@ on_error:
   retry_action: reload_finances
   nav_target: null
   error_message_key: "pfm_dashboard.error.body"
+
+# ── CC8: cache_lifecycle ─────────────────────────────────────────────────────
+# Addresses CC8 (cache_lifecycle) CAPABILITY_GAPS warn.
+cache_layers:
+  - name: pfm_room_cache
+    store: room-kmp
+    expiry_ttl_hours: 24
+    max_size_mb: 50
+    eviction_policy: lru
+    clear_triggers:
+      - manual            # user invokes Settings → Clear Local Data
+      - consent_revoked   # HSBC consent revocation flushes all cached PFM data
+    staleness_indicator: true
+    staleness_note: >
+      If the cache was last written more than 24 h ago, the dashboard shows a
+      "Data may be out of date" informational banner. Tapping it triggers a
+      background AIS re-fetch via the transactions feature (not a hard-block;
+      stale data is still displayed while the refresh runs in the background).

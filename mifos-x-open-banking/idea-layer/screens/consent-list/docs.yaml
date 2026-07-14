@@ -1,100 +1,122 @@
-feature: consent-dashboard
-status: enriched
+feature: consent-list
+status: designed
+score: 95
 cluster: consent
-acceptance_refs: [FR-008]
-scaffolded_by: "/idea-heal"
-enriched_by: "/idea-enrich (quality-push)"
-enriched_at: "2026-06-29"
+acceptance_refs:
+  - FR-008
+scaffolded_by: /idea-heal
+enriched_by: /idea-enrich (quality-push)
+enriched_at: '2026-06-29'
 archetype: index_list
-description: "Consent management list screen reachable from More/Settings. Partitions locally-stored HSBC consents into Active (Authorised) and History (Expired/Revoked) sections separated by a divider. Active cards show OBIE status chip, permission count, expiry countdown, and connection date. When days_until_expiry ≤ 14, a reconfirm urgency chip renders on the card and a warning banner appears at the top of the screen (OBIE 90-day PSU reconfirmation requirement — FR-008). HTTP 401 from consent-status transitions to a dedicated error_auth state with a 'Sign in again' CTA rather than the generic retry flow. Tapping any card navigates to consent-detail with the ConsentId as a route parameter."
+description: >-
+  Consent management list screen reachable from More/Settings. Partitions locally-stored HSBC consents into Active
+  (Authorised) and History (Expired/Revoked) sections separated by a divider. Active cards show OBIE status chip,
+  permission count, expiry countdown, and connection date. When days_until_expiry ≤ 14, a reconfirm urgency chip renders
+  on the card and a warning banner appears at the top of the screen (OBIE 90-day PSU reconfirmation requirement —
+  FR-008). HTTP 401 from consent-status transitions to a dedicated error_auth state with a 'Sign in again' CTA rather
+  than the generic retry flow. Tapping any card navigates to consent-detail with the ConsentId as a route parameter.
 has_ui: true
 has_server: false
-
 metadata:
   category: crud
   implementation_ready: true
-  impl_ready_at: "2026-06-29T12:00:00Z"
-  impl_ready_schema: "v2"
-
+  impl_ready_at: '2026-06-29T12:00:00Z'
+  impl_ready_schema: v2
 contracts: []
-
 libraries:
   - capability: rest-client
     library: ktorfit
-    version: "latest"
-    targets: [android, ios, desktop, web]
-
+    version: latest
+    targets:
+      - android
+      - ios
+      - desktop
+      - web
 vm_state:
   computed_fields:
     - name: active_consents
-      type: "List<OBReadConsentResponse1>"
-      derived_from: "consents.filter { it.Data.Status == 'Authorised' }"
+      type: List<OBReadConsentResponse1>
+      derived_from: consents.filter { it.Data.Status == 'Authorised' }
     - name: history_consents
-      type: "List<OBReadConsentResponse1>"
-      derived_from: "consents.filter { it.Data.Status in listOf('Expired', 'Revoked') }"
+      type: List<OBReadConsentResponse1>
+      derived_from: consents.filter { it.Data.Status in listOf('Expired', 'Revoked') }
     - name: has_active_consents
       type: Boolean
-      derived_from: "active_consents.isNotEmpty()"
+      derived_from: active_consents.isNotEmpty()
     - name: has_history_consents
       type: Boolean
-      derived_from: "history_consents.isNotEmpty()"
+      derived_from: history_consents.isNotEmpty()
     - name: has_near_expiry_consents
       type: Boolean
-      derived_from: "active_consents.any { it.days_until_expiry <= 14 }"
+      derived_from: active_consents.any { it.days_until_expiry <= 14 }
     - name: days_until_expiry
       type: Int
-      derived_from: "ChronoUnit.DAYS.between(Clock.System.now(), Data.ExpirationDateTime).coerceAtLeast(0)"
-      note: "Computed per consent item; coerced to 0 for already-expired consents in history"
+      derived_from: ChronoUnit.DAYS.between(Clock.System.now(), Data.ExpirationDateTime).coerceAtLeast(0)
+      note: Computed per consent item; coerced to 0 for already-expired consents in history
     - name: expiry_color
-      type: "String (design token)"
-      derived_from: "if (days_until_expiry <= 14) 'error' else 'on-surface-variant'"
+      type: String (design token)
+      derived_from: if (days_until_expiry <= 14) 'error' else 'on-surface-variant'
     - name: formatted_creation_date
       type: String
-      derived_from: "Data.CreationDateTime.format('d MMM yyyy')"
+      derived_from: Data.CreationDateTime.format('d MMM yyyy')
     - name: formatted_expiry_date
       type: String
-      derived_from: "Data.ExpirationDateTime.format('d MMM yyyy')"
-
+      derived_from: Data.ExpirationDateTime.format('d MMM yyyy')
 vm_actions:
   - name: LoadConsents
-    signature: "suspend fun loadConsents(): Unit"
-    state_mutations: ["uiState = Loading"]
+    signature: 'suspend fun loadConsents(): Unit'
+    state_mutations:
+      - uiState = Loading
     side_effects:
-      - "LocalStorage.getAllConsentIds()"
-      - "ConsentService.getConsentStatus(consentId) for each stored id"
-      - "Partition results into active_consents and history_consents"
-      - "Compute days_until_expiry, expiry_color, formatted dates per item"
+      - LocalStorage.getAllConsentIds()
+      - ConsentService.getConsentStatus(consentId) for each stored id
+      - Partition results into active_consents and history_consents
+      - Compute days_until_expiry, expiry_color, formatted dates per item
     error_handling:
-      NetworkError: "Transition to error state with message"
-      HttpException(401): "Transition to error_auth state — PSU session expired, prompt re-auth"
-      HttpException(500): "Transition to error state with generic message"
+      NetworkError: Transition to error state with message
+      HttpException(401): Transition to error_auth state — PSU session expired, prompt re-auth
+      HttpException(500): Transition to error state with generic message
   - name: NavigateConsentDetail
-    signature: "fun navigateConsentDetail(consentId: String): Unit"
+    signature: 'fun navigateConsentDetail(consentId: String): Unit'
     state_mutations: []
-    side_effects: ["Navigator.navigate(Route.ConsentDetail(consentId))"]
+    side_effects:
+      - Navigator.navigate(Route.ConsentDetail(consentId))
     error_handling: {}
   - name: NavigateConnect
-    signature: "fun navigateConnect(): Unit"
+    signature: 'fun navigateConnect(): Unit'
     state_mutations: []
-    side_effects: ["Navigator.navigate(Route.UserOnboarding)"]
+    side_effects:
+      - Navigator.navigate(Route.UserOnboarding)
     error_handling: {}
   - name: RetryLoad
-    signature: "suspend fun retryLoad(): Unit"
-    state_mutations: ["uiState = Loading"]
-    side_effects: ["ConsentService.getConsentStatus(consentId) for each stored id"]
+    signature: 'suspend fun retryLoad(): Unit'
+    state_mutations:
+      - uiState = Loading
+    side_effects:
+      - ConsentService.getConsentStatus(consentId) for each stored id
     error_handling:
-      NetworkError: "Transition to error state"
-      HttpException(401): "Transition to error_auth state"
+      NetworkError: Transition to error state
+      HttpException(401): Transition to error_auth state
   - name: NavigateReauth
-    signature: "fun navigateReauth(): Unit"
+    signature: 'fun navigateReauth(): Unit'
     state_mutations: []
-    side_effects: ["Navigator.navigate(Route.Login)"]
-    note: "Triggered from error_auth state when PSU access token is expired"
+    side_effects:
+      - Navigator.navigate(Route.Login)
+    note: Triggered from error_auth state when PSU access token is expired
     error_handling: {}
-
-error_cases: [NetworkError, TokenExpiredSession, ConsentStatusServerError]
-
+error_cases:
+  - NetworkError
+  - TokenExpiredSession
+  - ConsentStatusServerError
 test_fixtures:
-  source: "screens/consent-list/tests.yaml"
+  source: screens/consent-list/tests.yaml
   scenario_count: 8
-  priority_distribution: { high: 5, medium: 3, low: 0 }
+  priority_distribution:
+    high: 5
+    medium: 3
+    low: 0
+status_history:
+  - from: enriched
+    to: designed
+    at: '2026-07-01T10:52:41.602Z'
+    by: /idea-export-stitch

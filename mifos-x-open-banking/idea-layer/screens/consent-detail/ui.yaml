@@ -1,4 +1,5 @@
 screen_id: consent-detail
+archetype: detail_screen
 name: "HSBC Connection Detail"
 status: enriched
 quality_score: 95
@@ -60,7 +61,7 @@ shell:
   fab_visible: false
 
 # ── States ──────────────────────────────────────────────────────────
-states: [loading, content, revoke_confirm, revoking, error]
+states: [loading, content, revoke_confirm, revoking, error, empty]
 
 # ── Components ──────────────────────────────────────────────────────
 components:
@@ -112,6 +113,7 @@ components:
           - type: image
             id: bank_logo
             asset: "ic_hsbc_logo"
+            alt: "{strings.consent_detail.bank_logo_description}"
             content_description: "{strings.consent_detail.bank_logo_description}"
             accessibility_label: "{strings.consent_detail.bank_logo_a11y}"
             test_context:
@@ -377,4 +379,33 @@ components:
           purpose: "Retry CTA — re-triggers GET /account-access-consents/{ConsentId} after a transient load or revoke failure"
           required_fields: [on_click.action]
           interaction_type: action
+          data_driven: false
+
+  # ── Empty state ─────────────────────────────────────────────────────
+  - type: empty_state
+    id: empty_state
+    variant: neutral
+    state_binding: [empty]
+    icon: link_off
+    title: "{strings.consent_detail.empty.title}"
+    body: "{strings.consent_detail.empty.body}"
+    accessibility_label: "{strings.consent_detail.empty.a11y}"
+    test_context:
+      purpose: "Shown when GET /account-access-consents/{ConsentId} returns 200 with no Data block — ConsentId exists but OBIE response carries no consent record; prompts PSU to return to consent-list"
+      required_fields: [icon, title, body]
+      interaction_type: display
+      data_driven: false
+    children:
+      - type: button
+        id: empty_go_back_button
+        variant: filled
+        label: "{strings.consent_detail.empty.go_back}"
+        accessibility_label: "{strings.consent_detail.empty.go_back_a11y}"
+        on_click:
+          action: navigate_back
+          target: consent-list
+        test_context:
+          purpose: "Returns PSU to consent-list when the selected consent yields an empty OBIE API response"
+          required_fields: [on_click.action, on_click.target]
+          interaction_type: navigate
           data_driven: false

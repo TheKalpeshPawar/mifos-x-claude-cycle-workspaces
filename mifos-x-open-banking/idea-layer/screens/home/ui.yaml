@@ -1,12 +1,19 @@
 screen_id: home
+archetype: dashboard
 name: "{strings.home.screen.title}"
 status: enriched
-quality_score: 91
+quality_score: 95
 initial_state: loading
 i18n: true
 
+screens:
+  - id: home
+    name: "{strings.home.screen.title}"
+    viewmodel: HomeViewModel
+
 status_history:
   - { from: draft, to: enriched, at: "2026-06-30", by: "/idea-add (create + enrich)" }
+  - { from: enriched, to: enriched, at: "2026-07-14", by: "/idea-enrich (quality-pass)" }
 
 business_logic:
   kind: aggregate
@@ -32,6 +39,13 @@ shell:
   bottom_navigation_visible: true
   top_app_bar_visible: false
   fab_visible: false
+
+dependencies:
+  tier: 0
+  features:
+    - accounts
+    - transactions
+    - balances
 
 # ─────────────────────────────────────────────────────────────────────
 # STATES — full coverage required
@@ -99,6 +113,14 @@ components:
     scroll_direction: horizontal
     padding: { top: spacing.md, horizontal: spacing.md, bottom: spacing.xs }
     items_source: "{allAccounts}"
+    api_id: accounts-list
+    test_context:
+      purpose: "Horizontal scrolling strip of account chips — user selects active account to view"
+      data_driven: true
+      required_fields:
+        - "items_source"
+        - "on_click.action"
+      interaction_type: action
     children:
       - type: chip
         id: account_chip
@@ -120,6 +142,15 @@ components:
     background: "primaryContainer"
     margin: { horizontal: spacing.md, bottom: spacing.md }
     accessibility_label: "{strings.home.hero.card.accessibility}"
+    api_id: selected-account-balances
+    test_context:
+      purpose: "Hero card showing selected account nickname, InterimAvailable balance, and available balance — tapping navigates to account-detail"
+      data_driven: true
+      required_fields:
+        - "api_id"
+        - "on_click.action"
+        - "on_click.target"
+      interaction_type: navigate
     on_click:
       action: navigate_account_detail
       target: account-detail
@@ -327,6 +358,14 @@ components:
         scroll_direction: none
         gap: spacing.xxs
         accessibility_label: "{strings.home.recent_transactions.list.accessibility}"
+        api_id: recent-transactions
+        test_context:
+          purpose: "Ordered list of up to 5 most-recent Booked transactions; debit=error colour, credit=primary colour; each row navigates to transaction-detail"
+          data_driven: true
+          required_fields:
+            - "items_source"
+            - "api_id"
+          interaction_type: navigate
         children:
           - type: card
             id: recent_tx_row
@@ -388,6 +427,13 @@ components:
     padding: spacing.md
     margin: { horizontal: spacing.md, bottom: spacing.xl }
     accessibility_label: "{strings.home.spending_snapshot.accessibility}"
+    test_context:
+      purpose: "Summary card showing total spend this month and top spending category from cached Room DB PFM data; tapping navigates to spending-by-category"
+      data_driven: true
+      required_fields:
+        - "on_click.action"
+        - "on_click.target"
+      interaction_type: navigate
     on_click:
       action: navigate_spending
       target: spending-by-category

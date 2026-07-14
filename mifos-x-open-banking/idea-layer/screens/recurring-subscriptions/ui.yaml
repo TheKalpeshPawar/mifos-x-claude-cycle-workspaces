@@ -1,4 +1,5 @@
 screen_id: recurring-subscriptions
+archetype: index_list
 name: "Recurring Payments"
 status: enriched
 initial_state: loading
@@ -173,6 +174,54 @@ components:
           interaction_type: action
           data_driven: false
 
+# ── State model ─────────────────────────────────────────────────────
+state_model:
+  RecurringSubscriptionsViewModel:
+    state:
+      fields:
+        - name: uiState
+          type: "RecurringSubscriptionsUiState"
+          description: "Sealed class: Loading | Content(subscriptions, summary) | Empty | Error(throwable)"
+        - name: subscriptions
+          type: "List<RecurringSubscription>"
+          description: "Detected recurring payment patterns sorted by monthly_equivalent descending"
+        - name: summary
+          type: "RecurringSummary"
+          description: "Aggregated total_monthly (Float, 2dp) and count (Int) across all cadences"
+    screen_state:
+      members:
+        - Loading
+        - Content
+        - Empty
+        - Error
+    errors:
+      types:
+        - DataStoreReadException
+        - TransactionDeserializationException
+    actions:
+      members:
+        - loadSubscriptions
+        - retryLoadSubscriptions
+        - showMerchantTransactionHistory
+    di:
+      - TransactionRepository
+      - DateTimeProvider
+
+# ── Cross-feature dependencies ──────────────────────────────────────
+dependencies:
+  tier: 1
+  features:
+    - id: transactions
+      reads:
+        - "Local DataStore transaction cache (List<TransactionInformation>)"
+      contract: "Written by TransactionsViewModel; recurring-subscriptions is a read-only consumer — no writes to shared cache"
+
+# ── Screens registry ─────────────────────────────────────────────────
+screens:
+  - id: recurring-subscriptions
+    name: "Recurring Payments"
+    viewmodel: RecurringSubscriptionsViewModel
+
 status_history:
   - from: draft
     to: enriched
@@ -183,3 +232,8 @@ status_history:
     at: "2026-06-29"
     by: "/idea-enrich (quality push)"
     note: "Added loading/error states, full i18n wrapping, on_click drill-through, shimmer skeleton, error_state with retry"
+  - from: enriched
+    to: enriched
+    at: "2026-07-14"
+    by: "/idea-enrich (score push)"
+    note: "Added state_model (RecurringSubscriptionsViewModel), dependencies (cross-feature DataStore read from transactions), screens[] registry entry"

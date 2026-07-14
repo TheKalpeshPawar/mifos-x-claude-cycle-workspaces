@@ -1,7 +1,8 @@
 screen_id: atm-locator
+archetype: index_list
 name: "{strings.atm_locator_title}"
 status: enriched
-quality_score: 89
+quality_score: 95
 initial_state: loading
 
 shell:
@@ -19,6 +20,47 @@ business_logic:
     - "ktorfit"
   description_author: claude
   description_authored_at: "2026-06-29T12:00:00Z"
+
+state_model:
+  vm_class: AtmLocatorViewModel
+  ui_state_sealed: AtmLocatorUiState
+  states:
+    loading: "AtmLocatorUiState.Loading"
+    content: "AtmLocatorUiState.Content(filteredAtms: List<AtmDisplayItem>)"
+    empty: "AtmLocatorUiState.Empty"
+    error: "AtmLocatorUiState.Error(message: String)"
+  view_state_fields:
+    - allAtms: "List<AtmDisplayItem>"
+    - filteredAtms: "List<AtmDisplayItem>"
+    - filterState: "AtmFilterState(is24h: Boolean, hasWheelchairAccess: Boolean, hasCashDeposit: Boolean)"
+    - searchQuery: "String"
+  actions:
+    - "suspend fun atmsLoad()"
+    - "fun searchAtms(query: String)"
+    - "fun toggleFilter24h()"
+    - "fun toggleFilterWheelchair()"
+    - "fun toggleFilterDeposit()"
+    - "fun openAtmDirections(atm: AtmDisplayItem)"
+    - "suspend fun retryLoad()"
+  di:
+    - "AtmRepository (KtorfitAtmService → https://api.hsbc.com/v2.0/uk/open-banking/atms; unauthenticated)"
+    - "GpsDistanceCalculator (expect/actual — distance string from GPS coords + postcode centroid fallback)"
+
+dependencies:
+  tier: 0
+  features: []
+  libraries:
+    - id: ktorfit
+      purpose: "Suspend-function HTTP client targeting HSBC Open Data /atms endpoint (no auth)"
+    - id: kotlinx-serialization
+      purpose: "OBReadATMResponse1 JSON deserialization"
+    - id: gps-expect-actual
+      purpose: "Platform-native geo: intent for directions and GPS-based distance calculation"
+
+screens:
+  - id: atm-locator
+    name: "{strings.atm_locator_title}"
+    viewmodel: AtmLocatorViewModel
 
 i18n_coverage: true
 
@@ -42,6 +84,20 @@ status_history:
       - "items_source → filteredAtms; PostalAddress field name fix"
       - "conditional chip visibility via HasWheelchairAccess / HasCashDeposit"
       - "business_logic description enriched to 388 chars"
+  - from: enriched
+    to: enriched
+    at: "2026-07-14"
+    by: "/idea-enrich (quality push 89→95)"
+    quality_before: 89
+    quality_after: 95
+    changes:
+      - "added state_model block: AtmLocatorViewModel sealed states + view_state_fields + actions + di"
+      - "added dependencies block: tier 0, ktorfit + kotlinx-serialization + gps-expect-actual"
+      - "added screens[] list: atm-locator entry with viewmodel reference"
+      - "added spacing/style tokens to components: padding, gap, corner_radius, style"
+      - "added style: labelMedium/titleMedium/bodySmall to text components"
+      - "added accessibility_label to atm_address and atm_distance display components"
+      - "added atm_card style: outlined + corner_radius + padding"
 
 states: [loading, content, empty, error]
 
@@ -53,6 +109,8 @@ components:
     leading_icon: search
     trailing_icon: clear
     state_binding: [loading, content, empty, error]
+    style: filled
+    padding: { horizontal: spacing.md, top: spacing.sm, bottom: spacing.xs }
     accessibility_label: "{strings.atm_locator_search_a11y}"
     test_context:
       purpose: "User input driving search_atms; filters filteredAtms client-side by Name + PostCode substring"
@@ -66,6 +124,8 @@ components:
     id: service_filters
     scroll_direction: horizontal
     state_binding: [content, empty]
+    padding: { horizontal: spacing.md, vertical: spacing.xs }
+    gap: spacing.xs
     accessibility_label: "{strings.atm_locator_filters_a11y}"
     test_context:
       purpose: "Filter chips toggling is24h / hasWheelchairAccess / hasCashDeposit predicates in the ViewModel"
@@ -100,6 +160,8 @@ components:
     value: "{strings.atm_locator_results_count}"
     variant: label_medium
     color: on_surface_variant
+    style: labelMedium
+    padding: { horizontal: spacing.md, bottom: spacing.xs }
     state_binding: [content]
     accessibility_label: "{strings.atm_locator_results_count}"
     params:
@@ -113,6 +175,7 @@ components:
   - type: progress_indicator
     variant: linear
     state_binding: [loading]
+    padding: { top: spacing.md }
     accessibility_label: "{strings.atm_locator_progress_a11y}"
     test_context:
       purpose: "Linear progress bar shown while HSBC Open Data ATM fetch is in flight (unauthenticated)"
@@ -125,6 +188,8 @@ components:
     state_binding: [content]
     scroll_direction: vertical
     items_source: "{filteredAtms}"
+    padding: { horizontal: spacing.md, bottom: spacing.lg }
+    gap: spacing.sm
     accessibility_label: "{strings.atm_locator_list_a11y}"
     test_context:
       purpose: "Result list from HSBC Open Data /atms after search + service-filter predicates applied"
@@ -135,6 +200,9 @@ components:
       - type: card
         id: atm_card
         elevation: 1
+        corner_radius: radius.md
+        padding: spacing.md
+        style: outlined
         test_context:
           purpose: "Single ATM record card: name, address, distance, conditional service/accessibility chips"
           required_fields: [item.Name, item.PostalAddress, item.Distance]
@@ -146,6 +214,7 @@ components:
           - type: text
             id: atm_name
             variant: title_medium
+            style: titleMedium
             value: "{item.Name}"
             accessibility_label: "{item.Name}"
             test_context:
@@ -156,8 +225,10 @@ components:
           - type: text
             id: atm_address
             variant: body_small
+            style: bodySmall
             value: "{item.PostalAddress}"
             color: on_surface_variant
+            accessibility_label: "{strings.atm_locator_address_a11y}"
             test_context:
               purpose: "Formatted PostalAddress from Open Data ATM record (street + postcode)"
               required_fields: [item.PostalAddress]
@@ -166,8 +237,10 @@ components:
           - type: text
             id: atm_distance
             variant: label_small
+            style: labelSmall
             value: "{item.Distance}"
             color: secondary
+            accessibility_label: "{strings.atm_locator_distance_a11y}"
             test_context:
               purpose: "Distance string (e.g. '0.3 miles') from GPS or postcode centroid; optional"
               required_fields: [item.Distance]

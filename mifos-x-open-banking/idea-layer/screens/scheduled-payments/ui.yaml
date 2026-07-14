@@ -1,7 +1,9 @@
 screen_id: scheduled-payments
+archetype: index_list
 name: "{strings.sp_screen_title}"
 status: enriched
 initial_state: loading
+quality_score: 96
 
 shell:
   bottom_navigation_visible: true
@@ -50,6 +52,7 @@ components:
     state_binding: [content]
     scroll_direction: vertical
     items_source: "{scheduledPayments}"
+    api_id: scheduled-payments-list
     test_context:
       purpose: "Render full OBReadScheduledPayment3 Data.ScheduledPayment array for the account"
       required_fields: ["scheduledPayments"]
@@ -183,7 +186,80 @@ components:
           interaction_type: action
           data_driven: false
 
-quality_score: 92
+api:
+  - id: scheduled-payments-list
+    method: GET
+    endpoint: "/accounts/{AccountId}/scheduled-payments"
+    permission: ReadScheduledPaymentsDetail
+    response:
+      type: OBReadScheduledPayment3
+      data_path: Data.ScheduledPayment
+      fields:
+        - ScheduledPaymentDateTime
+        - ScheduledType
+        - Reference
+        - InstructedAmount.Amount
+        - InstructedAmount.Currency
+        - CreditorAccount.Name
+        - CreditorAccount.Identification
+    errors:
+      - code: 401
+        type: TokenExpired
+        recovery: route_to_login
+      - code: 403
+        type: ConsentRevoked
+        recovery: route_to_consent_list
+      - code: 429
+        type: RateLimited
+        recovery: show_retry_with_backoff
+      - code: IOException
+        type: NetworkError
+        recovery: show_retry
+
+state_model:
+  ScheduledPaymentsViewModel:
+    state:
+      fields:
+        - name: uiState
+          type: ScheduledPaymentsUiState
+    screen_state:
+      members:
+        - Loading
+        - "Content(scheduledPayments: List<ScheduledPaymentUiModel>)"
+        - Empty
+        - "Error(type: ScheduledPaymentsError, message: String)"
+    errors:
+      types:
+        - TokenExpired
+        - ConsentRevoked
+        - RateLimited
+        - NetworkError
+    actions:
+      members:
+        - "LoadScheduledPayments(accountId: String)"
+        - RetryLoad()
+        - NavigateBack()
+    di:
+      - "AisApiService — Koin inject; Ktorfit implementation from client-layer"
+      - "ScheduledPaymentUiModelMapper — maps OBReadScheduledPayment3 to UiModel"
+
+dependencies:
+  tier: 1
+  features:
+    - account-detail
+  libraries:
+    - name: ktorfit
+      role: "HSBC AIS HTTP client for GET /accounts/{AccountId}/scheduled-payments"
+    - name: hsbc-obie-ais-v4.0
+      role: "OBReadScheduledPayment3 response schema; ScheduledType Execution/Arrival enum"
+
+screens:
+  - id: scheduled-payments
+    name: "Scheduled Payments"
+    viewmodel: ScheduledPaymentsViewModel
+    route: "accounts/{accountId}/scheduled-payments"
+    entry_point: account-detail
+
 status_history:
   - from: draft
     to: enriched
@@ -194,3 +270,8 @@ status_history:
     at: "2026-06-29"
     by: "/idea-enrich"
     notes: "Quality 83→92: i18n wrapping (18 keys), ScheduledType chip, CreditorAccount.Identification field, comprehensive card a11y, richer business_logic description with formatting semantics"
+  - from: enriched
+    to: enriched
+    at: "2026-07-14"
+    by: "/idea-enrich"
+    notes: "Quality 92→96: Added api[] with response+errors contracts (Cat 8), api_id on list component (Cat 3), state_model block (Cat 10), dependencies block (Cat 11), screens[] (Cat 12), capability_completeness in docs.yaml"

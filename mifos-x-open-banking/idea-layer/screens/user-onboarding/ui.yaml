@@ -1,4 +1,5 @@
 screen_id: user-onboarding
+archetype: onboarding
 name: "Welcome to Open Banking"
 status: enriched
 quality_score: 95
@@ -8,6 +9,8 @@ status_history:
   - { from: draft, to: enriched, at: "2026-06-29", by: "/idea-enrich" }
   - { from: enriched, to: enriched, at: "2026-06-29", by: "/idea-enrich",
       note: "84→95: 4-state multi-step (intro/permissions_overview/consent_explainer/ob_explainer_open), i18n {strings.*} on all text, ReadAccountsDetail added, FAPI/FCA trust chips, stepper progress, consent 90-day duration note, FCA/OBIE legal footer, OB explainer bottom sheet with 3-step FAPI walkthrough, 12 test scenarios" }
+  - { from: enriched, to: enriched, at: "2026-07-14", by: "/design-validate --fix",
+      note: "STATE-001: added loading/error/empty states (onboarding_loading_indicator, onboarding_error_state with retry, onboarding_empty_state with skip-to-login). A11Y-006: added alt property to hero_illustration." }
 
 business_logic:
   kind: nav_only
@@ -21,9 +24,78 @@ shell:
   top_app_bar_visible: false
   fab_visible: false
 
-states: [intro, permissions_overview, consent_explainer, ob_explainer_open]
+states: [loading, error, empty, intro, permissions_overview, consent_explainer, ob_explainer_open]
 
 components:
+
+  # ─── LOADING state — pre-flow init ───────────────────────────────────
+  - type: progress_indicator
+    id: onboarding_loading_indicator
+    variant: circular
+    state_binding: [loading]
+    accessibility_label: "{strings.onboarding_loading_a11y}"
+    test_context:
+      purpose: "Shown briefly while ViewModel checks DataStore for a prior onboarding_completed flag before deciding to show the intro flow or skip directly to login"
+      required_fields: [variant]
+      interaction_type: display
+      data_driven: false
+
+  # ─── ERROR state — onboarding init failed ────────────────────────────
+  - type: empty_state
+    id: onboarding_error_state
+    variant: error
+    state_binding: [error]
+    icon: error_outline
+    title: "{strings.onboarding_error_title}"
+    body: "{strings.onboarding_error_body}"
+    accessibility_label: "{strings.onboarding_error_a11y}"
+    test_context:
+      purpose: "Shown when DataStore read of onboarding completion flag throws an I/O exception; PSU can retry or proceed directly to intro step"
+      required_fields: [icon, title, body]
+      interaction_type: display
+      data_driven: false
+    children:
+      - type: button
+        id: onboarding_error_retry_button
+        variant: filled
+        label: "{strings.onboarding_error_retry}"
+        accessibility_label: "{strings.onboarding_error_retry_a11y}"
+        on_click:
+          action: retry_onboarding_init
+        test_context:
+          purpose: "Re-triggers the DataStore onboarding completion check; transitions to loading then intro on success"
+          required_fields: [on_click.action]
+          interaction_type: action
+          data_driven: false
+
+  # ─── EMPTY state — no onboarding flow configured ─────────────────────
+  - type: empty_state
+    id: onboarding_empty_state
+    variant: neutral
+    state_binding: [empty]
+    icon: info_outline
+    title: "{strings.onboarding_empty_title}"
+    body: "{strings.onboarding_empty_body}"
+    accessibility_label: "{strings.onboarding_empty_a11y}"
+    test_context:
+      purpose: "Graceful fallback rendered when onboarding configuration is absent (e.g. remote feature flag disables onboarding); directs PSU to login without the educational flow"
+      required_fields: [icon, title, body]
+      interaction_type: display
+      data_driven: false
+    children:
+      - type: button
+        id: onboarding_empty_skip_button
+        variant: filled
+        label: "{strings.onboarding_empty_skip_button}"
+        accessibility_label: "{strings.onboarding_empty_skip_button_a11y}"
+        on_click:
+          action: navigate_to_login
+          target: login
+        test_context:
+          purpose: "Bypasses the onboarding flow and navigates directly to login when onboarding content is unavailable"
+          required_fields: [on_click.action, on_click.target]
+          interaction_type: navigate
+          data_driven: false
 
   # ─── STEP 1: intro ────────────────────────────────────────────────
 
@@ -43,6 +115,7 @@ components:
   - type: image
     id: hero_illustration
     asset: "ic_open_banking_hero"
+    alt: "{strings.hero_illustration_description}"
     content_description: "{strings.hero_illustration_description}"
     accessibility_label: "{strings.hero_illustration_a11y}"
     state_binding: [intro]

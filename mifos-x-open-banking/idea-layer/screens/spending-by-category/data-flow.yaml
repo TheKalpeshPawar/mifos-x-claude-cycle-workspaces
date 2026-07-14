@@ -1,5 +1,29 @@
 screen_id: spending-by-category
 
+# ── Cache lifecycle (CC8) ────────────────────────────────────────────────────
+cache_layers:
+  - name: pfm_room_cache
+    store: room-kmp
+    shared_with: [pfm-dashboard, budgets]
+    expiry:
+      ttl_hours: 24
+      staleness_policy: >
+        Aggregation always re-runs from the current Room snapshot on every selectPeriod or
+        retryCompute call; stale data is never returned from an in-memory cache. If Room is
+        empty post-cache-clear the screen transitions to UiState.Empty (not Error) because
+        zero rows is a valid clean-cache state, not a computation failure.
+    max_size_mb: 50
+    clear_triggers:
+      - source: manual
+        path: "Settings → Clear Local Data (settings screen, label: settings.clear_local_data.*)"
+      - source: consent_revoked
+        path: "ConsentRepository emits CONSENT_REVOKED event → Room transactions table wiped synchronously before UI observes stale rows"
+    notes: >
+      Cache is owned by the AIS sync layer; spending-by-category is a read-only consumer.
+      Storage visibility (path, approximate size, and manual clear affordance) is handled
+      by the Settings screen — no independent UI surface is required for this feature since
+      it shares the same backing store as pfm-dashboard and budgets.
+
 on_mount:
   - trigger: category_spend_compute
     description: "Client-derived spend aggregation for the default period (this month). Produces UiState: loading → content | empty | error."

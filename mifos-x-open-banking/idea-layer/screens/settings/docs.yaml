@@ -1,147 +1,147 @@
 feature: settings
 status: enriched
+score: 95
 cluster: settings
 acceptance_refs: []
-scaffolded_by: "/idea-heal"
+scaffolded_by: /idea-heal
 archetype: settings
-description: "App settings hub — appearance (theme), security (biometric lock + session timeout), notifications, account links (Manage Consents, Profile, Clear Local Data), and About & Legal. Client-only; no external API. SettingsViewModel drives a Loading → Content state machine over a DataStore preferences Flow."
+description: >-
+  App settings hub — appearance (theme), security (biometric lock + session timeout), notifications, account links
+  (Manage Consents, Profile, Clear Local Data), and About & Legal. Client-only; no external API. SettingsViewModel
+  drives a Loading → Content state machine over a DataStore preferences Flow.
 has_ui: true
 has_server: false
-
 metadata:
   category: settings
   implementation_ready: true
-  impl_ready_at: "2026-06-29T12:00:00Z"
-  impl_ready_schema: "v2"
-
+  impl_ready_at: '2026-06-29T12:00:00Z'
+  impl_ready_schema: v2
 contracts: []
-
 libraries:
-  - name: "androidx.datastore"
-    module: "androidx.datastore:datastore-preferences"
-    purpose: "Async persistent key-value storage for all settings preferences"
-  - name: "compose-settings"
-    module: "com.github.alorma:compose-settings-ui-m3"
-    purpose: "Pre-built Material 3 Compose settings UI components (list items, switches, dropdowns)"
-  - name: "kotlinx-serialization"
-    module: "org.jetbrains.kotlinx:kotlinx-serialization-json"
-    purpose: "Serialization for structured preference types stored in DataStore"
-
+  - name: androidx.datastore
+    module: androidx.datastore:datastore-preferences
+    purpose: Async persistent key-value storage for all settings preferences
+  - name: compose-settings
+    module: com.github.alorma:compose-settings-ui-m3
+    purpose: Pre-built Material 3 Compose settings UI components (list items, switches, dropdowns)
+  - name: kotlinx-serialization
+    module: org.jetbrains.kotlinx:kotlinx-serialization-json
+    purpose: Serialization for structured preference types stored in DataStore
 vm_actions:
   - name: updateTheme
-    signature: "suspend fun updateTheme(theme: String)"
+    signature: 'suspend fun updateTheme(theme: String)'
     state_mutations:
       - settings.theme
     side_effects:
-      - "Writes theme key to DataStore preferences atomically"
-      - "Dynamic theming reacts via collectAsStateWithLifecycle in AppTheme"
+      - Writes theme key to DataStore preferences atomically
+      - Dynamic theming reacts via collectAsStateWithLifecycle in AppTheme
     error_handling:
       on_error: log_only
-
   - name: toggleBiometricLock
-    signature: "suspend fun toggleBiometricLock()"
+    signature: suspend fun toggleBiometricLock()
     state_mutations:
       - settings.biometric_lock_enabled
     side_effects:
-      - "Flips biometric_lock_enabled in DataStore atomically"
-      - "If no enrolled biometrics detected, emits BiometricUnavailable event — no DataStore write"
+      - Flips biometric_lock_enabled in DataStore atomically
+      - If no enrolled biometrics detected, emits BiometricUnavailable event — no DataStore write
     error_handling:
       on_error: show_informational_dialog
-
   - name: updateSessionTimeout
-    signature: "suspend fun updateSessionTimeout(duration: String)"
+    signature: 'suspend fun updateSessionTimeout(duration: String)'
     state_mutations:
       - settings.session_timeout
     side_effects:
-      - "Writes session_timeout key to DataStore; value must be one of [2 minutes, 5 minutes, 10 minutes, 30 minutes]"
+      - Writes session_timeout key to DataStore; value must be one of [2 minutes, 5 minutes, 10 minutes, 30 minutes]
     error_handling:
       on_error: log_only
-
   - name: toggleConsentExpiryNotification
-    signature: "suspend fun toggleConsentExpiryNotification()"
+    signature: suspend fun toggleConsentExpiryNotification()
     state_mutations:
       - settings.notify_consent_expiry
     side_effects:
-      - "Persists notify_consent_expiry flag to DataStore atomically"
+      - Persists notify_consent_expiry flag to DataStore atomically
     error_handling:
       on_error: log_only
-
   - name: toggleSecurityAlertsNotification
-    signature: "suspend fun toggleSecurityAlertsNotification()"
+    signature: suspend fun toggleSecurityAlertsNotification()
     state_mutations:
       - settings.notify_security_alerts
     side_effects:
-      - "Persists notify_security_alerts flag to DataStore atomically"
+      - Persists notify_security_alerts flag to DataStore atomically
     error_handling:
       on_error: log_only
-
   - name: navigateConsentList
-    signature: "fun navigateConsentList()"
+    signature: fun navigateConsentList()
     state_mutations: []
     side_effects:
-      - "Emits navigation event to consent-list route"
+      - Emits navigation event to consent-list route
     error_handling: {}
-
   - name: navigateProfile
-    signature: "fun navigateProfile()"
+    signature: fun navigateProfile()
     state_mutations: []
     side_effects:
-      - "Emits navigation event to profile route"
+      - Emits navigation event to profile route
     error_handling: {}
-
   - name: clearLocalDataConfirm
-    signature: "fun clearLocalDataConfirm()"
+    signature: fun clearLocalDataConfirm()
     state_mutations: []
     side_effects:
-      - "Emits ShowClearDataConfirmation event; SettingsScreen observes and opens bottom-sheet"
+      - Emits ShowClearDataConfirmation event; SettingsScreen observes and opens bottom-sheet
     error_handling: {}
-
   - name: clearLocalData
-    signature: "suspend fun clearLocalData()"
+    signature: suspend fun clearLocalData()
     state_mutations: []
     side_effects:
-      - "Deletes all locally cached account and transaction rows from Room/SQLDelight"
-      - "Resets DataStore cached-at timestamp keys to null"
-      - "Emits LocalDataCleared event; UI shows success snackbar"
-      - "Open Banking consent authorisations in the server are NOT affected"
+      - Deletes all locally cached account and transaction rows from Room/SQLDelight
+      - Resets DataStore cached-at timestamp keys to null
+      - Emits LocalDataCleared event; UI shows success snackbar
+      - Open Banking consent authorisations in the server are NOT affected
     error_handling:
       on_error: show_error_snackbar_with_retry
-
   - name: openExternalUrl
-    signature: "fun openExternalUrl(url: String)"
+    signature: 'fun openExternalUrl(url: String)'
     state_mutations: []
     side_effects:
-      - "Fires platform intent / openURL to system browser with provided URL"
+      - Fires platform intent / openURL to system browser with provided URL
     error_handling:
       on_no_browser: show_snackbar
-
   - name: openOssLicences
-    signature: "fun openOssLicences()"
+    signature: fun openOssLicences()
     state_mutations: []
     side_effects:
-      - "Emits navigation event to AboutLibraries OSS licences destination"
+      - Emits navigation event to AboutLibraries OSS licences destination
     error_handling: {}
-
 error_cases:
-  - trigger: open_external_url
-    condition: "No browser app installed on device (ActivityNotFoundException on Android)"
-    handling: "Show snackbar — URL not opened silently; no crash. Snackbar offers no retry (no viable action available without a browser)."
-    severity: warning
-
-  - trigger: toggle_biometric_lock
-    condition: "Device has no biometric hardware or no enrolled biometrics (BiometricManager.BIOMETRIC_ERROR_NONE_ENROLLED / NO_HARDWARE)"
-    handling: "Emit BiometricUnavailable event; Settings screen shows informational AlertDialog explaining unavailability. DataStore not written; switch remains Off."
-    severity: info
-
-  - trigger: clear_local_data
-    condition: "Room/SQLDelight delete transaction fails (IOException, disk full)"
-    handling: "Show error snackbar with Retry action. DataStore timestamps are not reset until Room deletion succeeds (transactional ordering preserved)."
+  - trigger: load_settings_on_mount
+    condition: DataStore preferences Flow throws IOException on initial collection (storage corruption, disk full)
+    handling: >-
+      Transition screen to Error state. Display error_outline icon, title, body, and a Retry button. Retry re-triggers
+      Flow collection (Loading → Content on recovery, or Error again on repeat failure).
     severity: error
-
+  - trigger: open_external_url
+    condition: No browser app installed on device (ActivityNotFoundException on Android)
+    handling: >-
+      Show snackbar — URL not opened silently; no crash. Snackbar offers no retry (no viable action available without a
+      browser).
+    severity: warning
+  - trigger: toggle_biometric_lock
+    condition: >-
+      Device has no biometric hardware or no enrolled biometrics (BiometricManager.BIOMETRIC_ERROR_NONE_ENROLLED /
+      NO_HARDWARE)
+    handling: >-
+      Emit BiometricUnavailable event; Settings screen shows informational AlertDialog explaining unavailability.
+      DataStore not written; switch remains Off.
+    severity: info
+  - trigger: clear_local_data
+    condition: Room/SQLDelight delete transaction fails (IOException, disk full)
+    handling: >-
+      Show error snackbar with Retry action. DataStore timestamps are not reset until Room deletion succeeds
+      (transactional ordering preserved).
+    severity: error
 test_fixtures:
-  source: "FakeSettingsDataStore in-memory preferences; FakeLocalCacheRepository"
-  scenario_count: 10
+  source: FakeSettingsDataStore in-memory preferences; FakeLocalCacheRepository
+  scenario_count: 14
   priority_distribution:
-    high: 5
-    medium: 3
+    high: 7
+    medium: 5
     low: 2

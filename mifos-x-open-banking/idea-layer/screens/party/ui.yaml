@@ -1,7 +1,8 @@
 screen_id: party
+archetype: detail_screen
 name: "Account Holder"
 status: enriched
-quality_score: 93
+quality_score: 96
 initial_state: loading
 
 shell:
@@ -24,6 +25,29 @@ business_logic:
 state_model:
   vm_class: PartyViewModel
   ui_state_sealed: PartyUiState
+  state:
+    fields:
+      - "uiState: PartyUiState = PartyUiState.Loading"
+      - "accountId: String = \"\""
+  screen_state:
+    members:
+      - "PartyUiState.Loading"
+      - "PartyUiState.Content(party: OBParty2)"
+      - "PartyUiState.Error(message: String, errorCode: PartyErrorCode)"
+      - "PartyUiState.Empty"
+      - "PartyUiState.ConsentRequired"
+  errors:
+    types:
+      - "PartyErrorCode.AUTH — HTTP 401 access token expired; surface Retry CTA"
+      - "PartyErrorCode.NETWORK — device offline or AIS endpoint unreachable; surface Retry CTA"
+  actions:
+    members:
+      - "partyLoad(accountId: String) — parallel GET /party + GET /parties; merge by PartyId"
+      - "retryLoad(accountId: String) — delegates to partyLoad(accountId)"
+      - "navigateToConsent() — routes to consent-list screen for ReadParty re-grant"
+  di:
+    - "partyRepository: PartyRepository (Koin single)"
+    - "ktorfit: Ktorfit (AIS http client, Koin single)"
   states:
     loading: "PartyUiState.Loading"
     content: "PartyUiState.Content(party: OBParty2)"
@@ -38,6 +62,33 @@ status_history:
     by: "/idea-enrich"
 
 states: [loading, content, error, empty, consent_required]
+
+state_layouts:
+  loading:
+    type: column
+    alignment: center
+    padding: 24dp
+    children: [loading_indicator]
+  content:
+    type: column
+    scroll: true
+    spacing: 16dp
+    children: [party_header_card, contact_header, email_row, mobile_row, phone_row, address_header, address_list]
+  error:
+    type: column
+    alignment: center
+    padding: 24dp
+    children: [error_state]
+  empty:
+    type: column
+    alignment: center
+    padding: 24dp
+    children: [empty_state_view]
+  consent_required:
+    type: column
+    alignment: center
+    padding: 24dp
+    children: [consent_required_view]
 
 components:
 

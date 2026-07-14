@@ -1,99 +1,108 @@
 feature: direct-debits
-status: enriched
+status: designed
+score: 95
 cluster: payments-context
-acceptance_refs: [FR-006]
-scaffolded_by: "/idea-heal"
+acceptance_refs:
+  - FR-006
+scaffolded_by: /idea-heal
 archetype: index_list
 flow_ref: recurring-and-statements
-description: "Read-only list of direct debit mandates for an account, sourced from OBReadDirectDebit2. Displays mandate summary chips (Active count / Inactive count), then a sorted list of cards (Active first, Inactive last) each showing originator name, status badge, previous payment amount, collection date, and mandate reference. Reached from account-detail Direct Debits chip."
+description: >-
+  Read-only list of direct debit mandates for an account, sourced from OBReadDirectDebit2. Displays mandate summary
+  chips (Active count / Inactive count), then a sorted list of cards (Active first, Inactive last) each showing
+  originator name, status badge, previous payment amount, collection date, and mandate reference. Reached from
+  account-detail Direct Debits chip.
 has_ui: true
 has_server: false
-
 metadata:
   category: crud
   implementation_ready: true
-  impl_ready_at: "2026-06-29T12:00:00Z"
-  impl_ready_schema: "v2"
+  impl_ready_at: '2026-06-29T12:00:00Z'
+  impl_ready_schema: v2
   i18n_coverage: true
   i18n_key_count: 17
-
 contracts: []
-
 libraries:
   - capability: rest-client
     library: ktorfit
-    version: "latest"
-    targets: [android, ios, desktop, web]
-
+    version: latest
+    targets:
+      - android
+      - ios
+      - desktop
+      - web
 vm_actions:
   - name: LoadDirectDebits
-    signature: "suspend fun loadDirectDebits(accountId: String)"
+    signature: 'suspend fun loadDirectDebits(accountId: String)'
     state_mutations:
-      - "uiState = Loading"
-      - "rawList = response.Data.DirectDebit.map { it.withStatusVariant() }"
-      - "directDebits = rawList.sortedBy { if (it.DirectDebitStatusCode == 'Active') 0 else 1 }"
-      - "activeCount = directDebits.count { it.DirectDebitStatusCode == 'Active' }"
-      - "inactiveCount = directDebits.count { it.DirectDebitStatusCode == 'Inactive' }"
-      - "uiState = Content(directDebits, activeCount, inactiveCount) (when list non-empty)"
-      - "uiState = Empty (when list is empty)"
+      - uiState = Loading
+      - rawList = response.Data.DirectDebit.map { it.withStatusVariant() }
+      - directDebits = rawList.sortedBy { if (it.DirectDebitStatusCode == 'Active') 0 else 1 }
+      - activeCount = directDebits.count { it.DirectDebitStatusCode == 'Active' }
+      - inactiveCount = directDebits.count { it.DirectDebitStatusCode == 'Inactive' }
+      - uiState = Content(directDebits, activeCount, inactiveCount) (when list non-empty)
+      - uiState = Empty (when list is empty)
     side_effects:
-      - "GET /accounts/{accountId}/direct-debits via Ktorfit AisApiService"
+      - GET /accounts/{accountId}/direct-debits via Ktorfit AisApiService
     error_handling:
-      on_401: "uiState = Error(TokenExpired, userMessage = 'Session expired. Please log in again.', isRetriable = true)"
-      on_403: "uiState = Error(ConsentRevoked, userMessage = 'Account access consent has been revoked. Re-authorise in Consents.', isRetriable = false)"
-      on_429: "uiState = Error(RateLimited, userMessage = 'Too many requests. Please wait a moment and try again.', isRetriable = true)"
-      on_network: "uiState = Error(NetworkError, userMessage = 'No network connection. Check your connection and retry.', isRetriable = true)"
-
+      on_401: uiState = Error(TokenExpired, userMessage = 'Session expired. Please log in again.', isRetriable = true)
+      on_403: >-
+        uiState = Error(ConsentRevoked, userMessage = 'Account access consent has been revoked. Re-authorise in
+        Consents.', isRetriable = false)
+      on_429: >-
+        uiState = Error(RateLimited, userMessage = 'Too many requests. Please wait a moment and try again.', isRetriable
+        = true)
+      on_network: >-
+        uiState = Error(NetworkError, userMessage = 'No network connection. Check your connection and retry.',
+        isRetriable = true)
   - name: RetryLoad
-    signature: "fun retryLoad()"
-    precondition: "error.isRetriable == true (403 ConsentRevoked does not allow retry)"
+    signature: fun retryLoad()
+    precondition: error.isRetriable == true (403 ConsentRevoked does not allow retry)
     state_mutations:
-      - "re-invokes LoadDirectDebits with same accountId"
+      - re-invokes LoadDirectDebits with same accountId
     side_effects: []
     error_handling: {}
-
   - name: NavigateBack
-    signature: "fun navigateBack()"
+    signature: fun navigateBack()
     state_mutations: []
     side_effects:
-      - "Emits NavigationEvent.Back to NavController"
+      - Emits NavigationEvent.Back to NavController
     error_handling: {}
-
 error_cases:
   - id: TokenExpired
-    trigger: "HTTP 401 from HSBC AIS"
-    user_message: "Session expired. Please log in again."
+    trigger: HTTP 401 from HSBC AIS
+    user_message: Session expired. Please log in again.
     isRetriable: true
-    recovery: "Retry re-triggers LoadDirectDebits; on repeated 401, ViewModel may route to login screen"
-
+    recovery: Retry re-triggers LoadDirectDebits; on repeated 401, ViewModel may route to login screen
   - id: ConsentRevoked
-    trigger: "HTTP 403 from HSBC AIS (ReadDirectDebits not in consent)"
-    user_message: "Account access consent has been revoked. Re-authorise in Consents."
+    trigger: HTTP 403 from HSBC AIS (ReadDirectDebits not in consent)
+    user_message: Account access consent has been revoked. Re-authorise in Consents.
     isRetriable: false
-    recovery: "No retry; user navigates to consent-list screen to re-authorise"
-
+    recovery: No retry; user navigates to consent-list screen to re-authorise
   - id: RateLimited
-    trigger: "HTTP 429 from HSBC AIS"
-    user_message: "Too many requests. Please wait a moment and try again."
+    trigger: HTTP 429 from HSBC AIS
+    user_message: Too many requests. Please wait a moment and try again.
     isRetriable: true
-    recovery: "Retry button re-triggers LoadDirectDebits after user-initiated delay"
-
+    recovery: Retry button re-triggers LoadDirectDebits after user-initiated delay
   - id: NetworkError
-    trigger: "IOException / timeout from Ktorfit"
-    user_message: "No network connection. Check your connection and retry."
+    trigger: IOException / timeout from Ktorfit
+    user_message: No network connection. Check your connection and retry.
     isRetriable: true
-    recovery: "Retry button re-triggers LoadDirectDebits"
-
+    recovery: Retry button re-triggers LoadDirectDebits
   - id: EmptyResult
-    trigger: "Data.DirectDebit[] is empty in OBIE response (HTTP 200)"
-    user_message: "No direct debit mandates are registered for this account."
+    trigger: Data.DirectDebit[] is empty in OBIE response (HTTP 200)
+    user_message: No direct debit mandates are registered for this account.
     isRetriable: false
-    recovery: "Empty state shown; no action needed; back button returns to account-detail"
-
+    recovery: Empty state shown; no action needed; back button returns to account-detail
 test_fixtures:
-  source: "idea-layer/screens/direct-debits/demo-data.yaml"
+  source: screens/direct-debits/tests.yaml
   scenario_count: 9
   priority_distribution:
-    p0: 3
-    p1: 5
-    p2: 1
+    high: 3
+    medium: 5
+    low: 1
+status_history:
+  - from: enriched
+    to: designed
+    at: '2026-07-01T10:52:41.610Z'
+    by: /idea-export-stitch

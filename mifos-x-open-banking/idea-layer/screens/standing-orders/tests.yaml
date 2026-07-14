@@ -129,4 +129,33 @@ scenarios:
       - "Each amount announces 'Next payment: {amount} {currency}'"
       - "Each status badge announces 'Status: Active' or 'Status: Inactive'"
       - "Each sort-code announces 'Sort code / Account: {identification}'"
+      - "Each next-date row announces 'Next payment date: {date}'"
+      - "Each payment reference row announces 'Payment reference: {reference}'"
+      - "Card container announces 'Standing order for {payee name}' for TalkBack grouping"
       - "Retry button (error state) announces 'Retry loading standing orders'"
+
+  # ── NETWORK ERROR ──────────────────────────────────────────────────
+  - id: TC-SO-012
+    priority: p1
+    description: "Network error (IOException) shows correct message and Retry button"
+    state: error
+    given: "Device has no network connectivity; Ktorfit throws IOException"
+    when: "Screen mounts"
+    then:
+      - "Error state renders with error_outline icon"
+      - "Error title reads 'Could not load standing orders'"
+      - "Error message reads 'No network connection. Check your connection and retry.'"
+      - "Retry button visible with label 'Retry'"
+      - "Tapping Retry re-triggers LoadStandingOrders"
+
+  # ── UNKNOWN FREQUENCY FALLBACK ────────────────────────────────────
+  - id: TC-SO-013
+    priority: p2
+    description: "Unknown OBIE frequency code falls back to raw code string"
+    state: content
+    given: "HSBC returns a standing order with Frequency='IntrvlMnthDay:02:10' (not in decoder mapping)"
+    when: "Screen mounts"
+    then:
+      - "Frequency row displays the raw OBIE code 'IntrvlMnthDay:02:10' (fallback={Frequency})"
+      - "No crash or empty label; decoder gracefully falls back to raw value"
+      - "Frequency accessibility label reads 'Frequency: IntrvlMnthDay:02:10'"

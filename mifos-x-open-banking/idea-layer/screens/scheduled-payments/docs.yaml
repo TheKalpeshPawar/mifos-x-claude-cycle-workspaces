@@ -1,84 +1,107 @@
 feature: scheduled-payments
-status: enriched
+status: designed
+score: 96
 cluster: payments-context
-acceptance_refs: [FR-006]
-scaffolded_by: "/idea-heal"
+acceptance_refs:
+  - FR-006
+scaffolded_by: /idea-heal
 archetype: index_list
 flow_ref: recurring-and-statements
-description: "Read-only list of future-dated one-off scheduled payments for an account, sourced from OBReadScheduledPayment3. Shows payee name, instructed amount (GBP formatted), formatted scheduled date (EEE d MMM yyyy), ScheduledType chip (Execution date / Arrival date), destination CreditorAccount.Identification (sort code + account number), and payment reference. Reached from account-detail Scheduled chip. ViewModel maps OBIE ScheduledType enum to human-readable chip label + icon."
+description: >-
+  Read-only list of future-dated one-off scheduled payments for an account, sourced from OBReadScheduledPayment3. Shows
+  payee name, instructed amount (GBP formatted), formatted scheduled date (EEE d MMM yyyy), ScheduledType chip
+  (Execution date / Arrival date), destination CreditorAccount.Identification (sort code + account number), and payment
+  reference. Reached from account-detail Scheduled chip. ViewModel maps OBIE ScheduledType enum to human-readable chip
+  label + icon.
 has_ui: true
 has_server: false
-
 metadata:
   category: crud
   implementation_ready: true
-  impl_ready_at: "2026-06-29T12:00:00Z"
-  impl_ready_schema: "v2"
-
+  impl_ready_at: '2026-06-29T12:00:00Z'
+  impl_ready_schema: v2
 contracts: []
-
 libraries:
   - capability: rest-client
     library: ktorfit
-    version: "latest"
-    targets: [android, ios, desktop, web]
-
+    version: latest
+    targets:
+      - android
+      - ios
+      - desktop
+      - web
 vm_actions:
   - name: LoadScheduledPayments
-    signature: "suspend fun loadScheduledPayments(accountId: String)"
+    signature: 'suspend fun loadScheduledPayments(accountId: String)'
     state_mutations:
-      - "uiState = Loading"
-      - "uiState = Content(scheduledPayments = response.Data.ScheduledPayment.map { it.toUiModel() })"
-      - "uiState = Empty (when list is empty)"
+      - uiState = Loading
+      - uiState = Content(scheduledPayments = response.Data.ScheduledPayment.map { it.toUiModel() })
+      - uiState = Empty (when list is empty)
     side_effects:
-      - "GET /accounts/{accountId}/scheduled-payments via Ktorfit AisApiService"
+      - GET /accounts/{accountId}/scheduled-payments via Ktorfit AisApiService
     error_handling:
-      on_401: "uiState = Error(TokenExpired)"
-      on_403: "uiState = Error(ConsentRevoked)"
-      on_429: "uiState = Error(RateLimited)"
-      on_network: "uiState = Error(NetworkError)"
-    notes: "toUiModel() maps: ScheduledPaymentDateTime ISO-8601 → scheduledDateFormatted (EEE d MMM yyyy); ScheduledType Execution → scheduledTypeLabel='Execution date', scheduledTypeIcon='calendar_today', scheduledTypeA11y='Money leaves your account on {date}'; ScheduledType Arrival → scheduledTypeLabel='Arrival date', scheduledTypeIcon='arrow_downward', scheduledTypeA11y='Funds arrive at {payee} on {date}'."
-
+      on_401: uiState = Error(TokenExpired)
+      on_403: uiState = Error(ConsentRevoked)
+      on_429: uiState = Error(RateLimited)
+      on_network: uiState = Error(NetworkError)
+    notes: >-
+      toUiModel() maps: ScheduledPaymentDateTime ISO-8601 → scheduledDateFormatted (EEE d MMM yyyy); ScheduledType
+      Execution → scheduledTypeLabel='Execution date', scheduledTypeIcon='calendar_today', scheduledTypeA11y='Money
+      leaves your account on {date}'; ScheduledType Arrival → scheduledTypeLabel='Arrival date',
+      scheduledTypeIcon='arrow_downward', scheduledTypeA11y='Funds arrive at {payee} on {date}'.
   - name: RetryLoad
-    signature: "fun retryLoad()"
+    signature: fun retryLoad()
     state_mutations:
-      - "re-invokes LoadScheduledPayments with same accountId"
+      - re-invokes LoadScheduledPayments with same accountId
     side_effects: []
     error_handling: {}
-
   - name: NavigateBack
-    signature: "fun navigateBack()"
+    signature: fun navigateBack()
     state_mutations: []
     side_effects:
-      - "Emits NavigationEvent.Back to NavController"
+      - Emits NavigationEvent.Back to NavController
     error_handling: {}
-
 error_cases:
   - id: TokenExpired
-    trigger: "HTTP 401 from HSBC AIS"
-    user_message: "Session expired. Please log in again."
-    recovery: "Route to login screen"
+    trigger: HTTP 401 from HSBC AIS
+    user_message: Session expired. Please log in again.
+    recovery: Route to login screen
   - id: ConsentRevoked
-    trigger: "HTTP 403 from HSBC AIS"
-    user_message: "Account access consent has been revoked."
-    recovery: "Route to consent-list screen"
+    trigger: HTTP 403 from HSBC AIS
+    user_message: Account access consent has been revoked.
+    recovery: Route to consent-list screen
   - id: RateLimited
-    trigger: "HTTP 429 from HSBC AIS"
-    user_message: "Too many requests. Please wait a moment and try again."
-    recovery: "Retry button shown; exponential back-off in ViewModel"
+    trigger: HTTP 429 from HSBC AIS
+    user_message: Too many requests. Please wait a moment and try again.
+    recovery: Retry button shown; exponential back-off in ViewModel
   - id: NetworkError
-    trigger: "IOException / timeout"
-    user_message: "No network connection. Check your connection and retry."
-    recovery: "Retry button re-triggers LoadScheduledPayments"
+    trigger: IOException / timeout
+    user_message: No network connection. Check your connection and retry.
+    recovery: Retry button re-triggers LoadScheduledPayments
   - id: EmptyResult
-    trigger: "Data.ScheduledPayment[] is empty"
-    user_message: "No future-dated payments are pending for this account."
-    recovery: "Empty state shown; no action needed"
-
+    trigger: Data.ScheduledPayment[] is empty
+    user_message: No future-dated payments are pending for this account.
+    recovery: Empty state shown; no action needed
 test_fixtures:
-  source: "idea-layer/screens/scheduled-payments/demo-data.yaml"
+  source: idea-layer/screens/scheduled-payments/demo-data.yaml
   scenario_count: 8
   priority_distribution:
     p0: 3
     p1: 4
     p2: 1
+capability_completeness:
+  storage_location: "no-local-storage — screen fetches on mount from HSBC AIS; no Room/SQLDelight writes; data discarded on navigation"
+  destructive_action_safety: "not-applicable — AISP read-only screen; zero write, delete, or mutation operations permitted under ReadScheduledPaymentsDetail"
+  nav_callback_wiring: "yes — NavigateBack() emits NavigationEvent.Back to NavController; screen entered from account-detail via accountId nav param"
+  user_data_export: "not-applicable — AISP read-only; ReadScheduledPaymentsDetail is a read-only OBIE permission; no export surface warranted"
+  permission_visibility: "yes — requires ReadScheduledPaymentsDetail AISP permission declared at consent-creation time; 403 surfaced as ConsentRevoked error state"
+  storage_budget_awareness: "not-applicable — no local cache; fetch on demand only; no file or DB writes"
+  network_data_policy: "HSBC OBIE AIS v4.0 GET /accounts/{AccountId}/scheduled-payments; 429 handled with retry button and exponential back-off in ViewModel"
+  cache_lifecycle: "not-applicable — screen is stateless; data lives only in ViewModel memory; re-fetched on every mount or explicit retry"
+  error_recovery: "yes — 401/TokenExpired routes to login screen; 403/ConsentRevoked routes to consent-list screen; 429/NetworkError shows Retry button that re-triggers LoadScheduledPayments; empty Data.ScheduledPayment[] shows empty state without retry"
+
+status_history:
+  - from: enriched
+    to: designed
+    at: '2026-07-01T10:59:44.538Z'
+    by: /idea-export-stitch

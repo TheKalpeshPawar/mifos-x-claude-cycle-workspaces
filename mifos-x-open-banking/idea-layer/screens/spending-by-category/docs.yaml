@@ -1,34 +1,44 @@
 feature: pfm
-status: enriched
+status: designed
+score: 95
 cluster: pfm
-acceptance_refs: [FR-011]
-scaffolded_by: "/idea-heal"
+acceptance_refs:
+  - FR-011
+scaffolded_by: /idea-heal
 archetype: dashboard
-description: "Category-level spending breakdown derived from cached AIS transactions (CreditDebitIndicator=Debit). Period selector (this month / last month / 3 months) drives a pure in-memory re-aggregation without network calls. Tapping a category drills into the filtered transactions screen. Client-only; no external API. Loading, content, empty, and error states all handled."
+description: >-
+  Category-level spending breakdown derived from cached AIS transactions (CreditDebitIndicator=Debit). Period selector
+  (this month / last month / 3 months) drives a pure in-memory re-aggregation without network calls. Tapping a category
+  drills into the filtered transactions screen. Client-only; no external API. Loading, content, empty, and error states
+  all handled.
 has_ui: true
 has_server: false
-
 metadata:
   category: calculation
   implementation_ready: true
-  impl_ready_at: "2026-06-29T12:00:00Z"
-  impl_ready_schema: "v2"
-
+  impl_ready_at: '2026-06-29T12:00:00Z'
+  impl_ready_schema: v2
 contracts: []
-
 libraries:
   - capability: date-time
     library: kotlinx-datetime
-    version: "latest"
-    targets: [android, ios, desktop, web]
+    version: latest
+    targets:
+      - android
+      - ios
+      - desktop
+      - web
   - capability: async-computation
     library: kotlin-coroutines
-    version: "latest"
-    targets: [android, ios, desktop, web]
-
+    version: latest
+    targets:
+      - android
+      - ios
+      - desktop
+      - web
 vm_actions:
   - name: selectPeriod
-    signature: "fun selectPeriod(period: SpendingPeriod)"
+    signature: 'fun selectPeriod(period: SpendingPeriod)'
     state_mutations:
       - selectedPeriod
       - uiState (loading → content | empty | error)
@@ -36,43 +46,85 @@ vm_actions:
       - periodTotalSpend
       - periodLabel
     side_effects:
-      - "Sets uiState = Loading"
-      - "Reads cached Room transactions filtered by CreditDebitIndicator=Debit and kotlinx-datetime LocalDate range for the period"
-      - "Groups by auto-assigned category tag (derived from MerchantCategory / ProprietaryBankTransactionCode)"
-      - "Computes per-group: totalAmount (GBP), transactionCount, percentageOfTotal (rounded to 1dp), fraction (0.0–1.0)"
-      - "Sorts descending by totalAmount"
+      - Sets uiState = Loading
+      - >-
+        Reads cached Room transactions filtered by CreditDebitIndicator=Debit and kotlinx-datetime LocalDate range for
+        the period
+      - Groups by auto-assigned category tag (derived from MerchantCategory / ProprietaryBankTransactionCode)
+      - 'Computes per-group: totalAmount (GBP), transactionCount, percentageOfTotal (rounded to 1dp), fraction (0.0–1.0)'
+      - Sorts descending by totalAmount
     error_handling:
-      on_empty: "Transition to empty state"
-      on_error: "Transition to error state; expose retryCompute action"
-
+      on_empty: Transition to empty state
+      on_error: Transition to error state; expose retryCompute action
   - name: navigateCategoryTransactions
-    signature: "fun navigateCategoryTransactions(category: String)"
+    signature: 'fun navigateCategoryTransactions(category: String)'
     state_mutations: []
     side_effects:
-      - "Emits navigation event to TransactionsRoute with categoryFilter param URI-encoded"
+      - Emits navigation event to TransactionsRoute with categoryFilter param URI-encoded
     error_handling: {}
-
   - name: retryCompute
-    signature: "fun retryCompute()"
+    signature: fun retryCompute()
     state_mutations:
       - uiState (error → loading → content | empty | error)
     side_effects:
-      - "Re-triggers selectPeriod with currently selected period"
+      - Re-triggers selectPeriod with currently selected period
     error_handling:
-      on_error: "Returns to error state"
-
+      on_error: Returns to error state
 error_cases:
   - id: EC-SBC-001
-    trigger: "No debit transactions in local Room cache for selected date range"
-    handling: "Transition to empty state; period selector remains interactive"
+    trigger: No debit transactions in local Room cache for selected date range
+    handling: Transition to empty state; period selector remains interactive
   - id: EC-SBC-002
-    trigger: "Room query or in-memory aggregation throws an exception"
-    handling: "Transition to error state; retry button dispatches retryCompute"
-
+    trigger: Room query or in-memory aggregation throws an exception
+    handling: Transition to error state; retry button dispatches retryCompute
+  - id: EC-SBC-003
+    trigger: >-
+      Local Room cache is cleared (Settings → Clear Local Data or consent_revoked event)
+      while screen is active or between navigation visits
+    handling: >-
+      Next selectPeriod / on_mount call produces 0 rows → UiState.Empty. Period selector
+      remains interactive so user can switch periods. No auto-sync is triggered by this
+      screen — cache refill is the AIS sync layer's responsibility.
 test_fixtures:
-  source: "Priya Sharma anchor data — 3 months of HSBC UK sandbox transactions (Apr–Jun 2026) with 5–7 distinct MCC-derived categories per period"
+  source: >-
+    Priya Sharma anchor data — 3 months of HSBC UK sandbox transactions (Apr–Jun 2026) with 5–7 distinct MCC-derived
+    categories per period
   scenario_count: 7
   priority_distribution:
     high: 4
     medium: 2
     low: 1
+capability_completeness:
+  # CC1 — storage_location (warn → satisfied)
+  CC1_storage_location:
+    status: satisfied_via_shared_surface
+    resolution: >
+      Spending aggregation reads exclusively from pfm_room_cache (Room-KMP SQLite, internal app
+      storage, ~50 MB max). This screen is a read-only consumer of the shared AIS transaction
+      cache owned by the sync layer; it writes no independent data. Storage visibility (path,
+      approximate size, and clear affordance) is surfaced by the Settings screen via the
+      "Clear Local Data" entry (strings keys: settings.clear_local_data.*). No per-feature
+      storage UI is required since the backing store is shared with pfm-dashboard and budgets
+      and the single settings entry covers all three.
+    shared_backing_store: pfm_room_cache
+    settings_entry_ref: settings.clear_local_data
+
+  # CC8 — cache_lifecycle (warn → satisfied)
+  CC8_cache_lifecycle:
+    status: satisfied_via_data_flow
+    resolution: >
+      Cache lifecycle declared in data-flow.yaml#cache_layers. pfm_room_cache TTL 24 hours;
+      cleared on (a) manual user action via Settings → Clear Local Data, or (b) consent_revoked
+      event from ConsentRepository wiping the Room transactions table. Stale-cache behaviour: if
+      Room is empty post-clear, UiState.Empty is shown with the period selector still interactive
+      (EC-SBC-003). No background refresh is initiated by this screen — cache refill is the AIS
+      sync layer's responsibility. Max size capped at 50 MB shared across pfm-dashboard, budgets,
+      and this screen.
+    cache_layer_ref: pfm_room_cache
+    clear_trigger_settings_ref: settings.clear_local_data
+
+status_history:
+  - from: enriched
+    to: designed
+    at: '2026-07-01T10:59:44.540Z'
+    by: /idea-export-stitch

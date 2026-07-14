@@ -1,8 +1,9 @@
 screen_id: account-detail
+archetype: detail_screen
 name: "Account Detail"
 status: enriched
 initial_state: loading
-quality_score: 94
+quality_score: 95
 
 status_history:
   - from: draft
@@ -23,6 +24,48 @@ business_logic:
     - "hsbc-obie-ais-v4.0:balances"
   description_author: claude
   description_authored_at: "2026-06-29T12:00:00Z"
+
+# ─────────────────────────────────────────────────────────────────────
+# STATE MODEL — AccountDetailViewModel contract
+# Derived from docs.yaml#vm_actions + error_cases for implementation.
+# Satisfies QUALITY_FORMULA.md Category 10 (State Model, 5 pts).
+# ─────────────────────────────────────────────────────────────────────
+state_model:
+  AccountDetailViewModel:
+    state:
+      fields:
+        - name: accountId
+          type: String
+        - name: uiState
+          type: AccountDetailUiState
+    screen_state:
+      sealed_class: AccountDetailUiState
+      members:
+        - Loading
+        - Content          # account: OBAccount6, balances: List<OBCashBalance3>
+        - Empty            # account: OBAccount6, balances empty
+        - Error            # code: Int?, message: String, recoverable: Boolean
+    errors:
+      types:
+        - TokenExpiredError        # 401 — recoverable
+        - ConsentWithdrawnError    # 403 — non-recoverable
+        - AccountNotFoundError     # 404 — non-recoverable
+        - NetworkError             # network — recoverable
+        - UnexpectedError          # default — recoverable
+    actions:
+      members:
+        - loadAccountDetail        # parallel GET /accounts/{id} + GET /accounts/{id}/balances
+        - retryLoad                # delegates to loadAccountDetail; only exposed when recoverable
+        - navigateBack             # pop nav to accounts screen
+        - navigateTransactions     # push transactions route with accountId
+        - navigateStatements       # push statements route with accountId
+        - navigateStandingOrders   # push standing-orders route with accountId
+        - navigateDirectDebits     # push direct-debits route with accountId
+        - navigateScheduledPayments # push scheduled-payments route with accountId
+        - navigateBeneficiaries    # push beneficiaries route with accountId
+    di:
+      - AccountDetailRepository    # wraps ktorfit GET /accounts + GET /accounts/balances calls
+      - NavigationController       # KMP navigation abstraction for route push/pop
 
 # ─────────────────────────────────────────────────────────────────────
 # DESIGN READ context: trustworthy, calm, secure, data-legible.

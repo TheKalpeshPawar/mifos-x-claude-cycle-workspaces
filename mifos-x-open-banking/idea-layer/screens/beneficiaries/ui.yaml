@@ -1,7 +1,15 @@
 screen_id: beneficiaries
+archetype: index_list
 name: "{strings.beneficiaries.screen_title}"
 status: enriched
+quality_score: 95
 initial_state: loading
+
+capability_tags:
+  - rest-client
+  - list-display
+  - search-filter
+  - error-recovery
 
 shell:
   bottom_navigation_visible: true
@@ -20,6 +28,75 @@ business_logic:
     - "hsbc-obie-ais-v4.0:beneficiaries"
   description_author: claude
   description_authored_at: "2026-06-29T12:00:00Z"
+
+state_model:
+  viewmodel: BeneficiariesViewModel
+  state_class: BeneficiariesUiState
+  screen_state:
+    variants:
+      - name: Loading
+      - name: Content
+        fields:
+          - name: beneficiaries
+            type: "List<OBBeneficiary>"
+          - name: beneficiariesFiltered
+            type: "List<OBBeneficiary>"
+          - name: searchQuery
+            type: String
+            default: '""'
+      - name: Empty
+      - name: Error
+        fields:
+          - name: type
+            type: ErrorType
+            enum: [TokenExpired, ConsentRevoked, RateLimited, NetworkError, ServerError]
+          - name: message
+            type: String
+  errors:
+    - id: TokenExpired
+      http_status: 401
+    - id: ConsentRevoked
+      http_status: 403
+    - id: RateLimited
+      http_status: 429
+    - id: NetworkError
+      trigger: IOException
+    - id: ServerError
+      http_status: 500
+  events:
+    - name: NavigateTo
+      target: account-detail
+    - name: NavigateTo
+      target: consent-list
+  actions:
+    - name: LoadBeneficiaries
+      type: suspend
+    - name: FilterBeneficiaries
+      type: pure
+    - name: RetryLoad
+      type: sync
+    - name: NavigateToConsents
+      type: sync
+    - name: NavigateBack
+      type: sync
+  di:
+    - name: AisApiService
+      type: interface
+      library: ktorfit
+
+dependencies:
+  tier: feature
+  features:
+    - name: account-detail
+      relation: parent
+      params: [accountId]
+    - name: consent-list
+      relation: error-recovery
+      condition: "error.type == ConsentRevoked"
+  libraries:
+    - name: ktorfit
+      coords: "de.jensklingenberg.ktorfit:ktorfit-lib:2.x"
+      purpose: "REST client for HSBC AIS GET /accounts/{AccountId}/beneficiaries"
 
 components:
   - type: progress_indicator
@@ -49,7 +126,7 @@ components:
     id: beneficiary_search
     state_binding: [content]
     placeholder: "{strings.beneficiaries.search_placeholder}"
-    accessibility_label: "{strings.beneficiaries.search_placeholder}"
+    accessibility_label: "{strings.beneficiaries.search_a11y}"
     on_change:
       action: filter_beneficiaries
       param: query
@@ -86,7 +163,7 @@ components:
         supporting_text: "{item.CreditorAccount.SchemeName | schemeShortLabel} · {item.CreditorAccount.Identification}"
         trailing_content: "{item.Reference}"
         trailing_style: labelSmall
-        accessibility_label: "{strings.beneficiaries.row_accessibility_label}"
+        accessibility_label: "{item.CreditorAccount.Name}, {item.CreditorAccount.SchemeName | schemeShortLabel} account, {item.CreditorAccount.Identification}"
         test_context:
           purpose: "Show one beneficiary: initials avatar, creditor name headline, scheme-type·identifier as supporting, payment reference as trailing label"
           required_fields: ["item.CreditorAccount.Name", "item.CreditorAccount.Identification", "item.CreditorAccount.SchemeName", "item.Reference", "item.BeneficiaryId"]
@@ -162,7 +239,6 @@ components:
           interaction_type: navigate
           data_driven: false
 
-quality_score: 93
 status_history:
   - from: draft
     to: enriched

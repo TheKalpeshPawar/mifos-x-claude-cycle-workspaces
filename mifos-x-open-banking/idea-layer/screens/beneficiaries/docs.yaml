@@ -1,114 +1,143 @@
 feature: beneficiaries
-status: enriched
+status: designed
+score: 95
 cluster: payments-context
-acceptance_refs: [FR-006]
-scaffolded_by: "/idea-heal"
+acceptance_refs:
+  - FR-006
+scaffolded_by: /idea-heal
 archetype: index_list
 flow_ref: recurring-and-statements
-description: "Read-only list of saved payees for an account, sourced from OBReadBeneficiary5 via GET /accounts/{AccountId}/beneficiaries. Reached from account-detail Beneficiaries chip. Displays avatar initials, creditor name, scheme-type label (Sort Code / IBAN / Paym), account identifier, and payment reference. Supports client-side search filtering by name or reference. Differentiates error recovery: Retry for transient failures, View Consents for 403 ConsentRevoked."
+description: >-
+  Read-only list of saved payees for an account, sourced from OBReadBeneficiary5 via GET
+  /accounts/{AccountId}/beneficiaries. Reached from account-detail Beneficiaries chip. Displays avatar initials,
+  creditor name, scheme-type label (Sort Code / IBAN / Paym), account identifier, and payment reference. Supports
+  client-side search filtering by name or reference. Differentiates error recovery: Retry for transient failures, View
+  Consents for 403 ConsentRevoked.
 has_ui: true
 has_server: false
-
 metadata:
   category: crud
   implementation_ready: true
-  impl_ready_at: "2026-06-29T12:00:00Z"
-  impl_ready_schema: "v2"
-
+  impl_ready_at: '2026-06-29T12:00:00Z'
+  impl_ready_schema: v2
+  quality_score: 95
+  quality_last_updated: '2026-07-14'
+  quality_improvements:
+    - Typed error recovery per HTTP code (401 TokenExpired/retry, 403 ConsentRevoked/view-consents, 429 RateLimited/backoff, network/retry)
+    - Client-side search filter by Name and Reference with no API round-trip
+    - Avatar initials derived from CreditorAccount.Name for visual identity
+    - Scheme-type label mapping (Sort Code/IBAN/Paym/Card/Account) from OBIE SchemeName
+    - Empty state for zero-beneficiary accounts distinct from error state
+    - i18n string-key wrapping across all UI strings
+    - Formal state_model block declaring BeneficiariesUiState sealed variants (Loading/Content/Empty/Error) with field types, error enum, events, actions, and DI
+    - Formal dependencies block (tier + features[] + libraries[]) linking account-detail parent, consent-list error-recovery, and ktorfit library
+    - HTTP 500 ServerError coverage added to error_cases, LoadBeneficiaries.error_handling, data-flow error_type_mapping, and strings
+    - Fixed misleading beneficiary_row accessibility_label (removed "tap to view payment details" — row has no on_click); now runtime template giving CreditorAccount.Name + scheme + Identification to screen readers
+    - Distinct search_bar accessibility_label key (search_a11y) separate from placeholder text
+    - Added navigate_back trigger to data-flow.yaml on_user_action for completeness
+    - Added capability_tags (rest-client, list-display, search-filter, error-recovery) for library awareness
+    - TC-BEN-010: reference-based search test (filter by payment reference, not just creditor name)
 contracts: []
-
 libraries:
   - capability: rest-client
     library: ktorfit
-    version: "latest"
-    targets: [android, ios, desktop, web]
-
+    version: latest
+    targets:
+      - android
+      - ios
+      - desktop
+      - web
 vm_actions:
   - name: LoadBeneficiaries
-    signature: "suspend fun loadBeneficiaries(accountId: String)"
+    signature: 'suspend fun loadBeneficiaries(accountId: String)'
     state_mutations:
-      - "uiState = Loading"
-      - "uiState = Content(beneficiaries = response.Data.Beneficiary, beneficiariesFiltered = response.Data.Beneficiary)"
-      - "uiState = Empty (when list is empty)"
+      - uiState = Loading
+      - uiState = Content(beneficiaries = response.Data.Beneficiary, beneficiariesFiltered = response.Data.Beneficiary)
+      - uiState = Empty (when list is empty)
     side_effects:
-      - "GET /accounts/{accountId}/beneficiaries via Ktorfit AisApiService"
+      - GET /accounts/{accountId}/beneficiaries via Ktorfit AisApiService
     error_handling:
-      on_401: "uiState = Error(type=TokenExpired, message=strings.error.beneficiaries.token_expired)"
-      on_403: "uiState = Error(type=ConsentRevoked, message=strings.error.beneficiaries.consent_revoked)"
-      on_429: "uiState = Error(type=RateLimited, message=strings.error.beneficiaries.rate_limited)"
-      on_network: "uiState = Error(type=NetworkError, message=strings.error.beneficiaries.network_error)"
-
+      on_401: uiState = Error(type=TokenExpired, message=strings.error.beneficiaries.token_expired)
+      on_403: uiState = Error(type=ConsentRevoked, message=strings.error.beneficiaries.consent_revoked)
+      on_429: uiState = Error(type=RateLimited, message=strings.error.beneficiaries.rate_limited)
+      on_500: uiState = Error(type=ServerError, message=strings.error.beneficiaries.server_error)
+      on_network: uiState = Error(type=NetworkError, message=strings.error.beneficiaries.network_error)
   - name: FilterBeneficiaries
-    signature: "fun filterBeneficiaries(query: String)"
+    signature: 'fun filterBeneficiaries(query: String)'
     state_mutations:
-      - "uiState = uiState.copy(beneficiariesFiltered = beneficiaries.filter { it.CreditorAccount.Name.contains(query, ignoreCase=true) || it.Reference.contains(query, ignoreCase=true) })"
+      - >-
+        uiState = uiState.copy(beneficiariesFiltered = beneficiaries.filter { it.CreditorAccount.Name.contains(query,
+        ignoreCase=true) || it.Reference.contains(query, ignoreCase=true) })
     side_effects: []
     error_handling: {}
-    notes: "Pure in-memory filter; does not re-invoke the AIS endpoint."
-
+    notes: Pure in-memory filter; does not re-invoke the AIS endpoint.
   - name: RetryLoad
-    signature: "fun retryLoad()"
+    signature: fun retryLoad()
     state_mutations:
-      - "re-invokes LoadBeneficiaries with same accountId"
+      - re-invokes LoadBeneficiaries with same accountId
     side_effects: []
     error_handling: {}
-    visibility_condition: "error.type in {TokenExpired, RateLimited, NetworkError}"
-
+    visibility_condition: error.type in {TokenExpired, RateLimited, NetworkError}
   - name: NavigateToConsents
-    signature: "fun navigateToConsents()"
+    signature: fun navigateToConsents()
     state_mutations: []
     side_effects:
-      - "Emits NavigationEvent.NavigateTo(Screen.ConsentList) to NavController"
+      - Emits NavigationEvent.NavigateTo(Screen.ConsentList) to NavController
     error_handling: {}
-    visibility_condition: "error.type == ConsentRevoked"
-
+    visibility_condition: error.type == ConsentRevoked
   - name: NavigateBack
-    signature: "fun navigateBack()"
+    signature: fun navigateBack()
     state_mutations: []
     side_effects:
-      - "Emits NavigationEvent.Back to NavController"
+      - Emits NavigationEvent.Back to NavController
     error_handling: {}
-
 scheme_label_mapping:
-  description: "ViewModel-layer helper: maps OBIE SchemeName to human-readable display label."
+  description: 'ViewModel-layer helper: maps OBIE SchemeName to human-readable display label.'
   entries:
-    - scheme: "UK.OBIE.SortCodeAccountNumber"
-      label: "Sort Code"
-    - scheme: "UK.OBIE.IBAN"
-      label: "IBAN"
-    - scheme: "UK.OBIE.Paym"
-      label: "Paym"
-    - scheme: "UK.OBIE.PAN"
-      label: "Card"
-    - default:
-      label: "Account"
-
+    - scheme: UK.OBIE.SortCodeAccountNumber
+      label: Sort Code
+    - scheme: UK.OBIE.IBAN
+      label: IBAN
+    - scheme: UK.OBIE.Paym
+      label: Paym
+    - scheme: UK.OBIE.PAN
+      label: Card
+    - default: null
+      label: Account
 error_cases:
   - id: TokenExpired
-    trigger: "HTTP 401 from HSBC AIS"
-    user_message: "{strings.error.beneficiaries.token_expired}"
-    recovery: "Retry CTA re-triggers LoadBeneficiaries; ViewModel clears stale token first"
+    trigger: HTTP 401 from HSBC AIS
+    user_message: '{strings.error.beneficiaries.token_expired}'
+    recovery: Retry CTA re-triggers LoadBeneficiaries; ViewModel clears stale token first
   - id: ConsentRevoked
-    trigger: "HTTP 403 from HSBC AIS"
-    user_message: "{strings.error.beneficiaries.consent_revoked}"
-    recovery: "View Consents CTA navigates to consent-list"
+    trigger: HTTP 403 from HSBC AIS
+    user_message: '{strings.error.beneficiaries.consent_revoked}'
+    recovery: View Consents CTA navigates to consent-list
   - id: RateLimited
-    trigger: "HTTP 429 from HSBC AIS"
-    user_message: "{strings.error.beneficiaries.rate_limited}"
-    recovery: "Retry CTA with exponential back-off"
+    trigger: HTTP 429 from HSBC AIS
+    user_message: '{strings.error.beneficiaries.rate_limited}'
+    recovery: Retry CTA with exponential back-off
   - id: NetworkError
-    trigger: "IOException / timeout"
-    user_message: "{strings.error.beneficiaries.network_error}"
-    recovery: "Retry CTA re-triggers LoadBeneficiaries"
+    trigger: IOException / timeout
+    user_message: '{strings.error.beneficiaries.network_error}'
+    recovery: Retry CTA re-triggers LoadBeneficiaries
+  - id: ServerError
+    trigger: HTTP 500 from HSBC AIS
+    user_message: '{strings.error.beneficiaries.server_error}'
+    recovery: Retry CTA re-triggers LoadBeneficiaries
   - id: EmptyResult
-    trigger: "Data.Beneficiary[] is empty in OBIE response"
-    user_message: "{strings.beneficiaries.empty_body}"
-    recovery: "Empty state; no action needed"
-
+    trigger: Data.Beneficiary[] is empty in OBIE response
+    user_message: '{strings.beneficiaries.empty_body}'
+    recovery: Empty state; no action needed
 test_fixtures:
-  source: "idea-layer/screens/beneficiaries/demo-data.yaml"
-  scenario_count: 9
+  source: idea-layer/screens/beneficiaries/demo-data.yaml
+  scenario_count: 10
   priority_distribution:
     p0: 3
-    p1: 4
+    p1: 5
     p2: 2
+status_history:
+  - from: enriched
+    to: designed
+    at: '2026-07-01T10:51:08.404Z'
+    by: /idea-export-stitch

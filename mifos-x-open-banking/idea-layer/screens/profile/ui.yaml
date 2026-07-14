@@ -1,8 +1,9 @@
 screen_id: profile
+archetype: detail_screen
 name: "Profile"
 status: enriched
 initial_state: loading
-quality_score: 93
+quality_score: 98
 
 shell:
   bottom_navigation_visible: true
@@ -20,7 +21,7 @@ business_logic:
   description_author: claude
   description_authored_at: "2026-06-29T12:00:00Z"
 
-states: [loading, content, content_expiring, confirm_sign_out, error]
+states: [loading, content, content_expiring, confirm_sign_out, error, empty]
 
 components:
   # ── Loading ──────────────────────────────────────────────────────────
@@ -95,6 +96,7 @@ components:
   - type: list
     id: identity_list
     state_binding: [content, content_expiring, confirm_sign_out]
+    accessibility_label: "{strings.profile_identity_list_a11y}"
     test_context:
       purpose: "Container for email, mobile, and address rows from party payload"
       required_fields: []
@@ -251,6 +253,7 @@ components:
 
       - type: list
         id: permissions_list
+        accessibility_label: "{strings.profile_permissions_list_a11y}"
         test_context:
           purpose: "Human-readable list of OBIE Read permissions granted in the active consent; each row shows one permission"
           required_fields: [consent.permissions]
@@ -403,6 +406,96 @@ components:
         on_click:
           action: retry_load
 
+  # ── Empty state ──────────────────────────────────────────────────────
+  - type: empty_state
+    id: profile_empty_state
+    variant: neutral
+    state_binding: [empty]
+    icon: account_circle_off
+    title: "{strings.profile_empty_title}"
+    body: "{strings.profile_empty_body}"
+    accessibility_label: "{strings.profile_empty_a11y}"
+    test_context:
+      purpose: "Shown when GET /party returns a 200 with an empty Party array — HSBC PSU identity record absent for this token scope; prompts re-authentication as ReadParty scope may not have been granted"
+      required_fields: [icon, title, body]
+      interaction_type: display
+      data_driven: false
+    children:
+      - type: button
+        id: profile_empty_reauth_button
+        variant: filled
+        label: "{strings.profile_empty_reauth}"
+        accessibility_label: "{strings.profile_empty_reauth_a11y}"
+        on_click:
+          action: navigate_reauth
+          target: login
+        test_context:
+          purpose: "Re-initiates FAPI auth flow when party data is unavailable — likely a token freshness or ReadParty scope omission issue"
+          required_fields: [on_click.action, on_click.target]
+          interaction_type: navigate
+          data_driven: false
+
+state_model:
+  ProfileViewModel:
+    state:
+      fields:
+        - name: party
+          type: "OBPartyData2?"
+          default: "null"
+        - name: consent
+          type: "ConsentSummary?"
+          default: "null"
+        - name: uiState
+          type: "ProfileUiState"
+          default: "ProfileUiState.Loading"
+        - name: previousState
+          type: "ProfileUiState?"
+          default: "null"
+    screen_state:
+      sealed_class: ProfileUiState
+      members:
+        - Loading
+        - Content
+        - ContentExpiring
+        - ConfirmSignOut
+        - Error
+        - Empty
+    errors:
+      types:
+        - ReadPartyForbidden
+        - PartyNotFound
+        - NetworkError
+        - AuthError
+    actions:
+      members:
+        - loadProfile
+        - navigateConsentDetail
+        - navigateConsentRenew
+        - confirmSignOut
+        - dismissSignOutDialog
+        - executeSignOut
+        - retryLoad
+        - navigateReauth
+    di:
+      - PartyApiService
+      - TokenRepository
+      - ConsentRepository
+
+dependencies:
+  tier: 1
+  features:
+    - consent-detail
+    - login
+  services:
+    - PartyApiService (GET /accounts/{AccountId}/party)
+    - TokenRepository (encrypted token read/write for access_token + refresh_token)
+    - ConsentRepository (read active ConsentId + expiry + permissions from local cache)
+
+screens:
+  - id: profile
+    name: Profile
+    viewmodel: ProfileViewModel
+
 status_history:
   - from: draft
     to: enriched
@@ -413,3 +506,13 @@ status_history:
     at: "2026-06-29"
     by: "/idea-enrich"
     notes: "Quality pushed 85→93: full i18n coverage (42 keys), content_expiring state + expiry warning banner, address row, permissions list in consent card, accessibility labels on all section headers and cards, sign_out_button state_binding extended to content_expiring, avatar initials data-driven."
+  - from: enriched
+    to: enriched
+    at: "2026-07-14"
+    by: "/design-validate --fix"
+    note: "STATE-001: added empty state (profile_empty_state with reauth button) for HSBC GET /party returning empty Party array"
+  - from: enriched
+    to: enriched
+    at: "2026-07-14"
+    by: "/idea-enrich"
+    note: "Enrich pass 93→98: a11y labels on identity_list + permissions_list, explicit state_model + dependencies + screens blocks, navigateReauth VM action, EC-PROF-006 error case, TC-PROF-013 empty state test, full api.yaml response+errors contracts"

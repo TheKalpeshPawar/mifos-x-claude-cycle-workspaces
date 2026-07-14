@@ -1,8 +1,9 @@
 screen_id: settings
+archetype: settings
 name: "{strings.settings.title}"
 status: enriched
 initial_state: loading
-quality_score: 94
+quality_score: 95
 
 shell:
   bottom_navigation_visible: true
@@ -21,7 +22,7 @@ business_logic:
   description_author: claude
   description_authored_at: "2026-06-29T12:00:00Z"
 
-states: [loading, content]
+states: [loading, content, empty, error]
 
 components:
   # ── Loading Skeleton ─────────────────────────────────────────────────
@@ -377,6 +378,49 @@ components:
           interaction_type: display
           data_driven: true
 
+  # ── Empty state ──────────────────────────────────────────────────────
+  - type: empty_state
+    id: settings_empty_state
+    variant: neutral
+    state_binding: [empty]
+    icon: settings
+    title: "{strings.settings.empty.title}"
+    body: "{strings.settings.empty.body}"
+    accessibility_label: "{strings.settings.empty.a11y}"
+    test_context:
+      purpose: "Shown on first cold start before DataStore emits default preferences; typically transitions to content within one frame as defaults are written by SettingsViewModel"
+      required_fields: [icon, title, body]
+      interaction_type: display
+      data_driven: false
+
+  # ── Error state ───────────────────────────────────────────────────────
+  - type: empty_state
+    id: settings_error_state
+    variant: error
+    state_binding: [error]
+    icon: error_outline
+    title: "{strings.settings.error.title}"
+    body: "{strings.settings.error.body}"
+    accessibility_label: "{strings.settings.error.a11y}"
+    test_context:
+      purpose: "Shown when DataStore read throws an I/O exception (storage corruption, disk full); offers retry to re-trigger the preferences Flow collection"
+      required_fields: [icon, title, body]
+      interaction_type: display
+      data_driven: false
+    children:
+      - type: button
+        id: settings_error_retry_button
+        variant: filled
+        label: "{strings.settings.error.retry}"
+        accessibility_label: "{strings.settings.error.retry_a11y}"
+        on_click:
+          action: retry_load_settings
+        test_context:
+          purpose: "Re-triggers DataStore preferences Flow collection after I/O failure; transitions to loading then content on success"
+          required_fields: [on_click.action]
+          interaction_type: action
+          data_driven: false
+
 status_history:
   - from: draft
     to: enriched
@@ -387,3 +431,13 @@ status_history:
     at: "2026-06-29"
     by: "/idea-enrich"
     note: "Added loading state + skeleton, full i18n wrapping (53 string keys), section-header accessibility_label, clear_local_data_row (GDPR), dynamic app_version binding, enriched dropdown options i18n, business_logic expanded with DataStore + erasure detail"
+  - from: enriched
+    to: enriched
+    at: "2026-07-14"
+    by: "/design-validate --fix"
+    note: "STATE-001: added empty and error states with production-fidelity components (settings_empty_state, settings_error_state with retry button)"
+  - from: enriched
+    to: enriched
+    at: "2026-07-14"
+    by: "/idea-enrich"
+    note: "ENRICH-95: fixed I18n completeness (settings.error.a11y missing key); aligned data-flow.yaml with ui.yaml error/empty states + added retry_load_settings action; added error_case for DataStore mount IOException; added TC-SET-013/014 covering error and empty states; corrected scenario_count 10→14"

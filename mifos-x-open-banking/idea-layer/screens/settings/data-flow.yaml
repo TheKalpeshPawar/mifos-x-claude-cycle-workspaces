@@ -2,10 +2,11 @@ screen_id: settings
 
 on_mount:
   - trigger: load_settings
-    description: "Collect DataStore preferences Flow via SettingsViewModel.uiState (StateFlow). Emits Loading on subscription, then Content on first emission. No network call. Cached synchronously from local DataStore after first emission."
+    description: "Collect DataStore preferences Flow via SettingsViewModel.uiState (StateFlow). Emits Loading on subscription, then Empty on first cold start before defaults are written (transient — typically one frame), then Content on subsequent emissions. Emits Error when DataStore throws an IOException (storage corruption, disk full); error state exposes a Retry button that re-triggers the Flow collection."
     loading_state: loading
+    empty_state: empty
     success_state: content
-    # No error_state — DataStore failure falls back to default preferences, never crashes.
+    error_state: error
 
 on_user_action:
   - trigger: update_theme
@@ -31,3 +32,6 @@ on_user_action:
 
   - trigger: open_oss_licences
     description: "Open system-provided OSS licence screen via AboutLibraries navigation; no DataStore interaction."
+
+  - trigger: retry_load_settings
+    description: "Re-trigger the DataStore preferences Flow collection after an I/O failure. Transitions screen state from Error → Loading before the new Flow subscription starts. On success emits Content; on repeat IOException returns to Error."

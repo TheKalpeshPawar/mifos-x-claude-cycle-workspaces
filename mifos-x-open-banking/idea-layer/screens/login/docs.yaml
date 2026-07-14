@@ -1,71 +1,121 @@
 feature: consent-onboarding
-status: enriched
+status: designed
+score: 95
 cluster: consent
-acceptance_refs: [FR-001, FR-002]
-scaffolded_by: "/idea-heal"
+acceptance_refs:
+  - FR-001
+  - FR-002
+scaffolded_by: /idea-heal
 archetype: login
-description: "OAuth/FAPI initiation screen. Displays the 11 OBIE read permissions being staged in OBReadConsent1 so the PSU understands what HSBC will ask them to approve. On 'Continue to HSBC', the app POSTs consent-create (client_credentials grant), builds a PS256-signed FAPI 1.0 Advanced /authorize URL with PKCE S256, and launches an app-to-app redirect to HSBC for SCA and account selection. Screen transitions to the authorising holding state once the redirect fires. Returns to consent-callback on the deep-link redirect leg."
+description: >-
+  OAuth/FAPI initiation screen. Displays the 11 OBIE read permissions being staged in OBReadConsent1 so the PSU
+  understands what HSBC will ask them to approve. On 'Continue to HSBC', the app POSTs consent-create
+  (client_credentials grant), builds a PS256-signed FAPI 1.0 Advanced /authorize URL with PKCE S256, and launches an
+  app-to-app redirect to HSBC for SCA and account selection. Screen transitions to the authorising holding state once
+  the redirect fires. Returns to consent-callback on the deep-link redirect leg.
 has_ui: true
 has_server: false
-
 metadata:
   category: composite
   implementation_ready: true
-  impl_ready_at: "2026-06-29T12:00:00Z"
-  impl_ready_schema: "v2"
-
+  impl_ready_at: '2026-06-29T12:00:00Z'
+  impl_ready_schema: v2
 contracts: []
-
 libraries:
   - capability: rest-client
     library: ktorfit
-    version: "latest"
-    targets: [android, ios, desktop, web]
+    version: latest
+    targets:
+      - android
+      - ios
+      - desktop
+      - web
   - capability: jwt-signing
     library: jose4j
-    version: "latest"
-    targets: [android, ios, desktop, web]
-
+    version: latest
+    targets:
+      - android
+      - ios
+      - desktop
+      - web
 vm_actions:
   - name: LoadPermissionsConfig
-    signature: "fun loadPermissionsConfig(): Unit"
-    state_mutations: ["uiState=Content(permissions=OBReadConsent1.Permissions, consentExpiryLabel=formatted)"]
+    signature: 'fun loadPermissionsConfig(): Unit'
+    state_mutations:
+      - uiState=Content(permissions=OBReadConsent1.Permissions, consentExpiryLabel=formatted)
     side_effects:
-      - "Reads static OBReadConsent1.Permissions enum to build requested_permissions list"
-      - "Computes consentExpiryLabel = DateFormatter.format(now + 90.days, 'd MMM yyyy', prefix='Expires ')"
+      - Reads static OBReadConsent1.Permissions enum to build requested_permissions list
+      - Computes consentExpiryLabel = DateFormatter.format(now + 90.days, 'd MMM yyyy', prefix='Expires ')
     error_handling: {}
-
   - name: StartOAuth
-    signature: "suspend fun startOAuth(): Unit"
-    state_mutations: ["uiState=Loading", "uiState=Authorising", "uiState=Error(user_message)"]
+    signature: 'suspend fun startOAuth(): Unit'
+    state_mutations:
+      - uiState=Loading
+      - uiState=Authorising
+      - uiState=Error(user_message)
     side_effects:
-      - "ConsentService.createConsent(OBReadConsent1 with 11 Permissions, ExpirationDateTime, TransactionFromDateTime, TransactionToDateTime)"
-      - "LocalStorage.storeConsentId(staged_consent.Data.ConsentId)"
-      - "PkceGenerator.generateVerifier() → pkce_verifier"
-      - "FapiAuthBuilder.buildAuthorizeUrl(consentId, pkce_challenge, pkce_method=S256, nonce, state, request_object_alg=PS256)"
-      - "LocalStorage.storePkceVerifier(verifier, state)"
-      - "Navigator.launchAppToAppRedirect(authorizeUrl)"
+      - >-
+        ConsentService.createConsent(OBReadConsent1 with 11 Permissions, ExpirationDateTime, TransactionFromDateTime,
+        TransactionToDateTime)
+      - LocalStorage.storeConsentId(staged_consent.Data.ConsentId)
+      - PkceGenerator.generateVerifier() → pkce_verifier
+      - >-
+        FapiAuthBuilder.buildAuthorizeUrl(consentId, pkce_challenge, pkce_method=S256, nonce, state,
+        request_object_alg=PS256)
+      - LocalStorage.storePkceVerifier(verifier, state)
+      - Navigator.launchAppToAppRedirect(authorizeUrl)
     error_handling:
-      NetworkException: "uiState=Error(user_message='Unable to reach HSBC. Check your connection and try again.')"
-      HttpException(400): "uiState=Error(user_message='HSBC rejected the consent request. Please try again.')"
-      HttpException(401): "uiState=Error(user_message='Authorisation failed. The app may need to re-register with HSBC.')"
-      HttpException(500): "uiState=Error(user_message='HSBC is temporarily unavailable. Try again in a moment.')"
-      FapiRedirectException: "uiState=Error(user_message='Could not open HSBC. Ensure the HSBC Mobile Banking app is installed, or try again.')"
-
+      NetworkException: uiState=Error(user_message='Unable to reach HSBC. Check your connection and try again.')
+      HttpException(400): uiState=Error(user_message='HSBC rejected the consent request. Please try again.')
+      HttpException(401): uiState=Error(user_message='Authorisation failed. The app may need to re-register with HSBC.')
+      HttpException(500): uiState=Error(user_message='HSBC is temporarily unavailable. Try again in a moment.')
+      FapiRedirectException: >-
+        uiState=Error(user_message='Could not open HSBC. Ensure the HSBC Mobile Banking app is installed, or try
+        again.')
   - name: NavigateBack
-    signature: "fun navigateBack(): Unit"
+    signature: 'fun navigateBack(): Unit'
     state_mutations: []
-    side_effects: ["Navigator.navigateBack()"]
+    side_effects:
+      - Navigator.navigateBack()
     error_handling: {}
-
 error_cases:
   - NetworkException
   - ConsentCreateBadRequest
   - ConsentCreateUnauthorised
   - ConsentCreateServerError
   - FapiRedirectFailed
-
 test_fixtures:
-  source: "screens/login/tests.yaml"
+  source: screens/login/tests.yaml
   scenario_count: 7
-  priority_distribution: { high: 3, medium: 4, low: 0 }
+  priority_distribution:
+    high: 3
+    medium: 4
+    low: 0
+capability_completeness:
+  answered_at: "2026-07-14"
+  answered_by: "/idea-enrich"
+  CC1_storage_location: "ConsentId stored in encrypted LocalStorage under key `consent-id-{state}` immediately after successful consent-create POST. PKCE verifier and OAuth state parameter stored under `pkce-verifier-{state}` for callback validation. Both are ephemeral session values cleared after successful callback or explicit revocation. No account/balance/transaction data is stored on this screen — it is consent initiation only."
+  CC2_destructive_action_safety: "No destructive user actions. Cancel navigates back without side-effects. The consent-create POST is server-side only; if the PSU abandons in the loading state, the staged consent remains AwaitingAuthorisation on HSBC and expires per ExpirationDateTime without requiring app-side cleanup (OBIE-compliant behaviour)."
+  CC3_nav_callback_wiring: "Cancel → user-onboarding via Navigator.navigateBack(). Empty-state Go Back → user-onboarding. Post-FAPI-redirect return → consent-callback screen via OS deep-link registered in AndroidManifest under the TPP redirect_uri scheme; not an in-app NavController transition."
+  CC4_user_data_export: "No user-generated data created. ConsentId and PKCE verifier are AISP infrastructure values, not user content. Not subject to GDPR Article 20 data portability — no export mechanism required."
+  CC5_permission_visibility: "Full OBReadConsent1.Permissions list (11 OBIE read scopes) is rendered in permissions_list with per-row human-readable label and description. PSU reviews every scope before tapping 'Continue to HSBC'. No additional OS runtime permissions are required for this screen."
+  CC6_storage_budget_awareness: "ConsentId: 36-char UUID. PKCE verifier: 43-char base64url string. Total LocalStorage footprint: <500 bytes. OBReadConsent1 request payload (~300 bytes JSON) is not cached locally; it is sent in-flight and discarded after a 201 response."
+  CC7_network_data_policy: "Single authenticated POST to /account-access-consents using a client_credentials bearer token (no PSU token at consent-create stage). Response contains ConsentId only — no PSU account data. Response is consumed transiently to extract ConsentId and then garbage-collected; not persisted to disk. Ktorfit timeout: 15 seconds."
+  CC8_cache_lifecycle: "ConsentId and PKCE verifier persist for the 90-day OBIE consent window. Both are cleared by the consent-callback screen on successful authorisation exchange, or by the consent-detail revoke flow. A subsequent consent-create (re-authorisation flow) overwrites the stored ConsentId."
+  CC9_error_recovery: "Five named error paths with distinct user messages: NetworkException, HttpException(400), HttpException(401), HttpException(500), FapiRedirectException. All surface error state with 'Could not connect to HSBC' title and error-specific body text, plus 'Try again' retry CTA re-triggering startOAuth(). Empty state (zero permissions) blocks consent-create and shows 'Go back' only — prevents submitting a zero-scope OBReadConsent1 that HSBC would reject with 400."
+
+status_history:
+  - from: enriched
+    to: designed
+    at: '2026-07-01T10:52:41.613Z'
+    by: /idea-export-stitch
+  - from: designed
+    to: designed
+    at: '2026-07-14T00:00:00Z'
+    by: /idea-enrich
+    note: "score written (93); content verified stable; no regression from export"
+  - from: designed
+    to: designed
+    at: '2026-07-14T12:00:00Z'
+    by: /idea-enrich
+    note: "score 93→95: state_model (ConsentOnboardingViewModel full spec), dependencies (tier-0 with feature+library refs), screens[] registered, api.yaml errors{} contract, accessibility on card+list, TC-LOGIN-008 empty state test, capability_completeness CC1-CC9"

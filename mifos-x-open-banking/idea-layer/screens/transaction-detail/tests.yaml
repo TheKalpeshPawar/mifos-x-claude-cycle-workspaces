@@ -120,3 +120,35 @@ scenarios:
       - "Amount header shows '-£6.45' in error colour"
       - "ValueDateTime differs from BookingDateTime (2026-06-30 vs 2026-06-29)"
       - "MCC row shows '5812'"
+
+  - id: TC-TXNDTL-010
+    description: "Empty state shown when transactionId absent in a successful OBReadTransaction6 response"
+    state: empty
+    priority: critical
+    fixture: transaction_debit
+    given: "OBReadTransaction6 fetch succeeds (HTTP 200) but returned list contains no transaction matching the route-param transactionId"
+    when: "Screen mounts with a transactionId not present in the result set"
+    then:
+      - "transaction_empty_state component renders (state_binding: [empty])"
+      - "receipt_long icon visible"
+      - "Title shows 'Transaction not found'"
+      - "Body shows 'This transaction is no longer available. It may have been removed or your consent has expired.'"
+      - "transaction_empty_back_button (outlined) is visible"
+      - "No Retry button rendered (this is not an error state)"
+      - "Error state empty_state component is NOT rendered"
+      - "Tapping Go back navigates to transactions screen (target: transactions)"
+
+  - id: TC-TXNDTL-011
+    description: "Network error shows recoverable error state with Retry button"
+    state: error
+    priority: high
+    fixture: error_network
+    given: "Device offline or upstream network unreachable when screen mounts"
+    when: "Screen mounts with any valid transactionId and no cached list available"
+    then:
+      - "error_state empty_state renders with error_outline icon"
+      - "Error body shows 'No network connection. Please check your connection and retry.'"
+      - "Retry button IS visible (error.recoverable=true)"
+      - "Go back button NOT visible"
+      - "Tapping Retry re-triggers transaction_detail_load"
+      - "Empty state component is NOT rendered"

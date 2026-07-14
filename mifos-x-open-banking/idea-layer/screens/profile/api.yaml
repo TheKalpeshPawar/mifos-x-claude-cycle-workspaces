@@ -10,3 +10,52 @@ endpoints:
     path_params:
       AccountId: string
     notes: "Fetches the single account holder (OBReadParty2) for the primary authorised account. Used to populate the connected identity section."
+    response:
+      schema: OBReadParty2
+      key_fields:
+        - path: Data.Party[0].Name
+          type: string
+          nullable: false
+          usage: Displayed as full name and used to derive Initials (first char of each word, max 2)
+        - path: Data.Party[0].EmailAddress
+          type: string
+          nullable: true
+          usage: Displayed in email_row; row hidden if null
+        - path: Data.Party[0].Phone
+          type: string
+          nullable: true
+          usage: Displayed in mobile_row; row hidden if null
+        - path: Data.Party[0].Address
+          type: "OBPostalAddress8[]"
+          nullable: true
+          usage: Filter by AddressType == Residential; use first match; row hidden if absent
+        - path: Data.Party
+          type: "OBPartyData2[]"
+          nullable: false
+          usage: If array is empty → transition to empty state (EC-PROF-006)
+    errors:
+      - status: 401
+        code: Unauthorized
+        trigger: Access token expired or revoked
+        handling: >-
+          ViewModel triggers TokenRepository.refresh(); retries party call once.
+          If second 401 received, executeSignOut() clears all tokens and navigates to login.
+      - status: 403
+        code: Forbidden
+        trigger: Active consent does not include ReadParty scope
+        handling: >-
+          Transition to error state with targeted message explaining missing ReadParty permission.
+          Error message: 'Consent does not include profile access. The ReadParty permission was
+          not granted when you authorised this app.'
+      - status: 404
+        code: NotFound
+        trigger: Party resource not found for the given AccountId
+        handling: >-
+          Transition to error state with not-found message.
+          Error message: 'Profile not found for the linked account. Please contact HSBC if this persists.'
+      - status: 0
+        code: NetworkError
+        trigger: Connection timeout, DNS failure, or no network connectivity
+        handling: >-
+          Transition to error state with generic network message and Retry button.
+          retryLoad() re-invokes loadProfile().

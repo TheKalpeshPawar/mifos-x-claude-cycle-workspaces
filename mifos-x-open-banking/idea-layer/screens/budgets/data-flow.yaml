@@ -53,3 +53,38 @@ on_user_action:
 
   - trigger: navigate_spending_by_category
     description: "Emit navigation event to spending-by-category screen with category filter param."
+
+# ── Cache lifecycle declaration (CC8 — RULE-IDEA-CAPABILITY-COMPLETENESS-001) ──────────────────
+cache_layers:
+  - name: budgets_datastore
+    store: datastore-preferences
+    owned_by: budgets
+    persistence: explicit
+    expiry: persistent
+    estimated_size: "≤ 1 KB per BudgetEntry; typically < 10 KB for all entries combined"
+    clear_trigger: user_explicit_delete_per_entry
+    clear_on_account_disconnect: true
+    notes: >
+      DataStore Preferences store — one kotlinx-serialisation BudgetEntry per category key.
+      Persists across app restarts and OS upgrades. Removed only when the user explicitly
+      deletes a budget entry or uninstalls/clears app data. No automatic TTL; data is
+      intentionally persistent (user-authored budget targets should survive restarts).
+
+  - name: ais_transaction_cache
+    store: in_memory
+    owned_by: transactions
+    access_mode: read_only_consumer
+    scope: current_month_debit_transactions_grouped_by_category
+    persistence: session_bound
+    expiry: session_end
+    refresh_trigger: transactions_feature_load
+    stale_behaviour: >
+      If the user has not visited the Transactions screen in the current session, the cache
+      may be empty — BudgetViewModel will show £0 spend per category until transactions load.
+      No explicit error surfaced for stale cache; spend values update automatically once
+      the transactions feature populates the shared in-memory repository.
+    notes: >
+      Owned and managed by the transactions feature. Budgets reads aggregated current-month
+      debit totals per category via a shared in-memory repository (no direct DB access).
+      Cleared on process kill; no maximum-size cap imposed (typical monthly transaction
+      count < 500 entries, well within memory budget).

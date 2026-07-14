@@ -1,7 +1,8 @@
 screen_id: statements
+archetype: index_list
 name: "Statements"
 status: enriched
-quality_score: 94
+quality_score: 97
 initial_state: loading
 
 shell:
@@ -37,6 +38,9 @@ components:
     variant: list
     item_count: 3
     accessibility_label: "{strings.statements.skeleton.a11y}"
+    style:
+      background: surface
+      cornerRadius: "8dp"
     test_context:
       purpose: "Shimmer placeholder (3 rows) shown while OBReadStatement2 fetch is in flight; replaced by statements_list on success"
       required_fields: []
@@ -49,6 +53,9 @@ components:
     scroll_direction: vertical
     items_source: "{statements}"
     accessibility_label: "{strings.statements.list.a11y}"
+    style:
+      background: background
+      padding: "0dp"
     test_context:
       purpose: "Renders OBStatement2 records sorted descending by StartDateTime with period label, closing balance, and download icon"
       required_fields: [statements]
@@ -62,6 +69,10 @@ components:
         trailing_content: "{item.startDateFormatted} – {item.endDateFormatted}"
         trailing_style: bodySmall
         accessibility_label: "{strings.statements.row.a11y}"
+        style:
+          background: surface
+          ripple: true
+          minHeight: "72dp"
         test_context:
           purpose: "Single OBStatement2 row; headline = ViewModel-derived period label ('May 2026'); supporting = 'Closing balance: £2,847.63'; trailing = formatted date range; tap navigates to statement-detail"
           required_fields:
@@ -83,10 +94,16 @@ components:
           - type: icon_button
             id: download_statement_button
             icon: file_download
+            loading_icon: circular_progress
+            loading_state_binding: "downloadState[item.StatementId] == InProgress"
             variant: standard
             accessibility_label: "{strings.statements.row.download.a11y}"
+            loading_accessibility_label: "{strings.statements.row.download.in_progress_a11y}"
+            style:
+              tint: primary
+              size: "24dp"
             test_context:
-              purpose: "Triggers download_statement for this row's StatementId; stops event propagation so row-tap does not also fire"
+              purpose: "Triggers download_statement for this row's StatementId; shows circular_progress spinner while downloadState[statementId]==InProgress; stops event propagation so row-tap does not also fire"
               required_fields: [item.StatementId]
               interaction_type: action
               data_driven: true
@@ -112,6 +129,10 @@ components:
     title: "{strings.statements.empty.title}"
     body: "{strings.statements.empty.body}"
     accessibility_label: "{strings.statements.empty.title}"
+    style:
+      icon_tint: onSurfaceVariant
+      title_style: titleMedium
+      body_style: bodyMedium
     test_context:
       purpose: "Shown when OBReadStatement2 Data.Statement[] is empty; uses description icon (document) to signal data-type"
       required_fields: []
@@ -126,6 +147,10 @@ components:
     title: "{strings.statements.error.title}"
     body: "{error.message}"
     accessibility_label: "{strings.statements.error.title}"
+    style:
+      icon_tint: error
+      title_style: titleMedium
+      body_style: bodyMedium
     test_context:
       purpose: "Shown on 401/403/429/network error; error.message is localised by ViewModel from http_error_map in docs.yaml"
       required_fields: [error.message]
@@ -137,6 +162,9 @@ components:
         variant: filled
         label: "{strings.statements.retry.label}"
         accessibility_label: "{strings.statements.retry.a11y}"
+        style:
+          cornerRadius: "20dp"
+          horizontalPadding: "24dp"
         test_context:
           purpose: "Re-triggers retry_load which delegates to statementsLoad(accountId)"
           required_fields: []
@@ -144,3 +172,72 @@ components:
           data_driven: false
         on_click:
           action: retry_load
+
+layout:
+  loading:
+    type: column
+    scroll: false
+    padding: "16dp"
+    children: [statements_skeleton]
+  content:
+    type: lazy_column
+    scroll: vertical
+    padding: "0dp"
+    children: [statements_list]
+    separator: statement_row_divider
+  empty:
+    type: column
+    scroll: false
+    gravity: center
+    padding: "32dp"
+    children: [empty_statements]
+  error:
+    type: column
+    scroll: false
+    gravity: center
+    padding: "32dp"
+    children: [error_state]
+
+state_model:
+  StatementsViewModel:
+    state:
+      fields:
+        - name: uiState
+          type: StatementsUiState
+          initial: Loading
+        - name: downloadState
+          type: "Map<String, DownloadState>"
+          initial: "emptyMap()"
+    screen_state:
+      members:
+        - Loading
+        - "Content(statements: List<StatementRowUiModel>)"
+        - Empty
+        - "Error(message: String)"
+    errors:
+      types:
+        - http_401: "Session expired. Please re-authenticate."
+        - http_403: "Consent does not include ReadStatements."
+        - http_429: "Too many requests. Please wait and retry."
+        - http_501: "Statement download not available for this account type."
+        - network: "Unable to connect. Check your connection and retry."
+    actions:
+      members:
+        - "statementsLoad(accountId: String)"
+        - "navigateToStatementDetail(statementId: String, accountId: String)"
+        - "retryLoad(accountId: String)"
+        - "downloadStatement(statementId: String, accountId: String)"
+    di:
+      - StatementsRepository
+      - StatementFileRepository
+
+dependencies:
+  tier: 1
+  features:
+    - account-detail
+    - statement-detail
+
+screens:
+  - id: statements
+    name: "Statements"
+    viewmodel: StatementsViewModel

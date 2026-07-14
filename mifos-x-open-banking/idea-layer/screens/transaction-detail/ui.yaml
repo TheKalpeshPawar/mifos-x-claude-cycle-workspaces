@@ -1,8 +1,9 @@
 screen_id: transaction-detail
+archetype: detail_screen
 name: "Transaction Detail"
 status: enriched
 initial_state: loading
-quality_score: 94
+quality_score: 95
 
 capability_tags:
   - rest-client
@@ -22,6 +23,11 @@ status_history:
     at: "2026-06-29"
     by: "/idea-enrich"
     note: "quality push 83→94: i18n, MCC row, currency meta, conditional retry, copy reference, credit-transaction demo, error subtypes"
+  - from: enriched
+    to: enriched
+    at: "2026-07-14"
+    by: "/idea-enrich"
+    note: "quality push 94→95: wire empty state in data-flow (on_empty: empty), reconcile docs.yaml notes, add TC-TXNDTL-010 (empty state) + TC-TXNDTL-011 (network error), fix demo-data fixture comment"
 
 business_logic:
   kind: crud
@@ -39,7 +45,7 @@ shell:
   top_app_bar_leading: back
   fab_visible: false
 
-states: [loading, content, error]
+states: [loading, content, error, empty]
 
 components:
   # ── LOADING STATE ────────────────────────────────────────────────────────────
@@ -279,3 +285,32 @@ components:
           required_fields: [error.recoverable]
           interaction_type: navigate
           data_driven: true
+
+  # ── EMPTY STATE ───────────────────────────────────────────────────────────────
+  - type: empty_state
+    id: transaction_empty_state
+    variant: neutral
+    state_binding: [empty]
+    icon: receipt_long
+    title: "{strings.transaction_detail_empty_title}"
+    body: "{strings.transaction_detail_empty_body}"
+    accessibility_label: "{strings.transaction_detail_empty_title}"
+    test_context:
+      purpose: "Shown when the transactionId route parameter does not match any entry in the OBReadTransaction6 result set (transaction removed from HSBC's window or consent scope narrowed since the list was fetched); distinct from error state as the data fetch succeeded with a valid response but returned zero matching records"
+      required_fields: [icon, title, body]
+      interaction_type: display
+      data_driven: false
+    children:
+      - type: button
+        id: transaction_empty_back_button
+        variant: outlined
+        label: "{strings.transaction_detail_go_back}"
+        accessibility_label: "{strings.transaction_detail_go_back}"
+        on_click:
+          action: navigate_back
+          target: transactions
+        test_context:
+          purpose: "Returns PSU to the transactions list when the selected transaction yields no detail record"
+          required_fields: [on_click.action, on_click.target]
+          interaction_type: navigate
+          data_driven: false

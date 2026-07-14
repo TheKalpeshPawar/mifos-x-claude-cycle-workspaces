@@ -1,7 +1,8 @@
 screen_id: consent-callback
+archetype: empty_state
 name: "Authorisation Callback"
 status: enriched
-quality_score: 94
+quality_score: 95
 i18n_coverage: true
 initial_state: loading
 
@@ -94,6 +95,7 @@ components:
       align: center
       justify: center
       padding: spacing.xl
+    accessibility_label: "{strings.consent_callback_success_section_a11y}"
     test_context:
       purpose: "Centred column for transient success feedback before auto-navigation to accounts"
       required_fields: [variant]
@@ -253,3 +255,56 @@ components:
           required_fields: [on_click.action, on_click.target]
           interaction_type: navigate
           data_driven: false
+
+# ── ViewModel state model ──────────────────────────────────────────────────
+state_model:
+  ConsentCallbackViewModel:
+    state:
+      fields:
+        - name: uiState
+          type: ConsentCallbackUiState
+          default: Loading
+    screen_state:
+      members:
+        - Loading
+        - Content
+        - Empty
+        - Error
+        - AccessDenied
+        - SecurityError
+    errors:
+      types:
+        - TokenExchangeFailed
+        - ConsentRejected
+        - ConsentRevoked
+        - NetworkError
+        - InvalidState
+        - AccessDenied
+        - SecurityStateMismatch
+    actions:
+      members:
+        - "validateStateParam(receivedState: String): StateValidationResult"
+        - "classifyOAuthError(error: String, errorDescription: String?): OAuthErrorClass"
+        - "exchangeAuthCode(code: String, state: String, codeVerifier: String): Unit"
+        - "pollConsentStatus(): Unit"
+        - "navigateRetry(): Unit"
+        - "navigateLogin(): Unit"
+    di:
+      - TokenService
+      - ConsentService
+      - EncryptedSharedPreferences
+      - LocalStorage
+      - Navigator
+
+# ── Dependencies ───────────────────────────────────────────────────────────
+dependencies:
+  tier: 0
+  features:
+    - accounts
+    - login
+
+# ── Screens list ───────────────────────────────────────────────────────────
+screens:
+  - id: consent-callback
+    name: "Authorisation Callback"
+    viewmodel: ConsentCallbackViewModel

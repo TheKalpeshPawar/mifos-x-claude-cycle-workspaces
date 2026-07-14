@@ -1,77 +1,98 @@
 schema_version: "1.0.0"
 run:
-  at: "2026-06-30T00:00:00Z"
-  args: "(no-Stitch scope)"
+  at: "2026-07-14T00:00:00Z"
+  args: "for mifos-x-open-banking (full matrix dispatch; mockups + Stitch skipped per user)"
 steps:
   - n: 0
     name: init
     status: complete
-    at: "2026-06-29T15:10:00Z"
+    at: "2026-07-14T00:00:00Z"
   - n: "1.HP"
     name: matrix-audit
     status: complete
     verdict: matrix-partial
-    at: "2026-06-29T15:11:00Z"
-    note: "Initial run was matrix-broken (YAML parse error in consent-list/demo-data.yaml). Fixed; re-audit clean."
+    coverage_pct: 0
+    dispatch_queue_length: 185
+    at: "2026-07-14T00:00:00Z"
+    note: >-
+      Fresh audit found 185 dispatches / 0% coverage — root-caused to a Jul-1
+      bulk YAML-normalizer sweep that bumped every ui.yaml/docs.yaml mtime above
+      downstream artifacts (false mtime-staleness; ui.yaml git-clean) PLUS
+      docs.yaml missing the `score` field the audit reads. Not real content drift.
+  - n: 1
+    name: project-wide-artifacts
+    status: complete
+    at: "2026-07-14T00:00:00Z"
+    note: >-
+      Regenerated APP_FLOW.mmd, TAG_REGISTRY.yaml (68->76 tags), dashboard/
+      DEV_STATUS.md (24->25 screens), server/api_manifest.yaml — all now include
+      the `home` screen (25th) that was missing from every rollup.
+  - n: "3-FOUNDATION"
+    name: foundation
+    status: complete
+    at: "2026-07-14T00:00:00Z"
+    note: >-
+      /idea-generate-tests coverage-verified across 25 features. 4 features had
+      genuine coverage gaps -> 7 scenarios added (account-detail, budgets, home,
+      settings); 20 already complete; accounts fresh. Cross-cutting finding:
+      23/24 docs.yaml carry dangling FR-* acceptance_refs (REQUIREMENTS.md uses
+      SFR-AIS-*) — recorded, not auto-remapped.
   - n: "3-ENRICHMENT"
     name: enrichment
     status: complete
-    features_enriched: 24
-    at: "2026-06-29T15:55:00Z"
-    note: "All 24 screens re-enriched 80-88 -> 89-95; full i18n, real OBIE data, state coverage, a11y, tests; latent bugs fixed."
-  - n: "RECONCILE"
-    name: shared-state-reconcile
-    status: complete
-    at: "2026-06-30T09:00:00Z"
-    note: "Built _strings/strings.yaml (656 keys); components.yaml (3 project components); root-cause framework fixes to idea-graph-audit allow-list (layer0.ts component patterns + layer2 runtime-binding namespaces). component_type_unknown 0; demo_data_ref_unknown 174->19."
-  - n: "0.PRE"
-    name: structure-ensure
-    status: complete
-    at: "2026-06-30T10:30:00Z"
-    note: "Installed idea-layer/preview/_shared/preview-runtime.js byte-identical to framework template (RULE-PROTO-CLICK-002 C4)."
+    features_enriched: 25
+    at: "2026-07-14T00:00:00Z"
+    note: >-
+      /idea-enrich across all 25. Wrote the missing docs.yaml `score` field
+      (honest scores 89-95). Fixed real bugs: consent-list feature mislabel
+      (consent-dashboard), direct-debits/home test_fixtures pointers, home
+      implementation_ready. Reconciled all cross_ref_violations: pfm-dashboard
+      selected.value; transaction-detail canonical transaction fixture (13
+      fields); transactions period.totalCredit/totalDebit + group.date;
+      user-onboarding operation->state_op in data-flow.yaml. Fixed 3 duplicate
+      quality_score keys in ui.yaml (beneficiaries/scheduled-payments/
+      standing-orders) that a subagent introduced (matrix-broken -> clean).
   - n: "5-VISUALIZATION"
     name: visualization-previews
     status: complete
-    rendered_screens: 24
-    preview_html_files: 101
-    at: "2026-06-30T10:30:00Z"
+    rendered_screens: 3
+    cache_created: 10
+    cache_hit: 12
+    at: "2026-07-14T00:00:00Z"
     note: >-
-      Rendered per-state preview HTML for all 24 screens via isolated per-feature
-      agents (LLM, no Stitch). Real OBIE/HSBC demo data, {strings.x} resolved to
-      English, M3 design tokens (light+dark), app-shell chrome, RULE-PROTO-CLICK-002
-      interaction wiring, RV-001/003/023/026/029 validations passing. 3 screens
-      (budgets, standing-orders, transactions) failed on a transient
-      connection-closed error in the first pass and were re-rendered cleanly after
-      a disk-persistence audit (the other 21 were verified persisted and left
-      untouched). NOTE: MOCKUP.md generation (mockups/{f}/MOCKUP.md) + the export
-      phase (SPEC.md / export-mockup / export-stitch) remain pending and are OUT of
-      the no-Stitch scope.
-  - n: 4
-    name: artifacts
+      /idea-render-screen: 3 re-rendered (edited ui.yaml), 10 first-time cache
+      entries, 12 SHA cache-hits (no-op). /idea-render-validate --auto-fix:
+      32 Tier-1 violations fixed (RV-001 raw hex -> tokens, RV-031 inline script
+      -> external preview-runtime.js). Tier-2 advisory: RV-023 dark-mode missing
+      (14 screens), RV-018 raw px (no --sp-* tokens in design system).
+      MOCKUP.md + Stitch generation SKIPPED per user directive.
+  - n: "5-EXPORT"
+    name: export
     status: complete
-    at: "2026-06-30T10:45:00Z"
-    note: "Regenerated APP_FLOW.mmd (24 nodes/42 edges), TAG_REGISTRY.yaml (68 tags), dashboard/DEV_STATUS.md + dev-status.html; refreshed server/api_manifest.yaml (added open-data /atms group)."
-  - n: "4.VERIFY"
-    name: artifact-existence-gate
-    status: complete
-    at: "2026-06-30T10:46:00Z"
-    note: "APP_FLOW.mmd, TAG_REGISTRY.yaml, DEV_STATUS.md+html, api_manifest.yaml, flows(8), apis(1), previews(101) all present."
+    exported_count: 25
+    at: "2026-07-14T00:00:00Z"
+    note: >-
+      /idea-export-spec generated 25 SPEC.md + 25 API.md (exports/ was empty —
+      genuine first-generation; the implementation UI-source fallback per
+      RULE-UI-SOURCE-001). /idea-export bundle wrote EXPORT_MATRIX.yaml (25 rows)
+      + exports/INDEX.md. export-mockup + export-stitch SKIPPED per user.
   - n: 6
     name: final-audit
-    status: complete
+    status: partial
     verdict: matrix-partial
     coverage_pct: 0
     pre_queue: 0
     errors: 0
-    at: "2026-06-30T10:47:00Z"
+    dispatch_queue_length: 143
+    at: "2026-07-14T00:00:00Z"
     note: >-
-      pre=0 (precondition cleared), errors=0. coverage_pct stays 0 / verdict
-      matrix-partial BY DESIGN: the export phase (export-spec/export-mockup/
-      export-stitch, 24x3) is intentionally skipped per the no-Stitch directive,
-      so the matrix cannot reach 100% until export is run. Residual dispatch
-      entries are all export-phase + MOCKUP.md (out of scope) + 6 demo_data_ref
-      runtime-binding advisories (transaction/period/selected/group).
+      errors=0, precondition drained. coverage_pct stays 0 / matrix-partial by
+      STRUCTURE, not unfinished work: (1) mockups+Stitch skipped per user = 53
+      permanently-open queue entries; (2) mtime-vs-content-hash mismatch — SHA
+      cache-hits don't touch output mtime so the mtime-based audit perpetually
+      re-flags content-fresh render/tests/demo-data; (3) enrichment 95-threshold
+      vs honest 89-94 scores (20 features) — not inflated to fake green.
   - n: 5
     name: complete
     status: complete
-    at: "2026-06-30T10:47:00Z"
+    at: "2026-07-14T00:00:00Z"

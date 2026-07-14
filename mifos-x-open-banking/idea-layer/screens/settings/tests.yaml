@@ -94,3 +94,45 @@ scenarios:
     then:
       - "Exactly four options shown: 2 minutes, 5 minutes, 10 minutes, 30 minutes"
       - "Selecting '10 minutes' persists to DataStore and updates supporting_text"
+
+  - id: TC-SET-011
+    description: "Toggling Security Alerts notification off persists and survives restart"
+    state: content
+    when: "User taps Security Alerts switch (On → Off)"
+    then:
+      - "Switch flips to Off immediately"
+      - "DataStore is updated with notify_security_alerts=false"
+      - "State survives process death"
+
+  - id: TC-SET-012
+    description: "Tapping an About & Legal external link opens the correct URL in system browser"
+    state: content
+    when: "User taps 'Terms of Service' row (or 'Privacy Policy' or 'Licences')"
+    then:
+      - "open_external_url action fires with the corresponding URL"
+      - "System browser or Custom Tab opens with the target URL"
+      - "App remains in background; Settings screen accessible via back navigation"
+
+  - id: TC-SET-013
+    description: "Error state renders with Retry button when DataStore throws IOException on mount"
+    state: error
+    given: "SettingsDataStore.settingsFlow throws IOException on first collection (storage corruption)"
+    when: "Screen mounts and Flow collection fails"
+    then:
+      - "Loading skeleton disappears"
+      - "Error state UI shows error_outline icon, title 'Could not load settings', and body text"
+      - "Retry button is visible and focusable"
+      - "No setting rows are rendered"
+      - "Tapping Retry triggers retry_load_settings: screen transitions to Loading then Content on recovery"
+      - "On repeat IOException after retry, Error state is shown again"
+
+  - id: TC-SET-014
+    description: "Empty state renders transiently before DataStore writes first default preferences"
+    state: empty
+    given: "App first cold start; DataStore has never been written; Flow emits nothing before default coroutine writes complete"
+    when: "Screen mounts before DataStore default-write coroutine completes"
+    then:
+      - "Empty state UI shows settings icon, title 'No preferences saved', and body text"
+      - "No crash or unhandled state occurs"
+      - "Within one frame (or first DataStore emission), screen transitions to Content automatically"
+      - "No user action is needed; transition is automatic"
