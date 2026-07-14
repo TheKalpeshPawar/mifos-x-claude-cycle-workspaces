@@ -1,0 +1,51 @@
+id: consent-management
+version: "1.0.0"
+name: "Consent Lifecycle Management"
+description: >
+  Priya checks her active Open Banking consents, reviews which permissions have been
+  granted and when they expire, and either revokes the consent (DELETE
+  /account-access-consents/{id}) or triggers a reconfirmation before the 90-day OBIE
+  window closes. Includes a recovery path for a consent-expired error encountered on a
+  data screen.
+persona:
+  archetype: "returning user — consent steward"
+  jtbd: "Know exactly what data I'm sharing, for how long, and be able to cut access off immediately if I want to."
+  context: "Reviewing privacy and data-sharing settings on a quiet evening after seeing news about a data breach at another fintech."
+  knowledge_level: familiar
+  emotional_state: "cautious and trust-sensitive"
+goal: "Review active consents, understand the permissions granted, and either revoke or reconfirm before expiry."
+success_metric:
+  name: "consent-lifecycle-action-rate"
+  kind: retention
+  target: ">=70% of users who open consent-detail take a deliberate action (revoke, reconfirm, or 'consent looks fine' dismiss)"
+  measurement: "Events: consent_detail_opened / consent_revoked / consent_reconfirm_initiated tracked in Firebase Analytics"
+screen_sequence:
+  - screen_id: consent-list
+    state: "populated"
+    user_intent: "See all active consents with their current status (Authorised / Expired / Revoked) and expiry date."
+    success_signal: "At least one consent card renders with consent ID, status badge, creation date, expiry date, and tap-to-detail affordance."
+    notes: "Expired or soon-to-expire consents show a warning chip. Empty state shows 'No active consents' with CTA to connect HSBC."
+  - screen_id: consent-detail
+    state: "populated"
+    user_intent: "Inspect the granted permission set (ReadAccountsDetail, ReadTransactionsDetail, etc.) and decide on a lifecycle action."
+    success_signal: "Permission list renders with all granted OBIE permissions; Revoke and Reconfirm buttons are both accessible. Expiry date shown prominently."
+    notes: "Reconfirm button is highlighted when expiry is within 7 days. Revoke triggers a confirmation dialog before DELETE call."
+expected_outcome: >
+  Priya understands exactly which permissions are active and has either revoked the consent
+  (token cleared, data access ended) or reconfirmed it (fresh FAPI flow completed, 90-day
+  window reset). She leaves feeling in control of her data sharing.
+tier: maximum
+preconditions:
+  - "At least one active consent exists (status = Authorised)."
+  - "App has the consent ID stored from the original FAPI onboarding."
+failure_modes:
+  - cause: "Consent already expired server-side when user opens consent-detail (Awaiting Authorisation or Expired status returned by GET /account-access-consents/{id})."
+    recovery_screen: login
+    notes: "Detail screen shows 'This consent has expired' banner. Reconfirm CTA triggers fresh onboarding-consent flow from login."
+  - cause: "DELETE /account-access-consents/{id} returns 404 (consent already deleted externally)."
+    recovery_screen: consent-list
+    notes: "App treats 404 on DELETE as a successful revocation, clears local token, and navigates back to the consent list (now empty)."
+  - cause: "Network offline when user attempts revoke."
+    recovery_screen: consent-detail
+    notes: "Revoke button shows error snackbar 'Unable to revoke — check connection'. Consent remains active; user stays on detail screen."
+tags: [consent, revoke, reconfirm, obie, trust, p0]

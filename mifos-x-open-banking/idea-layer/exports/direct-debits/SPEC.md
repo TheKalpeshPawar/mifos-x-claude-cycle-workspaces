@@ -1,9 +1,6 @@
 <!-- source: screens/direct-debits/ui.yaml -->
-<!-- source_hash: 8f627a0862016e34b232d8c97c47bf23a2cebbe6255b04b8f9e6429b85a1f5c9 -->
-<!-- generated: 2026-07-14T00:00:00Z -->
-<!-- generated_from_feature_version: 1.0 -->
-<!-- generated_from_contract_version: 1.0 -->
-<!-- prior_version: — -->
+<!-- source_hash: regenerated-2026-07-14 -->
+<!-- generated: 2026-07-14T21:00:00Z -->
 
 # Direct Debits — Implementation Specification
 
@@ -17,45 +14,98 @@
 
 | Screen | ViewModel | States | Description |
 |--------|-----------|--------|-------------|
-| Direct Debits | DirectDebitsViewModel | loading, content, empty, error | Read-only list of OBIE direct debit mandates (OBReadDirectDebit2) for an account. Displays Active/Inactive summary chips, Active-first sorted list of mandate cards (originator name, status badge, previous payment amount/date, mandate reference). Typed error handling: TokenExpired (401), ConsentRevoked (403 — no retry), RateLimited (429), NetworkError. |
+| Direct Debits | DirectDebitsViewModel | loading, content, empty, error | Read-only list of OBIE direct debit mandates (OBReadDirectDebit2) for an account. Displays Active/Inactive summary chips, Active-first sorted mandate cards (originator name, status badge, previous payment amount/date, mandate reference). Typed error handling: TokenExpired (401), ConsentRevoked (403 — no retry), RateLimited (429), NetworkError. |
+
+---
 
 ## State Model
 
 ### DirectDebitsViewModel
 
-- **State**: loading — []; content — [directDebits(List\<OBDirectDebit2\>), activeCount(Int), inactiveCount(Int)]; empty — []; error — [userMessage(String), code(DirectDebitErrorCode), isRetriable(Boolean)]
-- **ScreenState**: Loading, Content, Empty, Error
-- **Errors**: TokenExpired/401 (isRetriable=true), ConsentRevoked/403 (isRetriable=false), RateLimited/429 (isRetriable=true), NetworkError/IOException (isRetriable=true), EmptyResult/200-empty (no error state — Empty ScreenState)
-- **Events**: NavigationEvent.Back (emitted to NavController)
-- **Actions**: LoadDirectDebits(accountId: String) — GET mandate list, derives status_variant + sorts Active-first, computes counts; RetryLoad() — precondition: error.isRetriable==true; NavigateBack() — emits NavigationEvent.Back
-- **DI**: AisApiService (via Ktorfit), Navigator
+- **State fields**: `uiState: DirectDebitsUiState = Loading` · `directDebits: List<OBDirectDebit2> = emptyList()` · `activeCount: Int = 0` · `inactiveCount: Int = 0`
+- **ScreenState**: `Loading` · `Content(directDebits, activeCount, inactiveCount)` · `Empty` · `Error(userMessage: String, code: DirectDebitErrorCode, isRetriable: Boolean)`
+- **Errors**: `TokenExpired` (HTTP 401, isRetriable=true) · `ConsentRevoked` (HTTP 403, isRetriable=false — retry button hidden) · `RateLimited` (HTTP 429, isRetriable=true) · `NetworkError` (IOException/timeout, isRetriable=true) · `EmptyResult` (200 + empty list → Empty ScreenState, not error)
+- **Actions**: `LoadDirectDebits(accountId: String)` — GET mandate list, derives status_variant per item, sorts Active-first, computes activeCount/inactiveCount · `RetryLoad()` — precondition: error.isRetriable==true · `NavigateBack()` — emits NavigationEvent.Back
+- **DI**: `AisApiService (Ktorfit)` · `Navigator`
 
-## Derived Fields (per mandate item)
+### Derived Fields (per mandate item)
 
-| Field | Type | Derivation |
-|-------|------|-----------|
-| status_variant | String | DirectDebitStatusCode == 'Active' → 'primary'; else → 'outline' |
-| activeCount | Int | directDebits.count { DirectDebitStatusCode == 'Active' } |
-| inactiveCount | Int | directDebits.count { DirectDebitStatusCode != 'Active' } |
-| sort order | — | Active mandates first, Inactive last |
+| Field | Derivation |
+|-------|-----------|
+| `status_variant` | `DirectDebitStatusCode == "Active"` → `"primary"` else `"outline"` |
+| `activeCount` | `directDebits.count { DirectDebitStatusCode == "Active" }` |
+| `inactiveCount` | `directDebits.count { DirectDebitStatusCode != "Active" }` |
+| sort order | Active mandates first, Inactive last |
 
-## API Endpoints (1)
+### State Transitions
 
-| Function | Method | Params | Response | Errors | Table |
-|----------|--------|--------|----------|--------|-------|
-| getDirectDebits | GET | AccountId(String) | OBReadDirectDebit2 | 400, 401, 403, 429, 500 | — |
+| From | Trigger | To State |
+|------|---------|----------|
+| — | Screen mount | loading |
+| loading | Data.DirectDebit[] non-empty | content |
+| loading | Data.DirectDebit[] empty | empty |
+| loading | HTTP 401 / 429 / IOException | error (isRetriable=true) |
+| loading | HTTP 403 | error (ConsentRevoked, isRetriable=false) |
+| error | Retry tapped (isRetriable=true only) | loading |
+| any | Back button | → account-detail (NavigationEvent.Back) |
 
-## Dependencies (Tier 1)
+---
 
-| Feature | Type | Required | Check |
-|---------|------|----------|-------|
-| account-detail | parent | true | Navigated from account-detail Direct Debits chip; accountId passed as route param |
+## Screen Inventory
+
+### State: loading
+
+- **Layout**: column, full-width
+- **Components**:
+  - `loading_skeleton` — skeleton, variant list_card, item_count 4; a11y: "Loading direct debits"
+
+### State: content
+
+- **Layout**: column, scrollable
+- **Components**:
+  - `mandate_summary_chips` — chip_group:
+    - `active_count_chip` (tonal variant): label "{activeCount} Active direct debits"
+    - `inactive_count_chip` (outline variant): label "{inactiveCount} Inactive direct debits"
+  - `direct_debits_list` — vertical list, items_source `{directDebits}`, sorted Active-first:
+    - `direct_debit_card` (elevation 1) per item:
+      - `dd_originator_name` — text, role heading, titleMedium; value: `{item.Name}`
+      - `dd_status_badge` — badge; variant: `{item.status_variant}` (primary for Active, outline for Inactive); always has a11y label (not decorative)
+      - `dd_previous_amount` — text, role amount, headlineSmall; value: `{item.PreviousPaymentAmount.Amount} {item.PreviousPaymentAmount.Currency}`; on-surface color (NOT error color — amounts are neutral)
+      - `dd_previous_date` — text bodySmall, on-surface-variant; locale-aware formatted PreviousPaymentDateTime
+      - `dd_mandate_id` — text labelSmall, on-surface-variant; value: "Mandate: {item.MandateIdentification}"
+
+### State: empty
+
+- **Layout**: column, center-aligned
+- **Components**:
+  - `empty_direct_debits` — icon: subscriptions; title + body from strings; no action button
+
+### State: error
+
+- **Layout**: column, center-aligned
+- **Components**:
+  - `error_state` — empty_state variant error; icon: error_outline; body: `{error.userMessage}` (ViewModel-mapped per error code)
+  - `retry_button` — filled button; visible only when `error.isRetriable == true`; triggers RetryLoad
+  - **Note**: 403 ConsentRevoked hides retry button (re-authorising consent is out-of-scope for this screen)
+
+---
+
+## API Dependencies
+
+| Endpoint | Method | Path | Permission | Response DTO | Pagination |
+|----------|--------|------|------------|--------------|-----------|
+| direct-debits-list | GET | /accounts/{AccountId}/direct-debits | ReadDirectDebits | OBReadDirectDebit2 | None — full list in one response |
+
+---
 
 ## Navigation
 
+- **Entry**: account-detail → tap Direct Debits chip (params: accountId)
+- **Back**: back_button / NavigationEvent.Back → account-detail
 - **Route**: DirectDebits(accountId: String)
-- **From**: account-detail (tap Direct Debits chip)
-- **To**: account-detail (back button)
+- **Flow ref**: recurring-and-statements
+
+---
 
 ## App-Shell
 
@@ -66,26 +116,47 @@
 | top_app_bar_title | {strings.direct_debits.title} |
 | top_app_bar_leading | back |
 | FAB visible | false |
-| safe-area | respect top + bottom, extend-and-pad notch |
+
+---
 
 ## Flow Logic (3 decisions)
 
-| Decision | Condition | True Path | False Path | Impl |
-|----------|-----------|-----------|------------|------|
-| Response 403? | HTTP 403 from AIS | Error(ConsentRevoked, isRetriable=false) — retry button hidden | Check other error codes | LoadDirectDebits() error_handling |
-| Mandate list empty? | Data.DirectDebit[].isEmpty() | Transition to empty state | Transition to content state with sorted list | LoadDirectDebits() uiState mutation |
-| Error retriable? | error.isRetriable == true | Show retry button in error state | Hide retry button (e.g. 403 ConsentRevoked) | RetryLoad() precondition |
+| Decision | Condition | True Path | False Path |
+|----------|-----------|-----------|------------|
+| HTTP 403? | 403 from HSBC AIS | Error(ConsentRevoked, isRetriable=false) — retry hidden | Check other error codes |
+| List empty? | Data.DirectDebit[].isEmpty() | Empty state | Content state with sorted list + summary chips |
+| Error retriable? | error.isRetriable == true | Show retry button | Hide retry button (403 ConsentRevoked) |
+
+---
+
+## Design Tokens
+
+| Usage | Token | Value |
+|-------|-------|-------|
+| Background | `background` | #F7F9FF |
+| Card container | `surfaceContainerHigh` (elevation 1) | #E5E8ED |
+| Originator heading | titleMedium | Roboto 16sp/500 |
+| Amount | headlineSmall on-surface | Roboto 24sp/32 — neutral, NOT error color |
+| Date / mandate ref | bodySmall, on-surface-variant | Roboto 12sp, #41474D |
+| Active chip (tonal) | primaryContainer, onPrimaryContainer | bg #C9E6FF, text #004B6F |
+| Inactive chip (outline) | outline | border #72787E |
+| Active badge | primary tonal | bg #C9E6FF, text #004B6F |
+| Inactive badge | outline | border #72787E |
+| Retry button | button_filled | bg #266489, text #FFFFFF |
+| Min touch target | — | 48dp |
+
+---
 
 ## Testing (9 scenarios)
 
 | ID | Scenario | Priority |
 |----|----------|----------|
-| TC-DD-001 | Direct debits list loads and renders all mandates including inactive, with correct status variants | P0 |
-| TC-DD-002 | Skeleton loading shown during direct debits fetch | P0 |
-| TC-DD-003 | Empty state when no direct debits registered for account | P1 |
-| TC-DD-004 | 401 token-expired error shows message and Retry button | P0 |
+| TC-DD-001 | Mandate list loads with correct status variants and Active-first sort order | P0 |
+| TC-DD-002 | Skeleton (4 cards) shown during fetch | P0 |
+| TC-DD-003 | Empty state when no direct debits registered for account | P0 |
+| TC-DD-004 | 401 token-expired error shows typed message and Retry button | P0 |
 | TC-DD-005 | Back button navigates to account-detail | P1 |
 | TC-DD-006 | 403 consent-revoked error shows message without Retry button | P1 |
 | TC-DD-007 | 429 rate-limited error shows message with Retry button | P1 |
 | TC-DD-008 | Network error shows message with Retry button | P1 |
-| TC-DD-009 | i18n coverage — all static labels come from strings keys | P2 |
+| TC-DD-009 | i18n — all static labels use strings keys (no hardcoded strings) | P2 |

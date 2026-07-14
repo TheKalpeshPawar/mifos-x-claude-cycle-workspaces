@@ -1,0 +1,59 @@
+id: pfm-review
+version: "1.0.0"
+name: "Personal Finance Management Review"
+description: >
+  Priya explores the PFM dashboard — a client-side analytics layer computed from her
+  AIS transaction data — to see total net worth across all accounts, this-month spending
+  vs income, and top spending categories. She drills into a category to see individual
+  transactions, sets or reviews monthly budgets per category, and reviews detected
+  recurring subscriptions distinct from bank-side standing orders.
+persona:
+  archetype: "returning user — personal finance analyst"
+  jtbd: "Understand where my money actually goes each month and set spending limits I can track without switching apps."
+  context: "Sunday evening budgeting session, trying to cut back on discretionary spending."
+  knowledge_level: familiar
+  emotional_state: "motivated to improve but slightly anxious about the numbers"
+goal: "Understand month-to-date spending by category, set a budget for the highest category, and identify any unexpected recurring charges."
+success_metric:
+  name: "pfm-deep-engagement"
+  kind: satisfaction
+  target: ">=60% of sessions opening pfm-dashboard also visit spending-by-category AND at least one of (budgets or recurring-subscriptions)"
+  measurement: "Funnel: pfm_dashboard_viewed → spending_by_category_viewed + (budgets_viewed OR subscriptions_viewed)"
+screen_sequence:
+  - screen_id: pfm-dashboard
+    state: "populated"
+    user_intent: "Get a holistic view of total balance, income vs expense this month, and top spending categories."
+    success_signal: "Dashboard shows: net-worth / total-balance figure, income bar and expense bar for current month, at least 3 top-category rows with spend amounts, and insight cards (e.g. 'Groceries up 15% this month')."
+    notes: "All analytics are computed client-side from AIS transaction data; no new API call is made. Data freshness tied to last transactions sync."
+  - screen_id: spending-by-category
+    state: "populated"
+    user_intent: "See spending ranked by category with amounts and percentages, and drill into the top category's transactions."
+    success_signal: "Category rows render with category name, colour chip, total spend, and percentage-of-income indicator. Tapping a row navigates to the transactions filtered by that category."
+    notes: "Period selector (This Month / Last Month / Custom) available. Pie-chart or bar-chart rendering depends on screen resolution."
+  - screen_id: budgets
+    state: "populated"
+    user_intent: "Review existing budget cards and set or adjust the budget for the highest-spend category."
+    success_signal: "Budget cards render per-category with: set limit, current spend, progress bar, and over-budget alert chip where applicable. Budget edit is accessible inline."
+    notes: "Budgets are stored locally (device storage, no new API). Over-budget cards shown in error colour (Material 3 error container)."
+  - screen_id: recurring-subscriptions
+    state: "populated"
+    user_intent: "See auto-detected recurring payments and subscriptions to identify any unexpected charges."
+    success_signal: "Subscription rows render with merchant name, detected frequency, estimated next-charge date, and last-transaction amount. Distinct from bank-side direct debits."
+    notes: "Detection algorithm runs on transaction descriptions client-side. Low-confidence detections are labelled 'Possible recurring'."
+expected_outcome: >
+  Priya has a clear picture of where her money went this month, has set a budget cap for
+  her top spending category, and has identified any unexpected recurring charges. She leaves
+  with an actionable plan and without needing any additional API access beyond her existing
+  AIS consent.
+tier: medium
+preconditions:
+  - "Active consent with ReadTransactionsDetail permission across all authorised accounts."
+  - "At least 30 days of transaction history available for meaningful categorisation."
+failure_modes:
+  - cause: "Insufficient transaction history — fewer than 10 transactions available for categorisation."
+    recovery_screen: pfm-dashboard
+    notes: "PFM dashboard shows 'Not enough data yet' empty state with guidance to wait or import more account history once more data is available."
+  - cause: "Client-side categorisation engine fails (unexpected transaction description format)."
+    recovery_screen: pfm-dashboard
+    notes: "Uncategorised transactions appear under 'Other' category. User can manually re-categorise from transaction-detail (future iteration)."
+tags: [pfm, budgets, spending, subscriptions, analytics, p2]
