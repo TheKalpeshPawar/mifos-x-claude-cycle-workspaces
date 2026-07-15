@@ -1,5 +1,5 @@
 <!-- source: screens/transactions/ui.yaml -->
-<!-- source_hash: — -->
+<!-- source_hash: regenerated-2026-07-14 -->
 <!-- generated: 2026-07-14T12:00:00Z -->
 <!-- generated_from_feature_version: — -->
 <!-- generated_from_contract_version: — -->

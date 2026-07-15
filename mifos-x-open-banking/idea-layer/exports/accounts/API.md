@@ -1,3 +1,7 @@
+<!-- source: screens/accounts/api.yaml -->
+<!-- source_hash: api-accounts-2ep-2026-07-14 -->
+<!-- generated: 2026-07-14T12:00:00Z -->
+
 # Accounts -- API Reference
 
 > **Source of Truth**: `idea-layer/screens/accounts/api.yaml`

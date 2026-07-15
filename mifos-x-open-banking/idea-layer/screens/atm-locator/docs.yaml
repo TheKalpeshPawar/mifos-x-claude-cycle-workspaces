@@ -1,5 +1,11 @@
 feature: atm-locator
-status: designed
+contract_version: "2.0.0"
+status: approved
+approve_hash: "sha256:f41b4ebd8260c6ee0dd9dcf10cf500ad9e013b9afa714d6ea4d9e97dca32f214"
+approved_at: "2026-07-14T00:00:00Z"
+approved_by: "/idea approve"
+approve_predicate_version: "1.0.0"
+approve_contract_version: "2.0.0"
 score: 95
 cluster: account-extras
 acceptance_refs:
@@ -122,20 +128,20 @@ capability_completeness:
   CC2_destructive_action_safety: "No destructive actions. Screen is fully read-only: no writes, deletes, or mutations of user data. retryLoad resets filterState to defaults (all-off) which is reversible UI state, not a destructive data action."
   CC3_nav_callback_wiring: "No in-app navigation targets from this screen. open_atm_directions exits via OS geo:/maps:// intent (expect/actual) — this is a one-way OS handoff, not an in-app navigateTo. Back navigation is handled by the top_app_bar_leading back button wired to the host NavController's popBackStack()."
   CC4_user_data_export: "No user data is created, collected, or exported. ATM data is public Open Data with no PII. No GDPR data-export requirement applies."
-  CC5_permission_visibility: "No runtime permissions required. GPS location is opportunistically consumed via expect/actual if already granted by the OS (for distance sorting) but no permission request is shown from this screen — the feature degrades gracefully to postcode-centroid distance when GPS is unavailable. No permission gate or Settings deep-link needed."
+  CC5_permission_visibility: "GPS permission state is now surfaced in settings/ui.yaml under the Permissions section (location_permission_row, id: location_permission_row). Displays runtime.gps_permission_state (granted | denied | not_asked) with purpose label 'Used to sort nearby HSBC ATMs by distance from your current location'. Tapping opens the OS app-settings deep-link (open_app_system_settings action) so users can revoke or grant location access at any time. Graceful degradation to postcode-centroid remains in effect when GPS is denied or not_asked — the Settings row makes that choice visible and reversible."
   CC6_storage_budget_awareness: "Single unauthenticated GET /atms response. Typical payload: ~200 ATM records, estimated 50-100 KB JSON. Decoded into List<AtmDisplayItem> in ViewModel memory only; no disk quota impact. A 15-second Ktorfit timeout prevents indefinite in-flight data accumulation."
-  CC7_network_data_policy: "Request is unauthenticated (no Bearer token, no FAPI signed request, no PKCE). Response is NOT cached to disk. Retry is manual (user-initiated via retry_load). Exponential back-off is not applied (single call per mount/retry). No background polling; data is only fetched on screen mount or explicit retry."
+  CC7_network_data_policy: "network_policy: cellular_allowed declared in api.yaml. response_caching added: ttl_minutes: 60, strategy: stale-while-revalidate — ATM locations change rarely, so a 60-minute in-memory cache (allAtms in ViewModel scope) avoids redundant cellular calls. Request is unauthenticated (no Bearer token, no FAPI). Retry is manual (retry_load). No background polling."
   CC8_cache_lifecycle: "No disk cache lifecycle. allAtms is held in AtmLocatorViewModel scope and released when the ViewModel is cleared (screen removed from back-stack). Data refetches on every fresh navigation to this screen. No stale-cache TTL concern."
   CC9_error_recovery: "Two named error paths: NETWORK_ERROR (IOException / SocketTimeoutException) and HTTP_5XX. Both surface the error state with distinct user-readable messages. The Retry filled_button re-triggers atmsLoad and resets filterState to all-off, ensuring the user starts with an unfiltered view. Empty state (zero results after filtering) is distinct from error and offers no retry since the data loaded successfully — the user is expected to adjust filters."
 
 exports:
   spec_md:
     source_hash: regenerated-2026-07-14
-    at: "2026-07-14T21:00:00Z"
+    at: "2026-07-14T12:00:00Z"
     path: idea-layer/exports/atm-locator/SPEC.md
   api_md:
     source_hash: regenerated-2026-07-14
-    at: "2026-07-14T21:00:00Z"
+    at: "2026-07-14T12:00:00Z"
     path: idea-layer/exports/atm-locator/API.md
 
 status_history:
@@ -147,3 +153,10 @@ status_history:
     to: designed
     at: '2026-07-14'
     by: /idea export
+  - from: designed
+    to: approved
+    at: "2026-07-14T00:00:00Z"
+    by: "/idea approve"
+    contract_version: "2.0.0"
+    bypass_flags: []
+    reason: ""

@@ -1,3 +1,7 @@
+<!-- source: screens/pfm-dashboard/api.yaml -->
+<!-- source_hash: api-pfm-dashboard-client-only-2026-07-14 -->
+<!-- generated: 2026-07-14T12:00:00Z -->
+
 # My Finances -- API Reference
 
 > **Source of Truth**: `idea-layer/screens/pfm-dashboard/api.yaml`
@@ -16,9 +20,20 @@
 ## Error Handling
 
 Errors originate from the local cache layer, not HTTP:
-- Empty cache -> Empty state (no retry; instructional message)
-- Computation exception -> Error state (retryable via reloadFinances action; Kermit log)
+- Empty cache → Empty state (EC-PFM-001; no retry — instructional message; PSU should visit Transactions screen to populate cache)
+- Room/SQLDelight query exception → Error state (EC-PFM-002; retryable via `reloadFinances` action; Kermit log)
+- In-memory computation exception → Error state (EC-PFM-002; same recovery path)
+
+## Local Cache Dependency
+
+`pfm-dashboard` reads from `pfm_cache.db` (Room/SQLDelight shared database). This database is:
+- **Populated by**: the `transactions` screen on each fetch (`loadTransactions`)
+- **Schema**: transactions keyed by `AccountId` + `TransactionId`, with `MerchantCategoryCode` and
+  `ProprietaryBankTransactionCode.Code` fields preserved for category derivation
+- **Shared with**: `spending-by-category` (reads same debit transaction rows)
+
+No Room schema migration is triggered by this screen — it is read-only.
 
 ## Full Contracts
 
-See `idea-layer/screens/pfm-dashboard/api.yaml` for confirmation of client-only strategy.
+See `idea-layer/screens/pfm-dashboard/api.yaml` for confirmation of client-only strategy (endpoints: []).

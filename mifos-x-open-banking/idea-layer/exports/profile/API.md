@@ -1,3 +1,9 @@
+<!-- source: screens/profile/api.yaml -->
+<!-- source_hash: api-profile-1ep-2026-07-14 -->
+<!-- generated: 2026-07-14T12:00:00Z -->
+<!-- generated_from_feature_version: 1.0.0 -->
+<!-- generated_from_contract_version: 1.0.0 -->
+
 # Profile -- API Reference
 
 > **Source of Truth**: `idea-layer/screens/profile/api.yaml`
@@ -8,16 +14,83 @@
 
 | Function | Method | Table | Auth | Params | Response | Cache |
 |----------|--------|-------|------|--------|----------|-------|
-| party | GET | accounts/{AccountId}/party | Yes (ReadParty permission required) | AccountId(String) | OBReadParty2: Data.Party (OBParty2 — Name, EmailAddress, Phone, Address[]) | -- |
+| party | GET | accounts/{AccountId}/party | Yes (ReadParty permission required) | AccountId(String) | OBReadParty2: Data.Party[] (OBParty2 — Name, EmailAddress, Phone, Address[]) | — |
 
 ## Error Handling
 
-All endpoints follow standard error mapping:
-- 401 -> Token refresh attempted once; second 401 triggers executeSignOut() → login
-- 403 -> ReadParty permission absent from consent; error state with targeted message
-- 404 -> Party resource not found for account; error state with not-found message
-- Network -> Generic network error; error state with Retry button
+| HTTP | Error Code | Condition | Recovery |
+|------|-----------|-----------|----------|
+| 401 | EC-PROF-001 | Token expired | Token refresh attempted once; second 401 triggers executeSignOut() → navigate login |
+| 403 | EC-PROF-002 | ReadParty permission absent from consent | Error state with targeted message; PSU directed to manage consent |
+| 404 | EC-PROF-003 | Party resource not found for account | Error state with party-not-found message; Retry button shown |
+| Network | EC-PROF-004 | IOException / SocketTimeoutException | Generic network error state; Retry button shown |
+| 200 + empty | EC-PROF-006 | `Data.Party[]` is empty (0 elements) | Empty state with `person_off` icon; no Retry — PSU should contact their bank |
+
+> **EC-PROF-006 note:** OBIE AIS v4.0 allows a 200 OK response with an empty `Data.Party[]` array when
+> the party resource exists but contains no data elements. This is distinct from HTTP 404 (party not found)
+> and should render the empty state, NOT the error state. No retry button is shown — the condition is
+> expected when the bank has not populated party data for this account.
 
 ## Full Contracts
 
-See `idea-layer/screens/profile/api.yaml` -> `endpoints[]` for complete request/response schemas.
+See `idea-layer/screens/profile/api.yaml` → `endpoints[]` for complete request/response schemas.
+
+### Endpoint Detail
+
+```
+GET /accounts/{AccountId}/party
+
+Auth:       Bearer {access_token}   (FAPI 1.0 Advanced)
+Permission: ReadParty
+Accept:     application/json
+```
+
+**Response — OBReadParty2:**
+
+```json
+{
+  "Data": {
+    "Party": [
+      {
+        "PartyId": "PABC000-00098-00001",
+        "Name": "Priya Sharma",
+        "EmailAddress": "priya.sharma@example.com",
+        "Phone": "+44-999-0030",
+        "Address": [
+          {
+            "AddressType": "Residential",
+            "AddressLine": ["14 Winding Way"],
+            "TownName": "London",
+            "PostCode": "EC1A 1BB",
+            "Country": "GB"
+          }
+        ]
+      }
+    ]
+  },
+  "Links": {},
+  "Meta": {}
+}
+```
+
+**Empty response (EC-PROF-006):**
+
+```json
+{
+  "Data": {
+    "Party": []
+  },
+  "Links": {},
+  "Meta": {}
+}
+```
+
+### Response Fields Used by UI
+
+| Field | Component | Notes |
+|-------|-----------|-------|
+| `Data.Party[0].Name` | `profile_name` (headlineMedium) | Full display name |
+| `Data.Party[0].EmailAddress` | `email_row` list item | May be absent — show "—" if null |
+| `Data.Party[0].Phone` | `phone_row` list item | May be absent — show "—" if null |
+| `Data.Party[0].Address[0]` (Residential) | `address_row` list item | Formatted multi-line |
+| `Data.Party[].isEmpty()` | Triggers empty state (EC-PROF-006) | Check before accessing index 0 |

@@ -155,6 +155,48 @@ components:
           on_click:
             action: update_session_timeout
 
+  # ── Permissions ──────────────────────────────────────────────────────
+  # CC5: permission_visibility — GPS location state for atm-locator distance sort.
+  # Shows granted/denied/not_asked; deep-links to OS system-settings so users can
+  # revoke or grant location access without leaving the app.
+  - type: section_header
+    id: permissions_header
+    state_binding: [content, clear_confirm]
+    label: "{strings.settings.section.permissions}"
+    accessibility_label: "{strings.settings.section.permissions.a11y}"
+    test_context:
+      purpose: "Section label for app runtime-permission visibility rows (GPS location for ATM distance sort)"
+      required_fields: []
+      interaction_type: display
+      data_driven: false
+
+  - type: list
+    id: permissions_list
+    state_binding: [content, clear_confirm]
+    test_context:
+      purpose: "Container for runtime permission info rows; GPS row shows granted/denied/not_asked state"
+      required_fields: []
+      interaction_type: display
+      data_driven: false
+    children:
+      - type: info_row
+        id: location_permission_row
+        label: "{strings.settings.permissions.location}"
+        value: "{runtime.gps_permission_state}"
+        secondary: "{strings.settings.permissions.location.purpose}"
+        icon: location_on
+        trailing_content:
+          type: icon
+          icon: open_in_new
+        accessibility_label: "{strings.settings.permissions.location.a11y}"
+        test_context:
+          purpose: "Displays GPS permission state (granted | denied | not_asked). Tapping opens OS app-settings deep-link so user can grant or revoke. GPS is used opportunistically by atm-locator for ATM distance sorting; denial degrades gracefully to postcode-centroid."
+          required_fields: [runtime.gps_permission_state]
+          interaction_type: action
+          data_driven: true
+        on_click:
+          action: open_app_system_settings
+
   # ── Notifications ────────────────────────────────────────────────────
   - type: section_header
     id: notifications_header
@@ -219,6 +261,60 @@ components:
             data_driven: true
           on_click:
             action: toggle_security_alerts_notification
+
+  # ── Storage ──────────────────────────────────────────────────────────
+  # CC1 + CC8: storage_location + cache_lifecycle for pfm-dashboard and
+  # spending-by-category. Both screens share pfm_room_cache (Room-KMP, 50 MB max,
+  # TTL 24 h). Single settings surface covers both features per suggested_fix.
+  - type: section_header
+    id: storage_header
+    state_binding: [content, clear_confirm]
+    label: "{strings.settings.section.storage}"
+    accessibility_label: "{strings.settings.section.storage.a11y}"
+    test_context:
+      purpose: "Section label for on-device data storage visibility and PFM cache management"
+      required_fields: []
+      interaction_type: display
+      data_driven: false
+
+  - type: list
+    id: storage_list
+    state_binding: [content, clear_confirm]
+    test_context:
+      purpose: "Container for PFM cache location info row and granular clear-cache action; shared by pfm-dashboard and spending-by-category"
+      required_fields: []
+      interaction_type: display
+      data_driven: false
+    children:
+      - type: info_row
+        id: pfm_storage_location_row
+        label: "{strings.settings.storage.pfm_data}"
+        value: "{platform.app_files_dir}/databases/pfm_cache"
+        secondary: "{strings.settings.storage.pfm_data.secondary}"
+        icon: storage
+        accessibility_label: "{strings.settings.storage.pfm_data.a11y}"
+        test_context:
+          purpose: "Displays the on-device file path of the PFM Room/SQLDelight cache (pfm_cache.db) in the app-private internal storage directory. Satisfies CC1 storage_location for pfm-dashboard and spending-by-category. Read-only display row — no action."
+          required_fields: [platform.app_files_dir]
+          interaction_type: display
+          data_driven: true
+
+      - type: list_item
+        id: clear_pfm_cache_row
+        label: "{strings.settings.storage.clear_pfm_cache}"
+        supporting_text: "{strings.settings.storage.clear_pfm_cache.secondary}"
+        icon: cleaning_services
+        trailing_content:
+          type: icon
+          icon: chevron_right
+        accessibility_label: "{strings.settings.storage.clear_pfm_cache.a11y}"
+        test_context:
+          purpose: "Triggers clearing of the PFM Room/SQLDelight cache (pfm_room_cache) — aggregated spending, income, and category data. Does NOT clear AIS consent, DataStore settings, or the budgets DataStore. Satisfies CC8 cache_lifecycle for pfm-dashboard and spending-by-category. Confirmation bottom-sheet shown before execution."
+          required_fields: []
+          interaction_type: action
+          data_driven: false
+        on_click:
+          action: clear_pfm_cache
 
   # ── Account ──────────────────────────────────────────────────────────
   - type: section_header
@@ -485,3 +581,8 @@ status_history:
     at: "2026-07-14"
     by: "/idea enrich"
     note: "ENRICH-95 round-2: trimmed business_logic.description to ≤400 chars with clear_confirm action names explicit; added TC-SET-015/016/017 (clear_confirm state machine); added dismissClearLocalData + executeClearLocalData vm_actions to docs.yaml; scenario_count→17"
+  - from: enriched
+    to: enriched
+    at: "2026-07-14"
+    by: "/idea-enrich atm-locator pfm-dashboard spending-by-category"
+    note: "CC-gaps pass: added Permissions section (location_permission_row, CC5 atm-locator) + Storage section (pfm_storage_location_row CC1, clear_pfm_cache_row CC8 — shared by pfm-dashboard + spending-by-category). New strings: settings.section.permissions, settings.permissions.location.*, settings.section.storage, settings.storage.*."

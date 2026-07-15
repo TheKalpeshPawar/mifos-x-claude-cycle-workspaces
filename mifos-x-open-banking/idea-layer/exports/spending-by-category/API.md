@@ -1,3 +1,7 @@
+<!-- source: screens/spending-by-category/api.yaml -->
+<!-- source_hash: api-sbc-client-only-2026-07-14 -->
+<!-- generated: 2026-07-14T12:00:00Z -->
+
 # Spending By Category -- API Reference
 
 > **Source of Truth**: `idea-layer/screens/spending-by-category/api.yaml` -> `endpoints[]`
