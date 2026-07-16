@@ -3,12 +3,16 @@ screen_id: consent-callback
 on_mount:
   # ── Step 0: Security pre-check — FAPI state param validation (MUST run first) ──
   - trigger: validate_state_param
-    description: "Validate the route_params.state value against the locally stored PKCE state before any token exchange. A mismatch indicates a CSRF or replay attack — abort immediately."
+    description: "Validate the route_params.state value and the hybrid-flow id_token nonce against the locally stored state/nonce before any token exchange. A mismatch indicates a CSRF or replay attack — abort immediately."
     steps:
       - action: validate_state
         params:
           received_state: "{route_params.state}"
-          stored_state: "{local_storage.pkce_state}"
+          stored_state: "{local_storage.oauth_state}"
+      - action: validate_nonce
+        params:
+          received_nonce: "{route_params.id_token.nonce}"
+          stored_nonce: "{local_storage.oauth_nonce}"
     on_mismatch: security_error
     short_circuit_on_mismatch: true
 
@@ -36,7 +40,6 @@ on_mount:
         params:
           code: "{route_params.code}"
           state: "{route_params.state}"
-          code_verifier: "{local_storage.pkce_code_verifier}"
         store_as: psu_token
         on_error:
           HttpException(400): error
@@ -70,7 +73,7 @@ on_user_action:
     description: "Navigate back to login on error or access_denied — clears partial auth state."
     navigate_to: login
     side_effects:
-      - "LocalStorage.clearPkceState()"
+      - "LocalStorage.clearOAuthState()"
       - "LocalStorage.clearConsentId()"
 
   - trigger: navigate_login

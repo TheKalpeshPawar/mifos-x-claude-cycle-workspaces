@@ -17,7 +17,7 @@
 
 | Screen | ViewModel | States | Description |
 |--------|-----------|--------|-------------|
-| Authorisation Callback | ConsentCallbackViewModel | loading, content, empty, error, access_denied, security_error | Return leg from HSBC authorisation portal — validates FAPI state param, exchanges auth code for PSU token, polls consent-status, then auto-navigates to accounts on Authorised. |
+| Authorisation Callback | ConsentCallbackViewModel | loading, content, empty, error, access_denied, security_error | Return leg from HSBC authorisation portal — validates FAPI state param and hybrid-flow id_token nonce, exchanges auth code for PSU token, polls consent-status, then auto-navigates to accounts on Authorised. |
 
 ## State Model
 
@@ -27,26 +27,26 @@
 - **ScreenState**: Loading, Content, Empty (AwaitingAuthorisation), Error (token-exchange / Rejected consent), AccessDenied (error=access_denied redirect), SecurityError (FAPI state mismatch)
 - **Errors**: TokenExchangeFailed (retry=false), ConsentRejected (retry=false), ConsentRevoked (retry=false), NetworkError (retry=true), InvalidState (retry=false), AccessDenied (retry=false), SecurityStateMismatch (retry=false)
 - **Events**: (none declared separately — state transitions drive navigation)
-- **Actions**: ValidateStateParam(receivedState: String) → StateValidationResult; ClassifyOAuthError(error: String, errorDescription: String?) → OAuthErrorClass; ExchangeAuthCode(code: String, state: String, codeVerifier: String); PollConsentStatus(); NavigateRetry() — clears PKCE + ConsentId, navigates to login; NavigateLogin() — clears all local state + revokes tokens, navigates to login
+- **Actions**: ValidateStateParam(receivedState: String, receivedNonce: String) → StateValidationResult; ClassifyOAuthError(error: String, errorDescription: String?) → OAuthErrorClass; ExchangeAuthCode(code: String, state: String); PollConsentStatus(); NavigateRetry() — clears OAuth state + ConsentId, navigates to login; NavigateLogin() — clears all local state + revokes tokens, navigates to login
 - **DI**: TokenService, ConsentService, EncryptedSharedPreferences, LocalStorage, Navigator
 
 ## API Endpoints (2)
 
 | Function | Method | Params | Response | Errors | Table |
 |----------|--------|--------|----------|--------|-------|
-| exchangeAuthCode | POST | grant_type(String), code(String), redirect_uri(String), code_verifier(String), client_assertion_type(String), client_assertion(String) | OAuthTokenResponse | 400, 401 | — |
+| exchangeAuthCode | POST | grant_type(String), code(String), redirect_uri(String), client_assertion_type(String), client_assertion(String) | OAuthTokenResponse | 400, 401 | — |
 | getConsentStatus | GET | ConsentId(String) | OBReadConsentResponse1 | 401, 404 | — |
 
 ## Dependencies (Tier 2)
 
 | Feature | Type | Required | Check |
 |---------|------|----------|-------|
-| login | predecessor | true | PKCE code_verifier + ConsentId stored in LocalStorage before redirect |
+| login | predecessor | true | OAuth state + nonce + ConsentId stored in LocalStorage before redirect |
 | accounts | successor | true | Navigation target on Authorised consent status |
 
 ## Navigation
 
-- **Route**: ConsentCallback(code: String?, state: String?, error: String?, errorDescription: String?)
+- **Route**: ConsentCallback(code: String?, idToken: String?, state: String?, error: String?, errorDescription: String?)
 - **From**: hsbc_oauth_redirect (deep-link from HSBC authorisation portal)
 - **To**: accounts (on Authorised), login (on error / access_denied / security_error)
 
@@ -63,7 +63,7 @@
 
 | Decision | Condition | True Path | False Path | Impl |
 |----------|-----------|-----------|------------|------|
-| State param valid? | receivedState == LocalStorage.pkce_state | Proceed to OAuth error or code exchange | Transition to security_error immediately — do NOT exchange code | ValidateStateParam() |
+| State param valid? | receivedState == LocalStorage.oauth_state AND receivedNonce == LocalStorage.oauth_nonce | Proceed to OAuth error or code exchange | Transition to security_error immediately — do NOT exchange code | ValidateStateParam() |
 | OAuth error present? | route_params.error != null | Classify error → access_denied or generic error state | Proceed to auth-code exchange | ClassifyOAuthError() |
 | Consent Authorised? | Data.Status == 'Authorised' | Auto-navigate to accounts after 1.5 s | Check AwaitingAuthorisation or error | PollConsentStatus() |
 | Consent awaiting? | Data.Status == 'AwaitingAuthorisation' | Transition to empty state — show manual re-poll | Transition to error state (Rejected / Revoked / network) | PollConsentStatus() |
@@ -77,4 +77,4 @@
 | TC-CALLBACK-003 | Empty state shown when consent still AwaitingAuthorisation after exchange | medium |
 | TC-CALLBACK-004 | Error state shown on PSU rejection or token exchange failure | high |
 | TC-CALLBACK-005 | Access denied state shown when HSBC redirect carries error=access_denied | high |
-| TC-CALLBACK-006 | Security error state shown when FAPI state parameter does not match stored PKCE state | high |
+| TC-CALLBACK-006 | Security error state shown when FAPI state parameter or id_token nonce does not match stored values | high |

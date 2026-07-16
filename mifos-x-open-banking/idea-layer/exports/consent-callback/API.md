@@ -8,7 +8,7 @@
 
 | Function | Method | Table | Auth | Params | Response | Cache |
 |----------|--------|-------|------|--------|----------|-------|
-| exchangeAuthCode (POST /oauth2/token) | POST | — | No (client_assertion JWT) | grant_type(String), code(String), redirect_uri(String), code_verifier(String), client_assertion_type(String), client_assertion(String) | OAuthTokenResponse: access_token, refresh_token, token_type, expires_in | -- |
+| exchangeAuthCode (POST /oauth2/token) | POST | — | No (client_assertion JWT) | grant_type(String), code(String), redirect_uri(String), client_assertion_type(String), client_assertion(String) | OAuthTokenResponse: access_token, refresh_token, token_type, expires_in | -- |
 | getConsentStatus (GET /account-access-consents/{ConsentId}) | GET | — | Yes (client_credentials) | ConsentId(String) | OBReadConsentResponse1: Data.Status, Data.Permissions[], Data.CreationDateTime, Data.ExpirationDateTime | -- |
 
 ## Inbound Redirect Parameters (not API calls)
@@ -16,14 +16,15 @@
 | Param | Type | Present on | Notes |
 |-------|------|-----------|-------|
 | code | String | Success redirect | OAuth2 auth code (single-use, ~10 min TTL) |
-| state | String | Both | Must match locally stored PKCE state — validated before any exchange |
+| id_token | String | Success redirect | OIDC hybrid-flow ID Token (JWT) — nonce claim must match locally stored value |
+| state | String | Both | Must match locally stored OAuth state — validated before any exchange |
 | error | String | Error redirect | access_denied \| temporarily_unavailable \| server_error |
 | error_description | String | Error redirect (optional) | Human-readable detail from HSBC |
 
 ## Error Handling
 
 All endpoints follow standard error mapping:
-- 400 → Bad/expired auth code or PKCE verifier mismatch (not retryable)
+- 400 → Bad/expired auth code or redirect_uri mismatch (not retryable)
 - 401 → Private key JWT assertion invalid, or client credentials token expired (not retryable without re-auth)
 - 404 → ConsentId not found (stale or already consumed)
 - Network error → retryable with user-initiated retry

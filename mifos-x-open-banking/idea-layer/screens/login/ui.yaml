@@ -25,7 +25,6 @@ state_model:
   di:
     - ConsentService
     - FapiAuthBuilder
-    - PkceGenerator
     - LocalStorage
     - Navigator
   errors:
@@ -44,8 +43,6 @@ dependencies:
       purpose: "POST /account-access-consents with OBReadConsent1 payload via client_credentials bearer token"
     - id: jose4j
       purpose: "PS256 request object signing for FAPI 1.0 Advanced /authorize URL construction"
-    - id: pkce
-      purpose: "S256 code_verifier/code_challenge generation and secure LocalStorage persistence for callback validation"
 
 screens:
   - id: login
@@ -66,18 +63,17 @@ status_history:
     quality_after: 95
     changes:
       - "state_model: full ConsentOnboardingViewModel spec added (vm_class, ui_state_sealed, 5 states, view_state_fields, actions, di, errors)"
-      - "dependencies: tier-0 declared with feature deps (consent-callback, user-onboarding) and library refs (ktorfit, jose4j, pkce)"
+      - "dependencies: tier-0 declared with feature deps (consent-callback, user-onboarding) and library refs (ktorfit, jose4j)"
       - "screens[]: login screen registered with ConsentOnboardingViewModel binding"
       - "accessibility_label: added to hsbc_explainer_card and permissions_list (Cat 9 coverage)"
       - "i18n_coverage: true set"
 
 business_logic:
   kind: composite
-  description: "Stages OBReadConsent1 to hsbc-obie-ais-v4.0:account-access-consents (10 read scopes incl. ReadAccountsDetail, ReadBalances, ReadTransactionsDetail) via ktorfit after obtaining a client_credentials token. Stores ConsentId in local storage, builds a fapi-1.0-advanced /authorize URL with pkce S256 code_challenge and a PS256-signed request object (jose4j) containing ConsentId, nonce, and state. Launches app-to-app redirect to HSBC for SCA and account selection; screen transitions to authorising state once redirect is launched. Consumer returns via the consent-callback deep link."
+  description: "Stages OBReadConsent1 to hsbc-obie-ais-v4.0:account-access-consents (10 read scopes incl. ReadAccountsDetail, ReadBalances, ReadTransactionsDetail) via ktorfit after obtaining a client_credentials token. Stores ConsentId in local storage, builds a FAPI 1.0 Advanced /authorize URL (response_type=code id_token, scope=openid accounts) with a PS256-signed request object (jose4j) containing ConsentId, nonce, and state. Launches app-to-app redirect to HSBC for SCA and account selection; screen transitions to authorising state once redirect is launched. Consumer returns via the consent-callback deep link."
   external_library_refs:
     - "hsbc-obie-ais-v4.0:account-access-consents"
     - "fapi-1.0-advanced"
-    - "pkce"
     - "ktorfit"
     - "jose4j"
   description_author: claude

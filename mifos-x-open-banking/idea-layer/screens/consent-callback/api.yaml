@@ -8,7 +8,7 @@ endpoints:
     notes: >
       FAPI-1.0-Advanced authorization_code token exchange. Called with:
       grant_type=authorization_code, code={route_params.code},
-      redirect_uri={registered_redirect_uri}, code_verifier={pkce.code_verifier},
+      redirect_uri={registered_redirect_uri},
       client_assertion_type=urn:ietf:params:oauth:client-assertion-type:jwt-bearer,
       client_assertion={private_key_jwt}. Returns access_token (PSU bearer),
       refresh_token, token_type=Bearer, expires_in. Stored in EncryptedSharedPreferences.
@@ -17,14 +17,13 @@ endpoints:
       grant_type: "authorization_code"
       code: "{route_params.code}"
       redirect_uri: "{registered_redirect_uri}"
-      code_verifier: "{pkce.code_verifier}"
       client_assertion_type: "urn:ietf:params:oauth:client-assertion-type:jwt-bearer"
       client_assertion: "{private_key_jwt}"
     response_dto: OAuthTokenResponse
     permission: null
     requires_auth: false
     error_codes:
-      400: "Bad code, expired code, or PKCE verifier mismatch"
+      400: "Bad code, expired code, or redirect_uri mismatch"
       401: "Private key JWT assertion invalid or key not registered"
 
   - id: consent-status
@@ -53,7 +52,8 @@ inbound_redirect_params:
   _note: "These are NOT API calls — they are route params carried in the deep-link URI from HSBC."
   success_params:
     code: "string — OAuth2 authorisation code (single-use, ~10 min TTL)"
-    state: "string — Opaque value; MUST equal the PKCE state stored before redirect"
+    id_token: "string — OIDC hybrid-flow ID Token (JWT); its nonce claim MUST equal the nonce stored before redirect"
+    state: "string — Opaque value; MUST equal the state stored before redirect"
   error_params:
     error: "access_denied | temporarily_unavailable | server_error"
     error_description: "string (optional) — human-readable detail from HSBC"

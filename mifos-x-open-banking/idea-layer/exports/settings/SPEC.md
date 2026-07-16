@@ -1,6 +1,6 @@
 <!-- source: screens/settings/ui.yaml -->
-<!-- source_hash: regenerated-2026-07-14 -->
-<!-- generated: 2026-07-14T21:00:00Z -->
+<!-- source_hash: regenerated-2026-07-16 -->
+<!-- generated: 2026-07-16T00:00:00Z -->
 
 # SPEC — settings
 
@@ -17,9 +17,10 @@ _Generated: 2026-07-14 · Source: idea-layer/screens/settings/ui.yaml_
 **Quality score:** 95  
 
 **Description:**  
-App settings hub — appearance (theme), security (biometric lock + session timeout), notifications
-(consent-expiry reminders, security alerts), account links (Manage Consents, Profile, Clear Local
-Data), and About & Legal. Client-only; no external API. `SettingsViewModel` drives a
+App settings hub — appearance (theme), security (biometric lock + session timeout), permissions
+(GPS state visibility), notifications (consent-expiry reminders, security alerts), storage (PFM
+cache location + granular clear), account links (Manage Consents, Profile, Clear Local Data), and
+About & Legal. Client-only; no external API. `SettingsViewModel` drives a
 Loading → Content state machine over a DataStore preferences Flow. The `clear_confirm` state
 gates irreversible local-data erasure behind a bottom-sheet (`clear_local_data_sheet`):
 `dismiss_clear_local_data` returns to content; `execute_clear_local_data` wipes
@@ -70,6 +71,14 @@ _Security_
 | `session_timeout_row` | list_item | Live session timeout value from StateFlow |
 | `session_dropdown` | dropdown | 2 min / 5 min / 10 min / 30 min; `on_click: update_session_timeout` |
 
+_Permissions_
+
+| Component | Type | Description |
+|---|---|---|
+| `permissions_header` | section_header | "Permissions" section label |
+| `permissions_list` | list | Container for runtime permission info rows |
+| `location_permission_row` | info_row (icon=location_on, trailing=open_in_new) | GPS permission state (`granted` / `denied` / `not_asked`) from `{runtime.gps_permission_state}`; `on_click: open_app_system_settings` deep-links to OS app settings to grant/revoke. GPS is used opportunistically by atm-locator for distance sorting; denial degrades gracefully to postcode-centroid. (CC5 permission_visibility) |
+
 _Notifications_
 
 | Component | Type | Description |
@@ -79,6 +88,15 @@ _Notifications_
 | `consent_expiry_switch` | switch | Bound to `settings.notify_consent_expiry`; `on_click: toggle_consent_expiry_notification` |
 | `security_alerts_notif_row` | list_item | Security-alert notification toggle |
 | `security_alerts_switch` | switch | Bound to `settings.notify_security_alerts`; `on_click: toggle_security_alerts_notification` |
+
+_Storage_
+
+| Component | Type | Description |
+|---|---|---|
+| `storage_header` | section_header | "Storage" section label |
+| `storage_list` | list | Container for PFM cache location + granular clear-cache action |
+| `pfm_storage_location_row` | info_row (icon=storage) | Read-only on-device path of the PFM Room/SQLDelight cache — `{platform.app_files_dir}/databases/pfm_cache`. No tap target. (CC1 storage_location for pfm-dashboard + spending-by-category) |
+| `clear_pfm_cache_row` | list_item (icon=cleaning_services, trailing=chevron_right) | `on_click: clear_pfm_cache` — clears `pfm_room_cache` (aggregated spending / income / category data) behind a confirmation sheet. Does NOT clear AIS consent, DataStore settings, or the budgets DataStore. (CC8 cache_lifecycle) |
 
 _Account_
 
@@ -144,6 +162,8 @@ _About & Legal_
 | `settings.notify_consent_expiry` | Boolean | Consent-expiry notification flag |
 | `settings.notify_security_alerts` | Boolean | Security-alert notification flag |
 | `settings.app_version` | String | BuildConfig.VERSION_NAME + VERSION_CODE (read-only) |
+| `runtime.gps_permission_state` | String | GPS runtime permission state: `granted` / `denied` / `not_asked` (platform-resolved, read-only) |
+| `platform.app_files_dir` | String | App-private internal files directory; base path for the PFM cache row (platform-resolved, read-only) |
 
 **VM Actions:**
 
@@ -159,6 +179,8 @@ _About & Legal_
 | `clearLocalDataConfirm` | `fun clearLocalDataConfirm()` | Transitions state → `clear_confirm`; reveals `clear_local_data_sheet` |
 | `dismissClearLocalData` | `fun dismissClearLocalData()` | Dismisses sheet; state → `content`; no data erased |
 | `executeClearLocalData` | `suspend fun executeClearLocalData()` | Deletes Room/SQLDelight cache transactionally; resets DataStore cached-at timestamps after Room success; emits LocalDataCleared event; Open Banking consents unaffected |
+| `openAppSystemSettings` | `fun openAppSystemSettings()` | Fires platform intent to the OS app-settings screen so the PSU can grant or revoke location permission without leaving the app |
+| `clearPfmCache` | `suspend fun clearPfmCache()` | Clears `pfm_room_cache` (aggregated PFM spending/income/category rows) after sheet confirmation; leaves AIS consent, DataStore settings, and budgets untouched |
 | `openExternalUrl` | `fun openExternalUrl(url: String)` | Fires platform intent to system browser |
 | `openOssLicences` | `fun openOssLicences()` | Emits nav event → AboutLibraries destination |
 | `retryLoadSettings` | `fun retryLoadSettings()` | Re-triggers DataStore Flow collection; loading → content on success |

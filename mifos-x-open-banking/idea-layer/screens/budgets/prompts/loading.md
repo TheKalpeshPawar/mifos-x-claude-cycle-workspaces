@@ -1,9 +1,9 @@
 ---
-ui_yaml_sha: a08e052152877d4ac6b23ae4ddc9eec203447ec8d53b663f8b21b2e9fc9957ad
+ui_yaml_sha: 09a7c2d3e32a23763d5c70c3bbee44932f960984b4eab09b0fe945041569db74
 design_md_hash: a3958d1ca6f307ebba64f58c9addd9531aafd615c1fa4c1b350e7b6683badd73
 app_shell_hash: c60afae56a9af273fdbab8a83d90027037612b4f72cf0c6a85bc872d34e9ab76
 design_read_hash: 513c061d12f3a90e84d6e98e1e037b131e59fa3ca5c5f3c0abfc6ba87d24bcaf
-content_hash: 1813e37beb80ece366a08af41dbf15566285f27e5c4c83d29b12c9fd878eb22d
+content_hash: ea84c6f7df3b521bdf9f73dfc1e51bdcf18feaeb5d79bd2a120ddf50a683b3bc
 
 design_read_aesthetic: minimalist-ui
 design_read_dials: {variance: 3, motion: 2, density: 5}
@@ -24,26 +24,72 @@ craft_rules_version: v1.0.0
 
 # budgets — loading state
 
-> Auto-generated from screens/budgets/ui.yaml @ SHA 315b112554b49dff
+> Auto-generated from screens/budgets/ui.yaml @ SHA 5bf066b2fd9e1ac2
 > Stitch DesignSystem: 8085591672064527850
 > DO NOT redeclare colors / fonts / spacing — they live in DESIGN.md.
 
 ↓↓↓ MOCKUP PROMPT
 
-Design the loading state of the budgets screen for **HSBC Open Banking**, a UK Open Banking AISP letting HSBC account holders set and track monthly spending limits by category.
+## Archetype: dashboard
 
-Palette: primary #95CDF7, surface #101417, onSurface #E0E3E8, surfaceContainer #1C2024, onSurfaceVariant #C1C7CE, error #FFB4AB, primaryContainer #004B6F, outline #8B9198
+## Layout
+- type: scrollable_column
+- padding: default
+- alignment: start
 
-**Component 1 - Top App Bar** (full width 393dp, height 64dp): Outfit medium 22sp title "Budgets" in #E0E3E8 on #101417. Visible and real during loading. No elevation.
+## Composition (top → bottom)
+1. **skeleton** (#budgets_skeleton)
+2. **error_state** (#budgets_error) — "{strings.budgets.error_title}"
+   - **button** (#retry_load_button) — label: "{strings.budgets.retry_button}"
+3. **section_header** (#set_budget_header) — label: "{strings.budgets.set_budget_header}"
+4. **card** (#set_budget_card) — "set_budget_card"
+   - **dropdown** (#budget_category_dropdown) — label: "{strings.budgets.category_label}"
+   - **text_field** (#budget_amount_field) — label: "{strings.budgets.amount_label}"
+   - **button** (#save_budget_button) — label: "{strings.budgets.save_button}"
+5. **text** (#budgets_storage_hint)
+6. **section_header** (#budgets_header) — label: "{current_month_label}"
+7. **list** (#budgets_list) — "budgets_list"
+   - **card** (#budget_card) — "budget_card"
+      - **list_item** (#budget_row_header) — label: "{item.category}"
+      - **progress_linear** (#budget_progress_bar)
+      - **text** (#over_budget_alert)
+      - **row** (#budget_card_actions) — "budget_card_actions"
+         - **button** (#view_category_spend_button) — label: "{strings.budgets.view_transactions}"
+         - **button** (#delete_budget_button) — label: "{strings.budgets.delete_button}"
+8. **empty_state** (#empty_state) — title: "{strings.budgets.empty_title}", icon: "savings"
 
-**Component 2 - Card** (full width minus 32dp insets, 12dp radius, background #1C2024, 16dp padding): "Set a Budget" section label shimmer bar 100x12dp #262A2E. Below: two full-width shimmer bars each 48dp tall #262A2E representing the category dropdown and amount field, 8dp gap between. Full-width 48dp shimmer bar for the Save Budget button placeholder. Shimmer sweep left-to-right. Archetype: skeleton_screen.
+## State-specific behavior
+- Show shimmer/skeleton loaders matching the content layout block-for-block — no real text, no images. This is the screen's initial state.
 
-**Component 3 - List** (full width minus 32dp insets, 12dp gap between cards): Section label shimmer 80x12dp #262A2E. Six skeleton budget Cards below, each: 12dp radius, #1C2024 background, 16dp padding. Inside each: header row shimmer 120x16dp #262A2E left, 80x12dp #262A2E right. Progress bar placeholder: full-width 6dp tall #262A2E shimmer. Status line placeholder: 100x12dp #262A2E shimmer. Shimmer sweep uniform across all six cards, in-phase.
+## Content source manifest
+- (no demo collections bound for this state)
 
-**Component 4 - Bottom Navigation Bar** (full width, height 80dp, background #1C2024): All tabs visible and stable during loading. Active "Budgets": savings icon and label #95CDF7. Inactive "Overview", "Spending", "Subscriptions": icon and label #8B9198. Nav bar never shimmer-animated.
+## Components (vocabulary used in this prompt)
+- (no named components extracted — see composition)
 
-Do not use an em-dash anywhere in this design. Do not make any headline more than 3 lines or any subtitle more than 25 words. Do not break the near-black surface theme with lighter shimmer base colours outside the palette. Do not render any readable text or numeric content inside skeleton placeholders.
+## Shell (app-shell resolved for this state)
+- App-shell rules are defined per project; per-screen overrides are merged in.
+- Render MUST keep nav/bar elements consistent with the resolved shell — present or absent, never partial.
 
-Six skeleton budget cards pulse in #262A2E shimmer, spatial placeholders confirming the data shape before transaction records resolve, trust-blue #95CDF7 alive only in the stable nav tab. calm.
+## Tokens (design-tokens roles consumed)
+- Colors: primary / secondary / surface / on-surface / on-surface-variant / error (M3 standard roles).
+- Typography: body-large / title-large (M3 standard roles).
+- Spacing: gap.sm / gap.md / gap.lg.
+- ALL token references are by name from the uploaded design system — no hex literals, no inline size values.
+
+## Self-Validation Checklist (MANDATORY)
+
+Before returning the rendered mockup, verify ALL of these are true. If any fails, FIX the output and re-render.
+
+- [ ] **Per-state shape:** the render shows ONLY this state ("loading"). Do not blend multiple states into one mockup.
+- [ ] **Real content:** every text label, image, and data point reflects the content source manifest above — no numbered generic items, no filler text, no dummy text, no empty strings.
+- [ ] **Token fidelity:** colors come from the uploaded design system (primary/secondary/surface/etc.) by name; spacing comes from declared scale tokens. No invented hex codes, no invented size literals.
+- [ ] **Component vocabulary:** every component in the render maps to a named design-system component (Card, FAB, BottomBar, etc.) — no invented or off-system components.
+- [ ] **Archetype honored:** the layout follows the "dashboard" archetype skeleton — composition order top → bottom matches the Composition section.
+- [ ] **App-shell parity:** if a bottom nav, top app bar, or FAB appears in the render, it matches the resolved shell from the app-shell config. Shell elements are either present-and-consistent OR absent — never partial.
+
+If any of these fail and the fix isn't clear → halt rendering and surface "Self-validation failed at: {checkpoint}."
+
+Return ONLY when all 6 checkpoints pass.
 
 ↑↑↑ MOCKUP PROMPT

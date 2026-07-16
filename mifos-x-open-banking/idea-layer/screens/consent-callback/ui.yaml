@@ -12,11 +12,10 @@ status_history:
 
 business_logic:
   kind: composite
-  description: "Receives the FAPI-1.0-Advanced authorisation redirect from HSBC. Validates the state parameter against the stored PKCE code_verifier; on mismatch shows security_error immediately without attempting token exchange. If route_params carry error=access_denied, shows the access-denied state. On a valid code, calls HSBC /oauth2/token (authorization_code grant, private_key_jwt client auth, PKCE code_verifier) via Ktorfit; stores PSU access+refresh tokens in EncryptedSharedPreferences. Then polls GET /account-access-consents/{ConsentId} with a client_credentials token until Status is Authorised (auto-navigate to accounts), AwaitingAuthorisation (empty state with manual re-poll), or Rejected / HTTP 400-401 (error state, retry path to login)."
+  description: "Receives the FAPI-1.0-Advanced authorisation redirect from HSBC. Validates the state parameter and the hybrid-flow id_token nonce against the locally stored values; on mismatch shows security_error immediately without attempting token exchange. If route_params carry error=access_denied, shows the access-denied state. On a valid code, calls HSBC /oauth2/token (authorization_code grant, private_key_jwt client auth) via Ktorfit; stores PSU access+refresh tokens in EncryptedSharedPreferences. Then polls GET /account-access-consents/{ConsentId} with a client_credentials token until Status is Authorised (auto-navigate to accounts), AwaitingAuthorisation (empty state with manual re-poll), or Rejected / HTTP 400-401 (error state, retry path to login)."
   external_library_refs:
     - "hsbc-obie-ais-v4.0:account-access-consents"
     - "fapi-1.0-advanced"
-    - "pkce"
     - "ktorfit"
     - "encrypted-shared-preferences"
     - "private_key_jwt"
@@ -227,7 +226,7 @@ components:
           interaction_type: navigate
           data_driven: false
 
-  # ── Security Error state — FAPI state param mismatch (PKCE/CSRF) ─────
+  # ── Security Error state — FAPI state/nonce mismatch (CSRF/replay) ────
   - type: empty_state
     id: security_error_state
     variant: error
@@ -237,7 +236,7 @@ components:
     body: "{strings.consent_callback_security_error_body}"
     accessibility_label: "{strings.consent_callback_security_error_a11y}"
     test_context:
-      purpose: "Security gate: shown when route state param does not match stored PKCE state — potential CSRF replay"
+      purpose: "Security gate: shown when route state param or id_token nonce does not match stored values — potential CSRF replay"
       required_fields: [icon, title, body]
       interaction_type: display
       data_driven: false
@@ -283,9 +282,9 @@ state_model:
         - SecurityStateMismatch
     actions:
       members:
-        - "validateStateParam(receivedState: String): StateValidationResult"
+        - "validateStateParam(receivedState: String, receivedNonce: String): StateValidationResult"
         - "classifyOAuthError(error: String, errorDescription: String?): OAuthErrorClass"
-        - "exchangeAuthCode(code: String, state: String, codeVerifier: String): Unit"
+        - "exchangeAuthCode(code: String, state: String): Unit"
         - "pollConsentStatus(): Unit"
         - "navigateRetry(): Unit"
         - "navigateLogin(): Unit"

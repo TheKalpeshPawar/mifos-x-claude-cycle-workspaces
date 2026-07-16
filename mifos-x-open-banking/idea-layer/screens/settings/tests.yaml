@@ -176,3 +176,50 @@ scenarios:
       - "Open Banking consent authorisations on the server are NOT deleted or modified"
       - "Success snackbar is displayed confirming erasure completion"
       - "On Room/SQLDelight delete failure (IOException): error snackbar with Retry is shown; DataStore timestamps are NOT reset (transactional ordering preserved)"
+
+  - id: TC-SET-018
+    description: "Permissions section renders GPS permission state from runtime"
+    state: content
+    priority: medium
+    given: "DataStore has emitted preferences; runtime.gps_permission_state is 'granted'"
+    when: "Content state renders"
+    then:
+      - "Permissions section header is visible between the Security and Notifications sections"
+      - "Location permission row shows its label with the value 'granted'"
+      - "Location permission row shows secondary text explaining the ATM distance-sort purpose"
+      - "Location permission row renders a location_on leading icon and an open_in_new trailing icon"
+
+  - id: TC-SET-019
+    description: "Location permission row reflects denied state without blocking the screen"
+    state: content
+    priority: medium
+    given: "runtime.gps_permission_state is 'denied'"
+    when: "Content state renders"
+    then:
+      - "Location permission row value reads 'denied'"
+      - "No error state is triggered; every other settings row remains interactive"
+      - "Secondary text still communicates that atm-locator degrades gracefully to postcode-centroid ordering"
+
+  - id: TC-SET-020
+    description: "Tapping the location permission row deep-links to OS app settings"
+    state: content
+    priority: medium
+    given: "Content state is rendered; location permission row is visible"
+    when: "User taps the location permission row (open_app_system_settings action)"
+    then:
+      - "openAppSystemSettings() is invoked on SettingsViewModel"
+      - "A platform intent to the OS app-settings screen is fired"
+      - "No DataStore write occurs"
+      - "On return to the app, runtime.gps_permission_state is re-read and the row value reflects any change"
+
+  - id: TC-SET-021
+    description: "Storage section shows PFM cache location and clears only the PFM cache"
+    state: content
+    priority: medium
+    given: "Content state is rendered; platform.app_files_dir resolves to the app-private internal files directory"
+    when: "User views the Storage section and taps Clear PFM Cache (clear_pfm_cache action)"
+    then:
+      - "PFM storage location row displays the resolved path ending in '/databases/pfm_cache' and exposes no tap target"
+      - "A confirmation bottom-sheet is shown before any erasure occurs"
+      - "On confirm, clearPfmCache() deletes the pfm_room_cache aggregated spending/income/category rows"
+      - "AIS consent authorisations, DataStore settings, and the budgets DataStore are NOT cleared"

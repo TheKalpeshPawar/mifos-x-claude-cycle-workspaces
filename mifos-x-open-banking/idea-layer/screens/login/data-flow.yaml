@@ -11,7 +11,7 @@ on_mount:
 
 on_user_action:
   - trigger: start_oauth
-    description: "POST consent-create to stage the OBReadConsent1 resource, then build the FAPI 1.0 Advanced /authorize URL (PKCE S256, PS256-signed request object, nonce, state). Launch app-to-app redirect to HSBC for SCA and account selection. Transitions to authorising once redirect is launched; transitions to error on any failure."
+    description: "POST consent-create to stage the OBReadConsent1 resource, then build the FAPI 1.0 Advanced /authorize URL (hybrid response_type=code id_token, PS256-signed request object, nonce, state). Launch app-to-app redirect to HSBC for SCA and account selection. Transitions to authorising once redirect is launched; transitions to error on any failure."
     steps:
       - call: consent-create
         body:
@@ -25,16 +25,16 @@ on_user_action:
       - action: build_fapi_authorize_url
         params:
           ConsentId: "{staged_consent.Data.ConsentId}"
-          pkce_challenge: "{pkce_verifier.challenge}"
-          pkce_method: "S256"
+          response_type: "code id_token"
+          scope: "openid accounts"
           nonce: "{generate_nonce()}"
           state: "{generate_state()}"
           request_object_alg: "PS256"
         store_as: authorize_url
-      - action: store_pkce_verifier
+      - action: store_state_and_nonce
         params:
-          verifier: "{pkce_verifier.verifier}"
           state: "{generate_state()}"
+          nonce: "{generate_nonce()}"
       - action: redirect_to_bank_authorize
         params:
           url: "{authorize_url}"

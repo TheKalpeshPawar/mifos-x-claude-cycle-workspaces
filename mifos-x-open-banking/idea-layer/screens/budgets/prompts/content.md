@@ -1,14 +1,14 @@
 ---
-ui_yaml_sha: a08e052152877d4ac6b23ae4ddc9eec203447ec8d53b663f8b21b2e9fc9957ad
+ui_yaml_sha: 09a7c2d3e32a23763d5c70c3bbee44932f960984b4eab09b0fe945041569db74
 design_md_hash: a3958d1ca6f307ebba64f58c9addd9531aafd615c1fa4c1b350e7b6683badd73
 app_shell_hash: c60afae56a9af273fdbab8a83d90027037612b4f72cf0c6a85bc872d34e9ab76
 design_read_hash: 513c061d12f3a90e84d6e98e1e037b131e59fa3ca5c5f3c0abfc6ba87d24bcaf
-content_hash: 16c28734282d5b46110a05488c43d0a0576ec64cca9e9c0d3c0c52265f19b0df
+content_hash: b6c1c336fdbe2425af678f3dec58c5d6ff1a1a556cddc0c332da8e665079c221
 
 design_read_aesthetic: minimalist-ui
 design_read_dials: {variance: 3, motion: 2, density: 5}
 aesthetic_variant_override: null
-archetype: screen
+archetype: dashboard
 
 feature: budgets
 state: content
@@ -24,26 +24,74 @@ craft_rules_version: v1.0.0
 
 # budgets — content state
 
-> Auto-generated from screens/budgets/ui.yaml @ SHA 4f573b9b17eb5d0d
+> Auto-generated from screens/budgets/ui.yaml @ SHA 6330136710deda26
 > Stitch DesignSystem: 8085591672064527850
 > DO NOT redeclare colors / fonts / spacing — they live in DESIGN.md.
 
 ↓↓↓ MOCKUP PROMPT
 
-Design the content state of the budgets screen for **HSBC Open Banking**, a UK Open Banking AISP letting HSBC account holders set and track monthly spending limits by category.
+## Archetype: dashboard
 
-Palette: primary #95CDF7, surface #101417, onSurface #E0E3E8, surfaceContainer #1C2024, onSurfaceVariant #C1C7CE, error #FFB4AB, primaryContainer #004B6F, outline #8B9198
+## Layout
+- type: scrollable_column
+- padding: default
+- alignment: start
 
-**Component 1 - Top App Bar** (full width 393dp, height 64dp): Outfit medium 22sp title "Budgets" in #E0E3E8 left-aligned on #101417. No elevation.
+## Composition (top → bottom)
+1. **skeleton** (#budgets_skeleton)
+2. **error_state** (#budgets_error) — "{strings.budgets.error_title}"
+   - **button** (#retry_load_button) — label: "{strings.budgets.retry_button}"
+3. **section_header** (#set_budget_header) — 6 items: "Groceries", "Dining", "Transport", "Bills", "Shopping", "Subscriptions"
+4. **card** (#set_budget_card) — "set_budget_card"
+   - **dropdown** (#budget_category_dropdown) — label: "{strings.budgets.category_label}"
+   - **text_field** (#budget_amount_field) — label: "{strings.budgets.amount_label}"
+   - **button** (#save_budget_button) — label: "{strings.budgets.save_button}"
+5. **text** (#budgets_storage_hint)
+6. **section_header** (#budgets_header) — 6 items: "Groceries", "Dining", "Transport", "Bills", "Shopping", "Subscriptions"
+7. **list** (#budgets_list) — "budgets_list"
+   - **card** (#budget_card) — "budget_card"
+      - **list_item** (#budget_row_header) — 6 items: "Groceries", "Dining", "Transport", "Bills", "Shopping", "Subscriptions"
+      - **progress_linear** (#budget_progress_bar)
+      - **text** (#over_budget_alert)
+      - **row** (#budget_card_actions) — "budget_card_actions"
+         - **button** (#view_category_spend_button) — label: "{strings.budgets.view_transactions}"
+         - **button** (#delete_budget_button) — label: "{strings.budgets.delete_button}"
+8. **empty_state** (#empty_state) — title: "{strings.budgets.empty_title}", icon: "savings"
 
-**Component 2 - Card** (full width minus 32dp insets, 12dp radius, background #1C2024, 16dp padding): Section label "Set a Budget" Outfit medium 12sp #95CDF7 tracked uppercase, 8dp bottom margin. Outlined field row 48dp tall, border #41474D, label "Category" #C1C7CE Outfit regular 14sp, trailing chevron icon #8B9198 - acts as dropdown selector with options Groceries, Dining, Transport, Bills, Shopping, Subscriptions. Outlined text field 48dp tall below, border #41474D, label "Monthly limit" #C1C7CE Outfit regular 14sp, currency keyboard. Filled Button below: full-width, background #95CDF7, label "Save Budget" in #00344E Outfit medium 14sp, 48dp height, radius 9999dp. 8dp gap between each field. Archetype: screen.
+## State-specific behavior
+- Fully populated with the real demo content listed below.
 
-**Component 3 - List** (full width minus 32dp insets, scrollable, 12dp gap between cards): Section label "June 2025" Outfit medium 12sp #C1C7CE tracked uppercase 8dp above first card. Six budget Cards, each: 12dp radius, background #1C2024, 16dp padding. Inside each card: header row with Outfit medium 16sp category name #E0E3E8 left, trailing Outfit 12sp "spent / limit" in #C1C7CE right. Progress Bar below header: full width, 6dp height, 4dp radius. Under-budget fill #95CDF7, over-budget fill #FFB4AB. Status line below bar: under-budget "£XX.XX remaining" in #C1C7CE Outfit 12sp, over-budget "£XX.XX over limit" in #FFB4AB Outfit 12sp. All amounts in monospace. Cards: Groceries £312.40/£350 under 89% bar #95CDF7 "£37.60 remaining", Dining £231.80/£200 over 116% bar #FFB4AB "£31.80 over limit", Transport £98.20/£150 under 65% bar #95CDF7 "£51.80 remaining", Bills £784.50/£800 under 98% bar #95CDF7 "£15.50 remaining", Shopping £156.90/£120 over 131% bar #FFB4AB "£36.90 over limit", Subscriptions £42.98/£50 under 86% bar #95CDF7 "£7.02 remaining".
+## Content source manifest
+- demo-data.budgets[0..5]
+- demo-data.budgets[0..5]
+- demo-data.budgets[0..5]
 
-**Component 4 - Bottom Navigation Bar** (full width, height 80dp, background #1C2024): Active "Budgets": icon savings filled, icon and label #95CDF7 Outfit 12sp. Inactive "Overview", "Spending", "Subscriptions": icon and label #8B9198.
+## Components (vocabulary used in this prompt)
+- (no named components extracted — see composition)
 
-Do not use an em-dash anywhere in this design. Do not make any headline more than 3 lines or any subtitle more than 25 words. Do not break the dark surface theme between the Set Budget card and the budget list. Do not place dark text on dark-filled buttons or use green/red semantics outside the defined palette.
+## Shell (app-shell resolved for this state)
+- App-shell rules are defined per project; per-screen overrides are merged in.
+- Render MUST keep nav/bar elements consistent with the resolved shell — present or absent, never partial.
 
-Progress bars rendered in two precise tones: trust-blue #95CDF7 for headroom, error-rose #FFB4AB for overspend, keeping regulatory calm while making over-budget rows immediately legible. restrained.
+## Tokens (design-tokens roles consumed)
+- Colors: primary / secondary / surface / on-surface / on-surface-variant / error (M3 standard roles).
+- Typography: body-large / title-large (M3 standard roles).
+- Spacing: gap.sm / gap.md / gap.lg.
+- ALL token references are by name from the uploaded design system — no hex literals, no inline size values.
+
+## Self-Validation Checklist (MANDATORY)
+
+Before returning the rendered mockup, verify ALL of these are true. If any fails, FIX the output and re-render.
+
+- [ ] **Per-state shape:** the render shows ONLY this state ("content"). Do not blend multiple states into one mockup.
+- [ ] **Real content:** every text label, image, and data point reflects the content source manifest above — no numbered generic items, no filler text, no dummy text, no empty strings.
+- [ ] **Token fidelity:** colors come from the uploaded design system (primary/secondary/surface/etc.) by name; spacing comes from declared scale tokens. No invented hex codes, no invented size literals.
+- [ ] **Component vocabulary:** every component in the render maps to a named design-system component (Card, FAB, BottomBar, etc.) — no invented or off-system components.
+- [ ] **Archetype honored:** the layout follows the "dashboard" archetype skeleton — composition order top → bottom matches the Composition section.
+- [ ] **App-shell parity:** if a bottom nav, top app bar, or FAB appears in the render, it matches the resolved shell from the app-shell config. Shell elements are either present-and-consistent OR absent — never partial.
+
+If any of these fail and the fix isn't clear → halt rendering and surface "Self-validation failed at: {checkpoint}."
+
+Return ONLY when all 6 checkpoints pass.
 
 ↑↑↑ MOCKUP PROMPT

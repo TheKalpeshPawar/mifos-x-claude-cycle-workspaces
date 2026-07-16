@@ -17,7 +17,7 @@
 
 | Screen | ViewModel | States | Description |
 |--------|-----------|--------|-------------|
-| Connect with HSBC | ConsentOnboardingViewModel | content, loading, authorising, error | OAuth/FAPI initiation screen. Stages OBReadConsent1 (10 OBIE read scopes), builds PS256-signed FAPI 1.0 Advanced /authorize URL with PKCE S256, launches app-to-app redirect to HSBC for SCA and account selection. |
+| Connect with HSBC | ConsentOnboardingViewModel | content, loading, authorising, error | OAuth/FAPI initiation screen. Stages OBReadConsent1 (10 OBIE read scopes), builds PS256-signed FAPI 1.0 Advanced /authorize URL (response_type=code id_token), launches app-to-app redirect to HSBC for SCA and account selection. |
 
 ## App-Shell
 
@@ -37,9 +37,9 @@
 - **Events**: (none)
 - **Actions**:
   - `LoadPermissionsConfig(): Unit` — reads OBReadConsent1.Permissions enum; computes `consent_expiry_label`
-  - `StartOAuth(): suspend Unit` — POSTs consent-create with client_credentials; stores ConsentId; builds FAPI /authorize URL (PS256, PKCE S256); launches app-to-app redirect; transitions loading → authorising | error
+  - `StartOAuth(): suspend Unit` — POSTs consent-create with client_credentials; stores ConsentId; builds FAPI /authorize URL (response_type=code id_token, PS256-signed request object); launches app-to-app redirect; transitions loading → authorising | error
   - `NavigateBack(): Unit` — Navigator.navigateBack()
-- **DI**: ConsentService, LocalStorage, PkceGenerator, FapiAuthBuilder, Navigator
+- **DI**: ConsentService, LocalStorage, FapiAuthBuilder, Navigator
 
 ## API Endpoints (1)
 

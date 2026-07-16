@@ -1,9 +1,9 @@
 ---
-ui_yaml_sha: a08e052152877d4ac6b23ae4ddc9eec203447ec8d53b663f8b21b2e9fc9957ad
+ui_yaml_sha: 09a7c2d3e32a23763d5c70c3bbee44932f960984b4eab09b0fe945041569db74
 design_md_hash: a3958d1ca6f307ebba64f58c9addd9531aafd615c1fa4c1b350e7b6683badd73
 app_shell_hash: c60afae56a9af273fdbab8a83d90027037612b4f72cf0c6a85bc872d34e9ab76
 design_read_hash: 513c061d12f3a90e84d6e98e1e037b131e59fa3ca5c5f3c0abfc6ba87d24bcaf
-content_hash: f4924e61020491582fc9a721fcb50d6943c240042297cbf4569f360a3f713c63
+content_hash: 15466d1971f5a108005085772103e097b123b8a4de1ff458ed2dbbe72164b103
 
 design_read_aesthetic: minimalist-ui
 design_read_dials: {variance: 3, motion: 2, density: 5}
@@ -24,26 +24,72 @@ craft_rules_version: v1.0.0
 
 # budgets — empty state
 
-> Auto-generated from screens/budgets/ui.yaml @ SHA 966398224a1dc68c
+> Auto-generated from screens/budgets/ui.yaml @ SHA b4ddef0d8df9e9f8
 > Stitch DesignSystem: 8085591672064527850
 > DO NOT redeclare colors / fonts / spacing — they live in DESIGN.md.
 
 ↓↓↓ MOCKUP PROMPT
 
-Design the empty state of the budgets screen for **HSBC Open Banking**, a UK Open Banking AISP letting HSBC account holders set and track monthly spending limits by category.
+## Archetype: dashboard
 
-Palette: primary #95CDF7, surface #101417, onSurface #E0E3E8, surfaceContainer #1C2024, onSurfaceVariant #C1C7CE, error #FFB4AB, primaryContainer #004B6F, outline #8B9198
+## Layout
+- type: scrollable_column
+- padding: default
+- alignment: start
 
-**Component 1 - Top App Bar** (full width 393dp, height 64dp): Outfit medium 22sp title "Budgets" in #E0E3E8 on #101417. No elevation.
+## Composition (top → bottom)
+1. **skeleton** (#budgets_skeleton)
+2. **error_state** (#budgets_error) — "{strings.budgets.error_title}"
+   - **button** (#retry_load_button) — label: "{strings.budgets.retry_button}"
+3. **section_header** (#set_budget_header) — label: "{strings.budgets.set_budget_header}"
+4. **card** (#set_budget_card) — "set_budget_card"
+   - **dropdown** (#budget_category_dropdown) — label: "{strings.budgets.category_label}"
+   - **text_field** (#budget_amount_field) — label: "{strings.budgets.amount_label}"
+   - **button** (#save_budget_button) — label: "{strings.budgets.save_button}"
+5. **text** (#budgets_storage_hint)
+6. **section_header** (#budgets_header) — label: "{current_month_label}"
+7. **list** (#budgets_list) — "budgets_list"
+   - **card** (#budget_card) — "budget_card"
+      - **list_item** (#budget_row_header) — label: "{item.category}"
+      - **progress_linear** (#budget_progress_bar)
+      - **text** (#over_budget_alert)
+      - **row** (#budget_card_actions) — "budget_card_actions"
+         - **button** (#view_category_spend_button) — label: "{strings.budgets.view_transactions}"
+         - **button** (#delete_budget_button) — label: "{strings.budgets.delete_button}"
+8. **empty_state** (#empty_state) — title: "{strings.budgets.empty_title}", icon: "savings"
 
-**Component 2 - Card** (full width minus 32dp insets, 12dp radius, background #1C2024, 16dp padding): Section label "Set a Budget" Outfit medium 12sp #95CDF7 tracked uppercase, 8dp bottom margin. Outlined field 48dp tall border #41474D label "Category" #C1C7CE. Outlined field 48dp tall border #41474D label "Monthly limit" #C1C7CE. Filled Button: background #95CDF7, label "Save Budget" in #00344E Outfit medium 14sp, 48dp height, radius 9999dp, full width. The Set Budget card is the primary action surface and always visible. Archetype: empty_state.
+## State-specific behavior
+- Show an empty-state illustration, a friendly message, and one primary call-to-action button.
 
-**Component 3 - Empty State** (centered in scroll area below Set Budget card, 32dp horizontal insets, 48dp top spacing): Icon savings 64dp in #C1C7CE centered. 16dp gap. Outfit medium 20sp heading "No budgets set" in #E0E3E8 center-aligned. 8dp gap. Outfit regular 14sp "Use the form above to create your first monthly spending limit. Limits are tracked against your HSBC transactions." in #C1C7CE center-aligned, max 3 lines. No additional button below (the Set Budget card above is the action).
+## Content source manifest
+- (no demo collections bound for this state)
 
-**Component 4 - Bottom Navigation Bar** (full width, height 80dp, background #1C2024): Active "Budgets": savings icon and label #95CDF7. Inactive "Overview", "Spending", "Subscriptions": icon and label #8B9198.
+## Components (vocabulary used in this prompt)
+- (no named components extracted — see composition)
 
-Do not use an em-dash anywhere in this design. Do not make any headline more than 3 lines or any subtitle more than 25 words. Do not break the dark surface theme between the Set Budget card and the empty-state guidance below it. Do not place dark labels on dark card backgrounds or light labels on the filled primary button in a colour other than #00344E.
+## Shell (app-shell resolved for this state)
+- App-shell rules are defined per project; per-screen overrides are merged in.
+- Render MUST keep nav/bar elements consistent with the resolved shell — present or absent, never partial.
 
-The Set Budget card with its trust-blue #95CDF7 save button dominates the upper half as the natural entry point, while the savings icon and guidance below confirm no budgets exist yet. minimal.
+## Tokens (design-tokens roles consumed)
+- Colors: primary / secondary / surface / on-surface / on-surface-variant / error (M3 standard roles).
+- Typography: body-large / title-large (M3 standard roles).
+- Spacing: gap.sm / gap.md / gap.lg.
+- ALL token references are by name from the uploaded design system — no hex literals, no inline size values.
+
+## Self-Validation Checklist (MANDATORY)
+
+Before returning the rendered mockup, verify ALL of these are true. If any fails, FIX the output and re-render.
+
+- [ ] **Per-state shape:** the render shows ONLY this state ("empty"). Do not blend multiple states into one mockup.
+- [ ] **Real content:** every text label, image, and data point reflects the content source manifest above — no numbered generic items, no filler text, no dummy text, no empty strings.
+- [ ] **Token fidelity:** colors come from the uploaded design system (primary/secondary/surface/etc.) by name; spacing comes from declared scale tokens. No invented hex codes, no invented size literals.
+- [ ] **Component vocabulary:** every component in the render maps to a named design-system component (Card, FAB, BottomBar, etc.) — no invented or off-system components.
+- [ ] **Archetype honored:** the layout follows the "dashboard" archetype skeleton — composition order top → bottom matches the Composition section.
+- [ ] **App-shell parity:** if a bottom nav, top app bar, or FAB appears in the render, it matches the resolved shell from the app-shell config. Shell elements are either present-and-consistent OR absent — never partial.
+
+If any of these fail and the fix isn't clear → halt rendering and surface "Self-validation failed at: {checkpoint}."
+
+Return ONLY when all 6 checkpoints pass.
 
 ↑↑↑ MOCKUP PROMPT
