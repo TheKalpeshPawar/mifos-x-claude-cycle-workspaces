@@ -69,7 +69,7 @@ components:
           interaction_type: input
           data_driven: true
         trailing_content:
-          type: dropdown
+          type: select
           id: theme_dropdown
           options:
             - "{strings.settings.theme.option_light}"
@@ -127,6 +127,10 @@ components:
             data_driven: true
           on_click:
             action: toggle_biometric_lock
+            action_contract:
+              effect: persist_db
+              external_library_refs: [androidx.datastore]
+              description: "Flips biometric_lock_enabled boolean in DataStore; checks BiometricManager availability first — skips the write and emits BiometricUnavailable if no hardware or enrollment is present."
 
       - type: list_item
         id: session_timeout_row
@@ -138,7 +142,7 @@ components:
           interaction_type: input
           data_driven: true
         trailing_content:
-          type: dropdown
+          type: select
           id: session_dropdown
           options:
             - "{strings.settings.session_timeout.option_2m}"
@@ -239,6 +243,10 @@ components:
             data_driven: true
           on_click:
             action: toggle_consent_expiry_notification
+            action_contract:
+              effect: persist_db
+              external_library_refs: [androidx.datastore]
+              description: "Flips notify_consent_expiry boolean in DataStore; the background notification scheduler reads this flag to decide whether to post consent-expiry alert notifications."
 
       - type: list_item
         id: security_alerts_notif_row
@@ -261,6 +269,10 @@ components:
             data_driven: true
           on_click:
             action: toggle_security_alerts_notification
+            action_contract:
+              effect: persist_db
+              external_library_refs: [androidx.datastore]
+              description: "Flips notify_security_alerts boolean in DataStore; the FCM message handler reads this flag to decide whether to display security-event push notifications."
 
   # ── Storage ──────────────────────────────────────────────────────────
   # CC1 + CC8: storage_location + cache_lifecycle for pfm-dashboard and
@@ -315,6 +327,10 @@ components:
           data_driven: false
         on_click:
           action: clear_pfm_cache
+          action_contract:
+            effect: delete
+            external_library_refs: [room]
+            description: "Clears all PFM aggregated spending and category rows from the local PFM Room cache at databases/pfm_cache after user confirmation; DataStore settings and Open Banking AIS consents are unaffected."
 
   # ── Account ──────────────────────────────────────────────────────────
   - type: section_header
@@ -354,6 +370,9 @@ components:
         on_click:
           action: navigate_consent_list
           target: consent-list
+          action_contract:
+            effect: navigate
+            description: "Navigates to the consent-list screen where the user can view and revoke active Open Banking account-access consents."
 
       - type: list_item
         id: profile_row
@@ -372,6 +391,9 @@ components:
         on_click:
           action: navigate_profile
           target: profile
+          action_contract:
+            effect: navigate
+            description: "Navigates to the profile screen displaying the account holder's identity details from the Open Banking party endpoint."
 
       - type: list_item
         id: clear_local_data_row
@@ -389,6 +411,10 @@ components:
           data_driven: false
         on_click:
           action: clear_local_data_confirm
+          action_contract:
+            effect: transform_state
+            external_library_refs: [kotlinx-coroutines]
+            description: "Emits ShowClearDataConfirmation to transition the screen to clear_confirm state and open the destructive-action bottom-sheet; no database or DataStore writes occur at this stage."
 
   # ── About & Legal ────────────────────────────────────────────────────
   - type: section_header
@@ -428,6 +454,10 @@ components:
           action: open_external_url
           params:
             url: "https://www.openbanking.org.uk/customer-hub/terms-and-conditions/"
+          action_contract:
+            effect: share_external
+            external_library_refs: ["platform-intent/openURL"]
+            description: "Hands the OBIE Terms and Conditions URL to the platform browser launcher (Android intent / iOS openURL) to open in the system browser or Custom Tab; no in-app state change. Shows a snackbar when no browser app is installed."
 
       - type: list_item
         id: privacy_row
@@ -446,6 +476,10 @@ components:
           action: open_external_url
           params:
             url: "https://www.openbanking.org.uk/privacy-policy/"
+          action_contract:
+            effect: share_external
+            external_library_refs: ["platform-intent/openURL"]
+            description: "Hands the OBIE Privacy Policy URL to the platform browser launcher (Android intent / iOS openURL) to open in the system browser or Custom Tab; no in-app state change. Shows a snackbar when no browser app is installed."
 
       - type: list_item
         id: licences_row
@@ -462,6 +496,10 @@ components:
           data_driven: false
         on_click:
           action: open_oss_licences
+          action_contract:
+            effect: share_external
+            external_library_refs: [AboutLibraries]
+            description: "Launches the in-app Open Source licences screen via the AboutLibraries Compose destination; no DataStore or network interaction."
 
       - type: list_item
         id: app_version_row
@@ -499,6 +537,10 @@ components:
           data_driven: false
         on_click:
           action: dismiss_clear_local_data
+          action_contract:
+            effect: transform_state
+            external_library_refs: [kotlinx-coroutines]
+            description: "Dismisses the clear-data confirmation bottom-sheet and transitions the screen back to content state without erasing any local data."
       - type: button
         id: confirm_clear_local_data_button
         variant: filled
@@ -512,6 +554,10 @@ components:
           data_driven: false
         on_click:
           action: execute_clear_local_data
+          action_contract:
+            effect: delete
+            external_library_refs: [room, sqldelight, androidx.datastore]
+            description: "Deletes all cached account and transaction rows from the Room/SQLDelight local database and resets DataStore cached-at timestamps to null so the next dashboard visit refetches; Open Banking consent authorisations are not affected."
 
   # ── Empty state ──────────────────────────────────────────────────────
   - type: empty_state
@@ -550,6 +596,10 @@ components:
         accessibility_label: "{strings.settings.error.retry_a11y}"
         on_click:
           action: retry_load_settings
+          action_contract:
+            effect: transform_state
+            external_library_refs: [kotlinx-coroutines]
+            description: "Re-triggers the DataStore preferences Flow collection after an I/O failure, transitioning from Error to Loading state; returns to Content on success or back to Error on repeated IOException."
         test_context:
           purpose: "Re-triggers DataStore preferences Flow collection after I/O failure; transitions to loading then content on success"
           required_fields: [on_click.action]

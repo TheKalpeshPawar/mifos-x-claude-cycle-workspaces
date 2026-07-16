@@ -90,6 +90,9 @@ components:
           params:
             statementId: "{item.StatementId}"
             accountId: "{accountId}"
+          action_contract:
+            effect: navigate
+            description: "Opens statement-detail screen for the selected period, passing StatementId and accountId as navigation arguments."
         children:
           - type: icon_button
             id: download_statement_button
@@ -112,6 +115,10 @@ components:
               params:
                 statementId: "{item.StatementId}"
                 accountId: "{accountId}"
+              action_contract:
+                effect: persist_file
+                external_library_refs: ["ktor-client-download", "hsbc-obie-ais-v4.0:statements-file"]
+                description: "Calls GET /accounts/{AccountId}/statements/{StatementId}/file (Accept: application/pdf, text/csv) and streams the response bytes to the platform file handler, saving the statement PDF or CSV to device storage."
 
   - type: divider
     id: statement_row_divider
@@ -172,6 +179,10 @@ components:
           data_driven: false
         on_click:
           action: retry_load
+          action_contract:
+            effect: call_api
+            external_library_refs: ["ktorfit", "hsbc-obie-ais-v4.0:statements"]
+            description: "Re-issues GET /accounts/{AccountId}/statements after a recoverable 401 or network error, returning the screen to Loading and then Content, Empty, or Error."
 
 layout:
   loading:

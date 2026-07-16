@@ -91,6 +91,9 @@ components:
           target: consent-detail
           params:
             consentId: "{item.Data.ConsentId}"
+          action_contract:
+            effect: navigate
+            description: "Navigates to the consent-detail screen passing the OBIE ConsentId as a route parameter for status, permissions, and expiry display."
         accessibility_label: "{strings.consent_list_card_hint}"
         test_context:
           purpose: "Tappable consent card — HSBC logo, OBIE status chip, optional reconfirm chip, permission count, expiry countdown, connection date"
@@ -225,6 +228,9 @@ components:
           target: consent-detail
           params:
             consentId: "{item.Data.ConsentId}"
+          action_contract:
+            effect: navigate
+            description: "Navigates to the consent-detail screen for an Expired or Revoked consent, passing the ConsentId as a route parameter for historical record display."
         accessibility_label: "{strings.consent_list_card_hint}"
         test_context:
           purpose: "Flat tappable card for Expired/Revoked consent showing muted status chip and expiry date"
@@ -303,6 +309,9 @@ components:
         on_click:
           action: navigate_connect
           target: user-onboarding
+          action_contract:
+            effect: navigate
+            description: "Navigates to the user-onboarding screen to begin a fresh FAPI account-access consent flow when no consents exist locally."
         test_context:
           purpose: "CTA navigating to user-onboarding to begin a fresh FAPI consent flow"
           required_fields: [on_click.action, on_click.target]
@@ -331,6 +340,10 @@ components:
         accessibility_label: "{strings.consent_list_retry_a11y}"
         on_click:
           action: retry_load
+          action_contract:
+            effect: call_api
+            external_library_refs: [ktorfit, "hsbc-obie-ais-v4.0:account-access-consents"]
+            description: "Re-runs load_consents: re-fetches status for all locally stored ConsentIds from GET /account-access-consents/{ConsentId} after a transient network or server failure."
         test_context:
           purpose: "Retry CTA re-triggering consent-status fetch after transient network or server failure"
           required_fields: [on_click.action]
@@ -360,6 +373,9 @@ components:
         on_click:
           action: navigate_reauth
           target: login
+          action_contract:
+            effect: navigate
+            description: "Navigates the PSU to the login screen to renew their OAuth session after receiving a 401 Unauthorized on the consent-status fetch."
         test_context:
           purpose: "Re-authentication CTA navigating PSU to the login screen to renew their OAuth session"
           required_fields: [on_click.action, on_click.target]

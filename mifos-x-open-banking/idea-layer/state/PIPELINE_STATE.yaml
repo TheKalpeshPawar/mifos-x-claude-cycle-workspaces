@@ -203,28 +203,118 @@ capabilities:
       stale_inputs: []
   idea-sync:
     last_run:
-      at: '2026-07-14T00:00:00Z'
-      status: partial
+      at: '2026-07-16T11:32:00Z'
+      status: success
       actor: claude
-      command: /idea sync for mifos-x-open-banking (full matrix dispatch)
-      args: for mifos-x-open-banking
+      command: /idea-sync
+      args: 'ignore absence of stitch mockups.'
       duration_ms: 0
       errors: 0
-      warnings: 3
+      warnings: 1
     metrics:
-      steps_total: 9
-      steps_succeeded: 8
+      steps_total: 8
+      steps_succeeded: 7
       steps_failed: 0
-      steps_partial: 1
-      scope: full matrix dispatch (foundation + enrichment + visualization-previews + export-spec + artifacts)
-      mockups_phase: skipped (user directive — Stitch PNGs already present)
-      export_spec_generated: 25
-      features_scored: 25
-      final_coverage_pct: 0
-      coverage_note: >-
-        0% is structural (mockups skipped + mtime-vs-content-hash audit mismatch + 95 enrich threshold vs honest 89-94
-        scores), not unfinished work.
+      steps_skipped: 1
+      scope: verify + gap-record (enrichment authoring deferred by user)
+      features_evaluated: 25
+      preflight: 'PASS (5 slugs; 1 acked WARN — idea-export-stitch, stitch ignored per args)'
+      mockups_phase: skipped (user directive — ignore absence of stitch mockups)
+      action_contract_gap: >-
+        124/124 interactive on_click components lack action_contract
+        (RULE-IDEA-ACTION-CONTRACT-001 AC1, severity error, grace_until null).
+        25 findings recorded — one per feature. Authoring NOT performed this run.
+      gate_trust_note: >-
+        G-ACTION-CONTRACT (framework-verify-action-contract.sh) exit 0 does NOT
+        currently prove AC1 passes. As shipped it matched only `- id:` component
+        starts while canonical enrich output writes `- type:` first, so it saw 30
+        of 248 components and reported a false green. Key-order fixed locally
+        2026-07-16 (canaries still red/green correct). It STILL models only flat
+        components and collapses nested `children:`/`trailing_content:` subtrees
+        into one verdict — which is where all 124 of these components live.
+        The 124 count comes from an independent YAML tree walk, not from the gate.
     detail_ref: state/SYNC_STEPS.yaml
+    drift:
+      stale_inputs: []
+  design-validate:
+    last_run:
+      at: '2026-07-16T12:55:00Z'
+      status: success
+      actor: claude
+      command: /design-validate
+      args: ''
+      duration_ms: 0
+      errors: 0
+      warnings: 1
+    metrics:
+      checks_run: 4
+      checks_not_evaluable: 14
+      wcag_pass: true
+      m3_pass: true
+      token_violations: 0
+      a11y_violations: 0
+      registry_violations: 0
+      score: 96
+      score_basis: partial-corpus
+      evaluated: >-
+        REG-001 (RESOLVED — `dropdown` x3 remapped to the registered `select`
+        after the RULE-COMPONENT-REGISTRY-001 picker; 0 unresolved types remain
+        across 41 distinct types / 25 screens); A11Y-002/COLOR (PASS — 13 M3
+        contrast pairs verified in light AND dark, all >=4.5:1); STATE-001 (PASS —
+        19/19 api-backed screens compose loading/content/error/empty);
+        RENDER-STALE (WARN — budgets + settings previews stale after the remap).
+      not_evaluable_note: >-
+        14 of ~20 declared rules could not execute: validation-rules.json is
+        v2.0.0 / lastUpdated 2026-02-10 and checks fields (keyboard.focusable,
+        label_source, supported_states, motion.*, breakpoints) that exist neither
+        in core/schemas/ui-yaml.schema.json nor in any of the 25 ui.yaml files.
+        Corpus size is self-inconsistent: runtime says 102 rules, _metadata says
+        147, categories block holds 67.
+      prior_run_warning: >-
+        The 2026-07-14 record claimed score 100 / pass true with every category
+        0/0/0 — including MOTION and RESP, which cannot run at all here. That was
+        a false green: unevaluable rules reported as zero findings. This run
+        scores only what it could actually evaluate and marks the rest explicitly.
+    detail_ref: state/DESIGN_VALIDATION.yaml
+    drift:
+      stale_inputs: []
+  idea-feature-enrich-loop:
+    last_run:
+      at: '2026-07-16T12:05:00Z'
+      status: success
+      actor: claude
+      command: /idea-feature-enrich-loop
+      args: ''
+      duration_ms: 0
+      errors: 0
+      warnings: 0
+    metrics:
+      features_enriched: 25
+      action_contracts_authored: 124
+      scope: >-
+        AC1 remediation only — authored the missing action_contract block on every
+        interactive on_click. No other enrichment dimension was touched.
+      effects_distribution: >-
+        navigate=56 transform_state=30 call_api=20 share_external=6 persist_db=4
+        delete=4 persist_file=2 copy_clipboard=1 none=1
+      library_channel: >-
+        external_library_refs throughout; library_refs[] unused. CAPABILITY_PROVIDERS.yaml
+        offers only cmp-audio-recorder / cmp-network-monitor / cmp-network-monitor-compose,
+        none of which this banking app consumes. Four platform capabilities had no provider
+        at all and use honest coined tokens grounded in project vocabulary:
+        platform-intent/openURL, platform-clipboard-manager, gps-expect-actual, room.
+      verification: >-
+        Nested component-tree walk over AC1-AC5 + the ui-yaml.schema.json
+        action_contract shape: 124/124 contracts present, 0 hard failures, 25/25
+        ui.yaml parse clean. 8 advisories, all writes_to omissions on DataStore/
+        prefs-backed effects with no relational table named in data-flow.yaml —
+        omitted rather than invented (writes_to grace runs to 2026-07-24).
+      not_covered: >-
+        15 on_click components remain contract-less because their type sits outside
+        the rule's interactive vocabulary (dropdown/text_button/segmented_button/
+        filled_button/outlined_button/info_row + 6 with no type field). See
+        CAPABILITY_GAPS.yaml#summary.known_gap_ac1_vocabulary.
+    detail_ref: state/CAPABILITY_GAPS.yaml
     drift:
       stale_inputs: []
   idea-export-stitch:
@@ -244,44 +334,6 @@ capabilities:
       features_generated_this_run: 4
       states_generated_this_run: 2
     detail_ref: state/STITCH_STATE.yaml
-  idea-render-validate:
-    last_run:
-      at: '2026-07-14T12:00:00Z'
-      status: warn
-      actor: claude
-      command: /idea-render-validate --target html
-      args: '--target html'
-      duration_ms: 0
-      files_touched:
-        - idea-layer/screens/*/ui.yaml (25 files — RV-020 archetype)
-        - idea-layer/screens/direct-debits/preview/*.html (4 files — RV-023)
-        - idea-layer/screens/settings/preview/loading.html (RV-008 + RV-023)
-        - idea-layer/screens/consent-callback/preview/*.html (6 files — RV-008)
-        - >-
-          idea-layer/screens/user-onboarding/preview/{intro,consent_explainer,ob_explainer_open,permissions_overview}.html
-          (RV-008)
-        - idea-layer/state/PIPELINE_STATE.yaml
-        - idea-layer/state/ACTIVITY_LOG.jsonl
-      artifacts:
-        - path: idea-layer/state/PIPELINE_STATE.yaml
-      errors: 0
-      warnings: 23
-    metrics:
-      files_validated: 114
-      focus_files_validated: 9
-      focus_files_verdict: all_pass_with_rv013_warn
-      tier1_auto_fixes_applied: 41
-      rv_020_archetype_fixes: 25
-      rv_023_dark_block_fixes: 5
-      rv_008_main_element_fixes: 11
-      rv_034_sha_check: pass
-      rv_013_absent_render_hash: 14
-      rv_013_placeholder_render_hash: 9
-      rv_016_icon_mixing_files: 5
-      rv_014_namespace_mixing: warn_pre_existing
-      rv_018_inline_px: 2
-    drift:
-      stale_inputs: []
   idea-verify:
     last_run:
       at: '2026-07-15T07:15:00Z'

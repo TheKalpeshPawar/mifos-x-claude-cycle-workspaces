@@ -1,18 +1,18 @@
 schema_version: "1.0"
-last_run: "2026-07-14T17:00:00Z"
+last_run: "2026-07-16T12:05:00Z"
 last_run_by: "claude"
-command: "/idea-enrich home accounts transactions recurring-subscriptions"
-last_enriched: "2026-07-14"
-last_enriched_by: "/idea-enrich home accounts transactions recurring-subscriptions"
+command: "/idea-feature-enrich-loop"
+last_enriched: "2026-07-16"
+last_enriched_by: "/idea-feature-enrich-loop (action_contract authoring, 25 features)"
 project: "mifos-x/mifos-x-open-banking"
 features_evaluated: 25
 overall: "warn"
 summary:
-  total_findings: 18
-  open_findings: 4
-  closed_findings: 14
+  total_findings: 44
+  open_findings: 5
+  closed_findings: 39
   by_gap_class:
-    fail: 0
+    fail: 1
     warn: 4
     advisory: 0
   dto_findings: 0
@@ -22,8 +22,29 @@ summary:
   deferred_findings: 0
   i18n_findings: 0
   quality_findings: 0
-  last_close: "2026-07-14 — CC7 home/accounts/transactions + QS-1 recurring-subscriptions closed by /idea-enrich ADVISORY cluster pass"
-  last_fix: "2026-07-14 — network_policy: cellular_allowed added to 6 OBIE endpoints across home/accounts/transactions api.yaml; idea-plan.yaml#network_policy default declared; recurring-subscriptions quality_score verified at 97"
+  action_contract_findings: 25
+  last_close: >-
+    2026-07-16 — all 25 AC1 action_contract findings closed by
+    /idea-feature-enrich-loop; 124/124 interactive on_click components now carry
+    a contract (verified by nested tree walk, 0 hard failures). Remaining 4 open
+    findings are stitch_coverage only.
+  known_gap_ac1_vocabulary: >-
+    15 further on_click components are NOT covered by AC1 because their `type` is
+    outside the rule's interactive vocabulary: dropdown (3), text_button (2),
+    segmented_button (1), filled_button (1), outlined_button (1), info_row (1),
+    and 6 components declaring on_click with NO `type` field at all. Four of those
+    types (text_button, segmented_button, filled_button, outlined_button) ARE
+    registered in the framework's layers/idea/templates/registry/actions.yaml, so
+    this is a vocabulary desync in RULE-IDEA-ACTION-CONTRACT-001 (which lists a
+    generic `button`), not a project error. `dropdown` resolves in no registry —
+    possible RULE-COMPONENT-REGISTRY-001 concern. Not authored this run.
+  prior_close: "2026-07-14 — CC7 home/accounts/transactions + QS-1 recurring-subscriptions closed by /idea-enrich ADVISORY cluster pass"
+  last_fix: >-
+    2026-07-16 — 124 action_contract blocks authored across all 25 features by
+    /idea-feature-enrich-loop. Prior: 2026-07-14 — network_policy cellular_allowed
+    added to 6 OBIE endpoints across home/accounts/transactions api.yaml;
+    idea-plan.yaml#network_policy default declared; recurring-subscriptions
+    quality_score verified at 97.
 
 findings:
 
@@ -465,5 +486,880 @@ findings:
       auth: none, base: https://api.hsbc.com/open-banking/v2.2). D6 now resolves
       OBReadATMResponse1's /atms endpoint against server/apis/open-data.yaml. PASS.
       OBReadATMResponse1.yaml already had owned: false; no DTO edit required.
+
+  # ── AC1: action_contract missing (RULE-IDEA-ACTION-CONTRACT-001) ─────────
+  #
+  # Detected 2026-07-16 by /idea-sync STEP 1 via a nested component-tree audit.
+  #
+  # PROJECT-WIDE: 124 of 124 interactive on_click components lack an
+  # action_contract block. ZERO are present anywhere in the project. The rule is
+  # severity: error, grace_until: null (HARD-IMMEDIATE, no waiver path) and
+  # gates /implement.
+  #
+  # WHY THIS WAS NEVER REPORTED: the shipped gate
+  # .claude-runtime/scripts/framework-verify-action-contract.sh returned
+  # "0 violations" — a false green — for two stacked parser defects:
+  #   1. It only recognised a component whose FIRST key is `- id:`, but the
+  #      canonical /idea-feature-enrich output writes `- type:` first. This hid
+  #      ~88% of components (30 seen vs 248 real). Fixed locally 2026-07-16.
+  #   2. It models only FLAT components and collapses each subtree into a single
+  #      verdict, so components nested under `children:` / `trailing_content:` —
+  #      where nearly every interactive component in this project lives — are
+  #      never evaluated. STILL OPEN: the gate cannot confirm these findings.
+  # Until defect 2 is fixed, G-ACTION-CONTRACT exit 0 does NOT mean AC1 passes.
+  #
+  # Per-feature fix: /idea-feature-enrich {feature} --re-author-action-contracts
+  # (RULE-IDEA-ACTION-CONTRACT-001 line 53 declares this the gap-registry route.)
+  # Each contract needs: effect ∈ core/registries/ACTION_CONTRACT_EFFECTS.yaml
+  # (12 keys), ≥1 library_refs/external_library_refs when effect ∉ {none,navigate}
+  # (AC3), and a 30..400 char description free of DC-2 forbidden tokens (AC4/AC5).
+
+  - feature_id: "settings"
+    sub_check: AC1
+    category: action_contract
+    gap_class: fail
+    rule: RULE-IDEA-ACTION-CONTRACT-001
+    error_code: ACTION_CONTRACT_MISSING
+    status: closed
+    detected_at: "2026-07-16T11:30:00Z"
+    detected_by: "/idea-sync STEP 1 (nested component-tree audit)"
+    closed_at: "2026-07-16T12:05:00Z"
+    closed_by: "/idea-feature-enrich-loop"
+    resolution: >
+      action_contract authored for every interactive on_click in this feature.
+      Each block declares an effect from the 12-key closed enum in
+      ACTION_CONTRACT_EFFECTS.yaml, a 30..400 char description grounded in the
+      feature's own data-flow.yaml / api.yaml / test_context (no DC-2 forbidden
+      tokens), and — for every effect outside {navigate, none} — at least one
+      external_library_refs entry per AC3. library_refs[] is unused throughout:
+      the cmp-* catalog in CAPABILITY_PROVIDERS.yaml provides only
+      audio-recording, network-monitoring and document-picking, none of which
+      this banking app consumes, so the free-text escape hatch is the correct
+      channel. Verified by a nested component-tree walk (AC1-AC5 + the
+      ui-yaml.schema.json action_contract shape): 124/124 interactive on_click
+      components carry a contract, 0 hard failures. count_after: 0.
+    evidence: >
+      13 interactive on_click components carry no action_contract block:
+      biometric_switch (switch, toggle_biometric_lock),
+      consent_expiry_switch (switch, toggle_consent_expiry_notification),
+      security_alerts_switch (switch, toggle_security_alerts_notification),
+      clear_pfm_cache_row (list_item, clear_pfm_cache),
+      manage_consents_row (list_item, navigate_consent_list),
+      profile_row (list_item, navigate_profile),
+      clear_local_data_row (list_item, clear_local_data_confirm),
+      terms_row (list_item, open_external_url),
+      privacy_row (list_item, open_external_url),
+      licences_row (list_item, open_oss_licences),
+      cancel_clear_local_data_button (button, dismiss_clear_local_data),
+      confirm_clear_local_data_button (button, execute_clear_local_data),
+      settings_error_retry_button (button, retry_load_settings).
+      Includes two destructive effects (clear_local_data, clear_pfm_cache) whose
+      contracts require effect: delete + explicit library refs.
+    suggested_fix: |
+      /idea-feature-enrich settings --re-author-action-contracts
+
+  - feature_id: "account-detail"
+    sub_check: AC1
+    category: action_contract
+    gap_class: fail
+    rule: RULE-IDEA-ACTION-CONTRACT-001
+    error_code: ACTION_CONTRACT_MISSING
+    status: closed
+    detected_at: "2026-07-16T11:30:00Z"
+    detected_by: "/idea-sync STEP 1 (nested component-tree audit)"
+    closed_at: "2026-07-16T12:05:00Z"
+    closed_by: "/idea-feature-enrich-loop"
+    resolution: >
+      action_contract authored for every interactive on_click in this feature.
+      Each block declares an effect from the 12-key closed enum in
+      ACTION_CONTRACT_EFFECTS.yaml, a 30..400 char description grounded in the
+      feature's own data-flow.yaml / api.yaml / test_context (no DC-2 forbidden
+      tokens), and — for every effect outside {navigate, none} — at least one
+      external_library_refs entry per AC3. library_refs[] is unused throughout:
+      the cmp-* catalog in CAPABILITY_PROVIDERS.yaml provides only
+      audio-recording, network-monitoring and document-picking, none of which
+      this banking app consumes, so the free-text escape hatch is the correct
+      channel. Verified by a nested component-tree walk (AC1-AC5 + the
+      ui-yaml.schema.json action_contract shape): 124/124 interactive on_click
+      components carry a contract, 0 hard failures. count_after: 0.
+    evidence: >
+      11 interactive on_click components carry no action_contract block:
+      back_button (icon_button, navigate_back), retry_button (button, retry_load),
+      and 9 navigation chips — chip_transactions, chip_statements,
+      chip_standing_orders, chip_direct_debits, chip_scheduled_payments,
+      chip_beneficiaries, chip_atm_locator, chip_product, chip_party.
+    suggested_fix: |
+      /idea-feature-enrich account-detail --re-author-action-contracts
+
+  - feature_id: "home"
+    sub_check: AC1
+    category: action_contract
+    gap_class: fail
+    rule: RULE-IDEA-ACTION-CONTRACT-001
+    error_code: ACTION_CONTRACT_MISSING
+    status: closed
+    detected_at: "2026-07-16T11:30:00Z"
+    detected_by: "/idea-sync STEP 1 (nested component-tree audit)"
+    closed_at: "2026-07-16T12:05:00Z"
+    closed_by: "/idea-feature-enrich-loop"
+    resolution: >
+      action_contract authored for every interactive on_click in this feature.
+      Each block declares an effect from the 12-key closed enum in
+      ACTION_CONTRACT_EFFECTS.yaml, a 30..400 char description grounded in the
+      feature's own data-flow.yaml / api.yaml / test_context (no DC-2 forbidden
+      tokens), and — for every effect outside {navigate, none} — at least one
+      external_library_refs entry per AC3. library_refs[] is unused throughout:
+      the cmp-* catalog in CAPABILITY_PROVIDERS.yaml provides only
+      audio-recording, network-monitoring and document-picking, none of which
+      this banking app consumes, so the free-text escape hatch is the correct
+      channel. Verified by a nested component-tree walk (AC1-AC5 + the
+      ui-yaml.schema.json action_contract shape): 124/124 interactive on_click
+      components carry a contract, 0 hard failures. count_after: 0.
+    evidence: >
+      10 interactive on_click components carry no action_contract block:
+      account_chip (chip, select_account), hero_balance_card (card,
+      navigate_account_detail), pay_button (icon_button, noop — disabled PISP
+      placeholder, contract should declare effect: none), transactions_button,
+      statements_button, consents_button (icon_button, navigate_*),
+      recent_tx_row (card, navigate_transaction_detail), spending_snapshot_card
+      (card, navigate_pfm), connect_bank_button (button, navigate_login),
+      retry_button (button, retry_load).
+    suggested_fix: |
+      /idea-feature-enrich home --re-author-action-contracts
+
+  - feature_id: "user-onboarding"
+    sub_check: AC1
+    category: action_contract
+    gap_class: fail
+    rule: RULE-IDEA-ACTION-CONTRACT-001
+    error_code: ACTION_CONTRACT_MISSING
+    status: closed
+    detected_at: "2026-07-16T11:30:00Z"
+    detected_by: "/idea-sync STEP 1 (nested component-tree audit)"
+    closed_at: "2026-07-16T12:05:00Z"
+    closed_by: "/idea-feature-enrich-loop"
+    resolution: >
+      action_contract authored for every interactive on_click in this feature.
+      Each block declares an effect from the 12-key closed enum in
+      ACTION_CONTRACT_EFFECTS.yaml, a 30..400 char description grounded in the
+      feature's own data-flow.yaml / api.yaml / test_context (no DC-2 forbidden
+      tokens), and — for every effect outside {navigate, none} — at least one
+      external_library_refs entry per AC3. library_refs[] is unused throughout:
+      the cmp-* catalog in CAPABILITY_PROVIDERS.yaml provides only
+      audio-recording, network-monitoring and document-picking, none of which
+      this banking app consumes, so the free-text escape hatch is the correct
+      channel. Verified by a nested component-tree walk (AC1-AC5 + the
+      ui-yaml.schema.json action_contract shape): 124/124 interactive on_click
+      components carry a contract, 0 hard failures. count_after: 0.
+    evidence: >
+      9 interactive on_click components carry no action_contract block:
+      onboarding_error_retry_button (retry_onboarding_init),
+      onboarding_empty_skip_button (navigate_to_login), intro_next_button
+      (step_next), permissions_back_button (step_back), permissions_next_button
+      (step_next), connect_hsbc_button (navigate_to_login), trust_back_button
+      (step_back), how_ob_works_button (open_ob_explainer),
+      ob_explainer_close_button (close_ob_explainer) — all type button.
+    suggested_fix: |
+      /idea-feature-enrich user-onboarding --re-author-action-contracts
+
+  - feature_id: "transactions"
+    sub_check: AC1
+    category: action_contract
+    gap_class: fail
+    rule: RULE-IDEA-ACTION-CONTRACT-001
+    error_code: ACTION_CONTRACT_MISSING
+    status: closed
+    detected_at: "2026-07-16T11:30:00Z"
+    detected_by: "/idea-sync STEP 1 (nested component-tree audit)"
+    closed_at: "2026-07-16T12:05:00Z"
+    closed_by: "/idea-feature-enrich-loop"
+    resolution: >
+      action_contract authored for every interactive on_click in this feature.
+      Each block declares an effect from the 12-key closed enum in
+      ACTION_CONTRACT_EFFECTS.yaml, a 30..400 char description grounded in the
+      feature's own data-flow.yaml / api.yaml / test_context (no DC-2 forbidden
+      tokens), and — for every effect outside {navigate, none} — at least one
+      external_library_refs entry per AC3. library_refs[] is unused throughout:
+      the cmp-* catalog in CAPABILITY_PROVIDERS.yaml provides only
+      audio-recording, network-monitoring and document-picking, none of which
+      this banking app consumes, so the free-text escape hatch is the correct
+      channel. Verified by a nested component-tree walk (AC1-AC5 + the
+      ui-yaml.schema.json action_contract shape): 124/124 interactive on_click
+      components carry a contract, 0 hard failures. count_after: 0.
+    evidence: >
+      9 interactive on_click components carry no action_contract block:
+      filter_all, filter_money_in, filter_money_out (chip, filter_transactions),
+      filter_date_range (chip, open_date_range_picker), search_field (text_field,
+      search_transactions), transaction_row (list_item,
+      navigate_transaction_detail), load_more_button (button,
+      load_more_transactions), clear_filters_button (button, clear_filters),
+      retry_button (button, retry_load).
+    suggested_fix: |
+      /idea-feature-enrich transactions --re-author-action-contracts
+
+  - feature_id: "profile"
+    sub_check: AC1
+    category: action_contract
+    gap_class: fail
+    rule: RULE-IDEA-ACTION-CONTRACT-001
+    error_code: ACTION_CONTRACT_MISSING
+    status: closed
+    detected_at: "2026-07-16T11:30:00Z"
+    detected_by: "/idea-sync STEP 1 (nested component-tree audit)"
+    closed_at: "2026-07-16T12:05:00Z"
+    closed_by: "/idea-feature-enrich-loop"
+    resolution: >
+      action_contract authored for every interactive on_click in this feature.
+      Each block declares an effect from the 12-key closed enum in
+      ACTION_CONTRACT_EFFECTS.yaml, a 30..400 char description grounded in the
+      feature's own data-flow.yaml / api.yaml / test_context (no DC-2 forbidden
+      tokens), and — for every effect outside {navigate, none} — at least one
+      external_library_refs entry per AC3. library_refs[] is unused throughout:
+      the cmp-* catalog in CAPABILITY_PROVIDERS.yaml provides only
+      audio-recording, network-monitoring and document-picking, none of which
+      this banking app consumes, so the free-text escape hatch is the correct
+      channel. Verified by a nested component-tree walk (AC1-AC5 + the
+      ui-yaml.schema.json action_contract shape): 124/124 interactive on_click
+      components carry a contract, 0 hard failures. count_after: 0.
+    evidence: >
+      7 interactive on_click components carry no action_contract block:
+      renew_consent_button (navigate_consent_renew), manage_consent_button
+      (navigate_consent_detail), sign_out_button (confirm_sign_out),
+      cancel_sign_out_button (dismiss_sign_out_dialog), confirm_sign_out_button
+      (execute_sign_out — destructive: clears tokens/consent), retry_button
+      (retry_load), profile_empty_reauth_button (navigate_reauth).
+    suggested_fix: |
+      /idea-feature-enrich profile --re-author-action-contracts
+
+  - feature_id: "consent-detail"
+    sub_check: AC1
+    category: action_contract
+    gap_class: fail
+    rule: RULE-IDEA-ACTION-CONTRACT-001
+    error_code: ACTION_CONTRACT_MISSING
+    status: closed
+    detected_at: "2026-07-16T11:30:00Z"
+    detected_by: "/idea-sync STEP 1 (nested component-tree audit)"
+    closed_at: "2026-07-16T12:05:00Z"
+    closed_by: "/idea-feature-enrich-loop"
+    resolution: >
+      action_contract authored for every interactive on_click in this feature.
+      Each block declares an effect from the 12-key closed enum in
+      ACTION_CONTRACT_EFFECTS.yaml, a 30..400 char description grounded in the
+      feature's own data-flow.yaml / api.yaml / test_context (no DC-2 forbidden
+      tokens), and — for every effect outside {navigate, none} — at least one
+      external_library_refs entry per AC3. library_refs[] is unused throughout:
+      the cmp-* catalog in CAPABILITY_PROVIDERS.yaml provides only
+      audio-recording, network-monitoring and document-picking, none of which
+      this banking app consumes, so the free-text escape hatch is the correct
+      channel. Verified by a nested component-tree walk (AC1-AC5 + the
+      ui-yaml.schema.json action_contract shape): 124/124 interactive on_click
+      components carry a contract, 0 hard failures. count_after: 0.
+    evidence: >
+      6 interactive on_click components carry no action_contract block:
+      reconfirm_button (navigate_reconfirm), revoke_button (confirm_revoke),
+      dialog_cancel_button (dismiss_revoke_confirm), dialog_confirm_button
+      (execute_revoke — destructive), retry_button (retry_load),
+      empty_go_back_button (navigate_back).
+    suggested_fix: |
+      /idea-feature-enrich consent-detail --re-author-action-contracts
+
+  - feature_id: "atm-locator"
+    sub_check: AC1
+    category: action_contract
+    gap_class: fail
+    rule: RULE-IDEA-ACTION-CONTRACT-001
+    error_code: ACTION_CONTRACT_MISSING
+    status: closed
+    detected_at: "2026-07-16T11:30:00Z"
+    detected_by: "/idea-sync STEP 1 (nested component-tree audit)"
+    closed_at: "2026-07-16T12:05:00Z"
+    closed_by: "/idea-feature-enrich-loop"
+    resolution: >
+      action_contract authored for every interactive on_click in this feature.
+      Each block declares an effect from the 12-key closed enum in
+      ACTION_CONTRACT_EFFECTS.yaml, a 30..400 char description grounded in the
+      feature's own data-flow.yaml / api.yaml / test_context (no DC-2 forbidden
+      tokens), and — for every effect outside {navigate, none} — at least one
+      external_library_refs entry per AC3. library_refs[] is unused throughout:
+      the cmp-* catalog in CAPABILITY_PROVIDERS.yaml provides only
+      audio-recording, network-monitoring and document-picking, none of which
+      this banking app consumes, so the free-text escape hatch is the correct
+      channel. Verified by a nested component-tree walk (AC1-AC5 + the
+      ui-yaml.schema.json action_contract shape): 124/124 interactive on_click
+      components carry a contract, 0 hard failures. count_after: 0.
+    evidence: >
+      5 interactive on_click components carry no action_contract block:
+      location_search (text_field, search_atms), filter_24h, filter_wheelchair,
+      filter_deposit (chip, toggle_filter_*), atm_card (card,
+      open_atm_directions — external map handoff, effect: share_external).
+    suggested_fix: |
+      /idea-feature-enrich atm-locator --re-author-action-contracts
+
+  - feature_id: "budgets"
+    sub_check: AC1
+    category: action_contract
+    gap_class: fail
+    rule: RULE-IDEA-ACTION-CONTRACT-001
+    error_code: ACTION_CONTRACT_MISSING
+    status: closed
+    detected_at: "2026-07-16T11:30:00Z"
+    detected_by: "/idea-sync STEP 1 (nested component-tree audit)"
+    closed_at: "2026-07-16T12:05:00Z"
+    closed_by: "/idea-feature-enrich-loop"
+    resolution: >
+      action_contract authored for every interactive on_click in this feature.
+      Each block declares an effect from the 12-key closed enum in
+      ACTION_CONTRACT_EFFECTS.yaml, a 30..400 char description grounded in the
+      feature's own data-flow.yaml / api.yaml / test_context (no DC-2 forbidden
+      tokens), and — for every effect outside {navigate, none} — at least one
+      external_library_refs entry per AC3. library_refs[] is unused throughout:
+      the cmp-* catalog in CAPABILITY_PROVIDERS.yaml provides only
+      audio-recording, network-monitoring and document-picking, none of which
+      this banking app consumes, so the free-text escape hatch is the correct
+      channel. Verified by a nested component-tree walk (AC1-AC5 + the
+      ui-yaml.schema.json action_contract shape): 124/124 interactive on_click
+      components carry a contract, 0 hard failures. count_after: 0.
+    evidence: >
+      5 interactive on_click components carry no action_contract block:
+      retry_load_button (retry_load), budget_amount_field (text_field,
+      update_budget_amount_field), save_budget_button (save_budget —
+      effect: persist_db), view_category_spend_button
+      (navigate_spending_by_category), delete_budget_button (delete_budget —
+      destructive, effect: delete).
+    suggested_fix: |
+      /idea-feature-enrich budgets --re-author-action-contracts
+
+  - feature_id: "consent-list"
+    sub_check: AC1
+    category: action_contract
+    gap_class: fail
+    rule: RULE-IDEA-ACTION-CONTRACT-001
+    error_code: ACTION_CONTRACT_MISSING
+    status: closed
+    detected_at: "2026-07-16T11:30:00Z"
+    detected_by: "/idea-sync STEP 1 (nested component-tree audit)"
+    closed_at: "2026-07-16T12:05:00Z"
+    closed_by: "/idea-feature-enrich-loop"
+    resolution: >
+      action_contract authored for every interactive on_click in this feature.
+      Each block declares an effect from the 12-key closed enum in
+      ACTION_CONTRACT_EFFECTS.yaml, a 30..400 char description grounded in the
+      feature's own data-flow.yaml / api.yaml / test_context (no DC-2 forbidden
+      tokens), and — for every effect outside {navigate, none} — at least one
+      external_library_refs entry per AC3. library_refs[] is unused throughout:
+      the cmp-* catalog in CAPABILITY_PROVIDERS.yaml provides only
+      audio-recording, network-monitoring and document-picking, none of which
+      this banking app consumes, so the free-text escape hatch is the correct
+      channel. Verified by a nested component-tree walk (AC1-AC5 + the
+      ui-yaml.schema.json action_contract shape): 124/124 interactive on_click
+      components carry a contract, 0 hard failures. count_after: 0.
+    evidence: >
+      5 interactive on_click components carry no action_contract block:
+      consent_card, history_consent_card (card, navigate_consent_detail),
+      connect_button (navigate_connect), retry_button (retry_load),
+      reauth_button (navigate_reauth).
+    suggested_fix: |
+      /idea-feature-enrich consent-list --re-author-action-contracts
+
+  - feature_id: "spending-by-category"
+    sub_check: AC1
+    category: action_contract
+    gap_class: fail
+    rule: RULE-IDEA-ACTION-CONTRACT-001
+    error_code: ACTION_CONTRACT_MISSING
+    status: closed
+    detected_at: "2026-07-16T11:30:00Z"
+    detected_by: "/idea-sync STEP 1 (nested component-tree audit)"
+    closed_at: "2026-07-16T12:05:00Z"
+    closed_by: "/idea-feature-enrich-loop"
+    resolution: >
+      action_contract authored for every interactive on_click in this feature.
+      Each block declares an effect from the 12-key closed enum in
+      ACTION_CONTRACT_EFFECTS.yaml, a 30..400 char description grounded in the
+      feature's own data-flow.yaml / api.yaml / test_context (no DC-2 forbidden
+      tokens), and — for every effect outside {navigate, none} — at least one
+      external_library_refs entry per AC3. library_refs[] is unused throughout:
+      the cmp-* catalog in CAPABILITY_PROVIDERS.yaml provides only
+      audio-recording, network-monitoring and document-picking, none of which
+      this banking app consumes, so the free-text escape hatch is the correct
+      channel. Verified by a nested component-tree walk (AC1-AC5 + the
+      ui-yaml.schema.json action_contract shape): 124/124 interactive on_click
+      components carry a contract, 0 hard failures. count_after: 0.
+    evidence: >
+      5 interactive on_click components carry no action_contract block:
+      period_this_month, period_last_month, period_3_months (chip,
+      select_period), category_row (list_item, navigate_category_transactions),
+      retry_button (button, retry_compute).
+    suggested_fix: |
+      /idea-feature-enrich spending-by-category --re-author-action-contracts
+
+  - feature_id: "transaction-detail"
+    sub_check: AC1
+    category: action_contract
+    gap_class: fail
+    rule: RULE-IDEA-ACTION-CONTRACT-001
+    error_code: ACTION_CONTRACT_MISSING
+    status: closed
+    detected_at: "2026-07-16T11:30:00Z"
+    detected_by: "/idea-sync STEP 1 (nested component-tree audit)"
+    closed_at: "2026-07-16T12:05:00Z"
+    closed_by: "/idea-feature-enrich-loop"
+    resolution: >
+      action_contract authored for every interactive on_click in this feature.
+      Each block declares an effect from the 12-key closed enum in
+      ACTION_CONTRACT_EFFECTS.yaml, a 30..400 char description grounded in the
+      feature's own data-flow.yaml / api.yaml / test_context (no DC-2 forbidden
+      tokens), and — for every effect outside {navigate, none} — at least one
+      external_library_refs entry per AC3. library_refs[] is unused throughout:
+      the cmp-* catalog in CAPABILITY_PROVIDERS.yaml provides only
+      audio-recording, network-monitoring and document-picking, none of which
+      this banking app consumes, so the free-text escape hatch is the correct
+      channel. Verified by a nested component-tree walk (AC1-AC5 + the
+      ui-yaml.schema.json action_contract shape): 124/124 interactive on_click
+      components carry a contract, 0 hard failures. count_after: 0.
+    evidence: >
+      5 interactive on_click components carry no action_contract block:
+      back_button (icon_button, navigate_back), reference_row (list_item,
+      copy_to_clipboard — effect: copy_clipboard), retry_button (retry_load),
+      go_back_button, transaction_empty_back_button (button, navigate_back).
+    suggested_fix: |
+      /idea-feature-enrich transaction-detail --re-author-action-contracts
+
+  - feature_id: "consent-callback"
+    sub_check: AC1
+    category: action_contract
+    gap_class: fail
+    rule: RULE-IDEA-ACTION-CONTRACT-001
+    error_code: ACTION_CONTRACT_MISSING
+    status: closed
+    detected_at: "2026-07-16T11:30:00Z"
+    detected_by: "/idea-sync STEP 1 (nested component-tree audit)"
+    closed_at: "2026-07-16T12:05:00Z"
+    closed_by: "/idea-feature-enrich-loop"
+    resolution: >
+      action_contract authored for every interactive on_click in this feature.
+      Each block declares an effect from the 12-key closed enum in
+      ACTION_CONTRACT_EFFECTS.yaml, a 30..400 char description grounded in the
+      feature's own data-flow.yaml / api.yaml / test_context (no DC-2 forbidden
+      tokens), and — for every effect outside {navigate, none} — at least one
+      external_library_refs entry per AC3. library_refs[] is unused throughout:
+      the cmp-* catalog in CAPABILITY_PROVIDERS.yaml provides only
+      audio-recording, network-monitoring and document-picking, none of which
+      this banking app consumes, so the free-text escape hatch is the correct
+      channel. Verified by a nested component-tree walk (AC1-AC5 + the
+      ui-yaml.schema.json action_contract shape): 124/124 interactive on_click
+      components carry a contract, 0 hard failures. count_after: 0.
+    evidence: >
+      4 interactive on_click components carry no action_contract block:
+      poll_again_button (poll_consent_status — effect: call_api), retry_button
+      (navigate_retry), denied_cta_button (navigate_retry),
+      security_retry_button (navigate_login).
+    suggested_fix: |
+      /idea-feature-enrich consent-callback --re-author-action-contracts
+
+  - feature_id: "login"
+    sub_check: AC1
+    category: action_contract
+    gap_class: fail
+    rule: RULE-IDEA-ACTION-CONTRACT-001
+    error_code: ACTION_CONTRACT_MISSING
+    status: closed
+    detected_at: "2026-07-16T11:30:00Z"
+    detected_by: "/idea-sync STEP 1 (nested component-tree audit)"
+    closed_at: "2026-07-16T12:05:00Z"
+    closed_by: "/idea-feature-enrich-loop"
+    resolution: >
+      action_contract authored for every interactive on_click in this feature.
+      Each block declares an effect from the 12-key closed enum in
+      ACTION_CONTRACT_EFFECTS.yaml, a 30..400 char description grounded in the
+      feature's own data-flow.yaml / api.yaml / test_context (no DC-2 forbidden
+      tokens), and — for every effect outside {navigate, none} — at least one
+      external_library_refs entry per AC3. library_refs[] is unused throughout:
+      the cmp-* catalog in CAPABILITY_PROVIDERS.yaml provides only
+      audio-recording, network-monitoring and document-picking, none of which
+      this banking app consumes, so the free-text escape hatch is the correct
+      channel. Verified by a nested component-tree walk (AC1-AC5 + the
+      ui-yaml.schema.json action_contract shape): 124/124 interactive on_click
+      components carry a contract, 0 hard failures. count_after: 0.
+    evidence: >
+      4 interactive on_click components carry no action_contract block:
+      continue_hsbc_button (start_oauth — external OAuth handoff),
+      cancel_button (navigate_back), retry_button (start_oauth),
+      login_empty_back_button (navigate_back).
+    suggested_fix: |
+      /idea-feature-enrich login --re-author-action-contracts
+
+  - feature_id: "pfm-dashboard"
+    sub_check: AC1
+    category: action_contract
+    gap_class: fail
+    rule: RULE-IDEA-ACTION-CONTRACT-001
+    error_code: ACTION_CONTRACT_MISSING
+    status: closed
+    detected_at: "2026-07-16T11:30:00Z"
+    detected_by: "/idea-sync STEP 1 (nested component-tree audit)"
+    closed_at: "2026-07-16T12:05:00Z"
+    closed_by: "/idea-feature-enrich-loop"
+    resolution: >
+      action_contract authored for every interactive on_click in this feature.
+      Each block declares an effect from the 12-key closed enum in
+      ACTION_CONTRACT_EFFECTS.yaml, a 30..400 char description grounded in the
+      feature's own data-flow.yaml / api.yaml / test_context (no DC-2 forbidden
+      tokens), and — for every effect outside {navigate, none} — at least one
+      external_library_refs entry per AC3. library_refs[] is unused throughout:
+      the cmp-* catalog in CAPABILITY_PROVIDERS.yaml provides only
+      audio-recording, network-monitoring and document-picking, none of which
+      this banking app consumes, so the free-text escape hatch is the correct
+      channel. Verified by a nested component-tree walk (AC1-AC5 + the
+      ui-yaml.schema.json action_contract shape): 124/124 interactive on_click
+      components carry a contract, 0 hard failures. count_after: 0.
+    evidence: >
+      4 interactive on_click components carry no action_contract block:
+      category_row (list_item, navigate_spending_by_category), chip_spending,
+      chip_budgets, chip_subscriptions (chip, navigate_*).
+    suggested_fix: |
+      /idea-feature-enrich pfm-dashboard --re-author-action-contracts
+
+  - feature_id: "accounts"
+    sub_check: AC1
+    category: action_contract
+    gap_class: fail
+    rule: RULE-IDEA-ACTION-CONTRACT-001
+    error_code: ACTION_CONTRACT_MISSING
+    status: closed
+    detected_at: "2026-07-16T11:30:00Z"
+    detected_by: "/idea-sync STEP 1 (nested component-tree audit)"
+    closed_at: "2026-07-16T12:05:00Z"
+    closed_by: "/idea-feature-enrich-loop"
+    resolution: >
+      action_contract authored for every interactive on_click in this feature.
+      Each block declares an effect from the 12-key closed enum in
+      ACTION_CONTRACT_EFFECTS.yaml, a 30..400 char description grounded in the
+      feature's own data-flow.yaml / api.yaml / test_context (no DC-2 forbidden
+      tokens), and — for every effect outside {navigate, none} — at least one
+      external_library_refs entry per AC3. library_refs[] is unused throughout:
+      the cmp-* catalog in CAPABILITY_PROVIDERS.yaml provides only
+      audio-recording, network-monitoring and document-picking, none of which
+      this banking app consumes, so the free-text escape hatch is the correct
+      channel. Verified by a nested component-tree walk (AC1-AC5 + the
+      ui-yaml.schema.json action_contract shape): 124/124 interactive on_click
+      components carry a contract, 0 hard failures. count_after: 0.
+    evidence: >
+      3 interactive on_click components carry no action_contract block:
+      account_card (card, navigate_account_detail), reconfirm_button (button,
+      navigate_reconfirm_consent), retry_button (button, retry_load).
+    suggested_fix: |
+      /idea-feature-enrich accounts --re-author-action-contracts
+
+  - feature_id: "beneficiaries"
+    sub_check: AC1
+    category: action_contract
+    gap_class: fail
+    rule: RULE-IDEA-ACTION-CONTRACT-001
+    error_code: ACTION_CONTRACT_MISSING
+    status: closed
+    detected_at: "2026-07-16T11:30:00Z"
+    detected_by: "/idea-sync STEP 1 (nested component-tree audit)"
+    closed_at: "2026-07-16T12:05:00Z"
+    closed_by: "/idea-feature-enrich-loop"
+    resolution: >
+      action_contract authored for every interactive on_click in this feature.
+      Each block declares an effect from the 12-key closed enum in
+      ACTION_CONTRACT_EFFECTS.yaml, a 30..400 char description grounded in the
+      feature's own data-flow.yaml / api.yaml / test_context (no DC-2 forbidden
+      tokens), and — for every effect outside {navigate, none} — at least one
+      external_library_refs entry per AC3. library_refs[] is unused throughout:
+      the cmp-* catalog in CAPABILITY_PROVIDERS.yaml provides only
+      audio-recording, network-monitoring and document-picking, none of which
+      this banking app consumes, so the free-text escape hatch is the correct
+      channel. Verified by a nested component-tree walk (AC1-AC5 + the
+      ui-yaml.schema.json action_contract shape): 124/124 interactive on_click
+      components carry a contract, 0 hard failures. count_after: 0.
+    evidence: >
+      3 interactive on_click components carry no action_contract block:
+      back_button (icon_button, navigate_back), retry_button (button,
+      retry_load), view_consents_button (button, navigate).
+    suggested_fix: |
+      /idea-feature-enrich beneficiaries --re-author-action-contracts
+
+  - feature_id: "statements"
+    sub_check: AC1
+    category: action_contract
+    gap_class: fail
+    rule: RULE-IDEA-ACTION-CONTRACT-001
+    error_code: ACTION_CONTRACT_MISSING
+    status: closed
+    detected_at: "2026-07-16T11:30:00Z"
+    detected_by: "/idea-sync STEP 1 (nested component-tree audit)"
+    closed_at: "2026-07-16T12:05:00Z"
+    closed_by: "/idea-feature-enrich-loop"
+    resolution: >
+      action_contract authored for every interactive on_click in this feature.
+      Each block declares an effect from the 12-key closed enum in
+      ACTION_CONTRACT_EFFECTS.yaml, a 30..400 char description grounded in the
+      feature's own data-flow.yaml / api.yaml / test_context (no DC-2 forbidden
+      tokens), and — for every effect outside {navigate, none} — at least one
+      external_library_refs entry per AC3. library_refs[] is unused throughout:
+      the cmp-* catalog in CAPABILITY_PROVIDERS.yaml provides only
+      audio-recording, network-monitoring and document-picking, none of which
+      this banking app consumes, so the free-text escape hatch is the correct
+      channel. Verified by a nested component-tree walk (AC1-AC5 + the
+      ui-yaml.schema.json action_contract shape): 124/124 interactive on_click
+      components carry a contract, 0 hard failures. count_after: 0.
+    evidence: >
+      3 interactive on_click components carry no action_contract block:
+      statement_row (list_item, navigate_statement_detail),
+      download_statement_button (icon_button, download_statement — effect:
+      persist_file), retry_button (button, retry_load).
+    suggested_fix: |
+      /idea-feature-enrich statements --re-author-action-contracts
+
+  - feature_id: "statement-detail"
+    sub_check: AC1
+    category: action_contract
+    gap_class: fail
+    rule: RULE-IDEA-ACTION-CONTRACT-001
+    error_code: ACTION_CONTRACT_MISSING
+    status: closed
+    detected_at: "2026-07-16T11:30:00Z"
+    detected_by: "/idea-sync STEP 1 (nested component-tree audit)"
+    closed_at: "2026-07-16T12:05:00Z"
+    closed_by: "/idea-feature-enrich-loop"
+    resolution: >
+      action_contract authored for every interactive on_click in this feature.
+      Each block declares an effect from the 12-key closed enum in
+      ACTION_CONTRACT_EFFECTS.yaml, a 30..400 char description grounded in the
+      feature's own data-flow.yaml / api.yaml / test_context (no DC-2 forbidden
+      tokens), and — for every effect outside {navigate, none} — at least one
+      external_library_refs entry per AC3. library_refs[] is unused throughout:
+      the cmp-* catalog in CAPABILITY_PROVIDERS.yaml provides only
+      audio-recording, network-monitoring and document-picking, none of which
+      this banking app consumes, so the free-text escape hatch is the correct
+      channel. Verified by a nested component-tree walk (AC1-AC5 + the
+      ui-yaml.schema.json action_contract shape): 124/124 interactive on_click
+      components carry a contract, 0 hard failures. count_after: 0.
+    evidence: >
+      3 interactive on_click components carry no action_contract block:
+      statement_txn_row (list_item, navigate_transaction_detail),
+      download_pdf_button (button, download_statement_pdf — effect:
+      persist_file), retry_button (button, retry_load).
+    suggested_fix: |
+      /idea-feature-enrich statement-detail --re-author-action-contracts
+
+  - feature_id: "direct-debits"
+    sub_check: AC1
+    category: action_contract
+    gap_class: fail
+    rule: RULE-IDEA-ACTION-CONTRACT-001
+    error_code: ACTION_CONTRACT_MISSING
+    status: closed
+    detected_at: "2026-07-16T11:30:00Z"
+    detected_by: "/idea-sync STEP 1 (nested component-tree audit)"
+    closed_at: "2026-07-16T12:05:00Z"
+    closed_by: "/idea-feature-enrich-loop"
+    resolution: >
+      action_contract authored for every interactive on_click in this feature.
+      Each block declares an effect from the 12-key closed enum in
+      ACTION_CONTRACT_EFFECTS.yaml, a 30..400 char description grounded in the
+      feature's own data-flow.yaml / api.yaml / test_context (no DC-2 forbidden
+      tokens), and — for every effect outside {navigate, none} — at least one
+      external_library_refs entry per AC3. library_refs[] is unused throughout:
+      the cmp-* catalog in CAPABILITY_PROVIDERS.yaml provides only
+      audio-recording, network-monitoring and document-picking, none of which
+      this banking app consumes, so the free-text escape hatch is the correct
+      channel. Verified by a nested component-tree walk (AC1-AC5 + the
+      ui-yaml.schema.json action_contract shape): 124/124 interactive on_click
+      components carry a contract, 0 hard failures. count_after: 0.
+    evidence: >
+      2 interactive on_click components carry no action_contract block:
+      back_button (icon_button, navigate_back), retry_button (button, retry_load).
+    suggested_fix: |
+      /idea-feature-enrich direct-debits --re-author-action-contracts
+
+  - feature_id: "scheduled-payments"
+    sub_check: AC1
+    category: action_contract
+    gap_class: fail
+    rule: RULE-IDEA-ACTION-CONTRACT-001
+    error_code: ACTION_CONTRACT_MISSING
+    status: closed
+    detected_at: "2026-07-16T11:30:00Z"
+    detected_by: "/idea-sync STEP 1 (nested component-tree audit)"
+    closed_at: "2026-07-16T12:05:00Z"
+    closed_by: "/idea-feature-enrich-loop"
+    resolution: >
+      action_contract authored for every interactive on_click in this feature.
+      Each block declares an effect from the 12-key closed enum in
+      ACTION_CONTRACT_EFFECTS.yaml, a 30..400 char description grounded in the
+      feature's own data-flow.yaml / api.yaml / test_context (no DC-2 forbidden
+      tokens), and — for every effect outside {navigate, none} — at least one
+      external_library_refs entry per AC3. library_refs[] is unused throughout:
+      the cmp-* catalog in CAPABILITY_PROVIDERS.yaml provides only
+      audio-recording, network-monitoring and document-picking, none of which
+      this banking app consumes, so the free-text escape hatch is the correct
+      channel. Verified by a nested component-tree walk (AC1-AC5 + the
+      ui-yaml.schema.json action_contract shape): 124/124 interactive on_click
+      components carry a contract, 0 hard failures. count_after: 0.
+    evidence: >
+      2 interactive on_click components carry no action_contract block:
+      back_button (icon_button, navigate_back), retry_button (button, retry_load).
+    suggested_fix: |
+      /idea-feature-enrich scheduled-payments --re-author-action-contracts
+
+  - feature_id: "standing-orders"
+    sub_check: AC1
+    category: action_contract
+    gap_class: fail
+    rule: RULE-IDEA-ACTION-CONTRACT-001
+    error_code: ACTION_CONTRACT_MISSING
+    status: closed
+    detected_at: "2026-07-16T11:30:00Z"
+    detected_by: "/idea-sync STEP 1 (nested component-tree audit)"
+    closed_at: "2026-07-16T12:05:00Z"
+    closed_by: "/idea-feature-enrich-loop"
+    resolution: >
+      action_contract authored for every interactive on_click in this feature.
+      Each block declares an effect from the 12-key closed enum in
+      ACTION_CONTRACT_EFFECTS.yaml, a 30..400 char description grounded in the
+      feature's own data-flow.yaml / api.yaml / test_context (no DC-2 forbidden
+      tokens), and — for every effect outside {navigate, none} — at least one
+      external_library_refs entry per AC3. library_refs[] is unused throughout:
+      the cmp-* catalog in CAPABILITY_PROVIDERS.yaml provides only
+      audio-recording, network-monitoring and document-picking, none of which
+      this banking app consumes, so the free-text escape hatch is the correct
+      channel. Verified by a nested component-tree walk (AC1-AC5 + the
+      ui-yaml.schema.json action_contract shape): 124/124 interactive on_click
+      components carry a contract, 0 hard failures. count_after: 0.
+    evidence: >
+      2 interactive on_click components carry no action_contract block:
+      back_button (icon_button, navigate_back), retry_button (button, retry_load).
+    suggested_fix: |
+      /idea-feature-enrich standing-orders --re-author-action-contracts
+
+  - feature_id: "party"
+    sub_check: AC1
+    category: action_contract
+    gap_class: fail
+    rule: RULE-IDEA-ACTION-CONTRACT-001
+    error_code: ACTION_CONTRACT_MISSING
+    status: closed
+    detected_at: "2026-07-16T11:30:00Z"
+    detected_by: "/idea-sync STEP 1 (nested component-tree audit)"
+    closed_at: "2026-07-16T12:05:00Z"
+    closed_by: "/idea-feature-enrich-loop"
+    resolution: >
+      action_contract authored for every interactive on_click in this feature.
+      Each block declares an effect from the 12-key closed enum in
+      ACTION_CONTRACT_EFFECTS.yaml, a 30..400 char description grounded in the
+      feature's own data-flow.yaml / api.yaml / test_context (no DC-2 forbidden
+      tokens), and — for every effect outside {navigate, none} — at least one
+      external_library_refs entry per AC3. library_refs[] is unused throughout:
+      the cmp-* catalog in CAPABILITY_PROVIDERS.yaml provides only
+      audio-recording, network-monitoring and document-picking, none of which
+      this banking app consumes, so the free-text escape hatch is the correct
+      channel. Verified by a nested component-tree walk (AC1-AC5 + the
+      ui-yaml.schema.json action_contract shape): 124/124 interactive on_click
+      components carry a contract, 0 hard failures. count_after: 0.
+    evidence: >
+      2 interactive on_click components carry no action_contract block:
+      retry_button (button, retry_load), reauthorise_button (button, navigate).
+    suggested_fix: |
+      /idea-feature-enrich party --re-author-action-contracts
+
+  - feature_id: "product"
+    sub_check: AC1
+    category: action_contract
+    gap_class: fail
+    rule: RULE-IDEA-ACTION-CONTRACT-001
+    error_code: ACTION_CONTRACT_MISSING
+    status: closed
+    detected_at: "2026-07-16T11:30:00Z"
+    detected_by: "/idea-sync STEP 1 (nested component-tree audit)"
+    closed_at: "2026-07-16T12:05:00Z"
+    closed_by: "/idea-feature-enrich-loop"
+    resolution: >
+      action_contract authored for every interactive on_click in this feature.
+      Each block declares an effect from the 12-key closed enum in
+      ACTION_CONTRACT_EFFECTS.yaml, a 30..400 char description grounded in the
+      feature's own data-flow.yaml / api.yaml / test_context (no DC-2 forbidden
+      tokens), and — for every effect outside {navigate, none} — at least one
+      external_library_refs entry per AC3. library_refs[] is unused throughout:
+      the cmp-* catalog in CAPABILITY_PROVIDERS.yaml provides only
+      audio-recording, network-monitoring and document-picking, none of which
+      this banking app consumes, so the free-text escape hatch is the correct
+      channel. Verified by a nested component-tree walk (AC1-AC5 + the
+      ui-yaml.schema.json action_contract shape): 124/124 interactive on_click
+      components carry a contract, 0 hard failures. count_after: 0.
+    evidence: >
+      1 interactive on_click component carries no action_contract block:
+      retry_button (button, retry_load).
+    suggested_fix: |
+      /idea-feature-enrich product --re-author-action-contracts
+
+  - feature_id: "recurring-subscriptions"
+    sub_check: AC1
+    category: action_contract
+    gap_class: fail
+    rule: RULE-IDEA-ACTION-CONTRACT-001
+    error_code: ACTION_CONTRACT_MISSING
+    status: closed
+    detected_at: "2026-07-16T11:30:00Z"
+    detected_by: "/idea-sync STEP 1 (nested component-tree audit)"
+    closed_at: "2026-07-16T12:05:00Z"
+    closed_by: "/idea-feature-enrich-loop"
+    resolution: >
+      action_contract authored for every interactive on_click in this feature.
+      Each block declares an effect from the 12-key closed enum in
+      ACTION_CONTRACT_EFFECTS.yaml, a 30..400 char description grounded in the
+      feature's own data-flow.yaml / api.yaml / test_context (no DC-2 forbidden
+      tokens), and — for every effect outside {navigate, none} — at least one
+      external_library_refs entry per AC3. library_refs[] is unused throughout:
+      the cmp-* catalog in CAPABILITY_PROVIDERS.yaml provides only
+      audio-recording, network-monitoring and document-picking, none of which
+      this banking app consumes, so the free-text escape hatch is the correct
+      channel. Verified by a nested component-tree walk (AC1-AC5 + the
+      ui-yaml.schema.json action_contract shape): 124/124 interactive on_click
+      components carry a contract, 0 hard failures. count_after: 0.
+    evidence: >
+      1 interactive on_click component carries no action_contract block:
+      subscription_row (list_item, navigate_transactions).
+    suggested_fix: |
+      /idea-feature-enrich recurring-subscriptions --re-author-action-contracts
+
+  # ── SAC: sub-action completeness (RULE-IDEA-SUB-ACTION-COMPLETENESS-001) ──
+  #
+  # PROVENANCE: emitted by the G-SAC gate (framework-verify, phase47-sac) during
+  # a coherence run on 2026-07-16. The gate APPENDED these keys as list items
+  # AFTER the file's terminal `closed: []` scalar, which is invalid YAML —
+  # "bad indentation of a mapping entry at line 1331". That corrupted the whole
+  # ledger for every parser. The finding itself is preserved verbatim below and
+  # re-homed under findings[] where it belongs; only its placement was wrong.
+  #
+  # The gate had never run before on this machine (the coherence aggregator's
+  # xargs dispatch was broken), so this append path had never executed. The gate
+  # needs fixing: it must append into findings[] rather than past `closed: []`.
+  - gap_key: pfm-dashboard:null
+    rule: RULE-IDEA-SUB-ACTION-COMPLETENESS-001
+    feature_id: "pfm-dashboard"
+    sub_check: SAC
+    category: sub_action_completeness
+    gap_class: fail
+    status: open
+    screen: pfm-dashboard
+    component: on_click
+    action: null
+    kind: sub-action-leaf-missing
+    severity: error
+    detected_at: "2026-07-16T12:12:00Z"
+    detected_by: "G-SAC (framework-verify-coherence phase47-sac)"
+    evidence: >
+      G-SAC reports a sub-action leaf with no resolvable action on pfm-dashboard.
+      Corroborated independently: the REG/AC audits found pfm-dashboard carries an
+      on_click component with NO `type:` and NO `id:` field, which is why AC1 could
+      not evaluate it either (see summary.known_gap_ac1_vocabulary).
+    suggested_fix: |
+      Inspect pfm-dashboard/ui.yaml for the typeless/idless on_click component and
+      give it a registered `type:` + `id:` + `action:`, or remove it if it is dead.
 
 closed: []

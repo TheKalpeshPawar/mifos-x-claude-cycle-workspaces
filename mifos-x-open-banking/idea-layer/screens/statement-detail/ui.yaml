@@ -293,6 +293,9 @@ components:
           params:
             transactionId: "{item.TransactionId}"
             accountId: "{item.AccountId}"
+          action_contract:
+            effect: navigate
+            description: "Navigates to transaction-detail screen for the selected OBTransaction6 entry within the statement period, passing TransactionId and AccountId as route arguments."
         test_context:
           purpose: "Tappable OBTransaction6 row within statement period; overline=date, credit=tertiary/green, debit=error/red; navigates to transaction-detail"
           required_fields: [item.TransactionId, item.AccountId, item.TransactionInformation, item.CreditDebitIndicator, item.Amount.Amount, item.Amount.Currency, item.BookingDateTime]
@@ -329,6 +332,10 @@ components:
       data_driven: false
     on_click:
       action: download_statement_pdf
+      action_contract:
+        effect: persist_file
+        external_library_refs: ["ktor-client-download", "hsbc-obie-ais-v4.0:statements-file"]
+        description: "Calls GET statements/{StatementId}/file (Accept: application/pdf) via ktor-client-download, streams the PDF binary, and hands off to the platform share/save sheet; drives DownloadState from Idle through Downloading to Downloaded or DownloadError."
 
   # ── Download in-progress indicator ────────────────────────────────────────────
   - type: progress_indicator
@@ -385,3 +392,7 @@ components:
           data_driven: false
         on_click:
           action: retry_load
+          action_contract:
+            effect: call_api
+            external_library_refs: ["ktorfit", "hsbc-obie-ais-v4.0:statements"]
+            description: "Re-triggers the parallel fetch of OBStatement2 and OBReadTransaction6 after a 401, 403, 404, or network failure, returning the screen to the Loading state."

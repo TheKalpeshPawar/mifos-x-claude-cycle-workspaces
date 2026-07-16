@@ -256,6 +256,9 @@ components:
     on_click:
       action: navigate_reconfirm
       target: login
+      action_contract:
+        effect: navigate
+        description: "Navigates to the login screen to re-run the FAPI authorization flow required for OBIE 90-day reconfirmation before the consent expires."
     test_context:
       purpose: "Tonal CTA for OBIE 90-day reconfirmation — navigates to login to re-run the FAPI authorize flow"
       required_fields: [on_click.action, on_click.target]
@@ -308,6 +311,10 @@ components:
     accessibility_label: "{strings.consent_detail.revoke_button_a11y}"
     on_click:
       action: confirm_revoke
+      action_contract:
+        effect: transform_state
+        external_library_refs: [kotlinx-coroutines]
+        description: "Transitions the screen to the revoke_confirm state to show the confirmation dialog without making any API call."
     test_context:
       purpose: "Destructive action button that transitions to the revoke_confirm dialog state — does NOT call DELETE immediately"
       required_fields: [on_click.action, color]
@@ -334,6 +341,10 @@ components:
         accessibility_label: "{strings.consent_detail.revoke_dialog.cancel_a11y}"
         on_click:
           action: dismiss_revoke_confirm
+          action_contract:
+            effect: transform_state
+            external_library_refs: [kotlinx-coroutines]
+            description: "Returns the screen to the content state from revoke_confirm, cancelling the revocation intent without invoking the DELETE endpoint."
         test_context:
           purpose: "Cancel CTA — dismisses the confirmation dialog and returns to the content state without any API call"
           required_fields: [on_click.action]
@@ -347,6 +358,10 @@ components:
         accessibility_label: "{strings.consent_detail.revoke_dialog.confirm_a11y}"
         on_click:
           action: execute_revoke
+          action_contract:
+            effect: call_api
+            external_library_refs: [ktorfit, "hsbc-obie-ais-v4.0:account-access-consents", encrypted-shared-preferences]
+            description: "Dispatches DELETE /account-access-consents/{ConsentId} via ktorfit; on 204 or idempotent 404 clears the PSU access token and ConsentId from EncryptedSharedPreferences, then navigates to consent-list."
         test_context:
           purpose: "Confirm CTA — dispatches ExecuteRevoke action; 204 clears local PSU token and ConsentId then navigates to consent-list; 404 treated as already-revoked (same cleanup)"
           required_fields: [on_click.action, color]
@@ -375,6 +390,10 @@ components:
         accessibility_label: "{strings.consent_detail.error.retry_a11y}"
         on_click:
           action: retry_load
+          action_contract:
+            effect: call_api
+            external_library_refs: [ktorfit, "hsbc-obie-ais-v4.0:account-access-consents"]
+            description: "Re-issues GET /account-access-consents/{ConsentId} via ktorfit to recover from a transient load failure or a revoke error."
         test_context:
           purpose: "Retry CTA — re-triggers GET /account-access-consents/{ConsentId} after a transient load or revoke failure"
           required_fields: [on_click.action]
@@ -404,6 +423,9 @@ components:
         on_click:
           action: navigate_back
           target: consent-list
+          action_contract:
+            effect: navigate
+            description: "Returns the PSU to the consent-list screen when the selected consent yields an empty OBIE API response."
         test_context:
           purpose: "Returns PSU to consent-list when the selected consent yields an empty OBIE API response"
           required_fields: [on_click.action, on_click.target]

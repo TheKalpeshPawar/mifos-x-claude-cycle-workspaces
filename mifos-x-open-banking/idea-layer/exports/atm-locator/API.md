@@ -9,7 +9,7 @@
 
 ## Overview
 
-ATM Locator makes a **single unauthenticated** call to the HSBC Open Data product-public endpoint. No AIS consent, no Bearer token, no PKCE, no FAPI signed request object.
+ATM Locator makes a **single unauthenticated** call to the HSBC Open Data product-public endpoint. No AIS consent, no Bearer token, no FAPI signed request object.
 
 | Call | Method | Full URL | Auth |
 |---|---|---|---|

@@ -46,6 +46,9 @@ components:
     on_click:
       action: navigate_back
       target: account-detail
+      action_contract:
+        effect: navigate
+        description: "Pops the direct-debits screen from the back stack, returning the user to account-detail."
     test_context:
       purpose: "Return user to account-detail screen, discarding direct-debits context"
       required_fields: []
@@ -196,6 +199,10 @@ components:
         visible: "{error.isRetriable}"
         on_click:
           action: retry_load
+          action_contract:
+            effect: call_api
+            external_library_refs: ["ktorfit", "hsbc-obie-ais-v4.0:direct-debits"]
+            description: "Re-issues GET /accounts/{AccountId}/direct-debits after a retriable failure (401, 429, or network error), returning the screen to Loading and then Content or Empty."
         test_context:
           purpose: "Retry button shown only for retriable errors (401, 429, network); hidden for 403 ConsentRevoked (retry won't help; user must re-authorise consent)"
           required_fields: ["error.isRetriable"]

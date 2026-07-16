@@ -131,6 +131,10 @@ components:
           action: select_account
           params:
             accountId: "{item.AccountId}"
+          action_contract:
+            effect: call_api
+            external_library_refs: [ktorfit, "hsbc-obie-ais-v4.0:balances", "hsbc-obie-ais-v4.0:transactions"]
+            description: "Persists the selected AccountId to DataStore then re-fetches balances and recent transactions for the newly selected account in parallel, returning the home screen to loading then content state."
 
   # ── Hero balance card ──────────────────────────────────────────────
   - type: card
@@ -156,6 +160,9 @@ components:
       target: account-detail
       params:
         accountId: "{selectedAccountId}"
+      action_contract:
+        effect: navigate
+        description: "Opens the full account detail screen for the currently selected account, passing selectedAccountId as a route parameter."
     children:
       - type: stack
         direction: vertical
@@ -251,6 +258,9 @@ components:
                   action: noop
                   params:
                     reason: "pisp_not_implemented"
+                  action_contract:
+                    effect: none
+                    description: "Disabled PISP stub — the Pay action is not implemented in the current AISP-only release; tap produces no observable effect."
               - type: text
                 value: "{strings.home.action.pay.label}"
                 style: labelSmall
@@ -274,6 +284,9 @@ components:
                   target: transactions
                   params:
                     accountId: "{selectedAccountId}"
+                  action_contract:
+                    effect: navigate
+                    description: "Navigates to the full transactions screen for the currently selected account, passing selectedAccountId as a route parameter."
               - type: text
                 value: "{strings.home.action.transactions.label}"
                 style: labelSmall
@@ -297,6 +310,9 @@ components:
                   target: statements
                   params:
                     accountId: "{selectedAccountId}"
+                  action_contract:
+                    effect: navigate
+                    description: "Navigates to the statements screen for the currently selected account, passing selectedAccountId as a route parameter."
               - type: text
                 value: "{strings.home.action.statements.label}"
                 style: labelSmall
@@ -318,6 +334,9 @@ components:
                 on_click:
                   action: navigate_consent_list
                   target: consent-list
+                  action_contract:
+                    effect: navigate
+                    description: "Navigates to the consent management list screen where the PSU can view and revoke their active OBIE account access consents."
               - type: text
                 value: "{strings.home.action.consents.label}"
                 style: labelSmall
@@ -351,6 +370,9 @@ components:
               target: transactions
               params:
                 accountId: "{selectedAccountId}"
+              action_contract:
+                effect: navigate
+                description: "Navigates to the full transactions screen for the currently selected account, passing selectedAccountId as a route parameter."
       # Transaction list (most recent 5)
       - type: list
         id: recent_transactions_list
@@ -417,6 +439,9 @@ components:
               params:
                 transactionId: "{item.TransactionId}"
                 accountId: "{item.AccountId}"
+              action_contract:
+                effect: navigate
+                description: "Opens the transaction detail screen for the tapped transaction row, passing both transactionId and accountId as route parameters."
 
   # ── Spending snapshot card ─────────────────────────────────────────
   - type: card
@@ -437,6 +462,9 @@ components:
     on_click:
       action: navigate_pfm
       target: pfm-dashboard
+      action_contract:
+        effect: navigate
+        description: "Opens the PFM spending-by-category dashboard where the PSU can see a full breakdown of their monthly spending by category."
     children:
       - type: stack
         direction: horizontal
@@ -495,6 +523,9 @@ components:
         on_click:
           action: navigate_login
           target: login
+          action_contract:
+            effect: navigate
+            description: "Navigates to the login screen to initiate the FAPI Open Banking consent flow, used when no bank accounts are connected yet."
 
   # ══════════════════════════════════════════════════════════════════
   # ERROR STATE
@@ -516,3 +547,7 @@ components:
         visible_when: "{error.recoverable}"
         on_click:
           action: retry_load
+          action_contract:
+            effect: call_api
+            external_library_refs: [ktorfit, "hsbc-obie-ais-v4.0:accounts", "hsbc-obie-ais-v4.0:balances", "hsbc-obie-ais-v4.0:transactions"]
+            description: "Re-issues the full home load sequence — fetches all authorised accounts then in parallel fetches balances and recent transactions for the selected account, recovering from a recoverable error."

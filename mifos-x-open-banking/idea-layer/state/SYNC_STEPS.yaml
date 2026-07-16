@@ -1,98 +1,84 @@
 schema_version: "1.0.0"
 run:
-  at: "2026-07-14T00:00:00Z"
-  args: "for mifos-x-open-banking (full matrix dispatch; mockups + Stitch skipped per user)"
+  at: '2026-07-16T11:24:00Z'
+  args: 'ignore absence of stitch mockups.'
 steps:
   - n: 0
     name: init
     status: complete
-    at: "2026-07-14T00:00:00Z"
-  - n: "1.HP"
-    name: matrix-audit
+    at: '2026-07-16T11:24:00Z'
+    notes: >-
+      idea-plan.yaml present -> IDEA_PLAN_SOURCE=true (validation + gap-fill mode,
+      not start-from-scratch). Preflight suite PASS with 1 acked WARN
+      (failure-log-review: idea-export-stitch — stitch mockups ignored per run args).
+
+  - n: 0.PRE
+    name: structure-ensure
     status: complete
-    verdict: matrix-partial
-    coverage_pct: 0
-    dispatch_queue_length: 185
-    at: "2026-07-14T00:00:00Z"
-    note: >-
-      Fresh audit found 185 dispatches / 0% coverage — root-caused to a Jul-1
-      bulk YAML-normalizer sweep that bumped every ui.yaml/docs.yaml mtime above
-      downstream artifacts (false mtime-staleness; ui.yaml git-clean) PLUS
-      docs.yaml missing the `score` field the audit reads. Not real content drift.
+    at: '2026-07-16T11:24:00Z'
+    notes: >-
+      preview-runtime.js reinstalled from framework template (drift vs
+      RULE-PROTO-CLICK-002 C4 byte-identity after framework update to abfae03a).
+
+  - n: 0.0
+    name: preflight-suite
+    status: complete
+    at: '2026-07-16T11:21:50Z'
+    notes: >-
+      5 slugs. source-of-truth-sync PASS, llm-preview-truth-gate PASS,
+      mockup-theme-consistency PASS, dashboard-truth-audit PASS,
+      failure-log-review WARN (acked — stitch). Three defects fixed to get here:
+      PIPELINE_STATE.yaml duplicate `idea-render-validate` key (project data,
+      made the file unparseable); preflight-source-of-truth-sync.ts crash on
+      object-valued typography.font_family + mode-nested colors;
+      preflight-mockup-theme-consistency.ts scoring mockups against DESIGN.md's
+      14-role subset instead of design-tokens.yaml's full 29-role theme
+      (8 false "stale token" findings, palette 6 -> 42).
+
   - n: 1
-    name: project-wide-artifacts
+    name: verify
     status: complete
-    at: "2026-07-14T00:00:00Z"
-    note: >-
-      Regenerated APP_FLOW.mmd, TAG_REGISTRY.yaml (68->76 tags), dashboard/
-      DEV_STATUS.md (24->25 screens), server/api_manifest.yaml — all now include
-      the `home` screen (25th) that was missing from every rollup.
-  - n: "3-FOUNDATION"
-    name: foundation
+    at: '2026-07-16T11:30:00Z'
+    detail_ref: state/CAPABILITY_GAPS.yaml
+    notes: >-
+      25 features x 7 sibling YAMLs verified via 5 parallel read-only agents plus
+      direct gate runs. YAML parse PASS on all 25. No dead nav targets, no missing
+      i18n keys, no dead flow entries. G-ILC state-coherence PASS (SC-1/2/3).
+      scaffold-align PASS. FOUND: 124/124 interactive on_click components lack an
+      action_contract block (RULE-IDEA-ACTION-CONTRACT-001 AC1, severity error,
+      grace_until null) across all 25 features. 25 findings recorded (one per
+      feature) in CAPABILITY_GAPS.yaml; authoring deferred to a dedicated
+      /idea-feature-enrich run per user decision.
+    findings_recorded: 25
+
+  - n: 3.0
+    name: enrichment-scope
+    status: skipped
+    at: '2026-07-16T11:31:00Z'
+    notes: >-
+      User chose "record gaps, skip authoring". No /idea-feature-enrich dispatched
+      this run. 124 action_contract blocks remain to author.
+
+  - n: 4
+    name: artifacts
     status: complete
-    at: "2026-07-14T00:00:00Z"
-    note: >-
-      /idea-generate-tests coverage-verified across 25 features. 4 features had
-      genuine coverage gaps -> 7 scenarios added (account-detail, budgets, home,
-      settings); 20 already complete; accounts fresh. Cross-cutting finding:
-      23/24 docs.yaml carry dangling FR-* acceptance_refs (REQUIREMENTS.md uses
-      SFR-AIS-*) — recorded, not auto-remapped.
-  - n: "3-ENRICHMENT"
-    name: enrichment
+    at: '2026-07-16T11:32:00Z'
+    notes: >-
+      skip_if_fresh=true and no screens/*.yaml content changed this run (state files
+      only), so all derived artifacts are content-fresh — no regeneration performed.
+
+  - n: 4.VERIFY
+    name: artifact-existence-gate
     status: complete
-    features_enriched: 25
-    at: "2026-07-14T00:00:00Z"
-    note: >-
-      /idea-enrich across all 25. Wrote the missing docs.yaml `score` field
-      (honest scores 89-95). Fixed real bugs: consent-list feature mislabel
-      (consent-dashboard), direct-debits/home test_fixtures pointers, home
-      implementation_ready. Reconciled all cross_ref_violations: pfm-dashboard
-      selected.value; transaction-detail canonical transaction fixture (13
-      fields); transactions period.totalCredit/totalDebit + group.date;
-      user-onboarding operation->state_op in data-flow.yaml. Fixed 3 duplicate
-      quality_score keys in ui.yaml (beneficiaries/scheduled-payments/
-      standing-orders) that a subagent introduced (matrix-broken -> clean).
-  - n: "5-VISUALIZATION"
-    name: visualization-previews
-    status: complete
-    rendered_screens: 3
-    cache_created: 10
-    cache_hit: 12
-    at: "2026-07-14T00:00:00Z"
-    note: >-
-      /idea-render-screen: 3 re-rendered (edited ui.yaml), 10 first-time cache
-      entries, 12 SHA cache-hits (no-op). /idea-render-validate --auto-fix:
-      32 Tier-1 violations fixed (RV-001 raw hex -> tokens, RV-031 inline script
-      -> external preview-runtime.js). Tier-2 advisory: RV-023 dark-mode missing
-      (14 screens), RV-018 raw px (no --sp-* tokens in design system).
-      MOCKUP.md + Stitch generation SKIPPED per user directive.
-  - n: "5-EXPORT"
-    name: export
-    status: complete
-    exported_count: 25
-    at: "2026-07-14T00:00:00Z"
-    note: >-
-      /idea-export-spec generated 25 SPEC.md + 25 API.md (exports/ was empty —
-      genuine first-generation; the implementation UI-source fallback per
-      RULE-UI-SOURCE-001). /idea-export bundle wrote EXPORT_MATRIX.yaml (25 rows)
-      + exports/INDEX.md. export-mockup + export-stitch SKIPPED per user.
-  - n: 6
-    name: final-audit
-    status: partial
-    verdict: matrix-partial
-    coverage_pct: 0
-    pre_queue: 0
-    errors: 0
-    dispatch_queue_length: 143
-    at: "2026-07-14T00:00:00Z"
-    note: >-
-      errors=0, precondition drained. coverage_pct stays 0 / matrix-partial by
-      STRUCTURE, not unfinished work: (1) mockups+Stitch skipped per user = 53
-      permanently-open queue entries; (2) mtime-vs-content-hash mismatch — SHA
-      cache-hits don't touch output mtime so the mtime-based audit perpetually
-      re-flags content-fresh render/tests/demo-data; (3) enrichment 95-threshold
-      vs honest 89-94 scores (20 features) — not inflated to fake green.
+    at: '2026-07-16T11:32:00Z'
+    notes: >-
+      APP_FLOW.mmd, TAG_REGISTRY.yaml, dashboard/DEV_STATUS.md + dev-status.html,
+      server/api_manifest.yaml present; flows/*.yaml = 9; server/apis/*.yaml = 2.
+      prototype/index.html absent — CORRECT, not a failure: the legacy
+      prototype-viewer tree was removed 2026-05-14 and RULE-PROTO-RENDER-LLM-001
+      forbids recreating it. The runtime's check list is stale on that row.
+
   - n: 5
-    name: complete
+    name: state-write
     status: complete
-    at: "2026-07-14T00:00:00Z"
+    at: '2026-07-16T11:32:00Z'

@@ -311,6 +311,10 @@ components:
     accessibility_label: "{strings.screen.login.cta.continue_a11y}"
     on_click:
       action: start_oauth
+      action_contract:
+        effect: share_external
+        external_library_refs: [ktorfit, jose4j, private_key_jwt, "fapi-1.0-advanced", "hsbc-obie-ais-v4.0:account-access-consents"]
+        description: "Stages OBReadConsent1 via POST to /account-access-consents (ktorfit), builds a FAPI 1.0 Advanced /authorize URL with PS256-signed request object (jose4j, private_key_jwt), then launches app-to-app redirect to HSBC for SCA and account selection."
     test_context:
       purpose: "Primary CTA triggering consent-create POST, FAPI URL build, and app-to-app redirect to HSBC"
       required_fields: [on_click.action]
@@ -327,6 +331,9 @@ components:
     on_click:
       action: navigate_back
       target: user-onboarding
+      action_contract:
+        effect: navigate
+        description: "Navigates back to user-onboarding, abandoning the HSBC consent flow; no consent is staged and no OAuth state is stored when this path is taken."
     test_context:
       purpose: "Secondary CTA allowing PSU to abandon the flow and return to the onboarding screen"
       required_fields: [on_click.action, on_click.target]
@@ -357,6 +364,10 @@ components:
         accessibility_label: "{strings.screen.login.error.retry_a11y}"
         on_click:
           action: start_oauth
+          action_contract:
+            effect: share_external
+            external_library_refs: [ktorfit, jose4j, private_key_jwt, "fapi-1.0-advanced", "hsbc-obie-ais-v4.0:account-access-consents"]
+            description: "Re-triggers consent-create POST (ktorfit) and FAPI 1.0 Advanced /authorize URL construction (jose4j, private_key_jwt) after a prior failure, then relaunches the HSBC app-to-app redirect for SCA."
         test_context:
           purpose: "Retry CTA that re-triggers start_oauth after consent-create failure"
           required_fields: [on_click.action]
@@ -388,6 +399,9 @@ components:
         on_click:
           action: navigate_back
           target: user-onboarding
+          action_contract:
+            effect: navigate
+            description: "Navigates back to user-onboarding when no OBIE permissions are available to stage, preventing the PSU from initiating a zero-scope consent that HSBC would reject."
         test_context:
           purpose: "Navigates back to user-onboarding when no OBIE permissions are available to stage; PSU can review scope requirements before retrying"
           required_fields: [on_click.action, on_click.target]

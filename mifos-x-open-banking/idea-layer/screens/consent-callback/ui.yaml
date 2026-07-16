@@ -162,6 +162,10 @@ components:
         accessibility_label: "{strings.consent_callback_poll_again_a11y}"
         on_click:
           action: poll_consent_status
+          action_contract:
+            effect: call_api
+            external_library_refs: [ktorfit, "hsbc-obie-ais-v4.0:account-access-consents"]
+            description: "Re-polls GET /account-access-consents/{ConsentId} with client_credentials token to check if consent status advanced from AwaitingAuthorisation to Authorised; returns to Loading then Content, or stays Empty if still pending."
         test_context:
           purpose: "Manual re-poll CTA that retriggers GET /account-access-consents/{ConsentId}"
           required_fields: [on_click.action]
@@ -191,6 +195,9 @@ components:
         on_click:
           action: navigate_retry
           target: login
+          action_contract:
+            effect: navigate
+            description: "Navigates back to login and clears partial OAuth state (oauth_state, ConsentId) so the PSU can restart the FAPI consent flow after a token exchange failure or Rejected consent status."
         test_context:
           purpose: "Retry CTA that navigates back to login so the PSU can restart the FAPI consent flow"
           required_fields: [on_click.action, on_click.target]
@@ -220,6 +227,9 @@ components:
         on_click:
           action: navigate_retry
           target: login
+          action_contract:
+            effect: navigate
+            description: "Navigates back to login after the PSU explicitly declined data sharing at HSBC (error=access_denied); clears OAuth state so the consent flow can be voluntarily restarted."
         test_context:
           purpose: "Soft CTA (outlined, lower urgency) allowing PSU to restart the consent flow voluntarily"
           required_fields: [on_click.action, on_click.target]
@@ -249,6 +259,9 @@ components:
         on_click:
           action: navigate_login
           target: login
+          action_contract:
+            effect: navigate
+            description: "Navigates back to login after a FAPI state or nonce mismatch, clears all local auth state and revokes tokens via TokenStore to prevent replay exploitation before restarting the consent flow."
         test_context:
           purpose: "Forces PSU to restart consent flow from login — invalidates any partial auth state on security violation"
           required_fields: [on_click.action, on_click.target]

@@ -67,6 +67,9 @@ components:
     on_click:
       action: navigate_back
       target: transactions
+      action_contract:
+        effect: navigate
+        description: "Pops the transaction-detail screen from the navigation stack, returning the PSU to the transactions list."
     test_context:
       purpose: "Pop screen off nav stack returning to transactions list"
       required_fields: []
@@ -223,6 +226,10 @@ components:
         on_click:
           action: copy_to_clipboard
           value: "{transaction.TransactionInformation}"
+          action_contract:
+            effect: copy_clipboard
+            external_library_refs: ["platform-clipboard-manager"]
+            description: "Copies the TransactionInformation reference string to the system clipboard via platform ClipboardManager and emits a snackbar confirmation to the PSU."
         accessibility_label: "{strings.transaction_detail_reference}: {transaction.TransactionInformation}. {strings.transaction_detail_copy_reference_a11y}"
         test_context:
           purpose: "Free-text reference from OBTransaction6.TransactionInformation (e.g. TESCO STORES 3476 LONDON); trailing copy-to-clipboard icon triggers CopyTransactionReference VM action"
@@ -266,6 +273,10 @@ components:
         accessibility_label: "{strings.transaction_detail_retry}"
         on_click:
           action: retry_load
+          action_contract:
+            effect: call_api
+            external_library_refs: [ktorfit, "hsbc-obie-ais-v4.0:transactions"]
+            description: "Re-fetches GET /accounts/{AccountId}/transactions when error.recoverable is true (401 token expiry or network error) and filters the result by transactionId to resolve the detail record."
         test_context:
           purpose: "Trigger retry of OBReadTransaction6 fetch — visible only when error.recoverable is true (401 token expiry, network errors)"
           required_fields: [error.recoverable]
@@ -280,6 +291,9 @@ components:
         accessibility_label: "{strings.transaction_detail_go_back}"
         on_click:
           action: navigate_back
+          action_contract:
+            effect: navigate
+            description: "Pops the transaction-detail screen when a non-recoverable error occurs (403 ConsentWithdrawn or TransactionNotFound); returns the PSU to the transactions list."
         test_context:
           purpose: "Navigate back to transactions list — shown when error is non-recoverable (403 ConsentWithdrawn, TransactionNotFoundError). No retry is meaningful."
           required_fields: [error.recoverable]
@@ -309,6 +323,9 @@ components:
         on_click:
           action: navigate_back
           target: transactions
+          action_contract:
+            effect: navigate
+            description: "Returns the PSU to the transactions list when the selected transactionId yields no matching record in the OBReadTransaction6 response."
         test_context:
           purpose: "Returns PSU to the transactions list when the selected transaction yields no detail record"
           required_fields: [on_click.action, on_click.target]

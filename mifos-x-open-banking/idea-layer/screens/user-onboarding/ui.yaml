@@ -62,6 +62,10 @@ components:
         accessibility_label: "{strings.onboarding_error_retry_a11y}"
         on_click:
           action: retry_onboarding_init
+          action_contract:
+            effect: transform_state
+            external_library_refs: [kotlinx-coroutines, androidx.datastore]
+            description: "Re-reads the onboarding_completed flag from DataStore in a coroutine; transitions through loading then to intro on success, or remains in error state on failure."
         test_context:
           purpose: "Re-triggers the DataStore onboarding completion check; transitions to loading then intro on success"
           required_fields: [on_click.action]
@@ -91,6 +95,9 @@ components:
         on_click:
           action: navigate_to_login
           target: login
+          action_contract:
+            effect: navigate
+            description: "Bypasses the onboarding educational flow and navigates directly to the login screen when onboarding content is unavailable or disabled."
         test_context:
           purpose: "Bypasses the onboarding flow and navigates directly to login when onboarding content is unavailable"
           required_fields: [on_click.action, on_click.target]
@@ -185,6 +192,10 @@ components:
     on_click:
       action: step_next
       target_state: permissions_overview
+      action_contract:
+        effect: transform_state
+        external_library_refs: [kotlinx-coroutines]
+        description: "Increments the ViewModel currentStep counter from 1 to 2, transitioning the screen state from intro to permissions_overview with no network call."
     test_context:
       purpose: "Advances PSU from intro step to permissions overview step"
       required_fields: [on_click.action, on_click.target_state]
@@ -320,6 +331,10 @@ components:
     on_click:
       action: step_back
       target_state: intro
+      action_contract:
+        effect: transform_state
+        external_library_refs: [kotlinx-coroutines]
+        description: "Decrements the ViewModel currentStep counter from 2 to 1, transitioning the screen state from permissions_overview back to intro with no network call."
     test_context:
       purpose: "Navigate back to intro step"
       required_fields: [on_click.action, on_click.target_state]
@@ -335,6 +350,10 @@ components:
     on_click:
       action: step_next
       target_state: consent_explainer
+      action_contract:
+        effect: transform_state
+        external_library_refs: [kotlinx-coroutines]
+        description: "Increments the ViewModel currentStep counter from 2 to 3, transitioning the screen state from permissions_overview to consent_explainer with no network call."
     test_context:
       purpose: "Advances PSU to step 3 — trust guarantees and connect CTA"
       required_fields: [on_click.action, on_click.target_state]
@@ -447,6 +466,9 @@ components:
     on_click:
       action: navigate_to_login
       target: login
+      action_contract:
+        effect: navigate
+        description: "Primary CTA — navigates to the login screen where OBReadConsent1 is staged and the FAPI 1.0 Advanced app-to-app redirect to HSBC begins."
     test_context:
       purpose: "Primary CTA — begins FAPI consent flow by navigating to login/consent-staging screen"
       required_fields: [on_click.action, on_click.target]
@@ -462,6 +484,10 @@ components:
     on_click:
       action: step_back
       target_state: permissions_overview
+      action_contract:
+        effect: transform_state
+        external_library_refs: [kotlinx-coroutines]
+        description: "Decrements the ViewModel currentStep counter from 3 to 2, transitioning the screen state from consent_explainer back to permissions_overview with no network call."
     test_context:
       purpose: "Navigate back to permissions_overview step"
       required_fields: [on_click.action, on_click.target_state]
@@ -477,6 +503,10 @@ components:
     on_click:
       action: open_ob_explainer
       target_state: ob_explainer_open
+      action_contract:
+        effect: transform_state
+        external_library_refs: [kotlinx-coroutines]
+        description: "Sets showObExplainerSheet to true in the ViewModel StateFlow, overlaying the ob_explainer_open bottom sheet on top of the consent_explainer step."
     test_context:
       purpose: "Opens the FAPI consent journey explainer bottom sheet"
       required_fields: [on_click.action, on_click.target_state]
@@ -563,6 +593,10 @@ components:
         on_click:
           action: close_ob_explainer
           target_state: consent_explainer
+          action_contract:
+            effect: transform_state
+            external_library_refs: [kotlinx-coroutines]
+            description: "Sets showObExplainerSheet to false in the ViewModel StateFlow, dismissing the OB explainer bottom sheet and returning the PSU to the consent_explainer step."
         test_context:
           purpose: "Closes the OB explainer sheet and returns PSU to consent_explainer step"
           required_fields: [on_click.action, on_click.target_state]

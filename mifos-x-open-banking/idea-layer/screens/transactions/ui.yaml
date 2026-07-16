@@ -100,6 +100,10 @@ components:
           action: filter_transactions
           params:
             filter: "all"
+          action_contract:
+            effect: transform_state
+            external_library_refs: [kotlinx-coroutines]
+            description: "Resets the CreditDebitIndicator filter to show all transactions, recomputes period totals from the full in-memory OBReadTransaction6 list, and updates the UI state without re-fetching."
         test_context:
           purpose: "Reset CreditDebitIndicator filter to show all transactions; restores period totals to full set"
           required_fields: []
@@ -116,6 +120,10 @@ components:
           action: filter_transactions
           params:
             filter: "credit"
+          action_contract:
+            effect: transform_state
+            external_library_refs: [kotlinx-coroutines]
+            description: "Filters the in-memory OBReadTransaction6 list to CreditDebitIndicator=Credit rows only and recomputes period totals without issuing any network request."
         test_context:
           purpose: "Filter transactions list to CreditDebitIndicator=Credit rows only"
           required_fields: []
@@ -132,6 +140,10 @@ components:
           action: filter_transactions
           params:
             filter: "debit"
+          action_contract:
+            effect: transform_state
+            external_library_refs: [kotlinx-coroutines]
+            description: "Filters the in-memory OBReadTransaction6 list to CreditDebitIndicator=Debit rows only and recomputes period totals without issuing any network request."
         test_context:
           purpose: "Filter transactions list to CreditDebitIndicator=Debit rows only"
           required_fields: []
@@ -146,6 +158,10 @@ components:
         accessibility_label: "{strings.transactions.a11y.filter_date_range}"
         on_click:
           action: open_date_range_picker
+          action_contract:
+            effect: transform_state
+            external_library_refs: [kotlinx-coroutines]
+            description: "Opens the date-range picker bottom sheet as a local UI state transition; on confirm the picker resets the pagination cursor and re-fetches with fromBookingDateTime and toBookingDateTime bounds."
         test_context:
           purpose: "Opens date range picker; on confirm re-fetches with fromBookingDateTime/toBookingDateTime and resets pagination cursor"
           required_fields: []
@@ -165,6 +181,10 @@ components:
     accessibility_label: "{strings.transactions.a11y.search}"
     on_click:
       action: search_transactions
+      action_contract:
+        effect: transform_state
+        external_library_refs: [kotlinx-coroutines]
+        description: "Applies a case-insensitive substring search over TransactionInformation and MerchantDetails.MerchantName against the in-memory OBReadTransaction6 list without re-fetching."
     test_context:
       purpose: "Case-insensitive substring match against TransactionInformation and MerchantDetails.MerchantName"
       required_fields: []
@@ -208,6 +228,9 @@ components:
           params:
             transactionId: "{item.TransactionId}"
             accountId: "{item.AccountId}"
+          action_contract:
+            effect: navigate
+            description: "Pushes the transaction-detail route with the tapped OBTransaction6 TransactionId and AccountId as route params."
         test_context:
           purpose: "Tappable transaction row with merchant name, PFM category chip, colour-coded amount, and conditional Pending badge; navigates to transaction-detail on tap"
           required_fields: [item.TransactionId, item.TransactionInformation, item.CreditDebitIndicator, item.Amount.Amount, item.Category, item.Status]
@@ -258,6 +281,10 @@ components:
     accessibility_label: "{strings.transactions.a11y.load_more}"
     on_click:
       action: load_more_transactions
+      action_contract:
+        effect: call_api
+        external_library_refs: [ktorfit, "hsbc-obie-ais-v4.0:transactions"]
+        description: "Fetches the next transactions page using the Links.Next cursor stored in next_link, appends returned OBTransaction6 rows to the in-memory list, and updates has_next_page and next_link from the new response."
     test_context:
       purpose: "Triggers next-page fetch using Links.Next cursor from OBIE pagination response; shown only when has_next_page=true and not already paginating"
       required_fields: [has_next_page, is_paginating]
@@ -298,6 +325,10 @@ components:
         accessibility_label: "{strings.transactions.a11y.clear_filters}"
         on_click:
           action: clear_filters
+          action_contract:
+            effect: transform_state
+            external_library_refs: [kotlinx-coroutines]
+            description: "Resets the CreditDebitIndicator filter, date range, and search query to defaults, transitioning the screen from empty back to content if transactions remain in the in-memory list."
         test_context:
           purpose: "Reset CreditDebitIndicator filter, date range, and search query; transitions to content if transactions exist"
           required_fields: []
@@ -333,6 +364,10 @@ components:
         accessibility_label: "{strings.transactions.a11y.retry}"
         on_click:
           action: retry_load
+          action_contract:
+            effect: call_api
+            external_library_refs: [ktorfit, "hsbc-obie-ais-v4.0:transactions"]
+            description: "Re-issues GET /accounts/{AccountId}/transactions from page one after a recoverable error (401 or network failure), resetting the pagination cursor before the fetch."
         test_context:
           purpose: "Retry GET /accounts/{AccountId}/transactions via ktorfit; hidden when error.recoverable=false (403 consent withdrawn)"
           required_fields: [error.recoverable]

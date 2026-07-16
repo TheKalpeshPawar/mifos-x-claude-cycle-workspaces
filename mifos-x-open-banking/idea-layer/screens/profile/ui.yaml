@@ -182,6 +182,9 @@ components:
         on_click:
           action: navigate_consent_renew
           target: consent-detail
+          action_contract:
+            effect: navigate
+            description: "Navigates to the consent-detail screen with the renew intent flag set, prompting the PSU to re-authorise the expiring OBIE AIS consent before it lapses."
 
   # ── Open Banking Connection ──────────────────────────────────────────
   - type: section_header
@@ -321,6 +324,9 @@ components:
         on_click:
           action: navigate_consent_detail
           target: consent-detail
+          action_contract:
+            effect: navigate
+            description: "Navigates to the consent-detail screen where the PSU can inspect the active OBIE AIS consent permissions and expiry, or initiate revocation."
 
   # ── Sign out ─────────────────────────────────────────────────────────
   - type: button
@@ -337,6 +343,10 @@ components:
       data_driven: false
     on_click:
       action: confirm_sign_out
+      action_contract:
+        effect: transform_state
+        external_library_refs: [kotlinx-coroutines]
+        description: "Transitions the screen to the confirm_sign_out state, saving the previous state (content or content_expiring) so it can be restored if the user cancels the dialog."
 
   # ── Confirm sign-out dialog ──────────────────────────────────────────
   - type: dialog
@@ -363,6 +373,10 @@ components:
           data_driven: false
         on_click:
           action: dismiss_sign_out_dialog
+          action_contract:
+            effect: transform_state
+            external_library_refs: [kotlinx-coroutines]
+            description: "Dismisses the sign-out confirmation dialog and restores the screen to the previous content or content_expiring state without clearing any tokens."
 
       - type: button
         id: confirm_sign_out_button
@@ -377,6 +391,10 @@ components:
           data_driven: false
         on_click:
           action: execute_sign_out
+          action_contract:
+            effect: delete
+            external_library_refs: [encrypted-shared-preferences]
+            description: "Permanently removes the PSU access token, refresh token, and ConsentId from EncryptedSharedPreferences secure storage, then navigates to the login screen regardless of any deletion error."
 
   # ── Error state ──────────────────────────────────────────────────────
   - type: empty_state
@@ -405,6 +423,10 @@ components:
           data_driven: false
         on_click:
           action: retry_load
+          action_contract:
+            effect: call_api
+            external_library_refs: [ktorfit, "hsbc-obie-ais-v4.0:party"]
+            description: "Re-triggers the loadProfile coroutine to re-fetch GET /accounts/{AccountId}/party via ktorfit after a 401, 403, 404, or network error."
 
   # ── Empty state ──────────────────────────────────────────────────────
   - type: empty_state
@@ -429,6 +451,9 @@ components:
         on_click:
           action: navigate_reauth
           target: login
+          action_contract:
+            effect: navigate
+            description: "Re-initiates the FAPI authorization flow by navigating to login when party data is unavailable due to a missing ReadParty scope or stale token."
         test_context:
           purpose: "Re-initiates FAPI auth flow when party data is unavailable — likely a token freshness or ReadParty scope omission issue"
           required_fields: [on_click.action, on_click.target]
