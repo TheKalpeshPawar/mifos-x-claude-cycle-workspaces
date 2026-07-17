@@ -30,59 +30,42 @@ business_logic:
   description_authored_at: "2026-06-29T12:00:00Z"
 
 state_model:
-  viewmodel: BeneficiariesViewModel
-  state_class: BeneficiariesUiState
-  screen_state:
-    variants:
-      - name: Loading
-      - name: Content
-        fields:
-          - name: beneficiaries
-            type: "List<OBBeneficiary>"
-          - name: beneficiariesFiltered
-            type: "List<OBBeneficiary>"
-          - name: searchQuery
-            type: String
-            default: '""'
-      - name: Empty
-      - name: Error
-        fields:
-          - name: type
-            type: ErrorType
-            enum: [TokenExpired, ConsentRevoked, RateLimited, NetworkError, ServerError]
-          - name: message
-            type: String
-  errors:
-    - id: TokenExpired
-      http_status: 401
-    - id: ConsentRevoked
-      http_status: 403
-    - id: RateLimited
-      http_status: 429
-    - id: NetworkError
-      trigger: IOException
-    - id: ServerError
-      http_status: 500
-  events:
-    - name: NavigateTo
-      target: account-detail
-    - name: NavigateTo
-      target: consent-list
-  actions:
-    - name: LoadBeneficiaries
-      type: suspend
-    - name: FilterBeneficiaries
-      type: pure
-    - name: RetryLoad
-      type: sync
-    - name: NavigateToConsents
-      type: sync
-    - name: NavigateBack
-      type: sync
-  di:
-    - name: AisApiService
-      type: interface
-      library: ktorfit
+  BeneficiariesViewModel:
+    state:
+      name: BeneficiariesState
+      fields:
+        - name: accountId
+          type: String
+        - name: uiState
+          type: BeneficiariesUiState
+    screen_state:
+      sealed_class: BeneficiariesUiState
+      members:
+        - Loading
+        - Content    # beneficiaries: List<OBBeneficiary>, beneficiariesFiltered: List<OBBeneficiary>, searchQuery: String (default "")
+        - Empty
+        - Error      # type: ErrorType(TokenExpired|ConsentRevoked|RateLimited|NetworkError|ServerError), message: String
+    errors:
+      types:
+        - TokenExpiredError     # HTTP 401
+        - ConsentRevokedError   # HTTP 403 — recovery: View Consents → consent-list
+        - RateLimitedError      # HTTP 429 — exponential back-off
+        - NetworkError          # IOException / timeout
+        - ServerError           # HTTP 500
+    actions:
+      members:
+        - loadBeneficiaries     # suspend; GET /accounts/{accountId}/beneficiaries
+        - filterBeneficiaries   # pure; client-side filter by CreditorAccount.Name or Reference
+        - retryLoad             # visible for TokenExpired/RateLimited/NetworkError; re-invokes loadBeneficiaries
+        - navigateToConsents    # sync; visible when ConsentRevoked; NavigateTo(consent-list)
+        - navigateBack          # sync; NavigateTo(account-detail)
+    events:
+      - name: NavigateTo
+        target: account-detail
+      - name: NavigateTo
+        target: consent-list
+    di:
+      - AisApiService           # interface; ktorfit; GET /accounts/{AccountId}/beneficiaries
 
 dependencies:
   tier: feature

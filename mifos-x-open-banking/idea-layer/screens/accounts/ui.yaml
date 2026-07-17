@@ -22,6 +22,55 @@ business_logic:
   description_author: claude
   description_authored_at: "2026-06-29T12:00:00Z"
 
+# ─────────────────────────────────────────────────────────────────────
+# STATE MODEL — AccountsViewModel contract
+# Derived from docs.yaml#impl_notes.state_model Kotlin block + viewmodel line.
+# Satisfies QUALITY_FORMULA.md Category 10 (State Model, 5 pts).
+# ─────────────────────────────────────────────────────────────────────
+state_model:
+  AccountsViewModel:
+    state:
+      name: AccountsState
+      fields:
+        - name: accounts
+          type: List<AccountWithBalance>
+        - name: filteredAccounts
+          type: List<AccountWithBalance>
+        - name: activeFilter
+          type: AccountSubType?
+        - name: totalBalanceFormatted
+          type: String
+        - name: totalBalanceAccountCount
+          type: Int
+        - name: activeConsentId
+          type: String
+        - name: consentDaysRemaining
+          type: Int
+        - name: isConsentExpiring
+          type: Boolean
+        - name: uiState
+          type: UiState
+    screen_state:
+      sealed_class: UiState
+      members:
+        - Loading
+        - Content
+        - ConsentExpiring   # < 30 days remaining on consent ExpirationDateTime
+        - Empty
+        - Error             # cause: Throwable
+    errors:
+      types:
+        - TokenExpiredError   # 401 — navigate to login; no active consent
+        - NetworkError        # network — Retry CTA on error state
+    actions:
+      members:
+        - filterAccounts            # client-side chip filter; no API round-trip
+        - navigateAccountDetail     # tap card → account-detail with AccountId
+        - navigateReconfirmConsent  # consent-expiring banner CTA → consent-detail with ConsentId
+        - retryLoad                 # re-triggers parallel GET /accounts + GET /accounts/{id}/balances
+    di:
+      - AccountsRepository   # parallel GET /accounts + GET /accounts/{AccountId}/balances via ktorfit
+
 shell:
   bottom_navigation_visible: true
   top_app_bar_visible: true

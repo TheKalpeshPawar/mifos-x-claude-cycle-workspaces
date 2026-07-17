@@ -20,37 +20,42 @@ business_logic:
 
 # ── ViewModel State Machine ─────────────────────────────────────────
 state_model:
-  _version: v3
-  class: ConsentDetailUiState
-  sealed: true
-  states:
-    - name: Loading
-      fields: []
-    - name: Content
+  ConsentDetailViewModel:
+    state:
+      name: ConsentDetailState
       fields:
-        - name: consent
-          type: OBReadConsentResponse1
-        - name: permissionsDetail
-          type: "List<PermissionDetail>"
-        - name: expiryWarningDays
-          type: "Int?"
-          nullable: true
-          note: "Non-null when ExpirationDateTime is within 7 calendar days; null otherwise. Drives expiry_warning_banner visibility."
-    - name: RevokeConfirm
-      fields:
-        - name: consent
-          type: OBReadConsentResponse1
-    - name: Revoking
-      fields:
-        - name: consent
-          type: OBReadConsentResponse1
-    - name: Error
-      fields:
-        - name: message
+        - name: consentId
           type: String
-        - name: errorCode
-          type: ConsentDetailErrorCode
-          note: "Enum: ConsentNotFound | ConsentRevoked | ConsentExpired | TokenExpired | NetworkError | RevokeServerError"
+        - name: uiState
+          type: ConsentDetailUiState
+    screen_state:
+      sealed_class: ConsentDetailUiState
+      members:
+        - Loading
+        - Content        # consent: OBReadConsentResponse1, permissionsDetail: List<PermissionDetail>, expiryWarningDays: Int? (non-null when ≤7 days to expiry)
+        - RevokeConfirm  # consent: OBReadConsentResponse1
+        - Revoking       # consent: OBReadConsentResponse1
+        - Error          # message: String, errorCode: ConsentDetailErrorCode(ConsentNotFound|ConsentRevoked|ConsentExpired|TokenExpired|NetworkError|RevokeServerError)
+    errors:
+      types:
+        - ConsentNotFoundError   # HTTP 404 on GET
+        - ConsentRevokedError    # HTTP 403
+        - ConsentExpiredError
+        - TokenExpiredError      # HTTP 401
+        - NetworkError           # network
+        - RevokeServerError      # HTTP 5xx on DELETE
+    actions:
+      members:
+        - loadConsentDetail      # suspend; GET /account-access-consents/{consentId}; maps Permissions + computes expiryWarningDays
+        - navigateReconfirm      # Navigator.navigate(Route.Login(reconfirmMode=true))
+        - confirmRevoke          # transitions uiState to RevokeConfirm; no API call
+        - dismissRevokeConfirm   # transitions uiState back to Content
+        - executeRevoke          # suspend; DELETE /account-access-consents/{consentId}; 404=idempotent; clears PSU token+ConsentId; navigates to consent-list
+        - retryLoad              # suspend; re-issues GET /account-access-consents/{consentId}
+    di:
+      - ConsentService           # ktorfit — GET /account-access-consents + DELETE consent-revoke
+      - LocalStorage             # EncryptedSharedPreferences — clears PSU token + ConsentId on revoke
+      - NavigationController     # KMP navigation abstraction
 
 # ── Shell ───────────────────────────────────────────────────────────
 shell:

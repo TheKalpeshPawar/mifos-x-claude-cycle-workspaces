@@ -20,6 +20,49 @@ business_logic:
   description_author: claude
   description_authored_at: "2026-06-29T12:00:00Z"
 
+# ─────────────────────────────────────────────────────────────────────
+# STATE MODEL — PfmDashboardViewModel contract
+# Derived from docs.yaml#vm_actions + error_cases for implementation.
+# Client-only: reads Room/SQLDelight pfm_cache.db; no network calls.
+# Satisfies QUALITY_FORMULA.md Category 10 (State Model, 5 pts).
+# ─────────────────────────────────────────────────────────────────────
+state_model:
+  PfmDashboardViewModel:
+    state:
+      name: PfmDashboardState
+      fields:
+        - name: selectedPeriod
+          type: PfmPeriod              # 7d | 30d | 3m; re-triggers computation on change
+        - name: netWorth
+          type: String                 # formatted GBP sum of all account balances
+        - name: topCategories
+          type: List<PfmCategory>      # ranked AIS debits by MerchantCategory descending
+        - name: insights
+          type: List<PfmInsight>       # rule-based insight cards from computation engine
+        - name: uiState
+          type: PfmDashboardUiState
+    screen_state:
+      sealed_class: PfmDashboardUiState
+      members:
+        - Loading
+        - Content    # netWorth, accountBreakdown, periodIncome, periodSpend, topCategories, insights
+        - Empty      # no transactions in local Room/SQLDelight cache (EC-PFM-001)
+        - Error      # exception during cache read or aggregation computation (EC-PFM-002)
+    errors:
+      types:
+        - EmptyCacheError    # no transactions in local cache after account sync (EC-PFM-001)
+        - AggregationError   # exception during Room/SQLDelight read or computation (EC-PFM-002)
+    actions:
+      members:
+        - loadFinancesOverview            # reads cache; computes net worth, categories, insights
+        - selectPeriod                    # switches PfmPeriod; re-triggers loadFinancesOverview
+        - reloadFinances                  # retry from error state; re-dispatches loadFinancesOverview
+        - navigateSpendingByCategory      # push spending-by-category with optional category filter
+        - navigateBudgets                 # push budgets route
+        - navigateRecurringSubscriptions  # push recurring-subscriptions route
+    di:
+      - PfmRepository        # wraps Room/SQLDelight pfm_cache.db reads and aggregation queries
+
 states: [loading, content, empty, error]
 
 components:
@@ -50,11 +93,23 @@ components:
       required_fields: []
       interaction_type: action
       data_driven: false
-    action:
-      label: "{strings.pfm_dashboard.error.retry}"
-      on_click:
-        action: reload_finances
-        target: null
+    children:
+      - type: button
+        id: pfm_error_retry_button
+        variant: filled
+        label: "{strings.pfm_dashboard.error.retry}"
+        accessibility_label: "{strings.pfm_dashboard.error.a11y}"
+        on_click:
+          action: reload_finances
+          action_contract:
+            effect: transform_state
+            external_library_refs: [kotlinx-coroutines]
+            description: "Re-dispatches loadFinancesOverview: re-reads cached transactions and account balances from PfmRepository (Room/SQLDelight) and recomputes net worth, period income/spend, top categories and insights in parallel via kotlinx-coroutines, moving error to loading then content."
+        test_context:
+          purpose: "Trigger retry of the client-side PFM aggregation after a cache-read or computation failure (EC-PFM-002). Client-only — no API call."
+          required_fields: []
+          interaction_type: action
+          data_driven: false
 
   # ── Period selector ──────────────────────────────────────────────────
   - type: segmented_button

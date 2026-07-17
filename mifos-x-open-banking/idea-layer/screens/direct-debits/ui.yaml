@@ -23,6 +23,48 @@ business_logic:
   description_author: claude
   description_authored_at: "2026-06-29T12:00:00Z"
 
+# ─────────────────────────────────────────────────────────────────────
+# STATE MODEL — DirectDebitsViewModel contract
+# Derived from docs.yaml#vm_actions + error_cases for implementation.
+# Satisfies QUALITY_FORMULA.md Category 10 (State Model, 5 pts).
+# ─────────────────────────────────────────────────────────────────────
+state_model:
+  DirectDebitsViewModel:
+    state:
+      name: DirectDebitsState
+      fields:
+        - name: accountId
+          type: String
+        - name: directDebits
+          type: List<OBDirectDebit2>
+        - name: activeCount
+          type: Int
+        - name: inactiveCount
+          type: Int
+        - name: uiState
+          type: DirectDebitsUiState
+    screen_state:
+      sealed_class: DirectDebitsUiState
+      members:
+        - Loading
+        - Content    # directDebits sorted Active-first; activeCount + inactiveCount computed
+        - Empty      # Data.DirectDebit[] is empty in OBIE 200 response
+        - Error      # typed error: TokenExpired / ConsentRevoked / RateLimited / NetworkError
+    errors:
+      types:
+        - TokenExpired      # HTTP 401 — retriable; session expired
+        - ConsentRevoked    # HTTP 403 — non-retriable; ReadDirectDebits not in consent
+        - RateLimited       # HTTP 429 — retriable; too many requests
+        - NetworkError      # IOException / timeout from ktorfit — retriable
+    actions:
+      members:
+        - loadDirectDebits  # GET /accounts/{accountId}/direct-debits; sorts + counts result
+        - retryLoad         # re-invokes loadDirectDebits; guarded by error.isRetriable
+        - navigateBack      # emits NavigationEvent.Back to NavController
+    di:
+      - DirectDebitsRepository    # wraps ktorfit GET /accounts/{accountId}/direct-debits
+      - NavigationController      # KMP navigation abstraction for back-stack pop
+
 components:
 
   # ── LOADING STATE ───────────────────────────────────────────────────

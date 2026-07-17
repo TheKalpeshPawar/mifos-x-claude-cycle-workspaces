@@ -1345,7 +1345,46 @@ findings:
     sub_check: SAC
     category: sub_action_completeness
     gap_class: fail
-    status: open
+    status: closed
+    closed_at: "2026-07-17"
+    closed_by: "/idea-sync (STEP 2.GAP-ROUTE — user picked [Fix + regenerate])"
+    closure_evidence: >
+      FIXED at the root cause, exactly as suggested_fix prescribed. The bare, typeless
+      `action:` block on components[] `type: error_state, id: error_view` was replaced with
+      the project's dominant pattern — a typed, id'd child:
+
+        children:
+          - type: button
+            id: pfm_error_retry_button
+            variant: filled
+            label: "{strings.pfm_dashboard.error.retry}"        # resolves to "Try again"
+            accessibility_label: "{strings.pfm_dashboard.error.a11y}"
+            on_click:
+              action: reload_finances
+              action_contract:
+                effect: transform_state
+                external_library_refs: [kotlinx-coroutines]
+                description: "<271 chars, grounded in pfm-dashboard/data-flow.yaml#on_mount.pfm_compute>"
+
+      Both defects the finding named are gone: (1) the invalid `action:` slot (an empty_state
+      slot, not an error_state slot per layers/idea/templates/registry/feedback.yaml) no longer
+      exists — verified `"action" in error_state == false`; (2) the affordance is now typed +
+      id'd, so RULE-IDEA-ACTION-CONTRACT-001 AC1 can see it and it carries a real
+      action_contract. effect: transform_state is correct — pfm-dashboard/api.yaml declares
+      `endpoints: []`, so this screen is client-only and the retry re-runs the local
+      PfmRepository (Room/SQLDelight) aggregation rather than any API call.
+
+      Cross-checks passed: AC4 description length 271 (needs 30..400); RULE-IMPL-DEAD-CLICKABLE-001
+      DCL-6 action-naming — on_click `reload_finances` mirrors state_model member `reloadFinances`
+      (the file's established snake-on_click / camel-state_model split, same as account-detail's
+      retry_load / retryLoad); RULE-IDEA-A11Y-LABEL-001 A11-1 accessibility_label present.
+      evidence.count_after: 0.
+
+      Cascade honoured (the finding warned "this edit re-stales pfm-dashboard's previews"):
+      MOCKUP.md + PROMPTS_FIGMA.md + exports/pfm-dashboard/SPEC.md were re-exported against the
+      new ui.yaml in the same sync so the EXPORT_MATRIX cells return to fresh. API.md is
+      untouched-and-fresh (api.yaml did not change). preview/*.html already renders a retry
+      affordance and is not EXPORT_MATRIX-tracked (v1 had no preview column).
     screen: pfm-dashboard
     component: on_click
     action: null
@@ -1354,12 +1393,50 @@ findings:
     detected_at: "2026-07-16T12:12:00Z"
     detected_by: "G-SAC (framework-verify-coherence phase47-sac)"
     evidence: >
-      G-SAC reports a sub-action leaf with no resolvable action on pfm-dashboard.
-      Corroborated independently: the REG/AC audits found pfm-dashboard carries an
-      on_click component with NO `type:` and NO `id:` field, which is why AC1 could
-      not evaluate it either (see summary.known_gap_ac1_vocabulary).
+      CONFIRMED + root-caused by /idea-verify 2026-07-16. pfm-dashboard/ui.yaml:53
+      declares its error-state retry as a BARE nested block on components[1]
+      (type: error_state):
+
+        action:
+          label: "{strings.pfm_dashboard.error.retry}"
+          on_click:
+            action: reload_finances
+            target: null
+
+      Two things are wrong with it:
+      (1) WRONG SLOT NAME — the framework registry
+          (layers/idea/templates/registry/feedback.yaml) declares error_state's
+          slots as optional: [illustration, message, retry_action, ...]. There is
+          NO `action` slot on error_state; `action` is a slot of EMPTY_state, which
+          is very likely where the shape was copied from.
+      (2) NOT A COMPONENT — the block carries no `type:` and no `id:`, so it is
+          invisible to RULE-IDEA-ACTION-CONTRACT-001 AC1 (whose vocabulary is
+          keyed on component type) and to the component registry check. Its
+          on_click therefore has no action_contract and nothing flags it.
+
+      This is a 1-of-37 outlier: every other error_state/empty_state in the
+      project (36 instances across the other 24 screens) models its affordance as
+      a proper `children[]` entry with a typed, id'd component — e.g.
+      account-detail's `children: - type: button, id: retry_button`. pfm-dashboard
+      is the only screen using a bare action block.
     suggested_fix: |
-      Inspect pfm-dashboard/ui.yaml for the typeless/idless on_click component and
-      give it a registered `type:` + `id:` + `action:`, or remove it if it is dead.
+      Convert to the dominant project pattern so AC1 and the registry can both see it:
+
+        - type: error_state
+          id: pfm_error_state
+          children:
+            - type: button
+              id: pfm_error_retry_button
+              label: "{strings.pfm_dashboard.error.retry}"
+              on_click:
+                action: reload_finances
+                action_contract:
+                  effect: transform_state          # pfm is client-only (api.yaml endpoints: [])
+                  external_library_refs: [kotlinx-coroutines]
+                  description: "<30..400 chars, grounded in pfm-dashboard/data-flow.yaml>"
+
+      Renaming `action:` -> `retry_action:` alone would satisfy the registry slot
+      name but would NOT fix (2) — the block would stay typeless and AC1 would
+      remain blind to it. Note this edit re-stales pfm-dashboard's previews.
 
 closed: []

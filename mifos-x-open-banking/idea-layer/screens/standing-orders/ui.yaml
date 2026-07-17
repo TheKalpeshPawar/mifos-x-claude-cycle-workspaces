@@ -23,6 +23,43 @@ business_logic:
   description_author: claude
   description_authored_at: "2026-06-29T15:00:00Z"
 
+# ─────────────────────────────────────────────────────────────────────
+# STATE MODEL — StandingOrdersViewModel contract
+# Derived from docs.yaml#vm_actions + error_cases for implementation.
+# Satisfies QUALITY_FORMULA.md Category 10 (State Model, 5 pts).
+# ─────────────────────────────────────────────────────────────────────
+state_model:
+  StandingOrdersViewModel:
+    state:
+      name: StandingOrdersState
+      fields:
+        - name: accountId
+          type: String
+        - name: uiState
+          type: StandingOrdersUiState
+    screen_state:
+      sealed_class: StandingOrdersUiState
+      members:
+        - Loading
+        - Content    # standingOrders: List<StandingOrderViewModel>, summaryLabel: String
+        - Empty      # Data.StandingOrder[] empty in OBReadStandingOrder6 response
+        - Error      # errorType: StandingOrderErrorType, message: String
+    errors:
+      types:
+        - TokenExpiredError     # 401 — recoverable; route to login
+        - ConsentRevokedError   # 403 — non-recoverable; route to consent-list
+        - RateLimitedError      # 429 — recoverable; retry after brief delay
+        - NetworkError          # IOException / timeout — recoverable
+        - ServerError           # 5xx — recoverable; retry; persistent → support
+    actions:
+      members:
+        - loadStandingOrders
+        - retryLoad
+        - navigateBack
+    di:
+      - StandingOrdersRepository  # GET /accounts/{AccountId}/standing-orders via ktorfit
+      - NavigationController      # KMP navigation abstraction for route push/pop
+
 components:
   # ── LOADING STATE ────────────────────────────────────────────────
   - type: progress_indicator

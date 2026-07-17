@@ -22,6 +22,57 @@ business_logic:
   description_author: claude
   description_authored_at: "2026-07-14T20:00:00Z"
 
+# ─────────────────────────────────────────────────────────────────────
+# STATE MODEL — SettingsViewModel contract
+# Derived from docs.yaml#vm_actions + error_cases for implementation.
+# Satisfies QUALITY_FORMULA.md Category 10 (State Model, 5 pts).
+# ─────────────────────────────────────────────────────────────────────
+state_model:
+  SettingsViewModel:
+    state:
+      name: SettingsState
+      fields:
+        - name: uiState
+          type: SettingsUiState
+        - name: settings
+          type: SettingsPreferences
+        - name: gpsPermissionState
+          type: String
+    screen_state:
+      sealed_class: SettingsUiState
+      members:
+        - Loading
+        - Content
+        - Empty
+        - Error
+        - ClearConfirm     # bottom-sheet gating destructive cache erasure
+    errors:
+      types:
+        - DataStoreIOError        # IOException reading preferences Flow on mount — severity: error
+        - CacheDeleteError        # Room/SQLDelight delete failure in executeClearLocalData — severity: error
+        - NoBrowserError          # no browser app for openExternalUrl — severity: warning (snackbar)
+        - BiometricUnavailableError  # no enrolled biometrics for toggleBiometricLock — severity: info (dialog)
+    actions:
+      members:
+        - updateTheme
+        - toggleBiometricLock
+        - updateSessionTimeout
+        - toggleConsentExpiryNotification
+        - toggleSecurityAlertsNotification
+        - navigateConsentList
+        - navigateProfile
+        - clearLocalDataConfirm
+        - dismissClearLocalData
+        - executeClearLocalData
+        - openExternalUrl
+        - openOssLicences
+        - openAppSystemSettings
+        - clearPfmCache
+        - retryLoadSettings
+    di:
+      - SettingsDataStore        # androidx.datastore — persists all preference keys
+      - LocalCacheRepository     # Room/SQLDelight — wipes pfm_room_cache on executeClearLocalData
+
 states: [loading, content, empty, error, clear_confirm]
 
 components:

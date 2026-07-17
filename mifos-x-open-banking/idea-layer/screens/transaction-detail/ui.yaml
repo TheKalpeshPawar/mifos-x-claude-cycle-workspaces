@@ -38,6 +38,46 @@ business_logic:
   description_author: claude
   description_authored_at: "2026-06-29T12:00:00Z"
 
+# ─────────────────────────────────────────────────────────────────────
+# STATE MODEL — TransactionDetailViewModel contract
+# Derived from docs.yaml#vm_actions + error_cases + impl_notes.
+# Satisfies QUALITY_FORMULA.md Category 10 (State Model, 5 pts).
+# ─────────────────────────────────────────────────────────────────────
+state_model:
+  TransactionDetailViewModel:
+    state:
+      name: TransactionDetailState
+      fields:
+        - name: transactionId
+          type: String
+        - name: accountId
+          type: String
+        - name: uiState
+          type: TransactionDetailUiState
+    screen_state:
+      sealed_class: TransactionDetailUiState
+      members:
+        - Loading
+        - Content    # transaction: OBTransaction6 with client-derived Category
+        - Error      # message: String, recoverable: Boolean
+        - Empty      # transactionId absent in successful OBReadTransaction6 response
+    errors:
+      types:
+        - TokenExpiredError         # 401 — recoverable; show Retry
+        - ConsentWithdrawnError     # 403 — non-recoverable; show Go Back
+        - TransactionNotFoundError  # transactionId absent in result — non-recoverable; routes to Empty state
+        - NetworkError              # IOException — recoverable; show Retry
+    actions:
+      members:
+        - loadTransactionDetail
+        - navigateBack
+        - retryLoad
+        - copyTransactionReference
+    di:
+      - TransactionsRepository    # GET /accounts/{AccountId}/transactions via ktorfit (filters by transactionId)
+      - ClipboardService          # expect/actual platform clipboard for copyTransactionReference
+      - NavigationController      # KMP navigation abstraction for route push/pop
+
 shell:
   bottom_navigation_visible: false
   top_app_bar_visible: true

@@ -22,6 +22,43 @@ business_logic:
   description_author: claude
   description_authored_at: "2026-06-29T12:00:00Z"
 
+# ─────────────────────────────────────────────────────────────────────
+# STATE MODEL — ProductViewModel contract
+# Derived from docs.yaml#vm_actions + error_cases for implementation.
+# Satisfies QUALITY_FORMULA.md Category 10 (State Model, 5 pts).
+# ─────────────────────────────────────────────────────────────────────
+state_model:
+  ProductViewModel:
+    state:
+      name: ProductState
+      fields:
+        - name: accountId
+          type: String
+        - name: product
+          type: OBProduct2?            # null until Content state; PCA or BCA entry from OBReadProduct2
+        - name: uiState
+          type: ProductUiState
+    screen_state:
+      sealed_class: ProductUiState
+      members:
+        - Loading
+        - Content    # product: OBProduct2 non-null PCA or BCA entry
+        - Empty      # OBReadProduct2.Data empty or PCA/BCA null (GlobalMoney / Savings / CreditCard)
+        - Error      # HTTP 401 / 403 / 404 / network failure from GET /accounts/{id}/product
+    errors:
+      types:
+        - TokenExpiredError      # HTTP 401 — re-authentication required
+        - ConsentScopeError      # HTTP 403 — ReadProducts not in active consent
+        - ProductNotFoundError   # HTTP 404 — no OBProduct2 record for this AccountId
+        - NetworkError           # device offline or AIS endpoint unreachable
+    actions:
+      members:
+        - productLoad    # GET /accounts/{accountId}/product → OBReadProduct2; dispatched on mount
+        - retryLoad      # delegates to productLoad(accountId) after error state
+    di:
+      - ProductRepository     # wraps ktorfit GET /accounts/{AccountId}/product
+      - NavigationController  # KMP navigation abstraction for back-stack pop
+
 status_history:
   - from: draft
     to: enriched

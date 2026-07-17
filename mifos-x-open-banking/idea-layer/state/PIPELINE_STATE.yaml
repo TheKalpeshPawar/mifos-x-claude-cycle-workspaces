@@ -203,39 +203,290 @@ capabilities:
       stale_inputs: []
   idea-sync:
     last_run:
-      at: '2026-07-16T11:32:00Z'
+      at: '2026-07-17T05:59:00Z'
       status: success
       actor: claude
       command: /idea-sync
-      args: 'ignore absence of stitch mockups.'
+      args: ''
+      duration_ms: 0
+      errors: 0
+      warnings: 0
+    metrics:
+      steps_total: 12
+      steps_succeeded: 11
+      steps_failed: 0
+      steps_skipped: 1
+      scope: >-
+        verify + gap-route + EXPORT_MATRIX v1->v2 migration. No enrichment dispatched
+        (all 25 features already approved at quality 95-98; the 124 action_contract
+        blocks the 2026-07-16 run deferred have since been authored).
+      features_evaluated: 25
+      preflight: PASS (5 slugs, all PASS — auto-proceed, no picker, zero acked WARNs)
+      export_matrix_migration: >-
+        v1 -> v2 COMPLETE (Step G.E.0 + G.E.1, Phase 4 T15/T16). The file was
+        schema_version "1.0" — the shape that made /idea-feature-mockup correctly emit
+        EXPORT_MATRIX_V1_DETECTED and refuse to write its 50 cells. Now 122 cells across
+        25 features: spec 25, api_md 25, mockup 25, prompts_figma 25,
+        mockup_stitch_manifest 22. 100 fresh / 22 stale / 0 pending.
+      export_matrix_disk_truth_deviation: >-
+        G.E.0 says "emit one cell per TRUTHY v1 boolean". v1 carried figma_exported:
+        0/false — a snapshot predating the 25 PROMPTS_FIGMA.md that /idea-feature-mockup
+        had just written. Migrating the booleans literally would have dropped 25 real
+        artifacts from the ledger, so truthiness was resolved against DISK
+        (COMMAND_MATRIX_REGISTRY row_scanner defines these columns as file_exists; the v1
+        file itself set the precedent when mockup_exported was corrected 0 -> 25).
+      export_matrix_verification: >-
+        Not self-reported — checked. All 122 output hashes AND every derived_from input
+        hash recomputed against live disk: 0 drift. 0 wrong stale verdicts, 0 orphaned
+        cells, summary in sync with cells[], framework-verify-export-matrix.sh PASS.
+      gaps_closed: 1
+      gap_closed_detail: >-
+        pfm-dashboard / RULE-IDEA-SUB-ACTION-COMPLETENESS-001 sub-action-leaf-missing —
+        the last open error in the project. Its error_state retry was a bare, typeless
+        `action:` block (a 1-of-37 outlier; `action` is an empty_state slot, not an
+        error_state slot). Fixed at root cause to the project's dominant typed-children
+        pattern: button id=pfm_error_retry_button + action_contract{effect:
+        transform_state, external_library_refs:[kotlinx-coroutines]}. transform_state is
+        correct — api.yaml declares endpoints: [], so the retry re-runs the local
+        PfmRepository aggregation, not an API call. Cascade honoured: SPEC.md + MOCKUP.md
+        + PROMPTS_FIGMA.md re-exported and their matrix cells refreshed, so the ledger
+        stayed truthful instead of recording fresh cells over stale files.
+      gaps_open_after: 0
+      gaps_deferred: >-
+        4 warn findings, all category=stitch_coverage (statements partial stitch run;
+        login content html/png never downloaded; accounts prompt_sha drift on all 5
+        states; 10 features absent from PROJECTS_INDEX.yaml). Owned by
+        /idea-feature-stitch — deliberately NOT routed here rather than half-fixed.
+      open_framework_findings: >-
+        (1) EXPORT_OUTPUT_TYPES.yaml declares mockups/{feature}/PROMPTS_STITCH.md as the
+        input for mockup_stitch_manifest, but that file exists for 0/25 features — it is
+        the LEGACY v3.1 path; RULE-STITCH-PROMPT-CANONICAL-001 moved per-state prompts to
+        screens/{feature}/prompts/{state}.md and this project already follows the new
+        convention. That single stale catalogue row is the sole cause of all 22 stale
+        cells. Fixing it is a FRAMEWORK edit, out of scope for a project sync — surfaced,
+        not papered over. (2) STEP 4.VERIFY's check list still expects
+        prototype/index.html, removed 2026-05-14 and forbidden by
+        RULE-PROTO-RENDER-LLM-001; carried forward unfixed from the prior run.
+    detail_ref: state/SYNC_STEPS.yaml
+    drift:
+      stale_inputs: []
+      next_required:
+        - idea-feature-stitch
+  idea-feature-export:
+    last_run:
+      at: '2026-07-16T14:10:00Z'
+      status: success
+      actor: claude
+      command: /idea-feature-export --all --force
+      args: '--all --force'
+      duration_ms: 0
+      errors: 0
+      warnings: 0
+    metrics:
+      features_exported: 25
+      files_written: 50
+      spec_written: 25
+      api_written: 25
+      roundtrip_passed: 25
+      roundtrip_failures: []
+      scope: >-
+        SPEC.md + API.md for all 25 features. MOCKUP.md / PROMPTS_FIGMA.md NOT in
+        scope this run (--mockup owns those); screens/*/prompts/*.md untouched —
+        they were rebuilt separately and are fresh.
+      verification: >-
+        Every export verified against its source YAML, not against the agent
+        reports: placeholder scan, state round-trip (every ui.yaml state appears),
+        VM-contract presence (state_model VM key appears), endpoint round-trip
+        (every api.yaml path appears; client-only features must SAY so rather than
+        invent endpoints), and action-effect coverage. 25/25 clean, 0 problems.
+      blocker_cleared: >-
+        This export was previously IMPOSSIBLE without data loss. C6_STATE_MODEL_FORMAT
+        (_shared/idea-shared-validation.md) rejects any state_model that lacks a
+        'ViewModel'-containing key or carries a flat `states:`/`initial_state:`, and
+        its fix REPLACES the block with {} (-30 quality). validate_screen_yaml
+        auto-applies fixes ("IF has auto-fix -> apply fix -> re-check"), and Step 1.5
+        of this command calls it at tier critical+high. C6 PASS was 0/25: running
+        --all --force would have WIPED the ViewModel contract from 6 features, then
+        skipped the export anyway via E1 (state_model empty). Fixed by authoring a
+        conforming state_model for all 25 features BEFORE exporting — see
+        capabilities.idea-feature-enrich-loop-style work recorded in this run's
+        CAPABILITY_GAPS entries and the C6 audit below.
+      c6_conformance: 'PASS 25/25 (was 0/25) — 0 malformed, 0 empty'
+      e1_gate: 'PASS 25/25 — every feature has state.fields + actions.members + di'
+      corrections_made: >-
+        pfm-dashboard's prior export documented the WRONG DI
+        (TransactionRepository/AccountRepository) — corrected to PfmRepository per
+        state_model.di. transaction-detail's prior export listed 3 states; ui.yaml
+        declares 4 — empty state added. user-onboarding's prior export omitted
+        loading/error/empty. EXPORT_MATRIX summary claimed mockup_exported: 0 and
+        stitch_generated: 0 while 25 MOCKUP.md and 22 PNG sets exist on disk —
+        corrected to 25 and 22.
+      known_gaps: >-
+        figma_exported 0/25 — PROMPTS_FIGMA.md has never been generated for any
+        feature (not stale; never produced). Out of scope for --all; needs
+        /idea-feature-export --mockup.
+    detail_ref: idea-layer/EXPORT_MATRIX.yaml
+    drift:
+      stale_inputs: []
+  idea-feature-mockup:
+    last_run:
+      at: '2026-07-17T05:15:47.000Z'
+      status: success
+      actor: claude
+      command: /idea-feature-mockup
+      args: ''
+      duration_ms: 0
+      errors: 0
+      warnings: 0
+    metrics:
+      features_exported: 25
+      files_written: 50
+      mockup_written: 25
+      figma_written: 25
+      scope: >-
+        MOCKUP.md + PROMPTS_FIGMA.md for all 25 features. Closes the
+        known_gaps.figma_exported 0/25 recorded by the preceding
+        idea-feature-export run — PROMPTS_FIGMA.md now exists for every feature
+        (previously never produced for any). Stitch per-state prompts
+        (screens/*/prompts/*.md) NOT in scope — /idea-feature-stitch owns those.
+      regeneration_reason: >-
+        All 25 MOCKUP.md were stale against ui.yaml. The pending
+        action-contract enrichment (38 files, +1169 lines) added state_model +
+        action_contract blocks that the Jul-14 mockups predated.
+      states_per_feature: >-
+        Mirrored from ui.yaml#states, not a canonical-4 template. Range 4..7 —
+        user-onboarding 7 (intro/permissions_overview/consent_explainer/
+        ob_explainer_open + loading/error/empty), consent-callback 6
+        (+access_denied/security_error), consent-detail 6 (+revoke_confirm/
+        revoking), profile 6 (+content_expiring/confirm_sign_out), accounts 5
+        (+consent_expiring), login 5 (+authorising), party 5
+        (+consent_required), consent-list 5 (+error_auth), settings 5
+        (+clear_confirm).
+      defects_corrected_in_source_artifacts: >-
+        The shipped mockups misrepresented the spec and were repaired against
+        it: a bottom-nav "PFM" tab that app-shell.yaml does not declare (rail is
+        Home|Accounts|Transactions|More since 2026-06-30) — present across most
+        features; home balance/transactions contradicting demo-data.yaml
+        (rendered GBP 4281.55 vs real 2847.63); login consent expiry off by two
+        weeks (10 Oct vs 26 Sep); a transactions "Pending" filter chip absent
+        from ui.yaml (correct: filter_date_range); phantom cancel_button + two
+        extra CTAs in consent-callback; phantom view_consents_button in
+        direct-debits; wrong icons (consent-list lock_outline vs lock_open;
+        consent-callback gpp_bad/error_outline); account-detail wrong nickname/
+        balances/servicer + missing chip_product/chip_party; product wrong
+        credit-interest tiers + stale features; pfm-dashboard stale top category
+        and an Interaction Summary covering only 4 of 14 declared actions.
+      self_inflicted_regression_repaired: >-
+        The first pass asked generators for hover/pressed/disabled variants
+        without stating the M3 state-layer contract. 11 features responded by
+        inventing off-palette hexes (hand-darkened primary etc.), turning
+        preflight mockup-theme-consistency from 0 findings to FAIL/12. Repaired:
+        9 features surgically (token + opacity overlay form), 2 regenerated from
+        scratch after their agents died mid-write (account-detail,
+        consent-detail). Gate re-run green — 0 findings.
+      warning_role_decision: >-
+        profile invented an amber warning palette (#FFF8E1/#F9A825/#795548) and
+        a teal (#00897B) because M3 declares no warning colour role. Mapped onto
+        the declared tertiary family (tertiaryContainer/onTertiaryContainer);
+        teal to primary. consent-detail independently reached the same proxy.
+        NOTE: adding a real warning role to design-tokens.yaml is /design-system
+        work, deliberately out of scope here.
+      verification: >-
+        Verified by evaluator, not by agent self-report — the self-reports were
+        unreliable: account-detail claimed PASS while writing FIGMA_PROMPTS.md
+        (wrong filename, invisible to the PROMPTS_FIGMA.md glob and therefore to
+        the theme gate); profile claimed TOKEN_REFS_RESOLVE=PASS while
+        introducing 4 off-palette hexes; budgets reported 332 figma lines vs 274
+        actual. Post-run gates: preflight-mockup-theme-consistency PASS
+        (findings 0), preflight-source-of-truth-sync PASS (A=B=C, 0 divergent),
+        artifact completeness 25/25, stray FIGMA_PROMPTS.md 0.
+      known_gaps: >-
+        budgets PROMPTS_FIGMA.md is 274 lines, short of the ~400-600 guidance
+        (content complete; density below target). EXPORT_MATRIX cells NOT
+        written this run — see export_matrix_status.
+      export_matrix_status: >-
+        EXPORT_MATRIX_V1_DETECTED — idea-layer/EXPORT_MATRIX.yaml is
+        schema_version "1.0". Per _shared/export-matrix-write.md Step 1 a writer
+        must not overwrite a v1 file with v2-shaped cells; migration is a
+        /idea-sync-driven event. The 50 mockup/prompts_figma cells are therefore
+        PENDING and will be picked up by the next /idea-sync migration + Step G
+        hash compare.
+    detail_ref: idea-layer/EXPORT_MATRIX.yaml
+    drift:
+      stale_inputs: []
+      next_required:
+        - idea-sync
+  idea-verify:
+    last_run:
+      at: '2026-07-16T13:35:00Z'
+      status: success
+      actor: claude
+      command: /idea-verify
+      args: 'ignore missing stitch mockups.'
       duration_ms: 0
       errors: 0
       warnings: 1
     metrics:
-      steps_total: 8
-      steps_succeeded: 7
-      steps_failed: 0
-      steps_skipped: 1
-      scope: verify + gap-record (enrichment authoring deferred by user)
       features_evaluated: 25
-      preflight: 'PASS (5 slugs; 1 acked WARN — idea-export-stitch, stitch ignored per args)'
-      mockups_phase: skipped (user directive — ignore absence of stitch mockups)
-      action_contract_gap: >-
-        124/124 interactive on_click components lack action_contract
-        (RULE-IDEA-ACTION-CONTRACT-001 AC1, severity error, grace_until null).
-        25 findings recorded — one per feature. Authoring NOT performed this run.
-      gate_trust_note: >-
-        G-ACTION-CONTRACT (framework-verify-action-contract.sh) exit 0 does NOT
-        currently prove AC1 passes. As shipped it matched only `- id:` component
-        starts while canonical enrich output writes `- type:` first, so it saw 30
-        of 248 components and reported a false green. Key-order fixed locally
-        2026-07-16 (canaries still red/green correct). It STILL models only flat
-        components and collapses nested `children:`/`trailing_content:` subtrees
-        into one verdict — which is where all 124 of these components live.
-        The 124 count comes from an independent YAML tree walk, not from the gate.
-    detail_ref: state/SYNC_STEPS.yaml
+      sibling_files_present: '175/175'
+      yaml_parse: 'PASS 25/25'
+      dead_nav_targets: 0
+      i18n_missing_entries: 0
+      dead_flow_entries: 0
+      action_contracts: 124
+      action_contract_missing: 0
+      states_empty: 0
+      orphan_screens: 0
+      gates: >-
+        G-ACTION-CONTRACT 0 violations (611 component blocks) · G-ILC fail=0 warn=0
+        (SC-0 parse gate included) · scaffold-align PASS · REG-001 0 unresolved
+        types · WCAG AA 0 FAIL / 0 WARN · 7/7 state files parse.
+      stitch_scope: >-
+        SKIPPED per run args. 4 stitch_coverage findings remain open in
+        CAPABILITY_GAPS (statements V1-STITCH-STATE-COMPLETE, login
+        V1-STITCH-FILES-ON-DISK, accounts V1-STITCH-PROMPT-SHA-DRIFT, multi
+        V1-STITCH-INDEX-ENTRY) and were not evaluated.
+      open_non_stitch: >-
+        1 — pfm-dashboard/SAC. Root-caused this run: its error_state retry is a
+        bare `action:` block (ui.yaml:53) with no type/id. error_state's registry
+        slot is `retry_action`, not `action` (`action` belongs to empty_state), and
+        because the block is typeless it is invisible to AC1. 1-of-37 outlier — the
+        other 36 error/empty states use typed children[]. Read-only command; not fixed.
+      false_positives_rejected: >-
+        1 — an ORPHAN_SCREEN advisory on `settings` was raised then rejected: the
+        check only walked ui.yaml on_click targets, but settings is reachable via
+        the app-shell bottom nav (More -> settings) AND flows/settings-and-profile.yaml.
+        RULE-PROTO-ORPHAN-ROUTE-001 OR-1 counts nav OR flow entry, so it satisfies both.
+    detail_ref: state/CAPABILITY_GAPS.yaml
     drift:
       stale_inputs: []
+    previous_run:
+      at: '2026-07-15T07:15:00Z'
+      status: warn
+      command: /idea verify
+      errors: 0
+      warnings: 4
+      checks_run: 409
+      checks_passed: 403
+      quality_score: 96
+      completeness_score: 90
+      open_gap_classes:
+        - V1-STITCH-PROMPT-SHA-DRIFT
+        - V1-STITCH-INDEX-ENTRY
+        - V1-STITCH-FILES-ON-DISK
+        - V1-STITCH-STATE-COMPLETE
+      flags:
+        - >-
+          SERVER-API-FIRST-PARTY: zero owned server APIs; backend.owned=false by
+          design (AISP pure-consumer). Standing project fact, not a defect.
+      detail_ref: state/verify-logs/all-2026-07-15T07-15-00Z.md
+      note: >-
+        Folded in from a DUPLICATE `idea-verify:` key that this run created and
+        then removed. PIPELINE_STATE.yaml holds ONE last_run per capability; the
+        07-15 record is preserved here as history. Its 4 warnings were all stitch
+        coverage — the same 4 still open in CAPABILITY_GAPS and skipped this run.
+        Delta 07-15 -> 07-16: 124 action_contracts authored (were 0), REG-001
+        resolved (dropdown -> select), 2 YAML corruptions repaired.
   design-validate:
     last_run:
       at: '2026-07-16T12:55:00Z'
@@ -257,24 +508,19 @@ capabilities:
       score: 96
       score_basis: partial-corpus
       evaluated: >-
-        REG-001 (RESOLVED — `dropdown` x3 remapped to the registered `select`
-        after the RULE-COMPONENT-REGISTRY-001 picker; 0 unresolved types remain
-        across 41 distinct types / 25 screens); A11Y-002/COLOR (PASS — 13 M3
-        contrast pairs verified in light AND dark, all >=4.5:1); STATE-001 (PASS —
-        19/19 api-backed screens compose loading/content/error/empty);
-        RENDER-STALE (WARN — budgets + settings previews stale after the remap).
+        REG-001 (RESOLVED — `dropdown` x3 remapped to the registered `select` after the RULE-COMPONENT-REGISTRY-001
+        picker; 0 unresolved types remain across 41 distinct types / 25 screens); A11Y-002/COLOR (PASS — 13 M3 contrast
+        pairs verified in light AND dark, all >=4.5:1); STATE-001 (PASS — 19/19 api-backed screens compose
+        loading/content/error/empty); RENDER-STALE (WARN — budgets + settings previews stale after the remap).
       not_evaluable_note: >-
-        14 of ~20 declared rules could not execute: validation-rules.json is
-        v2.0.0 / lastUpdated 2026-02-10 and checks fields (keyboard.focusable,
-        label_source, supported_states, motion.*, breakpoints) that exist neither
-        in core/schemas/ui-yaml.schema.json nor in any of the 25 ui.yaml files.
-        Corpus size is self-inconsistent: runtime says 102 rules, _metadata says
-        147, categories block holds 67.
+        14 of ~20 declared rules could not execute: validation-rules.json is v2.0.0 / lastUpdated 2026-02-10 and checks
+        fields (keyboard.focusable, label_source, supported_states, motion.*, breakpoints) that exist neither in
+        core/schemas/ui-yaml.schema.json nor in any of the 25 ui.yaml files. Corpus size is self-inconsistent: runtime
+        says 102 rules, _metadata says 147, categories block holds 67.
       prior_run_warning: >-
-        The 2026-07-14 record claimed score 100 / pass true with every category
-        0/0/0 — including MOTION and RESP, which cannot run at all here. That was
-        a false green: unevaluable rules reported as zero findings. This run
-        scores only what it could actually evaluate and marks the rest explicitly.
+        The 2026-07-14 record claimed score 100 / pass true with every category 0/0/0 — including MOTION and RESP, which
+        cannot run at all here. That was a false green: unevaluable rules reported as zero findings. This run scores
+        only what it could actually evaluate and marks the rest explicitly.
     detail_ref: state/DESIGN_VALIDATION.yaml
     drift:
       stale_inputs: []
@@ -292,27 +538,24 @@ capabilities:
       features_enriched: 25
       action_contracts_authored: 124
       scope: >-
-        AC1 remediation only — authored the missing action_contract block on every
-        interactive on_click. No other enrichment dimension was touched.
+        AC1 remediation only — authored the missing action_contract block on every interactive on_click. No other
+        enrichment dimension was touched.
       effects_distribution: >-
-        navigate=56 transform_state=30 call_api=20 share_external=6 persist_db=4
-        delete=4 persist_file=2 copy_clipboard=1 none=1
+        navigate=56 transform_state=30 call_api=20 share_external=6 persist_db=4 delete=4 persist_file=2
+        copy_clipboard=1 none=1
       library_channel: >-
-        external_library_refs throughout; library_refs[] unused. CAPABILITY_PROVIDERS.yaml
-        offers only cmp-audio-recorder / cmp-network-monitor / cmp-network-monitor-compose,
-        none of which this banking app consumes. Four platform capabilities had no provider
-        at all and use honest coined tokens grounded in project vocabulary:
+        external_library_refs throughout; library_refs[] unused. CAPABILITY_PROVIDERS.yaml offers only
+        cmp-audio-recorder / cmp-network-monitor / cmp-network-monitor-compose, none of which this banking app consumes.
+        Four platform capabilities had no provider at all and use honest coined tokens grounded in project vocabulary:
         platform-intent/openURL, platform-clipboard-manager, gps-expect-actual, room.
       verification: >-
-        Nested component-tree walk over AC1-AC5 + the ui-yaml.schema.json
-        action_contract shape: 124/124 contracts present, 0 hard failures, 25/25
-        ui.yaml parse clean. 8 advisories, all writes_to omissions on DataStore/
-        prefs-backed effects with no relational table named in data-flow.yaml —
-        omitted rather than invented (writes_to grace runs to 2026-07-24).
+        Nested component-tree walk over AC1-AC5 + the ui-yaml.schema.json action_contract shape: 124/124 contracts
+        present, 0 hard failures, 25/25 ui.yaml parse clean. 8 advisories, all writes_to omissions on DataStore/
+        prefs-backed effects with no relational table named in data-flow.yaml — omitted rather than invented (writes_to
+        grace runs to 2026-07-24).
       not_covered: >-
-        15 on_click components remain contract-less because their type sits outside
-        the rule's interactive vocabulary (dropdown/text_button/segmented_button/
-        filled_button/outlined_button/info_row + 6 with no type field). See
+        15 on_click components remain contract-less because their type sits outside the rule's interactive vocabulary
+        (dropdown/text_button/segmented_button/ filled_button/outlined_button/info_row + 6 with no type field). See
         CAPABILITY_GAPS.yaml#summary.known_gap_ac1_vocabulary.
     detail_ref: state/CAPABILITY_GAPS.yaml
     drift:
@@ -334,63 +577,19 @@ capabilities:
       features_generated_this_run: 4
       states_generated_this_run: 2
     detail_ref: state/STITCH_STATE.yaml
-  idea-verify:
+  idea-feature-stitch:
     last_run:
-      at: '2026-07-15T07:15:00Z'
-      status: warn
-      actor: claude
-      command: /idea verify
-      args: ''
-      duration_ms: 0
-      files_touched:
-        - idea-layer/state/PIPELINE_STATE.yaml
-        - idea-layer/state/verify-logs/all-2026-07-15T07-15-00Z.md
-      artifacts:
-        - path: idea-layer/state/verify-logs/all-2026-07-15T07-15-00Z.md
-      errors: 0
-      warnings: 4
-      flags: 1
-    metrics:
-      checks_run: 409
-      checks_passed: 403
-      checks_warned: 4
-      checks_failed: 0
-      checks_skipped: 2
-      overall: warn
-      blocking_rule_ids: []
-      quality_score: 96
-      completeness_score: 90
-      features_verified: all-25
-      open_gaps: 4
-      open_gap_classes:
-        - V1-STITCH-PROMPT-SHA-DRIFT
-        - V1-STITCH-INDEX-ENTRY
-        - V1-STITCH-FILES-ON-DISK
-        - V1-STITCH-STATE-COMPLETE
-      stitch_warns:
-        - 'accounts: prompt sha drift (5 states) — /idea-export-stitch accounts --force'
-        - 'budgets: absent from PROJECTS_INDEX — /idea-export-stitch budgets'
-        - 'login: content html/png not downloaded — /idea-export-stitch login --re-download'
-        - 'statements: loading+content generation failed — /idea-export-stitch statements'
-      flags:
-        - SERVER-API-FIRST-PARTY: zero owned server APIs; backend.owned=false by design (AISP pure-consumer)
-      delta_vs_previous:
-        note: stitch checks now included (were suppressed by args in 06:30:00Z run); no regressions
-        new_warnings: 4
-        resolved_warnings: 0
-    detail_ref: state/verify-logs/all-2026-07-15T07-15-00Z.md
-    drift:
-      stale_inputs: []
-    previous_run:
-      at: '2026-07-15T06:30:00Z'
+      at: '2026-07-16T13:03:42.613Z'
       status: success
-      command: /idea verify
-      args: ignore stitch mockups (images); flag absence of first-party server APIs
-      errors: 0
-      warnings: 0
-      quality_score: 96
-      completeness_score: 90
-      note: stitch checks suppressed per args; all structural+render checks passed
+      duration_ms: 35
+      actor: claude
+      command: /idea-feature-stitch budgets --build-prompts --force
+    metrics:
+      build_prompts_last_run: '2026-07-16T13:03:42.612Z'
+      states_written_this_run: 4
+      states_failed_this_run: 0
+      avg_chars_per_state: 4732
+    detail_ref: state/STITCH_STATE.yaml
 design_system:
   stitch:
     tokens_hash: 020c30cc

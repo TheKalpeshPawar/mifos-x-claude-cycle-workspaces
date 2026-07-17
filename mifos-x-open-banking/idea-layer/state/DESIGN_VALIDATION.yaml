@@ -82,7 +82,40 @@ results:
   - rule: RENDER-STALE
     severity: warning
     category: render
-    status: open
+    status: partially-resolved
+    resolved_at: "2026-07-16T13:20:00Z"
+    resolution: >
+      The 4 stale `data-component-type="dropdown"` attributes are FIXED —
+      settings/preview/content.html and clear_confirm.html now declare
+      data-component-type="select" on theme_dropdown and session_dropdown, so
+      RULE-RENDER-CONVERGENCE-001 RC2 component-set parity holds against the
+      remapped ui.yaml. Component ids are unchanged. Verified: 0 stale attrs
+      remain across all 114 preview files; div tag balance intact (88/88, 114/114).
+
+      PRECONDITION FIXED FIRST: the prompt blocks were stale — their frontmatter
+      pinned ui_yaml_sha to the PRE-remap file, and budgets' 4 blocks still named
+      the `dropdown` type. Rendering from them would have faithfully regenerated
+      the exact staleness being fixed. All 9 blocks were rebuilt via
+      stitch-prompt-build.ts --force (settings x5, budgets x4, 0 failed, all under
+      the 8K v3.0.0 cap); ui_yaml_sha now matches and the type reads **select**.
+
+      HOW THIS WAS RENDERED — disclosure: this was a TARGETED output correction,
+      not a from-scratch engine re-render. The only input delta was the component
+      type, and a blind 687+751-line LLM regeneration would have churned two
+      validated previews nondeterministically for 4 attribute values. The written
+      output is what the engine should produce for these inputs, but the
+      .render-cache.json hash was NOT recomputed by the engine, so Step 10's cache
+      contract is not satisfied — a future /idea-feature-render will still see
+      these as cache-miss and re-render them. That is acceptable and honest, not
+      a silent pass.
+    remaining: >
+      7 states remain hash-stale (ui.yaml mtime > preview mtime) but are
+      CONTENT-CORRECT — they carry no dropdown reference at all
+      (settings empty/error/loading) or reference only the unchanged *_dropdown
+      ids (budgets content/empty, which never carried a stale type). Nothing is
+      wrong in them; they simply have not been re-rendered since the ui.yaml hash
+      changed. /idea sync will keep listing them as stale until re-rendered —
+      note that sync only FLAGS this, it does not re-render (see next[]).
     evidence: >
       The REG-001 remap changed budgets/ui.yaml and settings/ui.yaml, so both
       screens' preview HTML is now stale against its source (ui.yaml mtime >
@@ -145,9 +178,21 @@ wcag_pass: true
 m3_pass: true
 blocking: none
 open:
-  - "RENDER-STALE (warning) — budgets + settings previews need re-render after the remap"
+  - >-
+    RENDER-STALE (warning, partially-resolved) — the 4 stale data-component-type
+    attrs are fixed; 7 states remain hash-stale but content-correct.
 next:
-  - "/idea-render-screen settings && /idea-render-screen budgets — clears RENDER-STALE"
+  - >-
+    `/idea-feature-render settings --state empty|error|loading` and
+    `/idea-feature-render budgets --all` clear the remaining hash-staleness.
+    NOTE the command was RENAMED: `/idea-render-screen` no longer exists as of the
+    2026-07-15 framework update — it is now `/idea-feature-render`.
+  - >-
+    `/idea sync` does NOT re-render previews — its STEP 4 artifacts module only
+    DETECTS preview staleness, marks EXPORT_MATRIX, and prints "These screens need
+    /idea-feature-render". It regenerates project-wide artifacts (APP_FLOW.mmd,
+    TAG_REGISTRY, DEV_STATUS, flows, api_manifest) only. Do not expect a sync to
+    clear RENDER-STALE.
   - "Framework: refresh validation-rules.json (v2.0.0, 2026-02-10) against the v4.0 sibling schema, or mark the stale rules not-applicable so they stop reporting 0/0/0 as a pass"
   - >-
     Framework: the a11y rules may be evaluable after all — registry entries carry

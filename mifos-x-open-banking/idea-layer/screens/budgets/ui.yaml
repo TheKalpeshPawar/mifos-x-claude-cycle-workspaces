@@ -21,6 +21,49 @@ business_logic:
   description_author: claude
   description_authored_at: "2026-06-29T12:00:00Z"
 
+# ─────────────────────────────────────────────────────────────────────
+# STATE MODEL — BudgetViewModel contract
+# Derived from docs.yaml#vm_actions + error_cases for implementation.
+# Client-only: persists BudgetEntry to DataStore; reads TransactionCache
+# for used/limit computation. No API endpoints.
+# Satisfies QUALITY_FORMULA.md Category 10 (State Model, 5 pts).
+# ─────────────────────────────────────────────────────────────────────
+state_model:
+  BudgetViewModel:
+    state:
+      name: BudgetsState
+      fields:
+        - name: budgets
+          type: List<BudgetEntry>
+        - name: form
+          type: BudgetForm           # holds category + amount + amountError
+        - name: currentMonthLabel
+          type: String
+        - name: uiState
+          type: BudgetsUiState
+    screen_state:
+      sealed_class: BudgetsUiState
+      members:
+        - Loading
+        - Content                    # budgets: List<BudgetEntry>, currentMonthLabel: String
+        - Empty                      # form still visible; no budgets saved yet
+        - Error                      # DataStore read failure on mount
+    errors:
+      types:
+        - StorageReadError           # DataStore IOException on mount (EC-BUD-004)
+        - StorageWriteError          # DataStore IOException on saveBudget / deleteBudget (EC-BUD-005)
+    actions:
+      members:
+        - retryLoad                  # re-runs budgets_load from loading state
+        - selectBudgetCategory       # updates form.category from dropdown
+        - updateBudgetAmountField    # updates form.amount + validates inline
+        - saveBudget                 # validates + upserts BudgetEntry to DataStore
+        - deleteBudget               # removes BudgetEntry from DataStore by category key
+        - navigateSpendingByCategory # pushes spending-by-category with category param
+    di:
+      - BudgetsDataStore             # DataStore<Preferences> for BudgetEntry persistence
+      - TransactionCache             # AIS debit cache for per-category used/limit computation
+
 states: [loading, content, empty, error]
 
 components:

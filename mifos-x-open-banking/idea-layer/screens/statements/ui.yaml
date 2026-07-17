@@ -212,6 +212,7 @@ layout:
 state_model:
   StatementsViewModel:
     state:
+      name: StatementsState
       fields:
         - name: uiState
           type: StatementsUiState
@@ -220,24 +221,25 @@ state_model:
           type: "Map<String, DownloadState>"
           initial: "emptyMap()"
     screen_state:
+      sealed_class: StatementsUiState
       members:
         - Loading
-        - "Content(statements: List<StatementRowUiModel>)"
+        - Content                           # statements: List<StatementRowUiModel>
         - Empty
-        - "Error(message: String)"
+        - Error                             # message: String
     errors:
       types:
-        - http_401: "Session expired. Please re-authenticate."
-        - http_403: "Consent does not include ReadStatements."
-        - http_429: "Too many requests. Please wait and retry."
-        - http_501: "Statement download not available for this account type."
-        - network: "Unable to connect. Check your connection and retry."
+        - TokenExpiredError                 # HTTP 401 — session expired
+        - ConsentScopeError                 # HTTP 403 — ReadStatements consent missing
+        - RateLimitedError                  # HTTP 429 — too many requests
+        - StatementDownloadUnsupportedError # HTTP 501 — download not available for account type
+        - NetworkError                      # network — AIS endpoint unreachable
     actions:
       members:
-        - "statementsLoad(accountId: String)"
-        - "navigateToStatementDetail(statementId: String, accountId: String)"
-        - "retryLoad(accountId: String)"
-        - "downloadStatement(statementId: String, accountId: String)"
+        - statementsLoad               # suspend; GET /accounts/{accountId}/statements
+        - navigateToStatementDetail    # fun(statementId: String, accountId: String)
+        - retryLoad                    # suspend; delegates to statementsLoad
+        - downloadStatement            # suspend; GET .../statements/{StatementId}/file → platform handler
     di:
       - StatementsRepository
       - StatementFileRepository

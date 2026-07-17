@@ -5,33 +5,45 @@ status: enriched
 quality_score: 95
 initial_state: content
 
+# ─────────────────────────────────────────────────────────────────────
+# STATE MODEL — ConsentOnboardingViewModel contract
+# Migrated to C6 format; vm_class/ui_state_sealed/flat states map removed.
+# Derived from ui.yaml#view_state_fields + docs.yaml#vm_actions + error_cases.
+# ─────────────────────────────────────────────────────────────────────
 state_model:
-  vm_class: ConsentOnboardingViewModel
-  ui_state_sealed: ConsentOnboardingUiState
-  states:
-    content: "ConsentOnboardingUiState.Content(requestedPermissions: List<OBPermission>, consentExpiryLabel: String)"
-    loading: "ConsentOnboardingUiState.Loading"
-    authorising: "ConsentOnboardingUiState.Authorising"
-    error: "ConsentOnboardingUiState.Error(userMessage: String)"
-    empty: "ConsentOnboardingUiState.Empty"
-  view_state_fields:
-    - requestedPermissions: "List<OBPermission>"
-    - consentExpiryLabel: "String"
-    - errorMessage: "String?"
-  actions:
-    - "fun loadPermissionsConfig(): Unit"
-    - "suspend fun startOAuth(): Unit"
-    - "fun navigateBack(): Unit"
-  di:
-    - ConsentService
-    - FapiAuthBuilder
-    - LocalStorage
-    - Navigator
-  errors:
-    types:
-      - NetworkException
-      - HttpException
-      - FapiRedirectException
+  ConsentOnboardingViewModel:
+    state:
+      name: ConsentOnboardingState
+      fields:
+        - name: requestedPermissions
+          type: List<OBPermission>
+        - name: consentExpiryLabel
+          type: String
+        - name: errorMessage
+          type: String?
+    screen_state:
+      sealed_class: ConsentOnboardingUiState
+      members:
+        - Content     # requestedPermissions: List<OBPermission>, consentExpiryLabel: String
+        - Loading     # consent-create POST in flight
+        - Authorising # FAPI redirect launched; user authenticating in HSBC
+        - Error       # userMessage: String
+        - Empty       # zero OBIE permissions staged; prevents zero-scope OBReadConsent1
+    errors:
+      types:
+        - NetworkException
+        - HttpException
+        - FapiRedirectException
+    actions:
+      members:
+        - loadPermissionsConfig  # reads OBReadConsent1.Permissions; computes consentExpiryLabel
+        - startOAuth             # POST consent-create; build FAPI URL; launch app-to-app redirect
+        - navigateBack           # pop to user-onboarding; no side-effects
+    di:
+      - ConsentService
+      - FapiAuthBuilder
+      - LocalStorage
+      - Navigator
 
 dependencies:
   tier: 0

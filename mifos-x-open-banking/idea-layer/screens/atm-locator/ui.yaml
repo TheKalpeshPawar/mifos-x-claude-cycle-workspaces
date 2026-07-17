@@ -22,29 +22,41 @@ business_logic:
   description_authored_at: "2026-06-29T12:00:00Z"
 
 state_model:
-  vm_class: AtmLocatorViewModel
-  ui_state_sealed: AtmLocatorUiState
-  states:
-    loading: "AtmLocatorUiState.Loading"
-    content: "AtmLocatorUiState.Content(filteredAtms: List<AtmDisplayItem>)"
-    empty: "AtmLocatorUiState.Empty"
-    error: "AtmLocatorUiState.Error(message: String)"
-  view_state_fields:
-    - allAtms: "List<AtmDisplayItem>"
-    - filteredAtms: "List<AtmDisplayItem>"
-    - filterState: "AtmFilterState(is24h: Boolean, hasWheelchairAccess: Boolean, hasCashDeposit: Boolean)"
-    - searchQuery: "String"
-  actions:
-    - "suspend fun atmsLoad()"
-    - "fun searchAtms(query: String)"
-    - "fun toggleFilter24h()"
-    - "fun toggleFilterWheelchair()"
-    - "fun toggleFilterDeposit()"
-    - "fun openAtmDirections(atm: AtmDisplayItem)"
-    - "suspend fun retryLoad()"
-  di:
-    - "AtmRepository (KtorfitAtmService → https://api.hsbc.com/v2.0/uk/open-banking/atms; unauthenticated)"
-    - "GpsDistanceCalculator (expect/actual — distance string from GPS coords + postcode centroid fallback)"
+  AtmLocatorViewModel:
+    state:
+      name: AtmLocatorState
+      fields:
+        - name: allAtms
+          type: "List<AtmDisplayItem>"
+        - name: filteredAtms
+          type: "List<AtmDisplayItem>"
+        - name: filterState
+          type: AtmFilterState        # is24h: Boolean, hasWheelchairAccess: Boolean, hasCashDeposit: Boolean
+        - name: searchQuery
+          type: String
+    screen_state:
+      sealed_class: AtmLocatorUiState
+      members:
+        - Loading
+        - Content              # filteredAtms: List<AtmDisplayItem>
+        - Empty
+        - Error                # message: String
+    errors:
+      types:
+        - NetworkError         # IOException / SocketTimeoutException — HSBC Open Data unreachable
+        - HttpServerError      # HTTP 5xx — HSBC Open Data service unavailable
+    actions:
+      members:
+        - atmsLoad               # suspend; GET /atms (HSBC Open Data, unauthenticated, 15s timeout)
+        - searchAtms             # fun(query: String); client-side filter on Name + PostCode; no API call
+        - toggleFilter24h        # fun(); toggles is24h in filterState; re-applies predicates
+        - toggleFilterWheelchair # fun(); toggles hasWheelchairAccess in filterState
+        - toggleFilterDeposit    # fun(); toggles hasCashDeposit in filterState
+        - openAtmDirections      # fun(atm: AtmDisplayItem); fires geo:/maps:// deep-link; no VM state change
+        - retryLoad              # suspend; resets filterState to default, delegates to atmsLoad
+    di:
+      - AtmRepository            # KtorfitAtmService → HSBC Open Data /atms; unauthenticated
+      - GpsDistanceCalculator    # expect/actual — GPS distance + postcode centroid fallback
 
 dependencies:
   tier: 0

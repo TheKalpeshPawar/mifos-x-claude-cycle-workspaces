@@ -1,9 +1,9 @@
 ---
-ui_yaml_sha: 5ce0e5b710baab509a003bdb8fa35a50b068c97218447942a71954c569cb3847
+ui_yaml_sha: a0bae917da6ffc2ea168ed79dad265b9751bf60e4338cdbd18b8efe867174914
 design_md_hash: a3958d1ca6f307ebba64f58c9addd9531aafd615c1fa4c1b350e7b6683badd73
 app_shell_hash: c60afae56a9af273fdbab8a83d90027037612b4f72cf0c6a85bc872d34e9ab76
 design_read_hash: 513c061d12f3a90e84d6e98e1e037b131e59fa3ca5c5f3c0abfc6ba87d24bcaf
-content_hash: 4720c5bba86c016b460a1a66553a9d7332d1cff2037b1e2446de945652c60c0a
+content_hash: 07c09f41d4308a019d2ee431315fd51d7399d96f1fbaf94f52d35fca47ce32c7
 
 design_read_aesthetic: minimalist-ui
 design_read_dials: {variance: 3, motion: 2, density: 5}
@@ -24,11 +24,14 @@ craft_rules_version: v1.0.0
 
 # settings — clear_confirm state
 
-> Auto-generated from screens/settings/ui.yaml @ SHA bf3139ec90afe263
+> Auto-generated from screens/settings/ui.yaml @ SHA 1b8ac196c733fdee
 > Stitch DesignSystem: 8085591672064527850
 > DO NOT redeclare colors / fonts / spacing — they live in DESIGN.md.
 
 ↓↓↓ MOCKUP PROMPT
+
+> DO NOT invent navigation, tabs, or screens beyond the declared app-shell (Home, Accounts, Transactions, More) plus the composition below. Every nav item you render MUST come from that list.
+> Only elements that navigate or perform an action may look tappable (cursor, ripple, pressed state). DO NOT add tap affordances to decorative content — page titles, section headings, avatars, standalone icons, badges, and static labels are NOT interactive.
 
 ## Archetype: settings
 
@@ -48,7 +51,7 @@ craft_rules_version: v1.0.0
    - **list_item** (#session_timeout_row) — label: "{strings.settings.session_timeout.label}"
 6. **section_header** (#permissions_header) — label: "{strings.settings.section.permissions}"
 7. **list** (#permissions_list) — "permissions_list"
-   - **info_row** (#location_permission_row) — label: "{strings.settings.permissions.location}", icon: "location_on"
+   - **info_row** (#location_permission_row) — label: "{strings.settings.permissions.location}", icon: "location_on", on_click: { action: open_app_system_settings }
 8. **section_header** (#notifications_header) — label: "{strings.settings.section.notifications}"
 9. **list** (#notifications_list) — "notifications_list"
    - **list_item** (#consent_expiry_notif_row) — label: "{strings.settings.consent_expiry_notif.label}"
@@ -56,24 +59,24 @@ craft_rules_version: v1.0.0
 10. **section_header** (#storage_header) — label: "{strings.settings.section.storage}"
 11. **list** (#storage_list) — "storage_list"
    - **info_row** (#pfm_storage_location_row) — label: "{strings.settings.storage.pfm_data}", icon: "storage"
-   - **list_item** (#clear_pfm_cache_row) — label: "{strings.settings.storage.clear_pfm_cache}", icon: "cleaning_services"
+   - **list_item** (#clear_pfm_cache_row) — label: "{strings.settings.storage.clear_pfm_cache}", icon: "cleaning_services", on_click: { action: clear_pfm_cache }
 12. **section_header** (#account_header) — label: "{strings.settings.section.account}"
 13. **list** (#account_links_list) — "account_links_list"
-   - **list_item** (#manage_consents_row) — label: "{strings.settings.manage_consents.label}", icon: "policy"
-   - **list_item** (#profile_row) — label: "{strings.settings.profile.label}", icon: "account_circle"
-   - **list_item** (#clear_local_data_row) — label: "{strings.settings.clear_local_data.label}", icon: "delete_sweep"
+   - **list_item** (#manage_consents_row) — label: "{strings.settings.manage_consents.label}", icon: "policy", on_click: { action: navigate_consent_list, target: consent-list }
+   - **list_item** (#profile_row) — label: "{strings.settings.profile.label}", icon: "account_circle", on_click: { action: navigate_profile, target: profile }
+   - **list_item** (#clear_local_data_row) — label: "{strings.settings.clear_local_data.label}", icon: "delete_sweep", on_click: { action: clear_local_data_confirm }
 14. **section_header** (#about_header) — label: "{strings.settings.section.about_legal}"
 15. **list** (#about_list) — "about_list"
-   - **list_item** (#terms_row) — label: "{strings.settings.terms.label}", icon: "article"
-   - **list_item** (#privacy_row) — label: "{strings.settings.privacy.label}", icon: "privacy_tip"
-   - **list_item** (#licences_row) — label: "{strings.settings.licences.label}", icon: "info_outline"
+   - **list_item** (#terms_row) — label: "{strings.settings.terms.label}", icon: "article", on_click: { action: open_external_url }
+   - **list_item** (#privacy_row) — label: "{strings.settings.privacy.label}", icon: "privacy_tip", on_click: { action: open_external_url }
+   - **list_item** (#licences_row) — label: "{strings.settings.licences.label}", icon: "info_outline", on_click: { action: open_oss_licences }
    - **list_item** (#app_version_row) — label: "{strings.settings.app_version.label}"
 16. **bottom_sheet** (#clear_local_data_sheet) — "{strings.settings.clear_local_data.dialog_title}"
-   - **button** (#cancel_clear_local_data_button) — label: "{strings.settings.clear_local_data.dialog_cancel}"
-   - **button** (#confirm_clear_local_data_button) — label: "{strings.settings.clear_local_data.dialog_confirm}"
+   - **button** (#cancel_clear_local_data_button) — label: "{strings.settings.clear_local_data.dialog_cancel}", on_click: { action: dismiss_clear_local_data }
+   - **button** (#confirm_clear_local_data_button) — label: "{strings.settings.clear_local_data.dialog_confirm}", on_click: { action: execute_clear_local_data }
 17. **empty_state** (#settings_empty_state) — title: "{strings.settings.empty.title}", icon: "settings"
 18. **empty_state** (#settings_error_state) — "{strings.settings.error.title}"
-   - **button** (#settings_error_retry_button) — label: "{strings.settings.error.retry}"
+   - **button** (#settings_error_retry_button) — label: "{strings.settings.error.retry}", on_click: { action: retry_load_settings }
 
 ## State-specific behavior
 - Custom state "Clear Confirm" — render per the composition below.
@@ -85,8 +88,11 @@ craft_rules_version: v1.0.0
 - (no named components extracted — see composition)
 
 ## Shell (app-shell resolved for this state)
-- App-shell rules are defined per project; per-screen overrides are merged in.
-- Render MUST keep nav/bar elements consistent with the resolved shell — present or absent, never partial.
+- Home: navigates to home
+- Accounts: navigates to accounts
+- Transactions: navigates to transactions
+- More: navigates to settings
+- Render MUST keep nav/bar elements consistent with the list above — present or absent, never partial.
 
 ## Tokens (design-tokens roles consumed)
 - Colors: primary / secondary / surface / on-surface / on-surface-variant / error (M3 standard roles).

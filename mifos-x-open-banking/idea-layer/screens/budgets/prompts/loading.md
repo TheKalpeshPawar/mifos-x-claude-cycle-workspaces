@@ -1,9 +1,9 @@
 ---
-ui_yaml_sha: 09a7c2d3e32a23763d5c70c3bbee44932f960984b4eab09b0fe945041569db74
+ui_yaml_sha: 9067dbba16d3f9ccbfdb74645bfaa2721e30c04046a18b92d1d0bdef2f0f8ce6
 design_md_hash: a3958d1ca6f307ebba64f58c9addd9531aafd615c1fa4c1b350e7b6683badd73
 app_shell_hash: c60afae56a9af273fdbab8a83d90027037612b4f72cf0c6a85bc872d34e9ab76
 design_read_hash: 513c061d12f3a90e84d6e98e1e037b131e59fa3ca5c5f3c0abfc6ba87d24bcaf
-content_hash: ea84c6f7df3b521bdf9f73dfc1e51bdcf18feaeb5d79bd2a120ddf50a683b3bc
+content_hash: 37749cb6cd82e29abf79a1e72d9bfd5c3f6e840cdf7618de2b54d1ae835eb550
 
 design_read_aesthetic: minimalist-ui
 design_read_dials: {variance: 3, motion: 2, density: 5}
@@ -24,11 +24,14 @@ craft_rules_version: v1.0.0
 
 # budgets — loading state
 
-> Auto-generated from screens/budgets/ui.yaml @ SHA 5bf066b2fd9e1ac2
+> Auto-generated from screens/budgets/ui.yaml @ SHA 2662b401d2f8eea0
 > Stitch DesignSystem: 8085591672064527850
 > DO NOT redeclare colors / fonts / spacing — they live in DESIGN.md.
 
 ↓↓↓ MOCKUP PROMPT
+
+> DO NOT invent navigation, tabs, or screens beyond the declared app-shell (Home, Accounts, Transactions, More) plus the composition below. Every nav item you render MUST come from that list.
+> Only elements that navigate or perform an action may look tappable (cursor, ripple, pressed state). DO NOT add tap affordances to decorative content — page titles, section headings, avatars, standalone icons, badges, and static labels are NOT interactive.
 
 ## Archetype: dashboard
 
@@ -40,12 +43,12 @@ craft_rules_version: v1.0.0
 ## Composition (top → bottom)
 1. **skeleton** (#budgets_skeleton)
 2. **error_state** (#budgets_error) — "{strings.budgets.error_title}"
-   - **button** (#retry_load_button) — label: "{strings.budgets.retry_button}"
+   - **button** (#retry_load_button) — label: "{strings.budgets.retry_button}", on_click: { action: retry_load }
 3. **section_header** (#set_budget_header) — label: "{strings.budgets.set_budget_header}"
 4. **card** (#set_budget_card) — "set_budget_card"
-   - **dropdown** (#budget_category_dropdown) — label: "{strings.budgets.category_label}"
-   - **text_field** (#budget_amount_field) — label: "{strings.budgets.amount_label}"
-   - **button** (#save_budget_button) — label: "{strings.budgets.save_button}"
+   - **select** (#budget_category_dropdown) — label: "{strings.budgets.category_label}", on_click: { action: select_budget_category }
+   - **text_field** (#budget_amount_field) — label: "{strings.budgets.amount_label}", on_click: { action: update_budget_amount_field }
+   - **button** (#save_budget_button) — label: "{strings.budgets.save_button}", on_click: { action: save_budget }
 5. **text** (#budgets_storage_hint)
 6. **section_header** (#budgets_header) — label: "{current_month_label}"
 7. **list** (#budgets_list) — "budgets_list"
@@ -54,8 +57,8 @@ craft_rules_version: v1.0.0
       - **progress_linear** (#budget_progress_bar)
       - **text** (#over_budget_alert)
       - **row** (#budget_card_actions) — "budget_card_actions"
-         - **button** (#view_category_spend_button) — label: "{strings.budgets.view_transactions}"
-         - **button** (#delete_budget_button) — label: "{strings.budgets.delete_button}"
+         - **button** (#view_category_spend_button) — label: "{strings.budgets.view_transactions}", on_click: { action: navigate_spending_by_category, target: spending-by-category }
+         - **button** (#delete_budget_button) — label: "{strings.budgets.delete_button}", on_click: { action: delete_budget }
 8. **empty_state** (#empty_state) — title: "{strings.budgets.empty_title}", icon: "savings"
 
 ## State-specific behavior
@@ -68,8 +71,11 @@ craft_rules_version: v1.0.0
 - (no named components extracted — see composition)
 
 ## Shell (app-shell resolved for this state)
-- App-shell rules are defined per project; per-screen overrides are merged in.
-- Render MUST keep nav/bar elements consistent with the resolved shell — present or absent, never partial.
+- Home: navigates to home
+- Accounts: navigates to accounts
+- Transactions: navigates to transactions
+- More: navigates to settings
+- Render MUST keep nav/bar elements consistent with the list above — present or absent, never partial.
 
 ## Tokens (design-tokens roles consumed)
 - Colors: primary / secondary / surface / on-surface / on-surface-variant / error (M3 standard roles).

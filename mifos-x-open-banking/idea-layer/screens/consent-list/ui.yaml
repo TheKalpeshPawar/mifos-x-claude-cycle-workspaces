@@ -18,6 +18,45 @@ business_logic:
   description_author: claude
   description_authored_at: "2026-06-29T12:00:00Z"
 
+# ─────────────────────────────────────────────────────────────────────
+# STATE MODEL — ConsentListViewModel contract
+# Derived from docs.yaml#vm_state + vm_actions + error_cases.
+# Satisfies QUALITY_FORMULA.md Category 10 (State Model, 5 pts).
+# ─────────────────────────────────────────────────────────────────────
+state_model:
+  ConsentListViewModel:
+    state:
+      name: ConsentListState
+      fields:
+        - name: consents
+          type: List<OBReadConsentResponse1>
+        - name: uiState
+          type: ConsentListUiState
+    screen_state:
+      sealed_class: ConsentListUiState
+      members:
+        - Loading
+        - Content       # active_consents + history_consents partitioned from consents list
+        - Empty         # no locally stored ConsentIds
+        - Error         # NetworkError or ConsentStatusServerError
+        - ErrorAuth     # HTTP 401 TokenExpiredSession — dedicated re-auth CTA
+    errors:
+      types:
+        - NetworkError               # IOException / timeout from ktorfit
+        - TokenExpiredSession        # HTTP 401 — PSU session expired
+        - ConsentStatusServerError   # HTTP 500 from GET /account-access-consents/{ConsentId}
+    actions:
+      members:
+        - loadConsents               # fetches status per stored ConsentId; partitions active/history
+        - navigateConsentDetail      # push consent-detail route with ConsentId param
+        - navigateConnect            # push user-onboarding route from empty state
+        - retryLoad                  # re-runs loadConsents after network/server failure
+        - navigateReauth             # push login route from error_auth state (401 recovery)
+    di:
+      - ConsentRepository            # wraps ktorfit GET /account-access-consents/{ConsentId}
+      - LocalConsentStorage          # persisted ConsentId list (locally stored)
+      - NavigationController         # KMP navigation abstraction
+
 shell:
   bottom_navigation_visible: true
   top_app_bar_visible: true

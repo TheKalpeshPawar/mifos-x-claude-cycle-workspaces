@@ -1,84 +1,160 @@
 schema_version: "1.0.0"
 run:
-  at: '2026-07-16T11:24:00Z'
-  args: 'ignore absence of stitch mockups.'
+  at: '2026-07-17T05:58:00Z'
+  args: ''
 steps:
   - n: 0
     name: init
     status: complete
-    at: '2026-07-16T11:24:00Z'
+    at: '2026-07-17T05:58:00Z'
     notes: >-
-      idea-plan.yaml present -> IDEA_PLAN_SOURCE=true (validation + gap-fill mode,
-      not start-from-scratch). Preflight suite PASS with 1 acked WARN
-      (failure-log-review: idea-export-stitch — stitch mockups ignored per run args).
-
-  - n: 0.PRE
-    name: structure-ensure
-    status: complete
-    at: '2026-07-16T11:24:00Z'
-    notes: >-
-      preview-runtime.js reinstalled from framework template (drift vs
-      RULE-PROTO-CLICK-002 C4 byte-identity after framework update to abfae03a).
+      idea-plan.yaml present -> IDEA_PLAN_SOURCE=true (validation + gap-fill mode).
+      PIPELINE_STATE.yaml parses, schema_version 2.1.0, capabilities-only shape intact.
 
   - n: 0.0
     name: preflight-suite
     status: complete
-    at: '2026-07-16T11:21:50Z'
+    at: '2026-07-17T05:58:00Z'
     notes: >-
-      5 slugs. source-of-truth-sync PASS, llm-preview-truth-gate PASS,
-      mockup-theme-consistency PASS, dashboard-truth-audit PASS,
-      failure-log-review WARN (acked — stitch). Three defects fixed to get here:
-      PIPELINE_STATE.yaml duplicate `idea-render-validate` key (project data,
-      made the file unparseable); preflight-source-of-truth-sync.ts crash on
-      object-valued typography.font_family + mode-nested colors;
-      preflight-mockup-theme-consistency.ts scoring mockups against DESIGN.md's
-      14-role subset instead of design-tokens.yaml's full 29-role theme
-      (8 false "stale token" findings, palette 6 -> 42).
+      5 slugs, all PASS -> auto-proceed, no picker.
+      source-of-truth-sync PASS (A=B=C, 0 divergent tokens);
+      llm-preview-truth-gate PASS (0 findings);
+      mockup-theme-consistency PASS (0 findings);
+      failure-log-review PASS (0 failed capabilities, no loop-hash candidates);
+      dashboard-truth-audit PASS (all dispatch_done cells verified, no false-positive ticks).
+      Contrast with the 2026-07-16 run, which needed an acked WARN — the
+      mockup-theme-consistency regression introduced by the /idea-feature-mockup
+      first pass (11 features carrying invented off-palette hexes) was repaired
+      before this sync started.
+
+  - n: 1.IDEA-MIGRATION
+    name: idea-artifact-migration-drift-probe
+    status: complete
+    at: '2026-07-17T05:58:00Z'
+    notes: >-
+      Non-mutating drift probe only (mode=drift-detect). No idea-artifact axis
+      migration required this run.
 
   - n: 1
     name: verify
     status: complete
-    at: '2026-07-16T11:30:00Z'
+    at: '2026-07-17T05:58:00Z'
     detail_ref: state/CAPABILITY_GAPS.yaml
     notes: >-
-      25 features x 7 sibling YAMLs verified via 5 parallel read-only agents plus
-      direct gate runs. YAML parse PASS on all 25. No dead nav targets, no missing
-      i18n keys, no dead flow entries. G-ILC state-coherence PASS (SC-1/2/3).
-      scaffold-align PASS. FOUND: 124/124 interactive on_click components lack an
-      action_contract block (RULE-IDEA-ACTION-CONTRACT-001 AC1, severity error,
-      grace_until null) across all 25 features. 25 findings recorded (one per
-      feature) in CAPABILITY_GAPS.yaml; authoring deferred to a dedicated
-      /idea-feature-enrich run per user decision.
-    findings_recorded: 25
+      44 findings in CAPABILITY_GAPS.yaml: 39 closed, 1 open (error), 4 status-less
+      (warn, stitch_coverage). The 124 missing action_contract blocks recorded as
+      FOUND by the 2026-07-16 run are now authored — that enrichment is what
+      stale-ified every derived mockup and motivated the /idea-feature-mockup
+      re-export that preceded this sync.
+      G-ILC state-coherence PASS (fail=0 warn=0).
+    findings_recorded: 0
+
+  - n: 2.GAP-ROUTE
+    name: gap-route-picker
+    status: complete
+    at: '2026-07-17T05:59:00Z'
+    notes: >-
+      ONE batched picker rendered (RULE-IDEA-GAP-REGISTRY-001 GR-5 — never per-gap).
+      1 open error routed: pfm-dashboard / RULE-IDEA-SUB-ACTION-COMPLETENESS-001
+      sub-action-leaf-missing. User picked [Fix + regenerate].
+      The 4 status-less warns are all category=stitch_coverage (statements partial
+      stitch run, login content html/png not downloaded, accounts prompt_sha drift,
+      10 features absent from PROJECTS_INDEX.yaml) — owned by /idea-feature-stitch,
+      NOT routed here. Deliberately left for that command rather than half-fixed.
+
+  - n: 2.GAP-FIX
+    name: pfm-dashboard-sac-fix
+    status: complete
+    at: '2026-07-17T05:41:24Z'
+    notes: >-
+      Root-cause fix, not a symptom patch. pfm-dashboard/ui.yaml error_state
+      (id: error_view) declared its retry as a BARE, TYPELESS `action:` block — a
+      1-of-37 outlier (the other 36 error/empty states across 24 screens all use a
+      typed children[] entry). Two defects: (1) `action` is not a slot on error_state
+      at all (it is an empty_state slot per layers/idea/templates/registry/feedback.yaml
+      — evidently copy-pasted); (2) being typeless + id-less it was invisible to
+      RULE-IDEA-ACTION-CONTRACT-001 AC1, so its on_click carried no action_contract
+      and nothing flagged it. Replaced with a typed child:
+      button / id pfm_error_retry_button / variant filled / label
+      "{strings.pfm_dashboard.error.retry}" ("Try again") / accessibility_label /
+      on_click.action reload_finances + action_contract{effect: transform_state,
+      external_library_refs: [kotlinx-coroutines], description 271 chars}.
+      effect=transform_state is correct: pfm-dashboard/api.yaml declares endpoints: [],
+      so the retry re-runs the local PfmRepository (Room/SQLDelight) aggregation —
+      it is NOT an API call. DCL-6 naming honoured (on_click reload_finances mirrors
+      state_model member reloadFinances, matching the file's snake/camel split).
+      Finding closed with count_after: 0.
+
+  - n: 2.GAP-FIX-CASCADE
+    name: pfm-dashboard-re-export
+    status: complete
+    at: '2026-07-17T05:45:09Z'
+    notes: >-
+      The ui.yaml edit re-staled pfm-dashboard's derived artifacts (the finding itself
+      warned of this). Re-exported against the new source so the ledger returns to
+      fresh rather than recording a lie: SPEC.md (175 lines, retry button documented,
+      client-only stated — no fabricated endpoints), MOCKUP.md (471 lines),
+      PROMPTS_FIGMA.md (398 lines). All three verified to contain
+      pfm_error_retry_button. API.md untouched and still fresh (api.yaml unchanged).
+      preview/*.html already renders a retry affordance and is not EXPORT_MATRIX-tracked
+      (v1 carried no preview column).
 
   - n: 3.0
     name: enrichment-scope
     status: skipped
-    at: '2026-07-16T11:31:00Z'
+    at: '2026-07-17T05:59:00Z'
     notes: >-
-      User chose "record gaps, skip authoring". No /idea-feature-enrich dispatched
-      this run. 124 action_contract blocks remain to author.
+      No enrichment dispatched. All 25 features are status=approved with
+      quality_score 95-98 (floor 60); the action_contract authoring that the previous
+      run deferred has already landed. Zero features in draft/enriched needing
+      promotion, so the [A/F/S] scope picker had an empty candidate set — skipped
+      rather than dispatched against nothing.
+
+  - n: 4.MATRIX
+    name: export-matrix-v1-to-v2-migration
+    status: complete
+    at: '2026-07-17T05:58:00Z'
+    detail_ref: EXPORT_MATRIX.yaml
+    notes: >-
+      Step G.E.0 + G.E.1 (Phase 4 T15/T16). EXPORT_MATRIX.yaml was schema_version "1.0"
+      (status-snapshot rows[] of booleans) — the shape that made /idea-feature-mockup
+      emit EXPORT_MATRIX_V1_DETECTED and correctly refuse to write cells. Migrated to
+      v2 staleness-ledger: 122 cells across 25 features (spec 25, api_md 25, mockup 25,
+      prompts_figma 25, mockup_stitch_manifest 22 — party/product/recurring-subscriptions
+      have no stitch manifest on disk). G.E.0 + G.E.1 applied in ONE atomic Write so no
+      half-migrated state can exist.
+      DELIBERATE DEVIATION from the literal G.E.0 text: it says "emit one cell per TRUTHY
+      v1 boolean", but v1 carried figma_exported: 0/false — a snapshot from 2026-07-16T14:10,
+      before /idea-feature-mockup generated all 25 PROMPTS_FIGMA.md. Migrating those booleans
+      literally would have silently dropped 25 real on-disk artifacts from the ledger.
+      COMMAND_MATRIX_REGISTRY row_scanner defines these columns as file_exists, and the v1
+      file itself set the precedent (mockup_exported corrected 0 -> 25 on the same basis).
+      Truthiness resolved against DISK.
+      Verified: 122/122 output hashes and every input hash match live disk; 0 wrong stale
+      verdicts; 0 orphaned cells; summary in sync; framework-verify-export-matrix.sh PASS.
+    findings_recorded: 1
 
   - n: 4
     name: artifacts
     status: complete
-    at: '2026-07-16T11:32:00Z'
+    at: '2026-07-17T05:59:00Z'
     notes: >-
-      skip_if_fresh=true and no screens/*.yaml content changed this run (state files
-      only), so all derived artifacts are content-fresh — no regeneration performed.
+      Project-wide derived artifacts content-fresh — no screens/*.yaml changed this run
+      except pfm-dashboard/ui.yaml, whose dependents were regenerated at step
+      2.GAP-FIX-CASCADE. No blanket regeneration performed.
 
   - n: 4.VERIFY
     name: artifact-existence-gate
     status: complete
-    at: '2026-07-16T11:32:00Z'
+    at: '2026-07-17T05:59:00Z'
     notes: >-
-      APP_FLOW.mmd, TAG_REGISTRY.yaml, dashboard/DEV_STATUS.md + dev-status.html,
-      server/api_manifest.yaml present; flows/*.yaml = 9; server/apis/*.yaml = 2.
-      prototype/index.html absent — CORRECT, not a failure: the legacy
-      prototype-viewer tree was removed 2026-05-14 and RULE-PROTO-RENDER-LLM-001
-      forbids recreating it. The runtime's check list is stale on that row.
+      APP_FLOW.mmd, TAG_REGISTRY.yaml, dashboard/DEV_STATUS.md, server/api_manifest.yaml
+      present; flows/*.yaml = 9; server/apis/*.yaml = 2. prototype/index.html absent —
+      CORRECT, not a failure: the legacy prototype-viewer tree was removed 2026-05-14 and
+      RULE-PROTO-RENDER-LLM-001 forbids recreating it. The runtime's check list is stale
+      on that row (carried forward from the 2026-07-16 run — still unfixed upstream).
 
   - n: 5
     name: state-write
     status: complete
-    at: '2026-07-16T11:32:00Z'
+    at: '2026-07-17T05:59:00Z'

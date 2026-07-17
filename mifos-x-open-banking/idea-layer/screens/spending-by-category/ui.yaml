@@ -21,6 +21,44 @@ business_logic:
   description_author: claude
   description_authored_at: "2026-06-29T12:00:00Z"
 
+# ─────────────────────────────────────────────────────────────────────
+# STATE MODEL — SpendingByCategoryViewModel contract
+# Derived from docs.yaml#vm_actions + error_cases for implementation.
+# Satisfies QUALITY_FORMULA.md Category 10 (State Model, 5 pts).
+# ─────────────────────────────────────────────────────────────────────
+state_model:
+  SpendingByCategoryViewModel:
+    state:
+      name: SpendingByCategoryState
+      fields:
+        - name: uiState
+          type: SpendingByCategoryUiState
+        - name: categories
+          type: List<CategorySpend>
+        - name: selectedPeriod
+          type: SpendingPeriod
+        - name: periodTotalSpend
+          type: String
+        - name: periodLabel
+          type: String
+    screen_state:
+      sealed_class: SpendingByCategoryUiState
+      members:
+        - Loading
+        - Content    # categories sorted by amount desc; periodTotalSpend + periodLabel computed
+        - Empty      # no debit transactions in Room cache for selected period — EC-SBC-001
+        - Error      # Room query or in-memory aggregation exception — EC-SBC-002
+    errors:
+      types:
+        - RoomQueryError    # Room query or in-memory aggregation throws exception — EC-SBC-002
+    actions:
+      members:
+        - selectPeriod
+        - navigateCategoryTransactions
+        - retryCompute
+    di:
+      - PfmTransactionCache   # Room/SQLDelight — cached OBTransaction6 debit rows (pfm_room_cache)
+
 states: [loading, content, empty, error]
 
 components:

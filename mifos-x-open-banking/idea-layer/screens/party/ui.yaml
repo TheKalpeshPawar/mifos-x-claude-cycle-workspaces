@@ -22,38 +22,40 @@ business_logic:
   description_author: claude
   description_authored_at: "2026-06-29T12:00:00Z"
 
+# ─────────────────────────────────────────────────────────────────────
+# STATE MODEL — PartyViewModel contract
+# Migrated to C6 format; vm_class/ui_state_sealed/flat states map removed.
+# Derived from ui.yaml#screen_state.members + docs.yaml#vm_actions + error_cases.
+# ─────────────────────────────────────────────────────────────────────
 state_model:
-  vm_class: PartyViewModel
-  ui_state_sealed: PartyUiState
-  state:
-    fields:
-      - "uiState: PartyUiState = PartyUiState.Loading"
-      - "accountId: String = \"\""
-  screen_state:
-    members:
-      - "PartyUiState.Loading"
-      - "PartyUiState.Content(party: OBParty2)"
-      - "PartyUiState.Error(message: String, errorCode: PartyErrorCode)"
-      - "PartyUiState.Empty"
-      - "PartyUiState.ConsentRequired"
-  errors:
-    types:
-      - "PartyErrorCode.AUTH — HTTP 401 access token expired; surface Retry CTA"
-      - "PartyErrorCode.NETWORK — device offline or AIS endpoint unreachable; surface Retry CTA"
-  actions:
-    members:
-      - "partyLoad(accountId: String) — parallel GET /party + GET /parties; merge by PartyId"
-      - "retryLoad(accountId: String) — delegates to partyLoad(accountId)"
-      - "navigateToConsent() — routes to consent-list screen for ReadParty re-grant"
-  di:
-    - "partyRepository: PartyRepository (Koin single)"
-    - "ktorfit: Ktorfit (AIS http client, Koin single)"
-  states:
-    loading: "PartyUiState.Loading"
-    content: "PartyUiState.Content(party: OBParty2)"
-    error: "PartyUiState.Error(message: String, errorCode: PartyErrorCode)"
-    empty: "PartyUiState.Empty"
-    consent_required: "PartyUiState.ConsentRequired"
+  PartyViewModel:
+    state:
+      name: PartyState
+      fields:
+        - name: uiState
+          type: PartyUiState
+        - name: accountId
+          type: String
+    screen_state:
+      sealed_class: PartyUiState
+      members:
+        - Loading
+        - Content       # party: OBParty2 (merged from /party + /parties by PartyId)
+        - Error         # message: String, errorCode: PartyErrorCode
+        - Empty         # 200 but no party records returned
+        - ConsentRequired # 403 PermissionNotGranted — ReadParty not in consent scope
+    errors:
+      types:
+        - PartyErrorCode.AUTH    # HTTP 401 — access token expired; surface Retry CTA
+        - PartyErrorCode.NETWORK # device offline or AIS endpoint unreachable; surface Retry CTA
+    actions:
+      members:
+        - partyLoad         # parallel GET /party + GET /parties; merge by PartyId
+        - retryLoad         # delegates to partyLoad(accountId)
+        - navigateToConsent # routes to consent-list for ReadParty re-grant
+    di:
+      - PartyRepository  # Koin single; parallel GET /party + GET /parties via ktorfit
+      - Ktorfit          # AIS http client; Koin single
 
 status_history:
   - from: draft

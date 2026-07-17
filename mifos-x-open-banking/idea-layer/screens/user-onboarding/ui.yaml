@@ -19,6 +19,45 @@ business_logic:
   description_author: claude
   description_authored_at: "2026-06-29T12:00:00Z"
 
+# ─────────────────────────────────────────────────────────────────────
+# STATE MODEL — UserOnboardingViewModel contract
+# Derived from docs.yaml#vm_actions + ui.yaml component actions.
+# Satisfies QUALITY_FORMULA.md Category 10 (State Model, 5 pts).
+# ─────────────────────────────────────────────────────────────────────
+state_model:
+  UserOnboardingViewModel:
+    state:
+      name: UserOnboardingState
+      fields:
+        - name: currentStep
+          type: Int
+        - name: showObExplainerSheet
+          type: Boolean
+    screen_state:
+      sealed_class: UserOnboardingUiState
+      members:
+        - Loading              # checking DataStore onboarding_completed flag
+        - Error                # DataStore IOException on init
+        - Empty                # onboarding config absent / feature-flagged off
+        - Intro                # step 1: hero + FAPI/FCA trust badges
+        - PermissionsOverview  # step 2: six OBIE ReadX scopes
+        - ConsentExplainer     # step 3: AIS trust guarantees + Connect CTA
+        - ObExplainerOpen      # overlay: three-step FAPI journey bottom sheet
+    errors:
+      types:
+        - DataStoreIOError   # IOException reading onboarding_completed flag from DataStore
+    actions:
+      members:
+        - stepNext
+        - stepBack
+        - openObExplainer
+        - closeObExplainer
+        - navigateToLogin
+        - retryOnboardingInit
+    di:
+      - OnboardingDataStore    # androidx.datastore — reads/writes onboarding_completed flag
+      - NavigationController   # KMP navigation abstraction for navigateToLogin
+
 shell:
   bottom_navigation_visible: false
   top_app_bar_visible: false

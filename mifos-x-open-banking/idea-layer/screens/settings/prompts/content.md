@@ -1,14 +1,14 @@
 ---
-ui_yaml_sha: a14204542d4a6df97e7084b25067fc3a1057dfe0f584e67c89903809f192cced
+ui_yaml_sha: a0bae917da6ffc2ea168ed79dad265b9751bf60e4338cdbd18b8efe867174914
 design_md_hash: a3958d1ca6f307ebba64f58c9addd9531aafd615c1fa4c1b350e7b6683badd73
 app_shell_hash: c60afae56a9af273fdbab8a83d90027037612b4f72cf0c6a85bc872d34e9ab76
 design_read_hash: 513c061d12f3a90e84d6e98e1e037b131e59fa3ca5c5f3c0abfc6ba87d24bcaf
-content_hash: 415c945ad5eee2dadb8f3a199f446878e311b46af82f4778a75fa6e7daa8a59a
+content_hash: f9e278b7774b8e7706c61d23697366c57804262a2ceec66d1bd97af8a654ab2c
 
 design_read_aesthetic: minimalist-ui
 design_read_dials: {variance: 3, motion: 2, density: 5}
 aesthetic_variant_override: null
-archetype: screen
+archetype: settings
 
 feature: settings
 state: content
@@ -24,34 +24,95 @@ craft_rules_version: v1.0.0
 
 # settings — content state
 
-> Auto-generated from screens/settings/ui.yaml @ SHA c307489c17e0bc70
+> Auto-generated from screens/settings/ui.yaml @ SHA f231bfeb2114b2f6
 > Stitch DesignSystem: 8085591672064527850
 > DO NOT redeclare colors / fonts / spacing — they live in DESIGN.md.
 
 ↓↓↓ MOCKUP PROMPT
 
-Design the content state of the settings screen for **HSBC Open Banking**, a regulated UK Open Banking AISP delivering calm, Trust Blue account-information management on Android Pixel 5.
+> DO NOT invent navigation, tabs, or screens beyond the declared app-shell (Home, Accounts, Transactions, More) plus the composition below. Every nav item you render MUST come from that list.
+> Only elements that navigate or perform an action may look tappable (cursor, ripple, pressed state). DO NOT add tap affordances to decorative content — page titles, section headings, avatars, standalone icons, badges, and static labels are NOT interactive.
 
-Archetype: detail_screen
+## Archetype: settings
 
-Palette: primary #95CDF7, surface #101417, onSurface #E0E3E8, onSurfaceVariant #C1C7CE, surfaceContainer #1C2024, primaryContainer #004B6F, onPrimaryContainer #C9E6FF, outline #8B9198
+## Layout
+- type: scrollable_column
+- padding: default
+- alignment: start
 
-1. **Component 1 - Top App Bar** (full width, 56dp): Title "Settings" Outfit titleMedium #E0E3E8 left-aligned on #101417 container; no back arrow; no overflow menu; root screen.
+## Composition (top → bottom)
+1. **skeleton** (#settings_loading_skeleton)
+2. **section_header** (#appearance_header) — label: "{strings.settings.section.appearance}"
+3. **list** (#appearance_list) — "appearance_list"
+   - **list_item** (#theme_row) — label: "{strings.settings.theme.label}"
+4. **section_header** (#security_header) — label: "{strings.settings.section.security}"
+5. **list** (#security_list) — "security_list"
+   - **list_item** (#biometric_row) — label: "{strings.settings.biometric_lock.label}"
+   - **list_item** (#session_timeout_row) — label: "{strings.settings.session_timeout.label}"
+6. **section_header** (#permissions_header) — label: "{strings.settings.section.permissions}"
+7. **list** (#permissions_list) — "permissions_list"
+   - **info_row** (#location_permission_row) — label: "{strings.settings.permissions.location}", icon: "location_on", on_click: { action: open_app_system_settings }
+8. **section_header** (#notifications_header) — label: "{strings.settings.section.notifications}"
+9. **list** (#notifications_list) — "notifications_list"
+   - **list_item** (#consent_expiry_notif_row) — label: "{strings.settings.consent_expiry_notif.label}"
+   - **list_item** (#security_alerts_notif_row) — label: "{strings.settings.security_alerts_notif.label}"
+10. **section_header** (#storage_header) — label: "{strings.settings.section.storage}"
+11. **list** (#storage_list) — "storage_list"
+   - **info_row** (#pfm_storage_location_row) — label: "{strings.settings.storage.pfm_data}", icon: "storage"
+   - **list_item** (#clear_pfm_cache_row) — label: "{strings.settings.storage.clear_pfm_cache}", icon: "cleaning_services", on_click: { action: clear_pfm_cache }
+12. **section_header** (#account_header) — label: "{strings.settings.section.account}"
+13. **list** (#account_links_list) — "account_links_list"
+   - **list_item** (#manage_consents_row) — label: "{strings.settings.manage_consents.label}", icon: "policy", on_click: { action: navigate_consent_list, target: consent-list }
+   - **list_item** (#profile_row) — label: "{strings.settings.profile.label}", icon: "account_circle", on_click: { action: navigate_profile, target: profile }
+   - **list_item** (#clear_local_data_row) — label: "{strings.settings.clear_local_data.label}", icon: "delete_sweep", on_click: { action: clear_local_data_confirm }
+14. **section_header** (#about_header) — label: "{strings.settings.section.about_legal}"
+15. **list** (#about_list) — "about_list"
+   - **list_item** (#terms_row) — label: "{strings.settings.terms.label}", icon: "article", on_click: { action: open_external_url }
+   - **list_item** (#privacy_row) — label: "{strings.settings.privacy.label}", icon: "privacy_tip", on_click: { action: open_external_url }
+   - **list_item** (#licences_row) — label: "{strings.settings.licences.label}", icon: "info_outline", on_click: { action: open_oss_licences }
+   - **list_item** (#app_version_row) — label: "{strings.settings.app_version.label}"
+16. **bottom_sheet** (#clear_local_data_sheet) — "{strings.settings.clear_local_data.dialog_title}"
+   - **button** (#cancel_clear_local_data_button) — label: "{strings.settings.clear_local_data.dialog_cancel}", on_click: { action: dismiss_clear_local_data }
+   - **button** (#confirm_clear_local_data_button) — label: "{strings.settings.clear_local_data.dialog_confirm}", on_click: { action: execute_clear_local_data }
+17. **empty_state** (#settings_empty_state) — title: "{strings.settings.empty.title}", icon: "settings"
+18. **empty_state** (#settings_error_state) — "{strings.settings.error.title}"
+   - **button** (#settings_error_retry_button) — label: "{strings.settings.error.retry}", on_click: { action: retry_load_settings }
 
-2. **Component 2 - List** (full width minus 32dp, Appearance section): Section label "Appearance" labelMedium #C1C7CE uppercase. One row: leading icon contrast_rtl_off in #C1C7CE; title "Theme" bodyLarge #E0E3E8; supporting "Follows device theme" bodyMedium #C1C7CE; trailing Switch in system-default position; 56dp row height; divider #41474D below.
+## State-specific behavior
+- Fully populated with the real demo content listed below.
 
-3. **Component 3 - List** (full width minus 32dp, Security section): Section label "Security" labelMedium #C1C7CE. Row 1: icon fingerprint #C1C7CE; title "Biometric unlock" bodyLarge #E0E3E8; supporting "Use fingerprint or face to open the app" bodyMedium #C1C7CE; trailing Switch ON thumb #95CDF7 track #004B6F; 56dp height. Row 2: icon timer #C1C7CE; title "Session timeout" bodyLarge #E0E3E8; trailing "30 minutes" #C1C7CE; chevron_right.
+## Content source manifest
+- (no demo collections bound for this state)
 
-4. **Component 4 - List** (full width minus 32dp, Notifications section): Section label "Notifications" labelMedium #C1C7CE. Row 1: leading icon notifications_active in #C1C7CE; title "Consent expiry alerts" bodyLarge #E0E3E8; supporting "Alert 7 days before consent expires" bodyMedium #C1C7CE; trailing Switch ON (#95CDF7 thumb, #004B6F track). Row 2: leading icon security in #C1C7CE; title "Security alerts" bodyLarge #E0E3E8; supporting "Notify on new device login" bodyMedium #C1C7CE; trailing Switch ON.
+## Components (vocabulary used in this prompt)
+- (no named components extracted — see composition)
 
-5. **Component 5 - List** (full width minus 32dp, Account section): Section label "Account" labelMedium #C1C7CE. Row 1: leading icon policy in #C1C7CE; title "Manage consents" bodyLarge #E0E3E8; trailing chevron_right #8B9198. Row 2: leading icon account_circle in #C1C7CE; title "Your profile" bodyLarge #E0E3E8; trailing chevron_right #8B9198. Row 3: leading icon delete_sweep in #C1C7CE; title "Clear local data" bodyLarge #E0E3E8; trailing chevron_right #8B9198. All rows 56dp height.
+## Shell (app-shell resolved for this state)
+- Home: navigates to home
+- Accounts: navigates to accounts
+- Transactions: navigates to transactions
+- More: navigates to settings
+- Render MUST keep nav/bar elements consistent with the list above — present or absent, never partial.
 
-6. **Component 6 - List** (full width minus 32dp, About and Legal section): Section label "About and Legal" labelMedium #C1C7CE. Row 1: icon article in #C1C7CE; title "Terms of use"; trailing chevron_right. Row 2: icon privacy_tip; title "Privacy policy"; trailing chevron_right. Row 3: icon info_outline; title "Open-source licences"; trailing chevron_right. Row 4: icon info; title "App version"; trailing text "2.4.1 (build 290)" bodyMedium #C1C7CE (no chevron). All row titles bodyLarge #E0E3E8; 56dp height.
+## Tokens (design-tokens roles consumed)
+- Colors: primary / secondary / surface / on-surface / on-surface-variant / error (M3 standard roles).
+- Typography: body-large / title-large (M3 standard roles).
+- Spacing: gap.sm / gap.md / gap.lg.
+- ALL token references are by name from the uploaded design system — no hex literals, no inline size values.
 
-7. **Component 7 - Bottom Navigation Bar** (full width, 80dp): Four tabs: Home, Accounts, Finances, Settings; Settings active icon and label #95CDF7 on #1C2024; three inactive tabs #C1C7CE; 48dp touch target.
+## Self-Validation Checklist (MANDATORY)
 
-DO NOT use an em-dash anywhere in row titles, supporting text, or section labels. DO NOT write any section header longer than two words or any supporting row subtitle exceeding 25 words. DO NOT introduce a lighter background color between sections; every surface stays on #101417 and section labels render on #101417 background throughout. DO NOT render a Switch with a light thumb on a light track; active Switch uses #95CDF7 thumb on #004B6F track, inactive uses #8B9198 thumb on #41474D track.
+Before returning the rendered mockup, verify ALL of these are true. If any fails, FIX the output and re-render.
 
-Mood: minimal calm across five grouped settings sections; Switches and the active nav tab carry #95CDF7 as the only color accent on a dark #101417 canvas, keeping every preference legible without decoration.
+- [ ] **Per-state shape:** the render shows ONLY this state ("content"). Do not blend multiple states into one mockup.
+- [ ] **Real content:** every text label, image, and data point reflects the content source manifest above — no numbered generic items, no filler text, no dummy text, no empty strings.
+- [ ] **Token fidelity:** colors come from the uploaded design system (primary/secondary/surface/etc.) by name; spacing comes from declared scale tokens. No invented hex codes, no invented size literals.
+- [ ] **Component vocabulary:** every component in the render maps to a named design-system component (Card, FAB, BottomBar, etc.) — no invented or off-system components.
+- [ ] **Archetype honored:** the layout follows the "settings" archetype skeleton — composition order top → bottom matches the Composition section.
+- [ ] **App-shell parity:** if a bottom nav, top app bar, or FAB appears in the render, it matches the resolved shell from the app-shell config. Shell elements are either present-and-consistent OR absent — never partial.
+
+If any of these fail and the fix isn't clear → halt rendering and surface "Self-validation failed at: {checkpoint}."
+
+Return ONLY when all 6 checkpoints pass.
 
 ↑↑↑ MOCKUP PROMPT

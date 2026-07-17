@@ -35,6 +35,65 @@ business_logic:
   description_author: claude
   description_authored_at: "2026-06-30T00:00:00Z"
 
+# ─────────────────────────────────────────────────────────────────────
+# STATE MODEL — HomeViewModel contract
+# Derived from docs.yaml#impl_notes.state_model Kotlin block + vm_actions + error_cases.
+# Satisfies QUALITY_FORMULA.md Category 10 (State Model, 5 pts).
+# ─────────────────────────────────────────────────────────────────────
+state_model:
+  HomeViewModel:
+    state:
+      name: HomeState
+      fields:
+        - name: allAccounts
+          type: List<OBAccount6>
+        - name: selectedAccountId
+          type: String
+        - name: selectedAccount
+          type: OBAccount6?
+        - name: selectedAccountBalance
+          type: OBCashBalance3?
+        - name: availableBalance
+          type: OBCashBalance3?
+        - name: recentTransactions
+          type: List<OBTransaction6>
+        - name: spendThisMonth
+          type: String
+        - name: topCategoryName
+          type: String
+        - name: activeConsentId
+          type: String
+        - name: uiState
+          type: UiState
+    screen_state:
+      sealed_class: UiState
+      members:
+        - Loading
+        - Content
+        - Empty   # reason: no_accounts | no_consent
+        - Error   # code: Int, message: String, recoverable: Boolean
+    errors:
+      types:
+        - TokenExpiredError    # EC-HOME-001 — 401 token expired; navigate to login
+        - ConsentScopeError    # EC-HOME-002 — 403 ReadAccountsDetail/ReadBalances not in consent
+        - RateLimitError       # EC-HOME-003 — 429 rate-limit; recoverable; exponential back-off
+        - NetworkError         # EC-HOME-006 — device offline or AIS endpoint unreachable
+    actions:
+      members:
+        - selectAccount             # persist AccountId to DataStore; re-fetch balances + transactions
+        - loadHome                  # GET /accounts then parallel GET /balances + GET /transactions
+        - retryLoad                 # re-invokes loadHome(); shown on recoverable error state
+        - navigateToAccountDetail   # hero card tap → account-detail with selectedAccountId
+        - navigateToTransactions    # quick-action or view-all → transactions with selectedAccountId
+        - navigateToStatements      # quick-action → statements with selectedAccountId
+        - navigateToSpending        # spending snapshot card → pfm-dashboard
+        - navigateToConsentList     # manage-consents quick-action → consent-list
+    di:
+      - AccountsRepository      # GET /accounts via ktorfit
+      - BalancesRepository      # GET /accounts/{id}/balances via ktorfit
+      - TransactionsRepository  # GET /accounts/{id}/transactions via ktorfit
+      - DataStore               # selectedAccountId persistence across app restarts
+
 shell:
   bottom_navigation_visible: true
   top_app_bar_visible: false
