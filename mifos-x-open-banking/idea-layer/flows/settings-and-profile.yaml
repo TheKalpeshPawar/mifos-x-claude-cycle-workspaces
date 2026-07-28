@@ -1,18 +1,20 @@
 id: settings-and-profile
 name: settings-and-profile
-description: "Settings and profile flow — the More tab (bottom nav order 4) leads to Settings (appearance/dark-mode, biometric lock, notifications, about & legal, manage-consents shortcut) and Profile (connected identity from account party, active consent summary, sign-out). Sign-out clears tokens and consent and redirects to login."
+description: "Settings flow — the More tab (bottom nav order 3) opens Settings, which offers appearance (theme dropdown), a Manage Consents shortcut, and About & Legal (privacy policy in a browser, open-source licences in-app, static app version). Reverse-synced 2026-07-28: the profile screen was never built, so this flow no longer contains it; sign-out is not reachable from settings in source — the only sign-out path is revoking a consent from consent-detail, which calls AppLogout."
 type: happy
 feature_ref: settings
 release_phase: P0
 
 screens:
   - settings
-  - profile
+  - licences
 
 entry_screen: settings
 
 connections:
-  - { from: settings, to: profile, type: push, label: "Tap Profile row" }
   - { from: settings, to: consent-list, type: push, label: "Tap Manage Consents row (cross-flow → consent-management)" }
-  - { from: profile, to: consent-detail, type: push, label: "Tap Manage Consent button (cross-flow → consent-management)" }
-  - { from: profile, to: login, type: push, label: "Sign-out confirmed — clears tokens + consent, redirects to login (cross-flow → onboarding-consent)" }
+  - { from: settings, to: licences, type: push, label: "Tap Licences row in About & Legal" }
+  - { from: licences, to: settings, type: pop, label: "Back from licences" }
+
+external_links:
+  - { from: settings, to: "privacy policy URL", type: browser, label: "Tap Privacy row — LocalUriHandler.openUri leaves the app" }

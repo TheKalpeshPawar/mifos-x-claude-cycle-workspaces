@@ -1,7 +1,7 @@
 screen_id: statements
 archetype: index_list
 name: "Statements"
-status: enriched
+status: implemented
 quality_score: 97
 initial_state: loading
 
@@ -236,13 +236,44 @@ state_model:
         - NetworkError                      # network — AIS endpoint unreachable
     actions:
       members:
-        - statementsLoad               # suspend; GET /accounts/{accountId}/statements
-        - navigateToStatementDetail    # fun(statementId: String, accountId: String)
-        - retryLoad                    # suspend; delegates to statementsLoad
-        - downloadStatement            # suspend; GET .../statements/{StatementId}/file → platform handler
+        - RetryLoad
+        - DownloadStatement    # data class — per-row download, keyed by statementId
+    state_fields_extra:
+      - name: downloadState
+        type: Map<String, DownloadState>   # per-statement download tracking, keyed by statementId
+      - name: statements
+        type: List<StatementRowUiModel>
+    nav_callbacks:
+      - "onBack -> popBackStack()"
+      - "onNavigateToStatementDetail(statementId, accountId) -> StatementDetailRoute(...)"
     di:
-      - StatementsRepository
-      - StatementFileRepository
+      - SavedStateHandle         # supplies the accountId route arg
+      - StatementsRepository     # Koin single; statements stream
+      - StatementFileRepository  # fetches statement file bytes
+      - StatementFileHandler     # platform handler that opens/saves the downloaded file
+
+# ─────────────────────────────────────────────────────────────────────
+# SOURCE BINDING — reverse-synced from source 2026-07-28
+# ─────────────────────────────────────────────────────────────────────
+implementation:
+  status: implemented
+  source_module: "feature/statements"
+  package: "org.mifosx.openbanking.feature.statements"
+  route: "StatementsRoute(accountId: String)"
+  viewmodel: StatementsViewModel
+  screen: StatementsScreen
+  test_tags_object: StatementsTestTags
+  domain_model: StatementPeriod
+  file_handler: "StatementFileHandler.kt — provided by cmp-navigation/statements/StatementFileHandlerProvider (js and nonJs actuals)"
+  reachable_from:
+    - "account-detail — AccountDetailChip.Statements"
+  synced_from_source_at: "2026-07-28"
+  added_in_sync:
+    - "downloadState map — per-row download tracking keyed by statementId, so multiple rows can download independently"
+    - "StatementFileHandler DI"
+  removed_in_sync:
+    - "statementsLoad action — the initial load is stream collection in init{}"
+    - "navigateToStatementDetail action — it is a nav-host callback, not an action member"
 
 dependencies:
   tier: 1

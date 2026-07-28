@@ -1,154 +1,52 @@
 screen_id: user-onboarding
 
+# Reverse-synced 2026-07-28. The previous 12-scenario suite tested a three-step
+# pager (intro / permissions_overview / consent_explainer), an ob_explainer bottom
+# sheet, step indicators, back/next navigation and loading/error/empty states —
+# none of which exist. Source ships onboarding/IntroScreen.kt: a stateless
+# composable with one outward edge.
+
 scenarios:
-
-  # ─── Step 1: intro ────────────────────────────────────────────────
-
-  - id: TC-ONBOARD-001
-    description: "Intro step renders hero, headline, body, FAPI chip, FCA chip, and Next button"
+  - id: TC-ONB-001
+    description: "Intro screen renders the hero, headline, body, trust chips and continue button"
     state: intro
-    given: "App launched with no active consent; screen is in initial intro state"
-    when: "Screen mounts"
+    priority: critical
+    given: "The app launches unauthenticated; AuthGraphRoute starts at IntroRoute"
+    when: "IntroScreen composes"
     then:
-      - "Step indicator shows step 1 of 3"
-      - "Hero illustration (ic_open_banking_hero) is visible"
-      - "Headline renders from {strings.onboarding_intro_headline}"
-      - "Body copy renders from {strings.onboarding_intro_body}"
-      - "FAPI 1.0 Advanced assist chip is visible"
-      - "FCA Regulated assist chip is visible"
-      - "'Next' button is visible and enabled"
-    priority: high
+      - "The OnboardingHeroIllustration renders"
+      - "Headline renders from {strings.user_onboarding.intro_headline}"
+      - "Body copy renders from {strings.user_onboarding.intro_body}"
+      - "Two AssistChips render: {strings.user_onboarding.fapi_chip} and {strings.user_onboarding.fca_chip}"
+      - "A single continue button renders from {strings.user_onboarding.intro_continue}"
 
-  - id: TC-ONBOARD-002
-    description: "Tapping Next on intro navigates to permissions_overview step"
+  - id: TC-ONB-002
+    description: "Continue navigates to the login screen"
     state: intro
-    given: "Onboarding screen is in intro state"
-    when: "PSU taps 'Next'"
+    priority: critical
+    given: "IntroScreen is displayed"
+    when: "User taps the continue button"
     then:
-      - "Screen transitions to permissions_overview state"
-      - "Step indicator shows step 2 of 3"
-      - "Section header 'What we'll read' is visible"
-    priority: high
+      - "onContinue fires navController.navigate(LoginRoute)"
+      - "The login screen stages the account-access-consent and renders the permission list"
 
-  # ─── Step 2: permissions_overview ─────────────────────────────────
-
-  - id: TC-ONBOARD-003
-    description: "Permissions overview renders all six OBIE ReadX categories and consent duration note"
-    state: permissions_overview
-    given: "Onboarding screen is in permissions_overview state"
-    when: "Step 2 is displayed"
+  - id: TC-ONB-003
+    description: "The screen holds no state and performs no I/O"
+    state: intro
+    priority: normal
+    given: "IntroScreen is displayed"
+    when: "The screen composes and recomposes"
     then:
-      - "Step indicator shows step 2 of 3"
-      - "Section header 'What we'll read' is visible"
-      - "Six permission list items render: account details, balances, transaction history, standing orders, direct debits, statements"
-      - "ReadAccountsDetail item (account details) is present as first permission"
-      - "Consent duration note (90 days, revocable) is visible"
-      - "Back button is visible and enabled"
-      - "Next button is visible and enabled"
-    priority: high
+      - "No ViewModel is resolved — the composable takes only onContinue and a Modifier"
+      - "No network call is made and nothing is persisted"
+      - "There is no loading, error or empty state to reach"
 
-  - id: TC-ONBOARD-004
-    description: "ReadAccountsDetail is the first permission shown (sort codes and IBANs detail)"
-    state: permissions_overview
-    given: "Permissions overview step is displayed"
-    when: "Step 2 renders"
+  - id: TC-ONB-004
+    description: "Intro is skipped on the re-consent path"
+    state: intro
+    priority: normal
+    given: "An authenticated user re-authorises from consent-list or consent-detail"
+    when: "The re-consent flow starts"
     then:
-      - "First list item headline renders {strings.onboarding_perm_accounts}"
-      - "Supporting text includes sort codes and IBANs reference"
-      - "manage_accounts icon is visible"
-    priority: medium
-
-  - id: TC-ONBOARD-005
-    description: "Tapping Back on permissions_overview returns to intro"
-    state: permissions_overview
-    given: "Onboarding screen is in permissions_overview state"
-    when: "PSU taps 'Back'"
-    then:
-      - "Screen transitions to intro state"
-      - "Step indicator shows step 1 of 3"
-    priority: medium
-
-  - id: TC-ONBOARD-006
-    description: "Tapping Next on permissions_overview advances to consent_explainer"
-    state: permissions_overview
-    given: "Onboarding screen is in permissions_overview state"
-    when: "PSU taps 'Next'"
-    then:
-      - "Screen transitions to consent_explainer state"
-      - "Step indicator shows step 3 of 3"
-      - "Section header 'What we never do' is visible"
-    priority: high
-
-  # ─── Step 3: consent_explainer ────────────────────────────────────
-
-  - id: TC-ONBOARD-007
-    description: "Consent explainer step renders trust guarantees, legal footer, and Connect CTA"
-    state: consent_explainer
-    given: "Onboarding screen is in consent_explainer state"
-    when: "Step 3 is displayed"
-    then:
-      - "Step indicator shows step 3 of 3"
-      - "Section header 'What we never do' is visible"
-      - "Three reassurance items render: no payments, no password seen, revoke anytime"
-      - "Divider is visible before legal footer"
-      - "FCA / OBIE v4.0 legal footer text is visible"
-      - "'Connect with HSBC' filled button is visible and enabled"
-      - "'Back' outlined button is visible"
-      - "'How Open Banking works' text button is visible"
-    priority: high
-
-  - id: TC-ONBOARD-008
-    description: "Tapping 'Connect with HSBC' navigates to login screen"
-    state: consent_explainer
-    given: "Onboarding screen is in consent_explainer state"
-    when: "PSU taps 'Connect with HSBC'"
-    then: "App navigates to the login screen to begin FAPI consent staging"
-    priority: high
-
-  - id: TC-ONBOARD-009
-    description: "Tapping Back on consent_explainer returns to permissions_overview"
-    state: consent_explainer
-    given: "Onboarding screen is in consent_explainer state"
-    when: "PSU taps 'Back'"
-    then:
-      - "Screen transitions to permissions_overview state"
-      - "Step indicator shows step 2 of 3"
-    priority: medium
-
-  # ─── OB Explainer bottom sheet ────────────────────────────────────
-
-  - id: TC-ONBOARD-010
-    description: "Tapping 'How Open Banking works' opens the OB explainer bottom sheet"
-    state: consent_explainer
-    given: "Onboarding screen is in consent_explainer state"
-    when: "PSU taps 'How Open Banking works'"
-    then:
-      - "Screen transitions to ob_explainer_open state"
-      - "Bottom sheet is visible with title from {strings.ob_explainer_title}"
-      - "Three FAPI step items are visible (grant permission, authenticate, secure token)"
-      - "Revoke note is visible"
-      - "'Got it' close button is visible"
-    priority: high
-
-  - id: TC-ONBOARD-011
-    description: "OB explainer sheet shows three FAPI consent journey steps with meaningful content"
-    state: ob_explainer_open
-    given: "OB explainer bottom sheet is open"
-    when: "Sheet is displayed"
-    then:
-      - "Step 1 (grant permission): icon how_to_reg visible, headline and body copy visible"
-      - "Step 2 (authenticate with HSBC): icon login visible, body confirms credentials never shared"
-      - "Step 3 (secure token): icon shield visible, body references FAPI 1.0 Advanced"
-      - "Revoke note text references Settings → Manage consents"
-    priority: medium
-
-  - id: TC-ONBOARD-012
-    description: "Tapping 'Got it' closes the OB explainer sheet and returns to consent_explainer"
-    state: ob_explainer_open
-    given: "OB explainer bottom sheet is open"
-    when: "PSU taps 'Got it'"
-    then:
-      - "Bottom sheet dismisses"
-      - "Screen returns to consent_explainer state"
-      - "Step indicator still shows step 3 of 3"
-    priority: medium
+      - "Navigation targets LoginRenewRoute, not IntroRoute"
+      - "IntroScreen is never composed — LoginRenewRoute exists precisely to skip onboarding"

@@ -1,6 +1,6 @@
 id: account-browsing
 name: account-browsing
-description: "Core account information flow — list authorised accounts with balance preview, open account detail with balances, and drill into product terms, party details, and ATM locator. Entry points into recurring payments, statements, and transactions are cross-flow exits to recurring-and-statements and transaction-review respectively."
+description: "Core account information flow — list authorised accounts with balance preview, open account detail with balances, and drill into product terms and account-holder details via the Explore chips. Entry points into recurring payments, statements and transactions are cross-flow exits to recurring-and-statements and transaction-review. Reverse-synced 2026-07-28: party renamed to account-holder; the ATM locator chip still ships but resolves to a placeholder destination with no feature module."
 type: happy
 feature_ref: accounts
 release_phase: P0
@@ -9,24 +9,30 @@ screens:
   - accounts
   - account-detail
   - product
-  - party
-  - atm-locator
+  - account-holder
 
 entry_screen: accounts
 
 connections:
   - { from: accounts, to: account-detail, type: push, label: "Tap account card" }
-  - { from: accounts, to: login, type: push, label: "Token expired or no active consent — redirect to re-auth (cross-flow → onboarding-consent)" }
-  - { from: account-detail, to: accounts, type: push, label: "Back button" }
-  - { from: account-detail, to: transactions, type: push, label: "Tap Transactions chip (cross-flow → transaction-review)" }
-  - { from: account-detail, to: statements, type: push, label: "Tap Statements chip (cross-flow → recurring-and-statements)" }
-  - { from: account-detail, to: standing-orders, type: push, label: "Tap Standing Orders chip (cross-flow → recurring-and-statements)" }
-  - { from: account-detail, to: direct-debits, type: push, label: "Tap Direct Debits chip (cross-flow → recurring-and-statements)" }
-  - { from: account-detail, to: scheduled-payments, type: push, label: "Tap Scheduled chip (cross-flow → recurring-and-statements)" }
-  - { from: account-detail, to: beneficiaries, type: push, label: "Tap Beneficiaries chip (cross-flow → recurring-and-statements)" }
-  - { from: account-detail, to: product, type: push, label: "Tap Product chip" }
-  - { from: account-detail, to: party, type: push, label: "Tap Account Holder (Party) chip" }
-  - { from: account-detail, to: atm-locator, type: push, label: "Tap Nearby ATMs chip" }
-  - { from: product, to: account-detail, type: push, label: "Back navigation" }
-  - { from: party, to: account-detail, type: push, label: "Back navigation" }
-  - { from: atm-locator, to: account-detail, type: push, label: "Back navigation" }
+  - { from: account-detail, to: accounts, type: pop, label: "Back button" }
+  - { from: account-detail, to: transactions, type: push, label: "AccountDetailChip.Transactions (cross-flow → transaction-review)" }
+  - { from: account-detail, to: statements, type: push, label: "AccountDetailChip.Statements (cross-flow → recurring-and-statements)" }
+  - { from: account-detail, to: standing-orders, type: push, label: "AccountDetailChip.StandingOrders (cross-flow → recurring-and-statements)" }
+  - { from: account-detail, to: direct-debits, type: push, label: "AccountDetailChip.DirectDebits (cross-flow → recurring-and-statements)" }
+  - { from: account-detail, to: scheduled-payments, type: push, label: "AccountDetailChip.ScheduledPayments (cross-flow → recurring-and-statements)" }
+  - { from: account-detail, to: beneficiaries, type: push, label: "AccountDetailChip.Beneficiaries (cross-flow → recurring-and-statements)" }
+  - { from: account-detail, to: product, type: push, label: "AccountDetailChip.Product" }
+  - { from: account-detail, to: account-holder, type: push, label: "AccountDetailChip.Party → AccountHolderRoute" }
+  - { from: product, to: account-detail, type: pop, label: "Back navigation" }
+  - { from: account-holder, to: account-detail, type: pop, label: "Back navigation" }
+
+placeholder_connections:
+  # Ships and navigates, but lands on PlaceholderScreen — no feature module exists.
+  - { from: account-detail, to: "AtmLocatorRoute", type: push, label: "AccountDetailChip.AtmLocator", status: placeholder }
+
+removed_in_sync:
+  # accounts -> login on token expiry: AccountsViewModel maps Unauthenticated to an
+  # error state; it does not navigate to login. Re-authentication is reached from
+  # consent-list / consent-detail via LoginRenewRoute instead.
+  - { from: accounts, to: login, reason: "no such navigation in source" }

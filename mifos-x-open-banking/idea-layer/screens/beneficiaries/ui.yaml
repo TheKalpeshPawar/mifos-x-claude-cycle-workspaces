@@ -1,7 +1,28 @@
 screen_id: beneficiaries
 archetype: index_list
 name: "{strings.beneficiaries.screen_title}"
-status: enriched
+status: implemented
+
+# ─────────────────────────────────────────────────────────────────────
+# SOURCE BINDING — reverse-synced from source 2026-07-28
+# ─────────────────────────────────────────────────────────────────────
+implementation:
+  status: implemented
+  source_module: "feature/beneficiaries"
+  package: "org.mifosx.openbanking.feature.beneficiaries"
+  route: "BeneficiariesRoute(accountId: String)"
+  viewmodel: BeneficiariesViewModel
+  screen: BeneficiariesScreen
+  test_tags_object: BeneficiariesTestTags
+  reachable_from:
+    - "account-detail — AccountDetailChip.Beneficiaries"
+  synced_from_source_at: "2026-07-28"
+  renamed_in_sync:
+    - "filterBeneficiaries -> Search — BeneficiariesAction declares Search, not a filter action"
+  removed_in_sync:
+    - "loadBeneficiaries action — the initial load is stream collection in init{}"
+    - "navigateToConsents / navigateBack actions — both are nav-host callbacks, not action members"
+    - "AisApiService DI — the view model injects BeneficiariesRepository, not the raw API service"
 quality_score: 95
 initial_state: loading
 
@@ -54,18 +75,15 @@ state_model:
         - ServerError           # HTTP 500
     actions:
       members:
-        - loadBeneficiaries     # suspend; GET /accounts/{accountId}/beneficiaries
-        - filterBeneficiaries   # pure; client-side filter by CreditorAccount.Name or Reference
-        - retryLoad             # visible for TokenExpired/RateLimited/NetworkError; re-invokes loadBeneficiaries
-        - navigateToConsents    # sync; visible when ConsentRevoked; NavigateTo(consent-list)
-        - navigateBack          # sync; NavigateTo(account-detail)
-    events:
-      - name: NavigateTo
-        target: account-detail
-      - name: NavigateTo
-        target: consent-list
+        - RetryLoad             # refreshes the beneficiaries stream
+        - Search                # data class — client-side filter by payee name or reference
+    nav_callbacks:
+      # Navigation is host-owned; neither is a BeneficiariesAction member.
+      - "onBack -> popBackStack() returning to account-detail"
+      - "onNavigateToConsents -> navigate(ConsentListRoute)"
     di:
-      - AisApiService           # interface; ktorfit; GET /accounts/{AccountId}/beneficiaries
+      - SavedStateHandle        # supplies the accountId route arg
+      - BeneficiariesRepository # Koin single; beneficiaries stream
 
 dependencies:
   tier: feature

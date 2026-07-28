@@ -1,9 +1,40 @@
 screen_id: settings
 archetype: settings
 name: "{strings.settings.title}"
-status: enriched
-initial_state: loading
+status: implemented
+initial_state: content
 quality_score: 95
+
+# ─────────────────────────────────────────────────────────────────────
+# SOURCE BINDING — reverse-synced from source 2026-07-28
+#
+# The former `ui_source_override: preview` pin is removed: the rendered previews
+# were deleted in this pass and SOURCE is now the sole design truth for this screen.
+# ─────────────────────────────────────────────────────────────────────
+implementation:
+  status: implemented
+  source_module: "feature/settings"
+  package: "org.mifosx.openbanking.feature.settings"
+  route: "SettingsRoute (data object)"
+  viewmodel: SettingsViewModel
+  screen: SettingsScreen
+  test_tags_object: SettingsTestTags
+  bottom_nav_tab: "MoreTab (order 3) — graphRoute == startDestinationRoute == SettingsRoute"
+  sibling_screen: "licences (LicencesRoute) — lives in the same module, modelled as screens/licences/"
+  nav_callbacks:
+    - "onNavigateToConsents -> navigate(ConsentListRoute)"
+    - "onNavigateToLicences -> navigate(LicencesRoute)"
+    - "onOpenUrl -> LocalUriHandler.openUri(url)"
+  synced_from_source_at: "2026-07-28"
+  removed_in_sync:
+    - "loading state — SettingsUiState declares only Content, Empty and Error"
+    - "clear_confirm state and the clearLocalDataConfirm / dismissClearLocalData / executeClearLocalData actions — no destructive cache-erasure surface exists in source"
+    - "toggleBiometricLock, updateSessionTimeout — no Security section is rendered"
+    - "toggleConsentExpiryNotification, toggleSecurityAlertsNotification — no Notifications section is rendered"
+    - "navigateProfile — the profile screen was never built and no such callback exists"
+    - "openAppSystemSettings, clearPfmCache — no such rows or actions"
+    - "SettingsPreferences / gpsPermissionState state fields — SettingsState carries only uiState"
+  note_unused_prefs: "UserData carries isBiometricsEnabled, isPasscodeEnabled, passcode, enableScreenCapture and appLanguage, but the settings screen exposes none of them — they are template-inherited fields with no UI surface."
 
 shell:
   bottom_navigation_visible: true
@@ -14,18 +45,16 @@ shell:
 
 business_logic:
   kind: nav_only
-  description: "Settings hub persisting theme, biometric-lock, session-timeout and notifications to DataStore (kotlinx-serialization). SettingsViewModel emits Loading→Content; no network. clear_confirm state gates erasure via bottom-sheet: dismiss_clear_local_data returns to content; execute_clear_local_data wipes Room/SQLDelight cache + DataStore cached-at timestamps; Open Banking consents unaffected."
+  description: "Settings hub over UserDataRepository. SettingsViewModel maps the user-data stream into SettingsUiState.Content carrying themeConfig (DarkThemeConfig), a resolved themeLabel StringResource, appVersionLabel from the injected SettingsAppVersion, and isThemeMenuExpanded. The only persisted mutation is SelectTheme, which writes DarkThemeConfig back through UserDataRepository; ToggleThemeMenu and DismissThemeMenu are pure local UI state for the dropdown. Three sections render: Appearance (theme dropdown), Account (a single consents row) and About (privacy link opening a browser, licences opening in-app, and a static app-version readout with no click handler). A preferences read failure surfaces SettingsErrorKind.PreferencesUnavailable; both error kinds are retriable."
   external_library_refs:
-    - "compose-settings"
-    - "kotlinx-serialization"
     - "androidx.datastore"
+    - "kotlinx-serialization"
   description_author: claude
-  description_authored_at: "2026-07-14T20:00:00Z"
+  description_authored_at: "2026-07-28T00:00:00Z"
 
 # ─────────────────────────────────────────────────────────────────────
 # STATE MODEL — SettingsViewModel contract
-# Derived from docs.yaml#vm_actions + error_cases for implementation.
-# Satisfies QUALITY_FORMULA.md Category 10 (State Model, 5 pts).
+# Mirrors ui/SettingsState.kt verbatim.
 # ─────────────────────────────────────────────────────────────────────
 state_model:
   SettingsViewModel:
@@ -34,656 +63,230 @@ state_model:
       fields:
         - name: uiState
           type: SettingsUiState
-        - name: settings
-          type: SettingsPreferences
-        - name: gpsPermissionState
-          type: String
     screen_state:
       sealed_class: SettingsUiState
       members:
-        - Loading
-        - Content
+        - Content   # themeConfig, themeLabel, appVersionLabel, isThemeMenuExpanded
         - Empty
-        - Error
-        - ClearConfirm     # bottom-sheet gating destructive cache erasure
+        - Error     # kind: SettingsErrorKind
     errors:
       types:
-        - DataStoreIOError        # IOException reading preferences Flow on mount — severity: error
-        - CacheDeleteError        # Room/SQLDelight delete failure in executeClearLocalData — severity: error
-        - NoBrowserError          # no browser app for openExternalUrl — severity: warning (snackbar)
-        - BiometricUnavailableError  # no enrolled biometrics for toggleBiometricLock — severity: info (dialog)
+        - SettingsErrorKind.PreferencesUnavailable  # isRetriable = true
+        - SettingsErrorKind.Unknown                 # isRetriable = true
     actions:
       members:
-        - updateTheme
-        - toggleBiometricLock
-        - updateSessionTimeout
-        - toggleConsentExpiryNotification
-        - toggleSecurityAlertsNotification
-        - navigateConsentList
-        - navigateProfile
-        - clearLocalDataConfirm
-        - dismissClearLocalData
-        - executeClearLocalData
-        - openExternalUrl
-        - openOssLicences
-        - openAppSystemSettings
-        - clearPfmCache
-        - retryLoadSettings
+        - SelectTheme        # data class(config: DarkThemeConfig) — persists via UserDataRepository
+        - ToggleThemeMenu    # local dropdown expand
+        - DismissThemeMenu   # local dropdown collapse
+        - RetryLoad
     di:
-      - SettingsDataStore        # androidx.datastore — persists all preference keys
-      - LocalCacheRepository     # Room/SQLDelight — wipes pfm_room_cache on executeClearLocalData
+      - UserDataRepository   # Koin single; theme + user preference stream and writes
+      - SettingsAppVersion   # supplies appVersionLabel
 
-states: [loading, content, empty, error, clear_confirm]
+status_history:
+  - from: enriched
+    to: implemented
+    at: "2026-07-28"
+    by: "/gap-analysis-project (reverse sync from source)"
+    note: "11 of 15 declared actions had no source implementation and were removed; loading and clear_confirm states removed; ui_source_override: preview pin dropped with the previews."
+
+states: [content, empty, error]
 
 components:
-  # ── Loading Skeleton ─────────────────────────────────────────────────
-  - type: skeleton
-    id: settings_loading_skeleton
-    state_binding: [loading]
-    variant: list
-    rows: 8
-    accessibility_label: "{strings.settings.loading.a11y}"
-    test_context:
-      purpose: "Full-screen shimmer skeleton while DataStore initialises on first composition; transitions to content immediately on first Content emission"
-      required_fields: []
-      interaction_type: display
-      data_driven: false
 
-  # ── Appearance ──────────────────────────────────────────────────────
+  # ══ APPEARANCE SECTION ═════════════════════════════════════════════
   - type: section_header
     id: appearance_header
-    state_binding: [content, clear_confirm]
+    state_binding: [content]
     label: "{strings.settings.section.appearance}"
+    test_tag: "settings:section:appearance"
     accessibility_label: "{strings.settings.section.appearance.a11y}"
     test_context:
-      purpose: "Section label separating appearance controls from other setting groups"
+      purpose: "SettingsSection title for the appearance group"
       required_fields: []
       interaction_type: display
       data_driven: false
 
-  - type: list
-    id: appearance_list
-    state_binding: [content, clear_confirm]
+  - type: select
+    id: theme_row
+    state_binding: [content]
+    label: "{strings.settings.theme.label}"
+    value: "{themeLabel}"
+    test_tag: "settings:row:theme"
+    value_test_tag: "settings:themeValue"
+    menu_test_tag: "settings:themeMenu"
+    expanded_binding: "{isThemeMenuExpanded}"
+    options:
+      - { id: FOLLOW_SYSTEM, label: "{strings.settings.theme.option_system}" }
+      - { id: LIGHT,         label: "{strings.settings.theme.option_light}" }
+      - { id: DARK,          label: "{strings.settings.theme.option_dark}" }
+    accessibility_label: "{strings.settings.theme.select_a11y}"
     test_context:
-      purpose: "Container for appearance preference rows"
-      required_fields: []
-      interaction_type: display
-      data_driven: false
-    children:
-      - type: list_item
-        id: theme_row
-        label: "{strings.settings.theme.label}"
-        supporting_text: "{settings.theme}"
-        test_context:
-          purpose: "Displays current theme value from DataStore and hosts theme picker; supporting_text must reflect live StateFlow value"
-          required_fields: [settings.theme]
-          interaction_type: input
-          data_driven: true
-        trailing_content:
-          type: select
-          id: theme_dropdown
-          options:
-            - "{strings.settings.theme.option_light}"
-            - "{strings.settings.theme.option_dark}"
-            - "{strings.settings.theme.option_system}"
-          value: "{settings.theme}"
-          accessibility_label: "{strings.settings.theme.select_a11y}"
-          test_context:
-            purpose: "Picker for app colour theme; selection persists to DataStore atomically; dynamic theme applies on next recomposition"
-            required_fields: [settings.theme]
-            interaction_type: input
-            data_driven: true
-          on_click:
-            action: update_theme
+      purpose: "ThemeDropdownRow — the only persisted preference on this screen"
+      required_fields: [themeConfig, themeLabel, isThemeMenuExpanded]
+      interaction_type: action
+      data_driven: true
+    on_click:
+      action: ToggleThemeMenu
+      action_contract:
+        effect: transform_state
+        description: "Dispatches SettingsAction.ToggleThemeMenu, flipping isThemeMenuExpanded on the Content state. Purely local UI state — nothing is persisted."
+    on_dismiss:
+      action: DismissThemeMenu
+      action_contract:
+        effect: transform_state
+        description: "Dispatches SettingsAction.DismissThemeMenu, collapsing the dropdown without changing the selected theme."
+    on_select:
+      action: SelectTheme
+      params:
+        config: "{option.id}"
+      action_contract:
+        effect: persist_db
+        writes_to: ["user_preferences.darkThemeConfig"]
+        external_library_refs: ["androidx.datastore"]
+        description: "Dispatches SettingsAction.SelectTheme(config), writing the chosen DarkThemeConfig back through UserDataRepository. The stream re-emits and the whole app retints."
 
-  # ── Security ─────────────────────────────────────────────────────────
-  - type: section_header
-    id: security_header
-    state_binding: [content, clear_confirm]
-    label: "{strings.settings.section.security}"
-    accessibility_label: "{strings.settings.section.security.a11y}"
-    test_context:
-      purpose: "Section label separating security preference controls"
-      required_fields: []
-      interaction_type: display
-      data_driven: false
-
-  - type: list
-    id: security_list
-    state_binding: [content, clear_confirm]
-    test_context:
-      purpose: "Container for security preference rows"
-      required_fields: []
-      interaction_type: display
-      data_driven: false
-    children:
-      - type: list_item
-        id: biometric_row
-        label: "{strings.settings.biometric_lock.label}"
-        supporting_text: "{strings.settings.biometric_lock.supporting}"
-        test_context:
-          purpose: "Hosts biometric lock toggle; if device lacks enrolled biometrics shows informational dialog; verifies on/off state reflects DataStore"
-          required_fields: [settings.biometric_lock_enabled]
-          interaction_type: action
-          data_driven: true
-        trailing_content:
-          type: switch
-          id: biometric_switch
-          value: "{settings.biometric_lock_enabled}"
-          accessibility_label: "{strings.settings.biometric_lock.toggle_a11y}"
-          test_context:
-            purpose: "Boolean toggle for biometric gate on app open; verify persistence survives process death; verify graceful handling when no biometric hardware present"
-            required_fields: [settings.biometric_lock_enabled]
-            interaction_type: action
-            data_driven: true
-          on_click:
-            action: toggle_biometric_lock
-            action_contract:
-              effect: persist_db
-              external_library_refs: [androidx.datastore]
-              description: "Flips biometric_lock_enabled boolean in DataStore; checks BiometricManager availability first — skips the write and emits BiometricUnavailable if no hardware or enrollment is present."
-
-      - type: list_item
-        id: session_timeout_row
-        label: "{strings.settings.session_timeout.label}"
-        supporting_text: "{settings.session_timeout}"
-        test_context:
-          purpose: "Displays current session timeout value from DataStore and hosts picker; value must match StateFlow"
-          required_fields: [settings.session_timeout]
-          interaction_type: input
-          data_driven: true
-        trailing_content:
-          type: select
-          id: session_dropdown
-          options:
-            - "{strings.settings.session_timeout.option_2m}"
-            - "{strings.settings.session_timeout.option_5m}"
-            - "{strings.settings.session_timeout.option_10m}"
-            - "{strings.settings.session_timeout.option_30m}"
-          value: "{settings.session_timeout}"
-          accessibility_label: "{strings.settings.session_timeout.select_a11y}"
-          test_context:
-            purpose: "Picker for inactivity session-timeout; only options from whitelist accepted; selection persisted immediately to DataStore"
-            required_fields: [settings.session_timeout]
-            interaction_type: input
-            data_driven: true
-          on_click:
-            action: update_session_timeout
-
-  # ── Permissions ──────────────────────────────────────────────────────
-  # CC5: permission_visibility — GPS location state for atm-locator distance sort.
-  # Shows granted/denied/not_asked; deep-links to OS system-settings so users can
-  # revoke or grant location access without leaving the app.
-  - type: section_header
-    id: permissions_header
-    state_binding: [content, clear_confirm]
-    label: "{strings.settings.section.permissions}"
-    accessibility_label: "{strings.settings.section.permissions.a11y}"
-    test_context:
-      purpose: "Section label for app runtime-permission visibility rows (GPS location for ATM distance sort)"
-      required_fields: []
-      interaction_type: display
-      data_driven: false
-
-  - type: list
-    id: permissions_list
-    state_binding: [content, clear_confirm]
-    test_context:
-      purpose: "Container for runtime permission info rows; GPS row shows granted/denied/not_asked state"
-      required_fields: []
-      interaction_type: display
-      data_driven: false
-    children:
-      - type: info_row
-        id: location_permission_row
-        label: "{strings.settings.permissions.location}"
-        value: "{runtime.gps_permission_state}"
-        secondary: "{strings.settings.permissions.location.purpose}"
-        icon: location_on
-        trailing_content:
-          type: icon
-          icon: open_in_new
-        accessibility_label: "{strings.settings.permissions.location.a11y}"
-        test_context:
-          purpose: "Displays GPS permission state (granted | denied | not_asked). Tapping opens OS app-settings deep-link so user can grant or revoke. GPS is used opportunistically by atm-locator for ATM distance sorting; denial degrades gracefully to postcode-centroid."
-          required_fields: [runtime.gps_permission_state]
-          interaction_type: action
-          data_driven: true
-        on_click:
-          action: open_app_system_settings
-
-  # ── Notifications ────────────────────────────────────────────────────
-  - type: section_header
-    id: notifications_header
-    state_binding: [content, clear_confirm]
-    label: "{strings.settings.section.notifications}"
-    accessibility_label: "{strings.settings.section.notifications.a11y}"
-    test_context:
-      purpose: "Section label separating notification toggle controls"
-      required_fields: []
-      interaction_type: display
-      data_driven: false
-
-  - type: list
-    id: notifications_list
-    state_binding: [content, clear_confirm]
-    test_context:
-      purpose: "Container for notification toggle rows; both controlled by DataStore flags"
-      required_fields: []
-      interaction_type: display
-      data_driven: false
-    children:
-      - type: list_item
-        id: consent_expiry_notif_row
-        label: "{strings.settings.consent_expiry_notif.label}"
-        supporting_text: "{strings.settings.consent_expiry_notif.supporting}"
-        test_context:
-          purpose: "Toggle for consent-expiry reminders; ensures PSU is alerted before Open Banking consent lapses — OBIE-mandated awareness"
-          required_fields: [settings.notify_consent_expiry]
-          interaction_type: action
-          data_driven: true
-        trailing_content:
-          type: switch
-          id: consent_expiry_switch
-          value: "{settings.notify_consent_expiry}"
-          accessibility_label: "{strings.settings.consent_expiry_notif.toggle_a11y}"
-          test_context:
-            purpose: "Persists notify_consent_expiry preference; test on-to-off and off-to-on transitions; verify toggle state readable by TalkBack"
-            required_fields: [settings.notify_consent_expiry]
-            interaction_type: action
-            data_driven: true
-          on_click:
-            action: toggle_consent_expiry_notification
-            action_contract:
-              effect: persist_db
-              external_library_refs: [androidx.datastore]
-              description: "Flips notify_consent_expiry boolean in DataStore; the background notification scheduler reads this flag to decide whether to post consent-expiry alert notifications."
-
-      - type: list_item
-        id: security_alerts_notif_row
-        label: "{strings.settings.security_alerts_notif.label}"
-        supporting_text: "{strings.settings.security_alerts_notif.supporting}"
-        test_context:
-          purpose: "Toggle for security-alert notifications; regulated banking security-visibility requirement per OBIE security standards"
-          required_fields: [settings.notify_security_alerts]
-          interaction_type: action
-          data_driven: true
-        trailing_content:
-          type: switch
-          id: security_alerts_switch
-          value: "{settings.notify_security_alerts}"
-          accessibility_label: "{strings.settings.security_alerts_notif.toggle_a11y}"
-          test_context:
-            purpose: "Persists notify_security_alerts flag to DataStore; verify state survives process death and app restart"
-            required_fields: [settings.notify_security_alerts]
-            interaction_type: action
-            data_driven: true
-          on_click:
-            action: toggle_security_alerts_notification
-            action_contract:
-              effect: persist_db
-              external_library_refs: [androidx.datastore]
-              description: "Flips notify_security_alerts boolean in DataStore; the FCM message handler reads this flag to decide whether to display security-event push notifications."
-
-  # ── Storage ──────────────────────────────────────────────────────────
-  # CC1 + CC8: storage_location + cache_lifecycle for pfm-dashboard and
-  # spending-by-category. Both screens share pfm_room_cache (Room-KMP, 50 MB max,
-  # TTL 24 h). Single settings surface covers both features per suggested_fix.
-  - type: section_header
-    id: storage_header
-    state_binding: [content, clear_confirm]
-    label: "{strings.settings.section.storage}"
-    accessibility_label: "{strings.settings.section.storage.a11y}"
-    test_context:
-      purpose: "Section label for on-device data storage visibility and PFM cache management"
-      required_fields: []
-      interaction_type: display
-      data_driven: false
-
-  - type: list
-    id: storage_list
-    state_binding: [content, clear_confirm]
-    test_context:
-      purpose: "Container for PFM cache location info row and granular clear-cache action; shared by pfm-dashboard and spending-by-category"
-      required_fields: []
-      interaction_type: display
-      data_driven: false
-    children:
-      - type: info_row
-        id: pfm_storage_location_row
-        label: "{strings.settings.storage.pfm_data}"
-        value: "{platform.app_files_dir}/databases/pfm_cache"
-        secondary: "{strings.settings.storage.pfm_data.secondary}"
-        icon: storage
-        accessibility_label: "{strings.settings.storage.pfm_data.a11y}"
-        test_context:
-          purpose: "Displays the on-device file path of the PFM Room/SQLDelight cache (pfm_cache.db) in the app-private internal storage directory. Satisfies CC1 storage_location for pfm-dashboard and spending-by-category. Read-only display row — no action."
-          required_fields: [platform.app_files_dir]
-          interaction_type: display
-          data_driven: true
-
-      - type: list_item
-        id: clear_pfm_cache_row
-        label: "{strings.settings.storage.clear_pfm_cache}"
-        supporting_text: "{strings.settings.storage.clear_pfm_cache.secondary}"
-        icon: cleaning_services
-        trailing_content:
-          type: icon
-          icon: chevron_right
-        accessibility_label: "{strings.settings.storage.clear_pfm_cache.a11y}"
-        test_context:
-          purpose: "Triggers clearing of the PFM Room/SQLDelight cache (pfm_room_cache) — aggregated spending, income, and category data. Does NOT clear AIS consent, DataStore settings, or the budgets DataStore. Satisfies CC8 cache_lifecycle for pfm-dashboard and spending-by-category. Confirmation bottom-sheet shown before execution."
-          required_fields: []
-          interaction_type: action
-          data_driven: false
-        on_click:
-          action: clear_pfm_cache
-          action_contract:
-            effect: delete
-            external_library_refs: [room]
-            description: "Clears all PFM aggregated spending and category rows from the local PFM Room cache at databases/pfm_cache after user confirmation; DataStore settings and Open Banking AIS consents are unaffected."
-
-  # ── Account ──────────────────────────────────────────────────────────
+  # ══ ACCOUNT SECTION ════════════════════════════════════════════════
   - type: section_header
     id: account_header
-    state_binding: [content, clear_confirm]
+    state_binding: [content]
     label: "{strings.settings.section.account}"
+    test_tag: "settings:section:account"
     accessibility_label: "{strings.settings.section.account.a11y}"
     test_context:
-      purpose: "Section label for account management and data-control navigation rows"
+      purpose: "SettingsSection title for the account group"
       required_fields: []
       interaction_type: display
       data_driven: false
 
-  - type: list
-    id: account_links_list
-    state_binding: [content, clear_confirm]
+  - type: list_item
+    id: consents_row
+    state_binding: [content]
+    title: "{strings.settings.consents.title}"
+    subtitle: "{strings.settings.consents.subtitle}"
+    leading_icon: policy
+    trailing: chevron
+    test_tag: "settings:row:consents"
+    trailing_test_tag: "settings:row:consents:chevron"
+    accessibility_label: "{strings.settings.opens_in_app.a11y}"
     test_context:
-      purpose: "Container for account-management navigation rows and destructive data-erasure action"
-      required_fields: []
-      interaction_type: display
-      data_driven: false
-    children:
-      - type: list_item
-        id: manage_consents_row
-        label: "{strings.settings.manage_consents.label}"
-        supporting_text: "{strings.settings.manage_consents.supporting}"
-        icon: policy
-        trailing_content:
-          type: icon
-          icon: chevron_right
-        accessibility_label: "{strings.settings.manage_consents.a11y}"
-        test_context:
-          purpose: "Navigation entry to consent-list; verify chevron visible and tap triggers navigation event to consent-list route"
-          required_fields: []
-          interaction_type: navigate
-          data_driven: false
-        on_click:
-          action: navigate_consent_list
-          target: consent-list
-          action_contract:
-            effect: navigate
-            description: "Navigates to the consent-list screen where the user can view and revoke active Open Banking account-access consents."
-
-      - type: list_item
-        id: profile_row
-        label: "{strings.settings.profile.label}"
-        supporting_text: "{strings.settings.profile.supporting}"
-        icon: account_circle
-        trailing_content:
-          type: icon
-          icon: chevron_right
-        accessibility_label: "{strings.settings.profile.a11y}"
-        test_context:
-          purpose: "Navigation entry to profile screen; verify label, supporting text, and tap triggers navigation to profile route"
-          required_fields: []
-          interaction_type: navigate
-          data_driven: false
-        on_click:
-          action: navigate_profile
-          target: profile
-          action_contract:
-            effect: navigate
-            description: "Navigates to the profile screen displaying the account holder's identity details from the Open Banking party endpoint."
-
-      - type: list_item
-        id: clear_local_data_row
-        label: "{strings.settings.clear_local_data.label}"
-        supporting_text: "{strings.settings.clear_local_data.supporting}"
-        icon: delete_sweep
-        trailing_content:
-          type: icon
-          icon: chevron_right
-        accessibility_label: "{strings.settings.clear_local_data.a11y}"
-        test_context:
-          purpose: "Triggers a destructive-action bottom-sheet confirmation before erasing locally cached account and transaction data; satisfies GDPR right-to-erasure for locally held cache; consent authorisations in Open Banking are NOT affected"
-          required_fields: []
-          interaction_type: action
-          data_driven: false
-        on_click:
-          action: clear_local_data_confirm
-          action_contract:
-            effect: transform_state
-            external_library_refs: [kotlinx-coroutines]
-            description: "Emits ShowClearDataConfirmation to transition the screen to clear_confirm state and open the destructive-action bottom-sheet; no database or DataStore writes occur at this stage."
-
-  # ── About & Legal ────────────────────────────────────────────────────
-  - type: section_header
-    id: about_header
-    state_binding: [content, clear_confirm]
-    label: "{strings.settings.section.about_legal}"
-    accessibility_label: "{strings.settings.section.about_legal.a11y}"
-    test_context:
-      purpose: "Section label separating legal and informational rows"
-      required_fields: []
-      interaction_type: display
-      data_driven: false
-
-  - type: list
-    id: about_list
-    state_binding: [content, clear_confirm]
-    test_context:
-      purpose: "Container for legal navigation rows and static version display"
-      required_fields: []
-      interaction_type: display
-      data_driven: false
-    children:
-      - type: list_item
-        id: terms_row
-        label: "{strings.settings.terms.label}"
-        icon: article
-        trailing_content:
-          type: icon
-          icon: open_in_new
-        accessibility_label: "{strings.settings.terms.a11y}"
-        test_context:
-          purpose: "Opens OBIE ToS URL in system browser; verify open_in_new icon present and correct URL is fired via platform intent"
-          required_fields: []
-          interaction_type: action
-          data_driven: false
-        on_click:
-          action: open_external_url
-          params:
-            url: "https://www.openbanking.org.uk/customer-hub/terms-and-conditions/"
-          action_contract:
-            effect: share_external
-            external_library_refs: ["platform-intent/openURL"]
-            description: "Hands the OBIE Terms and Conditions URL to the platform browser launcher (Android intent / iOS openURL) to open in the system browser or Custom Tab; no in-app state change. Shows a snackbar when no browser app is installed."
-
-      - type: list_item
-        id: privacy_row
-        label: "{strings.settings.privacy.label}"
-        icon: privacy_tip
-        trailing_content:
-          type: icon
-          icon: open_in_new
-        accessibility_label: "{strings.settings.privacy.a11y}"
-        test_context:
-          purpose: "Opens OBIE Privacy Policy URL in system browser; verify open_in_new icon and correct URL fired"
-          required_fields: []
-          interaction_type: action
-          data_driven: false
-        on_click:
-          action: open_external_url
-          params:
-            url: "https://www.openbanking.org.uk/privacy-policy/"
-          action_contract:
-            effect: share_external
-            external_library_refs: ["platform-intent/openURL"]
-            description: "Hands the OBIE Privacy Policy URL to the platform browser launcher (Android intent / iOS openURL) to open in the system browser or Custom Tab; no in-app state change. Shows a snackbar when no browser app is installed."
-
-      - type: list_item
-        id: licences_row
-        label: "{strings.settings.licences.label}"
-        icon: info_outline
-        trailing_content:
-          type: icon
-          icon: chevron_right
-        accessibility_label: "{strings.settings.licences.a11y}"
-        test_context:
-          purpose: "Opens in-app OSS licences destination (AboutLibraries); verify chevron visible and navigation event fires"
-          required_fields: []
-          interaction_type: action
-          data_driven: false
-        on_click:
-          action: open_oss_licences
-          action_contract:
-            effect: share_external
-            external_library_refs: [AboutLibraries]
-            description: "Launches the in-app Open Source licences screen via the AboutLibraries Compose destination; no DataStore or network interaction."
-
-      - type: list_item
-        id: app_version_row
-        label: "{strings.settings.app_version.label}"
-        supporting_text: "{settings.app_version}"
-        accessibility_label: "{strings.settings.app_version.a11y}"
-        test_context:
-          purpose: "Displays build version string from BuildConfig.VERSION_NAME + VERSION_CODE; verify supporting_text non-empty and no tap target registered"
-          required_fields: [settings.app_version]
-          interaction_type: display
-          data_driven: true
-
-  # ── Clear local data confirmation ────────────────────────────────────
-  - type: bottom_sheet
-    id: clear_local_data_sheet
-    state_binding: [clear_confirm]
-    title: "{strings.settings.clear_local_data.dialog_title}"
-    body: "{strings.settings.clear_local_data.dialog_body}"
-    accessibility_label: "{strings.settings.clear_local_data.a11y}"
-    test_context:
-      purpose: "Destructive-action confirmation bottom-sheet; appears only in clear_confirm state; triggered by clear_local_data_confirm. Clear erases Room/SQLDelight cached account+transaction rows and resets DataStore cached-at timestamps; consent authorisations in Open Banking are NOT affected."
+      purpose: "Only outbound in-app navigation from the account group"
       required_fields: []
       interaction_type: action
       data_driven: false
-    children:
-      - type: button
-        id: cancel_clear_local_data_button
-        variant: text
-        label: "{strings.settings.clear_local_data.dialog_cancel}"
-        accessibility_label: "{strings.settings.clear_local_data.dialog_cancel}"
-        test_context:
-          purpose: "Dismisses the confirmation sheet and returns to content state; no data erased."
-          required_fields: []
-          interaction_type: action
-          data_driven: false
-        on_click:
-          action: dismiss_clear_local_data
-          action_contract:
-            effect: transform_state
-            external_library_refs: [kotlinx-coroutines]
-            description: "Dismisses the clear-data confirmation bottom-sheet and transitions the screen back to content state without erasing any local data."
-      - type: button
-        id: confirm_clear_local_data_button
-        variant: filled
-        label: "{strings.settings.clear_local_data.dialog_confirm}"
-        color: error
-        accessibility_label: "{strings.settings.clear_local_data.dialog_confirm}"
-        test_context:
-          purpose: "Confirms erasure: clears cached account+transaction rows and resets DataStore cached-at timestamps; Open Banking consent authorisations are NOT affected."
-          required_fields: []
-          interaction_type: action
-          data_driven: false
-        on_click:
-          action: execute_clear_local_data
-          action_contract:
-            effect: delete
-            external_library_refs: [room, sqldelight, androidx.datastore]
-            description: "Deletes all cached account and transaction rows from the Room/SQLDelight local database and resets DataStore cached-at timestamps to null so the next dashboard visit refetches; Open Banking consent authorisations are not affected."
+    on_click:
+      action: navigate_consent_list
+      target: consent-list
+      action_contract:
+        effect: navigate
+        description: "Invokes the settingsScreen onNavigateToConsents callback, which navigates to ConsentListRoute. A nav-host callback, not a SettingsAction member."
 
-  # ── Empty state ──────────────────────────────────────────────────────
-  - type: empty_state
-    id: settings_empty_state
-    variant: neutral
-    state_binding: [empty]
-    icon: settings
-    title: "{strings.settings.empty.title}"
-    body: "{strings.settings.empty.body}"
-    accessibility_label: "{strings.settings.empty.a11y}"
+  # ══ ABOUT SECTION ══════════════════════════════════════════════════
+  - type: section_header
+    id: about_header
+    state_binding: [content]
+    label: "{strings.settings.section.about_legal}"
+    test_tag: "settings:section:about"
+    accessibility_label: "{strings.settings.section.about_legal.a11y}"
     test_context:
-      purpose: "Shown on first cold start before DataStore emits default preferences; typically transitions to content within one frame as defaults are written by SettingsViewModel"
-      required_fields: [icon, title, body]
+      purpose: "SettingsSection title for the about group"
+      required_fields: []
       interaction_type: display
       data_driven: false
 
-  # ── Error state ───────────────────────────────────────────────────────
+  - type: list_item
+    id: privacy_row
+    state_binding: [content]
+    title: "{strings.settings.privacy.title}"
+    leading_icon: privacy_tip
+    trailing: external_link
+    test_tag: "settings:row:privacy"
+    trailing_test_tag: "settings:row:privacy:externalLink"
+    accessibility_label: "{strings.settings.opens_externally.a11y}"
+    test_context:
+      purpose: "Leaves the app for a browser; carries the external-link glyph rather than a chevron"
+      required_fields: []
+      interaction_type: action
+      data_driven: false
+    on_click:
+      action: open_privacy_url
+      action_contract:
+        effect: share_external
+        external_library_refs: ["compose.ui.platform.LocalUriHandler"]
+        description: "Invokes the settingsScreen onOpenUrl callback, which calls LocalUriHandler.openUri(url) to open the privacy policy in the platform browser."
+
+  - type: list_item
+    id: licences_row
+    state_binding: [content]
+    title: "{strings.settings.licences.title}"
+    leading_icon: info
+    trailing: chevron
+    test_tag: "settings:row:licences"
+    trailing_test_tag: "settings:row:licences:chevron"
+    accessibility_label: "{strings.settings.opens_in_app.a11y}"
+    test_context:
+      purpose: "Opens the in-app OSS licences screen"
+      required_fields: []
+      interaction_type: action
+      data_driven: false
+    on_click:
+      action: navigate_licences
+      target: licences
+      action_contract:
+        effect: navigate
+        description: "Invokes the settingsScreen onNavigateToLicences callback, which navigates to LicencesRoute — a sibling destination in the same feature module."
+
+  - type: list_item
+    id: app_version_row
+    state_binding: [content]
+    title: "{strings.settings.app_version.title}"
+    subtitle: "{appVersionLabel}"
+    test_tag: "settings:row:appVersion"
+    subtitle_test_tag: "settings:appVersionValue"
+    test_context:
+      purpose: "Static build-identity readout — deliberately no icon, no trailing affordance and no click handler"
+      required_fields: [appVersionLabel]
+      interaction_type: display
+      data_driven: true
+
+  # ══ EMPTY STATE ════════════════════════════════════════════════════
   - type: empty_state
-    id: settings_error_state
-    variant: error
+    id: settings_empty
+    state_binding: [empty]
+    title: "{strings.settings.empty.title}"
+    body: "{strings.settings.empty.body}"
+    test_tag: "settings:emptyState"
+    accessibility_label: "{strings.settings.empty.title}"
+    test_context:
+      purpose: "SettingsUiState.Empty — no preferences resolved"
+      required_fields: []
+      interaction_type: display
+      data_driven: false
+
+  # ══ ERROR STATE ════════════════════════════════════════════════════
+  - type: error_state
+    id: settings_error
     state_binding: [error]
     icon: error_outline
     title: "{strings.settings.error.title}"
     body: "{strings.settings.error.body}"
-    accessibility_label: "{strings.settings.error.a11y}"
+    test_tag: "settings:errorState"
+    accessibility_label: "{strings.settings.error.title}"
     test_context:
-      purpose: "Shown when DataStore read throws an I/O exception (storage corruption, disk full); offers retry to re-trigger the preferences Flow collection"
-      required_fields: [icon, title, body]
+      purpose: "Both SettingsErrorKind values render here; both are retriable"
+      required_fields: [uiState.kind]
       interaction_type: display
-      data_driven: false
+      data_driven: true
     children:
       - type: button
-        id: settings_error_retry_button
+        id: retry_button
         variant: filled
         label: "{strings.settings.error.retry}"
-        accessibility_label: "{strings.settings.error.retry_a11y}"
+        test_tag: "settings:retryButton"
+        accessibility_label: "{strings.settings.error.retry.a11y}"
         on_click:
-          action: retry_load_settings
+          action: RetryLoad
           action_contract:
             effect: transform_state
-            external_library_refs: [kotlinx-coroutines]
-            description: "Re-triggers the DataStore preferences Flow collection after an I/O failure, transitioning from Error to Loading state; returns to Content on success or back to Error on repeated IOException."
-        test_context:
-          purpose: "Re-triggers DataStore preferences Flow collection after I/O failure; transitions to loading then content on success"
-          required_fields: [on_click.action]
-          interaction_type: action
-          data_driven: false
-
-status_history:
-  - from: draft
-    to: enriched
-    at: "2026-06-29"
-    by: "/idea-enrich"
-  - from: enriched
-    to: enriched
-    at: "2026-06-29"
-    by: "/idea-enrich"
-    note: "Added loading state + skeleton, full i18n wrapping (53 string keys), section-header accessibility_label, clear_local_data_row (GDPR), dynamic app_version binding, enriched dropdown options i18n, business_logic expanded with DataStore + erasure detail"
-  - from: enriched
-    to: enriched
-    at: "2026-07-14"
-    by: "/design-validate --fix"
-    note: "STATE-001: added empty and error states with production-fidelity components (settings_empty_state, settings_error_state with retry button)"
-  - from: enriched
-    to: enriched
-    at: "2026-07-14"
-    by: "/idea-enrich"
-    note: "ENRICH-95: fixed I18n completeness (settings.error.a11y missing key); aligned data-flow.yaml with ui.yaml error/empty states + added retry_load_settings action; added error_case for DataStore mount IOException; added TC-SET-013/014 covering error and empty states; corrected scenario_count 10→14"
-  - from: enriched
-    to: enriched
-    at: "2026-07-14"
-    by: "/idea enrich"
-    note: "ENRICH-95 round-2: trimmed business_logic.description to ≤400 chars with clear_confirm action names explicit; added TC-SET-015/016/017 (clear_confirm state machine); added dismissClearLocalData + executeClearLocalData vm_actions to docs.yaml; scenario_count→17"
-  - from: enriched
-    to: enriched
-    at: "2026-07-14"
-    by: "/idea-enrich atm-locator pfm-dashboard spending-by-category"
-    note: "CC-gaps pass: added Permissions section (location_permission_row, CC5 atm-locator) + Storage section (pfm_storage_location_row CC1, clear_pfm_cache_row CC8 — shared by pfm-dashboard + spending-by-category). New strings: settings.section.permissions, settings.permissions.location.*, settings.section.storage, settings.storage.*."
+            external_library_refs: ["androidx.datastore"]
+            description: "Dispatches SettingsAction.RetryLoad, re-reading the UserDataRepository preference stream to rebuild Content."

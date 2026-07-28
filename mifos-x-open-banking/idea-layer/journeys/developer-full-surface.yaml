@@ -1,73 +1,79 @@
 id: developer-full-surface
-version: "1.0.0"
+version: "2.0.0"
 name: "Developer Full AISP Surface Evaluation"
 description: >
   Sam, an Open Banking developer/reviewer, works through the AISP surface that goes beyond
-  core accounts and transactions: the account holder's party details (gated by ReadParty),
-  account product terms (fees and rates for BCA/PCA), the HSBC Open Data ATM locator
-  (unauthenticated), and the list of saved beneficiaries for a given account. Together
-  these screens prove the app's complete OBIE AIS endpoint coverage.
+  core accounts and transactions: the account holder's identity (gated by ReadParty),
+  account product terms (fees and rates for BCA/PCA), and the list of saved beneficiaries
+  for a given account. Together these screens prove the app's OBIE AIS endpoint coverage.
+  Reverse-synced 2026-07-28: the ATM locator step was removed — the chip still ships but
+  resolves to a placeholder screen with no feature module, and the Open Data endpoint is
+  not implemented on the network client.
 persona:
   archetype: "expert evaluator — AISP surface auditor"
   jtbd: "Confirm the reference app covers every OBIE AIS resource endpoint end-to-end against the HSBC sandbox, not just the common accounts-and-transactions subset."
   context: "Sandbox evaluation session on a development laptop, connected to the HSBC developer portal."
   knowledge_level: expert
   emotional_state: "analytical and standards-rigorous"
-goal: "Visit and verify party, product, atm-locator, and beneficiaries screens to confirm full OBIE AISP coverage beyond core account data."
+goal: "Visit and verify account-holder, product and beneficiaries screens to confirm OBIE AISP coverage beyond core account data."
 success_metric:
   name: "full-aisp-surface-task-completion"
   kind: task_completion
-  target: "All 4 specialist screens (party, product, atm-locator, beneficiaries) render real sandbox data in a single evaluation session"
-  measurement: "Session-level event set: party_screen_loaded_with_data AND product_screen_loaded_with_data AND atm_locator_results_shown AND beneficiaries_screen_loaded"
+  target: "All 3 specialist screens (account-holder, product, beneficiaries) render real sandbox data in a single evaluation session"
+  measurement: "Session-level event set: account_holder_screen_loaded_with_data AND product_screen_loaded_with_data AND beneficiaries_screen_loaded"
 screen_sequence:
   - screen_id: accounts
-    state: "populated"
+    state: "content"
     user_intent: "Confirm all sandbox accounts are listed; select a PCA/BCA account to evaluate product and party resources."
-    success_signal: "Account list shows at least one Personal Current Account (PCA) and the account type is clearly labelled."
+    success_signal: "Account list shows at least one Personal Current Account and the account type is clearly labelled. Filter chips offer All / Current / Savings / Credit."
   - screen_id: account-detail
-    state: "populated"
-    user_intent: "Verify that Product, Party, ATMs, and Beneficiaries chips are present in the Explore row alongside the standard chips."
-    success_signal: "All 9 Explore row chips are visible: Transactions, Statements, Standing Orders, Direct Debits, Scheduled, Beneficiaries, Product, Party, ATMs."
-  - screen_id: party
-    state: "populated"
-    user_intent: "Verify the ReadParty endpoint returns account holder name and address from GET /accounts/{id}/party or /parties."
-    success_signal: "Party screen shows account holder full name, at least one address block (street, town, postcode), and optionally email/phone if present in sandbox data."
-    notes: "Endpoint /accounts/{id}/party returns OBReadParty2 (single party); /accounts/{id}/parties returns OBReadParty3 (multi-party). Both should be attempted by the evaluator."
+    state: "content"
+    user_intent: "Verify the Explore chips are present, and that AccountCapabilityRegistry gates them per account."
+    success_signal: >
+      The Explore row renders the chips in availableChips. The full AccountDetailChip enum is
+      Transactions, Statements, StandingOrders, DirectDebits, ScheduledPayments, Beneficiaries,
+      AtmLocator, Product, Party — but only the registry-approved subset is shown for a given account.
+    notes: "The AtmLocator chip navigates to AtmLocatorRoute, which renders PlaceholderScreen. Evaluators should expect a placeholder, not a feature."
+  - screen_id: account-holder
+    state: "content"
+    user_intent: "Verify GET /accounts/{id}/party returns the account holder's identity."
+    success_signal: "The account-holder screen shows an avatar monogram, display name, role label, and email / mobile / address rows where the sandbox provides them."
+    notes: >
+      Source calls the singular /party endpoint only and maps it to the flat PartyProfile model
+      (displayName, roleLabel, initials, email, mobile, addressLine). Aisp.getParties() exists on
+      the client but nothing consumes it, so the multi-party OBReadParty3 path is NOT exercised.
   - screen_id: product
-    state: "populated"
-    user_intent: "Verify GET /accounts/{id}/product returns account product terms — fees, rates, and product features for PCA or BCA."
-    success_signal: "Product screen shows product name (e.g. 'HSBC Advance Current Account'), at least one fee tier or rate structure (AER/EAR), and product feature tags."
+    state: "content"
+    user_intent: "Verify GET /accounts/{id}/product returns account product terms — fees, rates and features."
+    success_signal: "Product screen shows the product name, at least one fee tier or rate structure, and product feature tags."
     notes: "Global Money accounts may return a different product structure; evaluator should test both PCA and Global Money."
-  - screen_id: atm-locator
-    state: "populated"
-    user_intent: "Verify the HSBC Open Data ATM endpoint works without authentication and returns nearby ATM records."
-    success_signal: "ATM list or map renders with at least one ATM marker showing location name, address, services (e.g. cash deposit, wheelchair access), and distance."
-    notes: "This endpoint uses HSBC Open Data (no OAuth required). Location permission must be granted on device to calculate distance."
   - screen_id: beneficiaries
-    state: "populated"
+    state: "content"
     user_intent: "Verify GET /accounts/{id}/beneficiaries returns saved payees with name and account identifier."
-    success_signal: "Beneficiaries list renders at least one row with creditor name, account scheme (e.g. UK.OBIE.SortCodeAccountNumber), and account identifier."
+    success_signal: "Beneficiaries list renders at least one row with creditor name and account identifier. The Search action filters the list client-side."
     fallback_screen_id: account-detail
     notes: "Empty state expected on sandbox accounts with no saved beneficiaries — evaluator should use a sandbox account known to have payees."
 expected_outcome: >
-  Sam has confirmed that all OBIE AIS resources — including the less-common party, product,
-  ATM Open Data, and beneficiaries endpoints — render real HSBC sandbox data correctly.
-  The reference app is verified as providing complete AISP coverage beyond accounts and
-  transactions.
+  Sam has confirmed that the implemented OBIE AIS resources — including the less-common party,
+  product and beneficiaries endpoints — render real HSBC sandbox data correctly, and has
+  identified the ATM locator as an unimplemented placeholder.
 tier: maximum
 preconditions:
   - "Active consent with ReadAccountsDetail, ReadParty, ReadProducts, ReadBeneficiariesDetail permissions in scope."
   - "HSBC sandbox credentials (client_id, mTLS cert, SSA) configured in app."
-  - "Location permission granted on device for ATM distance calculation."
   - "At least one PCA or BCA account in the sandbox that has product data available."
 failure_modes:
   - cause: "ReadParty permission absent from consent scope — GET /party returns 403."
-    recovery_screen: consent-detail
-    notes: "Party screen shows 'ReadParty permission not granted' banner. Sam navigates to consent-detail and reconfirms with expanded permission set."
-  - cause: "GET /product returns empty or unsupported product type for the selected account."
+    recovery_screen: account-holder
+    notes: >
+      classifyAccountHolderError maps Forbidden to AccountHolderErrorKind.ConsentMissingParty and
+      renders the shared error surface with the Retry CTA suppressed. There is NO in-screen
+      navigation to consent-detail — the evaluator must reach consents via settings.
+  - cause: "GET /product returns empty or an unsupported product type for the selected account."
     recovery_screen: account-detail
-    notes: "Product screen shows 'No product data available for this account type' empty state. Evaluator should switch to a PCA account."
-  - cause: "HSBC Open Data ATM endpoint unreachable (network issue or rate limit)."
-    recovery_screen: account-detail
-    notes: "ATM locator shows error state with Retry CTA. This is an unauthenticated public endpoint so no auth fix is possible."
-tags: [party, product, atm-locator, beneficiaries, aisp-coverage, developer, p2]
+    notes: "Product screen shows its empty state. Evaluator should switch to a PCA account."
+tags: [account-holder, product, beneficiaries, aisp-coverage, developer, p2]
+
+removed_in_sync:
+  - screen: atm-locator
+    reason: "No feature module. AtmLocatorRoute resolves to PlaceholderScreen and no Open Data endpoint exists on the network client."

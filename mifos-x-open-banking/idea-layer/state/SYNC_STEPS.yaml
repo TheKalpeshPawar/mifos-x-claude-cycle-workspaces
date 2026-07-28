@@ -1,160 +1,69 @@
 schema_version: "1.0.0"
 run:
-  at: '2026-07-17T05:58:00Z'
-  args: ''
+  at: '2026-07-28T00:00:00Z'
+  args: 'reverse — update idea-layer from source'
+  command: '/gap-analysis-project'
+
+# ─── RESET 2026-07-28 ───────────────────────────────────────────────────
+# The prior file detailed a 12-step /idea-sync run against the pre-sync
+# 25-feature idea-layer, including an EXPORT_MATRIX v1->v2 migration whose
+# 122 cells have since been reset. Those step records describe work on files
+# that no longer exist. Replaced with this run's record.
+
 steps:
   - n: 0
-    name: init
+    name: source-inventory
     status: complete
-    at: '2026-07-17T05:58:00Z'
+    at: '2026-07-28T00:00:00Z'
     notes: >-
-      idea-plan.yaml present -> IDEA_PLAN_SOURCE=true (validation + gap-fill mode).
-      PIPELINE_STATE.yaml parses, schema_version 2.1.0, capabilities-only shape intact.
-
-  - n: 0.0
-    name: preflight-suite
-    status: complete
-    at: '2026-07-17T05:58:00Z'
-    notes: >-
-      5 slugs, all PASS -> auto-proceed, no picker.
-      source-of-truth-sync PASS (A=B=C, 0 divergent tokens);
-      llm-preview-truth-gate PASS (0 findings);
-      mockup-theme-consistency PASS (0 findings);
-      failure-log-review PASS (0 failed capabilities, no loop-hash candidates);
-      dashboard-truth-audit PASS (all dispatch_done cells verified, no false-positive ticks).
-      Contrast with the 2026-07-16 run, which needed an acked WARN — the
-      mockup-theme-consistency regression introduced by the /idea-feature-mockup
-      first pass (11 features carrying invented off-palette hexes) was repaired
-      before this sync started.
-
-  - n: 1.IDEA-MIGRATION
-    name: idea-artifact-migration-drift-probe
-    status: complete
-    at: '2026-07-17T05:58:00Z'
-    notes: >-
-      Non-mutating drift probe only (mode=drift-detect). No idea-artifact axis
-      migration required this run.
-
+      Enumerated the shipped source: 18 feature modules, their Action sealed
+      interfaces, UiState members, ViewModel constructors, type-safe routes,
+      nav-host callbacks, core/model domain types and the Aisp/OAuth client surface.
   - n: 1
+    name: idea-inventory
+    status: complete
+    at: '2026-07-28T00:00:00Z'
+    notes: "Read the 25-screen roster with its declared states, actions, DI and flows."
+  - n: 2
+    name: drift-matrix
+    status: complete
+    at: '2026-07-28T00:00:00Z'
+    notes: >-
+      Classified every divergence: 6 screens spec-only, 1 renamed (party ->
+      account-holder), 1 source-only (licences), plus per-screen state/action/DI drift
+      and an app-shell tab contradiction.
+  - n: 3
+    name: purge-stale
+    status: complete
+    at: '2026-07-28T00:00:00Z'
+    notes: >-
+      Removed 6 screen trees, all preview HTML, all stitch mockups and prompts,
+      exports/, mockups/, _cache/, dashboard/, APP_FLOW.mmd and the historical
+      verify/sync logs. 785 files deleted in total.
+  - n: 4
+    name: absorb-source-truth
+    status: complete
+    at: '2026-07-28T00:00:00Z'
+    notes: >-
+      Rewrote every surviving screen's contract against source and authored the
+      licences screen from LicencesScreen.kt.
+  - n: 5
+    name: prune-catalogues
+    status: complete
+    at: '2026-07-28T00:00:00Z'
+    notes: >-
+      String catalogue rebalanced to 471 declared == 471 referenced (0 orphans,
+      0 missing). Ledgers reset rather than carried forward.
+  - n: 6
     name: verify
     status: complete
-    at: '2026-07-17T05:58:00Z'
-    detail_ref: state/CAPABILITY_GAPS.yaml
+    at: '2026-07-28T00:00:00Z'
     notes: >-
-      44 findings in CAPABILITY_GAPS.yaml: 39 closed, 1 open (error), 4 status-less
-      (warn, stitch_coverage). The 124 missing action_contract blocks recorded as
-      FOUND by the 2026-07-16 run are now authored — that enrichment is what
-      stale-ified every derived mockup and motivated the /idea-feature-mockup
-      re-export that preceded this sync.
-      G-ILC state-coherence PASS (fail=0 warn=0).
-    findings_recorded: 0
+      G-ILC fail=0 warn=0 · G-ACTION-CONTRACT 0 violations · YAML parse clean ·
+      per-feature source-drift 0 findings across 20 features · source untouched.
 
-  - n: 2.GAP-ROUTE
-    name: gap-route-picker
-    status: complete
-    at: '2026-07-17T05:59:00Z'
-    notes: >-
-      ONE batched picker rendered (RULE-IDEA-GAP-REGISTRY-001 GR-5 — never per-gap).
-      1 open error routed: pfm-dashboard / RULE-IDEA-SUB-ACTION-COMPLETENESS-001
-      sub-action-leaf-missing. User picked [Fix + regenerate].
-      The 4 status-less warns are all category=stitch_coverage (statements partial
-      stitch run, login content html/png not downloaded, accounts prompt_sha drift,
-      10 features absent from PROJECTS_INDEX.yaml) — owned by /idea-feature-stitch,
-      NOT routed here. Deliberately left for that command rather than half-fixed.
-
-  - n: 2.GAP-FIX
-    name: pfm-dashboard-sac-fix
-    status: complete
-    at: '2026-07-17T05:41:24Z'
-    notes: >-
-      Root-cause fix, not a symptom patch. pfm-dashboard/ui.yaml error_state
-      (id: error_view) declared its retry as a BARE, TYPELESS `action:` block — a
-      1-of-37 outlier (the other 36 error/empty states across 24 screens all use a
-      typed children[] entry). Two defects: (1) `action` is not a slot on error_state
-      at all (it is an empty_state slot per layers/idea/templates/registry/feedback.yaml
-      — evidently copy-pasted); (2) being typeless + id-less it was invisible to
-      RULE-IDEA-ACTION-CONTRACT-001 AC1, so its on_click carried no action_contract
-      and nothing flagged it. Replaced with a typed child:
-      button / id pfm_error_retry_button / variant filled / label
-      "{strings.pfm_dashboard.error.retry}" ("Try again") / accessibility_label /
-      on_click.action reload_finances + action_contract{effect: transform_state,
-      external_library_refs: [kotlinx-coroutines], description 271 chars}.
-      effect=transform_state is correct: pfm-dashboard/api.yaml declares endpoints: [],
-      so the retry re-runs the local PfmRepository (Room/SQLDelight) aggregation —
-      it is NOT an API call. DCL-6 naming honoured (on_click reload_finances mirrors
-      state_model member reloadFinances, matching the file's snake/camel split).
-      Finding closed with count_after: 0.
-
-  - n: 2.GAP-FIX-CASCADE
-    name: pfm-dashboard-re-export
-    status: complete
-    at: '2026-07-17T05:45:09Z'
-    notes: >-
-      The ui.yaml edit re-staled pfm-dashboard's derived artifacts (the finding itself
-      warned of this). Re-exported against the new source so the ledger returns to
-      fresh rather than recording a lie: SPEC.md (175 lines, retry button documented,
-      client-only stated — no fabricated endpoints), MOCKUP.md (471 lines),
-      PROMPTS_FIGMA.md (398 lines). All three verified to contain
-      pfm_error_retry_button. API.md untouched and still fresh (api.yaml unchanged).
-      preview/*.html already renders a retry affordance and is not EXPORT_MATRIX-tracked
-      (v1 carried no preview column).
-
-  - n: 3.0
-    name: enrichment-scope
-    status: skipped
-    at: '2026-07-17T05:59:00Z'
-    notes: >-
-      No enrichment dispatched. All 25 features are status=approved with
-      quality_score 95-98 (floor 60); the action_contract authoring that the previous
-      run deferred has already landed. Zero features in draft/enriched needing
-      promotion, so the [A/F/S] scope picker had an empty candidate set — skipped
-      rather than dispatched against nothing.
-
-  - n: 4.MATRIX
-    name: export-matrix-v1-to-v2-migration
-    status: complete
-    at: '2026-07-17T05:58:00Z'
-    detail_ref: EXPORT_MATRIX.yaml
-    notes: >-
-      Step G.E.0 + G.E.1 (Phase 4 T15/T16). EXPORT_MATRIX.yaml was schema_version "1.0"
-      (status-snapshot rows[] of booleans) — the shape that made /idea-feature-mockup
-      emit EXPORT_MATRIX_V1_DETECTED and correctly refuse to write cells. Migrated to
-      v2 staleness-ledger: 122 cells across 25 features (spec 25, api_md 25, mockup 25,
-      prompts_figma 25, mockup_stitch_manifest 22 — party/product/recurring-subscriptions
-      have no stitch manifest on disk). G.E.0 + G.E.1 applied in ONE atomic Write so no
-      half-migrated state can exist.
-      DELIBERATE DEVIATION from the literal G.E.0 text: it says "emit one cell per TRUTHY
-      v1 boolean", but v1 carried figma_exported: 0/false — a snapshot from 2026-07-16T14:10,
-      before /idea-feature-mockup generated all 25 PROMPTS_FIGMA.md. Migrating those booleans
-      literally would have silently dropped 25 real on-disk artifacts from the ledger.
-      COMMAND_MATRIX_REGISTRY row_scanner defines these columns as file_exists, and the v1
-      file itself set the precedent (mockup_exported corrected 0 -> 25 on the same basis).
-      Truthiness resolved against DISK.
-      Verified: 122/122 output hashes and every input hash match live disk; 0 wrong stale
-      verdicts; 0 orphaned cells; summary in sync; framework-verify-export-matrix.sh PASS.
-    findings_recorded: 1
-
-  - n: 4
-    name: artifacts
-    status: complete
-    at: '2026-07-17T05:59:00Z'
-    notes: >-
-      Project-wide derived artifacts content-fresh — no screens/*.yaml changed this run
-      except pfm-dashboard/ui.yaml, whose dependents were regenerated at step
-      2.GAP-FIX-CASCADE. No blanket regeneration performed.
-
-  - n: 4.VERIFY
-    name: artifact-existence-gate
-    status: complete
-    at: '2026-07-17T05:59:00Z'
-    notes: >-
-      APP_FLOW.mmd, TAG_REGISTRY.yaml, dashboard/DEV_STATUS.md, server/api_manifest.yaml
-      present; flows/*.yaml = 9; server/apis/*.yaml = 2. prototype/index.html absent —
-      CORRECT, not a failure: the legacy prototype-viewer tree was removed 2026-05-14 and
-      RULE-PROTO-RENDER-LLM-001 forbids recreating it. The runtime's check list is stale
-      on that row (carried forward from the 2026-07-16 run — still unfixed upstream).
-
-  - n: 5
-    name: state-write
-    status: complete
-    at: '2026-07-17T05:59:00Z'
+next_required:
+  - /idea-feature-export --all      # SPEC.md + API.md
+  - /idea-feature-mockup            # MOCKUP.md + PROMPTS_FIGMA.md (deferred)
+  - /idea-feature-render            # preview HTML (deferred)
+  - /idea-feature-stitch            # stitch mockups (deferred; may be dropped)

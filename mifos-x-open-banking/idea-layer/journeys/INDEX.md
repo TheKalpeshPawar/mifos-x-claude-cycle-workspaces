@@ -1,8 +1,8 @@
 # Journeys Index — mifos-x-open-banking
 
 Schema: `core/schemas/journeys/journey.schema.json` (x-contract-version: 1.0.0)
-Authored: 2026-07-14 via `/idea journey --all` batch scaffold.
-Flow linkage: omitted from initial authoring. Run `/idea journey link` to wire `flows[]` bidirectional refs to `idea-layer/flows/*.yaml`.
+Reverse-synced: 2026-07-28 by `/gap-analysis-project` against the shipped source.
+Flow linkage: run `/idea journey link` to wire `flows[]` bidirectional refs to `idea-layer/flows/*.yaml`.
 
 ---
 
@@ -16,15 +16,19 @@ Flow linkage: omitted from initial authoring. Run `/idea journey link` to wire `
 | [consent-management](consent-management.yaml) | Priya | consent steward | 2 | maximum | P0 | consent-dashboard |
 | [home-overview](home-overview.yaml) | Priya | daily pulse check | 1 | minimal | P0 | home |
 | [recurring-and-statements](recurring-and-statements.yaml) | Priya | commitments reviewer | 6 | medium | P1 | standing-orders, direct-debits, scheduled-payments, statements, accounts (account-detail entry) |
-| [settings-and-profile](settings-and-profile.yaml) | Priya | personalisation manager | 2 | minimal | P0 | settings, profile |
-| [pfm-review](pfm-review.yaml) | Priya | personal finance analyst | 4 | medium | P2 | pfm |
-| [developer-full-surface](developer-full-surface.yaml) | Sam | expert AISP auditor | 6 | maximum | P2 | party, product, atm-locator, beneficiaries, accounts (entry) |
+| [settings-and-profile](settings-and-profile.yaml) | Priya | personalisation manager | 2 | minimal | P0 | settings, licences |
+| [developer-full-surface](developer-full-surface.yaml) | Sam | expert AISP auditor | 5 | maximum | P2 | account-holder, product, beneficiaries, accounts (entry) |
 
-Total: 9 journeys, 29 screen-sequence slots across 25 unique screens.
+Total: 8 journeys, 24 screen-sequence slots.
+
+**Removed 2026-07-28:** `pfm-review` — all four of its screens (pfm-dashboard,
+spending-by-category, budgets, recurring-subscriptions) were spec-only and have been
+deleted. `settings-and-profile` lost its profile step and gained licences;
+`developer-full-surface` lost its atm-locator step and renamed party → account-holder.
 
 ---
 
-## Screen Coverage (25 / 25)
+## Screen Coverage (20 / 20)
 
 | screen | covered by journey(s) |
 |--------|-----------------------|
@@ -44,17 +48,12 @@ Total: 9 journeys, 29 screen-sequence slots across 25 unique screens.
 | statements | recurring-and-statements |
 | statement-detail | recurring-and-statements |
 | settings | settings-and-profile |
-| profile | settings-and-profile |
-| pfm-dashboard | pfm-review |
-| spending-by-category | pfm-review |
-| budgets | pfm-review |
-| recurring-subscriptions | pfm-review |
-| party | developer-full-surface |
+| licences | settings-and-profile |
+| account-holder | developer-full-surface |
 | product | developer-full-surface |
-| atm-locator | developer-full-surface |
 | beneficiaries | developer-full-surface |
 
-Coverage: **25 / 25** (100%). All `has_ui` features covered.
+Coverage: **20 / 20** (100%). All shipped screens covered.
 
 ---
 
@@ -68,7 +67,7 @@ Coverage: **25 / 25** (100%). All `has_ui` features covered.
 | J4 — success_metric.kind ∈ enum | PASS | all use valid enum values (activation, task_completion, retention, satisfaction, time_to_value) |
 | J5 — tier ∈ enum | PASS | maximum / medium / minimal used correctly |
 | J6 — preconditions and failure_modes present on high-risk journeys | PASS | all maximum-tier journeys have both; minimal-tier journeys have failure_modes |
-| J7 — INDEX.md covers all journey ids | PASS | all 9 journeys listed above |
+| J7 — INDEX.md covers all journey ids | PASS | all 8 journeys listed above |
 
 ---
 

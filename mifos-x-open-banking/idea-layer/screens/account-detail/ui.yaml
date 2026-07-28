@@ -1,7 +1,36 @@
 screen_id: account-detail
 archetype: detail_screen
 name: "Account Detail"
-status: enriched
+status: implemented
+
+# ─────────────────────────────────────────────────────────────────────
+# SOURCE BINDING — reverse-synced from source 2026-07-28
+# ─────────────────────────────────────────────────────────────────────
+implementation:
+  status: implemented
+  source_module: "feature/account-detail"
+  package: "org.mifosx.openbanking.feature.accountdetail"
+  route: "AccountDetailRoute(accountId: String)"
+  viewmodel: AccountDetailViewModel
+  screen: AccountDetailScreen
+  test_tags_object: AccountDetailTestTags
+  reachable_from:
+    - "accounts — onNavigateToAccountDetail(accountId)"
+  components:
+    - "components/AccountHeaderCard.kt"
+    - "components/AccountDescriptionCard.kt"
+    - "components/ExploreOptionsColumn.kt"
+  synced_from_source_at: "2026-07-28"
+  removed_in_sync:
+    - "The nine discrete navigate* actions — source collapses them into the AccountDetailChip enum plus one onNavigateToChip callback"
+    - "loadAccountDetail action — the initial load is stream collection in init{}"
+    - "navigateBack action — back is a nav-host onBack callback"
+    - "NavigationController DI — replaced by AccountCapabilityRegistry, which gates chip availability"
+  dangling_nav_target:
+    - chip: AtmLocator
+      target: AtmLocatorRoute
+      status: placeholder
+      note: "Resolves to PlaceholderScreen(\"ATM locator\") in cmp-navigation. The atm-locator idea-layer screen was removed in this sync because no feature module implements it; the chip still renders and still navigates."
 initial_state: loading
 quality_score: 95
 
@@ -44,37 +73,40 @@ state_model:
           type: String
         - name: uiState
           type: AccountDetailUiState
+    fields_extra:
+      - name: availableChips
+        type: Set<AccountDetailChip>   # resolved by AccountCapabilityRegistry per account
     screen_state:
       sealed_class: AccountDetailUiState
       members:
         - Loading
-        - Content          # account: OBAccount6, balances: List<OBCashBalance3>
-        - Empty            # account: OBAccount6, balances empty
-        - Error            # code: Int?, message: String, recoverable: Boolean
-    errors:
-      types:
-        - TokenExpiredError        # 401 — recoverable
-        - ConsentWithdrawnError    # 403 — non-recoverable
-        - AccountNotFoundError     # 404 — non-recoverable
-        - NetworkError             # network — recoverable
-        - UnexpectedError          # default — recoverable
+        - Content
+        - Empty
+        - Error
+    enums:
+      AccountDetailChip:
+        # The nine Explore destinations. Source models these as ONE enum plus a single
+        # onNavigateToChip(chip, accountId) callback — not nine discrete actions.
+        - Transactions       # -> TransactionsRoute(accountId)
+        - Statements         # -> StatementsRoute(accountId)
+        - StandingOrders     # -> StandingOrdersRoute(accountId)
+        - DirectDebits       # -> DirectDebitsRoute(accountId)
+        - ScheduledPayments  # -> ScheduledPaymentsRoute(accountId)
+        - Beneficiaries      # -> BeneficiariesRoute(accountId)
+        - AtmLocator         # -> AtmLocatorRoute — PLACEHOLDER destination, no feature module
+        - Product            # -> ProductRoute(accountId)
+        - Party              # -> AccountHolderRoute(accountId)
     actions:
       members:
-        - loadAccountDetail        # parallel GET /accounts/{id} + GET /accounts/{id}/balances
-        - retryLoad                # delegates to loadAccountDetail; only exposed when recoverable
-        - navigateBack             # pop nav to accounts screen
-        - navigateTransactions     # push transactions route with accountId
-        - navigateStatements       # push statements route with accountId
-        - navigateStandingOrders   # push standing-orders route with accountId
-        - navigateDirectDebits     # push direct-debits route with accountId
-        - navigateScheduledPayments # push scheduled-payments route with accountId
-        - navigateBeneficiaries    # push beneficiaries route with accountId
-        - navigateAtmLocator       # push atm-locator route with accountId
-        - navigateProduct          # push product route with accountId
-        - navigateParty            # push party route with accountId
+        - RetryLoad
+    nav_callbacks:
+      # Host-owned; resolved by navigateFromChip() in AuthenticatedNavbarNavigationScreen.
+      - "onNavigateToChip(chip: AccountDetailChip, accountId: String)"
+      - "onBack -> popBackStack() returning to accounts"
     di:
-      - AccountDetailRepository    # wraps ktorfit GET /accounts + GET /accounts/balances calls
-      - NavigationController       # KMP navigation abstraction for route push/pop
+      - SavedStateHandle           # supplies the accountId route arg
+      - AccountDetailRepository    # Koin single; account + balances stream
+      - AccountCapabilityRegistry  # decides which chips are available for this account
 
 # ─────────────────────────────────────────────────────────────────────
 # DESIGN READ context: trustworthy, calm, secure, data-legible.

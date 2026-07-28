@@ -1,7 +1,7 @@
 screen_id: statement-detail
 archetype: detail_screen
 name: "Statement Detail"
-status: enriched
+status: implemented
 quality_score: 95
 initial_state: loading
 
@@ -35,12 +35,45 @@ state_model:
         - NetworkError                   # device offline or AIS endpoint unreachable
     actions:
       members:
-        - statementDetailLoad   # parallel GET /statements/{id} + GET /statements/{id}/transactions
-        - downloadStatementPdf  # GET /statements/{id}/file (application/pdf) via ktor-client-download
-        - retryLoad             # delegates to statementDetailLoad(accountId, statementId)
+        - RetryLoad
+        - DownloadPdf     # fetches the statement file and hands it to StatementFileHandler
+    state_fields_extra:
+      - name: downloadState
+        type: DownloadState   # tracks the in-flight PDF download
+    nav_callbacks:
+      - "onBack -> popBackStack()"
+      - "onNavigateToTransactionDetail(transactionId, accountId) -> TransactionDetailRoute(...)"
     di:
-      - StatementsRepository     # GET /statements/{id} + GET /statements/{id}/transactions via ktorfit
-      - StatementFileDownloader  # GET /statements/{id}/file via ktor-client-download
+      - SavedStateHandle           # supplies the accountId and statementId route args
+      - StatementDetailRepository  # Koin single; statement + statement-transactions stream
+      - StatementFileRepository    # fetches the statement file bytes
+      - StatementFileHandler       # platform handler that opens/saves the downloaded file
+
+# ─────────────────────────────────────────────────────────────────────
+# SOURCE BINDING — reverse-synced from source 2026-07-28
+# ─────────────────────────────────────────────────────────────────────
+implementation:
+  status: implemented
+  source_module: "feature/statement-detail"
+  package: "org.mifosx.openbanking.feature.statementdetail"
+  route: "StatementDetailRoute(accountId: String, statementId: String)"
+  viewmodel: StatementDetailViewModel
+  screen: StatementDetailScreen
+  test_tags_object: StatementDetailTestTags
+  domain_model: StatementDetail
+  reachable_from:
+    - "statements — onNavigateToStatementDetail(statementId, accountId)"
+  synced_from_source_at: "2026-07-28"
+  added_in_sync:
+    - "downloadState state field — DownloadState tracks the in-flight PDF fetch"
+    - "onNavigateToTransactionDetail callback — statement transactions drill through to transaction-detail; the idea-layer declared no such route out of this screen"
+    - "StatementFileHandler DI — the platform file handler is injected, provided by cmp-navigation/statements/StatementFileHandlerProvider with jsCommon and nonJs actuals"
+  renamed_in_sync:
+    - "downloadStatementPdf -> DownloadPdf"
+    - "StatementsRepository -> StatementDetailRepository"
+    - "StatementFileDownloader -> StatementFileRepository"
+  removed_in_sync:
+    - "statementDetailLoad action — the initial load is stream collection in init{}"
 
 shell:
   bottom_navigation_visible: true

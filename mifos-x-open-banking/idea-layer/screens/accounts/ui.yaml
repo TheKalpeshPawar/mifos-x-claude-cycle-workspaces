@@ -1,75 +1,104 @@
 screen_id: accounts
 archetype: index_list
 name: "Accounts"
-status: enriched
+status: implemented
 quality_score: 95
 initial_state: loading
 i18n: true
+
+# ─────────────────────────────────────────────────────────────────────
+# SOURCE BINDING — reverse-synced from source 2026-07-28
+# ─────────────────────────────────────────────────────────────────────
+implementation:
+  status: implemented
+  source_module: "feature/accounts"
+  package: "org.mifosx.openbanking.feature.accounts"
+  graph: "accountsGraph(onNavigateToAccountDetail)"
+  route: "AccountsRoute (data object) inside AccountsDestination graph"
+  viewmodel: AccountsViewModel
+  screen: AccountsScreen
+  test_tags_object: AccountsTestTags
+  bottom_nav_tab: "AccountsTab (order 1)"
+  synced_from_source_at: "2026-07-28"
+  removed_in_sync:
+    - "consent_expiring state — no such ScreenState or UiState member in source"
+    - "navigateReconfirmConsent action — AccountsAction has only FilterAccounts and RetryLoad"
+    - "total_balance_summary stat_block — AccountsContent renders only the filter row and the card list; AccountsState carries no total-balance fields"
+    - "filter_global chip — AccountFilter declares only ALL, CURRENT, SAVINGS, CREDIT"
 
 status_history:
   - { from: draft, to: enriched, at: "2026-06-29", by: "/idea-enrich" }
   - { from: enriched, to: enriched, at: "2026-06-29", by: "/idea-enrich (quality push)", quality_before: 88, quality_after: 94 }
   - { from: enriched, to: enriched, at: "2026-07-14", by: "/idea-enrich (quality push)", quality_before: 94, quality_after: 95 }
+  - { from: enriched, to: implemented, at: "2026-07-28", by: "/gap-analysis-project (reverse sync from source)" }
 
 business_logic:
   kind: crud
-  description: "Lists authorised accounts via GET /accounts (hsbc-obie-ais-v4.0:accounts) and fans out parallel balance fetches per AccountId via GET /accounts/{AccountId}/balances (hsbc-obie-ais-v4.0:balances) using ktorfit suspend functions with kotlin.coroutines:async/awaitAll. Merges OBReadAccount6 + OBReadBalance1 into AccountWithBalance rows (Nickname, AccountSubType, Currency, InterimAvailable OBCashBalance3 Amount). Checks cached consent ExpirationDateTime: if < 30 days remaining, transitions to consent_expiring state surfacing reconfirmation banner. CreditCard accounts with CreditDebitIndicator=Debit render balance in error colour with 'Balance owed' badge. GlobalMoney/GlobalWallet cards render ISO currency code. Chip group filters AccountWithBalance list by AccountSubType client-side with no API round-trip. Total net balance across GBP accounts displayed in stat_block at top of content. Card tap navigates to account-detail with AccountId."
+  description: "AccountsViewModel collects AccountsOverviewRepository through combineContent, producing a ScreenState<AccountsData>. Each AccountWithBalance is projected into an AccountRowUi carrying a canonicalised AccountUiType (CURRENT / SAVINGS / CREDIT / GLOBAL_MONEY / GLOBAL_WALLET / OTHER), a formatted identifier via formatAccountIdentifier, and a balanceLabel via formatMoney — GBP renders bare, other currencies are prefixed with the ISO code, and an unavailable balance falls back to an em dash. isBalanceOwed drives the 'balance owed' badge on credit cards. AccountFilter.matches applies the chip filter client-side against the canonical subtype with no API round-trip; the active filter lives inside AccountsData, so filtering re-emits Content rather than mutating a separate field. Tapping a card navigates to account-detail with the AccountId."
   external_library_refs:
     - "ktorfit"
     - "hsbc-obie-ais-v4.0:accounts"
     - "hsbc-obie-ais-v4.0:balances"
-    - "kotlin.coroutines:async/awaitAll"
   description_author: claude
-  description_authored_at: "2026-06-29T12:00:00Z"
+  description_authored_at: "2026-07-28T00:00:00Z"
 
 # ─────────────────────────────────────────────────────────────────────
 # STATE MODEL — AccountsViewModel contract
-# Derived from docs.yaml#impl_notes.state_model Kotlin block + viewmodel line.
-# Satisfies QUALITY_FORMULA.md Category 10 (State Model, 5 pts).
+# Mirrors ui/AccountsViewModel.kt verbatim.
 # ─────────────────────────────────────────────────────────────────────
 state_model:
   AccountsViewModel:
     state:
       name: AccountsState
       fields:
-        - name: accounts
-          type: List<AccountWithBalance>
-        - name: filteredAccounts
-          type: List<AccountWithBalance>
-        - name: activeFilter
-          type: AccountSubType?
-        - name: totalBalanceFormatted
-          type: String
-        - name: totalBalanceAccountCount
-          type: Int
-        - name: activeConsentId
-          type: String
-        - name: consentDaysRemaining
-          type: Int
-        - name: isConsentExpiring
-          type: Boolean
         - name: uiState
-          type: UiState
+          type: ScreenState<AccountsData>
+    data_model:
+      name: AccountsData
+      fields:
+        - name: rows
+          type: List<AccountRowUi>
+        - name: activeFilter
+          type: AccountFilter
+    row_model:
+      name: AccountRowUi
+      fields:
+        - name: id
+          type: String
+        - name: type
+          type: AccountUiType
+        - name: nickname
+          type: String
+        - name: identifier
+          type: String
+        - name: balanceLabel
+          type: String
+        - name: isBalanceOwed
+          type: Boolean
+        - name: accountSubType
+          type: String
+        - name: accountNumber
+          type: String
+        - name: rawIdentification
+          type: String
     screen_state:
-      sealed_class: UiState
+      sealed_class: ScreenState        # shared core-base type, not a feature-local sealed interface
       members:
         - Loading
-        - Content
-        - ConsentExpiring   # < 30 days remaining on consent ExpirationDateTime
+        - Content                      # AccountsData
         - Empty
-        - Error             # cause: Throwable
-    errors:
-      types:
-        - TokenExpiredError   # 401 — navigate to login; no active consent
-        - NetworkError        # network — Retry CTA on error state
+        - Error
+        - NoNetwork
+        - Unauthenticated
+    enums:
+      AccountUiType: [CURRENT, SAVINGS, CREDIT, GLOBAL_MONEY, GLOBAL_WALLET, OTHER]
+      AccountFilter: [ALL, CURRENT, SAVINGS, CREDIT]
     actions:
       members:
-        - filterAccounts            # client-side chip filter; no API round-trip
-        - navigateAccountDetail     # tap card → account-detail with AccountId
-        - navigateReconfirmConsent  # consent-expiring banner CTA → consent-detail with ConsentId
-        - retryLoad                 # re-triggers parallel GET /accounts + GET /accounts/{id}/balances
+        - FilterAccounts               # data class — client-side chip filter, no API round-trip
+        - RetryLoad
     di:
-      - AccountsRepository   # parallel GET /accounts + GET /accounts/{AccountId}/balances via ktorfit
+      - AccountsOverviewRepository     # Koin single; combineContent over accounts + balances
 
 shell:
   bottom_navigation_visible: true
@@ -77,17 +106,18 @@ shell:
   top_app_bar_title: "{strings.accounts.screen.title}"
   fab_visible: false
 
-states: [loading, content, consent_expiring, empty, error]
+states: [loading, content, empty, error]
 
 components:
 
-  # ── LOADING STATE — shimmer card placeholders ──────────────────────
+  # ── LOADING STATE — AccountsSkeleton ───────────────────────────────
   - type: stack
     id: loading_skeleton
     state_binding: [loading]
     direction: vertical
     gap: spacing.sm
     padding: spacing.md
+    test_tag: "accounts_skeleton"
     accessibility_label: "{strings.accounts.loading.description}"
     children:
       - type: shimmer
@@ -106,70 +136,74 @@ components:
         height: "96dp"
         corner_radius: radius.md
 
-  # ── CONTENT: total balance summary ────────────────────────────────
-  - type: stat_block
-    id: total_balance_summary
-    state_binding: [content, consent_expiring]
-    label: "{strings.accounts.total_balance.label}"
-    value: "{totalBalanceFormatted}"
-    value_style: headlineLarge
-    sublabel: "{strings.accounts.total_balance.account_count}"
-    padding: { top: spacing.md, horizontal: spacing.md, bottom: spacing.xs }
-    accessibility_label: "{strings.accounts.total_balance.label}"
-
-  # ── CONTENT: account type filter chips ────────────────────────────
+  # ── CONTENT: account type filter chips (AccountTypeFilterRow) ──────
+  # Rendered from AccountFilter.entries — four chips, no Global option.
   - type: chip_group
     id: account_type_filter
-    state_binding: [content, consent_expiring]
+    state_binding: [content]
     selection_mode: single
     scroll_direction: horizontal
     padding: { horizontal: spacing.md, bottom: spacing.sm }
+    test_tag: "accounts_filter_row"
     accessibility_label: "{strings.accounts.filter.label}"
     chips:
       - id: filter_all
+        test_tag: "accounts_filter_ALL"
         label: "{strings.accounts.filter.all_label}"
         selected_by_default: true
         on_click:
-          action: filter_accounts
+          action: FilterAccounts
           params:
-            subtype: null
+            filter: "ALL"
+          action_contract:
+            effect: transform_state
+            description: "Dispatches AccountsAction.FilterAccounts(ALL), re-emitting AccountsData with every row and activeFilter = ALL. Purely client-side; no API round-trip."
       - id: filter_current
+        test_tag: "accounts_filter_CURRENT"
         label: "{strings.accounts.filter.current_label}"
         on_click:
-          action: filter_accounts
+          action: FilterAccounts
           params:
-            subtype: "CurrentAccount"
+            filter: "CURRENT"
+          action_contract:
+            effect: transform_state
+            description: "Dispatches AccountsAction.FilterAccounts(CURRENT), re-emitting AccountsData filtered by AccountFilter.matches against the canonical CurrentAccount subtype."
       - id: filter_savings
+        test_tag: "accounts_filter_SAVINGS"
         label: "{strings.accounts.filter.savings_label}"
         on_click:
-          action: filter_accounts
+          action: FilterAccounts
           params:
-            subtype: "Savings"
+            filter: "SAVINGS"
+          action_contract:
+            effect: transform_state
+            description: "Dispatches AccountsAction.FilterAccounts(SAVINGS), re-emitting AccountsData filtered to the canonical Savings subtype."
       - id: filter_credit
+        test_tag: "accounts_filter_CREDIT"
         label: "{strings.accounts.filter.credit_label}"
         on_click:
-          action: filter_accounts
+          action: FilterAccounts
           params:
-            subtype: "CreditCard"
-      - id: filter_global
-        label: "{strings.accounts.filter.global_label}"
-        on_click:
-          action: filter_accounts
-          params:
-            subtype: "GlobalMoney,GlobalWallet"
+            filter: "CREDIT"
+          action_contract:
+            effect: transform_state
+            description: "Dispatches AccountsAction.FilterAccounts(CREDIT), re-emitting AccountsData filtered to the canonical CreditCard subtype."
 
-  # ── CONTENT: account list ─────────────────────────────────────────
+  # ── CONTENT: account list (LazyColumn of AccountCard) ──────────────
   - type: list
     id: accounts_list
-    state_binding: [content, consent_expiring]
+    state_binding: [content]
     scroll_direction: vertical
     padding: { horizontal: spacing.md }
     gap: spacing.sm
-    items_source: "{filteredAccounts}"
+    items_source: "{rows}"
+    item_key: "{item.id}"
+    test_tag: "accounts_content"
     accessibility_label: "{strings.accounts.list.accessibility}"
     children:
       - type: card
         id: account_card
+        test_tag: "accounts_card_{item.id}"
         elevation: 1
         padding: spacing.md
         corner_radius: radius.md
@@ -182,7 +216,7 @@ components:
             children:
               - type: icon
                 id: account_type_icon
-                name: "{item.accountTypeIcon}"
+                name: "{item.type}"
                 size: icon.lg
                 color: "primary"
                 decorative: true
@@ -194,16 +228,16 @@ components:
                 children:
                   - type: text
                     id: account_subtype
-                    value: "{item.AccountSubType}"
+                    value: "{item.accountSubType}"
                     style: labelSmall
                     color: "secondary"
                   - type: text
                     id: account_nickname
-                    value: "{item.Nickname}"
+                    value: "{item.nickname}"
                     style: titleMedium
                   - type: text
                     id: account_number
-                    value: "{item.Account.Identification}"
+                    value: "{item.identifier}"
                     style: bodySmall
                     color: "on-surface-variant"
                     accessibility_label: "{strings.accounts.card.account_number.label}"
@@ -215,75 +249,53 @@ components:
                 children:
                   - type: text
                     id: balance_amount
-                    value: "{item.balanceFormatted}"
+                    value: "{item.balanceLabel}"
                     style: headlineSmall
-                    color: "{item.balanceColor}"
                     alignment: end
                   - type: badge
-                    id: balance_type_badge
-                    label: "{item.balanceTypeLabel}"
+                    id: balance_owed_badge
+                    test_tag: "accounts_balance_owed_badge"
+                    label: "{strings.accounts.card.balance.owed_label}"
                     variant: tonal
-                    visible_when: "{item.showBalanceBadge}"
+                    visible_when: "{item.isBalanceOwed}"
         on_click:
           action: navigate_account_detail
           target: account-detail
           params:
-            accountId: "{item.AccountId}"
+            accountId: "{item.id}"
           action_contract:
             effect: navigate
-            description: "Navigates to account-detail passing AccountId as a route parameter, enabling drill-down into transaction history, balances timeline, and sub-account details for the tapped account card."
+            description: "Invokes the accountsGraph onNavigateToAccountDetail callback, which navigates to AccountDetailRoute(accountId) — a nav-host callback, not an AccountsAction member."
 
-  # ── CONSENT EXPIRING: warning banner ──────────────────────────────
-  - type: banner
-    id: consent_expiry_banner
-    state_binding: [consent_expiring]
-    variant: warning
-    icon: warning_amber
-    title: "{strings.accounts.consent_expiring.banner_title}"
-    body: "{strings.accounts.consent_expiring.banner_body}"
-    accessibility_label: "{strings.accounts.consent_expiring.banner_title}"
-    sticky: bottom
-    actions:
-      - type: button
-        id: reconfirm_button
-        variant: text
-        label: "{strings.accounts.consent_expiring.action_label}"
-        accessibility_label: "{strings.accounts.consent_expiring.action_label}"
-        on_click:
-          action: navigate_reconfirm_consent
-          target: consent-detail
-          params:
-            consentId: "{activeConsentId}"
-          action_contract:
-            effect: navigate
-            description: "Navigates to consent-detail passing the active ConsentId, allowing the PSU to review and re-extend the expiring OBIE consent before it lapses and account access is lost."
-
-  # ── EMPTY STATE ────────────────────────────────────────────────────
+  # ── EMPTY STATE — AccountsEmpty ────────────────────────────────────
   - type: empty_state
     id: empty_accounts
     state_binding: [empty]
     icon: account_balance_wallet
     title: "{strings.accounts.empty.title}"
     body: "{strings.accounts.empty.body}"
+    test_tag: "accounts_empty"
     accessibility_label: "{strings.accounts.empty.title}"
 
-  # ── ERROR STATE ────────────────────────────────────────────────────
+  # ── ERROR STATE — AccountsError ────────────────────────────────────
   - type: error_state
     id: error_accounts
     state_binding: [error]
     icon: error_outline
     title: "{strings.accounts.error.title}"
-    body: "{error.userMessage}"
+    body: "{strings.accounts.error.body}"
+    test_tag: "accounts_error"
     accessibility_label: "{strings.accounts.error.title}"
     children:
       - type: button
         id: retry_button
         variant: filled
         label: "{strings.accounts.error.retry_button}"
+        test_tag: "accounts_error_retry"
         accessibility_label: "{strings.accounts.error.accessibility.retry}"
         on_click:
-          action: retry_load
+          action: RetryLoad
           action_contract:
             effect: call_api
             external_library_refs: [ktorfit, "hsbc-obie-ais-v4.0:accounts", "hsbc-obie-ais-v4.0:balances"]
-            description: "Re-triggers parallel fetch: GET /accounts returns OBReadAccount6 account list, then GET /accounts/{AccountId}/balances fans out per account via coroutineScope async/awaitAll to rebuild AccountWithBalance rows."
+            description: "Dispatches AccountsAction.RetryLoad, re-running the AccountsOverviewRepository combineContent stream over the accounts and balances sources to rebuild AccountsData."

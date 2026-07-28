@@ -19,15 +19,13 @@ base_urls:
   resource:  "https://sandbox.ob.hsbc.co.uk/mock/obie/open-banking/v4.0/aisp"
   oauth2:    "https://sandbox.ob.hsbc.co.uk/mock/obie/open-banking/v1.1/oauth2"
   dcr:       "https://sandbox.ob.hsbc.co.uk/mock/obie/open-banking/v3.2/oauth2"
-  open_data: "https://api.hsbc.com/open-banking/v2.2"   # public Open Data (live-confirmed 2026-07-14; v2.2, not v2.0/uk)
 
-# Open Data endpoints are documented as a separate client contract (see server/apis/open-data.yaml).
-related_apis:
-  - id: API-002
-    spec: server/apis/open-data.yaml
-    group: open-data
-    owned: false
-    role: public-consumer   # unauthenticated OBIE Open Data — no AIS consent
+# Reverse-synced 2026-07-28: the HSBC Open Data base URL, its related_apis entry and
+# server/apis/open-data.yaml were removed. No client method targets Open Data —
+# core/network/api/Aisp.kt declares no /atms call — and the atm-locator screen that
+# would have consumed it was never built. AtmLocatorRoute survives in cmp-navigation
+# as a PlaceholderScreen destination only.
+related_apis: []
 
 auth:
   scheme: bearer
@@ -69,10 +67,6 @@ endpoint_groups:
     label: "Product, party, parties"
     primary_flow: account-browsing
     count: 3
-  - id: open-data
-    label: "HSBC Open Data (public — no AIS consent)"
-    primary_flow: account-browsing
-    count: 1
     base_url_override: "https://api.hsbc.com/open-banking/v2.2"
     accept_media_type: "application/prs.openbanking.opendata.v2.2+json"
     auth_override: none
@@ -94,13 +88,12 @@ endpoints:
   - { id: statement-txns,      group: statements,       method: GET,    path: "/accounts/{AccountId}/statements/{StatementId}/transactions", response_dto: OBReadTransaction6,   permission: ReadTransactionsDetail, consumers: [statement-detail] }
   - { id: statement-file,      group: statements,       method: GET,    path: "/accounts/{AccountId}/statements/{StatementId}/file",        response_dto: null,                 permission: ReadStatementsDetail, consumers: [statements, statement-detail], produces: "application/pdf" }
   - { id: product,             group: account-extras,   method: GET,    path: "/accounts/{AccountId}/product",                              response_dto: OBReadProduct2,       permission: ReadProducts, consumers: [product] }
-  - { id: party,               group: account-extras,   method: GET,    path: "/accounts/{AccountId}/party",                                response_dto: OBReadParty2,         permission: ReadParty, consumers: [party, profile] }
-  - { id: parties,             group: account-extras,   method: GET,    path: "/accounts/{AccountId}/parties",                              response_dto: OBReadParty3,         permission: ReadParty, consumers: [party] }
-  # Open Data endpoint — separate base_url, no auth, no AIS consent required
-  - { id: atms,                group: open-data,        method: GET,    path: "/atms",                                                      response_dto: OBReadATMResponse1,   token: none, consumers: [atm-locator], note: "HSBC Open Data public endpoint (base https://api.hsbc.com/open-banking/v2.2); requires Accept: application/prs.openbanking.opendata.v2.2+json else 406; 15s timeout + retry; SLA not guaranteed" }
+  - { id: party,               group: account-extras,   method: GET,    path: "/accounts/{AccountId}/party",                                response_dto: OBReadParty2,         permission: ReadParty, consumers: [account-holder], source_binding: "Aisp.getParty()" }
+  - { id: parties,             group: account-extras,   method: GET,    path: "/accounts/{AccountId}/parties",                              response_dto: OBReadParty3,         permission: ReadParty, consumers: [], source_binding: "Aisp.getParties() — declared on the client, consumed by nothing" }
+  # Removed 2026-07-28: the Open Data /atms endpoint. No client method targets it
+  # and the atm-locator screen was never built.
 
 dtos:
-  - OBReadATMResponse1
   - OBReadConsent1
   - OBReadConsentResponse1
   - OBReadAccount6

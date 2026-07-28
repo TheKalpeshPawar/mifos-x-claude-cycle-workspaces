@@ -18,12 +18,12 @@
 | `button_filled` | Primary action | container `primary`, label `on_primary`, radius `full` |
 | `button_outlined` / `button_text` | Secondary action | outline `outline` |
 | `category_chip` | PFM category tag | tertiary-tinted, radius `full` |
-| `text_field` | Search / inputs (settings, budgets) | outline `outline`, focus `primary` |
+| `text_field` | Search inputs (transactions, beneficiaries) | outline `outline`, focus `primary` |
 | `segmented_filter` | Transaction filters (all/credit/debit, period) | selected `secondaryContainer` |
 | `state_loading` | Skeleton shimmer | `surfaceContainer` placeholders |
 | `state_empty` | No data | glyph + message + optional CTA |
 | `state_error` | Failure | message + **retry** action |
-| `chart_donut` | PFM spending-by-category | tertiary/secondary tints per category |
+| `chart_donut` | UNUSED — declared for the PFM breakdown; that screen was never built (removed 2026-07-28) | tertiary/secondary tints per category |
 | `progress_budget` | Budget tracker bar | `primary` fill, over-budget `error` |
 
 ## States contract

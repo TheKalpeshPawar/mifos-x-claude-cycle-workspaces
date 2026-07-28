@@ -1,7 +1,7 @@
 screen_id: scheduled-payments
 archetype: index_list
 name: "{strings.sp_screen_title}"
-status: enriched
+status: implemented
 initial_state: loading
 quality_score: 96
 
@@ -209,16 +209,19 @@ api:
         - InstructedAmount.Currency
         - CreditorAccount.Name
         - CreditorAccount.Identification
+    # Reverse-synced 2026-07-28: every kind renders on the shared error surface with
+    # a Retry CTA. Source has no route_to_login / route_to_consent_list recovery —
+    # this screen's only nav callback is onBack.
     errors:
       - code: 401
         type: TokenExpired
-        recovery: route_to_login
+        recovery: show_retry
       - code: 403
         type: ConsentRevoked
-        recovery: route_to_consent_list
+        recovery: show_retry
       - code: 429
         type: RateLimited
-        recovery: show_retry_with_backoff
+        recovery: show_retry
       - code: IOException
         type: NetworkError
         recovery: show_retry
@@ -228,14 +231,34 @@ state_model:
     state:
       name: ScheduledPaymentsState
       fields:
+        - name: accountId
+          type: String
         - name: uiState
           type: ScheduledPaymentsUiState
     screen_state:
+      sealed_class: ScheduledPaymentsUiState
       members:
         - Loading
-        - "Content(scheduledPayments: List<ScheduledPaymentUiModel>)"
+        - Content      # payments: List<ScheduledPaymentUiModel>
         - Empty
-        - "Error(type: ScheduledPaymentsError, message: String)"
+        - Error        # kind: ScheduledPaymentsError
+    row_model:
+      name: ScheduledPaymentUiModel
+      fields:
+        - name: scheduledPaymentId
+          type: String
+        - name: payeeName
+          type: String
+        - name: amountLabel
+          type: String
+        - name: scheduledDateLabel
+          type: String
+        - name: scheduledType
+          type: ScheduledPaymentType
+        - name: creditorIdentification
+          type: String
+        - name: reference
+          type: String
     errors:
       types:
         - TokenExpired
@@ -244,12 +267,32 @@ state_model:
         - NetworkError
     actions:
       members:
-        - "LoadScheduledPayments(accountId: String)"
-        - RetryLoad()
-        - NavigateBack()
+        - RetryLoad
+    nav_callbacks:
+      - "onBack -> popBackStack() returning to account-detail"
     di:
-      - "AisApiService — Koin inject; Ktorfit implementation from client-layer"
-      - "ScheduledPaymentUiModelMapper — maps OBReadScheduledPayment3 to UiModel"
+      - SavedStateHandle              # supplies the accountId route arg
+      - ScheduledPaymentsRepository   # Koin single; scheduled-payments stream
+
+# ─────────────────────────────────────────────────────────────────────
+# SOURCE BINDING — reverse-synced from source 2026-07-28
+# ─────────────────────────────────────────────────────────────────────
+implementation:
+  status: implemented
+  source_module: "feature/scheduled-payments"
+  package: "org.mifosx.openbanking.feature.scheduledpayments"
+  route: "ScheduledPaymentsRoute(accountId: String)"
+  viewmodel: ScheduledPaymentsViewModel
+  screen: ScheduledPaymentsScreen
+  test_tags_object: ScheduledPaymentsTestTags
+  domain_model: ScheduledPaymentItem
+  reachable_from:
+    - "account-detail — AccountDetailChip.ScheduledPayments"
+  synced_from_source_at: "2026-07-28"
+  removed_in_sync:
+    - "LoadScheduledPayments action — the initial load is stream collection in init{}"
+    - "NavigateBack action — back is a nav-host onBack callback"
+    - "AisApiService / ScheduledPaymentUiModelMapper DI — the view model injects ScheduledPaymentsRepository"
 
 dependencies:
   tier: 1

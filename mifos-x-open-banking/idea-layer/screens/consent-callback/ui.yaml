@@ -1,7 +1,7 @@
 screen_id: consent-callback
 archetype: empty_state
 name: "Authorisation Callback"
-status: enriched
+status: implemented
 quality_score: 95
 i18n_coverage: true
 initial_state: loading
@@ -27,7 +27,7 @@ shell:
   top_app_bar_visible: false
   fab_visible: false
 
-states: [loading, content, empty, error, access_denied, security_error]
+states: [loading, awaiting, content, access_denied, security_error, error]
 
 components:
 
@@ -269,6 +269,32 @@ components:
           data_driven: false
 
 # ── ViewModel state model ──────────────────────────────────────────────────
+# ─────────────────────────────────────────────────────────────────────
+# SOURCE BINDING — reverse-synced from source 2026-07-28
+# ─────────────────────────────────────────────────────────────────────
+implementation:
+  status: implemented
+  source_module: "feature/consent-callback"
+  package: "org.mifosx.openbanking.feature.consentcallback"
+  route: "ConsentCallbackRoute(...)"
+  viewmodel: ConsentCallbackViewModel
+  screen: ConsentCallbackScreen
+  test_tags_object: ConsentCallbackTestTags
+  step_composables:
+    - "steps/LoadingStep.kt"
+    - "steps/AwaitingStep.kt"
+    - "steps/SuccessStep.kt"
+    - "steps/AccessDeniedStep.kt"
+    - "steps/SecurityErrorStep.kt"
+    - "steps/ErrorStep.kt"
+  synced_from_source_at: "2026-07-28"
+  added_in_sync:
+    - "awaiting state — ConsentCallbackUiState.Awaiting ships in source with its own AwaitingStep.kt composable; the idea-layer never declared it"
+    - "explicit action members — the idea-layer previously listed raw method signatures instead of the ConsentCallbackAction sealed-interface members"
+  removed_in_sync:
+    - "empty state — ConsentCallbackUiState has no Empty member and no step composable renders one"
+  note: "This screen has no Skeleton/Empty/Error file pair like the list screens; each state is a dedicated step composable under steps/."
+
 state_model:
   ConsentCallbackViewModel:
     state:
@@ -278,36 +304,24 @@ state_model:
           type: ConsentCallbackUiState
           default: Loading
     screen_state:
+      sealed_class: ConsentCallbackUiState
       members:
-        - Loading
-        - Content
-        - Empty
-        - Error
-        - AccessDenied
-        - SecurityError
-    errors:
-      types:
-        - TokenExchangeFailed
-        - ConsentRejected
-        - ConsentRevoked
-        - NetworkError
-        - InvalidState
-        - AccessDenied
-        - SecurityStateMismatch
+        - Loading        # LoadingStep — token exchange in flight
+        - Awaiting       # AwaitingStep — consent staged, polling for Authorised
+        - Content        # SuccessStep — token obtained, consent authorised
+        - AccessDenied   # AccessDeniedStep — PSU rejected on the bank portal
+        - SecurityError  # SecurityErrorStep — state/nonce mismatch
+        - Error          # ErrorStep — token exchange or network failure
     actions:
       members:
-        - "validateStateParam(receivedState: String, receivedNonce: String): StateValidationResult"
-        - "classifyOAuthError(error: String, errorDescription: String?): OAuthErrorClass"
-        - "exchangeAuthCode(code: String, state: String): Unit"
-        - "pollConsentStatus(): Unit"
-        - "navigateRetry(): Unit"
-        - "navigateLogin(): Unit"
+        - ProcessCallback     # data class — validates state/nonce, exchanges the authorisation code
+        - PollConsentStatus   # re-checks consent status while Awaiting
+        - NavigateRetry       # restart the authorisation attempt
+        - NavigateLogin       # abandon and return to login
     di:
-      - TokenService
-      - ConsentService
-      - EncryptedSharedPreferences
-      - LocalStorage
-      - Navigator
+      - ConsentCallbackRepository  # Koin single; token exchange + consent status
+      - ConsentSession             # in-flight authorisation state (state, nonce, ConsentId)
+      - redirectUri                # String — the registered OAuth redirect URI
 
 # ── Dependencies ───────────────────────────────────────────────────────────
 dependencies:

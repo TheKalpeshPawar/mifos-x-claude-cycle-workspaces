@@ -1,6 +1,6 @@
 id: home-dashboard
 name: home-dashboard
-description: "Authenticated home dashboard flow — aggregates balance, recent transactions, and spending snapshot across the user's authorised accounts. Entry from bottom-nav Home tab (order 0) and on successful FAPI consent callback. Cross-flow exits to account-browsing (account-detail), transaction-review (transactions, transaction-detail), recurring-and-statements (statements), consent-management (consent-list), and pfm-review (pfm-dashboard). Transitions to login on 401 / no active consent."
+description: "Authenticated home dashboard flow — hero balance card for the selected account, an account-selector bottom sheet, and a recent-transactions section. Entry from the Home bottom-nav tab (order 0), which is also the authenticated NavHost start destination. Reverse-synced 2026-07-28: homeGraph exposes exactly two outward callbacks — onNavigateToTransactions and onNavigateToTransactionDetail — so the account-detail, statements, consent-list and pfm-dashboard exits previously declared here do not exist in source."
 type: happy
 feature_ref: home
 release_phase: P0
@@ -11,11 +11,19 @@ screens:
 entry_screen: home
 
 connections:
-  - { from: home, to: account-detail, type: push, label: "Tap hero balance card (cross-flow → account-browsing)" }
-  - { from: home, to: transactions, type: push, label: "Tap Transactions quick action or 'View all' recent transactions (cross-flow → transaction-review)" }
+  - { from: home, to: transactions, type: push, label: "Tap 'View all' in the recent transactions section (cross-flow → transaction-review)" }
   - { from: home, to: transaction-detail, type: push, label: "Tap a recent transaction row (cross-flow → transaction-review)" }
-  - { from: home, to: statements, type: push, label: "Tap Statements quick action (cross-flow → recurring-and-statements)" }
-  - { from: home, to: consent-list, type: push, label: "Tap Manage consents quick action (cross-flow → consent-management)" }
-  - { from: home, to: pfm-dashboard, type: push, label: "Tap spending snapshot card (cross-flow → pfm-review)" }
-  - { from: home, to: login, type: push, label: "401 — access token expired or no active consent" }
-  - { from: home, to: login, type: push, label: "Empty state CTA — no authorised accounts / no active consent" }
+
+in_screen_transitions:
+  # Driven by isAccountSelectorVisible; no navigation occurs.
+  - { trigger: OpenAccountSelector, label: "Tap the hero card account switcher — shows AccountSelectorSheet" }
+  - { trigger: DismissAccountSelector, label: "Dismiss the sheet" }
+  - { trigger: SelectAccount, label: "Pick an account chip — persists selectedAccountId and re-drives the stream" }
+
+removed_in_sync:
+  # Declared previously; no such callback exists on homeGraph.
+  - { to: account-detail, reason: "no onNavigateToAccountDetail callback" }
+  - { to: statements, reason: "no statements callback; statements is reached from account-detail" }
+  - { to: consent-list, reason: "no consents callback; consents are reached from settings" }
+  - { to: pfm-dashboard, reason: "screen removed — never built" }
+  - { to: login, reason: "HomeViewModel maps Unauthenticated to an error state; it does not navigate to login" }

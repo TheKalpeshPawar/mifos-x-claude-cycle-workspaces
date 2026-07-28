@@ -12,13 +12,16 @@ schema_version: "1.0"
 project: "mifos-x-open-banking"
 
 # ─── Bottom navigation (primary-flow chrome) ────────────────────────────
-# Typical for this app: Accounts | Transactions | Consents | More
-# Update target_screen values to match real screen IDs from idea-plan.yaml.
+# Reverse-synced from source 2026-07-28 against
+# cmp-navigation/authenticatednavbar/AuthenticatedNavBarTabItem.kt.
+# Shipped rail: Home | Accounts | Pay | More
 bottom_navigation:
   enabled: true
   # Rail updated 2026-06-30: Home added as primary landing (shows the currently selected
-  # account); Consents removed from the rail and surfaced via the Home "Manage consents"
-  # quick-action + Settings → Manage consents instead (consent-list stays fully reachable).
+  # account); Consents removed from the rail and surfaced via Settings → Manage consents
+  # (consent-list stays fully reachable). Corrected 2026-07-28: tab 2 is Pay, not
+  # Transactions, and the Home "Manage consents" quick-action does not exist in source —
+  # homeGraph exposes only transactions and transaction-detail callbacks.
   items:
     - id: home
       label: "Home"
@@ -30,11 +33,23 @@ bottom_navigation:
       icon: "account_balance"
       target_screen: accounts
       order: 1
-    - id: transactions
-      label: "Transactions"
-      icon: "receipt_long"
-      target_screen: transactions
+    # Reverse-synced 2026-07-28: source ships a "Pay" tab here, not "Transactions".
+    # AuthenticatedNavBarTabItem.PayTab points at SendMoneyRoute, a placeholder
+    # destination registered by bankingPlaceholderDestinations(). Recorded as the
+    # running truth even though idea-plan.yaml declares PISP out of scope —
+    # see the drift note below.
+    - id: pay
+      label: "Pay"
+      icon: "payments"
+      target_screen: send-money
       order: 2
+      implementation_status: placeholder
+      source_binding: "AuthenticatedNavBarTabItem.PayTab -> SendMoneyRoute"
+      drift_note: >-
+        Renders PlaceholderScreen("Pay"). idea-plan.yaml §vision.scope.out_of_scope
+        declares payment initiation (PISP) out of scope, yet core/network ships a
+        complete PISP wire-model surface and this tab points toward it. Transactions
+        remains fully reachable from home and from account-detail's Explore chips.
     - id: more
       label: "More"
       icon: "more_horiz"

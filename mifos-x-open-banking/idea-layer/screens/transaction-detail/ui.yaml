@@ -1,7 +1,7 @@
 screen_id: transaction-detail
 archetype: detail_screen
 name: "Transaction Detail"
-status: enriched
+status: implemented
 initial_state: loading
 quality_score: 95
 
@@ -69,14 +69,38 @@ state_model:
         - NetworkError              # IOException — recoverable; show Retry
     actions:
       members:
-        - loadTransactionDetail
-        - navigateBack
-        - retryLoad
-        - copyTransactionReference
+        - RetryLoad
+        - CopyReference   # data class — copies the transaction reference to the clipboard
+    nav_callbacks:
+      - "onBack -> popBackStack()"
     di:
-      - TransactionsRepository    # GET /accounts/{AccountId}/transactions via ktorfit (filters by transactionId)
-      - ClipboardService          # expect/actual platform clipboard for copyTransactionReference
-      - NavigationController      # KMP navigation abstraction for route push/pop
+      - SavedStateHandle              # supplies the transactionId and accountId route args
+      - TransactionDetailRepository   # Koin single; transaction-detail stream
+
+# ─────────────────────────────────────────────────────────────────────
+# SOURCE BINDING — reverse-synced from source 2026-07-28
+# ─────────────────────────────────────────────────────────────────────
+implementation:
+  status: implemented
+  source_module: "feature/transaction-detail"
+  package: "org.mifosx.openbanking.feature.transactiondetail"
+  route: "TransactionDetailRoute(transactionId: String, accountId: String)"
+  viewmodel: TransactionDetailViewModel
+  screen: TransactionDetailScreen
+  test_tags_object: TransactionDetailTestTags
+  domain_model: TransactionDetail
+  reachable_from:
+    - "transactions — onNavigateToTransactionDetail"
+    - "home — onNavigateToTransactionDetail (recent transactions section)"
+    - "statement-detail — onNavigateToTransactionDetail (statement transactions)"
+  synced_from_source_at: "2026-07-28"
+  renamed_in_sync:
+    - "copyTransactionReference -> CopyReference"
+    - "TransactionsRepository -> TransactionDetailRepository (a dedicated repository, not the list one)"
+  removed_in_sync:
+    - "loadTransactionDetail action — the initial load is stream collection in init{}"
+    - "navigateBack action — back is a nav-host onBack callback"
+    - "ClipboardService DI — the clipboard is reached inside the CopyReference handler, not injected into the view model constructor"
 
 shell:
   bottom_navigation_visible: false

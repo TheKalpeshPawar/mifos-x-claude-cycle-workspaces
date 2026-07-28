@@ -1,225 +1,108 @@
 screen_id: settings
 
+# Reverse-synced 2026-07-28 against the shipped suite:
+#   commonTest/ui/SettingsViewModelTest.kt
+#   commonTest/SettingsScreenUiTest.kt
+#   androidUnitTest/SettingsScreenRobolectricTest.kt
+#   androidInstrumentedTest/SettingsScreenInstrumentedTest.kt
+#
+# The previous 21-scenario suite tested a Security section (biometric lock,
+# session timeout), a Notifications section, a Storage section (PFM cache
+# location + clear), a Location-permission row, a Clear-Local-Data confirm
+# sheet, a Profile row and a loading skeleton — none of which exist in source.
+# SettingsUiState declares only Content, Empty and Error.
+
 scenarios:
   - id: TC-SET-001
-    description: "Loading skeleton renders before DataStore emits first value"
-    state: loading
-    given: "SettingsViewModel is initialising; DataStore flow has not yet emitted"
-    when: "Screen mounts"
+    description: "Settings renders three sections with current preference values"
+    state: content
+    priority: critical
+    given: "UserDataRepository emits user data with darkThemeConfig = FOLLOW_SYSTEM"
+    when: "The screen composes"
     then:
-      - "Shimmer skeleton is visible covering all sections"
-      - "No setting rows are rendered"
-      - "Top app bar title is present"
+      - "settings:content is displayed"
+      - "settings:section:appearance renders with a theme dropdown row (settings:row:theme)"
+      - "settings:themeValue reflects the resolved theme label"
+      - "settings:section:account renders a single Consents row (settings:row:consents) with a chevron"
+      - "settings:section:about renders Privacy, Licences and App Version rows"
+      - "settings:appVersionValue is non-empty"
 
   - id: TC-SET-002
-    description: "Settings screen renders all sections with current preference values"
+    description: "Theme dropdown opens, selects and persists"
     state: content
-    given: "DataStore returns saved preferences (theme=System, biometric=On, session=5 minutes, both notifications=On)"
-    when: "DataStore flow emits first Settings object"
+    priority: critical
+    given: "Content state with isThemeMenuExpanded = false"
+    when: "User taps the theme row, then picks Dark"
     then:
-      - "Skeleton disappears; content sections animate in"
-      - "Appearance section shows Theme row with supporting_text 'System'"
-      - "Security section shows Biometric App Lock switch set to On"
-      - "Security section shows Session Timeout row with supporting_text '5 minutes'"
-      - "Notifications section shows Consent Expiry Reminders switch set to On"
-      - "Notifications section shows Security Alerts switch set to On"
-      - "Account section shows Manage Consents, Profile, and Clear Local Data rows"
-      - "About & Legal section shows Terms, Privacy, Licences and App Version rows"
-      - "App Version supporting_text is non-empty"
+      - "ToggleThemeMenu sets isThemeMenuExpanded = true and settings:themeMenu is displayed"
+      - "SelectTheme(DarkThemeConfig.DARK) writes through UserDataRepository"
+      - "The stream re-emits and settings:themeValue updates to the Dark label"
+      - "The app retints immediately"
 
   - id: TC-SET-003
-    description: "Tapping Manage Consents navigates to consent-list"
+    description: "Dismissing the theme menu leaves the selection unchanged"
     state: content
-    when: "User taps 'Manage Consents' row"
-    then: "Navigation event emitted to consent-list route; chevron icon is visible"
+    priority: normal
+    given: "The theme dropdown is expanded"
+    when: "User dismisses without choosing"
+    then:
+      - "DismissThemeMenu sets isThemeMenuExpanded = false"
+      - "No write occurs and settings:themeValue is unchanged"
 
   - id: TC-SET-004
-    description: "Tapping Profile navigates to profile"
+    description: "Consents row navigates to consent-list"
     state: content
-    when: "User taps 'Profile' row"
-    then: "Navigation event emitted to profile route"
+    priority: critical
+    when: "User taps settings:row:consents"
+    then: "onNavigateToConsents fires -> navigate(ConsentListRoute)"
 
   - id: TC-SET-005
-    description: "Toggling Biometric App Lock persists new value"
+    description: "Licences row opens the in-app licences screen"
     state: content
-    when: "User taps Biometric App Lock switch (On → Off)"
+    priority: normal
+    when: "User taps settings:row:licences"
     then:
-      - "Switch flips to Off immediately"
-      - "DataStore is updated with biometric_lock_enabled=false"
-      - "Preference survives app restart"
+      - "onNavigateToLicences fires -> navigate(LicencesRoute)"
+      - "The row carries a chevron and the opens-in-app accessibility description"
 
   - id: TC-SET-006
-    description: "Selecting Dark theme applies immediately"
+    description: "Privacy row leaves the app for a browser"
     state: content
-    when: "User selects 'Dark' from Theme dropdown"
+    priority: normal
+    when: "User taps settings:row:privacy"
     then:
-      - "App theme changes to dark on next recomposition"
-      - "Theme row supporting_text updates to 'Dark'"
-      - "Preference persisted atomically to DataStore"
+      - "onOpenUrl fires -> LocalUriHandler.openUri(url)"
+      - "The row carries the external-link glyph and the opens-externally accessibility description"
 
   - id: TC-SET-007
-    description: "Toggling Consent Expiry Reminders off persists and survives restart"
+    description: "App version row is inert"
     state: content
-    when: "User taps Consent Expiry Reminders switch (On → Off)"
+    priority: normal
+    given: "Content state with a resolved appVersionLabel"
+    when: "The About section renders"
     then:
-      - "Switch flips to Off immediately"
-      - "DataStore is updated with notify_consent_expiry=false"
-      - "State survives process death"
+      - "settings:row:appVersion shows the version as subtitle text"
+      - "It has no icon, no trailing affordance and no click handler"
+      - "Tapping it produces no navigation and no action"
 
   - id: TC-SET-008
-    description: "Clear Local Data shows confirmation bottom-sheet and clears cache on confirm"
-    state: content
-    when: "User taps 'Clear Local Data' row, then taps 'Clear' in the confirmation bottom-sheet"
+    description: "Preferences failure surfaces a retriable error"
+    state: error
+    priority: critical
+    given: "UserDataRepository fails to read preferences"
+    when: "The screen composes"
     then:
-      - "Confirmation bottom-sheet appears with title and warning body"
-      - "On 'Clear': Room/SQLDelight cached rows are deleted"
-      - "DataStore cached-at timestamps are reset"
-      - "Open Banking consent authorisations are NOT affected"
-      - "Success snackbar shown after erasure completes"
+      - "SettingsErrorKind.PreferencesUnavailable is emitted"
+      - "settings:errorState renders with settings:errorTitle and settings:errorBody"
+      - "settings:retryButton is displayed (isRetriable = true)"
+      - "Tapping it dispatches SettingsAction.RetryLoad"
 
   - id: TC-SET-009
-    description: "Biometric toggle gracefully handles unavailable hardware"
-    state: content
-    given: "Device has no enrolled biometrics"
-    when: "User taps Biometric App Lock switch"
-    then:
-      - "Informational dialog shown explaining biometric unavailability"
-      - "Switch remains Off"
-      - "No crash or unhandled exception"
-
-  - id: TC-SET-010
-    description: "Session timeout picker accepts only whitelisted durations"
-    state: content
-    when: "User opens Session Timeout dropdown"
-    then:
-      - "Exactly four options shown: 2 minutes, 5 minutes, 10 minutes, 30 minutes"
-      - "Selecting '10 minutes' persists to DataStore and updates supporting_text"
-
-  - id: TC-SET-011
-    description: "Toggling Security Alerts notification off persists and survives restart"
-    state: content
-    when: "User taps Security Alerts switch (On → Off)"
-    then:
-      - "Switch flips to Off immediately"
-      - "DataStore is updated with notify_security_alerts=false"
-      - "State survives process death"
-
-  - id: TC-SET-012
-    description: "Tapping an About & Legal external link opens the correct URL in system browser"
-    state: content
-    when: "User taps 'Terms of Service' row (or 'Privacy Policy' or 'Licences')"
-    then:
-      - "open_external_url action fires with the corresponding URL"
-      - "System browser or Custom Tab opens with the target URL"
-      - "App remains in background; Settings screen accessible via back navigation"
-
-  - id: TC-SET-013
-    description: "Error state renders with Retry button when DataStore throws IOException on mount"
-    state: error
-    given: "SettingsDataStore.settingsFlow throws IOException on first collection (storage corruption)"
-    when: "Screen mounts and Flow collection fails"
-    then:
-      - "Loading skeleton disappears"
-      - "Error state UI shows error_outline icon, title 'Could not load settings', and body text"
-      - "Retry button is visible and focusable"
-      - "No setting rows are rendered"
-      - "Tapping Retry triggers retry_load_settings: screen transitions to Loading then Content on recovery"
-      - "On repeat IOException after retry, Error state is shown again"
-
-  - id: TC-SET-014
-    description: "Empty state renders transiently before DataStore writes first default preferences"
+    description: "Empty state renders when no preferences resolve"
     state: empty
-    given: "App first cold start; DataStore has never been written; Flow emits nothing before default coroutine writes complete"
-    when: "Screen mounts before DataStore default-write coroutine completes"
+    priority: normal
+    given: "SettingsUiState.Empty"
+    when: "The screen composes"
     then:
-      - "Empty state UI shows settings icon, title 'No preferences saved', and body text"
-      - "No crash or unhandled state occurs"
-      - "Within one frame (or first DataStore emission), screen transitions to Content automatically"
-      - "No user action is needed; transition is automatic"
-
-  - id: TC-SET-015
-    description: "Tapping Clear Local Data row triggers clear_local_data_confirm action and transitions to clear_confirm state"
-    state: clear_confirm
-    priority: high
-    given: "Screen is in content state"
-    when: "User taps the 'Clear Local Data' row (clear_local_data_confirm action)"
-    then:
-      - "Screen transitions to clear_confirm state"
-      - "clear_local_data_sheet bottom-sheet becomes visible with dialog_title and dialog_body text"
-      - "Cancel button (text variant) and Confirm/Clear button (filled, error colour) are both present and focusable"
-      - "All behind-sheet content rows remain rendered (state_binding [content, clear_confirm])"
-      - "No data has been erased at this point"
-
-  - id: TC-SET-016
-    description: "Tapping Cancel in clear_confirm bottom-sheet dismisses sheet and returns to content; no data erased"
-    state: clear_confirm
-    priority: medium
-    given: "Screen is in clear_confirm state; clear_local_data_sheet is visible"
-    when: "User taps the Cancel button (dismiss_clear_local_data action)"
-    then:
-      - "Bottom-sheet animates out; screen returns to content state"
-      - "No Room/SQLDelight cache rows are deleted"
-      - "No DataStore cached-at timestamps are reset"
-      - "Open Banking consent authorisations are unaffected"
-      - "All settings rows remain as they were before the sheet appeared"
-
-  - id: TC-SET-017
-    description: "Tapping Confirm in clear_confirm bottom-sheet executes cache erasure; consent authorisations unaffected"
-    state: clear_confirm
-    priority: high
-    given: "Screen is in clear_confirm state; clear_local_data_sheet is visible; device has locally cached account and transaction rows"
-    when: "User taps the Confirm/Clear button (execute_clear_local_data action)"
-    then:
-      - "Bottom-sheet dismisses; screen transitions back to content state"
-      - "All locally cached account and transaction rows are deleted from Room/SQLDelight"
-      - "DataStore cached-at timestamp keys are reset to null"
-      - "Open Banking consent authorisations on the server are NOT deleted or modified"
-      - "Success snackbar is displayed confirming erasure completion"
-      - "On Room/SQLDelight delete failure (IOException): error snackbar with Retry is shown; DataStore timestamps are NOT reset (transactional ordering preserved)"
-
-  - id: TC-SET-018
-    description: "Permissions section renders GPS permission state from runtime"
-    state: content
-    priority: medium
-    given: "DataStore has emitted preferences; runtime.gps_permission_state is 'granted'"
-    when: "Content state renders"
-    then:
-      - "Permissions section header is visible between the Security and Notifications sections"
-      - "Location permission row shows its label with the value 'granted'"
-      - "Location permission row shows secondary text explaining the ATM distance-sort purpose"
-      - "Location permission row renders a location_on leading icon and an open_in_new trailing icon"
-
-  - id: TC-SET-019
-    description: "Location permission row reflects denied state without blocking the screen"
-    state: content
-    priority: medium
-    given: "runtime.gps_permission_state is 'denied'"
-    when: "Content state renders"
-    then:
-      - "Location permission row value reads 'denied'"
-      - "No error state is triggered; every other settings row remains interactive"
-      - "Secondary text still communicates that atm-locator degrades gracefully to postcode-centroid ordering"
-
-  - id: TC-SET-020
-    description: "Tapping the location permission row deep-links to OS app settings"
-    state: content
-    priority: medium
-    given: "Content state is rendered; location permission row is visible"
-    when: "User taps the location permission row (open_app_system_settings action)"
-    then:
-      - "openAppSystemSettings() is invoked on SettingsViewModel"
-      - "A platform intent to the OS app-settings screen is fired"
-      - "No DataStore write occurs"
-      - "On return to the app, runtime.gps_permission_state is re-read and the row value reflects any change"
-
-  - id: TC-SET-021
-    description: "Storage section shows PFM cache location and clears only the PFM cache"
-    state: content
-    priority: medium
-    given: "Content state is rendered; platform.app_files_dir resolves to the app-private internal files directory"
-    when: "User views the Storage section and taps Clear PFM Cache (clear_pfm_cache action)"
-    then:
-      - "PFM storage location row displays the resolved path ending in '/databases/pfm_cache' and exposes no tap target"
-      - "A confirmation bottom-sheet is shown before any erasure occurs"
-      - "On confirm, clearPfmCache() deletes the pfm_room_cache aggregated spending/income/category rows"
-      - "AIS consent authorisations, DataStore settings, and the budgets DataStore are NOT cleared"
+      - "settings:emptyState renders with settings:emptyTitle and settings:emptyBody"
+      - "No section rows are rendered"

@@ -1,7 +1,7 @@
 screen_id: transactions
 archetype: index_list
 name: "{strings.transactions.title}"
-status: enriched
+status: implemented
 initial_state: loading
 quality_score: 95
 
@@ -39,6 +39,38 @@ business_logic:
 # Derived from docs.yaml#vm_actions + error_cases for implementation.
 # Satisfies QUALITY_FORMULA.md Category 10 (State Model, 5 pts).
 # ─────────────────────────────────────────────────────────────────────
+# ─────────────────────────────────────────────────────────────────────
+# SOURCE BINDING — reverse-synced from source 2026-07-28
+# ─────────────────────────────────────────────────────────────────────
+implementation:
+  status: implemented
+  source_module: "feature/transactions"
+  package: "org.mifosx.openbanking.feature.transactions"
+  route: "TransactionsRoute(accountId: String)"
+  viewmodel: TransactionsViewModel
+  screen: TransactionsScreen
+  test_tags_object: TransactionsTestTags
+  nav_callbacks:
+    - "onNavigateToTransactionDetail(transactionId, accountId) -> TransactionDetailRoute(...)"
+    - "onBack -> popBackStack()"
+  reachable_from:
+    - "home — onNavigateToTransactions(accountId)"
+    - "account-detail — AccountDetailChip.Transactions"
+  components:
+    - "components/TransactionRow.kt"
+    - "components/TransactionFilterChips.kt"
+    - "components/TransactionSearchField.kt"
+    - "components/PeriodSummary.kt"
+    - "components/LoadMoreButton.kt"
+  synced_from_source_at: "2026-07-28"
+  added_in_sync:
+    - "DismissDateRangePicker action — ships in source; the idea-layer declared only OpenDateRangePicker and SetDateRange"
+    - "dateFrom / dateTo / showDateRangePicker state fields"
+  removed_in_sync:
+    - "navigateTransactionDetail action — TransactionsAction has no such member; row taps go through the nav-host callback"
+    - "NavigationController DI — navigation is callback-based"
+  note_placeholder_collision: "cmp-navigation/placeholder/BankingDestinations.kt also declares a TransactionsRoute (arg-less data object) bound to PlaceholderScreen. The live route is this arg-carrying TransactionsRoute(accountId) in feature/transactions."
+
 state_model:
   TransactionsViewModel:
     state:
@@ -48,12 +80,16 @@ state_model:
           type: String
         - name: uiState
           type: TransactionsUiState
-        - name: transactions
-          type: List<OBTransaction6>
         - name: activeFilter
           type: TransactionFilter
-        - name: searchQuery
+        - name: query
           type: String
+        - name: dateFrom
+          type: LocalDate?
+        - name: dateTo
+          type: LocalDate?
+        - name: showDateRangePicker
+          type: Boolean
         - name: hasNextPage
           type: Boolean
         - name: isPaginating
@@ -62,29 +98,23 @@ state_model:
       sealed_class: TransactionsUiState
       members:
         - Loading
-        - Content    # transactionsByDate: Map<LocalDate, List<OBTransaction6>>, period totals
+        - Content
         - Empty      # active filter / search / date-range yields zero matching rows
-        - Error      # message: String, recoverable: Boolean
-    errors:
-      types:
-        - TokenExpiredError       # 401 — recoverable
-        - ConsentWithdrawnError   # 403 — non-recoverable
-        - RateLimitError          # 429 — recoverable
-        - NetworkError            # IOException — recoverable
+        - Error
     actions:
       members:
-        - loadTransactions
-        - filterTransactions
-        - openDateRangePicker
-        - searchTransactions
-        - navigateTransactionDetail
-        - clearFilters
-        - retryLoad
-        - loadMoreTransactions
-        - setDateRange
+        - LoadTransactions
+        - RetryLoad
+        - LoadMore                # OBIE Links.Next pagination
+        - FilterTransactions      # data class
+        - SearchTransactions      # data class
+        - OpenDateRangePicker
+        - SetDateRange            # data class
+        - DismissDateRangePicker
+        - ClearFilters
     di:
-      - TransactionsRepository   # GET /accounts/{AccountId}/transactions via ktorfit (OBIE Links.Next pagination)
-      - NavigationController     # KMP navigation abstraction for route push/pop
+      - SavedStateHandle         # supplies the accountId route arg
+      - TransactionsRepository   # Koin single; transactions stream + Links.Next pagination
 
 shell:
   bottom_navigation_visible: true

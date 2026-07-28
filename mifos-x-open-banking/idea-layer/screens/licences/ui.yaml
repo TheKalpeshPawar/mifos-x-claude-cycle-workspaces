@@ -1,0 +1,88 @@
+screen_id: licences
+archetype: detail_screen
+name: "{strings.licences.screen_title}"
+status: implemented
+initial_state: content
+quality_score: 90
+
+# ─────────────────────────────────────────────────────────────────────
+# SOURCE-ORIGINATED SCREEN — authored 2026-07-28 from source.
+# This destination ships in the app but had no idea-layer representation.
+# ─────────────────────────────────────────────────────────────────────
+implementation:
+  status: implemented
+  source_module: "feature/settings"
+  package: "org.mifosx.openbanking.feature.settings"
+  route: "LicencesRoute (data object, arg-less)"
+  screen: LicencesScreen
+  viewmodel: null
+  test_tags_object: "SettingsTestTags (shared with the settings screen)"
+  reachable_from:
+    - "settings — About section 'Licences' row -> onNavigateToLicences -> navigate(LicencesRoute)"
+  synced_from_source_at: "2026-07-28"
+  origin: source-only
+  note_duplicate_route: "cmp-navigation/placeholder/BankingDestinations.kt also declares a LicensesRoute (US spelling) bound to PlaceholderScreen(\"Licenses\"). It is unreachable dead code — the real destination is this LicencesRoute in feature/settings."
+
+shell:
+  bottom_navigation_visible: false
+  top_app_bar_visible: true
+  top_app_bar_title: "{strings.licences.screen_title}"
+  top_app_bar_leading: back
+  top_app_bar_leading_accessibility_label: "{strings.licences.nav_back}"
+  fab_visible: false
+
+business_logic:
+  kind: nav_only
+  description: "Static open-source licence readout. There is no ViewModel: LicencesScreen reads the bundled MPL licence text directly from the module's Compose resources via produceState { Res.readBytes(\"files/mpl_licence.txt\").decodeToString() }, starting from an empty string and swapping in the decoded text once the read completes. The body renders inside a KptScaffold with a back navigation icon, vertically scrollable, as a titleMedium intro paragraph followed by the full licence in a monospace bodySmall block. No network, no persistence, no user actions beyond back."
+  external_library_refs:
+    - "compose.resources"
+  description_author: claude
+  description_authored_at: "2026-07-28T00:00:00Z"
+
+# No state_model: the screen has no ViewModel, no actions and no error surface.
+# The only transient condition is the empty-string initial value of produceState,
+# which renders as an empty licence block rather than a distinct loading state.
+state_model: {}
+
+states: [content]
+
+components:
+
+  - type: stack
+    id: licences_screen
+    state_binding: [content]
+    direction: vertical
+    scroll: true
+    padding: "16dp"
+    gap: "16dp"
+    test_tag: "settings:licences:screen"
+    accessibility_label: "{strings.licences.screen_title}"
+    test_context:
+      purpose: "Scrolling column inside KptScaffold holding the intro and the licence body"
+      required_fields: []
+      interaction_type: display
+      data_driven: false
+    children:
+      - type: text
+        id: licences_intro
+        value: "{strings.licences.intro}"
+        style: titleMedium
+        color: "on-surface"
+        test_context:
+          purpose: "Intro paragraph above the licence text"
+          required_fields: []
+          interaction_type: display
+          data_driven: false
+
+      - type: text
+        id: licences_body
+        value: "{licence}"
+        style: bodySmall
+        font_family: monospace
+        color: "on-surface-variant"
+        test_tag: "settings:licences:list"
+        test_context:
+          purpose: "Full MPL licence text read from files/mpl_licence.txt in module Compose resources; empty string until produceState resolves"
+          required_fields: [licence]
+          interaction_type: display
+          data_driven: true

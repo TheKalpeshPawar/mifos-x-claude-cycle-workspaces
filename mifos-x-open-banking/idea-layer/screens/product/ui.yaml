@@ -1,7 +1,7 @@
 screen_id: product
 archetype: detail_screen
 name: "Product Terms"
-status: enriched
+status: implemented
 quality_score: 95
 initial_state: loading
 
@@ -53,11 +53,32 @@ state_model:
         - NetworkError           # device offline or AIS endpoint unreachable
     actions:
       members:
-        - productLoad    # GET /accounts/{accountId}/product → OBReadProduct2; dispatched on mount
-        - retryLoad      # delegates to productLoad(accountId) after error state
+        - ProductLoad    # dispatched on mount
+        - RetryLoad      # re-dispatches ProductLoad after an error
+    nav_callbacks:
+      - "onBack -> popBackStack() returning to account-detail"
     di:
-      - ProductRepository     # wraps ktorfit GET /accounts/{AccountId}/product
-      - NavigationController  # KMP navigation abstraction for back-stack pop
+      - SavedStateHandle   # supplies the accountId route arg
+      - ProductRepository  # Koin single; product stream
+
+# ─────────────────────────────────────────────────────────────────────
+# SOURCE BINDING — reverse-synced from source 2026-07-28
+# ─────────────────────────────────────────────────────────────────────
+implementation:
+  status: implemented
+  source_module: "feature/product"
+  package: "org.mifosx.openbanking.feature.product"
+  route: "ProductRoute(accountId: String)"
+  viewmodel: ProductViewModel
+  screen: ProductScreen
+  test_tags_object: ProductTestTags
+  domain_model: ProductTerms
+  reachable_from:
+    - "account-detail — AccountDetailChip.Product"
+  synced_from_source_at: "2026-07-28"
+  removed_in_sync:
+    - "NavigationController DI — back is a nav-host onBack callback"
+  note: "This screen's action set matched source exactly apart from casing; only DI and naming were corrected. A separate arg-less ProductsRoute placeholder also exists in cmp-navigation and is unreachable."
 
 status_history:
   - from: draft

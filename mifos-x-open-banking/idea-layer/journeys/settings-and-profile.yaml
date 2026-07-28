@@ -1,48 +1,63 @@
 id: settings-and-profile
-version: "1.0.0"
-name: "Settings and User Profile"
+version: "2.0.0"
+name: "Settings and Legal"
 description: >
-  Priya opens Settings from the More tab to configure app appearance (light/dark theme),
-  enable biometric app-lock, review notification preferences, access About & Legal, and
-  shortcut to consent management. She then navigates to her Profile to see her connected
-  identity (name and address from the OBIE party resource), an active-consents summary,
-  and sign out (which clears token + consent and redirects to login).
+  Priya opens Settings from the More tab to switch the app theme, jump to consent
+  management, and read the open-source licences. Reverse-synced 2026-07-28 against
+  source: the profile screen, biometric app-lock, session timeout and notification
+  preferences were all specified but never built, so this journey now covers only the
+  three sections the settings screen actually renders — Appearance, Account and About.
 persona:
   archetype: "returning user — personalisation and privacy manager"
-  jtbd: "Customise the app to my preferences and verify my connected identity before sharing the app with a family member."
+  jtbd: "Set the app to my preferred appearance and check what I have shared before handing the phone to a family member."
   context: "Quiet evening at home, setting up the app properly after a few weeks of use."
   knowledge_level: familiar
   emotional_state: "settled and thorough"
-goal: "Configure app settings and review connected identity, then sign out cleanly."
+goal: "Set the app theme and review consents and legal information."
 success_metric:
-  name: "settings-profile-task-completion"
+  name: "settings-task-completion"
   kind: satisfaction
-  target: ">=80% of users who open settings also open profile within the same session"
-  measurement: "Sequential funnel: settings_screen_viewed → profile_screen_viewed, same session"
+  target: ">=80% of users who open settings complete at least one action (theme change or consents open) in the same session"
+  measurement: "Sequential funnel: settings_screen_viewed → (theme_selected OR consent_list_viewed), same session"
 screen_sequence:
   - screen_id: settings
-    state: "populated"
-    user_intent: "Browse settings categories and toggle appearance or security preferences."
-    success_signal: "Settings list renders sections: Appearance (theme toggle), Security (biometric lock toggle), Notifications, About & Legal, and Manage Consents shortcut row."
-    notes: "Theme toggle applies immediately. Biometric lock toggle triggers OS biometric enrolment prompt if not already set up."
-  - screen_id: profile
-    state: "populated"
-    user_intent: "Review connected identity (name and address from OBIE ReadParty) and see the active-consents summary."
-    success_signal: "Profile screen shows account holder name, address, at least one active consent row with expiry, and a visible 'Sign Out' button."
-    notes: "Sign-out triggers a confirmation dialog. On confirm: local tokens and consent data are cleared, and the app navigates to login/user-onboarding."
+    state: "content"
+    user_intent: "Browse the settings sections and switch the app theme."
+    success_signal: >
+      Three SettingsSection groups render — Appearance (theme dropdown row), Account
+      (Consents row with chevron) and About (Privacy row with external-link glyph,
+      Licences row with chevron, and a static App Version readout).
+    notes: >
+      Selecting a theme dispatches SettingsAction.SelectTheme and writes DarkThemeConfig
+      through UserDataRepository; the whole app retints immediately. The App Version row
+      has no click handler by design.
+  - screen_id: licences
+    state: "content"
+    user_intent: "Read the bundled open-source licence text."
+    success_signal: "The licences screen renders an intro paragraph and the full MPL text in a scrollable monospace block."
+    notes: "Static bundled asset — no network call. Back returns to settings."
 expected_outcome: >
-  Priya has applied her preferred theme and security settings, confirmed her connected
-  identity matches her HSBC account details, and understands how to sign out if she
-  needs to. The app is set up to her satisfaction.
+  Priya has applied her preferred theme, knows where to review and revoke her bank
+  consents, and has seen the app's licensing and privacy information.
 tier: minimal
 preconditions:
-  - "Active consent and valid PSU access token."
-  - "ReadParty permission granted — required to populate identity on profile screen."
+  - "Authenticated session (the settings screen sits behind the authenticated nav graph)."
 failure_modes:
-  - cause: "ReadParty permission not in consent scope — party name and address are unavailable."
-    recovery_screen: profile
-    notes: "Profile renders with 'Party details not available' placeholder and suggests reconfirming consent with ReadParty permission. No navigation change."
-  - cause: "Biometric hardware not available on device."
+  - cause: "Preferences cannot be read from UserDataRepository."
     recovery_screen: settings
-    notes: "Biometric toggle is greyed out with a tooltip 'Not available on this device'. Settings screen remains active."
-tags: [settings, profile, appearance, security, biometric, sign-out, p0]
+    notes: "SettingsErrorKind.PreferencesUnavailable renders the shared error surface with a Retry CTA (isRetriable = true)."
+  - cause: "No browser available to open the privacy policy URL."
+    recovery_screen: settings
+    notes: "LocalUriHandler.openUri fails silently; the user stays on settings. Source models no error state for this."
+tags: [settings, licences, appearance, theme, legal, p0]
+
+removed_in_sync:
+  # Recorded so the deletion is traceable rather than silent.
+  - screen: profile
+    reason: "No route, no module, no ViewModel in source."
+  - capability: "biometric app-lock toggle"
+    reason: "UserData carries isBiometricsEnabled but the settings screen exposes no Security section."
+  - capability: "notification preferences"
+    reason: "No Notifications section is rendered."
+  - capability: "sign out from settings"
+    reason: "The only sign-out path in source is revoking a consent from consent-detail, which calls AppLogout."

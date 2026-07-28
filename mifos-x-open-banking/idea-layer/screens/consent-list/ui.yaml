@@ -1,7 +1,7 @@
 screen_id: consent-list
 archetype: index_list
 name: "{strings.consent_list_title}"
-status: enriched
+status: implemented
 quality_score: 95
 initial_state: loading
 
@@ -47,15 +47,40 @@ state_model:
         - ConsentStatusServerError   # HTTP 500 from GET /account-access-consents/{ConsentId}
     actions:
       members:
-        - loadConsents               # fetches status per stored ConsentId; partitions active/history
-        - navigateConsentDetail      # push consent-detail route with ConsentId param
-        - navigateConnect            # push user-onboarding route from empty state
-        - retryLoad                  # re-runs loadConsents after network/server failure
-        - navigateReauth             # push login route from error_auth state (401 recovery)
+        - RetryLoad                  # refreshes the consent stream after a failure
+    nav_callbacks:
+      # Host-owned; none are ConsentListAction members. Note that BOTH the empty-state
+      # "connect" affordance and the error_auth "re-authenticate" affordance resolve to
+      # the SAME destination — LoginRenewRoute — not to user-onboarding and login separately.
+      - "onBack -> popBackStack()"
+      - "onNavigateToDetail(consentId) -> navigate(ConsentDetailRoute(consentId))"
+      - "onConnectBank -> navigate(LoginRenewRoute)"
+      - "onReauthenticate -> navigate(LoginRenewRoute)"
     di:
-      - ConsentRepository            # wraps ktorfit GET /account-access-consents/{ConsentId}
-      - LocalConsentStorage          # persisted ConsentId list (locally stored)
-      - NavigationController         # KMP navigation abstraction
+      - ConsentDetailRepository      # Koin single; shared with the consent-detail screen
+      - ConsentSession               # active-consent session state
+
+# ─────────────────────────────────────────────────────────────────────
+# SOURCE BINDING — reverse-synced from source 2026-07-28
+# ─────────────────────────────────────────────────────────────────────
+implementation:
+  status: implemented
+  source_module: "feature/consent-list"
+  package: "org.mifosx.openbanking.feature.consentlist"
+  route: "ConsentListRoute (data object)"
+  viewmodel: ConsentListViewModel
+  screen: ConsentListScreen
+  test_tags_object: ConsentListTestTags
+  reachable_from:
+    - "settings — Account section 'Consents' row"
+    - "beneficiaries — onNavigateToConsents"
+  synced_from_source_at: "2026-07-28"
+  removed_in_sync:
+    - "loadConsents action — the initial load is stream collection in init{}"
+    - "navigateConsentDetail / navigateConnect / navigateReauth actions — all three are nav-host callbacks"
+    - "ConsentRepository / LocalConsentStorage / NavigationController DI — replaced by ConsentDetailRepository + ConsentSession"
+  corrected_in_sync:
+    - "navigateConnect previously claimed a user-onboarding destination; source routes it to LoginRenewRoute, the same target as re-authenticate"
 
 shell:
   bottom_navigation_visible: true

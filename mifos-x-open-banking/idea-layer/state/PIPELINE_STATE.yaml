@@ -1,7 +1,125 @@
 schema_version: 2.1.0
 project: mifos-x-open-banking
 generated: '2026-06-29'
+last_reverse_sync: '2026-07-28'
+
+# ─── ARTIFACT-VOIDING NOTICE 2026-07-28 ──────────────────────────────────
+# The reverse sync deleted every derived artifact in the idea-layer. The
+# capability entries listed below still carry a `last_run.status: success`,
+# and that success genuinely happened — but the outputs it produced are gone.
+# Treat each as NOT-RUN for staleness purposes; their last_run blocks are
+# retained only as provenance for how the pre-sync layer was built.
+#
+# Do not read these as "fresh". Their outputs are absent, not stale.
+artifacts_voided_by_reverse_sync:
+  at: '2026-07-28T00:00:00Z'
+  by: '/gap-analysis-project (reverse sync from source)'
+  capabilities:
+    - { id: idea-render-screen,   outputs: 'screens/*/preview/*.html',                 state: deleted, regenerate_with: '/idea-feature-render', deferred: true }
+    - { id: idea-render-validate, outputs: 'render validation over the previews',      state: void,    regenerate_with: '/idea-feature-validate', deferred: true }
+    - { id: idea-render-ledger,   outputs: 'state/RENDER_LEDGER.md',                   state: deleted, regenerate_with: '/idea-feature-render-ledger' }
+    - { id: idea-feature-export,  outputs: 'exports/*/SPEC.md, exports/*/API.md',      state: deleted, regenerate_with: '/idea-feature-export --all' }
+    - { id: idea-feature-mockup,  outputs: 'mockups/*/MOCKUP.md, PROMPTS_FIGMA.md',    state: deleted, regenerate_with: '/idea-feature-mockup', deferred: true }
+    - { id: idea-export-stitch,   outputs: 'screens/*/prompts/*.md',                   state: deleted, regenerate_with: '/idea-feature-stitch --build-prompts', deferred: true }
+    - { id: idea-feature-stitch,  outputs: 'mockups/*/stitch/**, state/STITCH_*.yaml', state: deleted, regenerate_with: '/idea-feature-stitch', deferred: true }
+    - { id: idea-generate-data-flow, outputs: '_cache/data-flow-views/**',             state: deleted, regenerate_with: '/idea-data-flow' }
+  note: >-
+    Stitch generation is deferred and may not be run at all — that decision is open.
+    HTML preview generation is deferred. Everything else regenerates on demand.
+
 capabilities:
+  kmp-implement:
+    # Backfilled 2026-07-28. The idea-layer previously held NO record that any
+    # implementation had happened, while source shipped 18 feature modules with
+    # unit, Compose-UI, Robolectric and instrumented tests. This entry records the
+    # observed source state; it does not claim a framework-driven /kmp-implement run.
+    last_run:
+      at: '2026-07-28T00:00:00Z'
+      status: success
+      duration_ms: 0
+      actor: external
+      args: ''
+      command: 'observed-from-source (backfilled by /gap-analysis-project)'
+      errors: 0
+      warnings: 0
+    metrics:
+      provenance: >-
+        Reconstructed by reading source, not by executing the command. Feature modules
+        were built outside the framework pipeline, so no ACTIVITY_LOG entries exist for them.
+      feature_modules_shipped: 18
+      idea_screens_bound: 20
+      modules: >-
+        account-detail, account-holder, accounts, beneficiaries, consent-callback,
+        consent-detail, consent-list, direct-debits, home, login, product,
+        scheduled-payments, settings, standing-orders, statement-detail, statements,
+        transaction-detail, transactions
+      screens_without_own_module: >-
+        user-onboarding (onboarding/IntroScreen.kt in feature/login) and
+        licences (LicencesScreen.kt in feature/settings)
+      architecture: >-
+        Stream-first MVI. BaseViewModel<S,E,A> + ScreenDataStream + Store5 stores in
+        core/store, repositories in core/data, Ktor/ktorfit client in core/network,
+        Koin DI per feature module, androidx-navigation type-safe routes.
+      unimplemented_placeholder_routes: 19
+      test_surface: >-
+        Per feature: commonTest ViewModel tests + *ScreenUiTest, androidUnitTest
+        Robolectric, androidInstrumentedTest, plus screenshot tests on
+        beneficiaries, consent-detail, consent-list, product, scheduled-payments,
+        statement-detail, statements, transaction-detail.
+    drift:
+      stale_inputs: []
+  gap-analysis-project:
+    last_run:
+      at: '2026-07-28T00:00:00Z'
+      status: success
+      duration_ms: 0
+      actor: claude
+      args: 'reverse — update idea-layer from source'
+      command: '/gap-analysis-project (reverse sync)'
+      errors: 0
+      warnings: 0
+    metrics:
+      direction: source -> idea-layer
+      mode: complete-source-match
+      screens_before: 25
+      screens_after: 20
+      screens_deleted: 6      # atm-locator, budgets, pfm-dashboard, profile, recurring-subscriptions, spending-by-category
+      screens_renamed: 1      # party -> account-holder
+      screens_added: 1        # licences (source-only surface)
+      files_deleted: 554      # all preview HTML, all stitch mockups, all stitch prompts, 6 screen trees + their exports/mockups
+      previews_removed: true
+      stitch_artifacts_removed: true
+      source_mutations: 0     # source was never written to
+    drift:
+      stale_inputs: []
+  git-session-start:
+    last_run:
+      at: '2026-07-22T00:00:00Z'
+      status: success
+      duration_ms: 0
+      actor: claude
+      args: '"feat: settings + profile features"'
+      command: '/git-session-start "feat: settings + profile features"'
+    metrics:
+      repos_resolved:
+        source: create
+      branches:
+        source: feat/settings-profile-features
+      prs_drafted: 1
+      prs_reused: 0
+      partial_resume: false
+      scope: >-
+        Source-only per RULE-GIT-SESSION-001 HR #18 (hard default; no --include-framework /
+        --include-workspace passed). Framework and workspace branches were left on their existing
+        claude-session-mifos-x-20260629154509571 branches, untouched.
+      base_branch_deviation: >-
+        Phase 3 HALTed: its create path bases new source branches on the default branch, but
+        origin/dev is 51 commits behind feature/aisp-hsbc-rebuild, still declares
+        ScreenDataStream's constructor `internal` (the feature test fakes require it public) and
+        lacks feature/account-detail entirely. User picked [Stack] at the halt picker, so the
+        branch and its draft PR are based on feature/aisp-hsbc-rebuild (open upstream PR openMF#6).
+    drift:
+      stale_inputs: []
   idea-generate-data-flow:
     last_run:
       at: '2026-07-14T00:00:00Z'

@@ -1,7 +1,7 @@
 screen_id: home
 archetype: dashboard
 name: "{strings.home.screen.title}"
-status: enriched
+status: implemented
 quality_score: 95
 initial_state: loading
 i18n: true
@@ -40,59 +40,94 @@ business_logic:
 # Derived from docs.yaml#impl_notes.state_model Kotlin block + vm_actions + error_cases.
 # Satisfies QUALITY_FORMULA.md Category 10 (State Model, 5 pts).
 # ─────────────────────────────────────────────────────────────────────
+# ─────────────────────────────────────────────────────────────────────
+# SOURCE BINDING — reverse-synced from source 2026-07-28
+# ─────────────────────────────────────────────────────────────────────
+implementation:
+  status: implemented
+  source_module: "feature/home"
+  package: "org.mifosx.openbanking.feature.home"
+  graph: "homeGraph(onNavigateToTransactions, onNavigateToTransactionDetail)"
+  route: "HomeRoute inside the HomeDestination graph"
+  viewmodel: HomeViewModel
+  screen: HomeScreen
+  test_tags_object: HomeTestTags
+  bottom_nav_tab: "HomeTab (order 0) — also the NavHost start destination"
+  nav_callbacks:
+    - "onNavigateToTransactions(accountId) -> TransactionsRoute(accountId)"
+    - "onNavigateToTransactionDetail(transactionId, accountId) -> TransactionDetailRoute(...)"
+  components:
+    - "components/HeroBalanceCard.kt"
+    - "components/AccountSelectorSheet.kt"
+    - "components/RecentTransactionsSection.kt"
+  synced_from_source_at: "2026-07-28"
+  added_in_sync:
+    - "OpenAccountSelector / DismissAccountSelector actions — the account-selector bottom sheet is driven by isAccountSelectorVisible; the idea-layer modelled neither the actions nor the sheet state"
+  removed_in_sync:
+    - "navigateToStatements — homeGraph exposes no statements callback"
+    - "navigateToSpending — the pfm-dashboard screen was never built; no callback exists"
+    - "navigateToConsentList — homeGraph exposes no consent-list callback; consents are reached from settings"
+    - "navigateToAccountDetail — homeGraph exposes no account-detail callback"
+    - "loadHome action — the initial load is stream collection in init{}, not a dispatched action"
+    - "spendThisMonth / topCategoryName / activeConsentId state fields — HomeData carries none of them"
+  note: "HomeData does expose a spending snapshot through core/data SpendingCalculator.computeSpendingSnapshot, but there is no navigation out of it."
+
 state_model:
   HomeViewModel:
     state:
       name: HomeState
       fields:
-        - name: allAccounts
-          type: List<OBAccount6>
+        - name: uiState
+          type: ScreenState<HomeData>
+        - name: isAccountSelectorVisible
+          type: Boolean
+        - name: accountId
+          type: String
+    data_model:
+      name: HomeData
+      fields:
+        - name: accounts
+          type: List<AccountChipUi>
         - name: selectedAccountId
           type: String
-        - name: selectedAccount
-          type: OBAccount6?
-        - name: selectedAccountBalance
-          type: OBCashBalance3?
-        - name: availableBalance
-          type: OBCashBalance3?
+        - name: accountTypeLabel
+          type: String
+        - name: accountNickname
+          type: String
+        - name: accountSubType
+          type: String
+        - name: accountNumber
+          type: String
+        - name: rawIdentification
+          type: String
+        - name: balanceLabel
+          type: String
+        - name: availableAmountLabel
+          type: String
+        - name: accountNumberLabel
+          type: String
         - name: recentTransactions
-          type: List<OBTransaction6>
-        - name: spendThisMonth
-          type: String
-        - name: topCategoryName
-          type: String
-        - name: activeConsentId
-          type: String
-        - name: uiState
-          type: UiState
+          type: List<TransactionRowUi>
     screen_state:
-      sealed_class: UiState
+      sealed_class: ScreenState        # shared core-base type
       members:
         - Loading
-        - Content
-        - Empty   # reason: no_accounts | no_consent
-        - Error   # code: Int, message: String, recoverable: Boolean
-    errors:
-      types:
-        - TokenExpiredError    # EC-HOME-001 — 401 token expired; navigate to login
-        - ConsentScopeError    # EC-HOME-002 — 403 ReadAccountsDetail/ReadBalances not in consent
-        - RateLimitError       # EC-HOME-003 — 429 rate-limit; recoverable; exponential back-off
-        - NetworkError         # EC-HOME-006 — device offline or AIS endpoint unreachable
+        - Content                      # HomeData
+        - Empty
+        - Error
+        - NoNetwork
+        - Unauthenticated
     actions:
       members:
-        - selectAccount             # persist AccountId to DataStore; re-fetch balances + transactions
-        - loadHome                  # GET /accounts then parallel GET /balances + GET /transactions
-        - retryLoad                 # re-invokes loadHome(); shown on recoverable error state
-        - navigateToAccountDetail   # hero card tap → account-detail with selectedAccountId
-        - navigateToTransactions    # quick-action or view-all → transactions with selectedAccountId
-        - navigateToStatements      # quick-action → statements with selectedAccountId
-        - navigateToSpending        # spending snapshot card → pfm-dashboard
-        - navigateToConsentList     # manage-consents quick-action → consent-list
+        - SelectAccount            # data class — persists the selection and re-drives the stream
+        - OpenAccountSelector      # shows the AccountSelectorSheet
+        - DismissAccountSelector   # hides the AccountSelectorSheet
+        - RetryLoad
     di:
-      - AccountsRepository      # GET /accounts via ktorfit
-      - BalancesRepository      # GET /accounts/{id}/balances via ktorfit
-      - TransactionsRepository  # GET /accounts/{id}/transactions via ktorfit
-      - DataStore               # selectedAccountId persistence across app restarts
+      - AccountsRepository      # accounts stream
+      - BalancesRepository      # balances stream
+      - TransactionsRepository  # recent-transactions stream
+      - UserDataRepository      # selectedAccountId persistence across app restarts
 
 shell:
   bottom_navigation_visible: true
@@ -502,65 +537,12 @@ components:
                 effect: navigate
                 description: "Opens the transaction detail screen for the tapped transaction row, passing both transactionId and accountId as route parameters."
 
-  # ── Spending snapshot card ─────────────────────────────────────────
-  - type: card
-    id: spending_snapshot_card
-    state_binding: [content]
-    elevation: 1
-    corner_radius: radius.md
-    padding: spacing.md
-    margin: { horizontal: spacing.md, bottom: spacing.xl }
-    accessibility_label: "{strings.home.spending_snapshot.accessibility}"
-    test_context:
-      purpose: "Summary card showing total spend this month and top spending category from cached Room DB PFM data; tapping navigates to spending-by-category"
-      data_driven: true
-      required_fields:
-        - "on_click.action"
-        - "on_click.target"
-      interaction_type: navigate
-    on_click:
-      action: navigate_pfm
-      target: pfm-dashboard
-      action_contract:
-        effect: navigate
-        description: "Opens the PFM spending-by-category dashboard where the PSU can see a full breakdown of their monthly spending by category."
-    children:
-      - type: stack
-        direction: horizontal
-        alignment: center_vertical
-        gap: spacing.md
-        children:
-          - type: stack
-            direction: vertical
-            gap: spacing.xxs
-            weight: 1
-            children:
-              - type: section_header
-                id: spending_snapshot_header
-                value: "{strings.home.spending_snapshot.title}"
-                style: titleSmall
-              - type: text
-                id: spending_this_month
-                value: "{strings.home.spending_snapshot.this_month_label}"
-                style: bodySmall
-                color: "on-surface-variant"
-              - type: text
-                id: spending_amount
-                value: "{spendThisMonth}"
-                style: headlineMedium
-                color: "error"
-                accessibility_label: "{strings.home.spending_snapshot.amount.accessibility}"
-              - type: text
-                id: spending_top_category
-                value: "{strings.home.spending_snapshot.top_category}"
-                style: bodySmall
-                color: "on-surface-variant"
-          - type: icon
-            id: spending_chevron
-            name: chevron_right
-            size: icon.md
-            color: "on-surface-variant"
-            accessibility_label: "{strings.home.spending_snapshot.cta.accessibility}"
+  # ── Spending snapshot card — REMOVED 2026-07-28 (reverse sync) ──────
+  # HomeData carries no spending fields and feature/home contains zero
+  # references to spending or snapshots. The card, its four text rows, its
+  # chevron and its navigate_pfm -> pfm-dashboard on_click were never built.
+  # core/data does ship SpendingCalculator.computeSpendingSnapshot and the
+  # SpendingSnapshot model, but the home screen does not consume them.
 
   # ══════════════════════════════════════════════════════════════════
   # EMPTY STATE

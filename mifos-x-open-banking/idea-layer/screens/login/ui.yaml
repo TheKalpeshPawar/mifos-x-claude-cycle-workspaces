@@ -1,7 +1,7 @@
 screen_id: login
 archetype: form
 name: "Connect with HSBC"
-status: enriched
+status: implemented
 quality_score: 95
 initial_state: content
 
@@ -10,40 +10,59 @@ initial_state: content
 # Migrated to C6 format; vm_class/ui_state_sealed/flat states map removed.
 # Derived from ui.yaml#view_state_fields + docs.yaml#vm_actions + error_cases.
 # ─────────────────────────────────────────────────────────────────────
+# ─────────────────────────────────────────────────────────────────────
+# SOURCE BINDING — reverse-synced from source 2026-07-28
+# ─────────────────────────────────────────────────────────────────────
+implementation:
+  status: implemented
+  source_module: "feature/login"
+  package: "org.mifosx.openbanking.feature.login"
+  viewmodel: LoginViewModel        # NOT ConsentOnboardingViewModel — the idea-layer name never existed in source
+  screen: LoginScreen
+  test_tags_object: LoginTestTags
+  routes:
+    - "LoginRoute — the onboarding-entry consent screen"
+    - "LoginRenewRoute — the same screen reached WITHOUT the onboarding intro, used for re-consent"
+    - "IntroRoute — the onboarding intro (see the user-onboarding screen, which ships inside this module)"
+  reached_by:
+    - "consent-list — onConnectBank and onReauthenticate both navigate(LoginRenewRoute)"
+    - "consent-detail — onReconfirm navigates(LoginRenewRoute)"
+  platform_expect_actual:
+    - "BrowserLauncher — androidMain/AndroidBrowserLauncher, desktopMain/DesktopBrowserLauncher, nativeMain/IosBrowserLauncher, jsCommonMain/JsBrowserLauncher"
+  synced_from_source_at: "2026-07-28"
+  added_in_sync:
+    - "Cancel action — LoginAction.Cancel aborts the in-flight authorisation"
+    - "Retry action — LoginAction.Retry re-attempts after an error"
+    - "LoginRenewRoute — a second, intro-less entry point with three inbound callers"
+  removed_in_sync:
+    - "navigateBack action — LoginAction has no such member; back is a nav-host onBack callback"
+    - "ConsentOnboardingViewModel / ConsentOnboardingUiState / ConsentOnboardingState names — source uses the Login* prefix throughout"
+
 state_model:
-  ConsentOnboardingViewModel:
+  LoginViewModel:
     state:
-      name: ConsentOnboardingState
+      name: LoginState
       fields:
-        - name: requestedPermissions
-          type: List<OBPermission>
-        - name: consentExpiryLabel
-          type: String
-        - name: errorMessage
-          type: String?
+        - name: uiState
+          type: LoginUiState
     screen_state:
-      sealed_class: ConsentOnboardingUiState
+      sealed_class: LoginUiState
       members:
-        - Content     # requestedPermissions: List<OBPermission>, consentExpiryLabel: String
         - Loading     # consent-create POST in flight
-        - Authorising # FAPI redirect launched; user authenticating in HSBC
-        - Error       # userMessage: String
-        - Empty       # zero OBIE permissions staged; prevents zero-scope OBReadConsent1
-    errors:
-      types:
-        - NetworkException
-        - HttpException
-        - FapiRedirectException
+        - Content     # requested permissions + consent expiry rendered
+        - Authorising # FAPI redirect launched; PSU authenticating on HSBC
+        - Empty       # zero OBIE permissions staged; prevents a zero-scope consent
+        - Error
     actions:
       members:
-        - loadPermissionsConfig  # reads OBReadConsent1.Permissions; computes consentExpiryLabel
-        - startOAuth             # POST consent-create; build FAPI URL; launch app-to-app redirect
-        - navigateBack           # pop to user-onboarding; no side-effects
+        - LoadPermissionsConfig  # reads the permission set; computes the consent expiry label
+        - StartOAuth             # POST consent-create; build FAPI URL; launch app-to-app redirect
+        - Cancel                 # abort the in-flight authorisation and return to Content
+        - Retry                  # re-attempt after an error
     di:
-      - ConsentService
-      - FapiAuthBuilder
-      - LocalStorage
-      - Navigator
+      - LoginRepository   # Koin single; consent creation + FAPI URL construction
+      - BrowserLauncher   # expect/actual per platform; launches the app-to-app redirect
+      - PendingAuthStore  # persists the in-flight authorisation (state, nonce, ConsentId) across the redirect
 
 dependencies:
   tier: 0
@@ -59,7 +78,7 @@ dependencies:
 screens:
   - id: login
     name: "{strings.screen.login.title}"
-    viewmodel: ConsentOnboardingViewModel
+    viewmodel: LoginViewModel
 
 i18n_coverage: true
 

@@ -24,15 +24,25 @@ metadata:
   impl_ready_schema: v2
 contracts: []
 libraries:
-  - name: androidx.datastore
-    module: androidx.datastore:datastore-preferences
-    purpose: Async persistent key-value storage for all settings preferences
-  - name: compose-settings
-    module: com.github.alorma:compose-settings-ui-m3
-    purpose: Pre-built Material 3 Compose settings UI components (list items, switches, dropdowns)
+  - name: multiplatform-settings
+    module: com.russhwolf:multiplatform-settings-no-arg (+ -coroutines)
+    purpose: >-
+      Preference storage. Consume the EXISTING core/datastore UserPreferencesRepository — this feature
+      adds NO new preference keys and NO new persistence code. Its only persisted setting is the theme,
+      already served by observeDarkThemeConfig: Flow<DarkThemeConfig> / setDarkThemeConfig(...).
+      (The keys that would have been new — session_timeout, notify_consent_expiry,
+      notify_security_alerts — belonged to the Security and Notifications sections, which are out of
+      scope per the 2026-07-22 scope cut.) androidx.datastore is not in the version catalog and must
+      not be introduced.
+  - name: app design system
+    module: core/ui (KptScaffold) + core-base/designsystem (KptTheme)
+    purpose: >-
+      Settings rows are composed from the app's own design system under the one-state-per-file
+      Screen/Content/Skeleton/Empty/Error convention. No third-party settings-UI dependency —
+      com.github.alorma:compose-settings-ui-m3 is not in the version catalog.
   - name: kotlinx-serialization
     module: org.jetbrains.kotlinx:kotlinx-serialization-json
-    purpose: Serialization for structured preference types stored in DataStore
+    purpose: Serialization for structured preference types held in preferences
 vm_actions:
   - name: updateTheme
     signature: 'suspend fun updateTheme(theme: String)'

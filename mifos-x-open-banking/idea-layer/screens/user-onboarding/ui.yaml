@@ -1,643 +1,138 @@
 screen_id: user-onboarding
 archetype: onboarding
 name: "Welcome to Open Banking"
-status: enriched
-quality_score: 95
+status: implemented
+quality_score: 88
 initial_state: intro
+
+# ─────────────────────────────────────────────────────────────────────
+# SOURCE BINDING — reverse-synced from source 2026-07-28
+#
+# This screen does NOT have its own feature module. It ships as
+# onboarding/IntroScreen.kt inside feature/login, reached via IntroRoute —
+# the start destination of the AuthGraphRoute graph.
+#
+# The previously-declared three-step pager (intro / permissions_overview /
+# consent_explainer), the ob_explainer_open bottom sheet, the loading /
+# error / empty states, the UserOnboardingViewModel and all six actions
+# were never built. Source ships ONE stateless composable with a single
+# outward edge.
+# ─────────────────────────────────────────────────────────────────────
+implementation:
+  status: implemented
+  source_module: "feature/login"
+  package: "org.mifosx.openbanking.feature.login.onboarding"
+  file: "onboarding/IntroScreen.kt"
+  route: "IntroRoute (data object) — startDestination of AuthGraphRoute"
+  screen: IntroScreen
+  viewmodel: null
+  supporting_composables:
+    - "onboarding/OnboardingHeroIllustration.kt"
+    - "onboarding/AssistChip.kt"
+  outward_edge: "onContinue -> navController.navigate(LoginRoute)"
+  synced_from_source_at: "2026-07-28"
+  removed_in_sync:
+    - "UserOnboardingViewModel and the whole state_model — IntroScreen is a stateless composable with no view model"
+    - "permissions_overview and consent_explainer states — no multi-step pager exists; the permission list lives on the login screen (components/PermissionList.kt)"
+    - "ob_explainer_open state — no bottom sheet is implemented"
+    - "loading, error, empty states — added by a 2026-07-14 /design-validate --fix pass; none were ever built"
+    - "stepNext, stepBack, openObExplainer, closeObExplainer, retryOnboardingInit actions — none exist"
+    - "OnboardingDataStore and NavigationController DI — nothing is injected; there is no onboarding_completed flag in source"
 
 status_history:
   - { from: draft, to: enriched, at: "2026-06-29", by: "/idea-enrich" }
-  - { from: enriched, to: enriched, at: "2026-06-29", by: "/idea-enrich",
-      note: "84→95: 4-state multi-step (intro/permissions_overview/consent_explainer/ob_explainer_open), i18n {strings.*} on all text, ReadAccountsDetail added, FAPI/FCA trust chips, stepper progress, consent 90-day duration note, FCA/OBIE legal footer, OB explainer bottom sheet with 3-step FAPI walkthrough, 12 test scenarios" }
-  - { from: enriched, to: enriched, at: "2026-07-14", by: "/design-validate --fix",
-      note: "STATE-001: added loading/error/empty states (onboarding_loading_indicator, onboarding_error_state with retry, onboarding_empty_state with skip-to-login). A11Y-006: added alt property to hero_illustration." }
+  - from: enriched
+    to: implemented
+    at: "2026-07-28"
+    by: "/gap-analysis-project (reverse sync from source)"
+    note: "Collapsed a speculative 7-state pager down to the single stateless intro composable that source actually ships."
 
 business_logic:
   kind: nav_only
-  description: "Three-step onboarding pager educating the PSU about AISP consent before initiating the FAPI 1.0 Advanced flow. Step 1 (intro): hero + headline + body copy establishes UK Open Banking as FCA-regulated and password-free; two assist chips surface the FAPI 1.0 Advanced security protocol and FCA-regulated status as trust badges. Step 2 (permissions_overview): lists all six OBIE ReadX scopes requested in OBReadConsent1 — ReadAccountsDetail, ReadBalances, ReadTransactionsDetail, ReadStandingOrdersDetail, ReadDirectDebits, ReadStatementsDetail — each in plain English, followed by a 90-day consent-duration note. Step 3 (consent_explainer): three AIS-only trust guarantees (no PISP payments, no password exposure, revoke-anytime via DELETE consent), FCA/OBIE v4.0 legal footer, and the primary CTA that navigates to the login screen where OBReadConsent1 is staged and the FAPI app-to-app redirect to HSBC begins. The ob_explainer_open overlay state renders a bottom sheet with a three-step plain-English walkthrough of the FAPI consent journey (grant permission on HSBC → authenticate via SCA → receive short-lived token via signed response). No API calls on this screen — all content is static educational copy."
+  description: "Static onboarding intro, and the first screen the app shows in the unauthenticated auth graph. IntroScreen renders a hero illustration, a headline, a body paragraph establishing UK Open Banking as FCA-regulated and password-free, two AssistChip trust badges (FAPI 1.0 Advanced, FCA-regulated), and a single continue button. It holds no state, performs no I/O and makes no API calls; onContinue is its only outward edge and navigates to LoginRoute, where the permission set is rendered and the consent is staged."
   external_library_refs: []
   description_author: claude
-  description_authored_at: "2026-06-29T12:00:00Z"
+  description_authored_at: "2026-07-28T00:00:00Z"
 
-# ─────────────────────────────────────────────────────────────────────
-# STATE MODEL — UserOnboardingViewModel contract
-# Derived from docs.yaml#vm_actions + ui.yaml component actions.
-# Satisfies QUALITY_FORMULA.md Category 10 (State Model, 5 pts).
-# ─────────────────────────────────────────────────────────────────────
-state_model:
-  UserOnboardingViewModel:
-    state:
-      name: UserOnboardingState
-      fields:
-        - name: currentStep
-          type: Int
-        - name: showObExplainerSheet
-          type: Boolean
-    screen_state:
-      sealed_class: UserOnboardingUiState
-      members:
-        - Loading              # checking DataStore onboarding_completed flag
-        - Error                # DataStore IOException on init
-        - Empty                # onboarding config absent / feature-flagged off
-        - Intro                # step 1: hero + FAPI/FCA trust badges
-        - PermissionsOverview  # step 2: six OBIE ReadX scopes
-        - ConsentExplainer     # step 3: AIS trust guarantees + Connect CTA
-        - ObExplainerOpen      # overlay: three-step FAPI journey bottom sheet
-    errors:
-      types:
-        - DataStoreIOError   # IOException reading onboarding_completed flag from DataStore
-    actions:
-      members:
-        - stepNext
-        - stepBack
-        - openObExplainer
-        - closeObExplainer
-        - navigateToLogin
-        - retryOnboardingInit
-    di:
-      - OnboardingDataStore    # androidx.datastore — reads/writes onboarding_completed flag
-      - NavigationController   # KMP navigation abstraction for navigateToLogin
+# No state_model: IntroScreen is a stateless composable with no ViewModel,
+# no actions and no error surface.
+state_model: {}
 
 shell:
   bottom_navigation_visible: false
   top_app_bar_visible: false
   fab_visible: false
 
-states: [loading, error, empty, intro, permissions_overview, consent_explainer, ob_explainer_open]
+states: [intro]
 
 components:
 
-  # ─── LOADING state — pre-flow init ───────────────────────────────────
-  - type: progress_indicator
-    id: onboarding_loading_indicator
-    variant: circular
-    state_binding: [loading]
-    accessibility_label: "{strings.onboarding_loading_a11y}"
-    test_context:
-      purpose: "Shown briefly while ViewModel checks DataStore for a prior onboarding_completed flag before deciding to show the intro flow or skip directly to login"
-      required_fields: [variant]
-      interaction_type: display
-      data_driven: false
-
-  # ─── ERROR state — onboarding init failed ────────────────────────────
-  - type: empty_state
-    id: onboarding_error_state
-    variant: error
-    state_binding: [error]
-    icon: error_outline
-    title: "{strings.onboarding_error_title}"
-    body: "{strings.onboarding_error_body}"
-    accessibility_label: "{strings.onboarding_error_a11y}"
-    test_context:
-      purpose: "Shown when DataStore read of onboarding completion flag throws an I/O exception; PSU can retry or proceed directly to intro step"
-      required_fields: [icon, title, body]
-      interaction_type: display
-      data_driven: false
-    children:
-      - type: button
-        id: onboarding_error_retry_button
-        variant: filled
-        label: "{strings.onboarding_error_retry}"
-        accessibility_label: "{strings.onboarding_error_retry_a11y}"
-        on_click:
-          action: retry_onboarding_init
-          action_contract:
-            effect: transform_state
-            external_library_refs: [kotlinx-coroutines, androidx.datastore]
-            description: "Re-reads the onboarding_completed flag from DataStore in a coroutine; transitions through loading then to intro on success, or remains in error state on failure."
-        test_context:
-          purpose: "Re-triggers the DataStore onboarding completion check; transitions to loading then intro on success"
-          required_fields: [on_click.action]
-          interaction_type: action
-          data_driven: false
-
-  # ─── EMPTY state — no onboarding flow configured ─────────────────────
-  - type: empty_state
-    id: onboarding_empty_state
-    variant: neutral
-    state_binding: [empty]
-    icon: info_outline
-    title: "{strings.onboarding_empty_title}"
-    body: "{strings.onboarding_empty_body}"
-    accessibility_label: "{strings.onboarding_empty_a11y}"
-    test_context:
-      purpose: "Graceful fallback rendered when onboarding configuration is absent (e.g. remote feature flag disables onboarding); directs PSU to login without the educational flow"
-      required_fields: [icon, title, body]
-      interaction_type: display
-      data_driven: false
-    children:
-      - type: button
-        id: onboarding_empty_skip_button
-        variant: filled
-        label: "{strings.onboarding_empty_skip_button}"
-        accessibility_label: "{strings.onboarding_empty_skip_button_a11y}"
-        on_click:
-          action: navigate_to_login
-          target: login
-          action_contract:
-            effect: navigate
-            description: "Bypasses the onboarding educational flow and navigates directly to the login screen when onboarding content is unavailable or disabled."
-        test_context:
-          purpose: "Bypasses the onboarding flow and navigates directly to login when onboarding content is unavailable"
-          required_fields: [on_click.action, on_click.target]
-          interaction_type: navigate
-          data_driven: false
-
-  # ─── STEP 1: intro ────────────────────────────────────────────────
-
-  - type: stepper
-    id: step_indicator_intro
-    total_steps: 3
-    current_step: 1
-    orientation: horizontal
-    state_binding: [intro]
-    accessibility_label: "{strings.onboarding_step_indicator_intro_a11y}"
-    test_context:
-      purpose: "Shows the PSU they are on step 1 of 3 of the onboarding flow"
-      required_fields: [total_steps, current_step]
-      interaction_type: display
-      data_driven: false
-
   - type: image
     id: hero_illustration
-    asset: "ic_open_banking_hero"
-    alt: "{strings.hero_illustration_description}"
-    content_description: "{strings.hero_illustration_description}"
-    accessibility_label: "{strings.hero_illustration_a11y}"
     state_binding: [intro]
+    source: OnboardingHeroIllustration
+    decorative: false
+    alt: "{strings.user_onboarding.hero_alt}"
     test_context:
-      purpose: "Hero illustration communicating trusted, FCA-regulated, secure bank data sharing via UK Open Banking"
-      required_fields: [asset, content_description]
-      interaction_type: display
-      data_driven: false
-
-  - type: text
-    id: intro_headline
-    value: "{strings.onboarding_intro_headline}"
-    style: headlineMedium
-    color: "on-surface"
-    state_binding: [intro]
-    accessibility_label: "{strings.onboarding_intro_headline}"
-    test_context:
-      purpose: "Step 1 headline — explains UK Open Banking as secure, regulated account data sharing"
-      required_fields: [value]
-      interaction_type: display
-      data_driven: false
-
-  - type: text
-    id: intro_body
-    value: "{strings.onboarding_intro_body}"
-    style: bodyMedium
-    color: "on-surface-variant"
-    state_binding: [intro]
-    test_context:
-      purpose: "Step 1 supporting body — FCA-regulated, read-only standard, password never shared"
-      required_fields: [value]
-      interaction_type: display
-      data_driven: false
-
-  - type: chip
-    id: fapi_security_badge
-    label: "{strings.onboarding_fapi_badge}"
-    icon: verified_user
-    variant: assist
-    state_binding: [intro]
-    accessibility_label: "{strings.onboarding_fapi_badge_a11y}"
-    test_context:
-      purpose: "Trust badge — FAPI 1.0 Advanced security protocol used for token exchange"
-      required_fields: [label, icon]
-      interaction_type: display
-      data_driven: false
-
-  - type: chip
-    id: fca_regulated_badge
-    label: "{strings.onboarding_fca_badge}"
-    icon: account_balance
-    variant: assist
-    state_binding: [intro]
-    accessibility_label: "{strings.onboarding_fca_badge_a11y}"
-    test_context:
-      purpose: "Trust badge — app is FCA-regulated under Payment Services Regulations 2017"
-      required_fields: [label, icon]
-      interaction_type: display
-      data_driven: false
-
-  - type: button
-    id: intro_next_button
-    variant: filled
-    label: "{strings.onboarding_intro_next}"
-    state_binding: [intro]
-    accessibility_label: "{strings.onboarding_intro_next}"
-    on_click:
-      action: step_next
-      target_state: permissions_overview
-      action_contract:
-        effect: transform_state
-        external_library_refs: [kotlinx-coroutines]
-        description: "Increments the ViewModel currentStep counter from 1 to 2, transitioning the screen state from intro to permissions_overview with no network call."
-    test_context:
-      purpose: "Advances PSU from intro step to permissions overview step"
-      required_fields: [on_click.action, on_click.target_state]
-      interaction_type: navigate
-      data_driven: false
-
-  # ─── STEP 2: permissions_overview ─────────────────────────────────
-
-  - type: stepper
-    id: step_indicator_permissions
-    total_steps: 3
-    current_step: 2
-    orientation: horizontal
-    state_binding: [permissions_overview]
-    accessibility_label: "{strings.onboarding_step_indicator_permissions_a11y}"
-    test_context:
-      purpose: "Shows the PSU they are on step 2 of 3"
-      required_fields: [total_steps, current_step]
-      interaction_type: display
-      data_driven: false
-
-  - type: section_header
-    id: what_we_read_header
-    label: "{strings.onboarding_what_we_read}"
-    state_binding: [permissions_overview]
-    test_context:
-      purpose: "Section heading introducing the six OBIE ReadX permission categories"
-      required_fields: [label]
-      interaction_type: display
-      data_driven: false
-
-  - type: list
-    id: permissions_list
-    state_binding: [permissions_overview]
-    scroll_direction: vertical
-    test_context:
-      purpose: "All six OBIE ReadX permission categories that will be included in OBReadConsent1"
-      required_fields: [children]
-      interaction_type: display
-      data_driven: false
-    children:
-      - type: list_item
-        id: perm_accounts
-        icon: manage_accounts
-        headline_text: "{strings.onboarding_perm_accounts}"
-        supporting_text: "{strings.onboarding_perm_accounts_detail}"
-        accessibility_label: "{strings.onboarding_perm_accounts_a11y}"
-        test_context:
-          purpose: "ReadAccountsDetail — account names, sort codes, IBANs for authorised accounts"
-          required_fields: [icon, headline_text, supporting_text]
-          interaction_type: display
-          data_driven: false
-
-      - type: list_item
-        id: perm_balances
-        icon: account_balance
-        headline_text: "{strings.onboarding_perm_balances}"
-        supporting_text: "{strings.onboarding_perm_balances_detail}"
-        accessibility_label: "{strings.onboarding_perm_balances_a11y}"
-        test_context:
-          purpose: "ReadBalances — current, savings, and credit card balances in real time"
-          required_fields: [icon, headline_text, supporting_text]
-          interaction_type: display
-          data_driven: false
-
-      - type: list_item
-        id: perm_transactions
-        icon: receipt_long
-        headline_text: "{strings.onboarding_perm_transactions}"
-        supporting_text: "{strings.onboarding_perm_transactions_detail}"
-        accessibility_label: "{strings.onboarding_perm_transactions_a11y}"
-        test_context:
-          purpose: "ReadTransactionsDetail — up to 90 days of debits and credits"
-          required_fields: [icon, headline_text, supporting_text]
-          interaction_type: display
-          data_driven: false
-
-      - type: list_item
-        id: perm_standing_orders
-        icon: autorenew
-        headline_text: "{strings.onboarding_perm_standing_orders}"
-        supporting_text: "{strings.onboarding_perm_standing_orders_detail}"
-        accessibility_label: "{strings.onboarding_perm_standing_orders_a11y}"
-        test_context:
-          purpose: "ReadStandingOrdersDetail — scheduled recurring payment mandates"
-          required_fields: [icon, headline_text, supporting_text]
-          interaction_type: display
-          data_driven: false
-
-      - type: list_item
-        id: perm_direct_debits
-        icon: subscriptions
-        headline_text: "{strings.onboarding_perm_direct_debits}"
-        supporting_text: "{strings.onboarding_perm_direct_debits_detail}"
-        accessibility_label: "{strings.onboarding_perm_direct_debits_a11y}"
-        test_context:
-          purpose: "ReadDirectDebits — active mandates authorised on the account"
-          required_fields: [icon, headline_text, supporting_text]
-          interaction_type: display
-          data_driven: false
-
-      - type: list_item
-        id: perm_statements
-        icon: description
-        headline_text: "{strings.onboarding_perm_statements}"
-        supporting_text: "{strings.onboarding_perm_statements_detail}"
-        accessibility_label: "{strings.onboarding_perm_statements_a11y}"
-        test_context:
-          purpose: "ReadStatementsDetail — monthly statement summaries and available PDF references"
-          required_fields: [icon, headline_text, supporting_text]
-          interaction_type: display
-          data_driven: false
-
-  - type: text
-    id: consent_duration_note
-    value: "{strings.onboarding_consent_duration}"
-    style: bodySmall
-    color: "on-surface-variant"
-    state_binding: [permissions_overview]
-    accessibility_label: "{strings.onboarding_consent_duration}"
-    test_context:
-      purpose: "Informs PSU that OBIE consent lasts up to 90 days and is revocable at any time"
-      required_fields: [value]
-      interaction_type: display
-      data_driven: false
-
-  - type: button
-    id: permissions_back_button
-    variant: outlined
-    label: "{strings.onboarding_step_back}"
-    state_binding: [permissions_overview]
-    accessibility_label: "{strings.onboarding_step_back_a11y}"
-    on_click:
-      action: step_back
-      target_state: intro
-      action_contract:
-        effect: transform_state
-        external_library_refs: [kotlinx-coroutines]
-        description: "Decrements the ViewModel currentStep counter from 2 to 1, transitioning the screen state from permissions_overview back to intro with no network call."
-    test_context:
-      purpose: "Navigate back to intro step"
-      required_fields: [on_click.action, on_click.target_state]
-      interaction_type: navigate
-      data_driven: false
-
-  - type: button
-    id: permissions_next_button
-    variant: filled
-    label: "{strings.onboarding_step_next}"
-    state_binding: [permissions_overview]
-    accessibility_label: "{strings.onboarding_step_next_a11y}"
-    on_click:
-      action: step_next
-      target_state: consent_explainer
-      action_contract:
-        effect: transform_state
-        external_library_refs: [kotlinx-coroutines]
-        description: "Increments the ViewModel currentStep counter from 2 to 3, transitioning the screen state from permissions_overview to consent_explainer with no network call."
-    test_context:
-      purpose: "Advances PSU to step 3 — trust guarantees and connect CTA"
-      required_fields: [on_click.action, on_click.target_state]
-      interaction_type: navigate
-      data_driven: false
-
-  # ─── STEP 3: consent_explainer ────────────────────────────────────
-
-  - type: stepper
-    id: step_indicator_trust
-    total_steps: 3
-    current_step: 3
-    orientation: horizontal
-    state_binding: [consent_explainer]
-    accessibility_label: "{strings.onboarding_step_indicator_trust_a11y}"
-    test_context:
-      purpose: "Shows the PSU they are on step 3 of 3"
-      required_fields: [total_steps, current_step]
-      interaction_type: display
-      data_driven: false
-
-  - type: section_header
-    id: what_we_never_do_header
-    label: "{strings.onboarding_what_we_never_do}"
-    state_binding: [consent_explainer]
-    test_context:
-      purpose: "Section heading introducing AIS-only trust guarantees"
-      required_fields: [label]
-      interaction_type: display
-      data_driven: false
-
-  - type: list
-    id: reassurance_list
-    state_binding: [consent_explainer]
-    scroll_direction: vertical
-    test_context:
-      purpose: "Three AIS-only guarantees: no PISP payments, no password exposure, revocable consent"
-      required_fields: [children]
-      interaction_type: display
-      data_driven: false
-    children:
-      - type: list_item
-        id: never_payments
-        icon: money_off
-        icon_color: "error"
-        headline_text: "{strings.onboarding_never_payments}"
-        supporting_text: "{strings.onboarding_never_payments_detail}"
-        accessibility_label: "{strings.onboarding_never_payments_a11y}"
-        test_context:
-          purpose: "AIS-only — no PISP capability, no money movement possible"
-          required_fields: [icon, icon_color, headline_text, supporting_text]
-          interaction_type: display
-          data_driven: false
-
-      - type: list_item
-        id: never_password
-        icon: lock
-        icon_color: "primary"
-        headline_text: "{strings.onboarding_never_password}"
-        supporting_text: "{strings.onboarding_never_password_detail}"
-        accessibility_label: "{strings.onboarding_never_password_a11y}"
-        test_context:
-          purpose: "FAPI app-to-app redirect — HSBC credentials never leave HSBC's secure portal"
-          required_fields: [icon, icon_color, headline_text, supporting_text]
-          interaction_type: display
-          data_driven: false
-
-      - type: list_item
-        id: never_locked_in
-        icon: cancel
-        icon_color: "primary"
-        headline_text: "{strings.onboarding_never_locked_in}"
-        supporting_text: "{strings.onboarding_never_locked_in_detail}"
-        accessibility_label: "{strings.onboarding_never_locked_in_a11y}"
-        test_context:
-          purpose: "PSU can DELETE the OBIE consent at any time via Settings → Consents"
-          required_fields: [icon, icon_color, headline_text, supporting_text]
-          interaction_type: display
-          data_driven: false
-
-  - type: divider
-    id: legal_divider
-    state_binding: [consent_explainer]
-    test_context:
-      purpose: "Visual separator between trust guarantees and FCA legal footer"
+      purpose: "OnboardingHeroIllustration.kt — the composable hero graphic"
       required_fields: []
       interaction_type: display
       data_driven: false
 
   - type: text
-    id: legal_footer
-    value: "{strings.onboarding_legal_footer}"
-    style: labelSmall
-    color: "on-surface-variant"
-    state_binding: [consent_explainer]
-    accessibility_label: "{strings.onboarding_legal_footer}"
+    id: intro_headline
+    state_binding: [intro]
+    role: heading
+    value: "{strings.user_onboarding.intro_headline}"
+    style: headlineMedium
     test_context:
-      purpose: "FCA regulation statement and OBIE v4.0 standard attribution"
-      required_fields: [value]
+      purpose: "feature_login_intro_headline"
+      required_fields: []
       interaction_type: display
       data_driven: false
 
+  - type: text
+    id: intro_body
+    state_binding: [intro]
+    value: "{strings.user_onboarding.intro_body}"
+    style: bodyMedium
+    color: "on-surface-variant"
+    test_context:
+      purpose: "feature_login_intro_body — establishes FCA regulation and password-free access"
+      required_fields: []
+      interaction_type: display
+      data_driven: false
+
+  - type: chip_group
+    id: trust_chips
+    state_binding: [intro]
+    selection_mode: none
+    accessibility_label: "{strings.user_onboarding.trust_chips_a11y}"
+    test_context:
+      purpose: "Two non-interactive AssistChip trust badges"
+      required_fields: []
+      interaction_type: display
+      data_driven: false
+    chips:
+      - id: fapi_chip
+        label: "{strings.user_onboarding.fapi_chip}"
+      - id: fca_chip
+        label: "{strings.user_onboarding.fca_chip}"
+
   - type: button
-    id: connect_hsbc_button
+    id: continue_button
+    state_binding: [intro]
     variant: filled
-    label: "{strings.onboarding_connect_button}"
-    icon: open_in_new
-    state_binding: [consent_explainer]
-    accessibility_label: "{strings.onboarding_connect_button_a11y}"
+    label: "{strings.user_onboarding.intro_continue}"
+    accessibility_label: "{strings.user_onboarding.intro_continue}"
+    test_context:
+      purpose: "The screen's only interactive element and only outward edge"
+      required_fields: []
+      interaction_type: action
+      data_driven: false
     on_click:
-      action: navigate_to_login
+      action: navigate_login
       target: login
       action_contract:
         effect: navigate
-        description: "Primary CTA — navigates to the login screen where OBReadConsent1 is staged and the FAPI 1.0 Advanced app-to-app redirect to HSBC begins."
-    test_context:
-      purpose: "Primary CTA — begins FAPI consent flow by navigating to login/consent-staging screen"
-      required_fields: [on_click.action, on_click.target]
-      interaction_type: navigate
-      data_driven: false
-
-  - type: button
-    id: trust_back_button
-    variant: outlined
-    label: "{strings.onboarding_step_back}"
-    state_binding: [consent_explainer]
-    accessibility_label: "{strings.onboarding_step_back_a11y}"
-    on_click:
-      action: step_back
-      target_state: permissions_overview
-      action_contract:
-        effect: transform_state
-        external_library_refs: [kotlinx-coroutines]
-        description: "Decrements the ViewModel currentStep counter from 3 to 2, transitioning the screen state from consent_explainer back to permissions_overview with no network call."
-    test_context:
-      purpose: "Navigate back to permissions_overview step"
-      required_fields: [on_click.action, on_click.target_state]
-      interaction_type: navigate
-      data_driven: false
-
-  - type: button
-    id: how_ob_works_button
-    variant: text
-    label: "{strings.onboarding_how_ob_works}"
-    state_binding: [consent_explainer]
-    accessibility_label: "{strings.onboarding_how_ob_works_a11y}"
-    on_click:
-      action: open_ob_explainer
-      target_state: ob_explainer_open
-      action_contract:
-        effect: transform_state
-        external_library_refs: [kotlinx-coroutines]
-        description: "Sets showObExplainerSheet to true in the ViewModel StateFlow, overlaying the ob_explainer_open bottom sheet on top of the consent_explainer step."
-    test_context:
-      purpose: "Opens the FAPI consent journey explainer bottom sheet"
-      required_fields: [on_click.action, on_click.target_state]
-      interaction_type: action
-      data_driven: false
-
-  # ─── OB Explainer bottom sheet ────────────────────────────────────
-
-  - type: bottom_sheet
-    id: ob_explainer_sheet
-    state_binding: [ob_explainer_open]
-    accessibility_label: "{strings.ob_explainer_title}"
-    test_context:
-      purpose: "Three-step plain-English walkthrough of the FAPI consent journey"
-      required_fields: [children]
-      interaction_type: display
-      data_driven: false
-    children:
-      - type: text
-        id: ob_explainer_title
-        value: "{strings.ob_explainer_title}"
-        style: titleLarge
-        color: "on-surface"
-        accessibility_label: "{strings.ob_explainer_title}"
-        test_context:
-          purpose: "Bottom sheet title"
-          required_fields: [value]
-          interaction_type: display
-          data_driven: false
-
-      - type: list_item
-        id: ob_step1
-        icon: how_to_reg
-        headline_text: "{strings.ob_explainer_step1_title}"
-        supporting_text: "{strings.ob_explainer_step1_body}"
-        accessibility_label: "{strings.ob_explainer_step1_title}"
-        test_context:
-          purpose: "FAPI Step 1 — PSU approves the OBReadConsent1 permission request on HSBC's secure portal"
-          required_fields: [icon, headline_text, supporting_text]
-          interaction_type: display
-          data_driven: false
-
-      - type: list_item
-        id: ob_step2
-        icon: login
-        headline_text: "{strings.ob_explainer_step2_title}"
-        supporting_text: "{strings.ob_explainer_step2_body}"
-        accessibility_label: "{strings.ob_explainer_step2_title}"
-        test_context:
-          purpose: "FAPI Step 2 — PSU authenticates directly on HSBC via SCA; credentials never shared"
-          required_fields: [icon, headline_text, supporting_text]
-          interaction_type: display
-          data_driven: false
-
-      - type: list_item
-        id: ob_step3
-        icon: shield
-        headline_text: "{strings.ob_explainer_step3_title}"
-        supporting_text: "{strings.ob_explainer_step3_body}"
-        accessibility_label: "{strings.ob_explainer_step3_title}"
-        test_context:
-          purpose: "FAPI Step 3 — HSBC returns a short-lived PSU access token via signed FAPI response"
-          required_fields: [icon, headline_text, supporting_text]
-          interaction_type: display
-          data_driven: false
-
-      - type: text
-        id: ob_explainer_revoke_note
-        value: "{strings.ob_explainer_revoke_note}"
-        style: bodySmall
-        color: "on-surface-variant"
-        accessibility_label: "{strings.ob_explainer_revoke_note}"
-        test_context:
-          purpose: "Revoke consent reminder within the OB explainer sheet"
-          required_fields: [value]
-          interaction_type: display
-          data_driven: false
-
-      - type: button
-        id: ob_explainer_close_button
-        variant: filled
-        label: "{strings.ob_explainer_close}"
-        accessibility_label: "{strings.ob_explainer_close_a11y}"
-        on_click:
-          action: close_ob_explainer
-          target_state: consent_explainer
-          action_contract:
-            effect: transform_state
-            external_library_refs: [kotlinx-coroutines]
-            description: "Sets showObExplainerSheet to false in the ViewModel StateFlow, dismissing the OB explainer bottom sheet and returning the PSU to the consent_explainer step."
-        test_context:
-          purpose: "Closes the OB explainer sheet and returns PSU to consent_explainer step"
-          required_fields: [on_click.action, on_click.target_state]
-          interaction_type: action
-          data_driven: false
+        description: "Invokes the IntroScreen onContinue callback, which calls navController.navigate(LoginRoute) inside authGraph. The login screen then stages the account-access-consent and launches the FAPI app-to-app redirect."

@@ -1,7 +1,7 @@
 screen_id: consent-detail
 archetype: detail_screen
 name: "HSBC Connection Detail"
-status: enriched
+status: implemented
 quality_score: 95
 initial_state: loading
 
@@ -35,6 +35,7 @@ state_model:
         - Content        # consent: OBReadConsentResponse1, permissionsDetail: List<PermissionDetail>, expiryWarningDays: Int? (non-null when ≤7 days to expiry)
         - RevokeConfirm  # consent: OBReadConsentResponse1
         - Revoking       # consent: OBReadConsentResponse1
+        - Empty          # 200 carrying no Data block — the ConsentId resolves but the bank holds no record for it
         - Error          # message: String, errorCode: ConsentDetailErrorCode(ConsentNotFound|ConsentRevoked|ConsentExpired|TokenExpired|NetworkError|RevokeServerError)
     errors:
       types:
@@ -46,16 +47,40 @@ state_model:
         - RevokeServerError      # HTTP 5xx on DELETE
     actions:
       members:
-        - loadConsentDetail      # suspend; GET /account-access-consents/{consentId}; maps Permissions + computes expiryWarningDays
-        - navigateReconfirm      # Navigator.navigate(Route.Login(reconfirmMode=true))
-        - confirmRevoke          # transitions uiState to RevokeConfirm; no API call
-        - dismissRevokeConfirm   # transitions uiState back to Content
-        - executeRevoke          # suspend; DELETE /account-access-consents/{consentId}; 404=idempotent; clears PSU token+ConsentId; navigates to consent-list
-        - retryLoad              # suspend; re-issues GET /account-access-consents/{consentId}
+        - RetryLoad              # refreshes the consent-detail stream
+        - ConfirmRevoke          # transitions uiState to RevokeConfirm; no API call
+        - DismissRevokeConfirm   # transitions uiState back to Content
+        - ExecuteRevoke          # DELETE the consent, then sign the user out via AppLogout
+    nav_callbacks:
+      # Host-owned; none are ConsentDetailAction members.
+      - "onBack -> popBackStack()"
+      - "onReconfirm -> navigate(LoginRenewRoute) — re-runs authorisation on the login screen"
+      - "onLoggedOut -> bubbles to the root navigator, which returns the user to onboarding"
     di:
-      - ConsentService           # ktorfit — GET /account-access-consents + DELETE consent-revoke
-      - LocalStorage             # EncryptedSharedPreferences — clears PSU token + ConsentId on revoke
-      - NavigationController     # KMP navigation abstraction
+      - SavedStateHandle          # supplies the consentId route arg
+      - ConsentDetailRepository   # Koin single; consent stream + revoke
+      - AppLogout                 # clears session state after a successful revoke
+
+# ─────────────────────────────────────────────────────────────────────
+# SOURCE BINDING — reverse-synced from source 2026-07-28
+# ─────────────────────────────────────────────────────────────────────
+implementation:
+  status: implemented
+  source_module: "feature/consent-detail"
+  package: "org.mifosx.openbanking.feature.consentdetail"
+  route: "ConsentDetailRoute(consentId: String)"
+  viewmodel: ConsentDetailViewModel
+  screen: ConsentDetailScreen
+  test_tags_object: ConsentDetailTestTags
+  revoke_dialog: "ConsentDetailRevokeDialog.kt"
+  reachable_from:
+    - "consent-list — onNavigateToDetail(consentId)"
+  synced_from_source_at: "2026-07-28"
+  removed_in_sync:
+    - "loadConsentDetail action — the initial load is stream collection in init{}"
+    - "navigateReconfirm action — reconfirm is the onReconfirm nav-host callback"
+    - "ConsentService / LocalStorage / NavigationController DI — replaced by ConsentDetailRepository + AppLogout"
+  note: "Revoke is a full logout: ExecuteRevoke calls AppLogout and the root navigator sends the user to onboarding — it does not navigate back to consent-list."
 
 # ── Shell ───────────────────────────────────────────────────────────
 shell:

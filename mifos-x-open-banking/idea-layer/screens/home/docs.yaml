@@ -84,14 +84,17 @@ impl_notes:
       val balance = balanceDef.await()
       val txList = txDef.await()
     }
-  selected_account_persistence: Store/restore selectedAccountId in DataStore; default to first account returned.
+  selected_account_persistence: Store/restore selectedAccountId via UserDataRepository; default to first account returned.
+  # Reverse-synced 2026-07-28 — homeGraph(onNavigateToTransactions, onNavigateToTransactionDetail).
   navigation:
-    - 'home → account-detail (param: AccountId)'
-    - 'home → transactions (param: AccountId)'
-    - 'home → statements (param: AccountId)'
-    - home → spending-by-category (no params — uses cached data)
-    - home → consent-list (no params)
-    - home → login — on 401 / no active consent
+    - 'home → transactions (param: accountId)'
+    - 'home → transaction-detail (params: transactionId, accountId)'
+  navigation_removed_in_sync:
+    - 'home → account-detail — no callback on homeGraph'
+    - 'home → statements — no callback on homeGraph'
+    - 'home → spending-by-category — screen never built; no spending card in source'
+    - 'home → consent-list — no callback; consents are reached from settings'
+    - 'home → login — HomeViewModel maps Unauthenticated to an error state, it does not navigate'
   i18n_keys_prefix: home.*
   i18n_keys_file: idea-layer/_strings/strings.yaml
 vm_actions:
@@ -184,7 +187,7 @@ capability_completeness:
     answer: "No destructive actions on home screen. Account-switcher selection is reversible. Revoke consent is on consent-detail, not here."
     status: n/a
   nav_callback_wiring:
-    answer: "All 8 navigation targets (account-detail, transactions, statements, consent-list, spending-by-category, transaction-detail, login) wired via vm_actions + NavEvent. No dead navigate callbacks."
+    answer: "Both navigation targets — transactions and transaction-detail — are wired as homeGraph callbacks (onNavigateToTransactions, onNavigateToTransactionDetail) and resolved by the nav host. No dead navigate callbacks. The account-selector sheet is in-screen state (OpenAccountSelector / DismissAccountSelector / SelectAccount), not navigation."
     status: addressed
   user_data_export:
     answer: "Home screen is read-only AIS aggregation — no user-generated data to export. Statement PDFs available via statements screen."

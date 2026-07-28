@@ -323,34 +323,36 @@ sections:
           description: "Account product terms (fees/rates) for BCA/PCA accounts."
           requirement_refs: [FR-007]
           dependencies: [accounts]
-        - name: party
+        - name: account-holder
           priority: could
-          description: "Account holder / PSU party details."
+          description: "Account holder / PSU party details. Renamed from `party` 2026-07-28 to match the shipped module feature/account-holder."
           requirement_refs: [FR-007]
           dependencies: [accounts]
-        - name: multi-currency
-          priority: could
-          description: "Global Money / Global Wallet multi-currency balances."
-          requirement_refs: [FR-009]
-          dependencies: [accounts]
-        - name: atm-locator
-          priority: could
-          description: "Find ATMs via HSBC Open Data (no auth)."
-          requirement_refs: [FR-010]
         - name: settings
           priority: should
-          description: "App settings: appearance (light/dark), security (biometric app-lock + session), notifications, about & legal (terms / privacy / licenses), and a shortcut to consent management."
+          description: "App settings: appearance (theme dropdown), a Manage Consents shortcut, and About & Legal (privacy policy in a browser, in-app open-source licences, static app version). Reverse-synced 2026-07-28 — biometric app-lock, session timeout and notification preferences were specified but never built."
           dependencies: [consent-dashboard]
-        - name: profile
-          priority: could
-          description: "User profile: connected identity (from the account party), active connection / consent summary, and sign-out (clears tokens + consent)."
-          requirement_refs: [FR-007]
-          dependencies: [accounts, consent-dashboard]
-        - name: pfm
+        - name: licences
           priority: should
-          description: "Personal finance management derived in-app from AIS transaction data — spend categorization, spending-by-category breakdowns, monthly budgets, income-vs-expense, total balance / net worth across accounts, recurring & subscription detection, and spending insight cards. Modelled on Tink's expense/income/risk analytics; computed client-side (no PISP, no extra endpoint)."
-          requirement_refs: [FR-011]
-          dependencies: [accounts, balances, transactions]
+          description: "Open-source licence readout — a pushed, arg-less screen inside the settings module rendering the bundled MPL text. Source-originated; added to the plan 2026-07-28 because it ships but was never specified."
+          dependencies: [settings]
+
+# ── REMOVED 2026-07-28 (reverse sync from source) ────────────────────
+# The following features were specified but have no source implementation.
+# Their screens, exports and mockups were deleted from the idea-layer so the
+# layer describes only what the app actually does.
+#
+#   atm-locator  (FR-010) — AtmLocatorRoute exists but resolves to PlaceholderScreen;
+#                           still reachable from the account-detail Explore chip.
+#   profile      (FR-007) — no route, no module. Sign-out exists only as a side
+#                           effect of revoking a consent (AppLogout).
+#   pfm          (FR-011) — no pfm-dashboard / spending-by-category / budgets /
+#                           recurring-subscriptions screens. Partial primitives DO
+#                           ship in core: SpendingCalculator.computeSpendingSnapshot,
+#                           SpendingSnapshot and the 7-value TransactionCategory enum,
+#                           consumed only by the home spending snapshot.
+#   multi-currency        — no dedicated surface; AccountUiType carries GLOBAL_MONEY
+#                           and GLOBAL_WALLET but AccountFilter offers no Global chip.
 
   screens:
     _tag: "§screens"
@@ -427,38 +429,22 @@ sections:
           archetype: detail_screen
           feature_refs: [product]
           description: "Account product terms — fees, rates and features (BCA/PCA accounts)."
-        - name: party
+        - name: account-holder
           archetype: detail_screen
-          feature_refs: [party]
-          description: "Account holder / PSU details — name, address and contact (gated by ReadParty)."
-        - name: atm-locator
-          archetype: index_list
-          feature_refs: [atm-locator]
-          description: "Nearby HSBC ATMs via Open Data (no auth) — location, services and accessibility."
+          feature_refs: [account-holder]
+          description: "Account holder / PSU details — display name, role label, email, mobile and a single flattened address line (gated by ReadParty). Renamed from `party` 2026-07-28."
         - name: settings
           archetype: settings
           feature_refs: [settings]
-          description: "Settings hub — appearance, security (biometric lock), notifications, about & legal, and manage consents."
-        - name: profile
+          description: "Settings hub — appearance (theme), manage consents, and about & legal (privacy, licences, app version)."
+        - name: licences
           archetype: detail_screen
-          feature_refs: [profile]
-          description: "User profile — connected identity (party), active consents summary, and sign out."
-        - name: pfm-dashboard
-          archetype: dashboard
-          feature_refs: [pfm]
-          description: "PFM overview — total balance / net worth across accounts, this-month spending vs income, top spending categories and insight cards."
-        - name: spending-by-category
-          archetype: dashboard
-          feature_refs: [pfm]
-          description: "Spending broken down by category for the period, with drill-down into a category's transactions."
-        - name: budgets
-          archetype: form
-          feature_refs: [pfm]
-          description: "Set and track monthly budgets per category with progress indicators and over-budget alerts."
-        - name: recurring-subscriptions
-          archetype: index_list
-          feature_refs: [pfm]
-          description: "Recurring payments & subscriptions detected from transaction patterns — distinct from bank-side standing orders / direct debits."
+          feature_refs: [licences]
+          description: "Open-source licence readout, pushed from the settings About section. Source-originated screen."
+
+# ── REMOVED 2026-07-28 (reverse sync from source) ────────────────────
+# Screens with no source implementation: atm-locator, profile, pfm-dashboard,
+# spending-by-category, budgets, recurring-subscriptions.
 
   flows:
     _tag: "§flows"
@@ -500,11 +486,9 @@ sections:
         - name: settings-and-profile
           type: happy
           feature_ref: settings
-          steps: ["More tab", "Open Settings (appearance, security, notifications, about & legal)", "Open Profile (connected identity, sign out)", "Shortcut to Consents"]
-        - name: pfm-review
-          type: happy
-          feature_ref: pfm
-          steps: ["Home / More → PFM dashboard", "Open spending-by-category → drill into a category's transactions", "Set or review monthly budgets", "Review detected recurring subscriptions"]
+          steps: ["More tab", "Open Settings (appearance, manage consents, about & legal)", "Open Licences", "Shortcut to Consents"]
+          # Reverse-synced 2026-07-28: the profile step was removed — no profile screen ships.
+        # pfm-review flow removed 2026-07-28 — none of its four screens were built.
 
   api_surface:
     _tag: "§api_surface"
@@ -536,22 +520,42 @@ sections:
         - { path: /oauth2/authorize, method: GET, description: "PSU authorisation — OAuth2 v1.1 (signed request object, PKCE, app-to-app). From the OIDC well-known config, not the AIS swagger.", auth_required: false, source: external_api, source_ref: null }
         - { path: /register, method: POST, description: "Dynamic Client Registration — DCR v3.2.1, signed SSA (separate dcr-uk.yaml spec).", auth_required: false, source: external_api, source_ref: API-002 }
       api_gap_analysis:
-        total_features: 18
-        api_covered: 15
-        coverage_percent: 83.3
+        # Reverse-synced 2026-07-28 against core/network/api/Aisp.kt + OAuth.kt.
+        total_features: 15
+        api_covered: 13
+        coverage_percent: 86.7
         gaps:
-          - feature: atm-locator
-            needed_endpoints: ["/atms (HSBC Open Data, unauthenticated)"]
-            gap_strategy: third_party
-            notes: "Open Data product-public endpoint, separate from the AIS surface."
           - feature: settings
             needed_endpoints: []
             gap_strategy: client_only
-            notes: "App settings are local/client-only — no external API required."
-          - feature: pfm
+            notes: "Settings reads and writes UserDataRepository only — no external API."
+          - feature: licences
             needed_endpoints: []
             gap_strategy: client_only
-            notes: "PFM analytics are computed in-app from AIS transaction data — no external endpoint."
+            notes: "Static bundled asset read from module Compose resources."
+      implemented_client_surface:
+        # Aisp.kt — every method that ships on the network client.
+        aisp: [createConsent, getConsent, deleteConsent, getAccounts, getAccountDetails,
+               getBalances, getBeneficiaries, getDirectDebits, getProduct, getParty,
+               getParties, getTransactions, getTransactionsPage, getStandingOrders,
+               getScheduledPayments, getStatements, getStatementDetails,
+               getStatementTransactions, getStatementFile]
+        oauth: [clientCredentialsToken, exchangeAuthorizationCode, refreshToken]
+        unconsumed:
+          - method: getParties
+            note: "No store, repository or feature consumes it. account-holder reads getParty (singular) only."
+      out_of_scope_drift:
+        - area: PISP
+          finding: >-
+            §vision.scope.out_of_scope declares payment initiation out of scope, but
+            core/network ships a complete PISP wire-model surface — domestic payment,
+            domestic scheduled payment, domestic standing order, international payment,
+            international scheduled payment and international standing order, each with
+            request + response models and serialization tests. No feature module or
+            repository consumes any of it, so nothing is reachable from the UI; the Pay
+            bottom-nav tab points at a SendMoneyRoute placeholder in that direction.
+          consumed_by: []
+          recorded_at: "2026-07-28"
 
   design_tokens:
     _tag: "§design_tokens"
@@ -617,7 +621,7 @@ sections:
         - version: "0.2.0"
           features: [beneficiaries, standing-orders, direct-debits, scheduled-payments]
         - version: "0.3.0"
-          features: [statements, product, party, multi-currency, atm-locator]
+          features: [statements, product, account-holder, settings, licences]
       epic_breakdown:
         - epic_name: "FAPI consent + core account information"
           features: [consent-onboarding, consent-dashboard, accounts, balances, transactions]
@@ -625,9 +629,11 @@ sections:
         - epic_name: "Payments-context read surfaces"
           features: [beneficiaries, standing-orders, direct-debits, scheduled-payments]
           milestone_ref: "0.2.0"
-        - epic_name: "Statements, product, party & extras"
-          features: [statements, product, party, multi-currency, atm-locator]
+        - epic_name: "Statements, product, account holder & settings"
+          features: [statements, product, account-holder, settings, licences]
           milestone_ref: "0.3.0"
+      # Reverse-synced 2026-07-28: multi-currency and atm-locator dropped from 0.3.0 —
+      # neither was built. settings + licences moved in, since both ship.
 
   release_phases:
     _tag: "§release_phases"
@@ -636,26 +642,29 @@ sections:
     _source: wizard
     content:
       phases:
+        # Reverse-synced 2026-07-28: statuses reflect what is actually built in source.
         - id: P0
           label: "MVP — Consent + core account information"
           flows: [onboarding-consent, account-browsing, transaction-review, consent-management, settings-and-profile, consent-expired]
-          target_features: [consent-onboarding, consent-dashboard, accounts, balances, transactions, settings, profile]
-          status: planned
+          target_features: [consent-onboarding, consent-dashboard, accounts, balances, transactions, settings, licences]
+          status: implemented
           derived_by: claude-subagent
+          sync_note: "profile dropped — never built. licences added — ships in source."
         - id: P1
           label: "Payments-context read surfaces"
           flows: [recurring-and-statements]
           target_features: [beneficiaries, standing-orders, direct-debits, scheduled-payments]
-          status: planned
+          status: implemented
           dependencies: [P0]
           derived_by: claude-subagent
         - id: P2
-          label: "Statements, product, party, PFM & extras"
-          flows: [pfm-review]
-          target_features: [statements, product, party, multi-currency, atm-locator, pfm]
-          status: planned
+          label: "Statements, product & account holder"
+          flows: []
+          target_features: [statements, product, account-holder]
+          status: implemented
           dependencies: [P1]
           derived_by: claude-subagent
+          sync_note: "multi-currency, atm-locator and pfm dropped — none were built. The pfm-review flow was removed with its screens."
 
 # ═══════════════════════════════════════════════════════════════════
 # NETWORK POLICY

@@ -38,45 +38,27 @@ scenarios:
       - "Recent transactions update to ISA Saver transactions"
       - "'ISA Saver' chip is now selected; 'Everyday Current' is unselected"
 
-  - id: TC-HOME-004
-    description: "Hero balance card tap navigates to account-detail"
-    state: content
-    given: "Content state, Everyday Current selected"
-    when: "User taps hero balance card"
-    then: "Navigates to account-detail screen with accountId=40051512345678"
-
-  - id: TC-HOME-005
-    description: "Transactions quick action navigates to transactions screen"
-    state: content
-    when: "User taps Transactions icon button"
-    then: "Navigates to transactions screen with accountId=40051512345678"
+  # Reverse-synced 2026-07-28. TC-HOME-004 (hero -> account-detail),
+  # TC-HOME-007 (consents quick action), TC-HOME-008 (spending snapshot) and
+  # TC-HOME-009 (disabled Pay action) were removed: homeGraph exposes only
+  # onNavigateToTransactions and onNavigateToTransactionDetail, and no spending
+  # card, consents affordance or Pay action exists on this screen in source.
 
   - id: TC-HOME-006
     description: "'View all' link navigates to transactions screen"
     state: content
-    when: "User taps 'View all' text button in recent transactions header"
-    then: "Navigates to transactions screen with accountId=40051512345678"
+    when: "User taps 'View all' text button in the recent transactions header"
+    then: "onNavigateToTransactions(accountId) fires -> TransactionsRoute(accountId=40051512345678)"
 
   - id: TC-HOME-007
-    description: "Manage consents quick action navigates to consent-list"
+    description: "Account selector sheet opens, selects and dismisses without navigating"
     state: content
-    when: "User taps 'Consents' (shield) icon button"
-    then: "Navigates to consent-list screen"
-
-  - id: TC-HOME-008
-    description: "Spending snapshot card navigates to spending-by-category"
-    state: content
-    when: "User taps spending snapshot card"
-    then: "Navigates to spending-by-category screen"
-
-  - id: TC-HOME-009
-    description: "Pay quick action is disabled (PISP not implemented)"
-    state: content
-    when: "Screen renders content state"
+    when: "User taps the hero card account switcher, picks a different account chip, then dismisses"
     then:
-      - "Pay icon button is visible but disabled (enabled=false)"
-      - "Pay label renders in on-surface-variant colour"
-      - "Tapping Pay produces no navigation or action"
+      - "OpenAccountSelector sets isAccountSelectorVisible = true and home_account_selector_sheet is displayed"
+      - "Tapping an account chip dispatches SelectAccount and persists selectedAccountId via UserDataRepository"
+      - "DismissAccountSelector sets isAccountSelectorVisible = false"
+      - "No navigation occurs at any point"
 
   - id: TC-HOME-010
     description: "Error state renders with retry CTA on 401 token expired"

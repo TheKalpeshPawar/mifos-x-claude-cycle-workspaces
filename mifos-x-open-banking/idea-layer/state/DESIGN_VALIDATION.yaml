@@ -1,201 +1,36 @@
 schema_version: "1.0.0"
-generated_at: "2026-07-16T12:40:00Z"
-command: "/design-validate"
+generated_at: "2026-07-28T00:00:00Z"
+command: "/gap-analysis-project (reverse sync — validation state reset)"
 actor: claude
 scope:
   workspace: mifos-x
   project: mifos-x-open-banking
-  screens_count: 25
+  screens_count: 20
   categories_requested: [all]
 
-# ── Validation Results ────────────────────────────────────────────────
-# Only EVALUABLE categories are scored. See not_evaluable[] below — the
-# previous run recorded every category as 0/0/0 and score 100, which read as a
-# clean pass when in fact 14 of ~20 declared rules cannot execute against this
-# project's schema at all. Unevaluable is not the same as passing.
-findings:
-  critical: 0
-  warning: 1
-  info: 1
-  total: 2
+# ─── RESET 2026-07-28 ───────────────────────────────────────────────────
+# The prior record scored a 25-screen corpus (REG-001 component types, WCAG AA
+# contrast pairs, STATE-001 state composition, RENDER-STALE). All four inputs
+# changed in the reverse sync: 6 screens deleted, every ui.yaml contract rewritten,
+# and the rendered previews it checked against were removed entirely.
+#
+# It also recorded that 14 of ~20 declared rules could not execute at all
+# (validation-rules.json v2.0.0 checks fields that exist in no schema and no
+# ui.yaml). That limitation is unchanged and is NOT resolved by this sync —
+# it is a framework-side gap, carried forward here so it is not lost.
 
-per_category:
-  REG:    { critical: 0, warning: 0, info: 0, status: evaluated }
-  COLOR:  { critical: 0, warning: 0, info: 1, status: evaluated }
-  STATE:  { critical: 0, warning: 0, info: 0, status: evaluated }
-  RENDER: { critical: 0, warning: 1, info: 0, status: evaluated }
-  A11Y:   { critical: 0, warning: 0, info: 0, status: partially-evaluated }
-  MOTION: { critical: 0, warning: 0, info: 0, status: not-evaluable }
-  RESP:   { critical: 0, warning: 0, info: 0, status: not-evaluable }
+validated: false
+reason: "Awaiting re-run — the screen corpus and every ui.yaml contract were rewritten on 2026-07-28."
 
-# ── Evaluated findings ────────────────────────────────────────────────
-results:
-  - rule: REG-001
-    severity: critical
-    category: registry
-    status: resolved
-    resolved_at: "2026-07-16T12:55:00Z"
-    resolved_by: "/design-validate (user picker: Remap, per RULE-COMPONENT-REGISTRY-001)"
-    count_after: 0
-    evidence: >
-      `type: dropdown` resolved in NO registry — not the 12 framework primitives,
-      not any of the 10 framework pattern files, not the project's components.yaml.
-      3 sites: budgets/ui.yaml:90 (budget_category_dropdown),
-      settings/ui.yaml:72 (theme_dropdown), settings/ui.yaml:145 (session_dropdown).
-      40 of the other 41 distinct types resolved against a 125-name vocabulary.
-    resolution: >
-      Remapped all 3 to `type: select`, which is registered in
-      layers/idea/templates/registry/inputs.yaml and defined verbatim as
-      "Dropdown selection from a list of options" — the canonical M3 type for this
-      surface. Fields were already compatible (label / options[] / value; select
-      `extends: input`). Component ids were deliberately NOT renamed: the rule
-      governs components[].type, and the *_dropdown ids are referenced across
-      strings.yaml, tests.yaml, docs.yaml, prompts/ and preview HTML — renaming
-      them would cascade for zero benefit.
-      Bonus: `select` carries an a11y contract the bare `dropdown` had none of —
-      role: combobox, min_touch_target: 48, label_source: slot:label, and keyboard
-      shortcuts (ArrowDown/Enter open, Escape close). Verified after: REG-001 = 0
-      unresolved types across all 25 screens; 124/124 action_contracts still intact.
+carried_forward_framework_gap:
+  finding: >-
+    validation-rules.json is v2.0.0 / lastUpdated 2026-02-10 and checks fields
+    (keyboard.focusable, label_source, supported_states, motion.*, breakpoints)
+    that exist neither in core/schemas/ui-yaml.schema.json nor in any project
+    ui.yaml. Corpus size is self-inconsistent: runtime reports 102 rules,
+    _metadata says 147, the categories block holds 67.
+  consequence: "14 of ~20 declared rules cannot execute. Any score is partial-corpus."
+  owner: framework
+  first_recorded: "2026-07-16"
 
-  - rule: A11Y-002
-    severity: critical
-    category: color
-    status: pass
-    evidence: >
-      WCAG AA contrast verified deterministically over the M3 role pairs in
-      design-system/design-tokens.yaml (relative luminance per WCAG 2.1).
-      13 contrast-bearing pairs checked in BOTH light and dark modes; all pass.
-      onSurface/surface 16.27:1 light / 14.39:1 dark. primary/surface 6.11:1 /
-      10.89:1. outline/surface 4.24:1 / 5.82:1 (needs 3:1 per WCAG 1.4.11).
-      The Material Theme Builder export (seed #266489) is genuinely AA-compliant.
-
-  - rule: COLOR-info
-    severity: info
-    category: color
-    status: info
-    evidence: >
-      outlineVariant/surface is 1.62:1 (light) / 1.97:1 (dark). This is CORRECT,
-      not a violation: outlineVariant is M3's decorative divider role and WCAG
-      1.4.11 exempts purely decorative elements. Recorded so a future run does not
-      re-flag it as a contrast failure.
-
-  - rule: RENDER-STALE
-    severity: warning
-    category: render
-    status: partially-resolved
-    resolved_at: "2026-07-16T13:20:00Z"
-    resolution: >
-      The 4 stale `data-component-type="dropdown"` attributes are FIXED —
-      settings/preview/content.html and clear_confirm.html now declare
-      data-component-type="select" on theme_dropdown and session_dropdown, so
-      RULE-RENDER-CONVERGENCE-001 RC2 component-set parity holds against the
-      remapped ui.yaml. Component ids are unchanged. Verified: 0 stale attrs
-      remain across all 114 preview files; div tag balance intact (88/88, 114/114).
-
-      PRECONDITION FIXED FIRST: the prompt blocks were stale — their frontmatter
-      pinned ui_yaml_sha to the PRE-remap file, and budgets' 4 blocks still named
-      the `dropdown` type. Rendering from them would have faithfully regenerated
-      the exact staleness being fixed. All 9 blocks were rebuilt via
-      stitch-prompt-build.ts --force (settings x5, budgets x4, 0 failed, all under
-      the 8K v3.0.0 cap); ui_yaml_sha now matches and the type reads **select**.
-
-      HOW THIS WAS RENDERED — disclosure: this was a TARGETED output correction,
-      not a from-scratch engine re-render. The only input delta was the component
-      type, and a blind 687+751-line LLM regeneration would have churned two
-      validated previews nondeterministically for 4 attribute values. The written
-      output is what the engine should produce for these inputs, but the
-      .render-cache.json hash was NOT recomputed by the engine, so Step 10's cache
-      contract is not satisfied — a future /idea-feature-render will still see
-      these as cache-miss and re-render them. That is acceptable and honest, not
-      a silent pass.
-    remaining: >
-      7 states remain hash-stale (ui.yaml mtime > preview mtime) but are
-      CONTENT-CORRECT — they carry no dropdown reference at all
-      (settings empty/error/loading) or reference only the unchanged *_dropdown
-      ids (budgets content/empty, which never carried a stale type). Nothing is
-      wrong in them; they simply have not been re-rendered since the ui.yaml hash
-      changed. /idea sync will keep listing them as stale until re-rendered —
-      note that sync only FLAGS this, it does not re-render (see next[]).
-    evidence: >
-      The REG-001 remap changed budgets/ui.yaml and settings/ui.yaml, so both
-      screens' preview HTML is now stale against its source (ui.yaml mtime >
-      preview mtime; .render-cache.json present on both).
-      settings/preview/content.html additionally encodes the OLD type verbatim as
-      data-component-type="dropdown" (x2 — theme_dropdown, session_dropdown), so
-      RULE-RENDER-CONVERGENCE-001 RC2 (component-set parity) will mismatch until
-      re-rendered. budgets/preview/content.html never rendered the dropdown at all
-      (its form card is absent from the content state), so it carries no stale type.
-      This is an ACCEPTED, known cost of the remap — the user chose remap without
-      an immediate re-render.
-    fix_hint: |
-      /idea-render-screen settings
-      /idea-render-screen budgets
-      (or /idea sync, which regenerates stale previews as part of STEP 4)
-
-  - rule: STATE-001
-    severity: critical
-    category: state
-    status: pass
-    evidence: >
-      All 19 api-backed screens compose loading/content/error/empty. The 6
-      client-only screens (no api endpoints — budgets, pfm-dashboard,
-      spending-by-category, settings, user-onboarding, recurring-subscriptions)
-      are outside STATE-001's scope but carry full state coverage regardless.
-
-# ── Rules that could NOT run (schema mismatch, NOT project defects) ────
-not_evaluable:
-  reason: >
-    validation-rules.json is version 2.0.0, lastUpdated 2026-02-10 — authored
-    against a ui.yaml vocabulary this project and the current framework schema no
-    longer use. None of the fields below are declared in
-    core/schemas/ui-yaml.schema.json, and none appear in any of the 25 ui.yaml
-    files. Scoring them would manufacture ~14 x 25 false criticals. The corpus
-    also disagrees with itself on size: the runtime claims 102 rules,
-    validation-rules.json#_metadata claims 147, and its categories block actually
-    contains 67.
-  rules:
-    - "A11Y-001 keyboard.focusable — no `keyboard:`/`focusable:` field exists (0/25 files, not in schema)"
-    - "A11Y-003 touch target >= 44dp — no min_height/touch_target/size field (0/25)"
-    - "A11Y-004 label_source — field absent (0/25); project uses accessibility_label instead (25/25)"
-    - "A11Y-005 focus_visible in supported_states — neither field exists (0/25)"
-    - "A11Y-008 dialog Escape shortcut — no keyboard.shortcuts block (0/25)"
-    - "MOTION-001..004 — no `motion:` block anywhere (0/25); reduced_motion_fallback absent"
-    - "RESP-001..003 — no breakpoints/responsive block anywhere (0/25)"
-  partially_evaluable:
-    - "A11Y-006 alt/decorative — present in only 6/25 files; cannot distinguish 'missing' from 'not-applicable' without an image inventory"
-
-# ── Overall Assessment ────────────────────────────────────────────────
-# Score formula per runtime: max(0, 100 - critical*15 - warning*3 - info*0.5).
-# 100 - (0*15) - (1*3) - (1*0.5) = 96.5 -> 96.
-# STILL marked partial-corpus and NOT comparable to the prior run's 100: that 100
-# was computed over a corpus where most rules silently no-op'd and reported their
-# absence as zero findings. This 96 is scored over 4 categories that actually ran
-# (REG, COLOR, STATE, RENDER); 14 rules remain unevaluable — see not_evaluable[].
-score: 96
-score_basis: partial-corpus
-pass: true
-wcag_pass: true
-m3_pass: true
-blocking: none
-open:
-  - >-
-    RENDER-STALE (warning, partially-resolved) — the 4 stale data-component-type
-    attrs are fixed; 7 states remain hash-stale but content-correct.
-next:
-  - >-
-    `/idea-feature-render settings --state empty|error|loading` and
-    `/idea-feature-render budgets --all` clear the remaining hash-staleness.
-    NOTE the command was RENAMED: `/idea-render-screen` no longer exists as of the
-    2026-07-15 framework update — it is now `/idea-feature-render`.
-  - >-
-    `/idea sync` does NOT re-render previews — its STEP 4 artifacts module only
-    DETECTS preview staleness, marks EXPORT_MATRIX, and prints "These screens need
-    /idea-feature-render". It regenerates project-wide artifacts (APP_FLOW.mmd,
-    TAG_REGISTRY, DEV_STATUS, flows, api_manifest) only. Do not expect a sync to
-    clear RENDER-STALE.
-  - "Framework: refresh validation-rules.json (v2.0.0, 2026-02-10) against the v4.0 sibling schema, or mark the stale rules not-applicable so they stop reporting 0/0/0 as a pass"
-  - >-
-    Framework: the a11y rules may be evaluable after all — registry entries carry
-    a11y blocks (select declares keyboard.focusable, min_touch_target, label_source)
-    that components INHERIT by type. A registry-resolving evaluator could score
-    A11Y-001/003/004 properly instead of scanning ui.yaml for literal fields.
+results: []
