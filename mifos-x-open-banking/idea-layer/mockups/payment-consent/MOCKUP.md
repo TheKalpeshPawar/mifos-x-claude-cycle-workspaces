@@ -2,7 +2,7 @@
 
 > Auto-generated from `screens/payment-consent/ui.yaml` + `docs.yaml` by `/idea-feature-mockup`
 > Design tokens: `design-system/design-tokens.yaml` (2.1.0) · Design system: Trust Blue 1.1.0
-> Generated: 2026-07-30
+> Generated: 2026-07-31
 > Content: `screens/payment-consent/demo-data.yaml`
 
 ---
@@ -17,11 +17,21 @@ app-to-app authorisation and is never reachable from navigation. Its five states
 vocabulary — three sequential progress stages, a terminal success, and an error — rather than the
 canonical `loading/content/empty/error`, because there is no "content" to browse.
 
-> **Design-validation note.** `DESIGN_VALIDATION.yaml#F-003` flags the absence of a literal
-> `loading`/`content` pair as a warning rather than a critical, on the grounds that
-> `validating`/`checking` are members of the schema's permitted `any_of` set. That finding carries
-> a bias disclosure: it was adjudicated by the same author who wrote the screen. If a reviewer
-> requires the literal vocabulary, this becomes a second critical.
+> **Design-validation note (updated 2026-07-31).** `DESIGN_VALIDATION.yaml#F-003` is CLOSED.
+> The absence of a literal `loading`/`content` pair is no longer adjudicated case-by-case —
+> `ui.yaml` now declares the mapping outright in a `state_roles:` block:
+> `loading ← validating, exchanging, checking` · `content ← authorised` · `empty ← null`.
+> That removes the bias problem the old note disclosed: the mapping is data a reviewer can
+> read, not a judgement they have to take on trust from the screen's own author.
+>
+> The three waiting phases stay distinct on purpose. They fail differently and each renders
+> its own variant below, so collapsing them into one `loading` would make a failed token
+> exchange indistinguishable from a failed status check — satisfying the letter of STATE-001
+> while destroying the reason these states exist.
+>
+> Open caveat, tracked as `DESIGN_VALIDATION.yaml#F-005`: no shipped framework evaluator
+> reads `state_roles` yet, so a STATE-001 implementation unaware of the key will still flag
+> this screen. Check this block before treating such a hit as real.
 
 ### Resolved app shell (RULE-APP-SHELL-001)
 

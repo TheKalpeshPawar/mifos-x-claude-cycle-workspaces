@@ -2,7 +2,7 @@
 
 > Generated from `screens/send-money/ui.yaml` by `/idea-feature-mockup`
 > Design System: Material Design 3 — Trust Blue 1.1.0 · tokens `design-tokens.yaml` 2.1.0
-> Generated: 2026-07-30
+> Generated: 2026-07-31
 
 ---
 
@@ -125,6 +125,14 @@ Frame: send-money_content_step1 (Fill, Auto Layout Vertical)
   │   │   └─ creditor_row (Fill × Hug, min 48dp, padding 12/16, radius/md)
   │   │       ├─ Headline: "Jameson Lettings" (bodyLarge)
   │   │       └─ Supporting: "Sort Code · 40-12-09 65872310" (bodyMedium, Roboto Mono)
+  │   ├─ no_saved_payees (Fill × Hug, centered)              [variant: 0 beneficiaries]
+  │   │   — REPLACES creditor_selector only; the rest of the step is unchanged
+  │   │   ├─ Icon: people_outline (48dp, color/onSurfaceVariant)
+  │   │   ├─ Title: "No saved payees yet" (titleMedium, color/onSurface)
+  │   │   └─ Body: "You have not saved anyone to pay. Enter their account
+  │   │             details below to send money." (bodyMedium, color/onSurfaceVariant)
+  │   │       manual_creditor_button below STAYS VISIBLE — this variant never
+  │   │       becomes a dead end, and must not be drawn as a full-screen empty
   │   ├─ manual_creditor_button (Hug, padding 12/16)
   │   │   └─ Label: "Enter details manually" (labelLarge, color/primary)
   │   ├─ manual_sort_code (Fill × 56dp, radius/sm)          [conditional]
@@ -158,13 +166,19 @@ Frame: send-money_content_step3 (Fill, Auto Layout Vertical)
   ├─ TopAppBar (same)
   ├─ StepIndicator → "Step 3 of 3 · Review"
   ├─ ScrollContent (Fill, Auto Layout Vertical, padding 16dp, gap 24dp)
-  │   ├─ review_summary (Fill × Hug, padding 16dp, radius/md, gap 16dp)
-  │   │   Fill: color/surfaceContainer · Elevation: level1
-  │   │   ├─ Pair: "From"      / "Current account ·· 3349"
-  │   │   ├─ Pair: "To"        / "Jameson Lettings" + "40-12-09 65872310" (mono)
-  │   │   ├─ Pair: "Amount"    / "£850.00" (headlineSmall, Roboto Mono)
-  │   │   └─ Pair: "Reference" / "RENT-FLAT12"
-  │   │       Label: bodySmall color/onSurfaceVariant · Value: bodyLarge color/onSurface
+  │   ├─ review_summary → component review_card (Fill × Hug, padding 4dp 16dp, radius/md)
+  │   │   Fill: color/surfaceContainer · Stroke 1dp color/outlineVariant · Elevation: level1
+  │   │   — trust_critical: outlined AND raised so it reads as a commitment surface,
+  │   │     not as another content card
+  │   │   ├─ review_from_row      → info_row: "From"      / "Current account ·· 3349"
+  │   │   ├─ review_to_row        → info_row: "To"        / "Jameson Lettings"
+  │   │   │                          secondary: "40-12-09 65872310" (Roboto Mono, bodyMedium)
+  │   │   ├─ review_amount_row    → info_row: "Amount"    / "£850.00" (Roboto Mono, emphasis)
+  │   │   └─ review_reference_row → info_row: "Reference" / "RENT-FLAT12"
+  │   │       blank reference renders the explicit string "None", never an empty row
+  │   │       Row: min-height 48dp, 1dp color/outlineVariant divider between siblings,
+  │   │            none after the last · Label: bodySmall color/onSurfaceVariant ·
+  │   │            Value: bodyLarge color/onSurface
   │   ├─ confirm_button (Fill × 48dp, radius/full, Fill: color/primary)
   │   │   └─ Label: "Send £850.00" (labelLarge, color/onPrimary)
   │   │       — states the ACTION and the AMOUNT, never a bare "Confirm"

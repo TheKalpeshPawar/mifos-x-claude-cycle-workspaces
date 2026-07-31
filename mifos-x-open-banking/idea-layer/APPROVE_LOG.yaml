@@ -268,3 +268,61 @@ entries:
     never_approved:
       - { feature: licences, reason: "Authored from source in this run; has not been through /idea-approve." }
     next_required: "Re-approve the 20-feature roster via /idea-approve once exports regenerate."
+
+# ═══════════════════════════════════════════════════════════════════════════
+# 2026-07-31 — /idea-approve ATTEMPTED on the 3 PISP features, NOT STAMPED
+# ═══════════════════════════════════════════════════════════════════════════
+attempts:
+  - action: "approve-attempt"
+    at: "2026-07-31T21:50:00Z"
+    features: [send-money, payment-consent, payment-status]
+    result: HALTED
+    stamped: false
+    halt_reason: "predicate-unassertable"
+    detail: >-
+      C2 (artifact freshness) was cleared first — SPEC/API/MOCKUP/PROMPTS_FIGMA and all 13
+      preview HTMLs were regenerated for the two edited features, so staleness is NOT the
+      blocker. Three other conditions cannot be asserted honestly, and no bypass flag was
+      used for any of them.
+    conditions:
+      - id: C1
+        status: UNASSERTABLE
+        detail: >-
+          capabilities.registry.json states "Features MUST declare a non-empty subset" of the
+          20 capabilities. None of these three declares a top-level `capabilities[]` at all —
+          docs.yaml carries flat `has_ui` / `has_server` booleans instead. C1 iterates
+          `capabilities[]` to resolve required_sections, so with an empty set it passes
+          VACUOUSLY rather than actually checking anything.
+      - id: C4
+        status: UNASSERTABLE
+        detail: >-
+          C4 reads the cached rule matrix at `docs.yaml#last_verify`. No such block exists on
+          any of the three, so "no blocking verify failures" has nothing to read. Fabricating
+          the cache would assert a verify run that never happened.
+      - id: C5
+        status: WRONG-TIER
+        detail: >-
+          This is the substantive one. `has_payments` carries `detail_level: maximum` and is
+          described in the registry as a "compliance/integrity surface"; the predicate notes
+          maximum tier permits NO warn failures and that `--force` cannot downgrade it. With
+          `capabilities[]` empty the effective tier collapses to the weakest setting, so the
+          app's ONLY irreversible money-movement features would be approved under a gate
+          strictly weaker than the one the framework defines for exactly this case.
+    why_not_stamped: >-
+      Stamping approve_hash unlocks /implement for money movement. Doing that while the
+      payments-specific maximum tier is structurally disengaged would be a false green on the
+      highest-risk surface in the project — the precise failure mode the tier exists to
+      prevent. The gap is pre-existing and project-wide (all 20 approved features share the
+      empty-capabilities shape), so this is not a regression from this session's work; it is a
+      latent condition that only becomes dangerous now that the features being approved move
+      money.
+    scope_note: >-
+      Declaring capabilities[] across the roster and running a real /idea verify to populate
+      last_verify is a project-wide change well beyond a design-validation fix pass, and the
+      maximum tier it would engage requires a genuine verify result that cannot be authored.
+      Left for an explicit decision.
+    next_required:
+      - "Declare `capabilities:` on the 3 PISP features — at minimum [has_ui, has_payments, has_api]; send-money also [has_form_input]"
+      - "Run /idea-verify to populate docs.yaml#last_verify so C4 has a real cache"
+      - "Re-run /idea-approve; expect the maximum tier to engage and demand zero warn failures"
+      - "Separately: decide whether the 20 already-approved features should be re-approved with declared capabilities"

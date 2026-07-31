@@ -1,7 +1,7 @@
 # Payment consent — Feature Specification
 
 > Generated from `screens/payment-consent/ui.yaml` by `/idea-feature-export`
-> Schema version: 2.0.0 · Source hash: `64c86ff15dcb`
+> Schema version: 2.0.0 · Source hash: `028d346b8e5b`
 > Endpoints: 3 · DTOs: 2 · Components: 5 · Test scenarios: 8
 
 ## Lossless Export Contract
@@ -147,14 +147,32 @@ Canonical brand spec: `design-system/DESIGN.md` 1.1.0.
 | TC-PCON-007 | **zero writes to `ConsentSession`** | ↑ |
 | TC-PCON-008 | poll deadline → timeout, not a hang | ↑ |
 
-## 8. Known deviation — STATE-001
+## 8. Canonical-role mapping — STATE-001
 
 States are `validating/exchanging/checking/authorised/error`; there is no literal `loading` or
-`content`. A strict STATE-001 reading fails this. SCREEN_SCHEMA declares state vocabulary
-per-feature with custom states allowed and lists `validating`/`checking` in its `any_of`;
-`validating` is the loading analogue and `authorised` the content analogue. Recorded as an
-accepted warning in `state/DESIGN_VALIDATION.yaml#F-003` with a bias disclosure, since the
-screen and the adjudication share an author.
+`content`. As of 2026-07-31 this is no longer an accepted-warning deviation — `ui.yaml`
+declares the mapping explicitly:
+
+```yaml
+state_roles:
+  loading: [validating, exchanging, checking]
+  content: [authorised]
+  error:   [error]
+  empty:   null   # n/a — no collection is rendered
+```
+
+The three waiting phases are kept distinct rather than collapsed into one `loading` because
+they fail differently and each renders its own preview: a failed token exchange must not be
+indistinguishable from a failed status check. Renaming them would have satisfied a literal
+STATE-001 read while destroying the diagnostic value the states exist for.
+
+**Consumer caveat.** The root of `ui.yaml` is `additionalProperties: true`, so `state_roles`
+is schema-valid — but no shipped framework evaluator reads it yet. A STATE-001 implementation
+that does not know the key will still report this screen as missing `loading`/`content`.
+Tracked as `state/DESIGN_VALIDATION.yaml#F-005`; promoting the key into
+`core/schemas/ui-yaml.schema.json` plus the shipped evaluator is a cross-project framework
+change and was deliberately not done unilaterally. Until then, treat a STATE-001 hit on this
+screen as a false positive and check this block first.
 
 ## 9. Implementation prerequisites
 

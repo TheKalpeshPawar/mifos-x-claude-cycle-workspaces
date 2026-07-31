@@ -1,7 +1,11 @@
 # Payment consent — API Contracts
 
 > Generated from `screens/payment-consent/api.yaml` by `/idea-feature-export`
-> Schema version: 2.0.0 · Source hash: `64c86ff15dcb` · Endpoints: 3 · DTOs: 2
+> Schema version: 2.0.0 · Source hash: `028d346b8e5b` · Endpoints: 3 · DTOs: 2
+>
+> Re-stamped 2026-07-31. `api.yaml` did not change — the three endpoints, two DTOs and the
+> error matrix below are byte-identical to the 07-30 export. Only the feature-level source
+> hash moved, because `ui.yaml` gained the `state_roles` canonical-role mapping.
 
 PISP resources on `/obie/open-banking/v4.0/pisp`; OAuth on `/obie/open-banking/v1.1`.
 

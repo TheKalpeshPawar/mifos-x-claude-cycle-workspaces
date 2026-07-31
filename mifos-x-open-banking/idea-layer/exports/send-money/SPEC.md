@@ -1,8 +1,8 @@
 # Send money — Feature Specification
 
 > Generated from `screens/send-money/ui.yaml` by `/idea-feature-export`
-> Schema version: 2.0.0 · Source hash: `3c3369f29335`
-> Endpoints: 3 · DTOs: 5 · Components: 15 · Test scenarios: 12
+> Schema version: 2.0.0 · Source hash: `7d924d371fb0`
+> Endpoints: 3 · DTOs: 5 · Components: 28 · Test scenarios: 14
 
 ## Lossless Export Contract
 
@@ -43,11 +43,29 @@ Single screen, three steps within `content`:
 
 | Step | Purpose | Key components |
 |---|---|---|
-| Recipient | choose funding account, then payee | `debtor_account_selector`, `creditor_selector`, `manual_creditor_button`, `manual_sort_code`, `manual_account_number` |
+| Recipient | choose funding account, then payee | `debtor_account_selector`, `creditor_selector`, `no_saved_payees`, `manual_creditor_button`, `manual_sort_code`, `manual_account_number` |
 | Amount | amount + optional reference | `amount_field`, `reference_field`, `review_button` |
-| Review | confirm before money moves | `review_summary`, `confirm_button`, `cancel_button` |
+| Review | confirm before money moves | `review_summary` (`review_card`) → `review_from_row`, `review_to_row`, `review_amount_row`, `review_reference_row`; `confirm_button`, `cancel_button` |
+
+`form_step_indicator` spans all three steps — a textual "Step N of 3", deliberately not a
+progress bar (motion dial 2).
 
 Plus `progress_indicator` (loading), `submitting_indicator`, `payment_success` (+ `view_payment_status_button`), `error_state` (+ `retry_button`, `reauthorise_button`, `view_consents_button`, `edit_amount_button`).
+
+### Two composition decisions codegen must preserve
+
+**`review_summary` is `review_card`, not `card`.** The design system marks that type
+`trust_critical` for this exact call site — the last surface the PSU reads before money
+moves irreversibly. It carries four `info_row` children rather than free text, so every
+payment fact is a labelled row; the amount row sets `emphasis: true` and reads as the
+primary fact. A blank reference renders the explicit `None` string, never an empty row.
+
+**An empty payee list is an INLINE affordance, not a screen state.** `no_saved_payees`
+binds to `content` with `visibility_condition: "{content.beneficiaries | isEmpty}"`.
+`send-money` deliberately declares NO `empty` screen state: `manual_creditor_button` is
+visible for the whole recipient step regardless of the list, so a first-time payer already
+has a working path via manual sort-code entry. Promoting the empty list to a screen state
+would replace a usable screen with a dead end. Do not "fix" this by adding one.
 
 ## 3. State model — `SendMoneyViewModel`
 
@@ -142,6 +160,12 @@ Canonical brand spec: `design-system/DESIGN.md` 1.1.0.
 | TC-SEND-010 | **retry reuses idempotency key** | ↑ |
 | TC-SEND-011 | FundsAvailable=false blocks submit | ↑ |
 | TC-SEND-012 | success → payment-status | `SendMoneyScreenRobolectricTest.kt` |
+| TC-SEND-013 | **empty payee list keeps manual entry usable** | ↑ |
+| TC-SEND-014 | **review card renders four labelled rows** | ↑ |
+
+TC-SEND-013 and TC-SEND-014 are the regression guards for the two composition decisions in
+§2. TC-SEND-013 asserts the screen is never replaced by a dead-end empty state; TC-SEND-014
+asserts the review surface renders structure rather than the empty card it was before.
 
 ## 8. Implementation prerequisites (P3 — blocking)
 

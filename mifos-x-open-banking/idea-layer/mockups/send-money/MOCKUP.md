@@ -2,7 +2,7 @@
 
 > Auto-generated from `screens/send-money/ui.yaml` + `docs.yaml` by `/idea-feature-mockup`
 > Design tokens: `design-system/design-tokens.yaml` (2.1.0) · Design system: Trust Blue 1.1.0
-> Generated: 2026-07-30
+> Generated: 2026-07-31
 > Content: `screens/send-money/demo-data.yaml` — HSBC-sandbox-shaped OBIE fixtures, no placeholders
 
 ---
@@ -108,6 +108,27 @@ send-money/
 └─────────────────────────────────────────┘
 ```
 
+**No saved payees** (`{content.beneficiaries | isEmpty}`) — the "Pay to" list is replaced by
+`no_saved_payees`; everything else on the step is unchanged:
+
+```
+│  ── Pay to ───────────────────────────   │
+│                                          │
+│              ( people icon )             │  no_saved_payees, empty_state
+│           No saved payees yet            │  title
+│   You have not saved anyone to pay.      │  body
+│   Enter their account details below      │
+│   to send money.                         │
+│                                          │
+│  Enter details manually                  │  manual_creditor_button — STILL VISIBLE
+```
+
+This is an INLINE empty inside `content`, not a screen-level `empty` state, and the
+distinction is the whole point. `manual_creditor_button` renders for the entire recipient
+step regardless of the payee list, so a first-time payer already has a working path. A
+screen-level empty state would black out a usable screen and strand them. The affordance
+explains the blank and points at the path that already exists — it does not gate anything.
+
 **Manual entry revealed** (`{content.manualEntryVisible}`) — appends below the text button:
 
 ```
@@ -124,11 +145,13 @@ send-money/
 ```
 send-money/ (step: Recipient)
 ├── TopAppBar → "Send money"
+├── form_step_indicator: step_indicator (textual, spans all 3 steps)
 ├── ScrollContent
 │   ├── debtor_account_selector: list (vertical, items ← content.debtorAccounts)
 │   │   └── debtor_account_row: list_item (two_line) ×2
 │   ├── creditor_selector: list (vertical, items ← content.beneficiaries)
 │   │   └── creditor_row: list_item (two_line) ×3
+│   ├── no_saved_payees: empty_state          [when content.beneficiaries isEmpty]
 │   ├── manual_creditor_button: button (text)
 │   ├── manual_sort_code: text_field        [conditional]
 │   └── manual_account_number: text_field   [conditional]
@@ -227,19 +250,19 @@ fires only after the first blur, so a half-typed `8` is never flagged as wrong m
 ├─────────────────────────────────────────┤
 │  Step 3 of 3 · Review                    │
 │                                          │
-│  ┌──────────────────────────────────┐   │  review_summary, card
-│  │ From                             │   │
+│  ┌──────────────────────────────────┐   │  review_summary, review_card
+│  │ From                             │   │  review_from_row · info_row
 │  │   Current account ·· 3349        │   │
-│  │                                  │   │
-│  │ To                               │   │
+│  │ ──────────────────────────────── │   │
+│  │ To                               │   │  review_to_row · info_row
 │  │   Jameson Lettings               │   │
-│  │   40-12-09 65872310              │   │
-│  │                                  │   │
-│  │ Amount                           │   │
+│  │   40-12-09 65872310              │   │  secondary, mono
+│  │ ──────────────────────────────── │   │
+│  │ Amount                           │   │  review_amount_row · emphasis
 │  │   £850.00                        │   │  mono
-│  │                                  │   │
-│  │ Reference                        │   │
-│  │   RENT-FLAT12                    │   │
+│  │ ──────────────────────────────── │   │
+│  │ Reference                        │   │  review_reference_row
+│  │   RENT-FLAT12                    │   │  blank → explicit "None"
 │  └──────────────────────────────────┘   │
 │                                          │
 │  [        Send £850.00        ]          │  confirm_button — names action + amount
@@ -251,7 +274,11 @@ fires only after the first blur, so a half-typed `8` is never flagged as wrong m
 
 This variant satisfies all four `irreversible_action.requirements`:
 
-1. **Distinct review surface** listing every committed value — `review_summary` card, nothing summarised or truncated.
+1. **Distinct review surface** listing every committed value — `review_summary`, typed
+   `review_card` (`trust_critical`), holding four labelled `info_row` children. Nothing
+   summarised or truncated, and no free text: every payment fact is a label/value pair, so
+   there is no way to render a commitment the PSU cannot read back. Until 2026-07-31 this
+   was a bare `card` with no children at all — the surface existed but showed nothing.
 2. **CTA states action + amount** — "Send £850.00", not "Confirm".
 3. **Same-weight escape adjacent** — `cancel_button`, never a lone destructive button.
 4. **CTA locks on tap** — transitions to `submitting`; double-submission impossible from the UI.
