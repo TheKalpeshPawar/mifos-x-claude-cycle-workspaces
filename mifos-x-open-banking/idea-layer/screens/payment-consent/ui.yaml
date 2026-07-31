@@ -19,6 +19,23 @@ shell:
 
 states: [validating, exchanging, checking, authorised, error]
 
+# Canonical-role mapping for the journey states above.
+#
+# This screen composes no literal `loading` or `content` state, which reads as a STATE-001
+# gap unless the mapping is written down. It is deliberate: the return leg of the PISP
+# app-to-app authorisation has three DISTINCT waiting phases that fail differently and each
+# render their own preview — validating the redirect params, exchanging the code for a
+# token, and checking consent status. Collapsing them into one `loading` would erase that
+# and make a failed exchange indistinguishable from a failed status check.
+#
+# So the roles are declared rather than the states renamed. Consumers resolving canonical
+# roles (STATE-001, codegen, reviewers) read this block; the journey granularity survives.
+state_roles:
+  loading: [validating, exchanging, checking]
+  content: [authorised]
+  error: [error]
+  empty: null   # n/a — no collection is rendered; this screen is a single-outcome readout
+
 business_logic:
   kind: auth
   description: >-

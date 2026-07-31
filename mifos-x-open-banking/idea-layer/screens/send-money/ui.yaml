@@ -139,6 +139,21 @@ components:
       interaction_type: display
       data_driven: false
 
+  # Textual "Step N of 3" — deliberately not a progress bar, per the motion dial of 2.
+  # Spans all three steps so the PSU always knows how far through the form they are.
+  - type: step_indicator
+    id: form_step_indicator
+    state_binding: [content]
+    value: "{strings.send_money.step_indicator}"
+    current: "{content.stepIndex}"
+    total: 3
+    accessibility_label: "{strings.send_money.step_indicator_a11y}"
+    test_context:
+      purpose: "Tell the PSU which of the three form steps they are on"
+      required_fields: ["content.stepIndex"]
+      interaction_type: display
+      data_driven: true
+
   # ── Step 1 — Recipient ────────────────────────────────────────────────
   - type: list
     id: debtor_account_selector
@@ -208,6 +223,24 @@ components:
           required_fields: ["item.name", "item.identification", "item.schemeLabel"]
           interaction_type: action
           data_driven: true
+
+  - type: empty_state
+    id: no_saved_payees
+    state_binding: [content]
+    visibility_condition: "{content.beneficiaries | isEmpty}"
+    icon: people_outline
+    title: "{strings.send_money.no_payees_title}"
+    body: "{strings.send_money.no_payees_body}"
+    accessibility_label: "{strings.send_money.no_payees_title}"
+    test_context:
+      purpose: >-
+        Shown inside the content state on the recipient step when the PSU has no saved payees.
+        Deliberately NOT a screen-level `empty` state: manual_creditor_button stays visible for
+        the whole recipient step, so a first-time payer still has a working path and the screen
+        must not be replaced by a dead end.
+      required_fields: ["content.beneficiaries"]
+      interaction_type: display
+      data_driven: true
 
   - type: button
     id: manual_creditor_button
@@ -326,7 +359,9 @@ components:
       data_driven: true
 
   # ── Step 3 — Review ───────────────────────────────────────────────────
-  - type: card
+  # review_card, not a generic card: this is the last surface before money moves, and the
+  # design system marks that type trust_critical for exactly this call site.
+  - type: review_card
     id: review_summary
     state_binding: [content]
     visibility_condition: "{content.step | isReview}"
@@ -336,6 +371,49 @@ components:
       required_fields: ["content.debtorAccountId", "content.creditor", "content.amountLabel"]
       interaction_type: display
       data_driven: true
+    children:
+      - type: info_row
+        id: review_from_row
+        label: "{strings.send_money.review_from_label}"
+        value: "{content.debtorAccountLabel}"
+        accessibility_label: "{strings.send_money.review_from_label}: {content.debtorAccountLabel}"
+        test_context:
+          purpose: "Debtor account the payment leaves from"
+          required_fields: ["content.debtorAccountLabel"]
+          interaction_type: display
+          data_driven: true
+      - type: info_row
+        id: review_to_row
+        label: "{strings.send_money.review_to_label}"
+        value: "{content.creditor.name}"
+        secondary: "{content.creditor.schemeLabel} · {content.creditor.identification}"
+        accessibility_label: "{strings.send_money.review_to_label}: {content.creditor.name}"
+        test_context:
+          purpose: "Creditor the payment goes to"
+          required_fields: ["content.creditor.name", "content.creditor.identification"]
+          interaction_type: display
+          data_driven: true
+      - type: info_row
+        id: review_amount_row
+        label: "{strings.send_money.review_amount_label}"
+        value: "{content.amountLabel}"
+        emphasis: true
+        accessibility_label: "{strings.send_money.review_amount_label}: {content.amountLabel}"
+        test_context:
+          purpose: "Amount, pre-formatted by the ViewModel via core/common FormatMoney"
+          required_fields: ["content.amountLabel"]
+          interaction_type: display
+          data_driven: true
+      - type: info_row
+        id: review_reference_row
+        label: "{strings.send_money.review_reference_label}"
+        value: "{content.reference | orElse:strings.send_money.review_reference_empty}"
+        accessibility_label: "{strings.send_money.review_reference_label}: {content.reference}"
+        test_context:
+          purpose: "Optional remittance reference; renders an explicit None when the PSU left it blank"
+          required_fields: []
+          interaction_type: display
+          data_driven: true
 
   - type: button
     id: confirm_button

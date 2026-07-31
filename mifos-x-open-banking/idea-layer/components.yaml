@@ -115,44 +115,90 @@ components:
         secondary: { type: string }
         icon: { type: string }
         trailing_content: { type: string }
+        # Added 2026-07-31 for the send-money review card: the amount row must read as the
+        # primary fact on the last surface before money moves.
+        emphasis: { type: boolean, default: false }
+
+  # ────────────────────────────────────────────────────────────────
+  # Review Card — the confirmation surface on send-money step 3.
+  # Trust-critical: the last thing the PSU reads before money moves. Registered
+  # 2026-07-31; send-money previously rendered this as a generic `card`, which
+  # left the design system's trust_critical treatment unreachable.
+  # ────────────────────────────────────────────────────────────────
+  - name: review_card
+    type: review_card
+    tier: project
+    extends: card
+    category: containers
+    description: >
+      Confirmation container holding the finished payment as labelled info_row children.
+      Trust-critical: elevated and outlined so it reads as a distinct commitment surface
+      rather than another content card, because confirming it moves money irreversibly.
+    a11y:
+      role: region
+      semantic_html: section
+      label_source: "{accessibility_label}"
+      contrast_required: true
+    default_style:
+      background: surfaceContainer
+      padding: "16dp"
+      corner_radius: radius.medium
+      elevation: elevation.level1
+    supported_states: [idle]
+    properties_schema:
+      type: object
+      properties:
+        accessibility_label: { type: string }
+
+  # ────────────────────────────────────────────────────────────────
+  # Step Indicator — textual "Step N of M" for multi-step forms.
+  # Deliberately textual, not a progress bar: the motion dial is 2.
+  # ────────────────────────────────────────────────────────────────
+  - name: step_indicator
+    type: step_indicator
+    tier: project
+    extends: text
+    category: typography
+    description: >
+      Textual progress readout for a multi-step form ("Step 2 of 3"). Chosen over a
+      progress bar so the screen carries no continuous motion, and so screen-reader users
+      get the position as words rather than as a percentage they must interpret.
+    a11y:
+      role: status
+      semantic_html: p
+      label_source: "{accessibility_label}"
+      contrast_required: true
+    default_style:
+      background: transparent
+      padding: "8dp 16dp"
+      corner_radius: radius.none
+      elevation: elevation.level0
+      text_color: onSurfaceVariant
+    supported_states: [idle]
+    properties_schema:
+      type: object
+      required: [current, total]
+      properties:
+        value: { type: string }
+        current: { type: string }
+        total: { type: integer }
+        accessibility_label: { type: string }
 
   # ────────────────────────────────────────────────────────────────
   # Bar Chart — dual-bar income vs spend visualization.
   # UNUSED since 2026-07-28 — was declared for the pfm-dashboard income/spend
   # comparison; that screen was never built and has been removed.
+  #
+  # STRUCK 2026-07-31: kept as a comment rather than a live entry, on the same
+  # reasoning design-system/components/_index.yaml gives for its own `removed:`
+  # block — an aspirational registry entry is worse than no entry, because a
+  # codegen pass reads the registry as a contract and will try to satisfy it.
+  # PFM is out of scope; if it returns, restore this from git history.
+  #
+  # - name: bar_chart
+  #   type: bar_chart
+  #   tier: project
+  #   extends: box
+  #   category: data_display
+  #   (full entry in history at components.yaml before 2026-07-31)
   # ────────────────────────────────────────────────────────────────
-  - name: bar_chart
-    type: bar_chart
-    tier: project
-    extends: box
-    category: data_display
-    description: >
-      Simple categorical bar chart container for the PFM income-vs-spend overview.
-      Renders one or more labelled bars with value-proportional heights. Decorative
-      bars are aria-hidden; the accessible summary is provided via label_source.
-    a11y:
-      role: img
-      semantic_html: figure
-      label_source: "{accessibility_label}"
-      contrast_required: true
-    default_style:
-      background: surfaceContainerLow
-      corner_radius: radius.md
-      padding: spacing.md
-      elevation: elevation.level0
-    supported_states: [idle, loading, empty]
-    state_styles:
-      loading: { opacity: opacity.loading }
-    properties_schema:
-      type: object
-      required: [series]
-      properties:
-        accessibility_label: { type: string }
-        series:
-          type: array
-          items:
-            type: object
-            properties:
-              label: { type: string }
-              value: { type: number }
-              color: { type: string }
