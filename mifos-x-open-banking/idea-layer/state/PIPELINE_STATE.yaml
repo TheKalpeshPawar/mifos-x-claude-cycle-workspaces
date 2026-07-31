@@ -1109,18 +1109,50 @@ capabilities:
           carries the full three-step shape.
     detail_ref: state/CAPABILITY_GAPS.yaml
   idea-verify:
-    stale: true
-    stale_reason: metrics describe the pre-07-28 25-feature roster; contradicted by CAPABILITY_GAPS
     last_run:
-      at: '2026-07-16T13:35:00Z'
-      status: success
+      at: '2026-07-31T22:10:00Z'
+      status: partial
       actor: claude
       command: /idea-verify
-      args: ignore missing stitch mockups.
+      args: ''
       duration_ms: 0
-      errors: 0
-      warnings: 1
+      errors: 1
+      warnings: 0
     metrics:
+      features_evaluated: 23
+      matrix: "23/23 PASS on parse · contract_version · states · nav · flow_entry · i18n · action_contract"
+      yaml_parse: "PASS — 161 sibling files, 0 failures"
+      contract_version: "23/23 at 2.0.0"
+      dead_nav_targets: 0
+      dead_flow_entries: 0
+      i18n_missing_entries: 0
+      declared_i18n_keys: 554
+      action_contract_blocks: 420
+      action_contract_missing: 0
+      open_errors: 1
+      open_error_id: "G-CAP-001 CAPABILITIES_UNDECLARED (all 23 features)"
+    status_reason: >-
+      partial, not success. Every mechanical check passes, but no feature declares
+      capabilities[], and the rule iterator gates on requires_capability ⊆
+      feature.capabilities. 147 of 568 rule files declare that key and therefore did not
+      run — 98 gated on has_ui, 27 on has_api, plus has_flow / requires_auth /
+      is_auth_feature and others. Calling this run "success" would assert coverage it does
+      not have.
+    last_verify_cache_written: false
+    last_verify_cache_note: >-
+      All 23 features pass, so docs.yaml#last_verify COULD have been written. It was not:
+      that cache is what /idea-approve C4 reads, and populating it from an iteration where
+      147 applicable rules never fired would manufacture the exact false green this session
+      already declined at the approve gate.
+    correction_issued: >-
+      Earlier guidance to declare has_payments on the PISP features was withdrawn.
+      RULE-CAP-HAS-PAYMENTS-001 is in-app-purchase compliance (payment_plans, iap_identifiers,
+      restore-purchases, App Store 5.1.1), not banking payment initiation. Correct sets:
+      send-money [has_ui, has_api, has_form_input]; payment-consent and payment-status
+      [has_ui, has_api]. Effective tier is medium, not maximum. See
+      CAPABILITY_GAPS.yaml#run_2026_07_31.correction.
+    detail_ref: state/CAPABILITY_GAPS.yaml
+    superseded_2026_07_16:
       features_evaluated: 25
       sibling_files_present: 175/175
       yaml_parse: PASS 25/25
@@ -1148,7 +1180,6 @@ capabilities:
         targets, but settings is reachable via the app-shell bottom nav (More -> settings) AND
         flows/settings-and-profile.yaml. RULE-PROTO-ORPHAN-ROUTE-001 OR-1 counts nav OR flow entry, so it satisfies
         both.
-    detail_ref: state/CAPABILITY_GAPS.yaml
     drift:
       stale_inputs: []
     previous_run:

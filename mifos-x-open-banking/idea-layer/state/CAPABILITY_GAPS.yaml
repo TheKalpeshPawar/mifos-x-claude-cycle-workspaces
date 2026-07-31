@@ -1,10 +1,89 @@
 schema_version: "1.0"
-last_run: "2026-07-30T00:00:00Z"
+last_run: "2026-07-31T22:10:00Z"
 last_run_by: "claude"
-command: "/idea-heal (deferral settlement + state coherence; findings NOT recomputed)"
+command: "/idea-verify (full 23-feature pass; findings RECOMPUTED)"
 project: "mifos-x/mifos-x-open-banking"
 roster_size: 23                 # canonical count from idea-layer/_list.json
-features_evaluated: 23          # project-wide checks 6/9/11/13 run 2026-07-30; see checks_run
+features_evaluated: 23
+
+# ═══════════════════════════════════════════════════════════════════════════
+# 2026-07-31 /idea-verify — full pass, all 23 features
+# ═══════════════════════════════════════════════════════════════════════════
+run_2026_07_31:
+  matrix: "23/23 PASS on parse · contract_version · states · nav targets · flow entry · i18n · action_contract"
+  measurements:
+    yaml_parsed: "161 sibling files across 23 features, 0 parse failures"
+    contract_version: "23/23 at 2.0.0 == VERSION_MANIFEST#contract_versions.current"
+    dead_nav_targets: 0
+    dead_flow_entries: 0
+    i18n: "554 declared keys, 0 unresolved {strings.*} references"
+    action_contract: "420 component blocks, 0 violations"
+  findings_open: 1
+
+  findings:
+    - id: G-CAP-001
+      kind: CAPABILITIES_UNDECLARED
+      severity: error
+      scope: "all 23 features"
+      detail: >-
+        No feature declares a top-level `capabilities[]`. docs.yaml carries flat `has_ui` /
+        `has_server` booleans instead. capabilities.registry.json states plainly: "Features
+        MUST declare a non-empty subset" of the 20 capabilities.
+      consequence: >-
+        This is not cosmetic. The capability-rule iterator gates on
+        `requires_capability ⊆ feature.capabilities`, so an empty set means NO
+        capability-gated rule fires. Measured against the live rule tree: 147 of 568 rule
+        files declare `requires_capability` and therefore never ran on this project —
+        98 gated on has_ui (against 23 screens that ARE all UI), 27 on has_api, plus
+        has_flow, requires_auth, is_auth_feature and the rest. Every /idea-verify result
+        this project has ever recorded covers only the ungated remainder.
+      blast_radius: "project-wide and pre-existing — the 20 already-approved features share the same shape"
+      blocks:
+        - "/idea-approve C1 — iterates capabilities[] to resolve required_sections; an empty set passes vacuously"
+        - "/idea-approve C5 — effective detail tier is computed from capabilities[]; empty collapses it to the weakest setting"
+
+  last_verify_cache:
+    written: false
+    why: >-
+      The runtime writes docs.yaml#last_verify only when a feature passes, and all 23 pass
+      the mechanical checks — so a cache COULD be written here. It deliberately was not.
+      Writing it would give /idea-approve C4 a cache to read, converting an honest
+      "unassertable" into a PASS founded on an iteration where 147 applicable rules never
+      fired. That is the same false-green this session already refused once at the approve
+      gate; producing it from the verify side instead would be the same error wearing a
+      different hat. Declare capabilities[] first, re-run, then the cache means something.
+
+  correction:
+    what: "Earlier guidance in this session recommended declaring `has_payments` on the 3 PISP features. That was WRONG."
+    why: >-
+      RULE-CAP-HAS-PAYMENTS-001 is IN-APP-PURCHASE compliance, not money movement. Its eight
+      error sub-checks are payment_plans[], refund_policy, iap_identifiers[], server-side
+      receipt verification, a restore-purchases flow, tax inclusivity, and an App Store
+      5.1.1 cancel-subscription path. The registry gloss "IAP, subscriptions, transactions"
+      reads ambiguously; the rule body does not. Declaring it on a bank-transfer feature
+      would raise eight inapplicable errors, invite someone to fabricate SKUs to clear them,
+      and make /kmp-client-gen emit StoreKit / BillingClient boilerplate into an Open
+      Banking client.
+    correct_sets:
+      send-money:      [has_ui, has_api, has_form_input]
+      payment-consent: [has_ui, has_api]
+      payment-status:  [has_ui, has_api]
+    resulting_tier: "medium (has_ui and has_form_input are both medium) — NOT maximum"
+    residual_gap: >-
+      This framework has no capability meaning "moves real money over banking rails".
+      has_payments covers store billing only. So PISP features land at the same medium tier
+      as any ordinary form screen. That is a genuine framework gap worth raising on its own
+      terms — but the fix is a new capability, never mis-declaring an existing one to borrow
+      its tier.
+
+  next_required:
+    - "DECIDE: declare capabilities[] across the roster. This activates 147 dormant rules and will surface real findings — that is the point, but it is a deliberate step, not a side effect of a verify run."
+    - "THEN re-run /idea-verify so last_verify reflects a full iteration"
+    - "THEN /idea-approve — C1/C4/C5 become assertable at medium tier"
+
+# ─── superseded 2026-07-30 record retained below ───────────────────────────
+superseded_2026_07_30:
+  note: "Prior /idea-heal record. Its findings_stale flag is resolved: findings ARE recomputed above."
 checks_run:
   # /idea-verify Phase 1-2, partial pass. Recorded per-check so a reader knows exactly which
   # gates are evidence and which are still owed — an unqualified "features_evaluated: 23"
