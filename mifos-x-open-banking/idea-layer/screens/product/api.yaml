@@ -15,7 +15,12 @@ endpoints:
         reason: "PSU access token expired; re-authentication required. ViewModel emits Error('Session expired. Please re-authenticate.')."
       - code: 403
         reason: "Active consent does not include ReadProducts permission. ViewModel emits Error('Consent does not include ReadProducts.')."
+      # Corrected 2026-07-30 (/idea-feature-export stale-artifact fix). Was "ViewModel emits
+      # Error(...)", contradicting data-flow.yaml:29-33 which maps 404 -> state: empty and cites
+      # THIS file as its authority. Empty is right: a bank holding no product record for an
+      # account is not a failure the customer can act on, so it gets no error icon and no Retry.
+      # It is the same outcome as TC-PROD-005 (Success with no PCA/BCA block), reached differently.
       - code: 404
-        reason: "No OBProduct2 record associated with the given AccountId. ViewModel emits Error('No product data available for this account.')."
+        reason: "No OBProduct2 record associated with the given AccountId. ViewModel emits Empty — content absent, not a failure. No Retry offered."
       - code: NETWORK_ERROR
         reason: "Device offline or OBIE endpoint unreachable. ViewModel emits Error(e.localizedMessage)."

@@ -146,8 +146,17 @@ components:
     padding: { horizontal: spacing.md, bottom: spacing.sm }
     test_tag: "accounts_filter_row"
     accessibility_label: "{strings.accounts.filter.label}"
+    # `type: chip` added to all four entries 2026-07-30 (/idea-verify check 13 -> /idea-heal).
+    # They previously carried id/test_tag/label/on_click but NO type, so action-contract-walk.ts
+    # reported them as "type=<none> — NOT evaluated", which the walker itself labels "a coverage
+    # hole, not a pass": each has an on_click that was neither passed nor failed, just skipped.
+    # account-detail's chips already declare `type: chip` (the walker reads them as type=chip),
+    # so this aligns with the existing convention rather than inventing one. The action_contract
+    # blocks were already present and correct — only the type was missing to make them visible
+    # to RULE-IDEA-ACTION-CONTRACT-001.
     chips:
       - id: filter_all
+        type: chip
         test_tag: "accounts_filter_ALL"
         label: "{strings.accounts.filter.all_label}"
         selected_by_default: true
@@ -157,8 +166,10 @@ components:
             filter: "ALL"
           action_contract:
             effect: transform_state
+            external_library_refs: [kotlinx-coroutines]
             description: "Dispatches AccountsAction.FilterAccounts(ALL), re-emitting AccountsData with every row and activeFilter = ALL. Purely client-side; no API round-trip."
       - id: filter_current
+        type: chip
         test_tag: "accounts_filter_CURRENT"
         label: "{strings.accounts.filter.current_label}"
         on_click:
@@ -167,8 +178,10 @@ components:
             filter: "CURRENT"
           action_contract:
             effect: transform_state
+            external_library_refs: [kotlinx-coroutines]
             description: "Dispatches AccountsAction.FilterAccounts(CURRENT), re-emitting AccountsData filtered by AccountFilter.matches against the canonical CurrentAccount subtype."
       - id: filter_savings
+        type: chip
         test_tag: "accounts_filter_SAVINGS"
         label: "{strings.accounts.filter.savings_label}"
         on_click:
@@ -177,8 +190,10 @@ components:
             filter: "SAVINGS"
           action_contract:
             effect: transform_state
+            external_library_refs: [kotlinx-coroutines]
             description: "Dispatches AccountsAction.FilterAccounts(SAVINGS), re-emitting AccountsData filtered to the canonical Savings subtype."
       - id: filter_credit
+        type: chip
         test_tag: "accounts_filter_CREDIT"
         label: "{strings.accounts.filter.credit_label}"
         on_click:
@@ -187,6 +202,7 @@ components:
             filter: "CREDIT"
           action_contract:
             effect: transform_state
+            external_library_refs: [kotlinx-coroutines]
             description: "Dispatches AccountsAction.FilterAccounts(CREDIT), re-emitting AccountsData filtered to the canonical CreditCard subtype."
 
   # ── CONTENT: account list (LazyColumn of AccountCard) ──────────────

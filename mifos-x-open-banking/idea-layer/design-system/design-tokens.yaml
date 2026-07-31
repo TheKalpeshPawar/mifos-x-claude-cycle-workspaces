@@ -4,7 +4,12 @@
 # This is the rendering source of truth (Compose codegen, /idea-render-screen, prototype).
 # DESIGN.md's front matter is the agent-facing subset derived from this file.
 
-schema_version: "2.0.0"
+schema_version: "2.1.0"
+# 2.1.0 (2026-07-30, /design-system) — extended for money MOVEMENT. Every prior version
+# described a strictly read-only AISP app; the PISP scope reversal added the app's first
+# forms and its first irreversible action, neither of which the system covered. Added:
+# semantic.payment_disposition, semantic.money (formalised), and the form/validation block.
+# No existing role, scale or radius changed — this release is purely additive.
 name: "Open Banking — Trust Blue"
 seed_color: "#266489"
 source: "Material Theme Builder (Color.kt/Theme.kt) — verbatim M3 roles"
@@ -161,7 +166,121 @@ mood_gradients:
     light: ["#266489", "#50606E"]
     dark:  ["#95CDF7", "#B7C9D9"]
 
+# ═══════════════════════════════════════════════════════════════════════════
+# SEMANTIC TOKENS — added 2.1.0 for money movement (PISP)
+# ═══════════════════════════════════════════════════════════════════════════
+
+# ─── Money display semantics (formalised; was prose-only in COMPONENTS.md) ───
+# Deliberately NOT green/red. Credit reads as the brand trust-blue, debit as error.
+# This is both a calm-finance choice and a colour-blind-safety one: the two hues are
+# distinguishable under deuteranopia and protanopia, where green/red are not.
+semantic:
+  money:
+    credit:  { light: "#266489", dark: "#95CDF7", role: primary, note: "incoming / positive" }
+    debit:   { light: "#BA1A1A", dark: "#FFB4AB", role: error,   note: "outgoing / negative" }
+    neutral: { light: "#41474D", dark: "#C1C7CE", role: onSurfaceVariant,
+               note: "unsigned figures — running balances, statement totals. See the balanceIsCredit trap below." }
+    font: "{typography.font_family.mono}"
+    alignment: right
+    _trap: >-
+      A per-transaction Balance.CreditDebitIndicator describes the TRANSACTION's direction,
+      not the balance's, so signing a running balance on it renders a healthy account as
+      negative. Running balances use `neutral` and are shown unsigned.
+
+  # ─── Payment disposition (NEW) ─────────────────────────────────────────────
+  # Three states, because a submitted payment is not a boolean. HSBC returns
+  # AcceptedSettlementInProcess on a SUCCESSFUL submit — accepted, not settled.
+  # Rendering that as success is a false statement about the customer's money, so
+  # in_progress gets its own visual identity that must not read as done.
+  payment_disposition:
+    in_progress:
+      container:    { light: "#D3E5F5", dark: "#384956" }   # secondaryContainer
+      on_container: { light: "#384956", dark: "#D3E5F5" }   # onSecondaryContainer
+      role: secondary
+      icon: "schedule"
+      contrast: { light: 7.22, dark: 7.22, target: 4.5, verdict: pass }
+      note: >-
+        Neutral slate, deliberately NOT primary. Primary is the credit/positive colour in
+        this system, so a primary chip would read as "money arrived". Slate reads as
+        "working" and is the visual half of the truthfulness invariant.
+    terminal_success:
+      container:    { light: "#C9E6FF", dark: "#004B6F" }   # primaryContainer
+      on_container: { light: "#004B6F", dark: "#C9E6FF" }   # onPrimaryContainer
+      role: primary
+      icon: "check_circle"
+      contrast: { light: 7.27, dark: 7.27, target: 4.5, verdict: pass }
+      note: "Trust-blue, consistent with credit already being primary. Reserved for a SETTLED payment."
+    terminal_failure:
+      container:    { light: "#FFDAD6", dark: "#93000A" }   # errorContainer
+      on_container: { light: "#93000A", dark: "#FFDAD6" }   # onErrorContainer
+      role: error
+      icon: "error"
+      contrast: { light: 7.24, dark: 7.24, target: 4.5, verdict: pass }
+    _contract:
+      colour_is_never_the_only_signal: true
+      required_per_state: [icon, text_label]
+      rationale: >-
+        Each disposition MUST carry its icon and its text label, not colour alone. This is a
+        WCAG 1.4.1 requirement (use of colour) and it is also what makes the truthfulness
+        invariant enforceable — a reviewer can read the label and see whether the screen is
+        claiming settlement it does not have.
+      unknown_status_policy: >-
+        An OBIE status outside the mapped vocabulary renders as in_progress, never as
+        success or failure. Failing open toward "still working" is the only safe guess.
+
+# ─── Form & validation (NEW) ─────────────────────────────────────────────────
+# The app had no forms before PISP: every prior screen was read-only, and text_field
+# existed only for client-side search. Money entry needs field-level validation, which
+# the system had no tokens for.
+form:
+  field:
+    radius: "{spacing.radius.small}"          # 8dp — inputs sit tighter than cards (12dp)
+    min_height_dp: 56
+    outline_default: { light: "#72787E", dark: "#8B9198", contrast: { light: 4.24, dark: 5.82 }, target: 3.0, verdict: pass }
+    outline_focus:   { light: "#266489", dark: "#95CDF7", contrast: { light: 6.11, dark: 10.89 }, target: 3.0, verdict: pass, width_dp: 2 }
+    outline_error:   { light: "#BA1A1A", dark: "#FFB4AB", contrast: { light: 6.14, dark: 10.90 }, target: 3.0, verdict: pass, width_dp: 2 }
+    label:        { role: onSurfaceVariant, typography: bodySmall }
+    input_text:   { role: onSurface, typography: bodyLarge }
+    helper_text:  { role: onSurfaceVariant, typography: bodySmall }
+    error_text:   { light: "#BA1A1A", dark: "#FFB4AB", typography: bodySmall,
+                    contrast: { light: 6.14, dark: 10.90 }, target: 4.5, verdict: pass }
+    disabled_opacity: 0.38
+  amount_field:
+    typography: headlineSmall
+    font: "{typography.font_family.mono}"
+    alignment: left
+    prefix: "currency symbol, onSurfaceVariant, never part of the editable value"
+    note: >-
+      Money is held and validated as minor units (pence) per core/common FormatMoney; the
+      field displays a formatted major-unit string. Mono so digits do not reflow while typing.
+  validation:
+    timing: on_change_after_first_blur
+    rationale: >-
+      Validating on every keystroke from empty flags a half-typed amount as wrong, which
+      reads as hostile. Waiting until the field has been left once, then live thereafter,
+      is the standard that keeps correction fast without punishing typing.
+    error_placement: below_field
+    blocks_advance: true
+
+# ─── Irreversible-action contract (NEW) ──────────────────────────────────────
+# Sending money is the first thing this app does that a customer cannot undo. Consent
+# revocation is destructive but reversible (re-authorise); a payment is not.
+irreversible_action:
+  applies_to: [send_money_confirm, consent_revoke]
+  requirements:
+    - "A distinct review surface listing every value that will be committed, before the commit."
+    - "The primary CTA states the action and the amount, not a bare 'Confirm'."
+    - "A same-weight escape (Cancel / Back) adjacent to the CTA — never a lone destructive button."
+    - "The CTA locks and shows progress on tap; double-submission is impossible from the UI."
+  colour_note: >-
+    The send-money confirm CTA stays `primary`, not `error`. Error-red would frame a payment
+    the customer intends as a danger, and the system reserves red for genuine failure. The
+    weight comes from the review surface and the amount in the label, not from alarm colour.
+
 accessibility:
   contrast_target: "WCAG AA"   # quiet_constraints: accessibility-first, regulated-industry
   min_touch_target_dp: 48
   reduce_motion_supported: true
+  colour_never_sole_signal: true    # WCAG 1.4.1 — see semantic.payment_disposition._contract
+  validated_pairs: 15               # all measured; see state/DESIGN_SYSTEM_STATE.yaml
+  validated_at: "2026-07-30"

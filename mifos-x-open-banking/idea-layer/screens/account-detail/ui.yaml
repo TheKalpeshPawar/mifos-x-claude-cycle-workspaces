@@ -26,11 +26,20 @@ implementation:
     - "loadAccountDetail action — the initial load is stream collection in init{}"
     - "navigateBack action — back is a nav-host onBack callback"
     - "NavigationController DI — replaced by AccountCapabilityRegistry, which gates chip availability"
-  dangling_nav_target:
+  # Was `dangling_nav_target:` — resolved 2026-07-30 (/idea-sync stale reconciliation).
+  # The binding is no longer dangling: the chip below now declares
+  # `target: _placeholder:atm-locator` with implementation_status + source_binding, so the
+  # placeholder is explicit rather than a pointer to a deleted screen.
+  placeholder_bound_chips:
     - chip: AtmLocator
-      target: AtmLocatorRoute
+      route: AtmLocatorRoute
       status: placeholder
-      note: "Resolves to PlaceholderScreen(\"ATM locator\") in cmp-navigation. The atm-locator idea-layer screen was removed in this sync because no feature module implements it; the chip still renders and still navigates."
+      takes_args: false
+      note: >-
+        Resolves to PlaceholderScreen("ATM locator") in cmp-navigation. The atm-locator
+        idea-layer screen was removed in the 2026-07-28 reverse sync because no feature module
+        implements it; the chip still renders and still navigates, so it stays documented.
+        AtmLocatorRoute is an arg-less data object — no accountId is passed.
 initial_state: loading
 quality_score: 95
 
@@ -457,22 +466,37 @@ components:
           interaction_type: navigate
           data_driven: true
 
+      # Reconciled 2026-07-30 (/idea-sync stale reconciliation). Two defects fixed, and
+      # the chip deliberately KEPT:
+      #   1. `target: atm-locator` pointed at an idea-layer screen deleted in the
+      #      2026-07-28 reverse sync — a dangling nav target. Now bound explicitly to the
+      #      placeholder route the chip actually reaches.
+      #   2. `params: {accountId}` overstated source: AtmLocatorRoute is an arg-less
+      #      `@Serializable data object` and navigateFromChip calls `navigate(AtmLocatorRoute)`
+      #      with no arguments. flow.yaml already recorded `params: []`; ui.yaml disagreed.
+      # The chip is NOT removed: AccountDetailChip.AtmLocator is member 7 of 9 in source,
+      # it renders and it navigates. Deleting it would make the idea-layer understate the
+      # app and would break the suites asserting all nine chips in declaration order.
       - type: chip
         id: chip_atm_locator
         label: "{strings.account_detail.nav_chip_atm_label}"
         icon: atm
+        implementation_status: placeholder
+        source_binding: "AccountDetailChip.AtmLocator -> AtmLocatorRoute -> PlaceholderScreen(\"ATM locator\")"
         on_click:
           action: navigate_atm_locator
-          target: atm-locator
-          params:
-            accountId: "{account.AccountId}"
+          target: _placeholder:atm-locator
+          params: {}
           action_contract:
             effect: navigate
-            description: "Navigates to the ATM and branch locator scoped to this account's sort-code area, passing accountId as a route parameter."
+            description: >-
+              Navigates to the ATM and branch locator, which is an arg-less stub route
+              in cmp-navigation rather than a built screen; no accountId is passed because
+              AtmLocatorRoute is a data object that takes no arguments.
         accessibility_label: "{strings.account_detail.nav_chip_atm_accessibility}"
         test_context:
-          purpose: "Navigate to ATM / branch locator scoped to this account's sort-code area."
-          required_fields: [account.AccountId]
+          purpose: "Navigate to the ATM / branch locator placeholder route; asserts the chip renders and dispatches."
+          required_fields: []
           interaction_type: navigate
           data_driven: true
 
@@ -501,12 +525,20 @@ components:
         icon: person
         on_click:
           action: navigate_party
-          target: party
+          # Retargeted 2026-07-30 (/idea-sync): was `target: party`, a screen renamed to
+          # account-holder in the 2026-07-28 reverse sync. flow.yaml already recorded the
+          # correct binding (AccountDetailChip.Party -> AccountHolderRoute); ui.yaml did not.
+          # The chip's enum member is still named Party in source — only the screen was renamed.
+          target: account-holder
           params:
             accountId: "{account.AccountId}"
           action_contract:
             effect: navigate
-            description: "Navigates to the account holder and party details screen (GET /accounts/{AccountId}/party), passing accountId as a route parameter."
+            description: >-
+              Navigates to the account-holder screen (GET /accounts/{AccountId}/party), passing
+              accountId as a route parameter. Because the chip carries account-detail's own
+              nav-arg the id is always valid — unlike the deleted Settings entry, which passed an
+              empty selectedAccountId and produced a malformed GET /accounts//party.
         accessibility_label: "{strings.nav_chip_party_accessibility}"
         test_context:
           purpose: "Navigate to the account holder / party details (GET /accounts/{AccountId}/party)."

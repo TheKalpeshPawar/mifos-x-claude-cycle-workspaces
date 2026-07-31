@@ -1,0 +1,212 @@
+screen_id: send-money
+
+# All PISP resources sit under the v4.0/pisp base path (AIS uses v4.0/aisp, OAuth uses v1.1).
+# Every WRITE below requires BOTH a detached x-jws-signature and an x-idempotency-key.
+# Omitting the signature returns 400 U019 "Missing information related to signature" —
+# verified live against the sandbox, see UKPersonal-API-endpoints.md PIS 1.
+api_base_path: "/obie/open-banking/v4.0/pisp"
+
+# ─────────────────────────────────────────────────────────────────────────
+# WRITE-CALL HEADER CONTRACT — new to this app; no AIS read needs any of it
+# ─────────────────────────────────────────────────────────────────────────
+write_header_contract:
+  x-jws-signature:
+    required_on: [domestic-payment-consent-create, domestic-payment-submit]
+    algorithm: PS256
+    form: detached
+    header_claims:
+      b64: false
+      crit: ["b64", "http://openbanking.org.uk/iat", "http://openbanking.org.uk/iss", "http://openbanking.org.uk/tan"]
+    implementation_note: >-
+      Reuses core/network BuildClientAssertion.signPs256 (already shipped for the FAPI
+      private_key_jwt client assertion). Detached form means the payload segment is
+      stripped from the compact serialization, leaving header..signature.
+    failure_if_absent: "400 OBErrorResponse1 with Errors[].ErrorCode = U019"
+  x-idempotency-key:
+    required_on: [domestic-payment-consent-create, domestic-payment-submit]
+    max_length: 40
+    stability: >-
+      Generated once per staged payment and reused across every retry of that payment,
+      including the consent-create and the later submit. Same key plus same body returns
+      the original result instead of creating a duplicate payment.
+  x-fapi-interaction-id:
+    required_on: all
+    form: "UUID generated per request; HSBC echoes it back for support tracing"
+  x-fapi-financial-id:
+    required_on: all
+    form: "Fixed OB-assigned institution identifier for HSBC"
+
+endpoints:
+  - id: domestic-payment-consent-create
+    method: POST
+    path: "/domestic-payment-consents"
+    request_dto: OBWriteDomesticConsent4
+    response_dto: OBWriteDomesticConsentResponse5
+    requires_auth: true
+    auth_scheme: bearer_client_credentials_token
+    auth_scope: payments
+    requires_jws_signature: true
+    requires_idempotency_key: true
+    path_params: {}
+    query_params: {}
+    notes: >-
+      Stages the payment. Uses a client-credentials token minted with scope=payments — NOT
+      the PSU AIS bearer, and NOT the AIS client-credentials token (different scope). This
+      mirrors how the shipped ConsentStores.kt already isolates consent management on a
+      client-credentials token.
+    request_shape_constraint:
+      Risk:
+        PaymentContextCode: "TransferToThirdParty | TransferToSelf"
+        _forbidden: [MerchantCategoryCode, MerchantCustomerIdentification, DeliveryAddress]
+        _rationale: "Consumer payment, not a merchant checkout — see docs.yaml#consumer_context_constraint"
+      Data.Initiation:
+        _required: [InstructionIdentification, EndToEndIdentification, InstructedAmount, CreditorAccount]
+        DebtorAccount: "Always supplied by this app from the PSU's own AIS /accounts, though the spec marks it optional"
+    error_responses:
+      - status_code: 400
+        error_code: "U019"
+        description: "Missing or malformed detached JWS signature."
+        ui_action: "Show non-recoverable error with the OB envelope Id as a support reference; no Retry CTA."
+      - status_code: 400
+        error_code: "U014"
+        description: "Payment outside control parameters — amount exceeds a limit."
+        ui_action: "Return to the amount step so the PSU can lower the amount."
+      - status_code: 400
+        error_code: "U002"
+        description: "A field is invalid — commonly a malformed CreditorAccount.Identification."
+        ui_action: "Return to the recipient step and highlight the offending field."
+      - status_code: 401
+        error_code: "UK.OBIE.Header.Invalid"
+        description: "Client-credentials payments token expired or invalid."
+        ui_action: "Retry CTA; the client re-mints the payments-scope token first."
+      - status_code: 429
+        error_code: "UK.OBIE.Rules.TooManyRequests"
+        description: "Rate-limited by HSBC."
+        ui_action: "Retry CTA with exponential back-off honouring Retry-After."
+
+  - id: domestic-payment-funds-confirmation
+    method: GET
+    path: "/domestic-payment-consents/{ConsentId}/funds-confirmation"
+    response_dto: OBWriteFundsConfirmationResponse1
+    requires_auth: true
+    auth_scheme: bearer_access_token
+    requires_jws_signature: false
+    requires_idempotency_key: false
+    path_params:
+      ConsentId: string
+    query_params: {}
+    notes: >-
+      Optional pre-submit check, callable only once the consent is Authorised (it needs the
+      PSU token). Returns Data.FundsAvailableResult.{FundsAvailable, FundsAvailableDateTime}.
+      A false result is surfaced as InsufficientFunds and the payment is not submitted.
+    error_responses:
+      - status_code: 400
+        error_code: "U009"
+        description: "Unexpected consent status — the consent is not Authorised."
+        ui_action: "Re-authorise CTA restarts the authorise leg."
+      - status_code: 403
+        error_code: "UK.OBIE.Resource.ConsentMismatch"
+        description: "Consent revoked or expired."
+        ui_action: "View Consents CTA navigates to consent-list."
+
+  - id: domestic-payment-submit
+    method: POST
+    path: "/domestic-payments"
+    request_dto: OBWriteDomestic2
+    response_dto: OBWriteDomesticResponse5
+    requires_auth: true
+    auth_scheme: bearer_access_token
+    requires_jws_signature: true
+    requires_idempotency_key: true
+    path_params: {}
+    query_params: {}
+    notes: >-
+      Executes the payment. Uses the PSU access token from the authorise leg. Data.ConsentId
+      must match the staged consent and Data.Initiation must be byte-identical to the staged
+      Initiation — a mismatch returns U008.
+    error_responses:
+      - status_code: 400
+        error_code: "U008"
+        description: "Mismatch between the staged consent and the payment order request."
+        ui_action: "Non-recoverable; discard the staged consent and restart the form."
+      - status_code: 400
+        error_code: "U009"
+        description: "Unexpected consent status — consent not Authorised."
+        ui_action: "Re-authorise CTA restarts the authorise leg via payment-consent."
+      - status_code: 400
+        error_code: "U019"
+        description: "Missing or malformed detached JWS signature."
+        ui_action: "Show non-recoverable error with support reference."
+      - status_code: 401
+        error_code: "UK.OBIE.Header.Invalid"
+        description: "PSU access token expired."
+        ui_action: "Retry CTA after refresh; idempotency key makes the retry safe."
+      - status_code: 403
+        error_code: "UK.OBIE.Resource.ConsentMismatch"
+        description: "Payment consent revoked."
+        ui_action: "View Consents CTA navigates to consent-list."
+
+response_shape:
+  OBWriteDomesticConsentResponse5:
+    Data:
+      ConsentId: string              # Staged consent id — carried into the authorise leg
+      Status: string                 # AWAU (AwaitingAuthorisation) -> AUTH (Authorised)
+      CreationDateTime: string
+      StatusUpdateDateTime: string
+      Initiation:                    # Echoed back; must be resent byte-identical on submit
+        InstructionIdentification: string
+        EndToEndIdentification: string
+        InstructedAmount:
+          Amount: string
+          Currency: string
+        DebtorAccount:
+          SchemeName: string
+          Identification: string
+          Name: string
+        CreditorAccount:
+          SchemeName: string
+          Identification: string
+          Name: string
+        RemittanceInformation:
+          Unstructured: [string]
+    Links:
+      Self: string
+    Meta:
+      TotalPages: integer
+
+  OBWriteDomesticResponse5:
+    Data:
+      DomesticPaymentId: string      # Payment resource id — handed to payment-status
+      ConsentId: string
+      Status: string                 # e.g. AcceptedSettlementInProcess / AcceptedSettlementCompleted
+      CreationDateTime: string
+      StatusUpdateDateTime: string
+      Initiation: object             # Echo of the submitted Initiation
+    Links:
+      Self: string
+    Meta:
+      TotalPages: integer
+
+  OBWriteFundsConfirmationResponse1:
+    Data:
+      FundsAvailableResult:
+        FundsAvailable: boolean
+        FundsAvailableDateTime: string
+
+# ─────────────────────────────────────────────────────────────────────────
+# EXISTING SOURCE SURFACE — what already ships, unconsumed
+# ─────────────────────────────────────────────────────────────────────────
+existing_source_surface:
+  wire_models:
+    path: "core/network/src/commonMain/kotlin/org/mifosx/openbanking/core/network/model/pisp/domesticPayment/"
+    state: "ships complete (request + response), all fields nullable, consumed by nothing"
+    serialization_tests: "core/network/src/desktopTest/.../pisp/domesticPayment/ — present for request and response"
+    fit_for_consumer_shape: >-
+      Yes. Risk.kt declares paymentContextCode, merchantCategoryCode,
+      merchantCustomerIdentification and deliveryAddress all nullable with null defaults, so
+      the consumer body (PaymentContextCode only) serializes without any model change.
+  missing:
+    - "Pisp.kt Ktorfit client interface — core/network/api/ ships only Aisp.kt and OAuth.kt"
+    - "Detached-JWS signer — signPs256 exists but only builds the attached client assertion"
+    - "x-idempotency-key generation and persistence across retries"
+    - "payments-scope client-credentials token path — OAuth.kt mints accounts scope only"

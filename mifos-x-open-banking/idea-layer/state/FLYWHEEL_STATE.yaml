@@ -1,0 +1,80 @@
+schema_version: "1.0"
+project: mifos-x-open-banking
+# Created 2026-07-30 by /idea-evolve STEP 5. The file did not exist before this run —
+# the project predates the flywheel-state spine, so `setup` is recorded as
+# skipped-with-reason rather than silently omitted (RULE-IDEA-AGENT-ZERO-SOFT-FAIL-001).
+
+current_phase: define
+loop_iteration: 0
+
+phases:
+  setup:
+    status: skipped-with-reason
+    reason: >-
+      Project was already bound and fully scaffolded before FLYWHEEL_STATE existed;
+      /idea-evolve STEP 0 resolved an active binding, so BRANCH SETUP never fired.
+    recorded_at: '2026-07-30T00:00:00Z'
+  define:
+    status: complete
+    started_at: '2026-07-30T00:00:00Z'
+    completed_at: '2026-07-30T00:00:00Z'
+    entered_by: /idea-evolve
+    prompt_summary: >-
+      Add PISP APIs and implement payment features, researched against the HSBC UK Personal
+      sandbox specs, Postman collection and endpoint catalogue.
+    classified_intent: add-feature
+    materialized:
+      features: [send-money, payment-consent, payment-status]
+      requirements: [FR-012, FR-013, FR-014, FR-015, FR-016, FR-017]
+      flows: [send-money-payment]
+      scope_change: "PISP domestic single payment moved out_of_scope -> in_scope"
+      release_phase: P3
+    picker_outcome: "[E] — narrowed to the send-money core; scheduled, standing-order and international variants deferred"
+    connect:
+      kind: app-shell
+      path: "idea-layer/design-system/app-shell.yaml#bottom_navigation.items[2]"
+      target: send-money
+      note: >-
+        No new nav edge. The Pay tab already declared target_screen: send-money with
+        implementation_status: placeholder; this run flipped it to specified.
+
+active_release_phase: P3
+
+# ── Verification performed during this Define pass ──────────────────────
+# The user challenged whether PISP fits a consumer app at all, or is a merchant-only
+# API. Verified against the spec rather than asserted:
+#   payment-initiation-4.0-personal.yaml:2281-2299 — OBInternalPaymentContext1Code
+#   includes TransferToSelf and TransferToThirdParty, both explicitly PSU-owned.
+#   :2244-2280 — OBRisk1 has no required properties, so every merchant field is optional.
+#   :2387-2391 — DebtorAccount is optional; required is only InstructionIdentification,
+#   EndToEndIdentification, InstructedAmount and CreditorAccount.
+# Conclusion: consumer PISP is in-model. The sandbox EXAMPLE bodies are merchant-shaped,
+# which is the real trap — captured as FR-015 and guarded by TC-SEND-005/006.
+define_verification:
+  question: "Does PISP fit a consumer app, or is it merchant-only?"
+  verdict: "Consumer-initiated payment is first-class in the standard; the example bodies are not."
+  spec_ref: "specs/hsbc-sandbox/openapi/payment-initiation-4.0-personal.yaml"
+  encoded_as: [FR-015, "screens/send-money/docs.yaml#consumer_context_constraint"]
+
+open_risks:
+  - id: RISK-PISP-001
+    severity: blocking
+    description: >-
+      No detached-JWS signer exists. Every PISP write returns 400 U019 until one lands.
+      signPs256 in core/network/BuildClientAssertion.kt is the primitive to extend
+      (b64:false + crit), so this is an extension, not a new signer.
+  - id: RISK-PISP-002
+    severity: blocking
+    description: "No Pisp.kt Ktorfit client — core/network/api ships only Aisp.kt and OAuth.kt."
+  - id: RISK-PISP-003
+    severity: high
+    description: >-
+      OAuth.kt mints only scope=accounts. A payments-scope client-credentials path is needed
+      for consent staging and status reads.
+  - id: RISK-PISP-004
+    severity: advisory
+    description: >-
+      PISP is a distinct FCA permission from AISP. Sandbox unaffected; production payment
+      initiation would need payment-initiation authorisation. ADR required.
+
+next_action: "/idea-sync --auto — drain the three content_stale features through enrich + cascade"

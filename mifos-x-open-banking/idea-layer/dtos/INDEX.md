@@ -1,7 +1,8 @@
 # DTO Registry Index — mifos-x-open-banking
 
 > Reverse-synced 2026-07-28 by `/gap-analysis-project` against the shipped source.
-> Source: HSBC UK Open Banking AIS v4.0 (OBIE UK standard).
+> Extended 2026-07-30 by `/idea-data-flow` with the PISP write contracts (F5 remediation).
+> Source: HSBC UK Open Banking AIS v4.0 + PIS v4.0 (OBIE UK standard).
 
 These entries describe the OBIE **wire contract**. Source models the same contract
 under a different package layout — `core/network/model/ais/{resource}/` — and maps
@@ -69,3 +70,35 @@ rather than legitimised here.
 | OBTransaction6 | OBTransaction6.yaml | Item type from OBReadTransaction6.Data.Transaction[] |
 
 All 8 home-screen OBIE shapes registered. ✓
+
+## PISP write contracts (added 2026-07-30, `/idea-data-flow` F5)
+
+These five were referenced by `send-money`, `payment-consent` and `payment-status` but
+registered nowhere, which failed RULE-DATA-FLOW-001 F5 on 3 of 23 features. They are the
+app's **first write contracts** — every AIS entry above is read-only.
+
+| Name | Version | Origin | Tier | Consumers | Source binding |
+|------|---------|--------|------|-----------|----------------|
+| OBWriteDomesticConsent4 | 1.0.0 | rest | maximum | 1 (send-money) | `model/pisp/domesticPayment/request/DomesticPaymentConsentRequest.kt` — ships, unconsumed |
+| OBWriteDomesticConsentResponse5 | 1.0.0 | rest | maximum | 2 (send-money, payment-consent) | `model/pisp/domesticPayment/response/DomesticPaymentConsentResponse.kt` — ships, unconsumed |
+| OBWriteDomestic2 | 1.0.0 | rest | maximum | 1 (send-money) | `model/pisp/domesticPayment/request/DomesticPaymentRequest.kt` — ships, unconsumed |
+| OBWriteDomesticResponse5 | 1.0.0 | rest | maximum | 2 (send-money, payment-status) | `model/pisp/domesticPayment/response/DomesticPaymentResponse.kt` — ships, unconsumed |
+| OBWriteFundsConfirmationResponse1 | 1.0.0 | rest | high | 1 (send-money) | **not modelled in source** — no funds-confirmation DTO ships |
+
+Two properties distinguish the write contracts from every AIS entry above:
+
+- **`OBWriteDomesticConsent4` and `OBWriteDomestic2` are signed writes.** Both require a
+  detached `x-jws-signature` (PS256) and an `x-idempotency-key`. Omitting the signature
+  returns `400 U019`. No AIS read needs either header.
+- **`OBWriteDomesticResponse5.status` is not a boolean.** A successful submit returns
+  `AcceptedSettlementInProcess` — accepted, not settled. Consumers must map it through
+  `design-tokens.yaml#semantic.payment_disposition` and must never render in-progress as sent.
+
+### Naming correction 2026-07-30
+
+`screens/account-holder/api.yaml` referenced `PartyResponse`, the source-side class name.
+Every other dto ref in the idea-layer — 23 of 24 — uses the OBIE wire name, which is what
+this registry keys on. Retargeted to `OBReadParty2`, whose `source_binding` preserves the
+link to `PartyResponse.kt`. `OBReadParty2` / `OBReadParty3` also carried `used_by` entries
+for `party` and `profile`; `party` was renamed to `account-holder` on 2026-07-28 and
+`profile` was deleted, so both were corrected.

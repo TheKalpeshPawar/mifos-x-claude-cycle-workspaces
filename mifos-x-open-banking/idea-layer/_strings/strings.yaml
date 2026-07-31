@@ -275,6 +275,11 @@ sp_ref_prefix: "Ref:"
 sp_empty_title: "No scheduled payments"
 sp_empty_body: "No future-dated payments are pending for this account."
 sp_empty_a11y: "No scheduled payments found"
+# Added 2026-07-30 with the unsupported state (see scheduled-payments/ui.yaml).
+# Wording mirrors the sibling capability-gated screens: state what the product does
+# not offer, and do NOT imply a retry — the servicer refused the resource outright.
+sp_unsupported_title: "Scheduled payments aren't available for this account"
+sp_unsupported_a11y: "Scheduled payments are not available for this account type"
 sp_error_title: "Could not load scheduled payments"
 sp_error_a11y: "Error loading scheduled payments"
 sp_retry_a11y: "Retry loading scheduled payments"
@@ -450,15 +455,6 @@ home.hero.balance.accessibility: "Current balance"
 home.hero.available_label: "Available"
 home.hero.available.accessibility: "Available balance"
 home.hero.identification.accessibility: "Account number"
-home.quick_actions.accessibility: "Quick account actions"
-home.action.pay.label: "Pay"
-home.action.pay.accessibility: "Pay — coming soon"
-home.action.transactions.label: "Transactions"
-home.action.transactions.accessibility: "View transactions for this account"
-home.action.statements.label: "Statements"
-home.action.statements.accessibility: "View statements for this account"
-home.action.consents.label: "Consents"
-home.action.consents.accessibility: "Manage your Open Banking consents"
 home.recent_transactions.title: "Recent transactions"
 home.recent_transactions.view_all: "View all"
 home.recent_transactions.view_all.accessibility: "View all transactions for this account"
@@ -468,9 +464,14 @@ home.recent_transactions.amount.accessibility: "{item.CreditDebitIndicator} {ite
 # Pruned 2026-07-28: spending_snapshot.* — HomeData carries no spending fields
 # and feature/home renders no snapshot card.
 home.empty.title: "No accounts connected"
-home.empty.body: "Your Open Banking consent has no active accounts. Connect your bank to get started."
-home.empty.cta: "Connect your bank"
-home.empty.cta.accessibility: "Connect your bank via Open Banking"
+# Body retargeted 2026-07-30 with the connect_bank_button removal: home's empty state has no
+# CTA of its own, so telling the PSU to "connect your bank" here pointed at an affordance that
+# does not exist on this screen. Source (HomeEmpty.kt:37) points them to Settings instead.
+home.empty.body: "Your Open Banking consent has no active accounts. Connect a bank from Settings → Consents to get started."
+# Pruned 2026-07-30: home.empty.cta + home.empty.cta.accessibility — swept together with the
+# connect_bank_button they labelled (see screens/home/ui.yaml). Removed in the SAME edit as the
+# component rather than left behind, because the 07-30 quick_actions_card removal orphaned 9
+# keys by not sweeping the catalogue and the next sync had to catch them.
 home.error.title: "Could not load your account"
 home.error.retry_button: "Retry"
 home.error.retry.accessibility: "Retry loading home screen"
@@ -551,3 +552,109 @@ error.beneficiaries.consent_revoked: "Access to beneficiaries has been revoked. 
 error.beneficiaries.rate_limited: "Too many requests. Please wait a moment and retry."
 error.beneficiaries.network_error: "No network connection. Check your connection and try again."
 error.beneficiaries.server_error: "Something went wrong on the HSBC side. Please try again."
+
+# ═══════════════════════════════════════════════════════════════════════════
+# PISP — payment initiation (added 2026-07-30, /idea-sync enrichment)
+# Copy honours DESIGN.md 1.1.0 §Do's and Don'ts:
+#   - an in-progress payment is NEVER described as sent, complete or successful
+#   - the confirm CTA names the action AND the amount, not a bare "Confirm"
+#   - no celebratory language on settlement — calm, regulated finance
+# ═══════════════════════════════════════════════════════════════════════════
+
+# --- send-money ---
+send_money.screen_title: "Send money"
+send_money.loading_label: "Loading your accounts and payees"
+send_money.debtor_list_label: "Choose the account to pay from"
+send_money.creditor_list_label: "Choose who to pay"
+send_money.enter_manually: "Enter account details instead"
+send_money.enter_manually_a11y: "Enter a sort code and account number for someone who is not a saved payee"
+send_money.sort_code_label: "Sort code"
+send_money.sort_code_placeholder: "00-00-00"
+send_money.sort_code_a11y: "Payee sort code, six digits"
+send_money.account_number_label: "Account number"
+send_money.account_number_placeholder: "00000000"
+send_money.account_number_a11y: "Payee account number, eight digits"
+send_money.amount_label: "Amount"
+send_money.amount_placeholder: "0.00"
+send_money.amount_a11y: "Amount to send"
+send_money.reference_label: "Reference (optional)"
+send_money.reference_placeholder: "What's this for?"
+send_money.reference_a11y: "Payment reference shown on the payee's statement, optional"
+send_money.review_cta: "Review payment"
+send_money.review_cta_a11y: "Review the payment before sending"
+send_money.review_summary_a11y: "Payment summary — check these details before you send"
+send_money.confirm_cta: "Send %1$s"
+send_money.confirm_cta_a11y: "Send %1$s to %2$s. This cannot be undone."
+send_money.cancel_cta: "Cancel"
+send_money.cancel_cta_a11y: "Cancel this payment and start again"
+send_money.submitting_label: "Sending your payment"
+send_money.success_title: "Payment submitted"
+send_money.success_body: "Your bank has accepted this payment. It may take a short time to reach %1$s."
+send_money.view_status_cta: "Track this payment"
+send_money.view_status_cta_a11y: "Open payment status to follow this payment to settlement"
+send_money.error_title: "Payment could not be completed"
+send_money.retry: "Try again"
+send_money.retry_a11y: "Retry sending this payment"
+send_money.reauthorise: "Authorise again"
+send_money.reauthorise_a11y: "Return to your bank to authorise this payment"
+send_money.edit_amount: "Change amount"
+send_money.edit_amount_a11y: "Go back and change the amount"
+send_money.view_consents: "Manage consents"
+send_money.view_consents_a11y: "Open consent management to restore access"
+
+# --- payment-consent ---
+payment_consent.screen_title: "Authorising payment"
+payment_consent.progress_label: "Authorising your payment"
+payment_consent.progress_detail: "Confirming with your bank. This usually takes a few seconds."
+payment_consent.check_again: "Check again"
+payment_consent.check_again_a11y: "Check with your bank again for the authorisation result"
+payment_consent.authorised_title: "Payment authorised"
+payment_consent.authorised_body: "Your bank has approved this payment. Sending it now."
+payment_consent.error_title: "Authorisation could not be completed"
+payment_consent.restart: "Start again"
+payment_consent.restart_a11y: "Start the payment authorisation again"
+payment_consent.abandon: "Discard payment"
+payment_consent.abandon_a11y: "Discard this payment. No money will be sent."
+
+# --- payment-status ---
+payment_status.screen_title: "Payment status"
+payment_status.loading_label: "Loading payment"
+payment_status.back_label: "Back"
+payment_status.summary_a11y: "Payment details"
+payment_status.in_progress_note: "Your bank has accepted this payment. The money has not left your account yet."
+payment_status.refresh: "Refresh"
+payment_status.refresh_a11y: "Check the payment status again"
+payment_status.new_payment: "Make a new payment"
+payment_status.new_payment_a11y: "Start a new payment"
+payment_status.error_title: "Could not load payment"
+payment_status.retry: "Try again"
+payment_status.retry_a11y: "Retry loading this payment"
+
+# --- error (PISP) ---
+error.send_money.signature_missing: "This payment could not be signed, so your bank rejected it. Nothing has been sent. Please report reference %1$s."
+error.send_money.consent_not_authorised: "This payment was not authorised with your bank. Authorise again to continue."
+error.send_money.consent_mismatch: "The payment details changed after authorisation, so it was not sent. Please start again."
+error.send_money.outside_limits: "This amount is outside your bank's payment limits. Try a smaller amount."
+error.send_money.invalid_field: "Some payee details are not valid. Check the sort code and account number."
+error.send_money.insufficient_funds: "There isn't enough money in this account to cover the payment."
+error.send_money.consent_revoked: "Permission for this payment was withdrawn. Re-authorise to try again."
+error.send_money.token_expired: "Your session has expired. Sign in again to send this payment."
+error.send_money.rate_limited: "Too many requests. Please wait a moment and try again."
+error.send_money.network_error: "No network connection. Nothing was sent — check your connection and try again."
+error.payment_consent.state_mismatch: "This authorisation could not be verified, so the payment was stopped. Please start again."
+error.payment_consent.no_pending: "There's no payment waiting to be authorised. Please start again."
+error.payment_consent.code_expired: "The authorisation took too long and expired. No money was sent."
+error.payment_consent.rejected: "You declined this payment at your bank. Nothing has been sent."
+error.payment_consent.timed_out: "Your bank hasn't confirmed this payment yet. You can check again or start over."
+error.payment_consent.network_error: "No network connection. The payment was not authorised."
+error.payment_status.not_found: "This payment could not be found."
+error.payment_status.token_expired: "Your session has expired. Sign in again to view this payment."
+error.payment_status.consent_revoked: "Permission for this payment was withdrawn. Payments already completed are not affected."
+error.payment_status.network_error: "No network connection. Check your connection and try again."
+
+# ── 9 keys REMOVED 2026-07-30 (/idea-sync i18n reconciliation) ────────────
+# home.quick_actions.accessibility + home.action.{pay,transactions,statements,consents}.{label,accessibility}
+# The quick-actions row they labelled was removed from source; its 119-line
+# ui.yaml card was deleted in the same session. Orphaned keys are not harmless:
+# they read as coverage in an i18n audit and invite a translator to spend money
+# localising strings no screen will ever render.

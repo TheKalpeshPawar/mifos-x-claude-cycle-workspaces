@@ -1,0 +1,48 @@
+feature: send-money
+flow_ref: send-money-payment
+
+entry_points:
+  - source: app-shell
+    label: "Tap the Pay tab in the bottom navigation"
+    params: []
+    notes: >-
+      The Pay tab already exists in app-shell.yaml#bottom_navigation.items[2] with
+      target_screen: send-money and implementation_status: placeholder. In source it is
+      AuthenticatedNavBarTabItem.PayTab pointing at SendMoneyRoute, which renders
+      PlaceholderScreen("Pay"). This feature replaces that placeholder — no new nav edge
+      is introduced, the existing one is filled.
+
+transitions:
+  - from: send-money
+    to: payment-consent
+    trigger: "Confirm button on the review step, after the consent is staged"
+    params: [consentId]
+    condition: "consent staged successfully (HTTP 201, Status = AwaitingAuthorisation)"
+    notes: >-
+      Leaves the app for the bank's authorise page. The return leg re-enters through
+      payment-consent, mirroring how login hands off to consent-callback for AIS.
+
+  - from: payment-consent
+    to: send-money
+    trigger: "Authorisation completed; PSU access token obtained"
+    params: [consentId]
+    notes: "Re-entry point that triggers SubmitPayment with the reused idempotency key."
+
+  - from: send-money
+    to: payment-status
+    trigger: "View status button on the success state"
+    params: [paymentId]
+    condition: "payment submitted successfully (HTTP 201)"
+
+  - from: send-money
+    to: consent-list
+    trigger: "View Consents button (shown on 403 ConsentRevoked)"
+    params: []
+    condition: "error.type == ConsentRevoked"
+
+  - from: send-money
+    to: send-money
+    trigger: "Edit amount button (shown on U014 OutsideControlParameters or InsufficientFunds)"
+    params: []
+    condition: "error.type in {OutsideControlParameters, InsufficientFunds}"
+    notes: "Self-transition back to the amount step; debtor and creditor selections are preserved."

@@ -1,36 +1,299 @@
 schema_version: "1.0.0"
-generated_at: "2026-07-28T00:00:00Z"
-command: "/gap-analysis-project (reverse sync — validation state reset)"
+generated_at: "2026-07-31T20:30:00Z"
+command: "/design-validate"
 actor: claude
+validated: true
 scope:
   workspace: mifos-x
   project: mifos-x-open-banking
-  screens_count: 20
+  screens_count: 23
   categories_requested: [all]
+  design_system_version: "1.1.0"
+  tokens_version: "2.1.0"
 
-# ─── RESET 2026-07-28 ───────────────────────────────────────────────────
-# The prior record scored a 25-screen corpus (REG-001 component types, WCAG AA
-# contrast pairs, STATE-001 state composition, RENDER-STALE). All four inputs
-# changed in the reverse sync: 6 screens deleted, every ui.yaml contract rewritten,
-# and the rendered previews it checked against were removed entirely.
-#
-# It also recorded that 14 of ~20 declared rules could not execute at all
-# (validation-rules.json v2.0.0 checks fields that exist in no schema and no
-# ui.yaml). That limitation is unchanged and is NOT resolved by this sync —
-# it is a framework-side gap, carried forward here so it is not lost.
+# ═══════════════════════════════════════════════════════════════════════
+# VERDICT
+# ═══════════════════════════════════════════════════════════════════════
+score: 93.0
+pass: true
+pass_reason: "No open critical findings. Hard gate satisfied."
+band: excellent       # thresholds: excellent 90 / good 75 / acceptable 60 / poor 0
+findings: { critical: 0, warning: 2, info: 2, total: 4 }
 
-validated: false
-reason: "Awaiting re-run — the screen corpus and every ui.yaml contract were rewritten on 2026-07-28."
+previous_run:
+  at: "2026-07-30T03:00:00Z"
+  score: 89.5
+  findings: { critical: 0, warning: 3, info: 3, total: 6 }
+  delta: >-
+    +3.5. Three prior findings closed — one genuinely fixed (section_header registered),
+    one fixed (state_model added to all 23), one withdrawn as a false positive the prior
+    run had itself flagged as doubtful — and two new ones opened against screen content
+    that postdates that run.
 
+per_category:
+  REG:    { critical: 0, warning: 1, info: 1 }
+  A11Y:   { critical: 0, warning: 0, info: 0 }
+  STATE:  { critical: 0, warning: 1, info: 1 }
+  MOTION: { critical: 0, warning: 0, info: 0 }
+  RESP:   { critical: 0, warning: 0, info: 0 }
+  COLOR:  { critical: 0, warning: 0, info: 0 }
+fixable_count: 4
+non_fixable_count: 0
+
+# ═══════════════════════════════════════════════════════════════════════
+# COVERAGE HONESTY — what actually ran
+# ═══════════════════════════════════════════════════════════════════════
+coverage:
+  partial_corpus: true
+  statement: >-
+    This score is over an EXECUTABLE SUBSET, not the declared rule set. The framework gap
+    first recorded 2026-07-16 is UNCHANGED: validation-rules.json checks fields that exist
+    in neither core/schemas/ui-yaml.schema.json nor any project ui.yaml, so those rules
+    cannot evaluate at all. Treat 93.0 as "93.0 on the rules that can run".
+  corpus_walked:
+    ui_yaml_files: 23
+    typed_components: 526
+    interactive_components: 131
+  rules_executed:
+    - "REG-001 component type resolves against the merged 3-tier registry"
+    - "REG-unused project registry + design catalog entries with no screen consumer"
+    - "A11Y accessible name on interactive components"
+    - "A11Y alt/decorative/accessibility_label on image, icon, avatar"
+    - "AC1 on_click carries a sibling action_contract (RULE-IDEA-ACTION-CONTRACT-001)"
+    - "STATE-001 screens with declared api operations compose loading/content/error/empty"
+    - "STRUCT-state-model block present"
+    - "touch targets — explicit *_dp declarations below 44"
+    - "{strings.*} references resolve against _strings/"
+    - "token references in screen YAML resolve against design-tokens.yaml"
+  rules_not_executable:
+    count: 14
+    reason: "field referenced by the rule exists in no schema and no ui.yaml"
+    ids: [A11Y-001, A11Y-004, A11Y-005, A11Y-007, A11Y-008, STATE-002, STATE-004,
+          MOTION-001, MOTION-002, MOTION-003, MOTION-004, RESP-001, RESP-002, RESP-003]
+    fields_absent: [keyboard.focusable, label_source, supported_states, heading_level,
+                    keyboard.shortcuts, motion.enter, motion.exit, motion.reduced_motion_fallback,
+                    breakpoints]
+  a11y_002_contrast:
+    executed_at_screen_level: false
+    reason: >-
+      Screens carry no raw colour values — 0 literal token references found across all 23
+      ui.yaml. Contrast was validated one layer up during /design-system 1.1.0: 15 pairs,
+      0 failures, range 4.24-10.90:1, recorded in state/DESIGN_SYSTEM_STATE.yaml#wcag.
+      Satisfied transitively, NOT re-measured here.
+  shipped_validator_unusable:
+    path: layers/idea/templates/design-system/validation/validator.ts
+    reason: >-
+      Has no CLI entry point (no import.meta.main, no Deno.args, no process.argv) and its
+      input type is a `Mockup` element tree documented as "parsed from Stitch/Figma/Chrome
+      DevTools". No ui.yaml adapter exists, so it cannot be invoked against screen YAML.
+      The walk was therefore performed inline per the runtime's Step 4 — same as the prior
+      run, which described its rules_executed in prose rather than by rule id for the same
+      reason.
+
+# ═══════════════════════════════════════════════════════════════════════
+# CORRECTED DURING THIS RUN — recorded so the error is not repeatable
+# ═══════════════════════════════════════════════════════════════════════
+self_correction:
+  - id: SC-1
+    initial_finding: "REG-001 — 32 of 34 component types unresolved"
+    corrected_to: "REG-001 — 0 of 34 unresolved"
+    cause: >-
+      The first extraction pass used a key regex (`id|name` at two-space indent) that does
+      not match the registry file shape (`- type:` under a `primitives:` / `patterns:`
+      root), recovering only 9 of 123 registry ids. This is the SAME class as the
+      2026-07-30 SC-1: a bad registry resolution manufactures mass critical false positives.
+    lesson: "Sanity-check the extracted registry SIZE before trusting any REG-001 result."
+  - id: SC-2
+    initial_finding: "A11Y — 2 interactive components without an accessible name"
+    corrected_to: "0"
+    cause: >-
+      The name predicate checked label/text/content but not `title`. settings/app_version_row
+      carries title: {strings.settings.app_version.title} and is interaction_type: display.
+  - id: SC-3
+    initial_finding: "A11Y — 3 media components missing alt/decorative"
+    corrected_to: "0"
+    cause: >-
+      The media predicate accepted only `alt` or `decorative: true`. This project's schema
+      expresses the accessible name as `accessibility_label`; all three declare one, and
+      consent-detail/expiry_warning_icon uses the ARIA-correct empty name ("") for a
+      decorative icon whose sibling text carries the same message.
+
+# ═══════════════════════════════════════════════════════════════════════
+# RESULTS
+# ═══════════════════════════════════════════════════════════════════════
+results:
+  - id: F-001
+    rule: STATE-001
+    category: state
+    severity: warning
+    title: "send-money declares no `empty` state despite two data-driven lists"
+    locations: [screens/send-money/ui.yaml]
+    detail: >-
+      send-money renders `debtor_account_selector` (items_source {content.debtorAccounts})
+      and `creditor_selector` (items_source {content.beneficiaries}) but composes only
+      loading / content / error / submitting / success. A PSU with no saved beneficiaries —
+      an ordinary first-payment state — has no defined rendering. The two `empty_state`
+      components in the file are not counter-evidence: both bind to `success` and `error`,
+      i.e. they are the empty_state COMPONENT TYPE used as a full-screen message surface,
+      not the screen STATE `empty`.
+    provenance: new
+    provenance_detail: >-
+      send-money/ui.yaml was written 2026-07-30T06:44Z, after the 03:00Z validation, so this
+      content has never been validated before.
+    fix_hint: >-
+      Add an `empty` state composing the no-beneficiaries case, or declare a per-list empty
+      affordance on creditor_selector.
+    fixable: true
+    auto_fix_applied: false
+
+  - id: F-002
+    rule: REG-drift
+    category: registry
+    severity: warning
+    title: "design catalog v1.1.0 payment components are not instantiated by the PISP screens"
+    locations:
+      - design-system/components/_index.yaml
+      - screens/payment-consent/ui.yaml
+      - screens/send-money/ui.yaml
+      - screens/payment-status/ui.yaml
+    detail: >-
+      The catalog added review_card, payment_summary_row, field_error and step_indicator in
+      v1.1.0 for the payment journey; all four are referenced by 0 of the 3 PISP screens,
+      which use generic card / text_field / chip / list_item instead. review_card is the
+      sharpest case — marked `trust_critical: true` and annotated "Last surface before money
+      moves — payments analogue of consent_card" — yet payment-consent renders a plain
+      `card`. The catalog's own removed_rationale names this as the hazard: "an aspirational
+      catalog entry is worse than no entry: a codegen pass reads the registry as a contract
+      and will try to satisfy it."
+    provenance: new
+    fix_hint: >-
+      Either adopt the specialized types in the PISP screen YAML, or strike the four entries
+      the way the v1.1.0 removals were struck. Adoption is the better fix for review_card,
+      since the trust-critical treatment is the reason it was specified at all.
+    fixable: true
+    auto_fix_applied: false
+
+  - id: F-003
+    rule: STATE-001
+    category: state
+    severity: info
+    title: "payment-consent declares no literal `loading` or `content` state"
+    locations: [screens/payment-consent/ui.yaml]
+    detail: >-
+      Its states are checking, validating, exchanging, authorised and error. The journey
+      states do fill the loading and content roles, which is defensible for a redirect
+      journey screen, but nothing machine-legible says so — a reader or codegen pass looking
+      for the canonical pair finds neither.
+    provenance: carried-forward
+    provenance_detail: "Open in the 2026-07-30 run as F-003 at warning; unchanged in substance."
+    fix_hint: "Alias the journey states to the canonical roles, or record the mapping in the states block."
+    fixable: true
+    auto_fix_applied: false
+
+  - id: F-004
+    rule: REG-unused
+    category: registry
+    severity: info
+    title: "2 Tier-3 registry entries have zero screen consumers"
+    locations: [components.yaml]
+    detail: >-
+      bar_chart and info_row are declared in components.yaml and used by no screen. chip_row
+      (2 screens) and section_header (9 screens) are consumed. Reported separately from
+      F-002 because this is the ui.yaml `type:` registry — a different namespace from the
+      design catalog.
+    counting_note: >-
+      A raw sweep of design-system/components/_index.yaml shows 19 of 30 entries with no
+      ui.yaml consumer, but that number OVERSTATES: 3 are deliberately struck in its
+      `removed:` block, and most of the rest are design-vocabulary names never expected to
+      appear as a ui.yaml type (top_app_bar, bottom_nav, button_filled, state_loading).
+      Only the F-002 subset is actionable.
+    provenance: pre-existing
+    fix_hint: "Strike bar_chart and info_row, or consume them."
+    fixable: true
+    auto_fix_applied: false
+
+# ═══════════════════════════════════════════════════════════════════════
+# CLOSED SINCE THE PRIOR RUN
+# ═══════════════════════════════════════════════════════════════════════
+closed:
+  - prior_id: F-001
+    rule: REG-001
+    was: "critical — component type `section_header` resolves in no registry tier (19 sites, 9 screens)"
+    status: RESOLVED
+    evidence: >-
+      section_header is now registered at Tier 3 in both components.yaml and
+      design-system/components/_index.yaml (added 1.1.1). Re-measured this run: all 34 used
+      types resolve against the 123-id merged registry (12 primitives + 102 framework
+      patterns + 5 aliases + 4 project). 0 unresolved.
+  - prior_id: F-005
+    rule: STRUCT-state-model
+    was: "info — no state_model block (licences, user-onboarding)"
+    status: RESOLVED
+    evidence: "All 23 screens now carry a state_model block; licences has 2 references, user-onboarding 3."
+  - prior_id: F-002
+    rule: A11Y-label
+    was: "warning — interactive component without accessibility_label (app_version_row, tx_category_tag)"
+    status: WITHDRAWN
+    reason: >-
+      Both were false positives, and the prior run had already flagged the doubt on one
+      ("app_version_row is arguably non-interactive... which would make it a false
+      positive"). Confirmed this run: app_version_row is a list_item with
+      title: {strings.settings.app_version.title}, interaction_type: display, and no
+      on_click. tx_category_tag is a chip with label: {item.Category}, interaction_type:
+      display. Neither is interactive and both carry an accessible name. No label should be
+      added — announcing a row users cannot act on would be the worse outcome.
+
+# ═══════════════════════════════════════════════════════════════════════
+# CLEAN
+# ═══════════════════════════════════════════════════════════════════════
+clean:
+  - "REG-001 — all 34 component types resolve across the merged 3-tier registry (0 unresolved)"
+  - "AC1 action_contract — 414 component blocks across 23 screens, 0 violations"
+  - "A11Y accessible name — 131 interactive components, 0 missing"
+  - "A11Y media — every image, icon and avatar carries accessibility_label, alt or an ARIA-correct empty name"
+  - "touch targets — no explicit dimension below 44dp anywhere"
+  - "i18n — 545 declared string keys, 595 references in ui.yaml, 0 unresolved"
+  - "token references — 0 unresolved (screens reference semantic roles, not literals)"
+  - "removed components — no screen references category_chip, chart_donut or progress_budget"
+  - "state_model — present on all 23 screens"
+  - "STATE-001 — 16 of 20 api-backed screens compose the full canonical set"
+
+# ═══════════════════════════════════════════════════════════════════════
+# NOT DEFECTS — evaluated and dismissed with reason
+# ═══════════════════════════════════════════════════════════════════════
+dismissed:
+  - finding: "consent-callback and payment-status declare no `empty` state"
+    reason: >-
+      Archetype-inappropriate. Neither renders any list or lazy_column, so there is no
+      collection that can be empty. consent-callback is a redirect-return screen and
+      payment-status a single-result readout. Flagging these would be a schema-literal
+      reading of STATE-001 against screens its intent does not cover — which is why
+      send-money (F-001) IS flagged and these two are not.
+
+# ═══════════════════════════════════════════════════════════════════════
+# CARRIED FORWARD — framework-side, not project-side
+# ═══════════════════════════════════════════════════════════════════════
 carried_forward_framework_gap:
   finding: >-
     validation-rules.json is v2.0.0 / lastUpdated 2026-02-10 and checks fields
-    (keyboard.focusable, label_source, supported_states, motion.*, breakpoints)
-    that exist neither in core/schemas/ui-yaml.schema.json nor in any project
-    ui.yaml. Corpus size is self-inconsistent: runtime reports 102 rules,
-    _metadata says 147, the categories block holds 67.
-  consequence: "14 of ~20 declared rules cannot execute. Any score is partial-corpus."
+    (keyboard.focusable, label_source, supported_states, motion.*, breakpoints) that exist
+    neither in core/schemas/ui-yaml.schema.json nor in any project ui.yaml.
+  corpus_size_inconsistency:
+    runtime_prose_says: 102
+    categories_block_holds: 124
+    metadata_says: 147
+    note: >-
+      Three different counts in the same capability. The 2026-07-16 record reported
+      102 / 67 / 147; the categories block has since grown to 124 while the runtime prose
+      and _metadata were not updated. The inconsistency is unresolved, only shifted.
+  consequence: "14 of the declared rules cannot execute. Any score is partial-corpus."
   owner: framework
   first_recorded: "2026-07-16"
+  still_open: true
 
-results: []
+next_actions:
+  - "F-001 — add an `empty` state to send-money for the no-beneficiaries case (warning)"
+  - "F-002 — decide adopt-or-strike for review_card / payment_summary_row / field_error / step_indicator (warning)"
+  - "F-003 — decide whether payment-consent must adopt the literal loading/content vocabulary (info, carried forward)"
+  - "F-004 — strike or consume bar_chart and info_row (info)"
+  - "FRAMEWORK — close the validation-rules.json schema gap or retire the 14 dead rules"

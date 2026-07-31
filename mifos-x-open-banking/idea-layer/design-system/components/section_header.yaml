@@ -1,0 +1,69 @@
+id: section_header
+category: list
+m3: Text
+added: "1.1.1"
+tokens_ref: "../design-tokens.yaml"
+
+purpose: >-
+  A labelled divider introducing a run of related rows inside a scrolling screen — "Balances",
+  "Appearance", "About & Legal". It is the app's grouping device on detail and settings
+  screens, where content is a sequence of labelled sections rather than a single list.
+
+registration_note: >-
+  Registered 2026-07-30 in response to /design-validate F-001. It had been in use across 9
+  screens and 19 call sites while resolving in no registry tier, which was the single critical
+  finding of that run. Documented here from the shape already established in those 19 uses —
+  this codifies existing practice, it does not introduce a new component.
+
+anatomy:
+  typography: titleSmall           # 14/20/500 — subordinate to the screen title (headlineSmall)
+  colour: onSurfaceVariant
+  padding: { top_dp: 24, bottom_dp: 8, horizontal_dp: 16 }
+  divider: none
+  rationale: >-
+    Separation comes from the leading whitespace, not from a rule. The system takes depth and
+    grouping from tonal surfaces rather than lines, and a 1px rule above every group would read
+    as busier than the low-variance dial allows.
+
+fields:
+  id:                  { required: true,  note: "stable, used by the test tag" }
+  label:               { required: true,  note: "string key — never a literal (RULE-IMPL-NO-HARDCODED-STRING-001)" }
+  state_binding:       { required: false, note: "usually [content]; headers hide in loading/empty/error" }
+  accessibility_label: { required: true }
+  test_tag:            { required: false, note: "convention `{screen}:section:{name}` where present" }
+
+rules:
+  - id: SH-1
+    rule: "Non-interactive. A section_header never carries on_click."
+    why: >-
+      A tappable header is a disclosure control, which is a different component with different
+      affordances and state. Confirmed across all 19 existing call sites — none has on_click.
+  - id: SH-2
+    rule: "Label is a string key, never a literal."
+    why: "Every user-visible string is localised; a literal here breaks the 471-key catalogue parity."
+  - id: SH-3
+    rule: "Bound to the states where its rows render — typically [content]."
+    why: "A header floating above a skeleton or an empty state labels nothing."
+  - id: SH-4
+    rule: "titleSmall, not a heading role that competes with the top-app-bar title."
+    why: "One dominant title per screen; sections are subordinate. See DESIGN.md §Typography."
+
+a11y:
+  role: heading
+  heading_level: 2
+  note: >-
+    Exposed as a level-2 heading beneath the screen title so screen-reader users can jump
+    between sections. accessibility_label is required because the visible label is often
+    abbreviated relative to what should be announced.
+  contrast: "onSurfaceVariant on surface — inherited, WCAG AA (see DESIGN_SYSTEM_STATE.yaml#wcag)"
+
+consumers:
+  - account-detail
+  - account-holder
+  - consent-detail
+  - home
+  - login
+  - product
+  - settings
+  - statement-detail
+  - transactions

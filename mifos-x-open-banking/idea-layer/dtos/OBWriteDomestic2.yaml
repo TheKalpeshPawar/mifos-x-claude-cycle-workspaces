@@ -1,0 +1,35 @@
+name: OBWriteDomestic2
+version: 1.0.0
+description: >
+  OBIE PISP v4.0 REQUEST body for POST /domestic-payments — the call that actually moves
+  money. Sent on the PSU access token obtained from the authorise leg, with a detached
+  x-jws-signature and the SAME x-idempotency-key used to stage the consent, so a retry
+  returns the original result instead of creating a second payment.
+source:
+  origin: rest
+  endpoint: "/domestic-payments"
+  method: POST
+  spec_ref: "specs/hsbc-sandbox/openapi/payment-initiation-4.0-personal.yaml"
+fields:
+  - name: consent_id
+    type: String
+    required: true
+    source_field: "Data.ConsentId"
+    description: "Must match the staged, Authorised consent."
+  - name: initiation
+    type: Json
+    required: true
+    source_field: "Data.Initiation"
+    description: >
+      MUST be byte-identical to the Initiation echoed by the consent response. Any divergence
+      returns 400 U008 (mismatch between staged consent and payment order request). PII.
+  - name: risk
+    type: Json
+    source_field: "Risk"
+    description: "Same consumer PaymentContextCode as the staged consent; no merchant fields."
+used_by:
+  - { feature: send-money, kind: request, api_id: domestic-payment-submit, role: body }
+capabilities_used: [has_api]
+tier: maximum
+tags: [obie, pisp, payment, request, pii, signed-write, money-movement]
+source_binding: "core/network/model/pisp/domesticPayment/request/DomesticPaymentRequest.kt (ships, unconsumed)"

@@ -12,7 +12,7 @@ shell:
   top_app_bar_leading: back
   fab_visible: false
 
-states: [loading, content, empty, error]
+states: [loading, content, empty, unsupported, error]
 
 business_logic:
   kind: crud
@@ -161,6 +161,35 @@ components:
       required_fields: []
       interaction_type: display
       data_driven: false
+
+  # ── UNSUPPORTED STATE ───────────────────────────────────────────────
+  # Added 2026-07-30 (/idea-heal -> enrich loop), closing
+  # DISCOVERY:scheduled-payments:missing-unsupported-state.
+  #
+  # This feature is product-gated exactly like direct-debits and standing-orders —
+  # its store fetcher calls recordIfUnsupported() on an OBIE U000 refusal before
+  # rethrowing (source BankingStores.kt:377). Both siblings declared `unsupported`;
+  # this one did not, because the 2026-07-28 reverse sync back-filled the state into
+  # them from source (see direct-debits/ui.yaml:46) and missed this feature.
+  #
+  # Distinct from empty: empty means the bank answered "none scheduled"; unsupported
+  # means the account's product does not expose the resource at all, so there is
+  # NOTHING to retry. Without this state the refusal falls through to the retryable
+  # error path and a PSU on a credit card gets a Retry that can never succeed.
+  - type: empty_state
+    id: unsupported_scheduled_payments
+    variant: info
+    state_binding: [unsupported]
+    icon: info_outline
+    title: "{strings.sp_unsupported_title}"
+    body: "{uiState.message}"
+    test_tag: "scheduledPayments:unsupportedState"
+    accessibility_label: "{strings.sp_unsupported_a11y}"
+    test_context:
+      purpose: "Servicer does not support the scheduled-payments resource for this account. No retry CTA — the capability registry refused the call rather than the network failing."
+      required_fields: ["uiState.message"]
+      interaction_type: display
+      data_driven: true
 
   - type: empty_state
     id: error_state

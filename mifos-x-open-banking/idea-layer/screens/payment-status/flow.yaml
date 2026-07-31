@@ -1,0 +1,30 @@
+feature: payment-status
+flow_ref: send-money-payment
+
+entry_points:
+  - source: send-money
+    label: "Tap View status on the payment success state"
+    params: [paymentId]
+
+  - source: app-shell
+    label: "Pay tab, when a payment is already in progress"
+    params: [paymentId]
+    condition: "the most recent payment has an in_progress disposition"
+    notes: >-
+      Secondary entry so a PSU who leaves the app mid-settlement can find the payment again
+      rather than being dropped back onto an empty send-money form.
+
+transitions:
+  - from: payment-status
+    to: send-money
+    trigger: "Back button (top-app-bar leading)"
+    params: []
+
+  - from: payment-status
+    to: send-money
+    trigger: "New payment button (shown only on a Rejected status)"
+    params: []
+    condition: "disposition == terminal_failure"
+    notes: >-
+      Opens send-money with a cleared form. Deliberately a fresh instruction rather than a
+      resubmit — a rejected payment must not be retried against the same consent.

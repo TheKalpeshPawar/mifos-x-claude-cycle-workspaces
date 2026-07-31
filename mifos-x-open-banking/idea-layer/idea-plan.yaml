@@ -30,6 +30,24 @@ _api_sources:
     version: "3.2.1"
     auth_schemes: [private_key_jwt, jws-ssa]
     local_path: /home/kalpesh/OpenBankingProject/specs/hsbc-sandbox/openapi/dcr-uk.yaml
+  # Added 2026-07-30 (/idea-evolve PISP scope reversal).
+  - id: API-003
+    type: openapi
+    url: /home/kalpesh/OpenBankingProject/HSBC_Sandbox/specs/hsbc-sandbox/openapi/payment-initiation-4.0-personal.yaml
+    spec_url: /home/kalpesh/OpenBankingProject/HSBC_Sandbox/specs/hsbc-sandbox/openapi/payment-initiation-4.0-personal.yaml
+    name: HSBC UK Open Banking — Payment Initiation API (PIS)
+    version: "4.0"
+    auth_schemes: [oauth2-fapi-1.0-advanced, mtls, private_key_jwt, detached-jws]
+    local_path: /home/kalpesh/OpenBankingProject/HSBC_Sandbox/specs/hsbc-sandbox/openapi/payment-initiation-4.0-personal.yaml
+    scoped_to: "Domestic single payment only — see §vision.scope.out_of_scope for the deferred variants."
+    key_schemas:
+      OBInternalPaymentContext1Code: >-
+        Six-value enum at :2281-2299. Only TransferToThirdParty and TransferToSelf are valid
+        for this consumer app; the other four are merchant contexts.
+      OBRisk1: "Declares no required properties (:2244-2280) — every merchant field is optional and omitted."
+      OBWriteDomestic2DataInitiation: >-
+        Requires InstructionIdentification, EndToEndIdentification, InstructedAmount and
+        CreditorAccount (:2387-2391). DebtorAccount is optional but always supplied here.
 _auto_approved: false
 _context_resources:
   - id: CR-001
@@ -85,7 +103,8 @@ sections:
       slug: mifos-x-open-banking
       workspace: mifos-x
       project_type: kmp
-      one_liner: "UK Open Banking AISP reference app — read account & transaction data from the HSBC sandbox via the OBIE standard."
+      # Updated 2026-07-30 (/idea-evolve): the app is no longer AISP-only.
+      one_liner: "UK Open Banking AISP + PISP reference app — read account & transaction data from the HSBC sandbox via the OBIE standard, and send a domestic payment."
       package_name: org.mifosx.openbanking
 
   domain:
@@ -150,16 +169,58 @@ sections:
         - "Consent-first and transparent — clear permissions, expiry, and revocation."
         - "Cross-platform: Android, iOS, Desktop, Web from one codebase."
       scope:
+        # ── SCOPE REVERSAL 2026-07-30 (/idea-evolve) ────────────────────────
+        # PISP moved out_of_scope -> in_scope. Rationale: core/network already shipped a
+        # complete unconsumed PISP wire-model surface for six payment types, and the Pay
+        # bottom-nav tab already pointed at it via the SendMoneyRoute placeholder — recorded
+        # as §api_surface.out_of_scope_drift on 2026-07-28. This reversal closes that drift
+        # by making the declaration match both the shipped code and the product intent.
+        # Scoped to DOMESTIC single payments only; scheduled, standing-order and every
+        # international variant stay out of scope for now.
         in_scope:
           - "AISP read-only account information across all HSBC sandbox AIS resources."
           - "Full FAPI consent journey + consent lifecycle management (dashboard, revoke, 90-day reconfirm)."
-          - "Multi-currency account display (Global Money / Global Wallet)."
-          - "ATM locator via HSBC Open Data (no auth)."
+          # Reworded 2026-07-30 (/idea-sync): the old claim was "Multi-currency account
+          # display (Global Money / Global Wallet)", which implied a dedicated surface that
+          # was never built. What ships is list rendering, so the claim now says only that.
+          - >-
+            Global Money / Global Wallet accounts rendered in the accounts list and account
+            detail — no dedicated multi-currency surface and no Global filter chip.
+          - >-
+            PISP consumer-initiated domestic single payments — the PSU pays a person from
+            their own authorised account. Risk.PaymentContextCode is restricted to the
+            consumer values TransferToThirdParty and TransferToSelf; the merchant-checkout
+            contexts and the merchant Risk fields are forbidden (see
+            screens/send-money/docs.yaml#consumer_context_constraint).
+          - "Detached JWS (x-jws-signature, PS256, b64:false) and x-idempotency-key on every PISP write."
         out_of_scope:
-          - "Payment initiation (PISP) — any money movement, new standing orders, beneficiary edits."
-          - "Confirmation of Funds (CBPII)."
+          - "PISP domestic scheduled payments and domestic standing orders (wire models ship; no UI)."
+          - "PISP international payments — single, scheduled and standing order (wire models ship, untested)."
+          - "Merchant-initiated / e-commerce checkout payment contexts — this is a consumer app."
+          - "Variable Recurring Payments (VRP), file payments and multi-bill payments."
+          - "Confirmation of Funds (CBPII) as a standalone capability — funds-confirmation is used only inside the payment flow."
+          - "Beneficiary edits — the beneficiaries surface stays read-only."
           - "Field-officer / agent-banking surfaces (removed — consumer-only app)."
           - "Production TPP enrolment (sandbox only; production hosts are TBD)."
+          # Moved from in_scope 2026-07-30 (/idea-sync): declared in scope but never built.
+          - >-
+            ATM / branch locator via HSBC Open Data. No screen, repository or Aisp call
+            exists. AccountDetailChip.AtmLocator ships and navigates, but only to
+            PlaceholderScreen("ATM locator").
+          - >-
+            PFM dashboard, spending-by-category, budgets and recurring-subscriptions
+            screens. The client-side primitives ship (SpendingCalculator, SpendingSnapshot,
+            TransactionCategory) but have no production caller and no surface; only the
+            per-transaction category tag under FR-011 remains in scope.
+        scope_change_log:
+          - at: "2026-07-30"
+            by: "/idea-evolve"
+            change: "PISP domestic single payment moved out_of_scope -> in_scope"
+            drift_closed: "§api_surface.out_of_scope_drift (recorded 2026-07-28)"
+            regulatory_note: >-
+              PISP is a distinct FCA permission from AISP. Sandbox operation is unaffected;
+              production payment initiation would require payment-initiation authorisation
+              this project does not hold. Tracked as an ADR, not a blocker.
       constraints:
         technical:
           - "Mutual TLS (mTLS) with HSBC-issued sandbox certs — platform-specific TLS config (expect/actual)."
@@ -239,16 +300,100 @@ sections:
           description: "Provide a consent dashboard: active consents, granted permissions, expiry, revoke, and 90-day reconfirmation."
           priority: must
           acceptance_criteria: ["DELETE /account-access-consents/{id} revokes; reconfirm re-runs authorize before 90 days."]
-        - id: FR-009
-          description: "Display multi-currency accounts (Global Money / Global Wallet)."
-          priority: could
-        - id: FR-010
-          description: "ATM locator via HSBC Open Data (unauthenticated)."
-          priority: could
+        # ── FR-009 + FR-010 REMOVED 2026-07-30 (/idea-sync stale reconciliation) ──
+        # Both were orphaned: no features[] entry referenced either, because the
+        # multi-currency and atm-locator features were deleted in the 2026-07-28
+        # reverse sync while their requirements were left behind.
+        #
+        #   FR-009 "Display multi-currency accounts (Global Money / Global Wallet)."
+        #     Removed as a REQUIREMENT, not as behaviour. There is no dedicated
+        #     multi-currency surface and AccountFilter deliberately offers no Global
+        #     chip (a Global Money wallet reports CACC, indistinguishable from a
+        #     current account, so the chip could never match). Global Money and Global
+        #     Wallet accounts DO render in the accounts list under Current, and
+        #     AccountUiType still carries GLOBAL_MONEY / GLOBAL_WALLET — that behaviour
+        #     stays documented in screens/accounts and screens/home.
+        #
+        #   FR-010 "ATM locator via HSBC Open Data (unauthenticated)."
+        #     No screen, no repository, no Aisp call. AccountDetailChip.AtmLocator
+        #     ships and navigates, but only to PlaceholderScreen("ATM locator"); that
+        #     chip stays documented in screens/account-detail as an explicit
+        #     placeholder binding.
         - id: FR-011
           description: "Client-side personal finance management derived from AIS transactions: categorization, spending-by-category, monthly budgets, recurring/subscription detection, income-vs-expense, and net worth. No payment initiation; no additional API."
           priority: should
           acceptance_criteria: ["Transactions are categorized and summarized in-app; budgets track against category spend; recurring payments are detected from transaction patterns."]
+          retained_because: >-
+            NOT orphaned — the transactions feature still claims it, and the client-side
+            primitives genuinely ship: SpendingCalculator.computeSpendingSnapshot,
+            SpendingSnapshot and the 7-value TransactionCategory enum all exist in
+            core/data. Only the four PFM SCREENS were removed. Scoped down accordingly:
+            the dashboard, budgets and drill-down surfaces are out of scope; the
+            per-transaction category tag is not.
+        # ── PISP requirements added 2026-07-30 (/idea-evolve scope reversal) ──
+        - id: FR-012
+          description: >-
+            Initiate a consumer domestic payment (PISP): the PSU selects one of their own
+            authorised accounts as debtor, a saved payee or a manually entered sort code and
+            account number as creditor, an amount and an optional reference, reviews the
+            payment, and confirms.
+          priority: must
+          acceptance_criteria:
+            - "POST /domestic-payment-consents returns 201 with Status AwaitingAuthorisation."
+            - "POST /domestic-payments returns 201 with a DomesticPaymentId after authorisation."
+            - "Amount is validated against the selected account's available balance before the review step."
+        - id: FR-013
+          description: >-
+            Complete the PISP app-to-app authorisation round trip on scope=payments: validate
+            the redirect state and nonce, exchange the code for a PSU access token, and poll
+            the payment consent until it reaches Authorised.
+          priority: must
+          acceptance_criteria:
+            - "A state or nonce mismatch is rejected before any token exchange is attempted."
+            - "The payments-scope token is never persisted into ConsentSession — the AIS session token is untouched."
+            - "Submit is gated on the consent reaching Authorised, since a non-Authorised consent returns 400 U009."
+        - id: FR-014
+          description: >-
+            Track a submitted payment to settlement via GET /domestic-payments/{PaymentId},
+            mapping OBIE status onto an in-progress / terminal-success / terminal-failure
+            disposition.
+          priority: must
+          acceptance_criteria:
+            - "AcceptedSettlementInProcess renders as in progress and is never described as sent or complete."
+            - "Polling stops on a terminal disposition and never starts on one."
+            - "An unrecognised status fails open to in progress rather than being guessed as success or failure."
+        - id: FR-015
+          description: >-
+            Restrict every payment this app initiates to a consumer payment context.
+            Risk.PaymentContextCode must be TransferToThirdParty or TransferToSelf; the
+            merchant fields MerchantCategoryCode, MerchantCustomerIdentification and
+            DeliveryAddress must never be sent.
+          priority: must
+          rationale: >-
+            OBInternalPaymentContext1Code offers six contexts, four of which describe a
+            merchant collecting from a customer. HSBC's own Postman examples use the merchant
+            shape, so copying them verbatim — the obvious thing to do — would model the wrong
+            application.
+          acceptance_criteria:
+            - "Every staged consent and submitted payment carries a consumer PaymentContextCode."
+            - "No request body contains any of the three merchant Risk fields."
+        - id: FR-016
+          description: >-
+            Sign every PISP write with a detached JWS in the x-jws-signature header (PS256,
+            b64:false plus the crit claims), extending the existing signPs256 primitive.
+          priority: must
+          acceptance_criteria:
+            - "POST /domestic-payment-consents and POST /domestic-payments both carry x-jws-signature."
+            - "Absence of the header is verified to produce 400 U019, and that error is surfaced as non-recoverable with a support reference rather than a Retry."
+        - id: FR-017
+          description: >-
+            Attach an x-idempotency-key (max 40 characters) to every PISP write, generated
+            once per staged payment and reused across the consent stage, the submit, and every
+            retry of either.
+          priority: must
+          acceptance_criteria:
+            - "A retry after a network failure reuses the original key and creates no second payment."
+            - "The same key is used for the consent stage and the subsequent submit."
       third_party_services:
         - name: HSBC UK Open Banking sandbox
           purpose: "Account & Transaction (AIS) API — the data source."
@@ -337,6 +482,63 @@ sections:
           description: "Open-source licence readout — a pushed, arg-less screen inside the settings module rendering the bundled MPL text. Source-originated; added to the plan 2026-07-28 because it ships but was never specified."
           dependencies: [settings]
 
+        # ── PISP features added 2026-07-30 (/idea-evolve scope reversal) ─────
+        - name: send-money
+          id: send-money
+          priority: must
+          status: scaffold
+          scaffolded_at: "2026-07-30T00:00:00Z"
+          category: payment-initiation
+          description: >-
+            Consumer-initiated domestic payment. Three-step form — funding account, payee,
+            amount — then review and confirm, which stages a domestic-payment-consent and hands
+            off to payment-consent for the bank authorisation. Replaces the Pay tab placeholder
+            (SendMoneyRoute -> PlaceholderScreen("Pay")). Composes with two already-shipped
+            surfaces: accounts supplies the debtor, beneficiaries supplies the creditor.
+          acceptance_criteria:
+            - "Payment stages and submits against the HSBC sandbox with a detached JWS and an idempotency key."
+            - "Risk carries a consumer PaymentContextCode and no merchant fields."
+            - "A retry after a network failure cannot create a duplicate payment."
+          requirement_refs: [FR-012, FR-015, FR-016, FR-017]
+          dependencies: [accounts, beneficiaries, payment-consent, payment-status]
+
+        - name: payment-consent
+          id: payment-consent
+          priority: must
+          status: scaffold
+          scaffolded_at: "2026-07-30T00:00:00Z"
+          category: payment-initiation
+          description: >-
+            Return leg of the PISP app-to-app authorisation on scope=payments — the analogue of
+            the shipped consent-callback, but for a domestic-payment-consent. Validates state and
+            nonce, exchanges the code, and polls the consent to Authorised before handing back to
+            send-money. Deliberately does NOT persist its token into ConsentSession, which holds
+            the AIS data-sharing session.
+          acceptance_criteria:
+            - "State or nonce mismatch is rejected before the single-use authorisation code is spent."
+            - "ConsentSession is never written to."
+            - "Return to send-money is gated on the consent reaching Authorised."
+          requirement_refs: [FR-013]
+          dependencies: [send-money]
+
+        - name: payment-status
+          id: payment-status
+          priority: must
+          status: scaffold
+          scaffolded_at: "2026-07-30T00:00:00Z"
+          category: payment-initiation
+          description: >-
+            Settlement tracking for a submitted payment. Exists because a successful submit
+            returns AcceptedSettlementInProcess, not a completed settlement — without it the PSU
+            is told "sent" with no way to learn whether the money actually moved. Maps OBIE
+            status onto a three-way disposition and polls only while in progress.
+          acceptance_criteria:
+            - "An in-progress payment is never described as sent, complete or successful."
+            - "Polling stops on a terminal disposition and never starts on one."
+            - "An unmapped status fails open to in progress."
+          requirement_refs: [FR-014]
+          dependencies: [send-money]
+
 # ── REMOVED 2026-07-28 (reverse sync from source) ────────────────────
 # The following features were specified but have no source implementation.
 # Their screens, exports and mockups were deleted from the idea-layer so the
@@ -386,9 +588,15 @@ sections:
           feature_refs: [home, accounts, balances, transactions]
           description: "Home landing — currently selected account hero balance, quick actions, recent transactions, spending snapshot, account switcher."
         - name: accounts
+          # feature_refs cleaned 2026-07-30 (/idea-sync): multi-currency was deleted from
+          # features[] in the 2026-07-28 reverse sync but left dangling here.
+          feature_refs: [accounts]
           archetype: index_list
-          feature_refs: [accounts, multi-currency]
-          description: "Authorised accounts with balance preview."
+          description: >-
+            Authorised accounts with balance preview. Global Money / Global Wallet accounts
+            render in this list under the Current filter — there is deliberately no Global
+            filter chip, because such a wallet reports AccountTypeCode CACC and is
+            indistinguishable here from an ordinary current account.
         - name: account-detail
           archetype: detail_screen
           feature_refs: [accounts, balances]
@@ -442,6 +650,29 @@ sections:
           feature_refs: [licences]
           description: "Open-source licence readout, pushed from the settings About section. Source-originated screen."
 
+        # ── PISP screens added 2026-07-30 (/idea-evolve scope reversal) ──────
+        - name: send-money
+          archetype: form
+          feature_refs: [send-money, accounts, beneficiaries]
+          description: >-
+            Three-step consumer payment form reached from the Pay tab — choose the funding
+            account from the PSU's own authorised accounts, choose a saved payee or enter a sort
+            code and account number, then enter amount and reference. A review step stages the
+            payment consent and hands off to the bank authorisation.
+        - name: payment-consent
+          archetype: empty_state
+          feature_refs: [payment-consent]
+          description: >-
+            Headless return leg of the PISP authorisation — validates the redirect, exchanges the
+            code, polls the payment consent to Authorised, then hands control back to send-money.
+            Renders progress and terminal error only.
+        - name: payment-status
+          archetype: detail_screen
+          feature_refs: [payment-status]
+          description: >-
+            Settlement tracking for a submitted payment — status disposition chip, the echoed
+            payment details, and a bounded poll that runs only while the payment is still moving.
+
 # ── REMOVED 2026-07-28 (reverse sync from source) ────────────────────
 # Screens with no source implementation: atm-locator, profile, pfm-dashboard,
 # spending-by-category, budgets, recurring-subscriptions.
@@ -490,6 +721,22 @@ sections:
           # Reverse-synced 2026-07-28: the profile step was removed — no profile screen ships.
         # pfm-review flow removed 2026-07-28 — none of its four screens were built.
 
+        # ── PISP flow added 2026-07-30 (/idea-evolve scope reversal) ─────────
+        - name: send-money-payment
+          type: happy
+          feature_ref: send-money
+          steps:
+            - "Pay tab → send-money (replaces the SendMoneyRoute placeholder)"
+            - "Choose the funding account from the PSU's own authorised accounts"
+            - "Choose a saved payee, or enter a sort code and account number manually"
+            - "Enter amount and optional reference; validated against available balance"
+            - "Review the payment and confirm"
+            - "App stages a domestic-payment-consent (payments-scope CC token + detached JWS + idempotency key)"
+            - "App-to-app redirect to HSBC: PSU authenticates (SCA) and approves the payment"
+            - "payment-consent validates the redirect, exchanges the code and polls the consent to Authorised"
+            - "App submits the payment reusing the same idempotency key and the byte-identical staged Initiation"
+            - "Success state → View status opens payment-status to track settlement"
+
   api_surface:
     _tag: "§api_surface"
     _status: draft
@@ -519,6 +766,15 @@ sections:
         - { path: /oauth2/token, method: POST, description: "Token endpoint — OAuth2 v1.1 (client_credentials + authorization_code; private_key_jwt). From the OIDC well-known config, not the AIS swagger.", auth_required: false, source: external_api, source_ref: null }
         - { path: /oauth2/authorize, method: GET, description: "PSU authorisation — OAuth2 v1.1 (signed request object, PKCE, app-to-app). From the OIDC well-known config, not the AIS swagger.", auth_required: false, source: external_api, source_ref: null }
         - { path: /register, method: POST, description: "Dynamic Client Registration — DCR v3.2.1, signed SSA (separate dcr-uk.yaml spec).", auth_required: false, source: external_api, source_ref: API-002 }
+        # ── PISP endpoints added 2026-07-30 (/idea-evolve scope reversal) ────
+        # Base path v4.0/pisp (AIS resources are v4.0/aisp). The two POSTs are the app's
+        # FIRST writes — everything above is a read — and both require a detached
+        # x-jws-signature plus an x-idempotency-key. Omitting the signature returns 400 U019.
+        - { path: /domestic-payment-consents, method: POST, description: "Stage a domestic payment consent. Client-credentials token on scope=payments. Requires x-jws-signature + x-idempotency-key. Risk.PaymentContextCode restricted to TransferToThirdParty | TransferToSelf.", auth_required: true, source: external_api, source_ref: API-003 }
+        - { path: "/domestic-payment-consents/{ConsentId}", method: GET, description: "Payment consent status — polled to AUTH before submit (a non-Authorised consent returns 400 U009).", auth_required: true, source: external_api, source_ref: API-003 }
+        - { path: "/domestic-payment-consents/{ConsentId}/funds-confirmation", method: GET, description: "Pre-submit funds check. PSU token; requires an Authorised consent.", auth_required: true, source: external_api, source_ref: API-003 }
+        - { path: /domestic-payments, method: POST, description: "Submit the payment. PSU token. Requires x-jws-signature + the SAME x-idempotency-key used to stage, and a byte-identical echo of the staged Initiation (mismatch returns U008).", auth_required: true, source: external_api, source_ref: API-003 }
+        - { path: "/domestic-payments/{DomesticPaymentId}", method: GET, description: "Payment resource with current settlement Status — the payment-status read. Pure read: no JWS, no idempotency key.", auth_required: true, source: external_api, source_ref: API-003 }
       api_gap_analysis:
         # Reverse-synced 2026-07-28 against core/network/api/Aisp.kt + OAuth.kt.
         total_features: 15
@@ -546,6 +802,9 @@ sections:
             note: "No store, repository or feature consumes it. account-holder reads getParty (singular) only."
       out_of_scope_drift:
         - area: PISP
+          status: resolved
+          resolved_at: "2026-07-30"
+          resolved_by: "/idea-evolve — scope reversal; PISP domestic single payment moved in_scope"
           finding: >-
             §vision.scope.out_of_scope declares payment initiation out of scope, but
             core/network ships a complete PISP wire-model surface — domestic payment,
@@ -554,8 +813,20 @@ sections:
             request + response models and serialization tests. No feature module or
             repository consumes any of it, so nothing is reachable from the UI; the Pay
             bottom-nav tab points at a SendMoneyRoute placeholder in that direction.
-          consumed_by: []
+          consumed_by: [send-money, payment-consent, payment-status]
           recorded_at: "2026-07-28"
+          resolution_note: >-
+            Only the DOMESTIC SINGLE payment models are brought into scope. The domestic
+            scheduled, domestic standing order and three international model sets remain
+            shipped-but-unconsumed and are now declared out_of_scope explicitly rather than
+            implicitly, so this is narrowed drift rather than closed drift. Re-audit if those
+            surfaces stay unconsumed.
+          residual_unconsumed:
+            - "core/network/.../pisp/domesticScheduledPayment (request + response, serialization-tested)"
+            - "core/network/.../pisp/domesticStandingOrder (request + response)"
+            - "core/network/.../pisp/internationalPayment (request + response, no serialization tests)"
+            - "core/network/.../pisp/internationalScheduledPayment (request + response, no serialization tests)"
+            - "core/network/.../pisp/internationalStandingOrder (request + response, no serialization tests)"
 
   design_tokens:
     _tag: "§design_tokens"
@@ -665,6 +936,25 @@ sections:
           dependencies: [P1]
           derived_by: claude-subagent
           sync_note: "multi-currency, atm-locator and pfm dropped — none were built. The pfm-review flow was removed with its screens."
+        - id: P3
+          label: "PISP — consumer domestic payment initiation"
+          flows: [send-money-payment]
+          target_features: [send-money, payment-consent, payment-status]
+          status: planned
+          dependencies: [P2]
+          derived_by: /idea-evolve
+          scaffolded_at: "2026-07-30"
+          note: >-
+            The app's first WRITE phase — P0 through P2 are entirely read-only AIS. Two
+            cross-cutting prerequisites gate every feature in it and are not per-feature work:
+            a Pisp.kt Ktorfit client (core/network/api ships only Aisp.kt and OAuth.kt), and a
+            detached-JWS signer plus idempotency-key handling. Without the signer every write
+            returns 400 U019, so nothing in P3 can be device-verified until it lands.
+          prerequisites:
+            - "core/network/api/Pisp.kt — Ktorfit interface for the five PISP endpoints"
+            - "Detached JWS (PS256, b64:false + crit) extending the shipped signPs256"
+            - "x-idempotency-key generation, persisted across retries of a staged payment"
+            - "payments-scope client-credentials token path (OAuth.kt mints accounts scope only)"
 
 # ═══════════════════════════════════════════════════════════════════
 # NETWORK POLICY

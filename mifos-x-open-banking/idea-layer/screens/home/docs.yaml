@@ -12,17 +12,28 @@ acceptance_refs:
   - FR-001
   - FR-003
   - FR-004
-  - FR-009
+  # FR-009 dropped 2026-07-30 (/idea-sync) — removed as orphaned with the multi-currency
+  # feature. The hero balance card renders whichever account is selected, Global Money
+  # included; that is covered by FR-003 / FR-004.
 scaffolded_by: /idea-add
 scaffolded_from_context: false
 archetype: dashboard
 is_primary_flow: true
-description: >
-  Landing screen (Home tab, bottom-nav order 0) displaying the currently selected account with its hero balance card,
-  quick-action row, recent transactions preview, and a spending snapshot. Aggregates AIS data: selected account metadata
-  (GET /accounts/{AccountId}), its InterimAvailable balance (GET /accounts/{AccountId}/balances), and 5 most-recent
-  transactions (GET /accounts/{AccountId}/transactions). Account-switcher chip at top drives state re-load for a
-  different AccountId. Routes to consent-list (Manage consents) — replacing bottom-nav Consents tab for production nav.
+# ── Description corrected 2026-07-30 (/idea-feature-export stale-artifact fix) ──
+# The prior text claimed a quick-action row, a spending snapshot and a route to consent-list.
+# Source ships none of the three: HomeContent.kt renders HeroBalanceCard ->
+# RecentTransactionsSection -> AccountSelectorSheet, and homeGraph takes only
+# onNavigateToTransactions + onNavigateToTransactionDetail. The 2026-07-28 reverse sync pruned
+# HomeData.spending and statementsAvailable but left this prose and a 119-line
+# quick_actions_card in ui.yaml behind; both are now removed.
+description: >-
+  Landing screen (Home tab, bottom-nav order 0) displaying the currently selected account.
+  Deliberately thin: hero balance card, then a recent-transactions preview. Aggregates AIS data —
+  selected account metadata (GET /accounts/{AccountId}), its InterimAvailable balance
+  (GET /accounts/{AccountId}/balances) and the 5 most-recent transactions
+  (GET /accounts/{AccountId}/transactions). Switching account is the hero card's job: tapping it
+  opens AccountSelectorSheet, the only ModalBottomSheet in this codebase. Navigates only to
+  transactions and transaction-detail.
 has_ui: true
 has_server: false
 metadata:
@@ -50,20 +61,19 @@ libraries:
       - web
 impl_notes:
   viewmodel: 'HomeViewModel : BaseViewModel<HomeState, HomeEvent, HomeAction>'
+  # Corrected 2026-07-30 — verbatim from HomeViewModel.kt:81-88. The prior block declared
+  # allAccounts / selectedAccountId / selectedAccount / selectedAccountBalance /
+  # availableBalance / recentTransactions as flat fields plus spendThisMonth, topCategoryName
+  # and activeConsentId. Source folds the loaded data into HomeData behind ScreenState and
+  # dropped the three PFM/consent fields with the spending card.
   state_model: |
     data class HomeState(
-      val allAccounts: List<OBAccount6> = emptyList(),
-      val selectedAccountId: String = "",
-      val selectedAccount: OBAccount6? = null,
-      val selectedAccountBalance: OBCashBalance3? = null,
-      val availableBalance: OBCashBalance3? = null,
-      val recentTransactions: List<OBTransaction6> = emptyList(),
-      val spendThisMonth: String = "",
-      val topCategoryName: String = "",
-      val activeConsentId: String = "",
-      val uiState: UiState = UiState.Loading
+      val uiState: ScreenState<HomeData> = ScreenState.Loading,
+      // Sheet visibility is presentation state, not loaded data, so it sits beside uiState
+      // rather than inside HomeData.
+      val isAccountSelectorVisible: Boolean = false,
     )
-    // UiState ∈ { Loading, Content, Empty(reason), Error(code, message, recoverable) }
+    // ScreenState ∈ { Loading, Empty, NoNetwork, Unauthenticated, Error, Content<HomeData> }
   dto_refs:
     - OBReadAccount6
     - OBAccount6
@@ -114,44 +124,32 @@ vm_actions:
       - selectedAccountBalance
       - availableBalance
       - recentTransactions
-      - spendThisMonth
-      - topCategoryName
       - uiState
     side_effects:
       - GET /accounts to populate switcher list
       - 'Parallel: GET /accounts/{id}/balances + GET /accounts/{id}/transactions?limit=5'
-      - Reads cached PFM data for spending snapshot (no extra API call)
   - name: RetryLoad
     signature: fun retryLoad()
     state_mutations:
       - uiState → Loading
     side_effects:
       - Re-invokes loadHome()
-  - name: NavigateToAccountDetail
-    signature: 'fun navigateToAccountDetail(accountId: String)'
-    state_mutations: []
-    side_effects:
-      - Emits NavEvent.ToAccountDetail(accountId)
-  - name: NavigateToTransactions
-    signature: 'fun navigateToTransactions(accountId: String)'
-    state_mutations: []
-    side_effects:
-      - Emits NavEvent.ToTransactions(accountId)
-  - name: NavigateToStatements
-    signature: 'fun navigateToStatements(accountId: String)'
-    state_mutations: []
-    side_effects:
-      - Emits NavEvent.ToStatements(accountId)
-  - name: NavigateToSpending
-    signature: fun navigateToSpending()
-    state_mutations: []
-    side_effects:
-      - Emits NavEvent.ToSpendingByCategory()
-  - name: NavigateToConsentList
-    signature: fun navigateToConsentList()
-    state_mutations: []
-    side_effects:
-      - Emits NavEvent.ToConsentList()
+  # ── Navigate* actions REMOVED 2026-07-30 (/idea-feature-export stale-artifact fix) ──
+  # Five declared: ToAccountDetail, ToTransactions, ToStatements, ToSpendingByCategory,
+  # ToConsentList. HomeAction (HomeViewModel.kt:90-102) has exactly four members and none is a
+  # navigate: navigation is host-owned via homeGraph's two lambdas. ToSpendingByCategory and
+  # ToConsentList targeted surfaces that do not exist or are not reachable from home at all.
+  - name: OpenAccountSelector
+    signature: fun openAccountSelector()
+    state_mutations:
+      - isAccountSelectorVisible = true
+    side_effects: []
+    notes: "Dispatched by the hero balance card's onClick — the card IS the switcher trigger."
+  - name: DismissAccountSelector
+    signature: fun dismissAccountSelector()
+    state_mutations:
+      - isAccountSelectorVisible = false
+    side_effects: []
 error_cases:
   - id: EC-HOME-001
     trigger: 401 from /balances or /transactions — token expired

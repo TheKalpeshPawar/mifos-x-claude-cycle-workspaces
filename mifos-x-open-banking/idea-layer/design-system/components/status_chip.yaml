@@ -1,0 +1,68 @@
+id: status_chip
+category: status
+m3: AssistChip
+added: "1.1.0"
+tokens_ref: "../design-tokens.yaml#semantic.payment_disposition"
+
+purpose: >-
+  Renders the disposition of a submitted payment. Exists because OBIE payment status is not a
+  success/failure pair: a successful submit returns AcceptedSettlementInProcess, which means
+  accepted but not settled. A two-state chip would force that into "success" and tell a
+  customer their money had moved when it had not.
+
+variants:
+  in_progress:
+    container:    { light: "#D3E5F5", dark: "#384956" }
+    on_container: { light: "#384956", dark: "#D3E5F5" }
+    icon: schedule
+    contrast_ratio: 7.22
+    obie_statuses: [AcceptedSettlementInProcess, AcceptedWithoutPosting, Pending]
+    label_guidance: "State that it is still moving — 'In progress', 'Being processed'. Never 'Sent'."
+  terminal_success:
+    container:    { light: "#C9E6FF", dark: "#004B6F" }
+    on_container: { light: "#004B6F", dark: "#C9E6FF" }
+    icon: check_circle
+    contrast_ratio: 7.27
+    obie_statuses: [AcceptedSettlementCompleted, AcceptedCreditSettlementCompleted]
+    label_guidance: "Only here may the copy say the money has left / arrived."
+  terminal_failure:
+    container:    { light: "#FFDAD6", dark: "#93000A" }
+    on_container: { light: "#93000A", dark: "#FFDAD6" }
+    icon: error
+    contrast_ratio: 7.24
+    obie_statuses: [Rejected]
+
+anatomy:
+  shape_radius: "{spacing.radius.full}"
+  min_height_dp: 32
+  padding: { horizontal_dp: 12, vertical_dp: 6 }
+  icon_size_dp: 18
+  label_typography: labelLarge
+  leading_icon: required
+  text_label: required
+
+rules:
+  - id: SC-1
+    rule: "Icon AND text label are both required on every variant."
+    why: >-
+      WCAG 1.4.1 (use of colour) — colour alone must not convey state. It is also what makes
+      the truthfulness rule auditable: a reviewer reads the label, not the hue.
+  - id: SC-2
+    rule: "in_progress MUST NOT use the primary role."
+    why: >-
+      Primary is the credit/positive colour in this system, so a primary chip reads as
+      'money arrived'. Neutral slate reads as 'working'.
+  - id: SC-3
+    rule: "An OBIE status outside the mapped vocabulary renders as in_progress."
+    why: "Failing open toward still-working is the only safe guess; guessing success is the worst outcome."
+  - id: SC-4
+    rule: "No green. No celebratory treatment on terminal_success."
+    why: "System-wide calm-finance constraint; a settled payment is routine, not an achievement."
+
+a11y:
+  contrast_target: "WCAG AA 4.5:1"
+  measured: "all six pairs 7.22-7.27:1"
+  announce: "Role status; announce the label text, not the colour."
+
+consumers:
+  - payment-status

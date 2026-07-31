@@ -200,25 +200,35 @@ components:
   # ══════════════════════════════════════════════════════════════════
 
   # ── Account switcher strip ─────────────────────────────────────────
-  - type: chip_row
-    id: account_switcher
+  # ── account_switcher RESHAPED 2026-07-30 (/idea-feature-export stale-artifact fix) ──
+  # Was a horizontal-scrolling `chip_row` of account chips. Source has no such row:
+  # HomeContent.kt line 63 wires `onClick = onOpenAccountSelector` on the HERO CARD, and the
+  # switcher is AccountSelectorSheet — the first and only ModalBottomSheet in this codebase.
+  # Modelled as the sheet it actually is, with the hero card as its trigger.
+  - type: bottom_sheet
+    id: account_selector_sheet
     state_binding: [content]
+    visibility_condition: "{state.isAccountSelectorVisible}"
     accessibility_label: "{strings.home.switcher.accessibility}"
-    scroll_direction: horizontal
-    padding: { top: spacing.md, horizontal: spacing.md, bottom: spacing.xs }
     items_source: "{allAccounts}"
     api_id: accounts-list
+    note: >-
+      Split in two on purpose in source: a thin ModalBottomSheet wrapper plus a stateless
+      AccountSelectorSheetContent holding every interactive row. A sheet renders in its own
+      window, where onNodeWithTag is unreliable, so the tests drive the content composable
+      directly — exactly as they do the other *ScreenContent. Sheet visibility lives on
+      HomeState beside uiState, not inside HomeData: it is presentation state, not loaded data.
     test_context:
-      purpose: "Horizontal scrolling strip of account chips — user selects active account to view"
+      purpose: "Account selector sheet — the PSU picks which account the whole screen renders"
       data_driven: true
       required_fields:
         - "items_source"
-        - "on_click.action"
+        - "state.isAccountSelectorVisible"
       interaction_type: action
     children:
-      - type: chip
-        id: account_chip
-        label: "{item.Nickname}"
+      - type: list_item
+        id: account_selector_row
+        headline: "{item.Nickname}"
         selected_when: "{item.AccountId == selectedAccountId}"
         accessibility_label: "{strings.home.switcher.chip.accessibility}"
         on_click:
@@ -228,9 +238,7 @@ components:
           action_contract:
             effect: call_api
             external_library_refs: [ktorfit, "hsbc-obie-ais-v4.0:balances", "hsbc-obie-ais-v4.0:transactions"]
-            description: "Persists the selected AccountId to DataStore then re-fetches balances and recent transactions for the newly selected account in parallel, returning the home screen to loading then content state."
-
-  # ── Hero balance card ──────────────────────────────────────────────
+            description: "Persists the selected AccountId to DataStore, closes the sheet, then re-fetches balances and recent transactions for the newly selected account, returning the home screen to loading then content state."
   - type: card
     id: hero_balance_card
     state_binding: [content]
@@ -242,21 +250,36 @@ components:
     accessibility_label: "{strings.home.hero.card.accessibility}"
     api_id: selected-account-balances
     test_context:
-      purpose: "Hero card showing selected account nickname, InterimAvailable balance, and available balance — tapping navigates to account-detail"
+      purpose: "Hero card showing selected account nickname, InterimAvailable balance, and available balance — tapping opens the account-selector sheet"
       data_driven: true
       required_fields:
         - "api_id"
         - "on_click.action"
-        - "on_click.target"
-      interaction_type: navigate
+      interaction_type: action
+    # ── CORRECTED 2026-07-30 (/idea-verify check 10 -> /idea-heal) ──
+    # Was `action: navigate_account_detail` / `target: account-detail` / effect: navigate.
+    # That contradicted THIS FILE's own comment at the account_selector_sheet block, which
+    # already recorded that HomeContent.kt:63 wires `onClick = onOpenAccountSelector` on the
+    # HERO CARD. The 2026-07-30 stale-artifact pass reshaped account_switcher into the sheet
+    # and documented the hero card as its trigger, but never updated the trigger itself — a
+    # half-applied fix that left the file self-contradictory.
+    #
+    # Source is authority and is unambiguous:
+    #   feature/home/.../HomeContent.kt:63  -> onClick = onOpenAccountSelector
+    #   feature/home/.../HomeScreen.kt:50   -> HomeAction.OpenAccountSelector
+    #   zero occurrences of onNavigateToAccountDetail anywhere in feature/home
+    # Home does not navigate to account-detail at all; that route is reached from the
+    # Accounts tab. Detected because check 10 found no flow.yaml transition home ->
+    # account-detail — correctly, since source has no such transition to record.
     on_click:
-      action: navigate_account_detail
-      target: account-detail
-      params:
-        accountId: "{selectedAccountId}"
+      action: open_account_selector
       action_contract:
-        effect: navigate
-        description: "Opens the full account detail screen for the currently selected account, passing selectedAccountId as a route parameter."
+        effect: transform_state
+        external_library_refs: [kotlinx-coroutines]
+        description: >-
+          Opens the AccountSelectorSheet so the PSU can change which account the whole home
+          screen renders. Pure presentation-state flip — HomeState.isAccountSelectorVisible —
+          with no navigation and no network call; the account list is already resident.
     children:
       - type: stack
         direction: vertical
@@ -319,125 +342,14 @@ components:
             accessibility_label: "{strings.home.hero.identification.accessibility}"
 
   # ── Quick actions row ──────────────────────────────────────────────
-  - type: card
-    id: quick_actions_card
-    state_binding: [content]
-    elevation: 1
-    corner_radius: radius.md
-    padding: spacing.md
-    margin: { horizontal: spacing.md, bottom: spacing.md }
-    accessibility_label: "{strings.home.quick_actions.accessibility}"
-    children:
-      - type: stack
-        direction: horizontal
-        alignment: center_vertical
-        gap: spacing.xs
-        children:
-          # Pay (PISP — future, disabled)
-          - type: stack
-            id: action_pay
-            direction: vertical
-            alignment: center_horizontal
-            gap: spacing.xxs
-            weight: 1
-            accessibility_label: "{strings.home.action.pay.accessibility}"
-            children:
-              - type: icon_button
-                id: pay_button
-                icon: send
-                variant: tonal
-                enabled: false
-                accessibility_label: "{strings.home.action.pay.accessibility}"
-                on_click:
-                  action: noop
-                  params:
-                    reason: "pisp_not_implemented"
-                  action_contract:
-                    effect: none
-                    description: "Disabled PISP stub — the Pay action is not implemented in the current AISP-only release; tap produces no observable effect."
-              - type: text
-                value: "{strings.home.action.pay.label}"
-                style: labelSmall
-                color: "on-surface-variant"
-                alignment: center
-          # Transactions
-          - type: stack
-            id: action_transactions
-            direction: vertical
-            alignment: center_horizontal
-            gap: spacing.xxs
-            weight: 1
-            children:
-              - type: icon_button
-                id: transactions_button
-                icon: receipt_long
-                variant: tonal
-                accessibility_label: "{strings.home.action.transactions.accessibility}"
-                on_click:
-                  action: navigate_transactions
-                  target: transactions
-                  params:
-                    accountId: "{selectedAccountId}"
-                  action_contract:
-                    effect: navigate
-                    description: "Navigates to the full transactions screen for the currently selected account, passing selectedAccountId as a route parameter."
-              - type: text
-                value: "{strings.home.action.transactions.label}"
-                style: labelSmall
-                color: "on-surface-variant"
-                alignment: center
-          # Statements
-          - type: stack
-            id: action_statements
-            direction: vertical
-            alignment: center_horizontal
-            gap: spacing.xxs
-            weight: 1
-            children:
-              - type: icon_button
-                id: statements_button
-                icon: description
-                variant: tonal
-                accessibility_label: "{strings.home.action.statements.accessibility}"
-                on_click:
-                  action: navigate_statements
-                  target: statements
-                  params:
-                    accountId: "{selectedAccountId}"
-                  action_contract:
-                    effect: navigate
-                    description: "Navigates to the statements screen for the currently selected account, passing selectedAccountId as a route parameter."
-              - type: text
-                value: "{strings.home.action.statements.label}"
-                style: labelSmall
-                color: "on-surface-variant"
-                alignment: center
-          # Manage consents
-          - type: stack
-            id: action_consents
-            direction: vertical
-            alignment: center_horizontal
-            gap: spacing.xxs
-            weight: 1
-            children:
-              - type: icon_button
-                id: consents_button
-                icon: shield
-                variant: tonal
-                accessibility_label: "{strings.home.action.consents.accessibility}"
-                on_click:
-                  action: navigate_consent_list
-                  target: consent-list
-                  action_contract:
-                    effect: navigate
-                    description: "Navigates to the consent management list screen where the PSU can view and revoke their active OBIE account access consents."
-              - type: text
-                value: "{strings.home.action.consents.label}"
-                style: labelSmall
-                color: "on-surface-variant"
-                alignment: center
-
-  # ── Recent transactions section ────────────────────────────────────
+  # ── quick_actions_card REMOVED 2026-07-30 (/idea-feature-export stale-artifact fix) ──
+  # A 119-line card declaring Pay / Transactions / Statements / Consents quick actions.
+  # Source ships none of it: HomeContent.kt renders HeroBalanceCard -> RecentTransactionsSection
+  # -> AccountSelectorSheet and nothing else, and homeGraph takes only two lambdas
+  # (onNavigateToTransactions, onNavigateToTransactionDetail) — so the Statements and Consents
+  # actions had no callback to fire and the Pay action was permanently disabled.
+  # Removed with the spending-snapshot prose in the same pass; both predate the 2026-07-28
+  # reverse sync, which pruned HomeData.spending and statementsAvailable but left this card.
   - type: stack
     id: recent_transactions_section
     state_binding: [content]
@@ -555,18 +467,17 @@ components:
     title: "{strings.home.empty.title}"
     body: "{strings.home.empty.body}"
     accessibility_label: "{strings.home.empty.title}"
-    children:
-      - type: button
-        id: connect_bank_button
-        variant: filled
-        label: "{strings.home.empty.cta}"
-        accessibility_label: "{strings.home.empty.cta.accessibility}"
-        on_click:
-          action: navigate_login
-          target: login
-          action_contract:
-            effect: navigate
-            description: "Navigates to the login screen to initiate the FAPI Open Banking consent flow, used when no bank accounts are connected yet."
+    # ── connect_bank_button REMOVED 2026-07-30 (/idea-verify check 10 -> /idea-heal) ──
+    # It declared `navigate_login` -> `target: login`, a navigation source does not have.
+    # feature/home/.../HomeEmpty.kt:37 states it outright: "Points the PSU to Settings rather
+    # than offering its own connect button. Staging a consent is a..." — and the file contains
+    # no Button and no onClick at all. homeGraph exposes exactly two callbacks
+    # (onNavigateToTransactions, onNavigateToTransactionDetail); there is no login lambda to
+    # invoke. This matches the deliberate project-wide convention the beneficiaries empty state
+    # follows: the connect/renew affordance lives ONLY on the consent screens, reached via
+    # Settings -> Consents, so a second entry point here would fork the consent journey.
+    # Detected by check 10 — no flow.yaml transition home -> login, correctly, since none exists.
+    # Strings home.empty.cta + home.empty.cta.accessibility are swept with it (see _strings).
 
   # ══════════════════════════════════════════════════════════════════
   # ERROR STATE

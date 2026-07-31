@@ -15,17 +15,83 @@ api:
   role: aisp
   source_spec: /home/kalpesh/OpenBankingProject/specs/hsbc-sandbox/openapi/account-info-4.0-personal.yaml
 
+# CORRECTED 2026-07-30 (/idea-heal). These three were wrong on both axes: they used
+# the FRONT-CHANNEL authorize host (sandbox.ob.hsbc.co.uk) instead of the mTLS resource
+# host, and carried a /mock/ segment that appears in no real call. They also contradicted
+# PROJECT_CONFIG.yaml#backend.environments.local, which was right.
+#
+# Ground truth is source, not either YAML:
+#   core/network/src/desktopTest/.../AispTest.kt:127,145
+#     -> https://secure.sandbox.ob.hsbc.co.uk/obie/open-banking/v4.0/aisp/
+#   core/network/build.gradle.kts:126-127 + README.md:97-98
+#     -> HSBC_BANK_HOST=secure.sandbox.ob.hsbc.co.uk   (mTLS resource / back channel)
+#        HSBC_AUTHORIZE_HOST=sandbox.ob.hsbc.co.uk     (browser authorize / front channel)
+# A request sent to the authorize host fails in a way that reads as an auth fault
+# rather than a wrong-host fault, which is why this sat unnoticed.
 base_urls:
-  resource:  "https://sandbox.ob.hsbc.co.uk/mock/obie/open-banking/v4.0/aisp"
-  oauth2:    "https://sandbox.ob.hsbc.co.uk/mock/obie/open-banking/v1.1/oauth2"
-  dcr:       "https://sandbox.ob.hsbc.co.uk/mock/obie/open-banking/v3.2/oauth2"
+  resource:  "https://secure.sandbox.ob.hsbc.co.uk/obie/open-banking/v4.0/aisp"
+  oauth2:    "https://secure.sandbox.ob.hsbc.co.uk/obie/open-banking/v1.1/oauth2"
+  dcr:       "https://secure.sandbox.ob.hsbc.co.uk/obie/open-banking/v3.2/oauth2"
+  authorize: "https://sandbox.ob.hsbc.co.uk"   # front channel only — browser authorize
 
 # Reverse-synced 2026-07-28: the HSBC Open Data base URL, its related_apis entry and
 # server/apis/open-data.yaml were removed. No client method targets Open Data —
 # core/network/api/Aisp.kt declares no /atms call — and the atm-locator screen that
 # would have consumed it was never built. AtmLocatorRoute survives in cmp-navigation
 # as a PlaceholderScreen destination only.
-related_apis: []
+related_apis:
+  # API-002 registered 2026-07-30. Before this the PISP contracts were unregistered at project
+  # level: the three PISP features carried their own api.yaml siblings but nothing tied them to
+  # a declared API. Registered HERE as a related API rather than folded into the endpoints[]
+  # above, because this file's `api:` block is API-001 with `role: aisp` — appending payment
+  # writes to it would make that role a lie.
+  - id: API-002
+    name: "HSBC UK Open Banking — Payment Initiation (PIS)"
+    standard: obie-uk-open-banking
+    version: "4.0"
+    brand: uk-personal
+    owned: false
+    role: pisp
+    source_spec: /home/kalpesh/OpenBankingProject/HSBC_Sandbox/specs/hsbc-sandbox/openapi/payment-initiation-4.0-personal.yaml
+    scope: domestic-single-payment          # scheduled / standing-order / international / VRP all out of scope
+    base_urls:
+      # Mirrors the AIS shape on the SAME mTLS host — deliberately NOT the spec's own
+      # `servers:` entry (:1110 reads https://sandbox.ob.hsbc.co.uk/mock/obie/.../pisp), which
+      # is a documentation mock: that host is the front-channel authorize host and /mock appears
+      # in no real call. Ground truth is source — AispTest.kt:127,145.
+      resource: "https://secure.sandbox.ob.hsbc.co.uk/obie/open-banking/v4.0/pisp"
+      unverified: true                      # clear once a real PISP call has succeeded
+    auth:
+      scheme: bearer
+      security_profile: fapi-1.0-advanced
+      transport: mtls
+      client_auth: private_key_jwt
+      consent_token: client_credentials     # scope=payments — OAuth.kt:103 already declares PAYMENTS
+      resource_token: authorization_code    # PSU-bound, after the app-to-app authorise leg
+      request_signing: detached-jws         # PS256, b64:false + crit — REQUIRED on every write
+      required_headers: ["Authorization", "x-fapi-interaction-id", "x-jws-signature", "x-idempotency-key"]
+      note: >-
+        x-jws-signature and x-idempotency-key are the two headers AIS never needed. Without the
+        detached JWS every write returns 400 U019. Neither header exists in source as of
+        2026-07-30 (verified: zero matches). See PROJECT_CONFIG#backend.auth.request_signing.
+    endpoints:
+      # Paths read from the spec directly (payment-initiation-4.0-personal.yaml:37,82,117,152,197).
+      - { id: pisp-consent-create,   method: POST, path: "/domestic-payment-consents",                              request_dto: OBWriteDomesticConsent4, response_dto: OBWriteDomesticConsentResponse5, token: client_credentials, consumers: [send-money] }
+      - { id: pisp-consent-status,   method: GET,  path: "/domestic-payment-consents/{ConsentId}",                  response_dto: OBWriteDomesticConsentResponse5, token: client_credentials, consumers: [payment-consent] }
+      - { id: pisp-funds-confirm,    method: GET,  path: "/domestic-payment-consents/{ConsentId}/funds-confirmation", token: authorization_code, consumers: [send-money] }
+      - { id: pisp-payment-submit,   method: POST, path: "/domestic-payments",                                      request_dto: OBWriteDomestic2, response_dto: OBWriteDomesticResponse5, token: authorization_code, consumers: [send-money] }
+      - { id: pisp-payment-status,   method: GET,  path: "/domestic-payments/{DomesticPaymentId}",                  response_dto: OBWriteDomesticResponse5, token: authorization_code, consumers: [payment-status] }
+    detail_source_of_truth:
+      - "idea-layer/screens/send-money/api.yaml"
+      - "idea-layer/screens/payment-consent/api.yaml"
+      - "idea-layer/screens/payment-status/api.yaml"
+    implementation_status: not-implemented
+    implementation_note: >-
+      SPECIFICATION ONLY — no PISP client ships. core/network/api/ holds Aisp.kt and OAuth.kt;
+      there is no Pisp.kt and zero references to /domestic-payments in source. The 130 PISP DTO
+      files under core/network/.../model/pisp/ DO already exist (all six OBIE payment types),
+      so the remaining work is the API interface, the JWS header, the idempotency key, and a
+      caller passing ConsentCreationScope.PAYMENTS.
 
 auth:
   scheme: bearer

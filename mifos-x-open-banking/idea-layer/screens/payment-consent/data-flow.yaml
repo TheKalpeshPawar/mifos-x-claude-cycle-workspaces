@@ -1,0 +1,102 @@
+screen_id: payment-consent
+
+cache_strategy: none
+cache_rationale: >-
+  An authorisation outcome is a one-shot event, and the payment-scoped token is deliberately
+  held in memory only. Caching either would risk replaying a stale authorisation against a
+  different payment.
+
+on_mount:
+  - trigger: handle_redirect
+    description: >-
+      Validate the redirect, exchange the code, then poll the consent until Authorised.
+      Ordering is deliberate: validate before spending an exchange, and confirm AUTH before
+      handing back, because a submit against a non-Authorised consent returns 400 U009.
+    steps:
+      - compute:
+          pending: "PendingAuthStore.consume()"   # single-use; a second read returns null
+      - guard:
+          condition: "pending != null"
+          else: "error(NoPendingAuthorisation)"
+      - guard:
+          condition: "pending.state == redirect.state"
+          else: "error(StateMismatch)"
+      - call: payment-token-exchange
+        form_params:
+          grant_type: authorization_code
+          code: "{redirect.code}"
+        store_as: payment_token
+        state_becomes: exchanging
+      - guard:
+          condition: "idToken.nonce == pending.nonce"
+          else: "error(StateMismatch)"
+      - poll: payment-consent-status
+        path_params:
+          ConsentId: "{pending.consentId}"
+        auth: client_credentials_payments_scope
+        interval_ms: 1500
+        deadline_ms: 45000
+        until: "Data.Status == 'AUTH'"
+        state_becomes: checking
+        store_as: consent
+      - emit_event: "Authorised(consentId = pending.consentId, token = payment_token.access_token)"
+    on_loading: validating
+    on_success: authorised
+    on_error: error
+    error_type_mapping:
+      - condition: "pending == null"
+        error_type: NoPendingAuthorisation
+        message_key: "error.payment_consent.no_pending"
+      - condition: "state or nonce mismatch"
+        error_type: StateMismatch
+        message_key: "error.payment_consent.state_mismatch"
+      - http_status: 400
+        error_code: invalid_grant
+        error_type: CodeExpired
+        message_key: "error.payment_consent.code_expired"
+      - condition: "Data.Status == 'RJCT'"
+        error_type: ConsentRejected
+        message_key: "error.payment_consent.rejected"
+      - condition: "poll deadline elapsed while status is AWAU"
+        error_type: AuthorisationTimedOut
+        message_key: "error.payment_consent.timed_out"
+      - default: NetworkError
+        message_key: "error.payment_consent.network_error"
+
+on_user_action:
+  - trigger: check_again
+    description: "Manual re-poll for a PSU who finished at the bank just after the poll window closed."
+    steps:
+      - call: payment-consent-status
+        path_params:
+          ConsentId: "{state.consentId}"
+        auth: client_credentials_payments_scope
+        store_as: consent
+    state_stays: checking
+
+  - trigger: retry_authorisation
+    description: >-
+      Emit RestartAuthorisation. send-money stages a fresh consent and relaunches; the previous
+      staged consent is abandoned unauthorised.
+    emits_event: RestartAuthorisation
+    navigates_to: send-money
+
+  - trigger: abandon_payment
+    description: >-
+      Drop the payment. No revocation call is made — an unauthorised consent cannot be submitted
+      against and expires on its own, so deleting it would be a needless extra write.
+    emits_event: Abandoned
+    navigates_to: send-money
+
+# ─────────────────────────────────────────────────────────────────────────
+# TOKEN-HANDLING INVARIANT
+# ─────────────────────────────────────────────────────────────────────────
+token_invariant:
+  rule: >-
+    The access token returned by payment-token-exchange is held in memory for the life of this
+    payment and is NEVER written to ConsentSession.
+  rationale: >-
+    ConsentSession holds the AIS data-sharing session; isActive() derives the app-open route
+    from it. Persisting a payments-scope token there would overwrite the AIS session token and
+    make a single payment authorisation look like a data-sharing session.
+  enforced_by: "TC-PCON-007"

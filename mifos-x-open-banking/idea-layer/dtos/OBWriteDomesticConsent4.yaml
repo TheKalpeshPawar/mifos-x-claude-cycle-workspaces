@@ -1,0 +1,43 @@
+name: OBWriteDomesticConsent4
+version: 1.0.0
+description: >
+  OBIE PISP v4.0 REQUEST body for POST /domestic-payment-consents — the staging call that
+  creates a domestic payment consent before the PSU authorises it. This is the app's FIRST
+  write contract; every AIS DTO in this registry is read-only.
+  Carries the Initiation block (what will be paid) and the Risk block (payment context).
+  Sent with a detached x-jws-signature and an x-idempotency-key; without the signature HSBC
+  returns 400 U019.
+source:
+  origin: rest
+  endpoint: "/domestic-payment-consents"
+  method: POST
+  spec_ref: "specs/hsbc-sandbox/openapi/payment-initiation-4.0-personal.yaml"
+fields:
+  - name: initiation
+    type: Json
+    required: true
+    source_field: "Data.Initiation"
+    description: >
+      OBWriteDomestic2DataInitiation. Spec-required: InstructionIdentification,
+      EndToEndIdentification, InstructedAmount {Amount, Currency}, CreditorAccount
+      {SchemeName, Identification, Name}. DebtorAccount is OPTIONAL in the spec but this app
+      always supplies it, from the PSU's own authorised accounts. Optional:
+      LocalInstrument, CreditorPostalAddress, RemittanceInformation {Unstructured[]}. PII.
+  - name: risk
+    type: Json
+    required: true
+    source_field: "Risk"
+    description: >
+      OBRisk1. Declares NO required properties. This app sends PaymentContextCode ONLY,
+      constrained to the consumer values TransferToThirdParty or TransferToSelf.
+      MerchantCategoryCode, MerchantCustomerIdentification and DeliveryAddress MUST NOT be
+      sent — they are merchant-checkout fields and this is a consumer app.
+  - name: read_refund_account
+    type: { optional: String }
+    source_field: "Data.ReadRefundAccount"
+used_by:
+  - { feature: send-money, kind: request, api_id: domestic-payment-consent-create, role: body }
+capabilities_used: [has_api]
+tier: maximum
+tags: [obie, pisp, payment, request, pii, signed-write]
+source_binding: "core/network/model/pisp/domesticPayment/request/DomesticPaymentConsentRequest.kt (ships, unconsumed)"
