@@ -1,7 +1,132 @@
 schema_version: "1.0"
-last_run: "2026-07-31T22:10:00Z"
+last_run: "2026-07-31T22:45:00Z"
 last_run_by: "claude"
-command: "/idea-verify (full 23-feature pass; findings RECOMPUTED)"
+command: "/idea-heal 'fix the error' — round 1 applied; re-verify surfaced the newly-eligible rule set"
+
+# ═══════════════════════════════════════════════════════════════════════════
+# 2026-07-31 /idea-heal — ROUND 1
+# ═══════════════════════════════════════════════════════════════════════════
+heal_round_1:
+  target: "G-CAP-001 CAPABILITIES_UNDECLARED (23 features)"
+  delegated_to: "/idea-feature-enrich Phase 2 step 21 (populate capabilities[] from the closed enum)"
+  delegation_note: >-
+    The engine's D7 delegation table has no CAPABILITIES_UNDECLARED row. Routed to enrich
+    because its declared contract owns this field; scoped to that sub-step rather than a
+    full 23-feature re-enrich.
+  status: RESOLVED
+  result: "23/23 features now declare capabilities[]; 0 undeclared"
+
+  declared:
+    has_ui: 23
+    has_flow: 23
+    has_api: 20              # not licences, settings, user-onboarding — zero operations
+    has_system_integration: 5 # login, consent-callback, payment-consent, send-money, user-onboarding
+    has_search: 2            # beneficiaries, transactions
+    has_static_content: 2    # licences, user-onboarding
+    has_form_input: 1        # send-money
+    has_local_preferences: 1 # settings
+
+  deliberately_not_declared:
+    - capability: has_payments
+      why: >-
+        In-app-purchase compliance (payment_plans[], iap_identifiers[], receipt verification,
+        restore-purchases, App Store 5.1.1). This app does bank payment initiation over OBIE
+        rails. Declaring it raises eight inapplicable errors and makes /kmp-client-gen emit
+        StoreKit boilerplate.
+    - capability: is_auth_feature
+      why: >-
+        Means the feature IS signin/signup/OTP; demands auth_screens[], OTP code TTL, resend
+        rate limit and account-lockout policy. Under the OBIE redirect model the PSU
+        authenticates AT their bank — there is no password, OTP or lockout here to declare.
+    - capability: has_offline_cache
+      why: >-
+        Means OFFLINE read with conflict resolution; demands stale-data indicators, eviction
+        policy and a conflict strategy. The three caches present are memory / memory_lru —
+        ephemeral, not offline persistence.
+    - capability: requires_auth
+      why: >-
+        Arguable and left undecided rather than guessed. Every AIS screen does require an
+        authorised consent, so a case exists — but the textual signal was unreliable
+        (consent/token appear in nearly every screen's prose) and RULE-SEED-AUTH-001's
+        obligations were not evaluated against this app. Flagged, not assumed.
+
+  eligibility_delta:
+    before: "0 of 148 capability-gated rule files could run"
+    after: "127 of 148 now eligible"
+    by_capability: { has_ui: 93, has_api: 26, has_flow: 3, has_system_integration: 1,
+                     has_local_preferences: 1, has_static_content: 1, has_search: 1, has_form_input: 1 }
+    still_dormant: 21
+    dormant_breakdown: >-
+      Most are correctly inapplicable capability rules (has_payments, is_auth_feature,
+      has_offline_cache, has_social, has_gamification, has_media_playback, has_file_operation,
+      has_content_creation, has_data_migration, has_realtime, has_journey). Five are not
+      feature capabilities at all but command/pipeline gates (kmp_implement ×3, ci, secrets,
+      framework, has_export_matrix). Two are artifacts of THIS measurement rather than real
+      dormancy: RULE-DEMO-DATA-001 uses disjunction syntax (`has_api OR has_offline_cache`)
+      which the eligibility probe read literally and so under-counted — the real iterator
+      resolves disjunctions and it IS eligible via has_api; and one row matched a trailing
+      comment in RULE_VERSION_POLICY.md.
+
+  structural_matrix_after: "23/23 PASS on all 7 checks · 0 findings · G-CAP-001 closed"
+
+  # ─────────────────────────────────────────────────────────────────────────
+  # NEWLY SURFACED — these were structurally invisible before this round
+  # ─────────────────────────────────────────────────────────────────────────
+  newly_surfaced:
+    note: >-
+      Declaring a capability activates its rule's sub-checks. These four classes are the
+      direct consequence, and finding them is the POINT of the fix — they were unreachable
+      while capabilities[] was empty. They are content changes across 9 features, not
+      mechanical edits, so round 2 was not auto-applied.
+    findings:
+      - id: G-CAP-SEARCH-001
+        rule: RULE-CAP-HAS-SEARCH-001 V1
+        severity: error
+        feature: transactions
+        detail: >-
+          V1 requires a dedicated search-type input, not a repurposed text input.
+          transactions#search_field is a `text_field`; beneficiaries#search_field uses the
+          dedicated `search_bar` and passes. This was predicted before declaring the
+          capability and declared anyway — hiding it by omitting has_search would have been
+          the wrong trade.
+        fix_hint: "Retype transactions#search_field to search_bar, or waive V1 with justification."
+      - id: G-CAP-FORM-001
+        rule: RULE-CAP-HAS-FORM-INPUT-001 V2 + V5
+        severity: error
+        feature: send-money
+        detail: >-
+          V2 requires every input to declare validators[] (type + pattern + length): zero are
+          declared across four text_fields, including the sort-code and account-number fields
+          that have hard 8-digit formats and max_length already set. V5 requires required
+          fields to be marked: none are. V3 passes — amount_field carries error_text.
+        fix_hint: "Add validators[] to manual_sort_code, manual_account_number, amount_field, reference_field; mark required fields."
+      - id: G-CAP-SYSINT-001
+        rule: RULE-CAP-HAS-SYSTEM-INTEGRATION-001 V1
+        severity: error
+        features: [login, consent-callback, payment-consent, send-money, user-onboarding]
+        detail: >-
+          V1 requires system_capabilities[] enumerating the specific integrations
+          (deep_link / notifications / widget / permission). None of the five declares it,
+          though all five perform an app-to-app or browser redirect.
+        fix_hint: "Declare system_capabilities: [deep_link] on each; add permission rationale + denied-state path if any permission is requested."
+      - id: G-CAP-PREFS-001
+        rule: RULE-CAP-HAS-LOCAL-PREFERENCES-001 V1
+        severity: error
+        feature: settings
+        detail: >-
+          V1 requires a preferences[] list with key, type, default and scope. settings has no
+          such block — the only "preferences" matches are prose in the description. The theme
+          preference is real (DataStore-backed, with a defaults path) but undeclared.
+        fix_hint: "Declare preferences[] with the theme key: {key, type: string, default: System, scope: device}."
+
+  next_round:
+    would_address: [G-CAP-SEARCH-001, G-CAP-FORM-001, G-CAP-SYSINT-001, G-CAP-PREFS-001]
+    not_auto_applied_because: >-
+      Nine features, four rule classes, and each fix is a real content decision (validator
+      patterns, permission UX paths, a component-type change on a shipped screen). The heal
+      engine would loop here; stopping after round 1 keeps the capability fix reviewable on
+      its own rather than folding it into a larger diff.
+    also_open: "requires_auth — decide whether AIS screens should declare it (see deliberately_not_declared)"
 project: "mifos-x/mifos-x-open-banking"
 roster_size: 23                 # canonical count from idea-layer/_list.json
 features_evaluated: 23
