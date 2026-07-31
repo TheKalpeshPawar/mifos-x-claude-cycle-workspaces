@@ -1,7 +1,7 @@
 # Scheduled payments — Feature Specification
 
 > Generated from `screens/scheduled-payments/ui.yaml` by `/idea-feature-export`
-> Schema version: 2.0.0 · Source hash: `bde6567a0e34`
+> Schema version: 2.0.0 · Source hash: `0f33ec921191`
 > Endpoints: 1 · DTOs: 1 · Components: 5 · Test scenarios: 8
 
 ## Lossless Export Contract

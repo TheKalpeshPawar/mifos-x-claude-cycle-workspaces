@@ -1,7 +1,7 @@
 # Account detail — API Contracts
 
 > Generated from `screens/account-detail/api.yaml` by `/idea-feature-export`
-> Schema version: 2.0.0 · Source hash: `63022c4bdb68` · Endpoints: 2 · DTOs: 2
+> Schema version: 2.0.0 · Source hash: `4f4bcb163d0a` · Endpoints: 2 · DTOs: 2
 
 Base path `/obie/open-banking/v4.0/aisp`. Both AIS reads on the PSU bearer.
 

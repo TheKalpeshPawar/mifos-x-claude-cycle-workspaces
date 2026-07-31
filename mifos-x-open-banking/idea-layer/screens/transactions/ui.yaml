@@ -252,23 +252,27 @@ components:
 
   # ─── Content: search field ─────────────────────────────────────────────────
 
-  - type: text_field
+  # search_bar, not text_field: RULE-CAP-HAS-SEARCH-001 V1 requires a dedicated search-type
+  # input rather than a repurposed text input, so the platform renders the search affordance
+  # and assistive tech announces it as a search field. Matches beneficiaries#beneficiary_search.
+  # Fires on_change, not on_click — this is live substring filtering as the PSU types, which
+  # is what the component's own interaction_type: input already declared.
+  - type: search_bar
     id: search_field
     state_binding: [content, empty]
     label: "{strings.transactions.search.label}"
     placeholder: "{strings.transactions.search.placeholder}"
     leading_icon: search
     trailing_icon: clear
-    validation: none
     accessibility_label: "{strings.transactions.a11y.search}"
-    on_click:
+    on_change:
       action: search_transactions
-      action_contract:
-        effect: transform_state
-        external_library_refs: [kotlinx-coroutines]
-        description: "Applies a case-insensitive substring search over TransactionInformation and MerchantDetails.MerchantName against the in-memory OBReadTransaction6 list without re-fetching."
+      param: query
     test_context:
-      purpose: "Case-insensitive substring match against TransactionInformation and MerchantDetails.MerchantName"
+      purpose: >-
+        Case-insensitive substring match over TransactionInformation and
+        MerchantDetails.MerchantName against the in-memory OBReadTransaction6 list.
+        Client-side only — no re-fetch, no API call.
       required_fields: []
       interaction_type: input
       data_driven: false

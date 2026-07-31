@@ -2,7 +2,7 @@
 
 > Auto-generated from `screens/login/ui.yaml` + `docs.yaml` by `/idea-feature-mockup`
 > Design tokens: `design-system/design-tokens.yaml` (2.1.0) · Design system: Trust Blue 1.1.0
-> Generated: 2026-07-30
+> Generated: 2026-07-31
 
 **Implemented** — `feature/login`. Two entry points: `LoginRoute` (from onboarding, inside
 `authGraph`) and **`LoginRenewRoute`** (from the consent screens, inside the authenticated host,

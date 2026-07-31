@@ -2,7 +2,7 @@
 
 > Auto-generated from `screens/product/ui.yaml` + `docs.yaml` by `/idea-feature-mockup`
 > Design tokens: `design-system/design-tokens.yaml` (2.1.0) · Design system: Trust Blue 1.1.0
-> Generated: 2026-07-30
+> Generated: 2026-07-31
 > Content: `screens/product/demo-data.yaml`
 
 **Implemented** — `feature/product`, `ProductRoute(accountId)`. Reached from the account-detail

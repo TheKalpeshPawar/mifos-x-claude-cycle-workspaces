@@ -119,14 +119,101 @@ heal_round_1:
           preference is real (DataStore-backed, with a defaults path) but undeclared.
         fix_hint: "Declare preferences[] with the theme key: {key, type: string, default: System, scope: device}."
 
+  round_2_applied:
+    at: "2026-07-31T23:20:00Z"
+    command: "/idea-sync — issue fixing first, then artifact sync"
+    all_four: CLOSED
+    fixes:
+      - id: G-CAP-SEARCH-001
+        fix: "transactions#search_field retyped text_field -> search_bar"
+        also: >-
+          Switched on_click -> on_change. A search surface filters as the PSU types; the
+          component's own test_context already declared interaction_type: input, so the
+          on_click was the anomaly. Now matches beneficiaries#beneficiary_search exactly.
+      - id: G-CAP-FORM-001
+        fix: "All 4 send-money inputs gained validators[] + an explicit required decision + per-field error_text"
+        detail: >-
+          sort code ^[0-9]{6}$ with hyphen strip — SIX digits, not the 8 that max_length
+          implies, because max_length counts the two display hyphens and validating the raw
+          8 characters would reject every correctly-typed code. account number ^[0-9]{8}$.
+          amount required + min 1 minor unit + max_dynamic against the selected account's
+          balance (advisory — funds-confirmation stays authoritative). reference is the only
+          optional field, capped at the OBIE 35-char RemittanceInformation limit.
+        state_model_extended: >-
+          Content gained fieldErrors: FieldErrors and availableBalanceMinorUnits: Long?.
+          fieldErrors is a MAP, not a reuse of the single validationError, because two fields
+          can be wrong at once — a short sort code AND a short account number — which one
+          nullable error cannot represent. Without this the error_text bindings added here
+          would have been dangling references.
+        v4_note: >-
+          Submit-guard satisfied by state transition, not a `disabled:` flag: confirm_button
+          binds to content only, so confirming unmounts it and renders submitting_indicator.
+          Recorded in docs.yaml#form_submit_guard so a reader looking for `disabled:` does
+          not read its absence as a failure.
+      - id: G-CAP-SYSINT-001
+        fix: "system_capabilities: [deep_link] declared on all 5 redirect features"
+        v2_v3_na: >-
+          Permission rationale and denied-state UX are genuinely N/A: the app requests ZERO
+          device permissions. No api.yaml declares requires_permission, and every
+          'permission' reference in the idea-layer is an OBIE consent SCOPE granted at the
+          bank, not an OS grant. Recorded once in login/docs.yaml and cross-referenced.
+      - id: G-CAP-PREFS-001
+        fix: "settings gained preferences[] with dark_theme_config {type, default: System, scope: device, allowed[]}"
+        also: >-
+          preferences_migrations: [] declared explicitly so a future rename records a
+          migration rather than silently orphaning a stored value, plus a V4 security note
+          that no tokens or PII live in DataStore — OBIE tokens go to secure storage.
+
+  artifact_sync:
+    measured_wrong_first: >-
+      A first pass compared every artifact against max(ui.yaml, docs.yaml) and reported all
+      23 features stale — 192 artifacts. That was the wrong denominator. Re-measured against
+      each artifact's DECLARED source (SPEC <- ui.yaml, API <- api.yaml, MOCKUP/PROMPTS <-
+      ui+docs, preview <- ui+tokens), only 2 features were genuinely stale.
+    why_most_were_not: >-
+      Adding capabilities[] to 23 docs.yaml bumped every mtime, but NO export renders that
+      field — verified: the only 'capabilit' matches in exports/ are AccountCapabilityRegistry
+      (a domain class) and a PIPELINE_STATE path. Content was already correct everywhere.
+    content_updated: [send-money, transactions]
+    content_update_detail: >-
+      send-money SPEC gained a Field validation contract section (the table codegen reads for
+      validators, the fieldErrors state backing, and the submit-guard note). transactions SPEC
+      corrected two component-inventory references from text_field to search_bar.
+    provenance_restamped: 151
+    restamp_scope: "ONLY `Source hash`, `> Generated:` and `<!-- render-hash: -->` lines — no rendered body touched"
+    stale_after: 0
+
   next_round:
-    would_address: [G-CAP-SEARCH-001, G-CAP-FORM-001, G-CAP-SYSINT-001, G-CAP-PREFS-001]
-    not_auto_applied_because: >-
-      Nine features, four rule classes, and each fix is a real content decision (validator
-      patterns, permission UX paths, a component-type change on a shipped screen). The heal
-      engine would loop here; stopping after round 1 keeps the capability fix reviewable on
-      its own rather than folding it into a larger diff.
+    would_address: []
+    applied_in_round_2: "all four — see round_2_applied above"
     also_open: "requires_auth — decide whether AIS screens should declare it (see deliberately_not_declared)"
+
+# ═══════════════════════════════════════════════════════════════════════════
+# CURRENT OPEN STATE
+# ═══════════════════════════════════════════════════════════════════════════
+open_findings_now: 0
+open_decisions:
+  - id: D-REQUIRES-AUTH
+    kind: decision
+    detail: >-
+      Whether the AIS screens should declare requires_auth. Every one does require an
+      authorised consent to call its endpoints, so a case exists — but the textual signal
+      was unreliable (consent/token appear in nearly every screen's prose) and
+      RULE-SEED-AUTH-001's obligations were never evaluated against this app. Left undecided
+      rather than guessed; declaring it would activate one more rule.
+  - id: D-BANKING-RAILS-CAPABILITY
+    kind: framework-gap
+    detail: >-
+      Nothing in the 20-capability vocabulary means "moves real money over banking rails".
+      has_payments is store billing only, so PISP features sit at the same medium tier as any
+      form screen. Raising a new capability is the fix; borrowing has_payments' tier by
+      mis-declaring it is not.
+  - id: D-ACTION-CONTRACT-VOCAB
+    kind: framework-gap
+    detail: >-
+      2 on_click components remain outside the action-contract interactive vocabulary
+      (home#view_all_transactions_link type=text_button, settings#theme_row type=select) and
+      go unevaluated. Widening the vocabulary is cross-project.
 project: "mifos-x/mifos-x-open-banking"
 roster_size: 23                 # canonical count from idea-layer/_list.json
 features_evaluated: 23

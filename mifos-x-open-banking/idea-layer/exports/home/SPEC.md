@@ -1,7 +1,7 @@
 # Home — Feature Specification
 
 > Generated from `screens/home/ui.yaml` by `/idea-feature-export`
-> Schema version: 2.0.0 · Source hash: `c48417190c81`
+> Schema version: 2.0.0 · Source hash: `5f67cd986e56`
 > Endpoints: 3 · DTOs: 3 · Components: 6 · Test scenarios: 13
 
 ## Lossless Export Contract

@@ -60,7 +60,15 @@ state_model:
       sealed_class: SendMoneyUiState
       members:
         - Loading
-        - Content      # step: Step(Recipient|Amount|Review), debtorAccounts: List<BankAccount>, beneficiaries: List<BeneficiaryItem>, debtorAccountId: String?, creditor: CreditorSelection?, amountMinorUnits: String, amountLabel: String, reference: String?, validationError: ValidationError?
+        - Content      # step: Step(Recipient|Amount|Review), debtorAccounts: List<BankAccount>, beneficiaries: List<BeneficiaryItem>, debtorAccountId: String?, creditor: CreditorSelection?, amountMinorUnits: String, amountLabel: String, reference: String?, validationError: ValidationError?, fieldErrors: FieldErrors, availableBalanceMinorUnits: Long?
+        # fieldErrors: FieldErrors — per-field inline messages backing each input's
+        # error_text (sortCode / accountNumber / amount / reference, all String?).
+        # A map rather than reuse of the single validationError: this form has four inputs
+        # and two can be wrong at once (a short sort code AND a short account number), which
+        # one nullable ValidationError cannot represent. validationError is RETAINED for the
+        # form-level amount check that TC-SEND-003 and TC-SEND-011 assert against.
+        # availableBalanceMinorUnits backs amount_field's max_dynamic validator; it is the
+        # selected debtor account's balance, so it is null until a debtor is chosen.
         - Submitting   # stage: Stage(StagingConsent|AwaitingAuthorisation|SubmittingPayment), consentId: String?
         - Success      # paymentId: String, statusLabel: String, amountLabel: String, creditorName: String
         - Error        # type: SendMoneyErrorKind, message: String, supportReference: String?
@@ -272,6 +280,15 @@ components:
     accessibility_label: "{strings.send_money.sort_code_a11y}"
     input_type: number
     max_length: 8
+    required: true
+    error_text: "{content.fieldErrors.sortCode}"   # V3 — inline, adjacent to the field
+    validators:
+      - { type: required, message: "{strings.send_money.sort_code_required}" }
+      - { type: pattern, pattern: "^[0-9]{6}$", strip: "-",
+          message: "{strings.send_money.sort_code_invalid}",
+          note: "UK sort code is SIX digits. The 00-00-00 placeholder and max_length 8 count
+                 the two display hyphens, which are stripped before validation — validating
+                 the raw 8 characters would reject every correctly-typed code." }
     on_change:
       action: update_manual_sort_code
       param: sortCode
@@ -290,6 +307,14 @@ components:
     accessibility_label: "{strings.send_money.account_number_a11y}"
     input_type: number
     max_length: 8
+    required: true
+    error_text: "{content.fieldErrors.accountNumber}"   # V3 — inline, adjacent to the field
+    validators:
+      - { type: required, message: "{strings.send_money.account_number_required}" }
+      - { type: pattern, pattern: "^[0-9]{8}$",
+          message: "{strings.send_money.account_number_invalid}",
+          note: "UK account number is exactly 8 digits — no separators, so max_length 8 is
+                 also the exact required length." }
     on_change:
       action: update_manual_account_number
       param: accountNumber
@@ -309,6 +334,17 @@ components:
     accessibility_label: "{strings.send_money.amount_a11y}"
     input_type: currency
     error_text: "{content.validationError.message}"
+    required: true
+    validators:
+      - { type: required, message: "{strings.send_money.amount_required}" }
+      - { type: min, value: 1, unit: minor_units,
+          message: "{strings.send_money.amount_too_small}",
+          note: "Guards a zero or negative payment (TC-SEND-004). Held in minor units, so 1 = 1p." }
+      - { type: max_dynamic, source: "{content.availableBalanceMinorUnits}",
+          message: "{strings.send_money.amount_exceeds_balance}",
+          note: "Local pre-check against the selected debtor account's available balance
+                 (TC-SEND-003). Advisory only — it never replaces the funds-confirmation
+                 call, which is the authoritative check and can still refuse (TC-SEND-011)." }
     on_change:
       action: enter_amount
       param: minorUnits
@@ -327,6 +363,13 @@ components:
     accessibility_label: "{strings.send_money.reference_a11y}"
     input_type: text
     max_length: 35
+    required: false        # the ONLY optional field on this form — see note
+    error_text: "{content.fieldErrors.reference}"   # V3 — fires on the 35-char overflow
+    validators:
+      - { type: max_length, value: 35,
+          message: "{strings.send_money.reference_too_long}",
+          note: "OBIE Initiation.RemittanceInformation.Unstructured caps at 35 characters.
+                 Exceeding it is rejected by the bank, so it must fail locally first." }
     on_change:
       action: enter_reference
       param: reference

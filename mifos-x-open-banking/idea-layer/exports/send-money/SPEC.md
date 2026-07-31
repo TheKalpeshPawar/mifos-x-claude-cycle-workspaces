@@ -1,7 +1,7 @@
 # Send money — Feature Specification
 
 > Generated from `screens/send-money/ui.yaml` by `/idea-feature-export`
-> Schema version: 2.0.0 · Source hash: `7d924d371fb0`
+> Schema version: 2.0.0 · Source hash: `9e34e88cc466`
 > Endpoints: 3 · DTOs: 5 · Components: 28 · Test scenarios: 14
 
 ## Lossless Export Contract
@@ -51,6 +51,32 @@ Single screen, three steps within `content`:
 progress bar (motion dial 2).
 
 Plus `progress_indicator` (loading), `submitting_indicator`, `payment_success` (+ `view_payment_status_button`), `error_state` (+ `retry_button`, `reauthorise_button`, `view_consents_button`, `edit_amount_button`).
+
+### Field validation contract
+
+Every input declares `validators[]` and an explicit `required` decision. `error_text` binds
+per-field to `content.fieldErrors.*` so messages render adjacent to the field, never as a
+toast alone.
+
+| Field | Required | Validators | Notes |
+|---|:---:|---|---|
+| `manual_sort_code` | yes | `required` · `pattern ^[0-9]{6}$` (strip `-`) | UK sort code is **6 digits**. `max_length: 8` counts the two display hyphens; validating the raw 8 characters would reject every correctly-typed code. |
+| `manual_account_number` | yes | `required` · `pattern ^[0-9]{8}$` | Exactly 8 digits, no separators — `max_length` is also the exact length. |
+| `amount_field` | yes | `required` · `min 1` (minor units) · `max_dynamic ← content.availableBalanceMinorUnits` | `min` guards a zero/negative payment (TC-SEND-004). The balance check is **advisory** — it never replaces funds-confirmation, which is authoritative and can still refuse (TC-SEND-011). |
+| `reference_field` | **no** | `max_length 35` | The only optional field. 35 is the OBIE `RemittanceInformation.Unstructured` cap; exceeding it is rejected by the bank, so it must fail locally first. |
+
+**State backing:** `Content` carries `fieldErrors: FieldErrors` (sortCode / accountNumber /
+amount / reference, all `String?`) alongside the pre-existing `validationError`. A map, not a
+reuse of the single nullable error, because two fields can be wrong simultaneously — a short
+sort code AND a short account number — which one `ValidationError` cannot represent.
+`availableBalanceMinorUnits: Long?` backs the dynamic max and is null until a debtor account
+is selected.
+
+**Submit guard:** there is no `disabled:` attribute on `confirm_button`. It binds to `content`
+only, so confirming transitions the screen to `submitting`, which unmounts the button and
+renders `submitting_indicator`. The control cannot be tapped twice because it ceases to
+exist — a stronger guarantee than a disabled flag, and the mechanism TC-SEND-010's
+idempotency-key assertion relies on.
 
 ### Two composition decisions codegen must preserve
 

@@ -2,7 +2,7 @@
 
 > Auto-generated from `screens/account-detail/ui.yaml` + `docs.yaml` by `/idea-feature-mockup`
 > Design tokens: `design-system/design-tokens.yaml` (2.1.0) · Design system: Trust Blue 1.1.0
-> Generated: 2026-07-30
+> Generated: 2026-07-31
 > Content: `screens/account-detail/demo-data.yaml`
 
 **Implemented** — `feature/account-detail`, `AccountDetailRoute(accountId)`. The app's **hub

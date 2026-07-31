@@ -2,7 +2,7 @@
 
 > Generated from `screens/payment-status/ui.yaml` by `/idea-feature-mockup`
 > Design System: Material Design 3 — Trust Blue 1.1.0 · tokens `design-tokens.yaml` 2.1.0
-> Generated: 2026-07-30
+> Generated: 2026-07-31
 
 ---
 

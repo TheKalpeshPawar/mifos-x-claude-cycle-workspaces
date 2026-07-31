@@ -1,7 +1,7 @@
 # Home — API Contracts
 
 > Generated from `screens/home/api.yaml` by `/idea-feature-export`
-> Schema version: 2.0.0 · Source hash: `c48417190c81` · Endpoints: 3 · DTOs: 3
+> Schema version: 2.0.0 · Source hash: `5f67cd986e56` · Endpoints: 3 · DTOs: 3
 
 Base path `/obie/open-banking/v4.0/aisp`. All three are AIS reads on the PSU bearer — no JWS,
 no idempotency key.

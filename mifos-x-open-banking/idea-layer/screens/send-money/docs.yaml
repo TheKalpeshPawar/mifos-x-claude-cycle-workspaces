@@ -26,6 +26,18 @@ has_server: false
 # restore-purchases, App Store subscription rules), not bank payment initiation. Declaring
 # it would raise eight inapplicable errors and make /kmp-client-gen emit StoreKit boilerplate.
 capabilities: [has_ui, has_api, has_flow, has_form_input, has_system_integration]
+# V1. V2/V3 N/A — zero device permissions app-wide (see login/docs.yaml).
+system_capabilities:
+  - kind: deep_link
+    detail: "Hands off to payment-consent for the app-to-app authorise leg, then resumes to submit."
+# RULE-CAP-HAS-FORM-INPUT-001 V4 (submit has a loading state + disable-while-submitting)
+# is satisfied by STATE TRANSITION rather than a `disabled:` flag. confirm_button binds to
+# `content` only; confirming moves the screen to `submitting`, which unmounts the button and
+# renders submitting_indicator. The control cannot be tapped twice because it no longer
+# exists — a stronger guarantee than a disabled attribute, and the mechanism TC-SEND-010's
+# idempotency-key assertion depends on. Recorded because a reader looking for `disabled:`
+# will not find one and could mistake that for the check failing.
+form_submit_guard: state-transition-unmount
 
 metadata:
   category: form

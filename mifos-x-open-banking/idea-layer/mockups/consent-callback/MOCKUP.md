@@ -2,7 +2,7 @@
 
 > Auto-generated from `screens/consent-callback/ui.yaml` + `docs.yaml` by `/idea-feature-mockup`
 > Design tokens: `design-system/design-tokens.yaml` (2.1.0) · Design system: Trust Blue 1.1.0
-> Generated: 2026-07-30
+> Generated: 2026-07-31
 
 **Implemented** — `feature/consent-callback`. The **AIS** return leg of the OAuth round-trip.
 Reached only via redirect, never from navigation.

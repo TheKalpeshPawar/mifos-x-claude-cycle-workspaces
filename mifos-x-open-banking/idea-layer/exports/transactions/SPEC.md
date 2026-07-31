@@ -1,7 +1,7 @@
 # Transactions — Feature Specification
 
 > Generated from `screens/transactions/ui.yaml` by `/idea-feature-export`
-> Schema version: 2.0.0 · Source hash: `a078cde13778`
+> Schema version: 2.0.0 · Source hash: `8fbdc3a139a1`
 > Endpoints: 1 · DTOs: 1 · Components: 9 · Test scenarios: 12
 
 ## Lossless Export Contract
@@ -40,7 +40,7 @@ its only production consumer is `feature/home`, not this screen.
 ## 3. Screen inventory
 
 `loading_spinner` · `period_summary` (stat_block) · `filter_chips` (chip_row) ·
-`search_field` (text_field) · `transactions_list` · `load_more_button` ·
+`search_field` (search_bar) · `transactions_list` · `load_more_button` ·
 `pagination_loader` · `empty_transactions` · `error_state`.
 
 ## 4. State model — `TransactionsViewModel`
@@ -87,7 +87,7 @@ Full contract in `API.md`.
 
 ## 7. Design tokens
 
-`list_item`, `chip_row` filters, `text_field` search, `amount` (mono; credit `primary`,
+`list_item`, `chip_row` filters, `search_bar` search, `amount` (mono; credit `primary`,
 debit `error`), `stat_block` period summary. Canonical brand spec: `design-system/DESIGN.md` 1.1.0.
 
 ## 8. Test mapping

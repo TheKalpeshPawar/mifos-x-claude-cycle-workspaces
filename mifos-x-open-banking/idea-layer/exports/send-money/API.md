@@ -1,7 +1,7 @@
 # Send money — API Contracts
 
 > Generated from `screens/send-money/api.yaml` by `/idea-feature-export`
-> Schema version: 2.0.0 · Source hash: `7d924d371fb0` · Endpoints: 3 · DTOs: 5
+> Schema version: 2.0.0 · Source hash: `9e34e88cc466` · Endpoints: 3 · DTOs: 5
 >
 > Re-stamped 2026-07-31. `api.yaml` did not change in that pass — the three endpoints, five
 > DTOs and the error matrix below are byte-identical to the 07-30 export. Only the

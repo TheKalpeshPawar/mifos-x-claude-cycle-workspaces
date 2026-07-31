@@ -1,7 +1,7 @@
 # Accounts — Feature Specification
 
 > Generated from `screens/accounts/ui.yaml` by `/idea-feature-export`
-> Schema version: 2.0.0 · Source hash: `e9536984d3c5`
+> Schema version: 2.0.0 · Source hash: `96e7b1f02bf2`
 > Endpoints: 2 · DTOs: 2 · Components: 5 · Test scenarios: 10
 
 ## Lossless Export Contract

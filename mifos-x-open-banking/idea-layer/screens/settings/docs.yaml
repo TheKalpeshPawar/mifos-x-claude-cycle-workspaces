@@ -32,6 +32,23 @@ has_server: false
 # toggle, not a form; the rule's sub-checks (validators[], submit loading state,
 # required-field marking) describe something this screen does not have.
 capabilities: [has_ui, has_flow, has_local_preferences]
+# RULE-CAP-HAS-LOCAL-PREFERENCES-001 V1/V3. DataStore-backed, read and written by
+# SettingsViewModel via UserDataRepository.setDarkThemeConfig.
+preferences:
+  - key: dark_theme_config
+    type: string
+    default: "System"          # V3 — never starts null; AppTheme falls back to the OS setting
+    scope: device              # not user-scoped: it is not synced and does not follow the PSU across devices
+    allowed: ["Light", "Dark", "System"]
+    surface: "settings#theme_row"
+# V2 schema migration: none needed yet — dark_theme_config is the only key and has never
+# been renamed or removed. Declared explicitly so a future rename records a migration here
+# rather than silently orphaning a stored value.
+preferences_migrations: []
+# V4 cross-check (RULE-SEED-SECURITY-001 V1-AUTH-TOKEN-STORAGE): no auth tokens, credentials
+# or PII live in preferences. OBIE access/refresh tokens go to ConsentSession over
+# multiplatform-settings SECURE storage via core/datastore, never here.
+preferences_security_note: "no tokens, credentials or PII in DataStore — secure storage only"
 metadata:
   category: settings
   implementation_ready: true

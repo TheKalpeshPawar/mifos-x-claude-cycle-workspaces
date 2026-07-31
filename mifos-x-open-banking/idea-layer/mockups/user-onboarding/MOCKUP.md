@@ -2,7 +2,7 @@
 
 > Auto-generated from `screens/user-onboarding/ui.yaml` + `docs.yaml` by `/idea-feature-mockup`
 > Design tokens: `design-system/design-tokens.yaml` (2.1.0) · Design system: Trust Blue 1.1.0
-> Generated: 2026-07-30
+> Generated: 2026-07-31
 
 **Implemented** — `onboarding/IntroScreen.kt` inside `feature/login`; it has **no module of its
 own**. The app's first screen for an unauthenticated PSU.
