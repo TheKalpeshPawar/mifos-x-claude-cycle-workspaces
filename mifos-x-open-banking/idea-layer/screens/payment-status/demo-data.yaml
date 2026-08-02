@@ -1,0 +1,159 @@
+sibling: demo-data
+schema_version: "2.1.0"
+feature_id: payment-status
+
+screen_id: payment-status
+_content_policy: "RULE-PROTO-CONTENT-001 — zero placeholders; real HSBC-sandbox-shaped OBIE data only."
+
+# PMT-812774903-01 is the payment produced by the send-money and payment-consent fixtures,
+# so all three features exercise one coherent payment end to end.
+
+payment_in_process:
+  Data:
+    DomesticPaymentId: "PMT-812774903-01"
+    ConsentId: "812774903"
+    Status: "AcceptedSettlementInProcess"
+    CreationDateTime: "2026-07-30T10:44:05+00:00"
+    StatusUpdateDateTime: "2026-07-30T10:44:05+00:00"
+    Initiation:
+      InstructionIdentification: "MFX20260730T1042330001"
+      EndToEndIdentification: "E2E-RENT-FLAT12-202607"
+      InstructedAmount:
+        Amount: "850.00"
+        Currency: "GBP"
+      DebtorAccount:
+        SchemeName: "UK.OBIE.SortCodeAccountNumber"
+        Identification: "80200110203349"
+        Name: "Mr Nico"
+      CreditorAccount:
+        SchemeName: "UK.OBIE.SortCodeAccountNumber"
+        Identification: "40120965872310"
+        Name: "Jameson Lettings"
+      RemittanceInformation:
+        Unstructured:
+          - "RENT-FLAT12"
+  Links:
+    Self: "https://secure.sandbox.ob.hsbc.co.uk/obie/open-banking/v4.0/pisp/domestic-payments/PMT-812774903-01"
+  Meta:
+    TotalPages: 1
+  _expected_disposition: in_progress
+
+payment_settled:
+  Data:
+    DomesticPaymentId: "PMT-812774903-01"
+    ConsentId: "812774903"
+    Status: "AcceptedSettlementCompleted"
+    CreationDateTime: "2026-07-30T10:44:05+00:00"
+    StatusUpdateDateTime: "2026-07-30T10:47:19+00:00"
+    Initiation:
+      InstructionIdentification: "MFX20260730T1042330001"
+      EndToEndIdentification: "E2E-RENT-FLAT12-202607"
+      InstructedAmount:
+        Amount: "850.00"
+        Currency: "GBP"
+      DebtorAccount:
+        SchemeName: "UK.OBIE.SortCodeAccountNumber"
+        Identification: "80200110203349"
+        Name: "Mr Nico"
+      CreditorAccount:
+        SchemeName: "UK.OBIE.SortCodeAccountNumber"
+        Identification: "40120965872310"
+        Name: "Jameson Lettings"
+      RemittanceInformation:
+        Unstructured:
+          - "RENT-FLAT12"
+  Links:
+    Self: "https://secure.sandbox.ob.hsbc.co.uk/obie/open-banking/v4.0/pisp/domestic-payments/PMT-812774903-01"
+  Meta:
+    TotalPages: 1
+  _expected_disposition: terminal_success
+
+payment_rejected:
+  Data:
+    DomesticPaymentId: "PMT-812774903-02"
+    ConsentId: "812774904"
+    Status: "Rejected"
+    CreationDateTime: "2026-07-30T11:02:41+00:00"
+    StatusUpdateDateTime: "2026-07-30T11:03:08+00:00"
+    Initiation:
+      InstructionIdentification: "MFX20260730T1102410002"
+      EndToEndIdentification: "E2E-FAMILY-202607"
+      InstructedAmount:
+        Amount: "40.00"
+        Currency: "GBP"
+      DebtorAccount:
+        SchemeName: "UK.OBIE.SortCodeAccountNumber"
+        Identification: "80200110203349"
+        Name: "Mr Nico"
+      CreditorAccount:
+        SchemeName: "UK.OBIE.SortCodeAccountNumber"
+        Identification: "23058011223344"
+        Name: "John Sharma"
+      RemittanceInformation:
+        Unstructured:
+          - "FAMILY"
+  Links:
+    Self: "https://secure.sandbox.ob.hsbc.co.uk/obie/open-banking/v4.0/pisp/domestic-payments/PMT-812774903-02"
+  Meta:
+    TotalPages: 1
+  _expected_disposition: terminal_failure
+
+payment_unknown_status:
+  # A status outside the mapped vocabulary. The app must fail open toward in_progress.
+  Data:
+    DomesticPaymentId: "PMT-812774903-03"
+    ConsentId: "812774905"
+    Status: "AcceptedTechnicalValidation"
+    CreationDateTime: "2026-07-30T11:20:00+00:00"
+    StatusUpdateDateTime: "2026-07-30T11:20:00+00:00"
+    Initiation:
+      InstructedAmount:
+        Amount: "12.50"
+        Currency: "GBP"
+      CreditorAccount:
+        SchemeName: "UK.OBIE.SortCodeAccountNumber"
+        Identification: "60000199887766"
+        Name: "EDF Energy"
+  Meta:
+    TotalPages: 1
+  _expected_disposition: in_progress
+
+error_fixtures:
+  not_found:
+    http_status: 400
+    body:
+      Code: "400"
+      Id: "b81f4a02-6c35-4d97-a1e8-53c9f720be44"
+      Message: "Bad Request"
+      Errors:
+        - ErrorCode: "U011"
+          Message: "Resource cannot be found"
+
+  rate_limited:
+    http_status: 429
+    headers:
+      Retry-After: "12"
+    body:
+      Code: "429"
+      Id: "5e0c9a37-8b14-42f6-90d3-7a2e1c6b04f9"
+      Message: "Too Many Requests"
+      Errors:
+        - ErrorCode: "U002"
+          Message: "Rate limit exceeded"
+
+_test_fixtures:
+  poll_stops_on_terminal:
+    sequence: [payment_in_process, payment_in_process, payment_settled]
+    expected_poll_count: 3
+    expected_polls_after_settled: 0
+  poll_never_starts_on_terminal:
+    first_read: payment_settled
+    expected_poll_count: 1
+  unknown_status_fails_open:
+    first_read: payment_unknown_status
+    expected_disposition: in_progress
+    expected_polling: true
+  rejected_offers_new_payment:
+    first_read: payment_rejected
+    expected_visible: [new_payment_button]
+    expected_hidden: [refresh_button]

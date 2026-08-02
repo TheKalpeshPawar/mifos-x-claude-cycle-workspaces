@@ -1,0 +1,148 @@
+name: OBTransaction6
+version: 1.0.0
+description: >
+  OBIE AIS v4.0 transaction record. Primary item type of OBReadTransaction6.Data.Transaction[].
+  Covers both Booked (settled) and Pending entries. TransactionId is the dedup key (optional
+  in spec but present in HSBC responses). Category icon is derived from
+  ProprietaryBankTransactionCode.Code or MerchantDetails.MerchantCategoryCode.
+  CreditorAccount and DebtorAccount are PII.
+source:
+  origin: rest
+  endpoint: "/accounts/{AccountId}/transactions"
+fields:
+  - name: accountId
+    type: String
+    description: "OBIE AccountId this transaction belongs to."
+    required: true
+    source_field: "AccountId"
+  - name: transactionId
+    type: { optional: String }
+    description: "Unique transaction identifier (primary key for dedup). Optional in OBIE v4.0 spec but reliably present in HSBC AIS responses."
+    source_field: "TransactionId"
+    example: "TX001-20260628-001"
+  - name: creditDebitIndicator
+    type: { enum_ref: TxCreditDebitIndicator }
+    description: "Credit = money in (inbound). Debit = money out (outbound)."
+    required: true
+    source_field: "CreditDebitIndicator"
+  - name: status
+    type: { enum_ref: TxStatus }
+    description: "Booked = settled; Pending = awaiting settlement; Rejected = failed."
+    required: true
+    source_field: "Status"
+  - name: transactionMutability
+    type: { optional: String }
+    description: "Mutable or Immutable. Indicates whether this transaction record may change (e.g. Pending→Booked amount change)."
+    source_field: "TransactionMutability"
+  - name: bookingDateTime
+    type: DateTime
+    description: "UTC datetime the transaction was booked (settled). Primary sort key for transaction list — descending."
+    required: true
+    source_field: "BookingDateTime"
+    example: "2026-06-28T14:32:00Z"
+  - name: valueDateTime
+    type: { optional: DateTime }
+    description: "UTC datetime funds were available (may differ from bookingDateTime for international transfers)."
+    source_field: "ValueDateTime"
+  - name: transactionReference
+    type: { optional: String }
+    description: "Payment reference string supplied by the payer (e.g. invoice number, rental reference). Used for transaction-detail display."
+    source_field: "TransactionReference"
+    example: "RENT-JUN-2026"
+  - name: statementReference
+    type: { optional: { list_of: String } }
+    description: "Statement IDs this transaction appears in. Cross-reference for statement-detail screen."
+    source_field: "StatementReference"
+  - name: amount
+    type: { dto_ref: OBActiveOrHistoricCurrencyAndAmount }
+    description: "Instructed transaction amount and currency."
+    required: true
+    source_field: "Amount"
+  - name: chargeAmount
+    type: { optional: { dto_ref: OBActiveOrHistoricCurrencyAndAmount } }
+    description: "ASPSP charge applied to this transaction (e.g. FX fee, international transfer fee)."
+    source_field: "ChargeAmount"
+  - name: currencyExchange
+    type: { optional: Json }
+    description: "FX details for cross-currency transactions: { SourceCurrency, TargetCurrency, ExchangeRate, ContractIdentification, QuotationDate, InstructedAmount }."
+    source_field: "CurrencyExchange"
+  - name: bankTransactionCode
+    type: { optional: Json }
+    description: "ISO 20022 bank transaction code { Code, SubCode }. Machine-readable payment classification."
+    source_field: "BankTransactionCode"
+  - name: proprietaryBankTransactionCode
+    type: { optional: Json }
+    description: "ASPSP-proprietary transaction code { Code, Issuer }. Used by ViewModel to derive category icon and spending-category classification."
+    source_field: "ProprietaryBankTransactionCode"
+  - name: balance
+    type: { optional: Json }
+    description: "Running account balance after the transaction: { Amount: OBActiveOrHistoricCurrencyAndAmount, CreditDebitIndicator, Type }."
+    source_field: "Balance"
+  - name: merchantDetails
+    type: { optional: Json }
+    description: "Merchant info: { MerchantName, MerchantCategoryCode }. MerchantCategoryCode used for category icon when ProprietaryBankTransactionCode absent."
+    source_field: "MerchantDetails"
+  - name: creditorAgent
+    type: { optional: Json }
+    description: "Receiving bank routing: { SchemeName, Identification, Name, PostalAddress }."
+    source_field: "CreditorAgent"
+  - name: creditorAccount
+    type: { optional: { dto_ref: OBCashAccount3 } }
+    description: "Receiving account identification (beneficiary). PII — SchemeName + Identification + Name."
+    source_field: "CreditorAccount"
+  - name: debtorAgent
+    type: { optional: Json }
+    description: "Sending bank routing. Present on inbound transfers."
+    source_field: "DebtorAgent"
+  - name: debtorAccount
+    type: { optional: { dto_ref: OBCashAccount3 } }
+    description: "Sending account identification. PII. Present on inbound credit transactions."
+    source_field: "DebtorAccount"
+  - name: cardInstrument
+    type: { optional: Json }
+    description: "Card payment details: { CardSchemeName (enum: AmericanExpress/Diners/Discover/MasterCard/VISA), AuthorisationType, Name, Identification (masked PAN) }."
+    source_field: "CardInstrument"
+  - name: addressLine
+    type: { optional: String }
+    description: "Narrative address line — often the merchant trading address for card transactions."
+    source_field: "AddressLine"
+  - name: supplementaryData
+    type: { optional: Json }
+    description: "ASPSP-specific supplementary data payload. Opaque — do not parse; forward if present."
+    source_field: "SupplementaryData"
+enums:
+  - name: TxCreditDebitIndicator
+    description: "Direction of money flow for a transaction."
+    values:
+      - { id: CREDIT, wire_value: "Credit", description: "Money received — inbound." }
+      - { id: DEBIT,  wire_value: "Debit",  description: "Money sent — outbound." }
+  - name: TxStatus
+    description: "OBIE transaction lifecycle status."
+    values:
+      - { id: BOOKED,   wire_value: "Booked",   description: "Transaction has settled. BookingDateTime is final." }
+      - { id: PENDING,  wire_value: "Pending",  description: "Awaiting settlement. Amount or date may change." }
+      - { id: REJECTED, wire_value: "Rejected", description: "Transaction was rejected." }
+used_by:
+  - feature: home
+    kind: response
+    api_id: recentTransactions
+    role: body
+  - feature: transactions
+    kind: response
+    api_id: transactions
+    role: body
+  - feature: transaction-detail
+    kind: response
+    api_id: transactions
+    role: body
+  - feature: statement-detail
+    kind: response
+    api_id: statementTxns
+    role: body
+capabilities_used:
+  - has_api
+tier: maximum
+tags:
+  - obie
+  - transaction
+  - pii

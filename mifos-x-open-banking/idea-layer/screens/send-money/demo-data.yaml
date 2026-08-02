@@ -1,0 +1,204 @@
+sibling: demo-data
+schema_version: "2.1.0"
+feature_id: send-money
+
+screen_id: send-money
+_content_policy: "RULE-PROTO-CONTENT-001 — zero placeholders; real HSBC-sandbox-shaped OBIE data only."
+
+# Debtor candidates are the PSU's own authorised accounts, taken from the live sandbox
+# capture in UKPersonal-API-endpoints.md AIS 5 (customer01). Creditor candidates reuse the
+# beneficiaries fixture already committed for the beneficiaries screen so the two features
+# agree on the same payee identities.
+
+debtor_accounts:
+  - AccountId: "123456791"
+    displayName: "Current account ·· 3349"
+    AccountTypeCode: "CACC"
+    Currency: "GBP"
+    SchemeName: "UK.OBIE.SortCodeAccountNumber"
+    Identification: "80200110203349"
+    Name: "Mr Nico"
+    availableBalanceMinorUnits: "2153092"
+    availableBalanceLabel: "£21,530.92 available"
+
+  - AccountId: "1123456841"
+    displayName: "BMM ACCOUNT ·· 3695"
+    AccountTypeCode: "SVGS"
+    Currency: "GBP"
+    SchemeName: "UK.OBIE.SortCodeAccountNumber"
+    Identification: "80122590953695"
+    Name: "ACCNT SHORT"
+    availableBalanceMinorUnits: "48210"
+    availableBalanceLabel: "£482.10 available"
+
+beneficiaries:
+  - BeneficiaryId: "BEN-001"
+    name: "Jameson Lettings"
+    schemeLabel: "Sort Code"
+    SchemeName: "UK.OBIE.SortCodeAccountNumber"
+    identification: "40-12-09 65872310"
+    Reference: "RENT-FLAT12"
+
+  - BeneficiaryId: "BEN-002"
+    name: "John Sharma"
+    schemeLabel: "Sort Code"
+    SchemeName: "UK.OBIE.SortCodeAccountNumber"
+    identification: "23-05-80 11223344"
+    Reference: "FAMILY"
+
+  - BeneficiaryId: "BEN-003"
+    name: "EDF Energy"
+    schemeLabel: "Sort Code"
+    SchemeName: "UK.OBIE.SortCodeAccountNumber"
+    identification: "60-00-01 99887766"
+    Reference: "ELEC-8841"
+
+# ─────────────────────────────────────────────────────────────────────────
+# Staged consent — the CONSUMER body shape.
+# Note what is absent: MerchantCategoryCode, MerchantCustomerIdentification and
+# DeliveryAddress. HSBC's Postman example sends all three plus
+# PaymentContextCode: EcommerceMerchantInitiatedPayment; that is the merchant shape and
+# is wrong for this app. See docs.yaml#consumer_context_constraint.
+# ─────────────────────────────────────────────────────────────────────────
+staged_consent_request:
+  Data:
+    Initiation:
+      InstructionIdentification: "MFX20260730T1042330001"
+      EndToEndIdentification: "E2E-RENT-FLAT12-202607"
+      InstructedAmount:
+        Amount: "850.00"
+        Currency: "GBP"
+      DebtorAccount:
+        SchemeName: "UK.OBIE.SortCodeAccountNumber"
+        Identification: "80200110203349"
+        Name: "Mr Nico"
+      CreditorAccount:
+        SchemeName: "UK.OBIE.SortCodeAccountNumber"
+        Identification: "40120965872310"
+        Name: "Jameson Lettings"
+      RemittanceInformation:
+        Unstructured:
+          - "RENT-FLAT12"
+  Risk:
+    PaymentContextCode: "TransferToThirdParty"
+
+staged_consent_response:
+  Data:
+    ConsentId: "812774903"
+    Status: "AWAU"
+    CreationDateTime: "2026-07-30T10:42:33+00:00"
+    StatusUpdateDateTime: "2026-07-30T10:42:33+00:00"
+    Initiation:
+      InstructionIdentification: "MFX20260730T1042330001"
+      EndToEndIdentification: "E2E-RENT-FLAT12-202607"
+      InstructedAmount:
+        Amount: "850.00"
+        Currency: "GBP"
+      DebtorAccount:
+        SchemeName: "UK.OBIE.SortCodeAccountNumber"
+        Identification: "80200110203349"
+        Name: "Mr Nico"
+      CreditorAccount:
+        SchemeName: "UK.OBIE.SortCodeAccountNumber"
+        Identification: "40120965872310"
+        Name: "Jameson Lettings"
+      RemittanceInformation:
+        Unstructured:
+          - "RENT-FLAT12"
+  Links:
+    Self: "https://secure.sandbox.ob.hsbc.co.uk/obie/open-banking/v4.0/pisp/domestic-payment-consents/812774903"
+  Meta:
+    TotalPages: 1
+
+funds_confirmation_response:
+  Data:
+    FundsAvailableResult:
+      FundsAvailable: true
+      FundsAvailableDateTime: "2026-07-30T10:44:02+00:00"
+
+payment_submit_response:
+  Data:
+    DomesticPaymentId: "PMT-812774903-01"
+    ConsentId: "812774903"
+    Status: "AcceptedSettlementInProcess"
+    CreationDateTime: "2026-07-30T10:44:05+00:00"
+    StatusUpdateDateTime: "2026-07-30T10:44:05+00:00"
+  Links:
+    Self: "https://secure.sandbox.ob.hsbc.co.uk/obie/open-banking/v4.0/pisp/domestic-payments/PMT-812774903-01"
+  Meta:
+    TotalPages: 1
+
+# ─────────────────────────────────────────────────────────────────────────
+# Error fixtures — real OB envelope shapes, captured or spec-derived.
+# ─────────────────────────────────────────────────────────────────────────
+error_fixtures:
+  signature_missing:
+    # Captured live: this is what the sandbox returns for an unsigned PISP write.
+    http_status: 400
+    body:
+      Code: "400"
+      Id: "ecbfbaf1-7673-492d-9de6-019dec3ea9fb"
+      Message: "Bad Request"
+      Errors:
+        - ErrorCode: "U019"
+          Message: "Missing information related to signature"
+
+  consent_not_authorised:
+    http_status: 400
+    body:
+      Code: "400"
+      Id: "3f21c0a7-9d54-4c11-b7e2-6a1d0f8e4b92"
+      Message: "Bad Request"
+      Errors:
+        - ErrorCode: "U009"
+          Message: "Unexpected consent status"
+
+  outside_control_parameters:
+    http_status: 400
+    body:
+      Code: "400"
+      Id: "9b7e4d20-1a6c-4f88-9d3a-2c5b7e10f4a6"
+      Message: "Bad Request"
+      Errors:
+        - ErrorCode: "U014"
+          Message: "Payment outside control parameters"
+          Path: "Data.Initiation.InstructedAmount.Amount"
+
+  consent_mismatch:
+    http_status: 400
+    body:
+      Code: "400"
+      Id: "c40a8f16-73b2-4e59-8f01-d6b3a9c27e58"
+      Message: "Bad Request"
+      Errors:
+        - ErrorCode: "U008"
+          Message: "Mismatch between staged consent and payment order request"
+          Path: "Data.Initiation"
+
+  insufficient_funds:
+    http_status: 200
+    body:
+      Data:
+        FundsAvailableResult:
+          FundsAvailable: false
+          FundsAvailableDateTime: "2026-07-30T10:44:02+00:00"
+
+_test_fixtures:
+  amount_exceeds_balance:
+    debtor_account_id: "1123456841"       # £482.10 available
+    input_amount_minor_units: "85000"      # £850.00
+    expected_validation_error: "ExceedsAvailableBalance"
+  amount_not_positive:
+    input_amount_minor_units: "0"
+    expected_validation_error: "AmountNotPositive"
+  own_account_transfer_context:
+    debtor_account_id: "123456791"
+    creditor_account_id: "1123456841"      # both belong to the PSU
+    expected_payment_context_code: "TransferToSelf"
+  third_party_context:
+    debtor_account_id: "123456791"
+    creditor_beneficiary_id: "BEN-001"
+    expected_payment_context_code: "TransferToThirdParty"
+  idempotency_key_reuse:
+    description: "Retry after a network drop must reuse the key generated at consent-stage time."
+    expected_behaviour: "identical x-idempotency-key on both the failed and retried submit"

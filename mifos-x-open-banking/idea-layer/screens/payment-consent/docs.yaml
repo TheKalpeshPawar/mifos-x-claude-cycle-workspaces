@@ -1,0 +1,226 @@
+sibling: docs
+schema_version: "4.0"
+feature_id: payment-consent
+
+feature: payment-consent
+contract_version: "2.0.0"
+status: enriched
+score: 88
+cluster: payment-initiation
+acceptance_refs:
+  - FR-013
+scaffolded_by: /idea-evolve
+archetype: empty_state
+flow_ref: send-money-payment
+description: >-
+  Return leg of the PISP app-to-app authorisation. The direct analogue of the shipped
+  consent-callback feature, but on scope=payments against a domestic-payment-consent rather
+  than an account-access-consent. send-money owns the outbound launch (it emits
+  LaunchAuthorisation and the Screen opens the browser); this feature owns everything after
+  HSBC redirects back — validating state and nonce against the pending authorisation,
+  exchanging the authorisation code for a PSU access token, polling the payment consent until
+  it reaches Authorised, and handing control back to send-money to submit. Headless: it
+  renders progress and terminal error only, never a form.
+has_ui: true
+has_server: false
+# has_system_integration: PISP app-to-app authorisation return leg (deep_link).
+# NOT has_payments — that capability is IN-APP-PURCHASE compliance (payment_plans[],
+# iap_identifiers[], receipt verification, restore-purchases, App Store 5.1.1 cancel path).
+# This is bank payment initiation over OBIE rails; none of those sub-checks apply.
+capabilities: [has_ui, has_api, has_flow, has_system_integration]
+
+# ─────────────────────────────────────────────────────────────────────
+# SPEC AHEAD OF SOURCE — declared 2026-08-02 by /idea-sync (source-truth pass)
+# ─────────────────────────────────────────────────────────────────────
+# The 2026-08-02 reverse pass aligned every AIS feature to shipped source. This feature is
+# exempt BY DESIGN: it is part of the 2026-07-30 payment-initiation scope reversal and is
+# specified ahead of source on purpose. Absence of a feature module is queued work, not drift.
+spec_ahead_of_source:
+  scope: feature
+  cluster: payment-initiation
+  declared_at: "2026-08-02"
+  declared_by: "/idea-sync (source-truth reverse pass)"
+  owed_by: /kmp-implement
+  reason: >-
+    Return leg of the PISP app-to-app authorisation, introduced by the 2026-07-30 scope reversal.
+    Its AIS analogue (consent-callback) IS shipped and can be mirrored when this is generated.
+  source_state_measured:
+    present:
+      - "PISP consent wire DTOs — core/network/.../model/pisp/domesticPayment/{request,response}/DomesticPaymentConsent*.kt"
+    absent:
+      - "no feature/payment-consent module, no ViewModel, no TestTags.kt"
+      - "no token-exchange or consent-poll service for scope=payments"
+  mirror_when_implemented: >-
+    feature/consent-callback — same state vocabulary (loading / awaiting / access_denied /
+    security_error), same state+nonce validation, differing only in scope=payments and in polling
+    a domestic-payment-consent rather than an account-access-consent.
+  consequence_for_verification: "drift and source-test checks are UNASSERTABLE — score N/A, not 0."
+# V1. V2/V3 N/A — zero device permissions app-wide (see login/docs.yaml).
+system_capabilities:
+  - kind: deep_link
+    detail: "PISP app-to-app authorisation return leg — same ConsentRedirectBus, payment-scoped token never written to ConsentSession."
+
+metadata:
+  category: auth
+  implementation_ready: true
+  quality_score: 88
+  scaffold_origin: "/idea-evolve — PISP scope reversal, 2026-07-30"
+
+# ─────────────────────────────────────────────────────────────────────────
+# WHY THIS IS A SEPARATE FEATURE FROM consent-callback
+# ─────────────────────────────────────────────────────────────────────────
+# The shipped consent-callback handles the AIS account-access-consent on scope=accounts and,
+# on success, persists PSU tokens which flips ConsentSession.isActive() and re-routes the
+# whole app to Home. A payment authorisation must NOT do that: it authorises one payment,
+# not a data-sharing session, and the app is already signed in when it happens.
+#
+# Concretely divergent:
+#   - scope is `payments`, not `openid accounts`
+#   - the consent resource is /pisp/domestic-payment-consents/{id}, not /aisp/account-access-consents/{id}
+#   - the resulting PSU token is single-payment scoped and MUST NOT overwrite the AIS session token
+#   - success returns to send-money to submit, it does not re-route to Home
+#   - the consent-status poll is load-bearing here (submit fails U009 unless Authorised),
+#     whereas in consent-callback the poll is best-effort and only supplies the expiry
+separation_rationale:
+  reuses_from_consent_callback:
+    - "PendingAuthStore state/nonce validation contract (single-use consume)"
+    - "The ConsentRedirectBus publish/collect wiring already built per platform"
+    - "The OAuth token-exchange call shape"
+  must_not_reuse:
+    - "ConsentSession token persistence — a payment token must not replace the AIS session token"
+    - "The post-success route to Home"
+
+regulatory:
+  note: >-
+    PISP is a distinct FCA permission from AISP. Sandbox operation is unaffected; production
+    payment initiation requires payment-initiation authorisation. Captured as an ADR.
+  affects_production: true
+  affects_sandbox: false
+  adr_required: true
+
+contracts: []
+
+libraries:
+  - capability: rest-client
+    library: ktorfit
+    version: latest
+    targets: [android, ios, desktop, web]
+  - capability: browser-redirect
+    library: "cmp-navigation:ConsentRedirectBus"
+    version: in-repo
+    targets: [android, ios, desktop]
+    notes: "Already shipped for the AIS callback; the payment redirect reuses the same per-platform bus."
+
+vm_actions:
+  - name: ValidateRedirect
+    signature: 'suspend fun validateRedirect(state: String, code: String)'
+    state_mutations:
+      - uiState = Validating
+      - uiState = Error(type=StateMismatch) when the returned state does not match the pending authorisation
+    side_effects:
+      - "PendingAuthStore.consume() — single-use read of the pending state/nonce/consentId"
+    error_handling:
+      on_state_mismatch: uiState = Error(type=StateMismatch, message=strings.error.payment_consent.state_mismatch)
+      on_missing_pending: uiState = Error(type=NoPendingAuthorisation, message=strings.error.payment_consent.no_pending)
+
+  - name: ExchangeCode
+    signature: 'suspend fun exchangeCode(code: String)'
+    state_mutations:
+      - uiState = Exchanging
+      - "psuPaymentToken = response.access_token (held for this payment only, never written to ConsentSession)"
+    side_effects:
+      - "POST /oauth2/token with grant_type=authorization_code and a private_key_jwt client assertion"
+    error_handling:
+      on_invalid_grant: uiState = Error(type=CodeExpired, message=strings.error.payment_consent.code_expired)
+      on_network: uiState = Error(type=NetworkError, message=strings.error.payment_consent.network_error)
+
+  - name: PollConsentStatus
+    signature: 'suspend fun pollConsentStatus(consentId: String)'
+    state_mutations:
+      - uiState = Checking
+      - uiState = Authorised(consentId) when Data.Status == AUTH
+      - uiState = Error(type=NotAuthorised) when the status is Rejected or still AwaitingAuthorisation past the deadline
+    side_effects:
+      - "GET /domestic-payment-consents/{ConsentId} using the client-credentials payments token"
+    error_handling:
+      on_rejected: uiState = Error(type=ConsentRejected, message=strings.error.payment_consent.rejected)
+      on_timeout: uiState = Error(type=AuthorisationTimedOut, message=strings.error.payment_consent.timed_out)
+    notes: >-
+      Load-bearing, unlike the AIS callback's best-effort poll: submitting against a consent
+      that is not Authorised returns 400 U009, so this must confirm AUTH before returning.
+
+  - name: ReturnToPayment
+    signature: fun returnToPayment()
+    state_mutations: []
+    side_effects:
+      - "Emits PaymentConsentEvent.Authorised(consentId, token) so send-money can submit"
+    error_handling: {}
+
+  - name: RetryAuthorisation
+    signature: fun retryAuthorisation()
+    state_mutations: []
+    side_effects:
+      - "Emits PaymentConsentEvent.RestartAuthorisation so send-money can re-stage and relaunch"
+    error_handling: {}
+    visibility_condition: "error.type in {CodeExpired, AuthorisationTimedOut, NetworkError}"
+
+  - name: AbandonPayment
+    signature: fun abandonPayment()
+    state_mutations: []
+    side_effects:
+      - "Emits PaymentConsentEvent.Abandoned; the staged consent is left unauthorised and expires on its own"
+    error_handling: {}
+
+error_cases:
+  - id: StateMismatch
+    trigger: "The state parameter returned by HSBC does not match the pending authorisation"
+    user_message: '{strings.error.payment_consent.state_mismatch}'
+    recovery: >-
+      No retry — a state mismatch is a possible CSRF or a crossed authorisation. The payment is
+      abandoned and the PSU is returned to the form to start again deliberately.
+  - id: NoPendingAuthorisation
+    trigger: "PendingAuthStore has no record — the app was restarted mid-authorisation"
+    user_message: '{strings.error.payment_consent.no_pending}'
+    recovery: "Return to send-money; the staged consent expires unauthorised"
+  - id: CodeExpired
+    trigger: "400 invalid_grant — the authorisation code expired (30-60s TTL) or was already used"
+    user_message: '{strings.error.payment_consent.code_expired}'
+    recovery: "Restart authorisation CTA re-stages and relaunches"
+  - id: ConsentRejected
+    trigger: "The consent status is Rejected — the PSU declined at the bank"
+    user_message: '{strings.error.payment_consent.rejected}'
+    recovery: "Return to send-money; no payment is made"
+  - id: AuthorisationTimedOut
+    trigger: "The consent is still AwaitingAuthorisation after the poll deadline"
+    user_message: '{strings.error.payment_consent.timed_out}'
+    recovery: "Restart authorisation CTA"
+  - id: NetworkError
+    trigger: IOException / timeout during token exchange or status poll
+    user_message: '{strings.error.payment_consent.network_error}'
+    recovery: "Retry CTA — safe, no payment has been submitted at this point"
+
+test_fixtures:
+  source: idea-layer/screens/payment-consent/demo-data.yaml
+  scenario_count: 11
+  priority_distribution:
+    p0: 5
+    p1: 6
+    p2: 0
+
+status_history:
+  - from: null
+    to: draft
+    at: "2026-07-30"
+    by: "/idea-evolve -> /idea-plan-add add-feature"
+
+# ── /idea-sync enrichment 2026-07-30 ────────────────────────────────────
+# draft -> enriched. What landed this pass:
+#   - i18n: every {strings.*} key this feature references is now declared in
+#     _strings/strings.yaml (catalogue 471 -> 554 keys, 0 missing, 0 orphans)
+#   - analytics: action tags registered in TAG_REGISTRY.yaml, flagged
+#     status: specified because no feature module exists yet
+#   - navigation: edges present in the regenerated APP_FLOW.mmd
+# Score 88 and not higher: the specification is complete, but the derived
+# artifacts (preview HTML, mockups, exports/SPEC.md) are deferred project-wide
+# since the 2026-07-28 reverse sync, and nothing here is verified against source
+# because P3 is not implemented. Approval remains a human gate (/idea approve).

@@ -1,0 +1,22 @@
+appId: org.mifosx.openbanking
+---
+# The authorise leg is an out-of-app SCA journey at the bank, which Maestro cannot drive —
+# the same limitation the AIS onboarding-consent flow has. This flow therefore asserts the
+# screen's own observable behaviour on re-entry rather than driving a real redirect, and is
+# run with the app deep-linked back to the callback so the composition is under test.
+- launchApp
+- openLink: "org.mifosx.openbanking://callback?code=3f9a7c2e-51b8-4d06-9e77-c40b8a12de35&state=st1785412953"
+
+# Progress is shown while the redirect is validated, the code exchanged and the consent polled.
+- assertVisible:
+    id: authorising_indicator
+- assertVisible:
+    id: progress_detail
+
+# Check again stays reachable during the polling window so a slow PSU is not stranded.
+- assertVisible:
+    id: check_again_button
+
+# Terminal success: the consent reached AUTH and control hands back to send-money to submit.
+- assertVisible:
+    id: authorised_state

@@ -1,0 +1,175 @@
+# api_manifest.yaml — HSBC UK Open Banking AIS v4.0 (client contracts)
+# Imported by /idea-import-api 2026-06-29 from account-info-4.0-personal.yaml.
+# Reconciled by /idea sync STEP 4 on 2026-07-14 — home screen added as consumer of accounts-list, balances, transactions.
+# External API consumer — these are Ktorfit client contracts, not an owned backend.
+
+schema_version: "1.0"
+
+api:
+  id: API-001
+  name: "HSBC UK Open Banking — Account & Transaction (AIS)"
+  standard: obie-uk-open-banking
+  version: "4.0"
+  brand: uk-personal
+  owned: false
+  role: aisp
+  source_spec: /home/kalpesh/OpenBankingProject/specs/hsbc-sandbox/openapi/account-info-4.0-personal.yaml
+
+# CORRECTED 2026-07-30 (/idea-heal). These three were wrong on both axes: they used
+# the FRONT-CHANNEL authorize host (sandbox.ob.hsbc.co.uk) instead of the mTLS resource
+# host, and carried a /mock/ segment that appears in no real call. They also contradicted
+# PROJECT_CONFIG.yaml#backend.environments.local, which was right.
+#
+# Ground truth is source, not either YAML:
+#   core/network/src/desktopTest/.../AispTest.kt:127,145
+#     -> https://secure.sandbox.ob.hsbc.co.uk/obie/open-banking/v4.0/aisp/
+#   core/network/build.gradle.kts:126-127 + README.md:97-98
+#     -> HSBC_BANK_HOST=secure.sandbox.ob.hsbc.co.uk   (mTLS resource / back channel)
+#        HSBC_AUTHORIZE_HOST=sandbox.ob.hsbc.co.uk     (browser authorize / front channel)
+# A request sent to the authorize host fails in a way that reads as an auth fault
+# rather than a wrong-host fault, which is why this sat unnoticed.
+base_urls:
+  resource:  "https://secure.sandbox.ob.hsbc.co.uk/obie/open-banking/v4.0/aisp"
+  oauth2:    "https://secure.sandbox.ob.hsbc.co.uk/obie/open-banking/v1.1/oauth2"
+  dcr:       "https://secure.sandbox.ob.hsbc.co.uk/obie/open-banking/v3.2/oauth2"
+  authorize: "https://sandbox.ob.hsbc.co.uk"   # front channel only — browser authorize
+
+# Reverse-synced 2026-07-28: the HSBC Open Data base URL, its related_apis entry and
+# server/apis/open-data.yaml were removed. No client method targets Open Data —
+# core/network/api/Aisp.kt declares no /atms call — and the atm-locator screen that
+# would have consumed it was never built. AtmLocatorRoute survives in cmp-navigation
+# as a PlaceholderScreen destination only.
+related_apis:
+  # API-002 registered 2026-07-30. Before this the PISP contracts were unregistered at project
+  # level: the three PISP features carried their own api.yaml siblings but nothing tied them to
+  # a declared API. Registered HERE as a related API rather than folded into the endpoints[]
+  # above, because this file's `api:` block is API-001 with `role: aisp` — appending payment
+  # writes to it would make that role a lie.
+  - id: API-002
+    name: "HSBC UK Open Banking — Payment Initiation (PIS)"
+    standard: obie-uk-open-banking
+    version: "4.0"
+    brand: uk-personal
+    owned: false
+    role: pisp
+    source_spec: /home/kalpesh/OpenBankingProject/HSBC_Sandbox/specs/hsbc-sandbox/openapi/payment-initiation-4.0-personal.yaml
+    scope: domestic-single-payment          # scheduled / standing-order / international / VRP all out of scope
+    base_urls:
+      # Mirrors the AIS shape on the SAME mTLS host — deliberately NOT the spec's own
+      # `servers:` entry (:1110 reads https://sandbox.ob.hsbc.co.uk/mock/obie/.../pisp), which
+      # is a documentation mock: that host is the front-channel authorize host and /mock appears
+      # in no real call. Ground truth is source — AispTest.kt:127,145.
+      resource: "https://secure.sandbox.ob.hsbc.co.uk/obie/open-banking/v4.0/pisp"
+      unverified: true                      # clear once a real PISP call has succeeded
+    auth:
+      scheme: bearer
+      security_profile: fapi-1.0-advanced
+      transport: mtls
+      client_auth: private_key_jwt
+      consent_token: client_credentials     # scope=payments — OAuth.kt:103 already declares PAYMENTS
+      resource_token: authorization_code    # PSU-bound, after the app-to-app authorise leg
+      request_signing: detached-jws         # PS256, b64:false + crit — REQUIRED on every write
+      required_headers: ["Authorization", "x-fapi-interaction-id", "x-jws-signature", "x-idempotency-key"]
+      note: >-
+        x-jws-signature and x-idempotency-key are the two headers AIS never needed. Without the
+        detached JWS every write returns 400 U019. Neither header exists in source as of
+        2026-07-30 (verified: zero matches). See PROJECT_CONFIG#backend.auth.request_signing.
+    endpoints:
+      # Paths read from the spec directly (payment-initiation-4.0-personal.yaml:37,82,117,152,197).
+      - { id: pisp-consent-create,   method: POST, path: "/domestic-payment-consents",                              request_dto: OBWriteDomesticConsent4, response_dto: OBWriteDomesticConsentResponse5, token: client_credentials, consumers: [send-money] }
+      - { id: pisp-consent-status,   method: GET,  path: "/domestic-payment-consents/{ConsentId}",                  response_dto: OBWriteDomesticConsentResponse5, token: client_credentials, consumers: [payment-consent] }
+      - { id: pisp-funds-confirm,    method: GET,  path: "/domestic-payment-consents/{ConsentId}/funds-confirmation", token: authorization_code, consumers: [send-money] }
+      - { id: pisp-payment-submit,   method: POST, path: "/domestic-payments",                                      request_dto: OBWriteDomestic2, response_dto: OBWriteDomesticResponse5, token: authorization_code, consumers: [send-money] }
+      - { id: pisp-payment-status,   method: GET,  path: "/domestic-payments/{DomesticPaymentId}",                  response_dto: OBWriteDomesticResponse5, token: authorization_code, consumers: [payment-status] }
+    detail_source_of_truth:
+      - "idea-layer/screens/send-money/api.yaml"
+      - "idea-layer/screens/payment-consent/api.yaml"
+      - "idea-layer/screens/payment-status/api.yaml"
+    implementation_status: not-implemented
+    implementation_note: >-
+      SPECIFICATION ONLY — no PISP client ships. core/network/api/ holds Aisp.kt and OAuth.kt;
+      there is no Pisp.kt and zero references to /domestic-payments in source. The 130 PISP DTO
+      files under core/network/.../model/pisp/ DO already exist (all six OBIE payment types),
+      so the remaining work is the API interface, the JWS header, the idempotency key, and a
+      caller passing ConsentCreationScope.PAYMENTS.
+
+auth:
+  scheme: bearer
+  security_profile: fapi-1.0-advanced
+  transport: mtls
+  client_auth: private_key_jwt
+  required_headers: ["Authorization", "x-fapi-interaction-id", "x-fapi-auth-date"]
+  consent_token: client_credentials   # consent create/status/delete
+  resource_token: authorization_code   # PSU-bound resource reads
+
+stats:
+  total_endpoints: 20
+  by_method: { GET: 17, POST: 2, DELETE: 1 }
+  groups: 7
+  last_reconciled: "2026-07-14"
+
+endpoint_groups:
+  - id: consent
+    label: "Account access consent"
+    primary_flow: onboarding-consent
+    count: 3
+  - id: accounts
+    label: "Accounts & balances"
+    primary_flow: account-browsing
+    count: 3
+  - id: transactions
+    label: "Transactions"
+    primary_flow: transaction-review
+    count: 1
+  - id: payments-context
+    label: "Beneficiaries, standing orders, direct debits, scheduled payments"
+    primary_flow: recurring-and-statements
+    count: 4
+  - id: statements
+    label: "Statements"
+    primary_flow: recurring-and-statements
+    count: 4
+  - id: account-extras
+    label: "Product, party, parties"
+    primary_flow: account-browsing
+    count: 3
+    base_url_override: "https://api.hsbc.com/open-banking/v2.2"
+    accept_media_type: "application/prs.openbanking.opendata.v2.2+json"
+    auth_override: none
+
+endpoints:
+  - { id: consent-create,      group: consent,          method: POST,   path: "/account-access-consents",                                   request_dto: OBReadConsent1,        response_dto: OBReadConsentResponse1, token: client_credentials, consumers: [login, consent-callback] }
+  - { id: consent-status,      group: consent,          method: GET,    path: "/account-access-consents/{ConsentId}",                       response_dto: OBReadConsentResponse1, token: client_credentials, consumers: [consent-callback, consent-detail] }
+  - { id: consent-revoke,      group: consent,          method: DELETE, path: "/account-access-consents/{ConsentId}",                       token: client_credentials, consumers: [consent-detail] }
+  - { id: accounts-list,       group: accounts,         method: GET,    path: "/accounts",                                                  response_dto: OBReadAccount6,       permission: ReadAccountsDetail, consumers: [accounts, home] }
+  - { id: account-detail,      group: accounts,         method: GET,    path: "/accounts/{AccountId}",                                      response_dto: OBReadAccount6,       permission: ReadAccountsDetail, consumers: [account-detail] }
+  - { id: balances,            group: accounts,         method: GET,    path: "/accounts/{AccountId}/balances",                             response_dto: OBReadBalance1,       permission: ReadBalances, consumers: [account-detail, accounts, home] }
+  - { id: transactions,        group: transactions,     method: GET,    path: "/accounts/{AccountId}/transactions",                         response_dto: OBReadTransaction6,   permission: ReadTransactionsDetail, consumers: [transactions, transaction-detail, home] }
+  - { id: beneficiaries,       group: payments-context, method: GET,    path: "/accounts/{AccountId}/beneficiaries",                        response_dto: OBReadBeneficiary5,   permission: ReadBeneficiariesDetail, consumers: [beneficiaries] }
+  - { id: standing-orders,     group: payments-context, method: GET,    path: "/accounts/{AccountId}/standing-orders",                      response_dto: OBReadStandingOrder6, permission: ReadStandingOrdersDetail, consumers: [standing-orders] }
+  - { id: direct-debits,       group: payments-context, method: GET,    path: "/accounts/{AccountId}/direct-debits",                        response_dto: OBReadDirectDebit2,   permission: ReadDirectDebits, consumers: [direct-debits] }
+  - { id: scheduled-payments,  group: payments-context, method: GET,    path: "/accounts/{AccountId}/scheduled-payments",                   response_dto: OBReadScheduledPayment3, permission: ReadScheduledPaymentsDetail, consumers: [scheduled-payments] }
+  - { id: statements,          group: statements,       method: GET,    path: "/accounts/{AccountId}/statements",                           response_dto: OBReadStatement2,     permission: ReadStatementsDetail, consumers: [statements] }
+  - { id: statement-detail,    group: statements,       method: GET,    path: "/accounts/{AccountId}/statements/{StatementId}",             response_dto: OBReadStatement2,     permission: ReadStatementsDetail, consumers: [statement-detail] }
+  - { id: statement-txns,      group: statements,       method: GET,    path: "/accounts/{AccountId}/statements/{StatementId}/transactions", response_dto: OBReadTransaction6,   permission: ReadTransactionsDetail, consumers: [statement-detail] }
+  - { id: statement-file,      group: statements,       method: GET,    path: "/accounts/{AccountId}/statements/{StatementId}/file",        response_dto: null,                 permission: ReadStatementsDetail, consumers: [statements, statement-detail], produces: "application/pdf" }
+  - { id: product,             group: account-extras,   method: GET,    path: "/accounts/{AccountId}/product",                              response_dto: OBReadProduct2,       permission: ReadProducts, consumers: [product] }
+  - { id: party,               group: account-extras,   method: GET,    path: "/accounts/{AccountId}/party",                                response_dto: OBReadParty2,         permission: ReadParty, consumers: [account-holder], source_binding: "Aisp.getParty()" }
+  - { id: parties,             group: account-extras,   method: GET,    path: "/accounts/{AccountId}/parties",                              response_dto: OBReadParty3,         permission: ReadParty, consumers: [], source_binding: "Aisp.getParties() — declared on the client, consumed by nothing" }
+  # Removed 2026-07-28: the Open Data /atms endpoint. No client method targets it
+  # and the atm-locator screen was never built.
+
+dtos:
+  - OBReadConsent1
+  - OBReadConsentResponse1
+  - OBReadAccount6
+  - OBReadBalance1
+  - OBReadTransaction6
+  - OBReadBeneficiary5
+  - OBReadStandingOrder6
+  - OBReadDirectDebit2
+  - OBReadScheduledPayment3
+  - OBReadStatement2
+  - OBReadProduct2
+  - OBReadParty2
+  - OBReadParty3

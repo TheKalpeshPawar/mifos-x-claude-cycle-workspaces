@@ -1,0 +1,53 @@
+sibling: flow
+schema_version: "4.0"
+feature_id: payment-consent
+
+feature: payment-consent
+flow_ref: send-money-payment
+
+entry_points:
+  - source: send-money
+    label: "Redirect return from HSBC after the PSU completes SCA on the payment"
+    params: [consentId]
+    notes: >-
+      Not a tap. The app left for the browser when send-money emitted LaunchAuthorisation; the
+      bank redirects back and the already-shipped per-platform ConsentRedirectBus republishes
+      the redirect into the composition, exactly as it does for the AIS consent-callback.
+
+transitions:
+  - from: payment-consent
+    to: send-money
+    trigger: "Consent status reached AUTH — emits PaymentConsentEvent.Authorised"
+    params: [consentId]
+    condition: "Data.Status == AUTH"
+    notes: >-
+      Returns as an event rather than a navigation so send-money retains the idempotency key
+      and the byte-identical staged Initiation it must resend.
+
+  - from: payment-consent
+    to: send-money
+    trigger: "Restart authorisation button"
+    params: []
+    condition: "error.type in {CodeExpired, AuthorisationTimedOut, NetworkError}"
+
+  - from: payment-consent
+    to: send-money
+    trigger: "Abandon button, or a state mismatch that cannot be recovered"
+    params: []
+    condition: "error.type in {StateMismatch, NoPendingAuthorisation, ConsentRejected}"
+    notes: "The staged consent is left unauthorised and expires on its own; no revocation call."
+
+# Moved verbatim from ui.yaml 2026-07-31 (CROSS_LEAK repair).
+dependencies:
+  tier: feature
+  features:
+    - name: send-money
+      relation: parent
+      params: [consentId]
+    - name: consent-list
+      relation: error-recovery
+      condition: "error.type == ConsentRejected"
+  libraries:
+    - name: ktorfit
+      coords: "de.jensklingenberg.ktorfit:ktorfit-lib:2.x"
+      purpose: "Token exchange and payment-consent status polling"

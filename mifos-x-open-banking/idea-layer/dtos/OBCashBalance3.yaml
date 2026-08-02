@@ -1,0 +1,86 @@
+name: OBCashBalance3
+version: 1.0.0
+description: >
+  OBIE AIS v4.0 balance record. Primary item type of OBReadBalance1.Data.Balance[].
+  Multiple records per account are expected (InterimAvailable, InterimBooked, OpeningBooked, etc.).
+  Home screen and accounts screen apply type-preference order:
+  InterimAvailable → InterimBooked → OpeningBooked. CreditCard + CreditDebitIndicator=Debit
+  means outstanding debt — render in error colour.
+source:
+  origin: rest
+  endpoint: "/accounts/{AccountId}/balances"
+fields:
+  - name: accountId
+    type: String
+    description: "OBIE AccountId this balance record belongs to."
+    required: true
+    source_field: "AccountId"
+    example: "22289"
+  - name: amount
+    type: { dto_ref: OBActiveOrHistoricCurrencyAndAmount }
+    description: "Balance amount and ISO 4217 currency."
+    required: true
+    source_field: "Amount"
+  - name: creditDebitIndicator
+    type: { enum_ref: BalanceCreditDebitIndicator }
+    description: "Credit = account is in credit. Debit = account is overdrawn or has outstanding debt (CreditCard)."
+    required: true
+    source_field: "CreditDebitIndicator"
+  - name: type
+    type: { enum_ref: BalanceType }
+    description: "Balance type code per ISO 20022 camt.052. InterimAvailable preferred for live display."
+    required: true
+    source_field: "Type"
+  - name: dateTime
+    type: DateTime
+    description: "UTC snapshot timestamp for this balance figure."
+    required: true
+    source_field: "DateTime"
+  - name: creditLine
+    type: { optional: { list_of: Json } }
+    description: >
+      Arranged and unarranged overdraft or credit limit lines.
+      Each entry: { Included: Boolean, Amount: OBActiveOrHistoricCurrencyAndAmount, Type: String }.
+      Type values: Available, Credit, Emergency, Pre-Agreed, Temporary.
+    source_field: "CreditLine"
+enums:
+  - name: BalanceCreditDebitIndicator
+    description: "Whether the balance is in credit or debit position."
+    values:
+      - { id: CREDIT, wire_value: "Credit", description: "Account balance is positive (in credit)." }
+      - { id: DEBIT,  wire_value: "Debit",  description: "Account is overdrawn or has outstanding debt." }
+  - name: BalanceType
+    description: "ISO 20022 / OBIE balance type codes. Controls which figure the ViewModel selects for display."
+    values:
+      - { id: CLOSING_AVAILABLE,        wire_value: "ClosingAvailable" }
+      - { id: CLOSING_BOOKED,           wire_value: "ClosingBooked" }
+      - { id: CLOSING_CLEARED,          wire_value: "ClosingCleared" }
+      - { id: EXPECTED,                 wire_value: "Expected" }
+      - { id: FORWARD_AVAILABLE,        wire_value: "ForwardAvailable" }
+      - { id: INFORMATION,              wire_value: "Information" }
+      - { id: INTERIM_AVAILABLE,        wire_value: "InterimAvailable",        description: "Live available balance. Preferred for hero balance display." }
+      - { id: INTERIM_BOOKED,           wire_value: "InterimBooked",           description: "Cleared transactions only. First fallback when InterimAvailable absent." }
+      - { id: INTERIM_CLEARED,          wire_value: "InterimCleared" }
+      - { id: OPENING_AVAILABLE,        wire_value: "OpeningAvailable" }
+      - { id: OPENING_BOOKED,           wire_value: "OpeningBooked",           description: "Statement-day opening balance. Last-resort fallback." }
+      - { id: OPENING_CLEARED,          wire_value: "OpeningCleared" }
+      - { id: PREVIOUSLY_CLOSED_BOOKED, wire_value: "PreviouslyClosedBooked" }
+used_by:
+  - feature: home
+    kind: response
+    api_id: selectedAccountBalances
+    role: body
+  - feature: accounts
+    kind: response
+    api_id: balances
+    role: body
+  - feature: account-detail
+    kind: response
+    api_id: balances
+    role: body
+capabilities_used:
+  - has_api
+tier: medium
+tags:
+  - obie
+  - balance

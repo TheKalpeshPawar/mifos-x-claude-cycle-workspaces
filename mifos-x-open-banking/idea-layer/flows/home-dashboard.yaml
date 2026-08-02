@@ -1,0 +1,29 @@
+id: home-dashboard
+name: home-dashboard
+description: "Authenticated home dashboard flow — hero balance card for the selected account, an account-selector bottom sheet, and a recent-transactions section. Entry from the Home bottom-nav tab (order 0), which is also the authenticated NavHost start destination. Reverse-synced 2026-07-28: homeGraph exposes exactly two outward callbacks — onNavigateToTransactions and onNavigateToTransactionDetail — so the account-detail, statements, consent-list and pfm-dashboard exits previously declared here do not exist in source."
+type: happy
+feature_ref: home
+release_phase: P0
+
+screens:
+  - home
+
+entry_screen: home
+
+connections:
+  - { from: home, to: transactions, type: push, label: "Tap 'View all' in the recent transactions section (cross-flow → transaction-review)" }
+  - { from: home, to: transaction-detail, type: push, label: "Tap a recent transaction row (cross-flow → transaction-review)" }
+
+in_screen_transitions:
+  # Driven by isAccountSelectorVisible; no navigation occurs.
+  - { trigger: OpenAccountSelector, label: "Tap the hero card account switcher — shows AccountSelectorSheet" }
+  - { trigger: DismissAccountSelector, label: "Dismiss the sheet" }
+  - { trigger: SelectAccount, label: "Pick an account chip — persists selectedAccountId and re-drives the stream" }
+
+removed_in_sync:
+  # Declared previously; no such callback exists on homeGraph.
+  - { to: account-detail, reason: "no onNavigateToAccountDetail callback" }
+  - { to: statements, reason: "no statements callback; statements is reached from account-detail" }
+  - { to: consent-list, reason: "no consents callback; consents are reached from settings" }
+  - { to: pfm-dashboard, reason: "screen removed — never built" }
+  - { to: login, reason: "HomeViewModel maps Unauthenticated to an error state; it does not navigate to login" }

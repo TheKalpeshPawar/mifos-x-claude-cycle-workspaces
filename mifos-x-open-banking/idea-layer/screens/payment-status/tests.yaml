@@ -1,0 +1,122 @@
+sibling: tests
+schema_version: "4.0"
+feature_id: payment-status
+
+screen_id: payment-status
+
+scenarios:
+  - id: TC-PSTAT-001
+    description: "Payment resource loads and renders the echoed Initiation"
+    state: content
+    priority: p0
+    given: "GET /domestic-payments/PMT-812774903-01 returns AcceptedSettlementInProcess"
+    when: "Screen mounts with paymentId=PMT-812774903-01"
+    then:
+      - "Amount renders as £850.00"
+      - "Payee renders as Jameson Lettings"
+      - "Reference renders as RENT-FLAT12"
+      - "Funding account renders from Data.Initiation.DebtorAccount"
+      - "Submitted-at renders from Data.CreationDateTime"
+
+  - id: TC-PSTAT-002
+    description: "An in-progress payment is NEVER described as sent or complete"
+    state: content
+    priority: p0
+    given: "Status is AcceptedSettlementInProcess"
+    when: "The content state renders"
+    then:
+      - "disposition is in_progress"
+      - "The status chip uses the progress variant, not the success variant"
+      - "The in-progress note is visible explaining the money has not moved yet"
+      - "No visible string asserts the payment is sent, complete, or successful"
+
+  - id: TC-PSTAT-003
+    description: "Only a settled status renders as terminal success"
+    state: content
+    priority: p0
+    given: "Status is AcceptedSettlementCompleted"
+    when: "The content state renders"
+    then:
+      - "disposition is terminal_success"
+      - "The status chip uses the success variant"
+      - "The in-progress note is NOT visible"
+      - "The refresh button is NOT visible — a terminal status cannot change"
+
+  - id: TC-PSTAT-004
+    description: "Polling stops the moment a terminal disposition arrives"
+    state: content
+    priority: p1
+    given: "The read sequence is in-process, in-process, settled"
+    when: "The auto-poll runs"
+    then:
+      - "Exactly three reads are made"
+      - "Zero further reads occur after the settled response"
+
+  - id: TC-PSTAT-005
+    description: "Polling never starts when the first read is already terminal"
+    state: content
+    priority: p1
+    given: "The first read returns AcceptedSettlementCompleted"
+    when: "Screen mounts"
+    then:
+      - "Exactly one read is made"
+      - "No poll timer is started"
+
+  - id: TC-PSTAT-006
+    description: "An unrecognised status fails open to in_progress rather than guessing an outcome"
+    state: content
+    priority: p1
+    given: "Status is AcceptedTechnicalValidation, which is outside the mapped vocabulary"
+    when: "The content state renders"
+    then:
+      - "disposition is in_progress"
+      - "Polling continues"
+      - "The status is NOT rendered as either success or failure"
+
+  - id: TC-PSTAT-007
+    description: "A rejected payment offers a fresh payment, not a retry of the same instruction"
+    state: content
+    priority: p1
+    given: "Status is Rejected"
+    when: "The content state renders"
+    then:
+      - "disposition is terminal_failure"
+      - "New payment button is visible and routes to send-money with a cleared form"
+      - "Refresh button is NOT visible"
+      - "No affordance resubmits against the rejected consent"
+
+  - id: TC-PSTAT-008
+    description: "A not-found payment is terminal and gets no Retry"
+    state: error
+    priority: p2
+    given: "The read returns 400 U011 Resource cannot be found"
+    when: "Screen mounts with an unknown paymentId"
+    then:
+      - "Error state renders with the PaymentNotFound message"
+      - "Retry button is NOT visible — the resource does not exist, so retrying cannot help"
+
+  - id: TC-PSTAT-009
+    description: "Screen shows a circular loading indicator while the initial payment read is in flight"
+    state: loading
+    priority: p1
+    given: "GET /domestic-payments/{DomesticPaymentId} has not yet responded"
+    when: "Screen mounts with paymentId=PMT-812774903-01 and domestic-payment-read is in flight"
+    then:
+      - "The circular progress indicator is visible"
+      - "The progress indicator accessibility label matches {strings.payment_status.loading_label}"
+      - "The status chip is NOT visible — no content has arrived yet"
+      - "The payment summary card is NOT visible"
+      - "The error state is NOT visible"
+
+coverage_notes:
+  truthfulness: >-
+    TC-PSTAT-002 and TC-PSTAT-003 are the guard for this screen's whole reason to exist. A
+    successful submit returns AcceptedSettlementInProcess, so the tempting simplification —
+    treat any Accepted* prefix as success — would tell a PSU their money had moved when it had
+    not. These two tests make that regression fail loudly.
+  polling_hygiene: >-
+    TC-PSTAT-004 and TC-PSTAT-005 pin that polling is bounded by disposition, not by a timer.
+    Polling a terminal status is how a client earns a 429 for no information gain.
+  fail_open: >-
+    TC-PSTAT-006 encodes the deliberate choice to treat an unknown status as still-working.
+    Guessing success on an unmapped code is the worst available failure mode.

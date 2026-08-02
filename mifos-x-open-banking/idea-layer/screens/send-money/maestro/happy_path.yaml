@@ -1,0 +1,40 @@
+appId: org.mifosx.openbanking
+---
+- launchApp
+# Enter via the Pay tab, which this feature replaces (it renders PlaceholderScreen("Pay") today).
+- tapOn:
+    id: "PayTab"
+- assertVisible: "Send money"
+
+# Step 1 — choose the funding account, then the payee.
+- assertVisible: "Current account ·· 3349"
+- tapOn: "Current account ·· 3349"
+- assertVisible: "Jameson Lettings"
+- tapOn: "Jameson Lettings"
+
+# Step 2 — amount and reference.
+- tapOn:
+    id: amount_field
+- inputText: "850.00"
+- tapOn:
+    id: reference_field
+- inputText: "RENT-FLAT12"
+- tapOn:
+    id: review_button
+
+# Step 3 — review, then confirm. Confirm hands off to the bank's authorise page,
+# so the run stops here: the authorise leg is an out-of-app SCA journey that
+# Maestro cannot drive, exactly as the AIS onboarding flow stops at the same point.
+- assertVisible: "£850.00"
+- assertVisible: "Jameson Lettings"
+- assertVisible: "RENT-FLAT12"
+- assertVisible:
+    id: confirm_button
+- assertVisible:
+    id: cancel_button
+
+# Cancel is the terminal assertion for the device-runnable happy path — it proves the
+# review step is reachable and abandonable without staging a real payment consent.
+- tapOn:
+    id: cancel_button
+- assertVisible: "Current account ·· 3349"

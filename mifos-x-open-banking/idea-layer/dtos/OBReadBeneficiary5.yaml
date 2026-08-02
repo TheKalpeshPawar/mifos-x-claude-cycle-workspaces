@@ -1,0 +1,40 @@
+name: OBReadBeneficiary5
+version: 1.0.0
+description: >
+  OBIE AIS v4.0 response envelope for GET /accounts/{AccountId}/beneficiaries.
+  Returns saved payees authorised under the PSU consent for the given AccountId.
+  Requires ReadBeneficiariesDetail permission. No pagination — full list in one response.
+  CreditorAccount.Identification is PII.
+source:
+  origin: rest
+  endpoint: "/accounts/{AccountId}/beneficiaries"
+fields:
+  - name: beneficiary
+    type: { list_of: Json }
+    description: >
+      OBBeneficiary5 payee records from Data.Beneficiary[]. Each entry contains:
+      AccountId (echoes request param), BeneficiaryId (primary key),
+      BeneficiaryType (Ordinary | Trusted), Reference (PSU-assigned payment ref),
+      CreditorAgent { SchemeName, Identification, Name }, CreditorAccount (OBCashAccount3
+      with SchemeName, Identification — PII, Name — PII), SupplementaryData.
+    required: true
+    source_field: "Data.Beneficiary"
+  - name: links
+    type: { optional: Json }
+    source_field: "Links"
+  - name: meta
+    type: { optional: Json }
+    source_field: "Meta"
+used_by:
+  - feature: beneficiaries
+    kind: response
+    api_id: beneficiariesList
+    role: body
+capabilities_used:
+  - has_api
+tier: medium
+tags:
+  - obie
+  - beneficiary
+  - pii
+  - envelope

@@ -1,0 +1,41 @@
+name: OBReadStandingOrder6
+version: 1.0.0
+description: >
+  OBIE AIS v4.0 response envelope for GET /accounts/{AccountId}/standing-orders.
+  Requires ReadStandingOrdersDetail permission for Amount fields.
+  Frequency field uses OBIE ISO 20022 frequency codes:
+  IntrvlMnthDay:01:01 = monthly on 1st, IntrvlWkDay:01:01 = weekly on Monday, etc.
+source:
+  origin: rest
+  endpoint: "/accounts/{AccountId}/standing-orders"
+fields:
+  - name: standingOrder
+    type: { list_of: Json }
+    description: >
+      OBStandingOrder6 records from Data.StandingOrder[]. Each entry contains:
+      AccountId, StandingOrderId (primary key), Frequency (ISO 20022 code),
+      Reference, FirstPaymentDateTime, NextPaymentDateTime, LastPaymentDateTime,
+      FinalPaymentDateTime, NumberOfPayments, StandingOrderStatusCode (Active | Inactive),
+      FirstPaymentAmount, NextPaymentAmount, FinalPaymentAmount, LastPaymentAmount
+      (each OBActiveOrHistoricCurrencyAndAmount), CreditorAgent, CreditorAccount (OBCashAccount3),
+      MandateRelatedInformation, SupplementaryData.
+    required: true
+    source_field: "Data.StandingOrder"
+  - name: links
+    type: { optional: Json }
+    source_field: "Links"
+  - name: meta
+    type: { optional: Json }
+    source_field: "Meta"
+used_by:
+  - feature: standing-orders
+    kind: response
+    api_id: standingOrdersList
+    role: body
+capabilities_used:
+  - has_api
+tier: medium
+tags:
+  - obie
+  - standing-order
+  - envelope

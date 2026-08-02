@@ -1,0 +1,155 @@
+# DEPLOYMENT_PROJECT_CONFIG.yaml — Project Release Configuration
+# Framework template: layers/deployment/templates/DEPLOYMENT_PROJECT_CONFIG.yaml
+# Copied to: {workspace_path}/deployment-layer/DEPLOYMENT_PROJECT_CONFIG.yaml on first /idea-deploy setup
+# Source of truth for all release config values
+# project_config.rb is a DERIVED artifact generated from this YAML for fastlane consumption
+schema_version: 2
+
+project:
+  name: "MifosXOpenBanking"
+  organization: "MifosXOpenBanking"
+
+android:
+  configured: true
+  package_name: "org.mifosx.openbanking"
+  keystore:
+    alias: "MifosXOpenBanking"         # stored lowercase by keytool; lookup is case-insensitive
+    password_source: "secrets.env"     # secrets.env | env_var | manual
+    status: "project_specific"         # not_generated | template | project_specific | mismatch
+    file: "keystores/upload.keystore"
+    # Generated 2026-07-28 via keystore-manager.sh generate. PKCS12, RSA 2048,
+    # valid 2026-07-28 → 2051-07-22. Replaces the template key (alias
+    # kmp-project-template). The superseded keystores/{original,release}_keystore.keystore
+    # are still git-tracked from Initial commit — remove them once nothing references them.
+    # ⚠️ store/key password is still the template default and is committed in plaintext in
+    # BOTH fastlane-config/project_config.rb and cmp-android/build.gradle.kts (2 hits each
+    # in HEAD). Rotate before the first Play Store upload — see PROJECT.md Known gaps.
+    password_committed_in_git: true
+  firebase:
+    prod_app_id: "1:728434912738:android:f60d3ee530291c5c1a1dbb"
+    demo_app_id: "1:728434912738:android:f60d3ee530291c5c1a1dbb"
+    project_number: "728434912738"     # extracted from prod_app_id (1:{NUMBER}:android:...)
+    groups: "mifos-mobile-apps"
+    credentials_file: "secrets/android/firebaseAppDistributionServiceCredentialsFile.json"
+  play_store:
+    registered: false
+    json_key: "secrets/android/playStorePublishServiceCredentialsFile.json"
+  apk_paths:
+    prod: "cmp-android/build/outputs/apk/prod/release/cmp-android-prod-release.apk"
+    demo: "cmp-android/build/outputs/apk/demo/release/cmp-android-demo-release.apk"
+  aab_path: "cmp-android/build/outputs/bundle/prodRelease/cmp-android-prod-release.aab"
+
+ios:
+  configured: false                    # values adopted from project_config.rb, but NO
+                                       # GoogleService-Info.plist and no AuthKey.p8 present —
+                                       # firebase.app_id below is UNVERIFIED against any plist
+  bundle_id: "org.mifosx.openbanking"
+  team_id: "L432S2FZP5"                # can inherit from ios_shared.team_id
+  firebase:
+    app_id: "1:728434912738:ios:1d81f8e53ca7a6f31a1dbb"
+    groups: "mifos-mobile-apps"
+  app_store_connect:
+    key_id: "ZVQ6W6P822"
+    issuer_id: "7ab9e361-9603-4c3e-b147-be3b0f816099"
+    key_path: "secrets/apple/appstore/AuthKey.p8"
+  code_signing:
+    match_type: "adhoc"                # adhoc | appstore | development
+    match_git_url: "git@github.com:openMF/ios-provisioning-profile.git"
+    match_git_branch: "master"
+  project_path: "cmp-ios/iosApp.xcodeproj"
+  workspace_path: "cmp-ios/iosApp.xcworkspace"
+  scheme: "iosApp"
+  primary_locale: "en-GB"
+
+# Team-level iOS config shared across projects
+ios_shared:
+  team_id: "L432S2FZP5"                # Apple Developer Team ID (10-char alphanumeric)
+  team_name: ""                        # Apple Developer Team name
+  apple_id: ""                         # Apple ID email for App Store Connect
+  itc_team_id: ""                      # App Store Connect team ID (numeric)
+  provisioning:
+    type: "automatic"                  # automatic | manual | match
+    match_git_url: "git@github.com:openMF/ios-provisioning-profile.git"  # fastlane match certs
+    match_storage_mode: "git"          # git | s3 | google_cloud
+    match_readonly: true               # true for CI, false for initial setup
+
+mac:
+  configured: false
+  bundle_id: ""
+  team_id: ""                          # inherits from ios_shared.team_id if empty
+  catalyst: false                      # Mac Catalyst (iOS app on Mac) vs native
+  app_store_connect:
+    key_id: ""                         # inherits from ios.app_store_connect if empty
+    issuer_id: ""
+
+tvos:
+  configured: false
+  bundle_id: ""
+  team_id: ""                          # inherits from ios_shared.team_id if empty
+
+watchos:
+  configured: false
+  bundle_id: ""
+  companion_app_bundle_id: ""          # iOS app it pairs with
+
+visionos:
+  configured: false
+  bundle_id: ""
+
+web:
+  configured: false
+  deploy_target: ""                    # github_pages | vercel | netlify | custom
+  custom_deploy_command: ""            # only if deploy_target == custom
+  base_url: ""
+
+desktop:
+  configured: false
+  platforms: []                        # [windows, linux, macos_native]
+  packaging:
+    windows: "msi"                     # msi | exe
+    linux: "deb"                       # deb | appimage
+    macos: "dmg"                       # dmg (unsigned) | dmg-notarized
+  signing:
+    macos_notarize: false              # true → enables [D5] notarized DMG
+    macos_developer_id: ""             # Developer ID Application cert identity
+    windows_local_sign: false          # true → enables [D7] local Authenticode signing
+    windows_cert_path: ""              # path to .pfx certificate
+
+shared:
+  firebase_project_id: "mifos-mobile-apps"
+  firebase_credentials: "secrets/android/firebaseAppDistributionServiceCredentialsFile.json"
+
+# Company/contact info — used by G7 text generation for review_information, trade_representative, copyright
+contact:
+  company_name: "Mifos Initiative"
+  contact_email: "team@mifos.org"
+  support_email: "team@mifos.org"
+  phone: "9078675309"
+  first_name: "Mifos"
+  last_name: "Initiative"
+  website: "https://mifos.org"
+  privacy_url: "https://mifos.org/privacy"
+  terms_url: ""
+  company_address:
+    address_line1: ""
+    address_line2: ""
+    city: ""
+    state: ""
+    postal_code: ""
+    country: ""
+
+# Metadata — set by framework during setup/adoption
+_meta:
+  source_origin: "adopted"             # "generated" (from template) | "adopted" (from existing project)
+  created_at: "2026-07-28"
+  last_modified: "2026-07-28"
+  framework_template_version: 2        # tracks schema_version at time of creation
+  adopted_from:
+    - "fastlane-config/project_config.rb"
+    - "cmp-android/google-services.json"
+    - "keystores/release_keystore.keystore (keytool alias read)"
+  adoption_incomplete:
+    # Play Store sync (adopt tasks 5-7) could not run — no service-account credential
+    # available; play_store.registered is therefore unverified, not proven false.
+    - "play_store_sync: skipped (no androidpublisher credential)"
+    - "gh_release_anchor: skipped (depends on play_store_sync tracks)"

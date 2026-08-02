@@ -1,0 +1,84 @@
+# components/_index.yaml — component registry index (Open Banking — Trust Blue)
+# v1.1.0 (2026-07-30) — payment components added; PFM components removed.
+schema_version: "1.1.0"
+design_system: "Open Banking — Trust Blue"
+tokens_ref: "../design-tokens.yaml"
+
+components:
+  # ── chrome ──────────────────────────────────────────────────────────────
+  - { id: top_app_bar,          category: chrome,    m3: TopAppBar }
+  - { id: bottom_nav,           category: chrome,    m3: NavigationBar,
+      note: "Rail is Home · Accounts · Pay · More (corrected 1.1.0)" }
+
+  # ── containers ──────────────────────────────────────────────────────────
+  - { id: card,                 category: container, m3: Card }
+  - { id: consent_card,         category: container, m3: Card, trust_critical: true }
+  - { id: review_card,          category: container, m3: Card, trust_critical: true, added: "1.1.0",
+      note: "Last surface before money moves — payments analogue of consent_card" }
+
+  # ── list / data ─────────────────────────────────────────────────────────
+  # section_header registered 2026-07-30 (/design-validate F-001, REG-001 critical).
+  # It was in use across 9 screens / 19 call sites while resolving in NO registry tier —
+  # not a primitive, not a framework pattern, not an alias. Registered at Tier 3 rather
+  # than aliased: it is a real, established concept in this app with a settled shape.
+  - { id: section_header,       category: list,      m3: Text, added: "1.1.1",
+      note: "Labelled group divider above a run of related rows" }
+  - { id: list_item,            category: list,      m3: ListItem }
+  - { id: permission_row,       category: list,      m3: ListItem }
+  - { id: payment_summary_row,  category: list,      m3: ListItem, added: "1.1.0" }
+  - { id: amount,               category: data,      m3: Text }
+  - { id: balance_hero,         category: data,      m3: Text }
+
+  # ── actions ─────────────────────────────────────────────────────────────
+  - { id: button_filled,        category: action,    m3: Button }
+  - { id: button_outlined,      category: action,    m3: OutlinedButton }
+  - { id: button_text,          category: action,    m3: TextButton }
+  - { id: chip,                 category: action,    m3: AssistChip }
+  - { id: chip_row,             category: layout,    m3: "custom" }
+  - { id: status_chip,          category: status,    m3: AssistChip, added: "1.1.0",
+      note: "Payment disposition — icon + label always; colour never the sole signal" }
+
+  # ── input ───────────────────────────────────────────────────────────────
+  - { id: text_field,           category: input,     m3: OutlinedTextField,
+      note: "Scope widened 1.1.0 — was search-only, now also form entry with validation" }
+  - { id: amount_field,         category: input,     m3: OutlinedTextField, added: "1.1.0" }
+  - { id: field_error,          category: input,     m3: "supportingText", added: "1.1.0" }
+  - { id: segmented_filter,     category: input,     m3: SegmentedButton }
+  - { id: step_indicator,       category: input,     m3: Text, added: "1.1.0",
+      note: "Textual 'Step N of M' — not a progress bar (motion dial 2)" }
+
+  # ── state surfaces ──────────────────────────────────────────────────────
+  - { id: state_loading,        category: state,     m3: "skeleton" }
+  - { id: state_empty,          category: state,     m3: "empty" }
+  - { id: state_error,          category: state,     m3: "error" }
+  - { id: state_submitting,     category: state,     m3: "progress", added: "1.1.0" }
+  - { id: state_success,        category: state,     m3: "success",  added: "1.1.0" }
+
+# ── Realization map (added 2026-07-31) ──────────────────────────────────────
+# This catalog is the DESIGN vocabulary; screens declare ui.yaml `type:` values from the
+# Tier-3 renderer registry at idea-layer/components.yaml. The two namespaces overlap but
+# are not identical, so a catalog entry with no same-named `type:` in any screen is not
+# automatically drift. Where a catalog concept is realized under a different name — or as a
+# property rather than a component — record it here rather than leaving the gap to be
+# rediscovered as a finding every run.
+realized_as:
+  - { id: payment_summary_row, realized_by: "components.yaml#info_row",
+      note: "info_row already modelled label + value + secondary exactly; send-money's review rows use it. Minting a second type would have duplicated a registered concept." }
+  - { id: field_error, realized_by: "text_field.error_text",
+      note: "M3 supportingText is a property of OutlinedTextField, not a sibling component. send-money#amount_field carries error_text: {content.validationError.message}. Catalog models it as a component; the screen models it correctly." }
+  - { id: review_card, realized_by: "components.yaml#review_card",
+      note: "Adopted 2026-07-31 — send-money#review_summary was a generic card until then, leaving the trust_critical treatment unreachable on the last surface before money moves." }
+  - { id: step_indicator, realized_by: "components.yaml#step_indicator",
+      note: "Adopted 2026-07-31 — send-money#form_step_indicator. The 3-step form previously gave the PSU no position feedback." }
+  - { id: state_submitting, realized_by: "send-money#states[submitting]" }
+  - { id: state_success,    realized_by: "send-money#states[success]" }
+
+removed:
+  - { id: category_chip,   removed_in: "1.1.0", reason: "PFM category tag — PFM screens deleted 2026-07-28" }
+  - { id: chart_donut,     removed_in: "1.1.0", reason: "PFM breakdown chart — screen never built" }
+  - { id: progress_budget, removed_in: "1.1.0", reason: "Budget tracker bar — budgets screen never built" }
+
+removed_rationale: >-
+  Struck rather than left in place. An aspirational catalog entry is worse than no entry:
+  a codegen pass reads the registry as a contract and will try to satisfy it, producing a
+  component with no screen to live on.

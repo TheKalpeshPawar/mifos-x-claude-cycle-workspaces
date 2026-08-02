@@ -1,0 +1,46 @@
+name: OBWriteDomesticConsentResponse5
+version: 1.0.0
+description: >
+  OBIE PISP v4.0 RESPONSE for POST /domestic-payment-consents (201) and
+  GET /domestic-payment-consents/{ConsentId}. Carries the staged ConsentId and its Status,
+  which the app polls to AUTH before submitting — a submit against a non-Authorised consent
+  returns 400 U009. The echoed Initiation must be resent byte-identically on submit or HSBC
+  returns U008.
+source:
+  origin: rest
+  endpoint: "/domestic-payment-consents/{ConsentId}"
+  method: GET
+  spec_ref: "specs/hsbc-sandbox/openapi/payment-initiation-4.0-personal.yaml"
+fields:
+  - name: consent_id
+    type: String
+    required: true
+    source_field: "Data.ConsentId"
+  - name: status
+    type: String
+    required: true
+    source_field: "Data.Status"
+    description: "AWAU AwaitingAuthorisation -> AUTH Authorised | RJCT Rejected."
+  - name: creation_date_time
+    type: String
+    source_field: "Data.CreationDateTime"
+  - name: status_update_date_time
+    type: String
+    source_field: "Data.StatusUpdateDateTime"
+  - name: initiation
+    type: Json
+    source_field: "Data.Initiation"
+    description: "Echo of the staged Initiation. Resent verbatim on submit. PII."
+  - name: links
+    type: { optional: Json }
+    source_field: "Links"
+  - name: meta
+    type: { optional: Json }
+    source_field: "Meta"
+used_by:
+  - { feature: send-money,      kind: response, api_id: domestic-payment-consent-create, role: body }
+  - { feature: payment-consent, kind: response, api_id: payment-consent-status,          role: body }
+capabilities_used: [has_api]
+tier: maximum
+tags: [obie, pisp, payment, consent, envelope, pii]
+source_binding: "core/network/model/pisp/domesticPayment/response/DomesticPaymentConsentResponse.kt (ships, unconsumed)"

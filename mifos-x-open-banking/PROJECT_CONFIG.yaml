@@ -1,0 +1,231 @@
+# PROJECT_CONFIG.yaml — Machine-readable project configuration (schema v2)
+# Recreated 2026-06-29 from a clean slate. Prior idea-layer + plans were scrapped;
+# this config carries only verified ground truth (KMP stack + HSBC AISP backend) and
+# the new build intent. Product/feature decomposition is authored fresh via /idea-plan.
+
+schema_version: 2
+
+# ─── Project Identity ────────────────────────────────────────────────────────
+project:
+  name: mifos-x-open-banking
+  type: kmp
+  subtype: kmp-app
+  tech_stack: kmp-app                 # canonical field read by secrets-resolve-path.sh;
+                                      # `type: kmp` alone is the pre-D1-split legacy sentinel
+  status: idea-layer-pending          # rebuilding AISP reference app from scratch
+  created: 2026-05-20
+  updated: 2026-06-29
+  one_liner: >-
+    A UK Open Banking AISP + PISP reference app — a Compose Multiplatform client that
+    consumes the HSBC UK sandbox to showcase the full OBIE account-information capability
+    set (consent journey + accounts, balances, transactions, beneficiaries, standing
+    orders, direct debits, scheduled payments, statements, product, party) and, since the
+    2026-07-30 scope reversal, domestic single payment initiation on the PSU's instruction.
+
+# ─── Tech Stack (verified against source @ migration/hsbc-sandbox) ─────────────
+tech:
+  language: kotlin                    # Kotlin 2.3.20
+  ui_framework: compose-multiplatform # Compose Multiplatform 1.10.3
+  android_gradle_plugin: "8.12.3"
+  gradle: "9.5"
+  architecture: stream-first          # BaseViewModel<S,E,A> + ScreenDataStream + Store5
+  kmp_arch: "stream-first@latest"
+  di: koin                            # Koin 4.1.1 + koin-annotations
+  network: ktor-ktorfit               # Ktor 3.3.3 + Ktorfit 2.7.3
+  database: room-kmp                  # Room 3.0.0-alpha05 (reset to v1 in source)
+  navigation: androidx-navigation     # type-safe @Serializable routes
+  settings: multiplatform-settings    # 1.3.0 (secure settings via core/datastore)
+  datetime: kotlinx-datetime          # 0.7.1
+  product_flavors:
+    plugin: io.github.mobilebytelabs.kmp-product-flavors
+    # Source wires two flavors (LocalFlavors.kt + BuildKonfig). This AISP reference
+    # build scopes to the `consumer` (retail account-information) experience.
+    # The `fieldOfficer` agent-banking flavor is OUT OF SCOPE for AISP.
+    primary_flavor: consumer
+
+# ─── Backend ─────────────────────────────────────────────────────────────────
+# EXTERNAL API CONSUMER, NO OWNED BACKEND.
+# Pure KMP client consuming the HSBC UK/CE Open Banking REST API (OBIE Read/Write
+# Standard). This project OWNS NO backend and NO database. There is intentionally NO
+# `server.backends` block → RULE-IDEA-SERVER-DATA-001 owned-DB checks MUST SKIP.
+# idea-layer/server/apis/* are CLIENT contracts for Ktorfit codegen, not owned schema.
+#
+# Role: AISP (Account Information Service Provider) + PISP (Payment Initiation Service
+#   Provider). AIS is read-only; PIS writes on the PSU's explicit instruction.
+#   CHANGED 2026-07-30 — through 2026-07-29 this file declared "AISP — READ-ONLY. No
+#   payment initiation.", which stopped being true when the idea-layer scope reversal
+#   moved domestic single payment initiation in-scope (idea-plan.yaml, DESIGN.md 1.1.0,
+#   and the send-money / payment-consent / payment-status features). The config was the
+#   last artifact still asserting AISP-only.
+#
+#   Consumer PISP is first-class in the standard, verified against the spec rather than
+#   assumed: OBInternalPaymentContext1Code carries TransferToSelf and TransferToThirdParty
+#   (payment-initiation-4.0-personal.yaml:2281), OBRisk1 declares no required properties so
+#   the merchant fields are all omittable (:2244), and OBDomestic2 requires only
+#   InstructionIdentification / EndToEndIdentification / InstructedAmount / CreditorAccount
+#   — DebtorAccount is optional (:2387). NOTE the Risk *envelope* IS required at
+#   OBWriteDomesticConsent4 (:2356); only its properties are optional, so send `Risk: {}`
+#   rather than omitting it.
+#
+#   REGULATORY, UNRESOLVED: PISP is a distinct FCA permission from AISP. The sandbox is
+#   unaffected, but production payment initiation needs authorisation this project does not
+#   hold. All three PISP features carry `adr_required: true` and the ADR is NOT yet written.
+#
+# AUTH — UK Open Banking FAPI 1.0 Advanced:
+#   • Transport: mutual TLS (mTLS) — HSBC-issued sandbox transport (QWAC) cert.
+#   • Onboarding: Dynamic Client Registration (DCR) — POST /register with a signed SSA.
+#   • Client auth: private_key_jwt (PS256 client assertion) on the token endpoint.
+#   • Consent: client_credentials token → POST /account-access-consents → status AWAU.
+#   • Authorization: OAuth2 authorization_code + PKCE (S256) with a signed request
+#     object (Hybrid `code id_token`); PSU authenticates app-to-app at HSBC (SCA).
+#   • AIS is read-only → detached-JWS request signing (x-jws-signature) NOT required.
+#   • PIS DOES require detached JWS (x-jws-signature, PS256, b64:false + crit) on every
+#     write. Without it HSBC rejects the request with 400 U019. Extend the existing
+#     `signPs256` in core/network/BuildClientAssertion.kt — do not add a second signer.
+#     Also required per write: `x-idempotency-key`, persisted across retries.
+#     Neither exists in source yet (verified 2026-07-30: zero matches for either header).
+#   • Consent lifecycle: 90-day reconfirmation (SCA-RTS Art 36(6) / Art 10A).
+#   • Credentials NEVER hardcoded (RULE-CREDS-LIFECYCLE-001): certs/keys/clientId/SSA
+#     live in gitignored local materials, referenced by env-var name only.
+#     HSBC sandbox material on disk: /home/kalpesh/OpenBankingProject/HSBC_Sandbox/
+#     (start: docs/00-HOW-TO-USE-THE-SANDBOX.md; AISP: docs/01-account-information-sharing.md).
+backend:
+  owned: false
+  provider: rest                      # HSBC Open Banking REST API (external)
+  standard: obie-uk-open-banking      # OBIE Read/Write Standard
+  role: aisp+pisp                     # AIS read-only + PIS domestic single payment (2026-07-30)
+  default_brand: uk-personal          # 1 of 10 HSBC sandbox brands
+  auth:
+    protocol: oauth2
+    security_profile: fapi-1.0-advanced
+    grants: [client_credentials, authorization_code]
+    transport: mtls
+    client_auth: private_key_jwt      # PS256 client assertion
+    client_registration: dcr          # POST /register with signed SSA
+    pkce: s256
+    request_object_signed: true       # signed `request` JWT (Hybrid code id_token)
+    consent_model: create-consent -> authorize -> token -> resource
+    consent_reconfirm_days: 90
+    # Per-role, not per-project: AIS reads need no signature; PIS writes mandate one.
+    request_signing:
+      ais: none                       # AIS read-only — no detached x-jws-signature
+      pis: detached-jws               # PS256, b64:false + crit — else HSBC 400 U019
+    idempotency_key_required: [pis]   # x-idempotency-key, stable across retries
+    # Materials — referenced by env-var name (never values):
+    transport_cert_env: HSBC_OB_TRANSPORT_CERT
+    signing_cert_env: HSBC_OB_SIGNING_CERT
+    private_key_env: HSBC_OB_PRIVATE_KEY
+    qseal_pubkey_env: HSBC_OB_QSEAL_PUBKEY
+    software_statement_env: HSBC_OB_SOFTWARE_STATEMENT
+    signing_kid_env: HSBC_OB_SIGNING_KID
+    client_id_env: HSBC_OB_CLIENT_ID
+  environments:
+    local:                            # HSBC UK sandbox (the dev target)
+      api_base_url: https://secure.sandbox.ob.hsbc.co.uk   # mTLS resource host (UK Personal)
+      authorize_base_url: https://sandbox.ob.hsbc.co.uk    # OAuth authorize host
+      api_version: v4.0
+      resource_prefix: /obie/open-banking/v4.0/aisp
+      # PISP resource prefix — mirrors the AIS shape on the SAME mTLS host
+      # (api_base_url above), i.e. https://secure.sandbox.ob.hsbc.co.uk/obie/
+      # open-banking/v4.0/pisp. Deliberately NOT the spec's `servers:` URL
+      # (payment-initiation-4.0-personal.yaml:1110 reads
+      # https://sandbox.ob.hsbc.co.uk/mock/obie/open-banking/v4.0/pisp) — that is a
+      # documentation mock: `sandbox.ob.hsbc.co.uk` is the FRONT-CHANNEL authorize
+      # host, not the mTLS resource host, and the /mock segment appears in no real
+      # call. Ground truth is source: core/network/.../AispTest.kt:127,145 hit
+      # secure.sandbox.ob.hsbc.co.uk/obie/open-banking/v4.0/aisp/ with no /mock,
+      # and core/network/build.gradle.kts:126-127 documents the host split.
+      pisp_resource_prefix: /obie/open-banking/v4.0/pisp
+      pisp_base_unverified: true      # clear once a real PISP call has succeeded
+      oauth_prefix: /obie/open-banking/v1.1/oauth2
+      dcr_prefix: /obie/open-banking/v3.2/oauth2
+      brand: uk-personal
+      auth_method: oauth2_fapi
+    production:                       # requires real TPP enrolment + eIDAS certs
+      api_base_url: TBD
+      authorize_base_url: TBD
+      api_version: v4.0
+      brand: uk-personal
+      auth_method: oauth2_fapi
+  observability:
+    provider: firebase
+    services: [crashlytics, performance]
+    firebase_project_id: TBD
+
+# ─── Platforms ───────────────────────────────────────────────────────────────
+platforms: [android, ios, desktop, web]
+
+# ─── Design ──────────────────────────────────────────────────────────────────
+design:
+  icon_library: material_symbols
+  icon_style: outlined
+  icon_size_base: 24
+  icon_color_default: var(--fg)
+
+# ─── Layers ──────────────────────────────────────────────────────────────────
+layers:
+  plan:           { enabled: true }
+  design-spec:    { enabled: true, design_tool: figma }
+  server:         { enabled: true }   # CLIENT contracts for HSBC AIS (Ktorfit interfaces)
+  client:         { enabled: true }   # Ktorfit services + Store5 repos per OBIE AIS resource
+  feature:        { enabled: true }
+  infrastructure: { enabled: true }
+  platform:       { enabled: true }   # expect/actual: mTLS, secure storage, app-to-app redirect
+  testing:        { enabled: true, frameworks: [kotlin-test] }
+
+# ─── Stitch (mockup generation) ──────────────────────────────────────────────
+stitch:
+  enabled: true
+
+# ─── Idea-layer pipeline flags ────────────────────────────────────────────────
+idea:
+  # Read by /idea-feature-export Step 3.2 and /idea-feature-stitch. Previously
+  # UNSET, which was a live trap: the runtime's ELSE branch treats "unset" as v3
+  # for a grace window that was HARD-REMOVED on 2026-06-09, so any export --mockup
+  # or stitch run would have routed to a deleted code path. v4 is the correct and
+  # only coherent value — CANONICAL_PATHS.yaml:37 and /idea-feature-render both
+  # use the v4 per-state path screens/{feature}/prompts/{state}.md.
+  stitch_pipeline_version: v4
+
+  # Visual tier deferred by user decision 2026-07-30 (see
+  # idea-layer/state/CAPABILITY_GAPS.yaml#deferred_by_design). Scope is RENDERED
+  # output only: screens/*/preview/*.html and the Stitch-SDK mockups under
+  # mockups/{feature}/. A verify/sync run must treat those two as satisfied.
+  #
+  # CORRECTED 2026-07-30 — an earlier revision listed "prompts" here too. That was
+  # the agent's inference, not the user's decision. Per-state prompts
+  # (screens/*/prompts/{state}.md) are NOT deferred; they are local markdown
+  # directives with no Stitch-SDK involvement. They remain outstanding work,
+  # sequenced after the verify re-seed because they derive from ui.yaml.
+  visual_tier_deferred: true
+  visual_tier_deferred_scope: [preview_html, stitch_mockups]
+  prompts_deferred: false
+  visual_tier_deferred_at: "2026-07-30"
+
+# ─── Source Metadata ─────────────────────────────────────────────────────────
+source:
+  repo_url: https://github.com/openMF/mifos-x-open-banking.git
+  fork_url: git@github.com:TheKalpeshPawar/mifos-x-open-banking.git
+  default_branch: dev
+  current_branch: firebase-config     # verified 2026-07-30; was stale at migration/hsbc-sandbox
+                                      # (branch is level with origin/dev — rev-list 0/0)
+  local_clone_at: workspaces/mifos-x/mifos-x-open-banking/source/mifos-x-open-banking
+  local_clone_kind: symlink
+  symlink_target: /home/kalpesh/OpenSource/Mifos/mifos-x-open-banking
+  package_name: org.mifosx.openbanking
+  root_project: MifosXOpenBanking
+  template_base: https://github.com/openMF/kmp-project-template
+  # Reusable base already in source (de-templated KMP shell — keep, build AISP on top):
+  reusable_base:
+    - core-base/security        # biometric, secure storage, session, field encryption (expect/actual, tested)
+    - core-base/network         # KtorHttpClient + certificate pinning config
+    - core-base/store           # Store5 + paging
+    - core-base/datastore       # secure settings
+    - core-base/designsystem
+    - cmp-navigation            # RootNav + splash + authenticated graph + M3 scaffold + flavor bottom nav
+  greenfield:
+    # No Open Banking network/auth/data layer exists yet — all greenfield:
+    - core/network NetworkModule (empty stub)
+    - core/data RepositoryModule (empty stub)
+    - core/auth, core/domain (0 files)
+    - mTLS client cert + private_key_jwt + OAuth2/PKCE + account-access-consents (none yet)

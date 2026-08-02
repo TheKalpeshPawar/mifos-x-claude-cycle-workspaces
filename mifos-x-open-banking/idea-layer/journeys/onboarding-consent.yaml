@@ -1,0 +1,60 @@
+id: onboarding-consent
+version: "1.0.0"
+name: "First-Time Open Banking Consent"
+description: >
+  Priya launches the app for the first time, reads what account data will be shared and
+  why, initiates the FAPI 1.0 Advanced consent journey against HSBC, completes SCA on
+  the bank portal, and lands on her authorised account list — going from anxious stranger
+  to confident connected user in one session.
+persona:
+  archetype: "first-time user"
+  jtbd: "Securely connect my HSBC account so I can see all my balances and transactions in one place without sharing my password."
+  context: "At home on a weekend morning, considering whether to trust a new fintech app."
+  knowledge_level: novice
+  emotional_state: "anxious about data sharing but curious about the benefit"
+goal: "Complete the UK Open Banking consent journey from first app launch to seeing authorised accounts."
+success_metric:
+  name: "consent-to-accounts-activation"
+  kind: activation
+  target: ">=85% of sessions starting user-onboarding reach accounts-populated within 3 minutes"
+  measurement: "Funnel: onboarding_screen_viewed → consent_callback_success → accounts_loaded event in Firebase Analytics"
+screen_sequence:
+  - screen_id: user-onboarding
+    state: "content"
+    user_intent: "Understand what Open Banking is, what data the app will read, and decide whether to proceed."
+    success_signal: "Taps 'Connect with HSBC' after reading the permission-summary card."
+  - screen_id: login
+    state: "loading"
+    user_intent: "Initiate the FAPI consent — the app stages an account-access-consent and app-to-app redirects to HSBC."
+    success_signal: "HSBC authorisation portal launches via app-to-app redirect; Priya authenticates and approves."
+    notes: "SCA and account selection happen on HSBC's portal. Control returns to app via custom-scheme callback URI."
+    fallback_screen_id: user-onboarding
+  - screen_id: consent-callback
+    state: "loading"
+    user_intent: "Wait while the app exchanges the authorisation code for a PSU-bound access token."
+    success_signal: "Callback auto-navigates to accounts screen on Authorised status."
+    fallback_screen_id: login
+    notes: "Rejection or token-exchange failure shows an error dialog with retry options."
+  - screen_id: accounts
+    state: "populated"
+    user_intent: "Confirm that authorised HSBC accounts are now visible and accessible."
+    success_signal: "At least one account card renders with account name, type, and balance preview."
+expected_outcome: >
+  Priya has an active OBIE account-access-consent, a PSU-bound access token stored securely
+  on-device, and a populated accounts screen showing every HSBC account she chose to share.
+tier: maximum
+preconditions:
+  - "Fresh install — no prior consent, no token."
+  - "Device is online."
+  - "HSBC sandbox is reachable at configured base URL."
+failure_modes:
+  - cause: "PSU rejects the consent request on HSBC portal — no authorisation code returned."
+    recovery_screen: user-onboarding
+    notes: "consent-callback detects rejection parameter; shows 'Connection cancelled' error with a 'Try again' CTA that navigates back to user-onboarding."
+  - cause: "Token exchange fails — network error, expired code, or invalid state parameter."
+    recovery_screen: login
+    notes: "Retry initiates a fresh consent-staging cycle from the login screen."
+  - cause: "App-to-app redirect fails to return (HSBC portal not installed or redirect URI blocked)."
+    recovery_screen: login
+    notes: "Timeout fallback; user is advised to ensure HSBC Mobile Banking app is installed."
+tags: [fapi, consent, onboarding, auth, oauth2, p0, tier-maximum]

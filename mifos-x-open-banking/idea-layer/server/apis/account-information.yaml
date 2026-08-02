@@ -1,0 +1,164 @@
+# apis/account-information.yaml — full AIS endpoint specs (HSBC v4.0)
+# Per-flow client contracts. Source: account-info-4.0-personal.yaml. Read-only (AISP).
+
+schema_version: "1.0"
+api_ref: API-001
+group: account-information
+
+common:
+  base_url: "https://sandbox.ob.hsbc.co.uk/mock/obie/open-banking/v4.0/aisp"
+  auth: "Bearer <access-token>"
+  required_headers: ["Authorization", "x-fapi-interaction-id", "x-fapi-auth-date"]
+  response_envelope: { Data: "<payload>", Links: ["Self", "Next", "Prev", "First", "Last"], Meta: ["TotalPages", "FirstAvailableDateTime"] }
+  error_codes: [400, 401, 403, 404, 405, 406, 429, 500]
+
+flows:
+
+  onboarding-consent:
+    endpoints:
+      - id: consent-create
+        method: POST
+        path: "/account-access-consents"
+        token: client_credentials
+        request_dto: OBReadConsent1
+        request_notes: "Data.Permissions[] + optional ExpirationDateTime + TransactionFrom/ToDateTime; Risk: {}"
+        response_dto: OBReadConsentResponse1
+        status: 201
+        returns_notes: "Data.ConsentId + Status=AwaitingAuthorisation (AWAU)"
+        consumers: [login, consent-callback]
+
+  consent-management:
+    endpoints:
+      - id: consent-status
+        method: GET
+        path: "/account-access-consents/{ConsentId}"
+        token: client_credentials
+        path_params: { ConsentId: string }
+        response_dto: OBReadConsentResponse1
+        returns_notes: "Status: AWAU -> AUTH | RJCT | CANC | EXPD"
+        consumers: [consent-callback, consent-detail]
+      - id: consent-revoke
+        method: DELETE
+        path: "/account-access-consents/{ConsentId}"
+        token: client_credentials
+        path_params: { ConsentId: string }
+        status: 204
+        consumers: [consent-detail]
+
+  account-browsing:
+    endpoints:
+      - id: accounts-list
+        method: GET
+        path: "/accounts"
+        response_dto: OBReadAccount6
+        permission: ReadAccountsDetail
+        returns_notes: "Data.Account[] — always the first resource call; yields AccountId values"
+        consumers: [accounts, home]
+      - id: account-detail
+        method: GET
+        path: "/accounts/{AccountId}"
+        path_params: { AccountId: string }
+        response_dto: OBReadAccount6
+        permission: ReadAccountsDetail
+        consumers: [account-detail]
+      - id: balances
+        method: GET
+        path: "/accounts/{AccountId}/balances"
+        path_params: { AccountId: string }
+        response_dto: OBReadBalance1
+        permission: ReadBalances
+        consumers: [account-detail, accounts, home]
+      - id: product
+        method: GET
+        path: "/accounts/{AccountId}/product"
+        path_params: { AccountId: string }
+        response_dto: OBReadProduct2
+        permission: ReadProducts
+        consumers: [product]
+      - id: party
+        method: GET
+        path: "/accounts/{AccountId}/party"
+        path_params: { AccountId: string }
+        response_dto: OBReadParty2
+        permission: ReadParty
+        consumers: [party, profile]
+      - id: parties
+        method: GET
+        path: "/accounts/{AccountId}/parties"
+        path_params: { AccountId: string }
+        response_dto: OBReadParty3
+        permission: ReadParty
+        consumers: [party]
+
+  transaction-review:
+    endpoints:
+      - id: transactions
+        method: GET
+        path: "/accounts/{AccountId}/transactions"
+        path_params: { AccountId: string }
+        query_params: { fromBookingDateTime: "date-time?", toBookingDateTime: "date-time?" }
+        response_dto: OBReadTransaction6
+        permission: ReadTransactionsDetail
+        notes: "Also satisfied by ReadTransactionsCredits / ReadTransactionsDebits / ReadTransactionsBasic. ASPSP ignores timezone on filters; paginated via Links.Next."
+        consumers: [transactions, transaction-detail, home]
+
+  recurring-and-statements:
+    endpoints:
+      - id: beneficiaries
+        method: GET
+        path: "/accounts/{AccountId}/beneficiaries"
+        path_params: { AccountId: string }
+        response_dto: OBReadBeneficiary5
+        permission: ReadBeneficiariesDetail
+        consumers: [beneficiaries]
+      - id: standing-orders
+        method: GET
+        path: "/accounts/{AccountId}/standing-orders"
+        path_params: { AccountId: string }
+        response_dto: OBReadStandingOrder6
+        permission: ReadStandingOrdersDetail
+        consumers: [standing-orders]
+      - id: direct-debits
+        method: GET
+        path: "/accounts/{AccountId}/direct-debits"
+        path_params: { AccountId: string }
+        response_dto: OBReadDirectDebit2
+        permission: ReadDirectDebits
+        consumers: [direct-debits]
+      - id: scheduled-payments
+        method: GET
+        path: "/accounts/{AccountId}/scheduled-payments"
+        path_params: { AccountId: string }
+        response_dto: OBReadScheduledPayment3
+        permission: ReadScheduledPaymentsDetail
+        consumers: [scheduled-payments]
+      - id: statements
+        method: GET
+        path: "/accounts/{AccountId}/statements"
+        path_params: { AccountId: string }
+        query_params: { fromStatementDateTime: "date-time?", toStatementDateTime: "date-time?" }
+        response_dto: OBReadStatement2
+        permission: ReadStatementsDetail
+        consumers: [statements]
+      - id: statement-detail
+        method: GET
+        path: "/accounts/{AccountId}/statements/{StatementId}"
+        path_params: { AccountId: string, StatementId: string }
+        response_dto: OBReadStatement2
+        permission: ReadStatementsDetail
+        consumers: [statement-detail]
+      - id: statement-txns
+        method: GET
+        path: "/accounts/{AccountId}/statements/{StatementId}/transactions"
+        path_params: { AccountId: string, StatementId: string }
+        response_dto: OBReadTransaction6
+        permission: ReadTransactionsDetail
+        consumers: [statement-detail]
+      - id: statement-file
+        method: GET
+        path: "/accounts/{AccountId}/statements/{StatementId}/file"
+        path_params: { AccountId: string, StatementId: string }
+        response_dto: null
+        produces: "application/pdf"
+        permission: ReadStatementsDetail
+        consumers: [statements, statement-detail]

@@ -1,0 +1,47 @@
+name: OBReadAccount6
+version: 1.0.0
+description: >
+  OBIE AIS v4.0 response envelope for GET /accounts (list all authorised accounts) and
+  GET /accounts/{AccountId} (single account). Data.Account[] contains OBAccount6 records.
+  The home screen uses this to populate the account-switcher chip strip; the accounts
+  screen renders the full account card list.
+source:
+  origin: rest
+  endpoint: "/accounts"
+fields:
+  - name: account
+    type: { list_of: { dto_ref: OBAccount6 } }
+    description: >
+      Account records mapped from Data.Account[]. Empty list = PSU has no authorised accounts
+      in this consent scope — render empty state reason=no_accounts. Single-account detail
+      call wraps a one-element array.
+    required: true
+    source_field: "Data.Account"
+  - name: links
+    type: { optional: Json }
+    description: "OBIE Links envelope (Self, First, Prev, Next, Last). Unused for accounts — full list always returned."
+    source_field: "Links"
+  - name: meta
+    type: { optional: Json }
+    description: "OBIE Meta envelope (TotalPages, FirstAvailableDateTime)."
+    source_field: "Meta"
+used_by:
+  - feature: home
+    kind: response
+    api_id: accountsList
+    role: body
+  - feature: accounts
+    kind: response
+    api_id: accountsList
+    role: body
+  - feature: account-detail
+    kind: response
+    api_id: accountDetail
+    role: body
+capabilities_used:
+  - has_api
+tier: medium
+tags:
+  - obie
+  - account
+  - envelope

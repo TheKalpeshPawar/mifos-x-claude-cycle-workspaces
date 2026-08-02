@@ -1,0 +1,63 @@
+id: settings-and-profile
+version: "2.0.0"
+name: "Settings and Legal"
+description: >
+  Priya opens Settings from the More tab to switch the app theme, jump to consent
+  management, and read the open-source licences. Reverse-synced 2026-07-28 against
+  source: the profile screen, biometric app-lock, session timeout and notification
+  preferences were all specified but never built, so this journey now covers only the
+  three sections the settings screen actually renders — Appearance, Account and About.
+persona:
+  archetype: "returning user — personalisation and privacy manager"
+  jtbd: "Set the app to my preferred appearance and check what I have shared before handing the phone to a family member."
+  context: "Quiet evening at home, setting up the app properly after a few weeks of use."
+  knowledge_level: familiar
+  emotional_state: "settled and thorough"
+goal: "Set the app theme and review consents and legal information."
+success_metric:
+  name: "settings-task-completion"
+  kind: satisfaction
+  target: ">=80% of users who open settings complete at least one action (theme change or consents open) in the same session"
+  measurement: "Sequential funnel: settings_screen_viewed → (theme_selected OR consent_list_viewed), same session"
+screen_sequence:
+  - screen_id: settings
+    state: "content"
+    user_intent: "Browse the settings sections and switch the app theme."
+    success_signal: >
+      Three SettingsSection groups render — Appearance (theme dropdown row), Account
+      (Consents row with chevron) and About (Privacy row with external-link glyph,
+      Licences row with chevron, and a static App Version readout).
+    notes: >
+      Selecting a theme dispatches SettingsAction.SelectTheme and writes DarkThemeConfig
+      through UserDataRepository; the whole app retints immediately. The App Version row
+      has no click handler by design.
+  - screen_id: licences
+    state: "content"
+    user_intent: "Read the bundled open-source licence text."
+    success_signal: "The licences screen renders an intro paragraph and the full MPL text in a scrollable monospace block."
+    notes: "Static bundled asset — no network call. Back returns to settings."
+expected_outcome: >
+  Priya has applied her preferred theme, knows where to review and revoke her bank
+  consents, and has seen the app's licensing and privacy information.
+tier: minimal
+preconditions:
+  - "Authenticated session (the settings screen sits behind the authenticated nav graph)."
+failure_modes:
+  - cause: "Preferences cannot be read from UserDataRepository."
+    recovery_screen: settings
+    notes: "SettingsErrorKind.PreferencesUnavailable renders the shared error surface with a Retry CTA (isRetriable = true)."
+  - cause: "No browser available to open the privacy policy URL."
+    recovery_screen: settings
+    notes: "LocalUriHandler.openUri fails silently; the user stays on settings. Source models no error state for this."
+tags: [settings, licences, appearance, theme, legal, p0]
+
+removed_in_sync:
+  # Recorded so the deletion is traceable rather than silent.
+  - screen: profile
+    reason: "No route, no module, no ViewModel in source."
+  - capability: "biometric app-lock toggle"
+    reason: "UserData carries isBiometricsEnabled but the settings screen exposes no Security section."
+  - capability: "notification preferences"
+    reason: "No Notifications section is rendered."
+  - capability: "sign out from settings"
+    reason: "The only sign-out path in source is revoking a consent from consent-detail, which calls AppLogout."

@@ -1,0 +1,68 @@
+id: recurring-and-statements
+version: "1.0.0"
+name: "Payment Commitments and Statements"
+description: >
+  Priya drills into an account's payment-context read surfaces from the account detail
+  screen — checking standing orders (recurring outbound), direct-debit mandates,
+  scheduled future-dated payments, and statements (list then single-statement detail
+  with period balances and transactions). All screens are read-only; no payment initiation.
+persona:
+  archetype: "returning user — financial commitments reviewer"
+  jtbd: "Understand all my automatic payment commitments and access a past statement to reconcile or share with a third party."
+  context: "End-of-month financial admin session on a tablet, preparing for a mortgage application."
+  knowledge_level: familiar
+  emotional_state: "methodical and detail-focused"
+goal: "Review all standing orders, direct debits, and scheduled payments for an account, then access a specific statement."
+success_metric:
+  name: "payment-surfaces-full-coverage"
+  kind: task_completion
+  target: ">=75% of sessions entering recurring-and-statements visit at least 3 of the 5 sub-screens (SO, DD, SP, Statements, Statement-detail)"
+  measurement: "Funnel across: standing_orders_viewed / direct_debits_viewed / scheduled_payments_viewed / statements_viewed / statement_detail_viewed events"
+screen_sequence:
+  - screen_id: account-detail
+    state: "populated"
+    user_intent: "Identify the Explore row chips to navigate into payment-context sub-screens."
+    success_signal: "Standing Orders, Direct Debits, Scheduled, Beneficiaries, and Statements chips are all visible and tappable."
+  - screen_id: standing-orders
+    state: "populated"
+    user_intent: "See recurring outbound orders — amount, frequency, next payment date, and payee."
+    success_signal: "At least one standing-order card renders with creditor name, frequency (e.g. Monthly), next-payment date, and instructed amount."
+    fallback_screen_id: account-detail
+    notes: "Empty state shown if no standing orders exist for this account — not an error."
+  - screen_id: direct-debits
+    state: "populated"
+    user_intent: "Review direct-debit mandates — originator, status, and most-recent collection amount."
+    success_signal: "Direct-debit rows render with originator name, mandate status (Active/Cancelled), and most-recent amount."
+    fallback_screen_id: account-detail
+  - screen_id: scheduled-payments
+    state: "populated"
+    user_intent: "Check future-dated one-off payments — execution date, amount, and payee."
+    success_signal: "Scheduled-payment cards show execution date, instructed amount, and creditor account identifier."
+    fallback_screen_id: account-detail
+    notes: "Empty state expected on current accounts with no upcoming scheduled payments."
+  - screen_id: statements
+    state: "populated"
+    user_intent: "Select a past statement period for download or detailed review."
+    success_signal: "Statement list renders period labels (e.g. 'June 2025'), statement type (Regular), and creation date for each entry."
+    fallback_screen_id: account-detail
+  - screen_id: statement-detail
+    state: "populated"
+    user_intent: "Read the selected statement — period, opening/closing balances, and transactions within the period."
+    success_signal: "Statement detail screen shows statement period, opening balance, closing balance, and a transactions sub-list for the period."
+    fallback_screen_id: statements
+expected_outcome: >
+  Priya has reviewed all payment commitments (standing orders, direct debits, scheduled
+  payments) and examined a specific statement with its period balances and transaction list.
+  She can now provide accurate figures for her mortgage application.
+tier: medium
+preconditions:
+  - "Active consent with ReadStandingOrdersDetail, ReadDirectDebits, ReadScheduledPaymentsDetail, ReadStatementsDetail permissions."
+  - "At least one authorised account selected in account-detail."
+failure_modes:
+  - cause: "ReadStatementsDetail permission not in consent scope — GET /statements returns 403."
+    recovery_screen: consent-detail
+    notes: "App shows 'Statements permission not granted' banner with link to consent-detail to reconfirm with expanded permissions."
+  - cause: "Network timeout on any sub-screen data load."
+    recovery_screen: account-detail
+    notes: "Error state with Retry CTA shown on the individual sub-screen; back navigation returns to account-detail."
+tags: [standing-orders, direct-debits, scheduled-payments, statements, beneficiaries, p1]

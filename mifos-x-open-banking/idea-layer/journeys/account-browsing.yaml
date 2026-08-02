@@ -1,0 +1,45 @@
+id: account-browsing
+version: "1.0.0"
+name: "Account List and Detail"
+description: >
+  Priya opens the Accounts tab to see all her authorised HSBC accounts with balance
+  previews, then drills into a specific account to view detailed balance breakdown
+  (InterimAvailable, InterimBooked) and the entry points to transactions, statements,
+  and payment-context sub-screens.
+persona:
+  archetype: "returning user — regular account checker"
+  jtbd: "See which accounts I have shared and check the current balance on each without opening the bank app."
+  context: "Quick check during a lunch break to confirm a balance before making a purchase."
+  knowledge_level: familiar
+  emotional_state: "purposeful and time-limited"
+goal: "Navigate from the account list to a specific account detail and confirm balance and entry points."
+success_metric:
+  name: "accounts-to-detail-task-completion"
+  kind: task_completion
+  target: ">=90% of sessions visiting accounts also open at least one account-detail"
+  measurement: "Sequential funnel: accounts_screen_viewed → account_detail_opened, same session"
+screen_sequence:
+  - screen_id: accounts
+    state: "populated"
+    user_intent: "Survey all authorised accounts with their current balance previews and pick one to inspect."
+    success_signal: "Account cards render with account name, sort code / IBAN, account type, and InterimAvailable balance."
+    notes: "Multi-currency Global Money and Global Wallet accounts appear with currency flag and local-amount badge."
+  - screen_id: account-detail
+    state: "populated"
+    user_intent: "View full balance breakdown (InterimAvailable vs InterimBooked) and see navigation chips to sub-screens."
+    success_signal: "Balance section shows at least one balance type; Explore row chips (Transactions, Statements, Standing Orders, Direct Debits, Scheduled, Beneficiaries, Product, Party, ATMs) are all visible and tappable."
+expected_outcome: >
+  Priya has confirmed the balance on her chosen account and knows how to navigate to
+  transactions, statements, and all payment-context read surfaces from the account detail.
+tier: medium
+preconditions:
+  - "Active consent and valid PSU access token."
+  - "At least one authorised account returned by GET /accounts."
+failure_modes:
+  - cause: "Token expired between sessions — GET /accounts returns 401."
+    recovery_screen: login
+    notes: "App detects 401, clears stale token, shows 're-connect' banner, redirects to login for fresh consent."
+  - cause: "GET /accounts returns empty — no accounts authorised in consent scope."
+    recovery_screen: accounts
+    notes: "Empty state on accounts screen shows 'No accounts connected' with CTA to manage consents."
+tags: [accounts, balances, multi-currency, p0]

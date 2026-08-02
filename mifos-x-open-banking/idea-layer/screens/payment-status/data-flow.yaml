@@ -1,0 +1,93 @@
+sibling: data-flow
+schema_version: "2.1.0"
+feature_id: payment-status
+
+screen_id: payment-status
+
+cache_strategy: memory
+cache_rationale: >-
+  A short-lived in-memory cache is fine and useful — back-navigating to a payment should not
+  re-hit the network. Room persistence is deliberately NOT used: a payment status written to
+  disk could outlive the consent that permitted the read and could be shown to a PSU as current
+  when it is hours stale. This matches how every consent-scoped store in the app is
+  createMemoryStore rather than createStore.
+store_shape: "createMemoryStore(fetcher) keyed by DomesticPaymentId"
+
+on_mount:
+  - trigger: payment_status_load
+    description: "Read the payment resource and map its OBIE status onto a disposition."
+    steps:
+      - call: domestic-payment-read
+        path_params:
+          DomesticPaymentId: "{params.paymentId}"
+        auth: client_credentials_payments_scope
+        store_as: payment
+      - compute:
+          status_code: "{payment.Data.Status}"
+          disposition: "dispositionFor(status_code)"        # unknown -> in_progress
+          status_label: "statusLabelFor(status_code)"
+          amount_label: "formatMoney(payment.Data.Initiation.InstructedAmount)"
+          creditor_name: "{payment.Data.Initiation.CreditorAccount.Name}"
+          reference_label: "{payment.Data.Initiation.RemittanceInformation.Unstructured[0]}"
+          debtor_account_label: "accountDisplayName(payment.Data.Initiation.DebtorAccount)"
+          submitted_at_label: "formatDateTime(payment.Data.CreationDateTime)"
+    on_loading: loading
+    on_success: content
+    on_error: error
+    error_type_mapping:
+      - http_status: 404
+        error_type: PaymentNotFound
+        message_key: "error.payment_status.not_found"
+      - http_status: 400
+        error_code: U011
+        error_type: PaymentNotFound
+        message_key: "error.payment_status.not_found"
+      - http_status: 401
+        error_type: TokenExpired
+        message_key: "error.payment_status.token_expired"
+      - http_status: 403
+        error_type: ConsentRevoked
+        message_key: "error.payment_status.consent_revoked"
+      - default: NetworkError
+        message_key: "error.payment_status.network_error"
+
+  - trigger: auto_poll
+    description: >-
+      Re-read on a backing-off interval while the payment is still moving. Starts only if the
+      first read returned an in_progress disposition, and stops the instant a terminal
+      disposition arrives — a terminal status cannot change, so polling it is pure waste and
+      an easy way to earn a 429.
+    condition: "disposition == in_progress"
+    re_runs: [payment_status_load]
+    interval_ms: 3000
+    backoff_multiplier: 1.5
+    max_interval_ms: 30000
+    max_duration_ms: 600000
+    stop_when: "disposition in {terminal_success, terminal_failure}"
+    on_429: "double the current interval; keep the last known status rendered"
+
+on_user_action:
+  - trigger: refresh_status
+    description: "Manual re-read, offered while in_progress and as the error-state Retry."
+    re_runs: [payment_status_load]
+
+  - trigger: navigate_to_send_money
+    description: "Open send-money with a cleared form after a Rejected status."
+    navigates_to: send-money
+    params: {}
+
+  - trigger: navigate_back
+    description: "Leave the tracking screen. Read-only, so departure has no effect on settlement."
+    navigates_to: send-money
+
+# ─────────────────────────────────────────────────────────────────────────
+# TRUTHFULNESS INVARIANT
+# ─────────────────────────────────────────────────────────────────────────
+truthfulness_invariant:
+  rule: >-
+    The UI must never describe an in_progress payment as sent, complete, or successful.
+  rationale: >-
+    HSBC returns AcceptedSettlementInProcess on a successful submit. That means accepted, not
+    settled. Collapsing the disposition to a boolean would tell a PSU their money has moved when
+    it has not, which is a false statement about their finances rather than a cosmetic bug.
+  enforced_by: "TC-PSTAT-002, TC-PSTAT-003"

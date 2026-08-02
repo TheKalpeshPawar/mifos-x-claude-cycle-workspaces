@@ -1,0 +1,118 @@
+name: OBAccount6
+version: 1.0.0
+description: >
+  OBIE AIS v4.0 account record. Primary item type extracted from OBReadAccount6.Data.Account[].
+  AccountId (primary key) is used as path param for all resource sub-endpoints (/balances,
+  /transactions, /statements, etc.). Account[] (OBCashAccount3[]) carries the sort-code+account-number
+  or IBAN identification. Multi-currency GlobalWallet accounts may have multiple Account entries.
+source:
+  origin: rest
+  endpoint: "/accounts/{AccountId}"
+fields:
+  - name: accountId
+    type: String
+    description: "ASPSP-assigned unique account identifier (primary key). Used as path param for all sub-resource calls."
+    required: true
+    source_field: "AccountId"
+    example: "22289"
+  - name: status
+    type: { optional: { enum_ref: AccountStatus } }
+    description: "Account lifecycle status. Omitted = treat as Enabled."
+    source_field: "Status"
+  - name: statusUpdateDateTime
+    type: { optional: DateTime }
+    description: "UTC datetime of the last status change."
+    source_field: "StatusUpdateDateTime"
+  - name: currency
+    type: String
+    description: "ISO 4217 3-letter base currency of the account. 'GBP' for most HSBC UK personal accounts."
+    required: true
+    source_field: "Currency"
+    example: "GBP"
+    constraints:
+      min_length: 3
+      max_length: 3
+  - name: accountType
+    type: { enum_ref: AccountType }
+    description: "Business or Personal classification."
+    required: true
+    source_field: "AccountType"
+  - name: accountSubType
+    type: { enum_ref: AccountSubType }
+    description: "Product sub-classification (CurrentAccount, CreditCard, Savings, etc.)."
+    required: true
+    source_field: "AccountSubType"
+  - name: description
+    type: { optional: String }
+    description: "ASPSP-provided product description, e.g. 'Personal Current Account'."
+    source_field: "Description"
+    example: "Personal Current Account"
+  - name: nickname
+    type: { optional: String }
+    description: "PSU-assigned nickname for the account shown in the app UI."
+    source_field: "Nickname"
+    example: "Main Account"
+  - name: openingDate
+    type: { optional: Date }
+    description: "Date the account was opened (ISO 8601 date only)."
+    source_field: "OpeningDate"
+  - name: maturityDate
+    type: { optional: Date }
+    description: "Maturity date for fixed-term products (bonds, fixed-rate mortgages)."
+    source_field: "MaturityDate"
+  - name: switchStatus
+    type: { optional: String }
+    description: "Current Account Switch Service status code, e.g. UK.CASS.NotSwitched."
+    source_field: "SwitchStatus"
+  - name: account
+    type: { list_of: { dto_ref: OBCashAccount3 } }
+    description: "Array of account identification entries (sort-code+account-number, IBAN, Paym, PAN). ViewModel typically uses the first UK.OBIE.SortCodeAccountNumber entry for display."
+    required: true
+    source_field: "Account"
+  - name: servicer
+    type: { optional: Json }
+    description: "ASPSP routing info { SchemeName, Identification }. Typically BICFI or Sort Code. Often omitted for personal retail accounts."
+    source_field: "Servicer"
+enums:
+  - name: AccountStatus
+    description: "OBIE account lifecycle status codes."
+    values:
+      - { id: ENABLED,    wire_value: "Enabled",   description: "Account is active and usable." }
+      - { id: DISABLED,   wire_value: "Disabled",  description: "Account temporarily blocked." }
+      - { id: DELETED,    wire_value: "Deleted",   description: "Account closed." }
+      - { id: PRO_FORMA,  wire_value: "ProForma",  description: "Account pending activation." }
+  - name: AccountType
+    description: "OBIE account type."
+    values:
+      - { id: BUSINESS, wire_value: "Business" }
+      - { id: PERSONAL, wire_value: "Personal" }
+  - name: AccountSubType
+    description: "OBIE account sub-classification."
+    values:
+      - { id: CHARGE_CARD,     wire_value: "ChargeCard" }
+      - { id: CREDIT_CARD,     wire_value: "CreditCard" }
+      - { id: CURRENT_ACCOUNT, wire_value: "CurrentAccount" }
+      - { id: E_MONEY,         wire_value: "EMoney" }
+      - { id: LOAN,            wire_value: "Loan" }
+      - { id: MORTGAGE,        wire_value: "Mortgage" }
+      - { id: PRE_PAID_CARD,   wire_value: "PrePaidCard" }
+      - { id: SAVINGS,         wire_value: "Savings" }
+used_by:
+  - feature: home
+    kind: response
+    api_id: accountsList
+    role: body
+  - feature: accounts
+    kind: response
+    api_id: accountsList
+    role: body
+  - feature: account-detail
+    kind: response
+    api_id: accountDetail
+    role: body
+capabilities_used:
+  - has_api
+tier: medium
+tags:
+  - obie
+  - account

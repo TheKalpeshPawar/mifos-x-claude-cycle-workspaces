@@ -1,0 +1,38 @@
+name: OBReadDirectDebit2
+version: 1.0.0
+description: >
+  OBIE AIS v4.0 response envelope for GET /accounts/{AccountId}/direct-debits.
+  Requires ReadDirectDebits permission. No pagination — full list returned in one response
+  per OBIE AIS v4.0 direct-debits contract. Inactive mandates are included.
+source:
+  origin: rest
+  endpoint: "/accounts/{AccountId}/direct-debits"
+fields:
+  - name: directDebit
+    type: { list_of: Json }
+    description: >
+      OBDirectDebit2 mandate records from Data.DirectDebit[]. Each entry contains:
+      AccountId, DirectDebitId (primary key, optional), MandateIdentification (scheme ref),
+      DirectDebitStatusCode (Active | Inactive), Name (originator name — PII),
+      PreviousPaymentDateTime, Frequency (optional, ISO 20022),
+      PreviousPaymentAmount (OBActiveOrHistoricCurrencyAndAmount, optional).
+    required: true
+    source_field: "Data.DirectDebit"
+  - name: links
+    type: { optional: Json }
+    source_field: "Links"
+  - name: meta
+    type: { optional: Json }
+    source_field: "Meta"
+used_by:
+  - feature: direct-debits
+    kind: response
+    api_id: directDebitsList
+    role: body
+capabilities_used:
+  - has_api
+tier: medium
+tags:
+  - obie
+  - direct-debit
+  - envelope

@@ -1,0 +1,56 @@
+name: OBReadTransaction6
+version: 1.0.0
+description: >
+  OBIE AIS v4.0 response envelope for GET /accounts/{AccountId}/transactions and
+  GET /accounts/{AccountId}/statements/{StatementId}/transactions.
+  Supports Links.Next pagination — client stores Links.Next as next_link state and
+  presents a 'Load more' CTA when non-null. Page size is HSBC-controlled (~100 per page).
+  Home screen slices the first 5 Booked transactions client-side from the initial page.
+source:
+  origin: rest
+  endpoint: "/accounts/{AccountId}/transactions"
+fields:
+  - name: transaction
+    type: { list_of: { dto_ref: OBTransaction6 } }
+    description: >
+      Transaction records from Data.Transaction[]. Includes both Booked and Pending entries.
+      Client sorts by bookingDateTime descending. Date-range filter changes reset
+      the pagination cursor — fresh first-page fetch required.
+    required: true
+    source_field: "Data.Transaction"
+  - name: links
+    type: { optional: Json }
+    description: >
+      OBIE pagination links. Client reads Links.Next to determine if more pages exist.
+      Stores it as next_link state; uses it as URL override for load_more_transactions trigger.
+      Null or absent Links.Next = last page.
+    source_field: "Links"
+  - name: meta
+    type: { optional: Json }
+    description: "OBIE Meta envelope (TotalPages — may be null for HSBC AIS)."
+    source_field: "Meta"
+used_by:
+  - feature: home
+    kind: response
+    api_id: recentTransactions
+    role: body
+  - feature: transactions
+    kind: response
+    api_id: transactions
+    role: body
+  - feature: transaction-detail
+    kind: response
+    api_id: transactions
+    role: body
+  - feature: statement-detail
+    kind: response
+    api_id: statementTxns
+    role: body
+capabilities_used:
+  - has_api
+tier: medium
+tags:
+  - obie
+  - transaction
+  - envelope
+  - paginated

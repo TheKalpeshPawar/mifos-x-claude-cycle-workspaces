@@ -1,0 +1,150 @@
+sibling: api
+schema_version: "4.0"
+feature_id: payment-consent
+
+screen_id: payment-consent
+
+api_base_path: "/obie/open-banking/v4.0/pisp"
+oauth_base_path: "/obie/open-banking/v1.1"
+
+endpoints:
+  - id: payment-authorize-redirect
+    method: GET
+    path: "/oauth2/authorize"
+    base_path_override: "/obie/open-banking/v1.1"
+    requires_auth: false
+    auth_scheme: none
+    requires_jws_signature: false
+    requires_idempotency_key: false
+    query_params:
+      response_type: string
+      client_id: string
+      state: string
+      nonce: string
+      scope: "payments"
+      redirect_uri: string
+      request: "signed request object (PS256 JWT) carrying the openbanking_intent_id = ConsentId"
+    notes: >-
+      Browser redirect, not an API call the client makes directly — send-money emits
+      LaunchAuthorisation and the Screen opens it. Identical in shape to the AIS authorize call
+      except scope is `payments` and the intent id is the domestic-payment ConsentId. The
+      return leg arrives through the already-shipped per-platform ConsentRedirectBus.
+    response: "302 to the bank login; after SCA the browser returns to the registered callback with code, id_token and state"
+
+  - id: payment-token-exchange
+    method: POST
+    path: "/oauth2/token"
+    base_path_override: "/obie/open-banking/v1.1"
+    response_dto: OAuthTokenResponse
+    requires_auth: false
+    auth_scheme: private_key_jwt_form_body
+    requires_jws_signature: false
+    requires_idempotency_key: false
+    request_content_type: application/x-www-form-urlencoded
+    form_params:
+      grant_type: authorization_code
+      code: "authorisation code from the redirect"
+      redirect_uri: "registered callback"
+      client_assertion_type: "urn:ietf:params:oauth:client-assertion-type:jwt-bearer"
+      client_assertion: "PS256-signed JWT"
+    notes: >-
+      No Authorization header — the client authenticates with private_key_jwt in the form body.
+      The resulting access token is scoped to this payment and MUST NOT be persisted into
+      ConsentSession, which holds the AIS data-sharing session.
+    error_responses:
+      - status_code: 400
+        error_code: "invalid_grant"
+        description: "Authorisation code expired (30-60s TTL) or already used."
+        ui_action: "Restart authorisation CTA re-stages the consent and relaunches."
+      - status_code: 400
+        error_code: "invalid_request"
+        description: "Client assertion malformed or signature invalid."
+        ui_action: "Non-recoverable; surface with a support reference."
+      - status_code: 401
+        error_code: "invalid_client"
+        description: "Wrong kid, expired exp, reused jti, or iss does not equal sub."
+        ui_action: "Non-recoverable; surface with a support reference."
+
+  - id: payment-consent-status
+    method: GET
+    path: "/domestic-payment-consents/{ConsentId}"
+    response_dto: OBWriteDomesticConsentResponse5
+    requires_auth: true
+    auth_scheme: bearer_client_credentials_token
+    auth_scope: payments
+    requires_jws_signature: false
+    requires_idempotency_key: false
+    path_params:
+      ConsentId: string
+    notes: >-
+      Polled until Data.Status reaches AUTH. This poll is load-bearing, not best-effort:
+      submitting against a consent that is not Authorised returns 400 U009, so the return to
+      send-money is gated on it. Polling uses the client-credentials payments token, matching
+      how the shipped ConsentStores.kt reads the AIS consent on a client-credentials token
+      rather than the PSU bearer.
+    poll_contract:
+      interval_ms: 1500
+      deadline_ms: 45000
+      terminal_success: "AUTH"
+      terminal_failure: ["RJCT"]
+      on_deadline: "AuthorisationTimedOut — offer Restart authorisation"
+    error_responses:
+      - status_code: 400
+        error_code: "U011"
+        description: "Resource cannot be found — the ConsentId is unknown or already consumed."
+        ui_action: "Abandon and return to send-money."
+      - status_code: 401
+        error_code: "UK.OBIE.Header.Invalid"
+        description: "Client-credentials payments token expired."
+        ui_action: "Re-mint the token and re-poll."
+
+response_shape:
+  OBWriteDomesticConsentResponse5:
+    Data:
+      ConsentId: string
+      Status: string          # AWAU AwaitingAuthorisation -> AUTH Authorised | RJCT Rejected
+      CreationDateTime: string
+      StatusUpdateDateTime: string
+      Initiation: object      # Echoed; send-money resends it byte-identically on submit
+    Links:
+      Self: string
+    Meta:
+      TotalPages: integer
+
+  OAuthTokenResponse:
+    access_token: string
+    token_type: string        # Bearer
+    refresh_token: string
+    expires_in: integer
+    scope: string             # payments
+    id_token: string
+
+# ─────────────────────────────────────────────────────────────────────────
+# REUSE MAP — what already ships and must not be rebuilt
+#
+# Key renamed `path:` -> `source_ref:` on 2026-08-02. These are Kotlin SOURCE
+# references, never HTTP endpoints, but framework-verify-api-contract-orphan.sh
+# ACO-1 matches every `- path:` line in an api.yaml regardless of its parent
+# block, so all five were reported as orphan endpoints with no matching
+# Service.kt method. The gate defect is framework-side and stays open there
+# (FW-2); this rename is the project-side fix, and `source_ref` reads truer for
+# a file reference than `path` did.
+# ─────────────────────────────────────────────────────────────────────────
+existing_source_surface:
+  reusable:
+    - source_ref: "core/data/.../callback/PendingAuthStore.kt"
+      note: "state/nonce/consentId stash with a single-use consume(); reuse the contract verbatim"
+    - source_ref: "cmp-navigation ConsentRedirectBus (per-platform publish/collect)"
+      note: "Android onCreate/onNewIntent, desktop loopback, iOS bridge — already wired"
+    - source_ref: "core/network/api/OAuth.kt exchangeAuthorizationCode"
+      note: "Token-exchange call shape; needs a payments-scope variant"
+    - source_ref: "core/network/BuildClientAssertion.kt"
+      note: "private_key_jwt client assertion — unchanged for this flow"
+  must_not_reuse:
+    - source_ref: "core/data/.../callback/ConsentSession.kt saveConsentMeta / token persistence"
+      note: >-
+        Persisting a payment token here would flip isActive() semantics and overwrite the AIS
+        session token. The payment token is held in memory for the life of the payment only.
+  missing:
+    - "payments-scope client-credentials token path — OAuth.kt mints accounts scope only"
+    - "Pisp.kt Ktorfit client for the consent-status read"

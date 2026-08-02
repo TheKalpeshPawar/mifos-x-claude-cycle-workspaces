@@ -1,0 +1,46 @@
+id: transaction-review
+version: "1.0.0"
+name: "Transaction History and Detail"
+description: >
+  Priya opens the transaction list for an account, applies date and credit/debit filters
+  to narrow results, and taps a specific transaction to see full detail including merchant,
+  category tag, amount, booking date, and any enriched narrative. Category tags are applied
+  client-side to feed the PFM feature.
+persona:
+  archetype: "returning user — transaction investigator"
+  jtbd: "Check recent transactions to reconcile my spending and identify where my money went this month."
+  context: "End-of-month review, settling into an armchair with a cup of tea to go through outgoings."
+  knowledge_level: familiar
+  emotional_state: "focused and investigative"
+goal: "Filter the transaction list and read the full detail of a chosen transaction to understand a spending item."
+success_metric:
+  name: "transaction-detail-task-completion"
+  kind: task_completion
+  target: ">=80% of sessions opening transactions also open at least one transaction-detail"
+  measurement: "Sequential funnel: transactions_screen_viewed → transaction_detail_opened, same session"
+screen_sequence:
+  - screen_id: transactions
+    state: "populated"
+    user_intent: "Browse recent transactions and apply credit/debit and date filters to find specific entries."
+    success_signal: "Transaction rows render with merchant name, amount, debit/credit indicator, booking date, and category chip. Filter UI responds to taps."
+    notes: "Pagination loads additional transactions on scroll. Search field allows free-text merchant filter."
+  - screen_id: transaction-detail
+    state: "populated"
+    user_intent: "Read the full detail of a selected transaction — merchant, category, transaction type, booking and value dates, and narrative."
+    success_signal: "Detail screen shows transaction ID, amount, dates, merchant name, category tag with colour, and enriched narrative field."
+expected_outcome: >
+  Priya has identified the transaction she was looking for, read its full detail, and
+  can confirm the merchant, amount, category, and booking date. The category tag is
+  consistent with the PFM spending breakdown for the same period.
+tier: medium
+preconditions:
+  - "Active consent and valid PSU access token with ReadTransactionsDetail permission."
+  - "At least one transaction exists for the selected account."
+failure_modes:
+  - cause: "GET /transactions returns consent-expired error (UK.OBIE.Resource.ConsentMismatch)."
+    recovery_screen: consent-list
+    notes: "In-screen banner prompts re-consent. User is routed to consent management then re-auth."
+  - cause: "No transactions found for the applied filter combination."
+    recovery_screen: transactions
+    notes: "Empty state within transactions screen with 'Clear filters' CTA — no navigation change."
+tags: [transactions, pfm, filtering, p0]

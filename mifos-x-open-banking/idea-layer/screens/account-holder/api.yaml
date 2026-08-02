@@ -1,0 +1,69 @@
+sibling: api
+schema_version: "4.0"
+feature_id: account-holder
+
+screen_id: account-holder
+
+# Reverse-synced from source 2026-07-28.
+# The previously-declared `parties` endpoint was removed: Aisp.getParties() exists on
+# the network client but no store, repository or view model consumes it. This screen
+# reads the singular /party endpoint only.
+
+endpoints:
+  - id: party
+    method: GET
+    path: "/accounts/{AccountId}/party"
+    # Retargeted 2026-07-30 (/idea-data-flow F5). Was `PartyResponse`, the SOURCE-side
+    # class name (core/network/model/ais/party/PartyResponse.kt). Every other dto ref in
+    # the idea-layer — 23 of 24 — uses the OBIE wire name, which is what dtos/ registers.
+    # OBReadParty2 carries the source_binding back to PartyResponse.kt, so nothing is lost.
+    response_dto: OBReadParty2
+    permission: ReadParty
+    requires_auth: true
+    path_params:
+      AccountId: string
+    source_binding:
+      client: "Aisp.getParty(accountId): NetworkResult<PartyResponse, NetworkError>"
+      store: "BankingStores.partyStore(aisp): Store<String, PartyProfile>"
+      mapper: "PartyResponse.toPartyProfile() — core/data/banking/mapper/PartyMapper.kt"
+      repository: "ProfileRepository.profileStream(accountId, scope): ScreenDataStream<PartyProfile>"
+    notes: "Returns the single account holder linked to the account. Requires ReadParty in the active consent. The mapper flattens the wire shape into the PartyProfile domain model before it reaches the view model."
+    response:
+      status: 200
+      schema: PartyResponse
+      data_path: "Data.Party"
+      wire_fields:
+        - "PartyId: string"
+        - "Name: string (optional)"
+        - "FullLegalName: string (optional)"
+        - "PartyType: string (optional)"
+        - "EmailAddress: string (optional)"
+        - "Phone: string (optional)"
+        - "Mobile: string (optional)"
+        - "Address: PartyAddress (optional)"
+      domain_model:
+        name: PartyProfile
+        fields:
+          - "partyId: String"
+          - "displayName: String — Party.resolveName(); blank routes the screen to Empty"
+          - "roleLabel: String — Party.resolveRoleLabel()"
+          - "initials: String — derived from displayName via toInitials()"
+          - "email: String"
+          - "mobile: String — Party.resolveMobile()"
+          - "addressLine: String — PartyAddress.toAddressLine(), a single flattened string (source does NOT model an OBPostalAddress8 array)"
+    errors:
+      http_401: "NetworkError.Client.Unauthorized -> AccountHolderErrorKind.TokenExpired (retriable)"
+      http_403: "NetworkError.Client.Forbidden -> AccountHolderErrorKind.ConsentMissingParty (NOT retriable; retry CTA suppressed)"
+      http_404: "NetworkError.Client.NotFound -> AccountHolderErrorKind.ProfileNotFound (NOT retriable)"
+      http_200_empty: "PartyProfile.isEmpty (blank displayName) -> AccountHolderUiState.Empty via emptyIfContent"
+      http_500: "-> AccountHolderErrorKind.LoadFailed (retriable)"
+      network: "ScreenState.NoNetwork -> AccountHolderErrorKind.LoadFailed (retriable)"
+
+unconsumed_client_surface:
+  # Present on the network client but wired to nothing — recorded so the drift stays visible.
+  - id: parties
+    method: GET
+    path: "/accounts/{AccountId}/parties"
+    client: "Aisp.getParties(accountId): NetworkResult<PartiesResponse, NetworkError>"
+    consumed_by: []
+    note: "No store, repository or feature consumes this. Serialization test exists at core/network/desktopTest/model/ais/parties/PartiesSerializationTest.kt."

@@ -1,0 +1,43 @@
+id: home-overview
+version: "1.0.0"
+name: "Home Dashboard Overview"
+description: >
+  Priya opens the app directly to the Home tab after a previous successful consent.
+  The dashboard presents the currently selected account's hero balance card, quick-action
+  chips (Transactions, Statements, Manage Consents), recent transactions list, and a
+  spending-snapshot card powered by client-side PFM analytics — giving a complete
+  financial overview in one glance without navigating deeper.
+persona:
+  archetype: "returning user — daily financial pulse check"
+  jtbd: "See my current balance and latest transactions at a glance without opening multiple screens."
+  context: "Morning routine check — 30 seconds before leaving the house, already wearing a coat."
+  knowledge_level: familiar
+  emotional_state: "time-pressured and action-oriented"
+goal: "Get a complete financial snapshot for the selected account from the Home tab without navigating away."
+success_metric:
+  name: "home-time-to-financial-snapshot"
+  kind: time_to_value
+  target: "Hero balance and at least 3 recent transactions visible within 2 seconds of screen appearing (cached data path)"
+  measurement: "Performance trace: home_screen_created → first_meaningful_paint (balance + recent-tx rows) via Firebase Performance"
+screen_sequence:
+  - screen_id: home
+    state: "populated"
+    user_intent: "Read the hero balance, scan recent transactions, and note the spending snapshot — all without tapping anything."
+    success_signal: "Hero balance card shows account name and InterimAvailable balance; at least 3 recent transaction rows render with merchant and amount; spending snapshot card shows this-month totals. Account switcher chip is visible for multi-account users."
+    notes: "Account switcher in the hero card allows switching the selected account without leaving the screen. Stale data (>1h) shows a 'Refresh' banner. Home auto-navigates to login if access token is absent."
+expected_outcome: >
+  Priya has read her current balance, confirmed the most recent transactions match
+  her expectations, and noted her month-to-date spending — all within the Home tab
+  in under 30 seconds. No navigation was required.
+tier: minimal
+preconditions:
+  - "Active consent and valid PSU access token."
+  - "Cached or freshly fetched accounts, balances, and transactions data available."
+failure_modes:
+  - cause: "Access token expired — app detects 401 on home data load."
+    recovery_screen: login
+    notes: "Home shows 'Session expired — reconnect' empty state with CTA. Tapping navigates to login for fresh consent."
+  - cause: "No authorised accounts (empty GET /accounts response)."
+    recovery_screen: home
+    notes: "Empty state on home screen shows 'No accounts connected' with 'Connect HSBC' CTA routing to onboarding-consent flow."
+tags: [home, dashboard, balances, transactions, pfm, p0]
