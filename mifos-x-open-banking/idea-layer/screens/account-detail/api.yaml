@@ -1,77 +1,26 @@
 sibling: api
 schema_version: "4.0"
 feature_id: account-detail
-api:
-  - id: obp_get_account_detail
-    endpoint: "GET /obp/v4.0.0/banks/{bankId}/accounts/{accountId}/owner/account"
-    tag: Accounts
-    auth: DirectLogin
-    note: "Shipped accountDetail() owner-view endpoint (v4.0.0). bankId defaults to config.bankId when blank. Returns owners + account_attributes + routings + number + balance (the no-view /account path returns OBP-10404)."
-    params:
-      - name: bankId
-        type: path
-        value: "gh.29.uk"
-      - name: accountId
-        type: path
-    response:
-      fields:
-        - name: account_id
-          type: String
-        - name: label
-          type: String
-        - name: product_code
-          type: String
-        - name: account_type
-          type: String
-        - name: number
-          type: String
-        - name: iban
-          type: String
-        - name: balance
-          type: object
-          children:
-            - name: currency
-              type: String
-            - name: amount
-              type: String
-        - name: account_routings
-          type: "List<AccountRouting>"
-          children:
-            - name: scheme
-              type: String
-            - name: address
-              type: String
-        - name: account_attributes
-          type: "List<AccountAttribute>"
-          children:
-            - name: name
-              type: String
-            - name: type
-              type: String
-            - name: value
-              type: String
-        - name: owners
-          type: "List<AccountOwner>"
-          children:
-            - name: display_name
-              type: String
-    errors:
-      - code: 401
-        message: "Unauthorized"
-      - code: 404
-        message: "Account not found"
 
-  - id: resolve_bank_name
-    resolution: bank_name
-    via: BanksRepository.bankName(bankId)
-    note: "VM-side resolution of the owning bank display name; not a screen-owned endpoint."
+screen_id: account-detail
 
-  - id: resolve_account_holder
-    resolution: account_holder_name
-    via: CustomersRepository.accountHolderName(bankId, accountId)
-    note: "VM-side resolution of the real holder legal name (Owner customer-account link); owners[].display_name fallback. Never an OBP login username."
+endpoints:
+  - id: account-detail
+    method: GET
+    path: "/accounts/{AccountId}"
+    response_dto: OBReadAccount6
+    permission: ReadAccountsDetail
+    requires_auth: true
+    path_params:
+      AccountId: string
+    notes: "Returns single account metadata — subtype, identification, currency, servicer."
 
-deferred_apis:
-  - id: obp_get_account_transactions
-    endpoint: "GET /obp/v3.0.0/banks/{bankId}/accounts/{accountId}/owner/transactions"
-    reason: "Recent-transactions list removed from shipped account-detail; transaction history reached via the ACTIVITY 'Transaction history' row navigating to the transactions screen."
+  - id: balances
+    method: GET
+    path: "/accounts/{AccountId}/balances"
+    response_dto: OBReadBalance1
+    permission: ReadBalances
+    requires_auth: true
+    path_params:
+      AccountId: string
+    notes: "Returns all balance types for the account (InterimAvailable, InterimBooked, OpeningBooked, etc.)."

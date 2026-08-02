@@ -1,12 +1,12 @@
 ---
-ui_yaml_sha: 32104a29c04c671ed5b57d3bf8d3f614dc3c4a3c7f3991600922913889eb8f9c
-design_md_hash: 71b53c295bf863d34057f16264caf37a11512e794d356b3bec219352550d05ec
-app_shell_hash: ad7a6b42b2ae10e63ef270f15d857bd44445d775e8d9b09313b31e6569df95b4
-design_read_hash: 1639ea0545fdbc1ba9ce1eef5369eae224a6f4f57f07f0639b699652daeb8558
-content_hash: dff45c06afc92c26a61292936e498c48293c6dbc38c78cc4c011eba5c44fe50a
+ui_yaml_sha: a83644c564f57763479fd61f951702a4dee9eda3eb15517c033574970019ade6
+design_md_hash: f734ecfba28b3b0688cbd7ca6f3d7fca27febb15fd021d72a4518ae0e3a4200d
+app_shell_hash: 7b9c63f9aee4f5b5005b1d7533e7f5feab6427f398954987c34ee0f382b0ed69
+design_read_hash: 513c061d12f3a90e84d6e98e1e037b131e59fa3ca5c5f3c0abfc6ba87d24bcaf
+content_hash: 331a727a8ae60fbc056947240c3b300e8f1ccbe5b79d04e9084d61ae35236d77
 
-design_read_aesthetic: taste-default
-design_read_dials: {variance: 4, motion: 3, density: 5}
+design_read_aesthetic: minimalist-ui
+design_read_dials: {variance: 3, motion: 2, density: 5}
 aesthetic_variant_override: null
 archetype: skeleton_screen
 
@@ -14,8 +14,8 @@ feature: accounts
 state: loading
 state_visibility: loading
 
-project_id: '17153754672098888646'
-design_system_id: '2005644667042354169'
+project_id: 'null'
+design_system_id: 'null'
 
 generated_by: stitch-prompt-build.ts v2.0.0
 prompt_template_version: stitch-per-state-v3.0.0
@@ -24,38 +24,79 @@ craft_rules_version: v1.0.0
 
 # accounts — loading state
 
-> Auto-generated from screens/accounts/ui.yaml @ SHA 8b6a35515ba1b8cb
-> Stitch DesignSystem: 2005644667042354169
+> Auto-generated from screens/accounts/ui.yaml @ SHA c5d4ec2c596b5a7e
+> Stitch DesignSystem: (pending DESIGN.md upload — run /idea-feature-stitch sub-plan 02)
 > DO NOT redeclare colors / fonts / spacing — they live in DESIGN.md.
 
 ↓↓↓ MOCKUP PROMPT
 
-Design the loading state of the My Accounts screen for **mifos-x-open-banking**, a Open Banking KMP super-app for consumer and field-officer banking built with Compose Multiplatform.
+> DO NOT invent navigation, tabs, or screens beyond the declared app-shell (Home, Accounts, Pay, More) plus the composition below. Every nav item you render MUST come from that list.
+> Only elements that navigate or perform an action may look tappable (cursor, ripple, pressed state). DO NOT add tap affordances to decorative content — page titles, section headings, avatars, standalone icons, badges, and static labels are NOT interactive.
 
-Palette: background #12140E, surface #12140E, onSurface #E3E3D8, primary #B2D188, onPrimary #1F3701, primaryContainer #354E16, secondary #A0CFCB, surfaceContainer #1E201A, surfaceContainerHigh #282A24, outline #8F9285, outlineVariant #44483D, accent #4C662B.
+## Archetype: index_list
 
-**Component 1 — Top App Bar Shimmer** (56dp tall, full width, background #12140E): Left-aligned 120dp x 22dp shimmer for the title; 24dp x 24dp circular shimmer right-inset 16dp for the help icon. Base #1E201A, highlight #282A24, 1200ms sweep. skeleton_screen archetype.
+## Layout
+- type: scrollable_column
+- padding: default
+- alignment: start
+- responsive: any multi-column region MUST be mobile-first and collapse to a single column at narrow/phone widths — never a fixed multi-column grid with no single-column fallback.
 
-**Component 2 — Search Bar Shimmer** (52dp tall, full width minus 32dp insets, top margin 12dp, corner radius 12dp): Single rounded-rectangle shimmer spanning the search field. Base #1E201A, highlight #282A24, 1200ms cadence. No filter tabs.
+## Composition (top → bottom)
+1. **stack** (#loading_skeleton) — "loading_skeleton"
+   - **shimmer** (#skeleton_card_1)
+   - **shimmer** (#skeleton_card_2)
+   - **shimmer** (#skeleton_card_3)
+2. **chip_group** (#account_type_filter)
+3. **list** (#accounts_list) — "accounts_list"
+   - **card** (#account_card) — "account_card"
+      - **stack**
+         - **icon** (#account_type_icon)
+         - **stack** (#account_text_column) — "account_text_column"
+            - **text** (#account_subtype)
+            - **text** (#account_nickname)
+            - **text** (#account_number)
+         - **stack** (#balance_column) — "balance_column"
+            - **text** (#balance_amount)
+            - **badge** (#balance_owed_badge) — label: "{strings.accounts.card.balance.owed_label}"
+4. **empty_state** (#empty_accounts) — title: "{strings.accounts.empty.title}", icon: "account_balance_wallet"
+5. **error_state** (#error_accounts) — "{strings.accounts.error.title}"
+   - **button** (#retry_button) — label: "{strings.accounts.error.retry_button}", on_click: { action: retryload }
 
-**Component 3 — Bank Group 1 Header Shimmer** (36dp tall, full width minus 32dp insets, top margin 20dp): 20dp x 20dp icon shimmer left; 140dp x 14dp name + 80dp x 12dp count stacked center (4dp gap); 64dp x 14dp subtotal shimmer right. Base #1E201A, highlight #282A24.
+## State-specific behavior
+- Show shimmer/skeleton loaders matching the content layout block-for-block — no real text, no images. This is the screen's initial state.
 
-**Component 4 — Account Card Shimmer 1** (88dp tall, full width minus 32dp insets, top margin 8dp, corner radius 12dp, background #1E201A): Top row: 160dp x 16dp label left, 72dp x 20dp pill badge right. Middle: 100dp x 22dp balance shimmer. Bottom: 16dp x 16dp icon + 180dp x 12dp IBAN shimmer, 6dp gap.
+## Content source manifest
+- (no demo collections bound for this state)
 
-**Component 5 — Account Card Shimmer 2** (88dp tall, top margin 8dp, same layout as Component 4): Mirrors Component 4 exactly. Base #282A24, highlight #44483D for visual separation.
+## Components (vocabulary used in this prompt)
+- (no named components extracted — see composition)
 
-**Component 6 — Bank Group 2 Header Shimmer** (36dp tall, full width minus 32dp insets, top margin 20dp): Same structure as Component 3. Base #1E201A, highlight #282A24, 1200ms sweep.
+## Shell (app-shell resolved for this state)
+- Home: navigates to home
+- Accounts: navigates to accounts
+- Pay: navigates to send-money
+- More: navigates to settings
+- Render MUST keep nav/bar elements consistent with the list above — present or absent, never partial.
 
-**Component 7 — Account Card Shimmer 3** (88dp tall, top margin 8dp, same layout as Component 4): Single business account card shimmer, same dimensions and tokens as Component 4.
+## Tokens (design-tokens roles consumed)
+- Colors: primary / secondary / surface / on-surface / on-surface-variant / error (M3 standard roles).
+- Typography: body-large / title-large (M3 standard roles).
+- Spacing: gap.sm / gap.md / gap.lg.
+- ALL token references are by name from the uploaded design system — no hex literals, no inline size values.
 
-**Component 8 — Divider Shimmer** (1dp tall, full width minus 32dp insets, top margin 16dp): Static thin bar, color #44483D, no animation.
+## Self-Validation Checklist (MANDATORY)
 
-**Component 9 — Total Balance Footer Shimmer** (52dp tall, full width minus 32dp insets, top margin 8dp, corner radius 12dp, background #1E201A): 140dp x 14dp label shimmer left, 80dp x 20dp total shimmer right, both vertically centered with 16dp padding.
+Before returning the rendered mockup, verify ALL of these are true. If any fails, FIX the output and re-render.
 
-**Component 10 — FAB Shimmer** (56dp x 56dp, bottom-right, 16dp inset, corner radius 16dp): Square shimmer, base #354E16, highlight #4C662B, for the add account FAB.
+- [ ] **Per-state shape:** the render shows ONLY this state ("loading"). Do not blend multiple states into one mockup.
+- [ ] **Real content:** every text label, image, and data point reflects the content source manifest above — no numbered generic items, no filler text, no dummy text, no empty strings.
+- [ ] **Token fidelity:** colors come from the uploaded design system (primary/secondary/surface/etc.) by name; spacing comes from declared scale tokens. No invented hex codes, no invented size literals.
+- [ ] **Component vocabulary:** every component in the render maps to a named design-system component (Card, FAB, BottomBar, etc.) — no invented or off-system components.
+- [ ] **Archetype honored:** the layout follows the "index_list" archetype skeleton — composition order top → bottom matches the Composition section.
+- [ ] **App-shell parity:** if a bottom nav, top app bar, or FAB appears in the render, it matches the resolved shell from the app-shell config. Shell elements are either present-and-consistent OR absent — never partial.
 
-DO NOT use em-dash anywhere in text. DO NOT make any headline >3 lines or any subtitle >25 words. DO NOT break the page theme between sections. DO NOT place light text on light buttons or dark text on dark buttons.
+If any of these fail and the fix isn't clear → halt rendering and surface "Self-validation failed at: {checkpoint}."
 
-Full vertically scrollable layout on #12140E background. Shimmer placeholders pulse between #1E201A and #282A24 in a calm, steady rhythm signaling data in transit. The earthy accent #B2D188 and grounding #4C662B keep the loading state composed and balanced.
+Return ONLY when all 6 checkpoints pass.
 
 ↑↑↑ MOCKUP PROMPT

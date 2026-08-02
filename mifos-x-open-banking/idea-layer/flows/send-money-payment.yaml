@@ -1,0 +1,76 @@
+# RESHAPED 2026-08-02 by /idea-sync (source-truth pass).
+#
+# This file was authored in the JOURNEY shape while living in flows/: it carried
+# `flow_id` / `screen_sequence` / `steps` / `entry_points` / `error_paths` while the other
+# eight flows carry `id` / `name` / `description` / `type` / `feature_ref` / `release_phase` /
+# `screens` / `entry_screen` / `connections`. Nothing about the content was wrong — the
+# container was — so every step description and success signal is preserved rather than
+# rewritten: the narrative screen_sequence moved to journeys/send-money-payment.yaml (where
+# that key belongs and where this flow previously had no counterpart at all), and the graph
+# is expressed here as screens[] + connections[] like its eight siblings.
+
+id: send-money-payment
+name: send-money-payment
+description: >-
+  The PSU pays a person from one of their own authorised accounts using the HSBC PISP
+  domestic-payment endpoints. This is a consumer payment, not a merchant checkout — the Risk
+  block carries PaymentContextCode TransferToThirdParty (or TransferToSelf for an own-account
+  move) and no merchant fields. The flow spans three features: send-money owns the form and
+  the two writes, payment-consent owns the out-of-app authorise leg, and payment-status owns
+  settlement tracking. All three are specified ahead of source (see each docs.yaml
+  #spec_ahead_of_source) — source has the PISP wire DTOs and a Pay-tab placeholder route, but
+  no feature module yet.
+type: happy
+feature_ref: send-money
+release_phase: P3          # idea-plan.yaml:958-961 — "PISP — consumer domestic payment initiation"
+is_primary_flow: true
+
+screens:
+  - send-money
+  - payment-consent
+  - payment-status
+
+entry_screen: send-money
+
+connections:
+  - { from: send-money, to: payment-consent, type: push, label: "Review confirmed — consent staged (201 AwaitingAuthorisation), app-to-app redirect to HSBC for SCA" }
+  - { from: payment-consent, to: send-money, type: push, label: "Consent Authorised — control returns to submit the payment with the same idempotency key" }
+  - { from: send-money, to: payment-status, type: push, label: "View status from the success state" }
+  - { from: payment-status, to: send-money, type: pop, label: "Back navigation" }
+  - { from: send-money, to: consent-list, type: push, label: "403 payment consent revoked or expired — View Consents (cross-flow → consent-management)" }
+
+# ── Detail beyond the eight sibling flows ────────────────────────────────────
+# Retained from the pre-reshape revision. No other flow declares these two blocks; they are
+# additive and were not dropped simply because the schema does not require them.
+
+steps:
+  - "Pay tab → send-money (replaces the SendMoneyRoute placeholder)"
+  - "Choose funding account from the PSU's own authorised accounts"
+  - "Choose a saved payee, or enter a sort code and account number manually"
+  - "Enter amount and optional reference; local validation against available balance"
+  - "Review the payment and confirm"
+  - "App stages a domestic-payment-consent (payments-scope CC token + detached JWS + idempotency key)"
+  - "App-to-app redirect to HSBC: PSU authenticates (SCA) and approves the payment"
+  - "Callback exchanges the code for a PSU access token"
+  - "App submits the payment reusing the same idempotency key"
+  - "Land on the success state; View status opens payment-status"
+
+entry_points:
+  - source: app-shell
+    detail: "Pay tab, bottom_navigation.items[2] — already declared with target_screen: send-money"
+
+error_paths:
+  - condition: "400 U019 — missing or malformed detached JWS"
+    outcome: "Non-recoverable error with a support reference; no Retry offered"
+  - condition: "400 U009 — consent not Authorised"
+    outcome: "Re-authorise CTA restarts the payment-consent leg"
+  - condition: "400 U014 — payment outside control parameters"
+    outcome: "Return to the amount step, debtor and creditor preserved"
+  - condition: "400 U008 — staged consent does not match the submitted order"
+    outcome: "Discard the staged consent and restart the form"
+  - condition: "403 — payment consent revoked or expired"
+    outcome: "View Consents CTA navigates to consent-list"
+  - condition: "funds-confirmation FundsAvailable=false"
+    outcome: "InsufficientFunds error; the payment is never submitted"
+  - condition: "network failure mid-submit"
+    outcome: "Retry reusing the same idempotency key — cannot produce a duplicate payment"

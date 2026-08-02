@@ -1,938 +1,433 @@
-id: transaction-detail
-name: Transaction Detail
-feature: transaction-detail
-flavor: consumer
-status: approved
-quality_score: 93
-contract_version: "1.1.0"
-approve_hash: "sha256:07af12bd8c96e4f037af12bd8c96e4f037af12bd8c96e4f037af12bd8c96e4f0"
-approved_at: "2026-06-11T14:45:00Z"
-approved_by: "/idea approve"
-approve_predicate_version: "1.0.0"
-approve_contract_version: "1.1.0"
-capabilities:
-  - has_ui
-status_history:
-  - status: designed
-    at: "2026-05-25T00:00:00Z"
-    by: "/idea export"
-    exports: [spec_md, api_md, mockup_md]
-  - from: designed
-    to: approved
-    at: "2026-05-25T13:45:00Z"
-    by: "/idea approve"
-    contract_version: "1.1.0"
-    bypass_flags: []
-  - from: approved
-    to: approved
-    at: "2026-06-06T16:30:00Z"
-    by: "/kmp-implement transaction-detail"
-    contract_version: "1.1.0"
-    note: "Implemented inside feature/transactions (same module as the list — send-money multi-screen pattern, no new gradle module). TransactionDetailViewModel loads via the existing TransactionsRepository.getTransaction (v3.0.0 single-transaction endpoint, already in the client layer); content projects display fields (signed amount + currency symbol, debit=error/credit=primary colors, category from TXN_TYPE fallback detail type, '25 May 2026, 14:32' date-time, reference = transaction UUID). Screen: amount hero on primaryContainer + Completed badge, counterparty card (initial-letter avatar — sandbox has no merchant logos), details card with house 0-elevation style, copy-reference to clipboard with snackbar. Deviations: share top-bar action omitted; download_receipt_button + report_issue_link surface 'coming soon' snackbars (no consumer OBP receipt/dispute endpoint); manage_tags_row navigates to the transaction-tags Phase-2 placeholder as specced; skeleton loading = centered progress indicator (house pattern). Pending payments (transaction-requests INITIATED, SCA challenge unanswered) ALSO open this screen: PendingRow is clickable → requestId load path (no per-request OBP read endpoint, so the request is found in the account's transaction-request list); pending detail shows muted amount, Schedule badge 'Awaiting confirmation', category 'Pending', To row with SEPA IBAN/counterparty, reference = request id; receipt + tags hidden (nothing booked yet). TransactionDetailRoute(bankId, accountId, transactionId, requestId) replaced the arg-less placeholder; wired from transactions rows (booked + pending) AND cards-screen recent-transaction rows (this_account routing from the v6 payload). 11 VM tests (field derivation, credit sign, holder fallback, unparseable date, error, retry, blank-ids empty without API call, pending derivation, request-not-found, list failure, booked-path-not-called)."
-  - from: approved
-    to: enriched
-    at: "2026-06-11"
-    by: "/idea verify --source-drift (write-back)"
-    note: "Reconciled spec to shipped Kotlin. Dual-mode load made explicit: booked path (transactionId → getTransaction v3.0.0) vs pending path (requestId → found in PaymentsRepository.listTransactionRequests). uiState = ScreenState<TransactionDetailContent>; added no_network + unauthenticated states (fold into the same 'Transaction not found' card as error). state_model rewritten to the shipped TransactionDetailContent projection (amount/isDebit/isPending/statusLabel/counterpartyName/category/dateTime/reference/typeLabel/fromAccountLabel/fromAccountTail/toDetail/narrative); statusLabel 'Completed' vs 'Awaiting confirmation'; pending amount unsigned; typeLabel() maps SEPA/SANDBOX_TAN/COUNTERPARTY/DIRECT_DEBIT/STANDING_ORDER; counterpartyName via counterpartyDisplayName(...).ifBlank{'Payment'}; toDetail only populated for pending (SEPA iban/counterparty/sandbox-tan), booked toDetail = ''. Marked deferred: download_receipt_button (no real download — 'coming soon' snackbar), report_issue_link/open_dispute_form (no dispute endpoint), share_transaction top-bar action (omitted). Receipt/tags rows hidden for pending. api.yaml: single-transaction GET (v3.0.0) + added PaymentsRepository.listTransactionRequests (v4.0.0) for the pending path. Counterparty hard-rule documented. Pending re-render + re-approve."
-  - from: enriched
-    to: approved
-    at: "2026-06-11T14:45:00Z"
-    by: "/idea approve"
-    contract_version: "1.1.0"
-    bypass_flags: []
-    note: "Approved after source→spec reconciliation (spec matches shipped Kotlin) + /idea verify PASS. Write-back shape (no approve_hash), consistent with project pattern. Previews for reconciled screens may lag the YAML pending a separate re-render."
+sibling: ui
+schema_version: "4.0"
+feature_id: transaction-detail
 
+screen_id: transaction-detail
+archetype: detail_screen
+name: "Transaction Detail"
+status: implemented
+initial_state: loading
+quality_score: 95
+
+capability_tags:
+  - rest-client
+  - data-display
+  - open-banking-ais
+  - navigation
+
+i18n_coverage: true
+
+status_history:
+  - from: draft
+    to: enriched
+    at: "2026-06-29"
+    by: "/idea-enrich"
+  - from: enriched
+    to: enriched
+    at: "2026-06-29"
+    by: "/idea-enrich"
+    note: "quality push 83→94: i18n, MCC row, currency meta, conditional retry, copy reference, credit-transaction demo, error subtypes"
+  - from: enriched
+    to: enriched
+    at: "2026-07-14"
+    by: "/idea-enrich"
+    note: "quality push 94→95: wire empty state in data-flow (on_empty: empty), reconcile docs.yaml notes, add TC-TXNDTL-010 (empty state) + TC-TXNDTL-011 (network error), fix demo-data fixture comment"
+
+business_logic:
+  kind: crud
+  description: "Resolves a single transaction by transactionId from the in-memory OBReadTransaction6 list fetched via ktorfit on the transactions screen; surfaces Amount (with currency), MerchantDetails.MerchantName, Status, BookingDateTime, ValueDateTime, client-derived Category, MerchantCategoryCode, Balance.Amount, TransactionInformation (with copy-to-clipboard), and ProprietaryBankTransactionCode for a read-only AISP detail view. Retry gated by error.recoverable flag; non-recoverable errors (403 ConsentWithdrawn, TransactionNotFound) show Go Back instead."
+  external_library_refs:
+    - "ktorfit"
+    - "hsbc-obie-ais-v4.0:transactions"
+  description_author: claude
+  description_authored_at: "2026-06-29T12:00:00Z"
+
+# ─────────────────────────────────────────────────────────────────────
+# STATE MODEL — TransactionDetailViewModel contract
+# Derived from docs.yaml#vm_actions + error_cases + impl_notes.
+# Satisfies QUALITY_FORMULA.md Category 10 (State Model, 5 pts).
+# ─────────────────────────────────────────────────────────────────────
+state_model:
+  TransactionDetailViewModel:
+    state:
+      name: TransactionDetailState
+      fields:
+        - name: transactionId
+          type: String
+        - name: accountId
+          type: String
+        - name: uiState
+          type: TransactionDetailUiState
+    screen_state:
+      sealed_class: TransactionDetailUiState
+      members:
+        - Loading
+        - Content    # transaction: OBTransaction6 with client-derived Category
+        - Error      # message: String, recoverable: Boolean
+        - Empty      # transactionId absent in successful OBReadTransaction6 response
+    errors:
+      types:
+        - TokenExpiredError         # 401 — recoverable; show Retry
+        - ConsentWithdrawnError     # 403 — non-recoverable; show Go Back
+        - TransactionNotFoundError  # transactionId absent in result — non-recoverable; routes to Empty state
+        - NetworkError              # IOException — recoverable; show Retry
+    actions:
+      members:
+        - RetryLoad
+        - CopyReference   # data class — copies the transaction reference to the clipboard
+    nav_callbacks:
+      - "onBack -> popBackStack()"
+    di:
+      - SavedStateHandle              # supplies the transactionId and accountId route args
+      - TransactionDetailRepository   # Koin single; transaction-detail stream
+
+# ─────────────────────────────────────────────────────────────────────
+# SOURCE BINDING — reverse-synced from source 2026-07-28
+# ─────────────────────────────────────────────────────────────────────
+implementation:
+  status: implemented
+  source_module: "feature/transaction-detail"
+  package: "org.mifosx.openbanking.feature.transactiondetail"
+  route: "TransactionDetailRoute(transactionId: String, accountId: String)"
+  viewmodel: TransactionDetailViewModel
+  screen: TransactionDetailScreen
+  test_tags_object: TransactionDetailTestTags
+  domain_model: TransactionDetail
+  reachable_from:
+    - "transactions — onNavigateToTransactionDetail"
+    - "home — onNavigateToTransactionDetail (recent transactions section)"
+    - "statement-detail — onNavigateToTransactionDetail (statement transactions)"
+  synced_from_source_at: "2026-07-28"
+  renamed_in_sync:
+    - "copyTransactionReference -> CopyReference"
+    - "TransactionsRepository -> TransactionDetailRepository (a dedicated repository, not the list one)"
+  removed_in_sync:
+    - "loadTransactionDetail action — the initial load is stream collection in init{}"
+    - "navigateBack action — back is a nav-host onBack callback"
+    - "ClipboardService DI — the clipboard is reached inside the CopyReference handler, not injected into the view model constructor"
 
 shell:
-  bottom_nav: false
-  top_app_bar:
-    show: true
-    title: "Transaction Details"
-    navigation_icon: arrow_back
-    navigation_action: navigate_back
-    # Shipped TopAppBar has no actions — the share action was omitted (no share endpoint/intent).
-    actions: []
+  bottom_navigation_visible: false
+  top_app_bar_visible: true
+  top_app_bar_title: "{strings.transaction_detail_screen_title}"
+  top_app_bar_leading: back
+  fab_visible: false
 
-screens:
-  - id: transaction_detail_content
-    label: Transaction Detail
-    route: /transactions/{transactionId}
-    scroll: vertical
+states: [loading, content, error, empty]
 
-archetype: detail_screen
+# TEST TAGS — reconciled against source 2026-08-02 by /idea-sync (source-truth pass).
+test_tags:
+  source: "feature/transaction-detail/src/commonMain/kotlin/org/mifosx/openbanking/feature/transactiondetail/TransactionDetailTestTags.kt"
+  declared_in_source: 24         # all flat consts — this screen has no builder fns
+  bound: 18
+  unbound:
+    - { tag: "transactionDetail:content", why: "Tags the content column wrapping the header fields and detail card; modelled here as siblings bound to [content] with no wrapper." }
+    - { tag: "transactionDetail:referenceCopyIcon", parent: reference_row,
+        why: "The copy affordance is a trailing icon PROPERTY of the reference_row list_item here, not a child component." }
+    - { tag: "transactionDetail:errorTitle", parent: error_state,             why: "Text node modelled as the parent's `title:` field." }
+    - { tag: "transactionDetail:errorBody",  parent: error_state,             why: "Text node modelled as the parent's `body:` field." }
+    - { tag: "transactionDetail:emptyTitle", parent: transaction_empty_state, why: "Text node modelled as the parent's `title:` field." }
+    - { tag: "transactionDetail:emptyBody",  parent: transaction_empty_state, why: "Text node modelled as the parent's `body:` field." }
 
 components:
-  - type: box
-    id: amount_hero_section
-    style:
-      background: "#4C662B"
-      padding_horizontal: spacing.lg
-      padding_top: 28
-      padding_bottom: 36
-      align: center
-    a11y:
-      role: region
-      label: "Transaction amount summary"
+  # ── LOADING STATE ────────────────────────────────────────────────────────────
+  - type: progress_circular
+    state_binding: [loading]
+    accessibility_label: "{strings.transaction_detail_loading}"
+    test_tag: "transactionDetail:loading"
     test_context:
-      tag: amount_hero_section
-      assert_visible: true
+      purpose: "Visual feedback while OBReadTransaction6 list is fetched and filtered by transactionId"
+      required_fields: []
+      interaction_type: display
+      data_driven: false
+
+  # ── NAVIGATION (always visible) ───────────────────────────────────────────────
+  - type: icon_button
+    id: back_button
+    icon: arrow_back
+    accessibility_label: "{strings.transaction_detail_back_a11y}"
+    on_click:
+      action: navigate_back
+      target: transactions
+      action_contract:
+        effect: navigate
+        description: "Pops the transaction-detail screen from the navigation stack, returning the PSU to the transactions list."
+    test_context:
+      purpose: "Pop screen off nav stack returning to transactions list"
+      required_fields: []
+      interaction_type: navigate
+      data_driven: false
+
+  # ── HEADER — AMOUNT ───────────────────────────────────────────────────────────
+  - type: text
+    id: amount_header
+    test_tag: "transactionDetail:amount"
+    state_binding: [content]
+    value: "{transaction.CreditDebitIndicator == 'Credit' ? '+' : '-'}£{transaction.Amount.Amount}"
+    style: displaySmall
+    color: "{transaction.CreditDebitIndicator == 'Credit' ? 'primary' : 'error'}"
+    accessibility_label: "{strings.transaction_detail_amount_a11y_prefix}: {transaction.Amount.Amount} {transaction.Amount.Currency}"
+    test_context:
+      purpose: "Large colour-coded amount header: primary for credit, error for debit; sign prefixed from CreditDebitIndicator"
+      required_fields: [transaction.Amount.Amount, transaction.CreditDebitIndicator]
+      interaction_type: display
+      data_driven: true
+
+  - type: text
+    id: transaction_currency_meta
+    test_tag: "transactionDetail:currency"
+    state_binding: [content]
+    value: "{transaction.Amount.Currency}"
+    style: labelMedium
+    color: onSurfaceVariant
+    accessibility_label: "Currency: {transaction.Amount.Currency}"
+    test_context:
+      purpose: "Currency code (GBP) displayed in muted labelMedium below the amount — confirms ISO 4217 currency for screen-reader users and international PSUs"
+      required_fields: [transaction.Amount.Currency]
+      interaction_type: display
+      data_driven: true
+
+  # ── HEADER — MERCHANT & STATUS ────────────────────────────────────────────────
+  - type: text
+    id: merchant_name
+    test_tag: "transactionDetail:merchant"
+    state_binding: [content]
+    value: "{transaction.MerchantDetails.MerchantName || transaction.TransactionInformation}"
+    style: headlineMedium
+    accessibility_label: "{strings.transaction_detail_merchant_a11y_prefix}: {transaction.MerchantDetails.MerchantName}"
+    test_context:
+      purpose: "Merchant name from OBTransaction6.MerchantDetails.MerchantName; falls back to TransactionInformation when MerchantDetails absent (e.g. direct credits, bank transfers)"
+      required_fields: [transaction.MerchantDetails.MerchantName]
+      interaction_type: display
+      data_driven: true
+
+  - type: chip
+    id: status_badge
+    test_tag: "transactionDetail:statusChip"
+    state_binding: [content]
+    label: "{transaction.Status}"
+    variant: assist
+    color: "{transaction.Status == 'Booked' ? 'primaryContainer' : 'secondaryContainer'}"
+    accessibility_label: "{strings.transaction_detail_status_a11y_prefix}: {transaction.Status}"
+    test_context:
+      purpose: "OBIE Status enum badge (Booked=primaryContainer, Pending=secondaryContainer)"
+      required_fields: [transaction.Status]
+      interaction_type: display
+      data_driven: true
+
+  - type: divider
+    id: header_separator
+    state_binding: [content]
+
+  # ── DETAIL CARD ───────────────────────────────────────────────────────────────
+  - type: card
+    id: detail_card
+    test_tag: "transactionDetail:detailCard"
+    state_binding: [content]
+    elevation: 1
+    test_context:
+      purpose: "Grouped detail card of all supplementary transaction fields from OBTransaction6"
+      required_fields: [transaction.BookingDateTime, transaction.ValueDateTime, transaction.Category, transaction.Balance.Amount.Amount, transaction.TransactionInformation, transaction.ProprietaryBankTransactionCode.Code]
+      interaction_type: display
+      data_driven: true
     children:
       - type: text
-        id: amount_hero_value
-        content: "-£42.50"
-        style:
-          typography: "Outfit/display_large"
-          color: "#BA1A1A"
-          font_weight: 700
-          text_align: center
-        a11y:
-          role: text
-          label: "Debit: forty-two pounds fifty"
+        id: detail_card_header
+        value: "{strings.transaction_detail_card_title}"
+        style: titleSmall
+        color: onSurfaceVariant
+        accessibility_label: "{strings.transaction_detail_card_title}"
+
+      - type: list_item
+        id: booking_date_row
+        test_tag: "transactionDetail:bookingDateRow"
+        label: "{strings.transaction_detail_booking_date}"
+        supporting_text: "{transaction.BookingDateTime}"
+        accessibility_label: "{strings.transaction_detail_booking_date}: {transaction.BookingDateTime}"
         test_context:
-          tag: amount_hero_value
-          assert_content: "-£42.50"
-
-      - type: stack
-        id: status_badge_row
-        style:
-          direction: horizontal
-          justify: center
-          padding_top: spacing.sm
-        children:
-          - type: box
-            id: status_badge
-            style:
-              background: "#4C662B33"
-              border_radius: 20
-              padding_horizontal: spacing.md
-              padding_vertical: 6
-            children:
-              - type: stack
-                id: status_badge_inner
-                style:
-                  direction: horizontal
-                  align: center
-                  spacing: 6
-                children:
-                  - type: icon
-                    id: status_icon
-                    content: "check_circle"
-                    style:
-                      size: 14
-                      color: "#4C662B"
-                    a11y:
-                      role: img
-                      label: "Completed status icon"
-                    test_context:
-                      tag: status_icon
-
-                  # content.statusLabel — "Completed" (booked, check_circle icon) or
-                  # "Awaiting confirmation" (pending, schedule icon, muted color).
-                  - type: text
-                    id: status_label
-                    content: "Completed"
-                    bound_field: statusLabel
-                    style:
-                      typography: "Outfit/label_medium"
-                      color: "#4C662B"
-                    a11y:
-                      role: text
-                      label: "Status: Completed"
-                    test_context:
-                      tag: status_label
-                      assert_content: "Completed"
-
-  - type: box
-    id: merchant_card
-    style:
-      background: "#FFFFFF"
-      border_radius: 20
-      padding: 20
-      margin_horizontal: 20
-      margin_top: -20
-      margin_bottom: spacing.md
-      elevation: 4
-    a11y:
-      role: region
-      label: "Merchant information"
-    test_context:
-      tag: merchant_card
-    children:
-      - type: stack
-        id: merchant_row
-        style:
-          direction: horizontal
-          align: center
-          spacing: 16
-        children:
-          - type: image
-            id: merchant_logo
-            content: "merchant_tesco_large"
-            style:
-              width: 56
-              height: 56
-              border_radius: 28
-              background: "#CDEDA3"
-            a11y:
-              role: img
-              label: "Tesco Supermarket logo"
-            test_context:
-              tag: merchant_logo
-
-          - type: stack
-            id: merchant_info
-            style:
-              direction: vertical
-              flex: 1
-            children:
-              # content.counterpartyName — resolved via counterpartyDisplayName(...).ifBlank{"Payment"}.
-              # NEVER the raw other_account.holder.name (that's the OBP login-username placeholder).
-              # Avatar shows the first letter of this name; sandbox has no merchant logos.
-              - type: text
-                id: merchant_name
-                content: "Tesco Supermarket"
-                bound_field: counterpartyName
-                style:
-                  typography: "Outfit/title_large"
-                  color: "#1A1C16"
-                  font_weight: 600
-                a11y:
-                  role: heading
-                  level: 2
-                  label: "Merchant: Tesco Supermarket"
-                test_context:
-                  tag: merchant_name
-                  assert_content: "Tesco Supermarket"
-
-              - type: box
-                id: category_badge
-                style:
-                  background: "#CDEDA3"
-                  border_radius: 6
-                  padding_horizontal: spacing.sm
-                  padding_vertical: spacing.xs
-                  align_self: flex_start
-                  margin_top: spacing.xs
-                children:
-                  - type: text
-                    id: category_label
-                    content: "Groceries"
-                    style:
-                      typography: "Outfit/label_small"
-                      color: "#4C662B"
-                    a11y:
-                      role: text
-                      label: "Category: Groceries"
-                    test_context:
-                      tag: category_label
-                      assert_content: "Groceries"
-
-  - type: box
-    id: details_card
-    style:
-      background: "#FFFFFF"
-      border_radius: 16
-      padding: 20
-      margin_horizontal: 20
-      margin_bottom: spacing.md
-      elevation: 1
-    a11y:
-      role: region
-      label: "Transaction details"
-    test_context:
-      tag: details_card
-    children:
-      - type: stack
-        id: detail_date_row
-        style:
-          direction: horizontal
-          align: center
-          justify: space_between
-          padding_bottom: spacing.md
-        children:
-          - type: text
-            id: detail_date_label
-            content: "Date & Time"
-            style:
-              typography: "Outfit/label_small"
-              color: "#44483D"
-              letter_spacing: 0.4
-            a11y:
-              role: text
-            test_context:
-              tag: detail_date_label
-
-          - type: text
-            id: detail_date_value
-            content: "25 May 2026, 14:32"
-            style:
-              typography: "Outfit/body_medium"
-              color: "#1A1C16"
-              font_weight: 500
-            a11y:
-              role: text
-              label: "Transaction date: 25 May 2026, 14:32"
-            test_context:
-              tag: detail_date_value
-              assert_content: "25 May 2026, 14:32"
+          purpose: "ISO 8601 BookingDateTime from OBTransaction6 showing when the transaction cleared"
+          required_fields: [transaction.BookingDateTime]
+          interaction_type: display
+          data_driven: true
 
       - type: divider
-        id: detail_div_1
-        style:
-          color: "#F9FAEF"
-          margin_bottom: spacing.md
-        a11y:
-          role: separator
+
+      - type: list_item
+        id: value_date_row
+        test_tag: "transactionDetail:valueDateRow"
+        label: "{strings.transaction_detail_value_date}"
+        supporting_text: "{transaction.ValueDateTime}"
+        accessibility_label: "{strings.transaction_detail_value_date}: {transaction.ValueDateTime}"
         test_context:
-          tag: detail_div_1
-
-      - type: stack
-        id: detail_reference_row
-        style:
-          direction: horizontal
-          align: center
-          justify: space_between
-          padding_bottom: spacing.md
-        children:
-          - type: text
-            id: detail_reference_label
-            content: "Reference"
-            style:
-              typography: "Outfit/label_small"
-              color: "#44483D"
-              letter_spacing: 0.4
-            a11y:
-              role: text
-            test_context:
-              tag: detail_reference_label
-
-          - type: stack
-            id: reference_value_row
-            style:
-              direction: horizontal
-              align: center
-              spacing: 6
-            children:
-              - type: text
-                id: detail_reference_value
-                content: "SEPA-2026051500123"
-                style:
-                  typography: "Outfit/body_small"
-                  color: "#1A1C16"
-                  font_family: monospace
-                a11y:
-                  role: text
-                  label: "Reference: SEPA-2026051500123"
-                test_context:
-                  tag: detail_reference_value
-                  assert_content: "SEPA-2026051500123"
-
-              - type: icon
-                id: copy_reference_icon
-                content: "content_copy"
-                supported_states: [idle, hover, focus_visible, pressed, disabled]
-                style:
-                  size: 16
-                  color: "#4C662B"
-                on_click:
-                  action: copy_reference
-                a11y:
-                  role: button
-                  label: "Copy reference number"
-                keyboard:
-                  focusable: true
-                test_context:
-                  tag: copy_reference_icon
-                  assert_clickable: true
+          purpose: "ISO 8601 ValueDateTime from OBTransaction6 showing effective value date (may differ from BookingDateTime for pending transactions)"
+          required_fields: [transaction.ValueDateTime]
+          interaction_type: display
+          data_driven: true
 
       - type: divider
-        id: detail_div_2
-        style:
-          color: "#F9FAEF"
-          margin_bottom: spacing.md
-        a11y:
-          role: separator
+
+      - type: list_item
+        id: category_row
+        test_tag: "transactionDetail:categoryRow"
+        label: "{strings.transaction_detail_category}"
+        supporting_text: "{transaction.Category}"
+        accessibility_label: "{strings.transaction_detail_category}: {transaction.Category}"
         test_context:
-          tag: detail_div_2
-
-      - type: stack
-        id: detail_type_row
-        style:
-          direction: horizontal
-          align: center
-          justify: space_between
-          padding_bottom: spacing.md
-        children:
-          - type: text
-            id: detail_type_label
-            content: "Transaction Type"
-            style:
-              typography: "Outfit/label_small"
-              color: "#44483D"
-              letter_spacing: 0.4
-            a11y:
-              role: text
-            test_context:
-              tag: detail_type_label
-
-          - type: text
-            id: detail_type_value
-            content: "SEPA Credit Transfer"
-            style:
-              typography: "Outfit/body_medium"
-              color: "#1A1C16"
-              font_weight: 500
-            a11y:
-              role: text
-              label: "Transaction type: SEPA Credit Transfer"
-            test_context:
-              tag: detail_type_value
-              assert_content: "SEPA Credit Transfer"
+          purpose: "Client-derived PFM category from ProprietaryBankTransactionCode.Code MCC lookup (e.g. MCC 5411 → Groceries)"
+          required_fields: [transaction.Category]
+          interaction_type: display
+          data_driven: true
 
       - type: divider
-        id: detail_div_3
-        style:
-          color: "#F9FAEF"
-          margin_bottom: spacing.md
-        a11y:
-          role: separator
+
+      - type: list_item
+        id: mcc_row
+        test_tag: "transactionDetail:mccRow"
+        label: "{strings.transaction_detail_mcc}"
+        supporting_text: "{transaction.MerchantDetails.MerchantCategoryCode}"
+        visible: "{transaction.MerchantDetails.MerchantCategoryCode != null}"
+        accessibility_label: "{strings.transaction_detail_mcc}: {transaction.MerchantDetails.MerchantCategoryCode}"
         test_context:
-          tag: detail_div_3
-
-      - type: stack
-        id: detail_from_row
-        style:
-          direction: horizontal
-          align: flex_start
-          justify: space_between
-          padding_bottom: spacing.md
-        children:
-          - type: text
-            id: detail_from_label
-            content: "From Account"
-            style:
-              typography: "Outfit/label_small"
-              color: "#44483D"
-              letter_spacing: 0.4
-            a11y:
-              role: text
-            test_context:
-              tag: detail_from_label
-
-          - type: stack
-            id: detail_from_value_col
-            style:
-              direction: vertical
-              align: flex_end
-            children:
-              - type: text
-                id: detail_from_account_name
-                content: "Primary Checking"
-                style:
-                  typography: "Outfit/body_medium"
-                  color: "#1A1C16"
-                  font_weight: 500
-                a11y:
-                  role: text
-                test_context:
-                  tag: detail_from_account_name
-                  assert_content: "Primary Checking"
-
-              - type: text
-                id: detail_from_iban
-                content: "...0130"
-                style:
-                  typography: "Outfit/body_small"
-                  color: "#44483D"
-                  font_family: monospace
-                a11y:
-                  role: text
-                  label: "Account ending 0130"
-                test_context:
-                  tag: detail_from_iban
+          purpose: "ISO 18245 Merchant Category Code from OBTransaction6.MerchantDetails.MerchantCategoryCode; conditionally rendered — absent for direct credits, bank transfers, and non-card transactions"
+          required_fields: [transaction.MerchantDetails.MerchantCategoryCode]
+          interaction_type: display
+          data_driven: true
 
       - type: divider
-        id: detail_div_4
-        style:
-          color: "#F9FAEF"
-          margin_bottom: spacing.md
-        a11y:
-          role: separator
+
+      - type: list_item
+        id: balance_after_row
+        test_tag: "transactionDetail:balanceAfterRow"
+        label: "{strings.transaction_detail_balance_after}"
+        trailing_content: "{transaction.Balance.CreditDebitIndicator == 'Credit' ? '' : '-'}£{transaction.Balance.Amount.Amount}"
+        trailing_style: bodyMedium
+        accessibility_label: "{strings.transaction_detail_balance_after}: {transaction.Balance.CreditDebitIndicator == 'Credit' ? '' : 'negative '}£{transaction.Balance.Amount.Amount}"
         test_context:
-          tag: detail_div_4
+          purpose: "Running balance after transaction from OBTransactionCashBalance field; sign derived from Balance.CreditDebitIndicator; type InterimBooked"
+          required_fields: [transaction.Balance.Amount.Amount, transaction.Balance.CreditDebitIndicator]
+          interaction_type: display
+          data_driven: true
 
-      # Shipped: label is "To" when isDebit else "From"; value is content.counterpartyName
-      # (NOT a separate beneficiary name); secondary line = content.toDetail and is only
-      # populated for pending payments (SEPA iban / counterparty id / sandbox-tan accountId) —
-      # booked transactions have toDetail = "" so no secondary line renders.
-      - type: stack
-        id: detail_to_row
-        style:
-          direction: horizontal
-          align: flex_start
-          justify: space_between
-        children:
-          - type: text
-            id: detail_to_label
-            content: "To"
-            dynamic_label: "isDebit ? 'To' : 'From'"
-            style:
-              typography: "Outfit/label_small"
-              color: "#44483D"
-              letter_spacing: 0.4
-            a11y:
-              role: text
-            test_context:
-              tag: detail_to_label
+      - type: divider
 
-          - type: stack
-            id: detail_to_value_col
-            style:
-              direction: vertical
-              align: flex_end
-            children:
-              - type: text
-                id: detail_to_name
-                content: "Tesco PLC"
-                bound_field: counterpartyName
-                style:
-                  typography: "Outfit/body_medium"
-                  color: "#1A1C16"
-                  font_weight: 500
-                a11y:
-                  role: text
-                test_context:
-                  tag: detail_to_name
-                  assert_content: "Tesco PLC"
-
-              # Secondary line — content.toDetail. Pending only; blank for booked transactions.
-              - type: text
-                id: detail_to_iban
-                content: "DE89 3704...0044"
-                bound_field: toDetail
-                visible_when: "toDetail.isNotBlank()"
-                style:
-                  typography: "Outfit/body_small"
-                  color: "#44483D"
-                  font_family: monospace
-                a11y:
-                  role: text
-                  label: "Beneficiary IBAN ending 0044"
-                test_context:
-                  tag: detail_to_iban
-
-  # DEFERRED (shipped as placeholder): no consumer OBP receipt-download endpoint, so tapping
-  # surfaces a 'Receipt download is coming soon' snackbar instead of generating a PDF. Only
-  # rendered for booked transactions (hidden when isPending).
-  - type: button
-    id: download_receipt_button
-    deferred: true
-    deferred_reason: "No OBP receipt-download endpoint; shipped surfaces a 'coming soon' snackbar."
-    visible_when: "!isPending"
-    label: "Download Receipt"
-    supported_states: [idle, hover, focus_visible, pressed, disabled]
-    style:
-      variant: outlined
-      border_color: "#4C662B"
-      text_color: "#4C662B"
-      border_radius: 12
-      padding_vertical: 14
-      typography: "Outfit/label_large"
-      margin_horizontal: 20
-      margin_bottom: spacing.sm
-      icon: download
-    on_click:
-      action: notify_coming_soon
-    a11y:
-      role: button
-      label: "Download transaction receipt as PDF"
-      hint: "Downloads a PDF receipt for this transaction"
-    keyboard:
-      focusable: true
-    test_context:
-      tag: download_receipt_button
-      assert_clickable: true
-
-  - type: stack
-    id: report_issue_row
-    style:
-      direction: horizontal
-      align: center
-      justify: center
-      padding_bottom: spacing.lg
-    a11y:
-      role: group
-    test_context:
-      tag: report_issue_row
-    children:
-      - type: icon
-        id: report_issue_icon
-        content: "flag"
-        supported_states: [idle, hover, focus_visible, pressed, disabled]
-        style:
-          size: 16
-          color: "#BA1A1A"
-          padding_right: 6
-        a11y:
-          role: img
-          label: "Report icon"
-        test_context:
-          tag: report_issue_icon
-
-      # DEFERRED (shipped as placeholder): no OBP dispute endpoint, so tapping surfaces a
-      # 'Disputes are coming soon' snackbar instead of opening a dispute form.
-      - type: link
-        id: report_issue_link
-        deferred: true
-        deferred_reason: "No OBP dispute endpoint; shipped surfaces a 'coming soon' snackbar."
-        content: "Report an Issue"
-        style:
-          typography: "Outfit/label_medium"
-          color: "#BA1A1A"
+      - type: list_item
+        id: reference_row
+        test_tag: "transactionDetail:referenceRow"
+        label: "{strings.transaction_detail_reference}"
+        supporting_text: "{transaction.TransactionInformation}"
+        trailing_icon: content_copy
         on_click:
-          action: notify_coming_soon
-        a11y:
-          role: link
-          label: "Report an issue with this transaction"
-          hint: "Opens the dispute form for this transaction"
-        keyboard:
-          focusable: true
+          action: copy_to_clipboard
+          value: "{transaction.TransactionInformation}"
+          action_contract:
+            effect: copy_clipboard
+            external_library_refs: ["platform-clipboard-manager"]
+            description: "Copies the TransactionInformation reference string to the system clipboard via platform ClipboardManager and emits a snackbar confirmation to the PSU."
+        accessibility_label: "{strings.transaction_detail_reference}: {transaction.TransactionInformation}. {strings.transaction_detail_copy_reference_a11y}"
         test_context:
-          tag: report_issue_link
-          assert_clickable: true
+          purpose: "Free-text reference from OBTransaction6.TransactionInformation (e.g. TESCO STORES 3476 LONDON); trailing copy-to-clipboard icon triggers CopyTransactionReference VM action"
+          required_fields: [transaction.TransactionInformation]
+          interaction_type: action
+          data_driven: true
 
-  - type: list_item
-    id: manage_tags_row
-    style:
-      direction: horizontal
-      align: center
-      padding_horizontal: 20
-      padding_vertical: 14
-      background: "colors.surface_variant"
-      border_radius: 12
-      margin_horizontal: 20
-      margin_bottom: spacing.sm
-    content:
-      leading_icon: label
-      text: "Tags & Notes"
-      supporting_text: "Add tags or notes to this transaction"
-      trailing_icon: chevron_right
-    on_click:
-      target: transaction-tags
-    a11y:
-      role: button
-      label: "Manage tags and notes for this transaction"
-      hint: "Opens the Tags & Notes screen"
-    keyboard:
-      focusable: true
+      - type: divider
+
+      - type: list_item
+        id: bank_code_row
+        test_tag: "transactionDetail:bankCodeRow"
+        label: "{strings.transaction_detail_bank_code}"
+        supporting_text: "{transaction.ProprietaryBankTransactionCode.Code} · {transaction.ProprietaryBankTransactionCode.Issuer}"
+        accessibility_label: "{strings.transaction_detail_bank_code}: {transaction.ProprietaryBankTransactionCode.Code} {strings.transaction_detail_bank_code_issued_by} {transaction.ProprietaryBankTransactionCode.Issuer}"
+        test_context:
+          purpose: "HSBC proprietary transaction code and issuer from OBTransaction6.ProprietaryBankTransactionCode (e.g. DR · HSBC)"
+          required_fields: [transaction.ProprietaryBankTransactionCode.Code, transaction.ProprietaryBankTransactionCode.Issuer]
+          interaction_type: display
+          data_driven: true
+
+  # ── ERROR STATE ───────────────────────────────────────────────────────────────
+  - type: empty_state
+    id: error_state
+    test_tag: "transactionDetail:errorState"
+    variant: error
+    state_binding: [error]
+    icon: error_outline
+    title: "{strings.transaction_detail_error_title}"
+    body: "{error.message}"
+    accessibility_label: "{strings.transaction_detail_error_title}"
     test_context:
-      tag: manage_tags_row
-      assert_clickable: true
-      assert_nav_target: transaction-tags
+      purpose: "Fallback error surface for 401 token expired (recoverable), 403 consent withdrawn (non-recoverable), or transactionId not found in list (non-recoverable). Retry button conditional on error.recoverable."
+      required_fields: [error.message, error.recoverable]
+      interaction_type: display
+      data_driven: true
+    children:
+      - type: button
+        id: retry_button
+        test_tag: "transactionDetail:retryButton"
+        variant: filled
+        visible: "{error.recoverable}"
+        label: "{strings.transaction_detail_retry}"
+        accessibility_label: "{strings.transaction_detail_retry}"
+        on_click:
+          action: retry_load
+          action_contract:
+            effect: call_api
+            reads_from: transactions
+            external_library_refs: [ktorfit, "hsbc-obie-ais-v4.0:transactions"]
+            description: "Re-fetches GET /accounts/{AccountId}/transactions when error.recoverable is true (401 token expiry or network error) and filters the result by transactionId to resolve the detail record."
+        test_context:
+          purpose: "Trigger retry of OBReadTransaction6 fetch — visible only when error.recoverable is true (401 token expiry, network errors)"
+          required_fields: [error.recoverable]
+          interaction_type: action
+          data_driven: true
 
-  - type: spacer
-    id: bottom_spacer
-    style:
-      height: 16
+      - type: button
+        id: go_back_button
+        test_tag: "transactionDetail:goBackButton"
+        variant: outlined
+        visible: "{!error.recoverable}"
+        label: "{strings.transaction_detail_go_back}"
+        accessibility_label: "{strings.transaction_detail_go_back}"
+        on_click:
+          action: navigate_back
+          action_contract:
+            effect: navigate
+            description: "Pops the transaction-detail screen when a non-recoverable error occurs (403 ConsentWithdrawn or TransactionNotFound); returns the PSU to the transactions list."
+        test_context:
+          purpose: "Navigate back to transactions list — shown when error is non-recoverable (403 ConsentWithdrawn, TransactionNotFoundError). No retry is meaningful."
+          required_fields: [error.recoverable]
+          interaction_type: navigate
+          data_driven: true
 
-responsive:
-  mobile_only: true
-  baseline_width: 390
-
-states:
-  initial_state: loading
-  loading:
-    layout:
-      components_visible: []
-      skeleton:
-        - id: skel_hero
-          type: box
-          style:
-            background: "#4C662B"
-            height: 160
-        - id: skel_merchant
-          type: box
-          style:
-            background: "#E1E4D5"
-            border_radius: 20
-            height: 100
-            margin_horizontal: 20
-            margin_top: -20
-        - id: skel_details
-          type: box
-          style:
-            background: "#E1E4D5"
-            border_radius: 16
-            height: 300
-            margin_horizontal: 20
-            margin_top: spacing.md
-        - id: skel_actions
-          type: box
-          style:
-            background: "#E1E4D5"
-            border_radius: 12
-            height: 52
-            margin_horizontal: 20
-            margin_top: spacing.md
-
-  content:
-    # Booked: all rows render. Pending (isPending): download_receipt_button + manage_tags_row
-    # are hidden (nothing booked yet — no receipt, no tags); report_issue_row still renders.
-    layout:
-      components_visible:
-        - amount_hero_section
-        - merchant_card
-        - details_card
-        - download_receipt_button
-        - manage_tags_row
-        - report_issue_row
-      pending_hidden:
-        - download_receipt_button
-        - manage_tags_row
-
-  error:
-    layout:
-      components_visible: []
-      error_card:
-        id: error_state_card
-        title: "Transaction not found"
-        message: "We could not load this transaction. It may have been removed or there may be a connection issue."
-        action_label: "Retry"
-        action: retry_load
-        icon: cloud_off
-
-  # ScreenState.NoNetwork / Unauthenticated fold into the same 'Transaction not found' card
-  # as error in the shipped composable.
-  no_network:
-    layout:
-      components_visible: []
-      error_card:
-        id: error_state_card
-        title: "Transaction not found"
-        message: "We could not load this transaction. It may have been removed or there may be a connection issue."
-        action_label: "Retry"
-        action: retry_load
-        icon: cloud_off
-
-  unauthenticated:
-    layout:
-      components_visible: []
-      error_card:
-        id: error_state_card
-        title: "Transaction not found"
-        message: "We could not load this transaction. It may have been removed or there may be a connection issue."
-        action_label: "Retry"
-        action: retry_load
-        icon: cloud_off
-
-  empty:
-    layout:
-      components_visible: []
-      empty_card:
-        id: empty_state_card
-        title: "Transaction details not available"
-        message: "No details are available for this transaction. It may have been archived or the record is no longer accessible."
-        action_label: "Go Back"
-        action: navigate_back
-        icon: receipt_long
-
-state_model:
-  view_model: TransactionDetailViewModel
-  # Shipped: a single StateFlow<ScreenState<TransactionDetailContent>>. load() dispatches on the
-  # constructor args — transactionId non-blank → booked path (getTransaction); else requestId
-  # non-blank → pending path (listTransactionRequests, find by id); else ScreenState.Empty.
-  screen_state: "ScreenState<TransactionDetailContent>"
-  state_wrapper: ScreenState
-  screen_states: [Loading, Content, Empty, Error, NoNetwork, Unauthenticated]
-  content_class: TransactionDetailContent
-  content_fields:
-    - name: amount
-      type: String
-      note: "Signed for booked (formatSigned), unsigned for pending (formatUnsigned — money not yet debited)"
-    - name: isDebit
-      type: Boolean
-    - name: isPending
-      type: Boolean
-    - name: statusLabel
-      type: String
-      note: "'Completed' (booked) or 'Awaiting confirmation' (pending)"
-    - name: counterpartyName
-      type: String
-      note: "counterpartyDisplayName(...).ifBlank{'Payment'} — never the raw login-username holder"
-    - name: category
-      type: String
-      note: "categoryLabel(txn) for booked; 'Pending' for pending"
-    - name: dateTime
-      type: String
-      note: "formatDateTime — '25 May 2026, 14:32'"
-    - name: reference
-      type: String
-      note: "txId for booked; request id for pending"
-    - name: typeLabel
-      type: String
-      note: "typeLabel(details.type) — see type_label_map"
-    - name: fromAccountLabel
-      type: String
-    - name: fromAccountTail
-      type: String
-      note: "'...' + last 4 of the account id"
-    - name: toDetail
-      type: String
-      note: "pending only (SEPA iban / counterparty id / sandbox-tan accountId); '' for booked"
-    - name: narrative
-      type: String
-      note: "metadata.narrative for booked; '' for pending"
-  load_modes:
-    booked:
-      trigger: "transactionId.isNotBlank()"
-      source: "TransactionsRepository.getTransaction(bankId, accountId, transactionId)"
-    pending:
-      trigger: "requestId.isNotBlank()"
-      source: "PaymentsRepository.listTransactionRequests(bankId, accountId) → first { it.id == requestId }"
-      note: "No per-request OBP read endpoint, so the request is found in the account's list."
-    empty:
-      trigger: "both blank"
-      result: "ScreenState.Empty"
-  type_label_map:
-    SEPA: "SEPA Credit Transfer"
-    SANDBOX_TAN: "Transfer"
-    COUNTERPARTY: "Counterparty Transfer"
-    DIRECT_DEBIT: "Direct Debit"
-    STANDING_ORDER: "Standing Order"
-    default: "type or 'Payment'"
-  errors:
-    - id: not_found
-      message: "We could not load this transaction. It may have been removed or there may be a connection issue."
-  events:
-    - RetryLoad
-    - CopyReference
-  methods:
-    - name: onRetry
-      note: "re-runs load() (booked or pending per the same constructor args)"
-  side_effects:
-    - name: copy_reference
-      note: "ClipboardManager.setText(reference) + 'Reference copied' snackbar — UI-side, not a VM event"
-    - name: notify_coming_soon
-      note: "Receipt download + Report-an-issue surface 'coming soon' snackbars (no consumer endpoint)"
-  di:
-    - TransactionsRepository
-    - PaymentsRepository
-    - CounterpartyNameResolver
-
-# Counterparty display — HARD RULE (workspaces/mifos-x/CLAUDE.md): counterpartyName comes from
-# counterpartyDisplayName(txn, resolvedNames, placeholder).ifBlank{"Payment"}; the raw
-# other_account.holder.name (OBP login-username placeholder) is never shown.
-
-api:
-  # Booked path — single-transaction read. v3.0.0; no attributes inline, so category falls back
-  # to the detail type when the row was opened without a TXN_TYPE.
-  - id: obp_get_transaction_detail
-    endpoint: "GET /obp/v3.0.0/banks/{bankId}/accounts/{accountId}/owner/transactions/{transactionId}/transaction"
-    tag: Transactions
-    auth: DirectLogin
-    used_for: booked
-    params:
-      - name: bankId
-        type: path
-      - name: accountId
-        type: path
-      - name: transactionId
-        type: path
-    response:
-      fields:
-        - name: id
-          type: String
-        - name: this_account
-          type: object
-        - name: other_account
-          type: object
-          children:
-            - name: id
-              type: String
-            - name: holder
-              type: object
-        - name: details
-          type: object
-          children:
-            - name: type
-              type: String
-            - name: description
-              type: String
-            - name: posted
-              type: String
-            - name: completed
-              type: String
-            - name: value
-              type: object
-              children:
-                - name: currency
-                  type: String
-                - name: amount
-                  type: String
-        - name: metadata
-          type: object
-          children:
-            - name: narrative
-              type: "String?"
-    errors:
-      - code: 401
-        message: "Unauthorized — DirectLogin token missing or expired"
-      - code: 404
-        message: "Transaction not found"
-      - code: 500
-        message: "OBP server error"
-
-  # Pending path — no per-request read endpoint exists, so the request is located in the
-  # account's transaction-request list by requestId.
-  - id: obp_list_transaction_requests
-    endpoint: "GET /obp/v4.0.0/banks/{bankId}/accounts/{accountId}/owner/transaction-requests"
-    tag: Transaction-Requests
-    auth: DirectLogin
-    used_for: pending
-    params:
-      - name: bankId
-        type: path
-      - name: accountId
-        type: path
-    response:
-      fields:
-        - name: transaction_requests
-          type: "List<TransactionRequestSummary>"
-          children:
-            - name: id
-              type: String
-            - name: type
-              type: String
-            - name: status
-              type: String
-            - name: start_date
-              type: String
-            - name: details
-              type: object
-              children:
-                - name: description
-                  type: String
-                - name: to_sepa
-                  type: "object?"
-                - name: to_counterparty
-                  type: "object?"
-                - name: to_sandbox_tan
-                  type: "object?"
-                - name: value
-                  type: object
-                  children:
-                    - name: currency
-                      type: String
-                    - name: amount
-                      type: String
-    errors:
-      - code: 401
-        message: "Unauthorized"
-      - code: 404
-        message: "Account not found"
-
-dependencies:
-  tier: feature
-  features:
-    - transactions
-    - account-detail
+  # ── EMPTY STATE ───────────────────────────────────────────────────────────────
+  - type: empty_state
+    id: transaction_empty_state
+    test_tag: "transactionDetail:emptyState"
+    variant: neutral
+    state_binding: [empty]
+    icon: receipt_long
+    title: "{strings.transaction_detail_empty_title}"
+    body: "{strings.transaction_detail_empty_body}"
+    accessibility_label: "{strings.transaction_detail_empty_title}"
+    test_context:
+      purpose: "Shown when the transactionId route parameter does not match any entry in the OBReadTransaction6 result set (transaction removed from HSBC's window or consent scope narrowed since the list was fetched); distinct from error state as the data fetch succeeded with a valid response but returned zero matching records"
+      required_fields: [icon, title, body]
+      interaction_type: display
+      data_driven: false
+    children:
+      - type: button
+        id: transaction_empty_back_button
+        test_tag: "transactionDetail:emptyBackButton"
+        variant: outlined
+        label: "{strings.transaction_detail_go_back}"
+        accessibility_label: "{strings.transaction_detail_go_back}"
+        on_click:
+          action: navigate_back
+          target: transactions
+          action_contract:
+            effect: navigate
+            description: "Returns the PSU to the transactions list when the selected transactionId yields no matching record in the OBReadTransaction6 response."
+        test_context:
+          purpose: "Returns PSU to the transactions list when the selected transaction yields no detail record"
+          required_fields: [on_click.action, on_click.target]
+          interaction_type: navigate
+          data_driven: false

@@ -1,12 +1,12 @@
 ---
-ui_yaml_sha: f40389aebb44c1ab7cf7d41e2c7831d6dfd06eb9cf01fcd11f6806ecc71dc804
-design_md_hash: 71b53c295bf863d34057f16264caf37a11512e794d356b3bec219352550d05ec
-app_shell_hash: ad7a6b42b2ae10e63ef270f15d857bd44445d775e8d9b09313b31e6569df95b4
-design_read_hash: 1639ea0545fdbc1ba9ce1eef5369eae224a6f4f57f07f0639b699652daeb8558
-content_hash: 73f1f420f603dab870bf4a0a8145753288d792c7243c86e08e41fa568bb11386
+ui_yaml_sha: efa344738ce661263ac9a18f8138ede60254e9ff9f6ce532ed9e003c171afa0d
+design_md_hash: f734ecfba28b3b0688cbd7ca6f3d7fca27febb15fd021d72a4518ae0e3a4200d
+app_shell_hash: 7b9c63f9aee4f5b5005b1d7533e7f5feab6427f398954987c34ee0f382b0ed69
+design_read_hash: 513c061d12f3a90e84d6e98e1e037b131e59fa3ca5c5f3c0abfc6ba87d24bcaf
+content_hash: 4939dbbee9381d594756e307b1136c884fbc9ee5c5ffa1743bc3d4f44d8d32f1
 
-design_read_aesthetic: taste-default
-design_read_dials: {variance: 4, motion: 3, density: 5}
+design_read_aesthetic: minimalist-ui
+design_read_dials: {variance: 3, motion: 2, density: 5}
 aesthetic_variant_override: null
 archetype: error_state
 
@@ -24,28 +24,88 @@ craft_rules_version: v1.0.0
 
 # send-money — error state
 
-> Auto-generated from screens/send-money/ui.yaml @ SHA 21ec36237de2b084
-> Stitch DesignSystem: (pending DESIGN.md upload — run /idea-export-stitch sub-plan 02)
+> Auto-generated from screens/send-money/ui.yaml @ SHA 4444224ef76574dc
+> Stitch DesignSystem: (pending DESIGN.md upload — run /idea-feature-stitch sub-plan 02)
 > DO NOT redeclare colors / fonts / spacing — they live in DESIGN.md.
 
 ↓↓↓ MOCKUP PROMPT
-Design the error state of the send money screen for **Mifos X Open Banking**, a Open Banking KMP super-app — consumer retail banking + field officer agent banking powered by Open Bank Project API v7, built with Compose Multiplatform across Android, iOS, Desktop, and Web.
 
-Palette: primary #B2D188, on_primary #1F3701, primary_container #354E16, on_primary_container #CDEDA3, secondary #A0CFCB, on_secondary #003735, secondary_container #1F4E4B, on_secondary_container #BCEBE7, background #12140E, on_background #E3E3D8, surface #12140E, on_surface #E3E3D8, surface_variant #44483D, on_surface_variant #C5C8BA, surface_container #1E201A, surface_container_high #282A24, outline #8F9285, outline_variant #44483D, error #FFB4AB, pending #E8A317, nav_active_indicator #354E16.
+> DO NOT invent navigation, tabs, or screens beyond the declared app-shell (Home, Accounts, Pay, More) plus the composition below. Every nav item you render MUST come from that list.
+> Only elements that navigate or perform an action may look tappable (cursor, ripple, pressed state). DO NOT add tap affordances to decorative content — page titles, section headings, avatars, standalone icons, badges, and static labels are NOT interactive.
 
-**Component 1 — App Bar** (64dp tall, full width): Title "Send Money" Outfit Medium 18sp #E3E3D8 centered. Leading back-arrow 24dp tinted #B2D188. Background #12140E, zero elevation.
+## Archetype: form
 
-**Component 2 — Hero** (centered, top margin 64dp): 160dp x 160dp illustration of a broken transfer arrow or disconnected bank node rendered in neutral charcoal tones #44483D / #8F9285 on #12140E. Conveys connection failure without harsh alarm. error_state archetype.
+## Layout
+- type: scrollable_column
+- padding: default
+- alignment: start
+- responsive: any multi-column region MUST be mobile-first and collapse to a single column at narrow/phone widths — never a fixed multi-column grid with no single-column fallback.
 
-**Component 3 — Text** (centered, top margin 24dp, horizontal padding 32dp): "Payment service unavailable" Outfit SemiBold 22sp #E3E3D8 centered, max 2 lines.
+## Composition (top → bottom)
+1. **progress_indicator**
+2. **step_indicator** (#form_step_indicator)
+3. **list** (#debtor_account_selector) — "debtor_account_selector"
+   - **list_item** (#debtor_account_row) — on_click: { action: select_debtor_account }
+4. **list** (#creditor_selector) — "creditor_selector"
+   - **list_item** (#creditor_row) — on_click: { action: select_creditor }
+5. **empty_state** (#no_saved_payees) — title: "{strings.send_money.no_payees_title}", icon: "people_outline"
+6. **button** (#manual_creditor_button) — label: "{strings.send_money.enter_manually}", on_click: { action: show_manual_creditor_entry }
+7. **text_field** (#manual_sort_code) — label: "{strings.send_money.sort_code_label}"
+8. **text_field** (#manual_account_number) — label: "{strings.send_money.account_number_label}"
+9. **text_field** (#amount_field) — label: "{strings.send_money.amount_label}"
+10. **text_field** (#reference_field) — label: "{strings.send_money.reference_label}"
+11. **button** (#review_button) — label: "{strings.send_money.review_cta}", on_click: { action: review_payment }
+12. **review_card** (#review_summary) — "review_summary"
+   - **info_row** (#review_from_row) — label: "{strings.send_money.review_from_label}"
+   - **info_row** (#review_to_row) — label: "{strings.send_money.review_to_label}"
+   - **info_row** (#review_amount_row) — label: "{strings.send_money.review_amount_label}"
+   - **info_row** (#review_reference_row) — label: "{strings.send_money.review_reference_label}"
+13. **button** (#confirm_button) — label: "{strings.send_money.confirm_cta}", on_click: { action: confirm_and_stage_consent }
+14. **button** (#cancel_button) — label: "{strings.send_money.cancel_cta}", on_click: { action: cancel_payment }
+15. **progress_indicator** (#submitting_indicator)
+16. **empty_state** (#payment_success) — "{strings.send_money.success_title}"
+   - **button** (#view_payment_status_button) — label: "{strings.send_money.view_status_cta}", on_click: { action: navigate, target: payment-status }
+17. **empty_state** (#error_state) — "{strings.send_money.error_title}"
+   - **button** (#retry_button) — label: "{strings.send_money.retry}", on_click: { action: retry_submit }
+   - **button** (#reauthorise_button) — label: "{strings.send_money.reauthorise}", on_click: { action: navigate, target: payment-consent }
+   - **button** (#view_consents_button) — label: "{strings.send_money.view_consents}", on_click: { action: navigate, target: consent-list }
+   - **button** (#edit_amount_button) — label: "{strings.send_money.edit_amount}", on_click: { action: back_step }
 
-**Component 4 — Text** (centered, top margin 8dp, horizontal padding 48dp): "Check your connection and try again. Your draft has been saved and will not be lost." Outfit Regular 14sp #8F9285 centered, line-height 20sp, max 25 words.
+## State-specific behavior
+- Show an error illustration, a short message, and a single Retry action. No content rails visible.
 
-**Component 5 — Button** (full width minus 64dp insets, top margin 32dp): Filled pill button 48dp tall, 999dp corner radius, background #B2D188, leading refresh icon 20dp #1F3701, label "Retry" Outfit SemiBold 16sp #1F3701 centered.
+## Content source manifest
+- (no demo collections bound for this state)
 
-**Component 6 — Button** (centered, top margin 16dp, bottom 48dp): Text button "Go back" Outfit Medium 14sp #8F9285, no background, 48dp tap target.
+## Components (vocabulary used in this prompt)
+- (no named components extracted — see composition)
 
-Do not use em-dash anywhere in text. Do not make any headline more than 3 lines or any subtitle more than 25 words. Do not break the page theme between sections. Do not place light text on light buttons or dark text on dark buttons.
+## Shell (app-shell resolved for this state)
+- Home: navigates to home
+- Accounts: navigates to accounts
+- Pay: navigates to send-money
+- More: navigates to settings
+- Render MUST keep nav/bar elements consistent with the list above — present or absent, never partial.
 
-Centered layout on #12140E with generous vertical breathing room. The earth-green #B2D188 on the retry button provides a calm, reassuring recovery action, keeping error tones neutral rather than alarming to maintain the trustworthy regulated banking atmosphere.
+## Tokens (design-tokens roles consumed)
+- Colors: primary / secondary / surface / on-surface / on-surface-variant / error (M3 standard roles).
+- Typography: body-large / title-large (M3 standard roles).
+- Spacing: gap.sm / gap.md / gap.lg.
+- ALL token references are by name from the uploaded design system — no hex literals, no inline size values.
+
+## Self-Validation Checklist (MANDATORY)
+
+Before returning the rendered mockup, verify ALL of these are true. If any fails, FIX the output and re-render.
+
+- [ ] **Per-state shape:** the render shows ONLY this state ("error"). Do not blend multiple states into one mockup.
+- [ ] **Real content:** every text label, image, and data point reflects the content source manifest above — no numbered generic items, no filler text, no dummy text, no empty strings.
+- [ ] **Token fidelity:** colors come from the uploaded design system (primary/secondary/surface/etc.) by name; spacing comes from declared scale tokens. No invented hex codes, no invented size literals.
+- [ ] **Component vocabulary:** every component in the render maps to a named design-system component (Card, FAB, BottomBar, etc.) — no invented or off-system components.
+- [ ] **Archetype honored:** the layout follows the "form" archetype skeleton — composition order top → bottom matches the Composition section.
+- [ ] **App-shell parity:** if a bottom nav, top app bar, or FAB appears in the render, it matches the resolved shell from the app-shell config. Shell elements are either present-and-consistent OR absent — never partial.
+
+If any of these fail and the fix isn't clear → halt rendering and surface "Self-validation failed at: {checkpoint}."
+
+Return ONLY when all 6 checkpoints pass.
+
 ↑↑↑ MOCKUP PROMPT

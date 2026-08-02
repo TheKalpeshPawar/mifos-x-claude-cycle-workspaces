@@ -1,12 +1,12 @@
 ---
-ui_yaml_sha: b89d839e6c9e3be9d2a9ef40cf53bd6b62a21124885037343b404ee39dd8d76d
-design_md_hash: 71b53c295bf863d34057f16264caf37a11512e794d356b3bec219352550d05ec
-app_shell_hash: ad7a6b42b2ae10e63ef270f15d857bd44445d775e8d9b09313b31e6569df95b4
-design_read_hash: 1639ea0545fdbc1ba9ce1eef5369eae224a6f4f57f07f0639b699652daeb8558
-content_hash: 5fb79b99aeb3ce0764bce161561fba90cf8634b3fc56a7c8969b258e46bb1d9e
+ui_yaml_sha: 10606eacf96bb4546025d80be9b0028a47285eff63bbf206884f9ae45e53a4c8
+design_md_hash: f734ecfba28b3b0688cbd7ca6f3d7fca27febb15fd021d72a4518ae0e3a4200d
+app_shell_hash: 7b9c63f9aee4f5b5005b1d7533e7f5feab6427f398954987c34ee0f382b0ed69
+design_read_hash: 513c061d12f3a90e84d6e98e1e037b131e59fa3ca5c5f3c0abfc6ba87d24bcaf
+content_hash: 212a963a55536dfe6f20ec1a16417ca1490f0d830b92aa4c27382207204cb283
 
-design_read_aesthetic: taste-default
-design_read_dials: {variance: 4, motion: 3, density: 5}
+design_read_aesthetic: minimalist-ui
+design_read_dials: {variance: 3, motion: 2, density: 5}
 aesthetic_variant_override: null
 archetype: skeleton_screen
 
@@ -14,8 +14,8 @@ feature: home
 state: loading
 state_visibility: loading
 
-project_id: '17153754672098888646'
-design_system_id: '2005644667042354169'
+project_id: 'null'
+design_system_id: 'null'
 
 generated_by: stitch-prompt-build.ts v2.0.0
 prompt_template_version: stitch-per-state-v3.0.0
@@ -24,28 +24,95 @@ craft_rules_version: v1.0.0
 
 # home — loading state
 
-> Auto-generated from screens/home/ui.yaml @ SHA 041f8010d0411280
-> Stitch DesignSystem: 2005644667042354169
+> Auto-generated from screens/home/ui.yaml @ SHA d8d7997b226062c7
+> Stitch DesignSystem: (pending DESIGN.md upload — run /idea-feature-stitch sub-plan 02)
 > DO NOT redeclare colors / fonts / spacing — they live in DESIGN.md.
 
 ↓↓↓ MOCKUP PROMPT
 
-Design the loading state of the home screen for **mifos-x-open-banking**, a Kotlin Multiplatform open-banking super-app for consumer retail banking and field officer agent banking.
+> DO NOT invent navigation, tabs, or screens beyond the declared app-shell (Home, Accounts, Pay, More) plus the composition below. Every nav item you render MUST come from that list.
+> Only elements that navigate or perform an action may look tappable (cursor, ripple, pressed state). DO NOT add tap affordances to decorative content — page titles, section headings, avatars, standalone icons, badges, and static labels are NOT interactive.
 
-Palette: primary #B2D188, on_primary #1F3701, primary_container #354E16, on_primary_container #CDEDA3, secondary #A0CFCB, on_secondary #003735, secondary_container #1F4E4B, background #12140E, surface #12140E, on_surface #E3E3D8, surface_variant #44483D, outline #8F9285, pending #E8A317.
+## Archetype: dashboard
 
-**Component 1 — App Bar** (full width, 56dp tall): Outfit medium 20sp, on_surface #E3E3D8; shimmer rectangle matching greeting text and date lines, background #12140E.
+## Layout
+- type: scrollable_column
+- padding: default
+- alignment: start
+- responsive: any multi-column region MUST be mobile-first and collapse to a single column at narrow/phone widths — never a fixed multi-column grid with no single-column fallback.
 
-**Component 2 — Balance Card** (full width minus 32dp insets, 140dp tall): skeleton_screen shimmer block, surface_container #1E201A fill, radius 16dp; three stacked shimmer bars representing label, balance amount, and masked IBAN; Chip Row of 3 shimmer pill buttons (Send Money, Beneficiaries, View Cards) at bottom, height 36dp each.
+## Composition (top → bottom)
+1. **stack** (#loading_skeleton) — "loading_skeleton"
+   - **shimmer** (#skeleton_hero)
+   - **shimmer** (#skeleton_actions)
+   - **shimmer** (#skeleton_tx_header)
+   - **shimmer** (#skeleton_tx_1)
+   - **shimmer** (#skeleton_tx_2)
+   - **shimmer** (#skeleton_tx_3)
+2. **bottom_sheet** (#account_selector_sheet) — "account_selector_sheet"
+   - **list_item** (#account_selector_row) — on_click: { action: select_account }
+3. **card** (#hero_balance_card) — "hero_balance_card"
+   - **stack**
+      - **stack**
+         - **text** (#hero_account_subtype)
+         - **icon** (#hero_account_icon)
+      - **text** (#hero_nickname)
+      - **text** (#hero_balance)
+      - **stack**
+         - **text** (#hero_available_label)
+         - **text** (#hero_available_amount)
+      - **text** (#hero_identification)
+4. **stack** (#recent_transactions_section) — "recent_transactions_section"
+   - **stack**
+      - **section_header** (#recent_tx_header)
+      - **text_button** (#view_all_transactions_link) — label: "{strings.home.recent_transactions.view_all}", on_click: { action: navigate_transactions, target: transactions }
+   - **list** (#recent_transactions_list) — "recent_transactions_list"
+      - **card** (#recent_tx_row) — "recent_tx_row"
+         - **stack**
+            - **icon** (#tx_category_icon)
+            - **stack**
+               - **text** (#tx_description)
+               - **text** (#tx_date)
+            - **text** (#tx_amount)
+5. **empty_state** (#empty_home) — title: "{strings.home.empty.title}", icon: "account_balance_wallet"
+6. **error_state** (#error_home) — "{strings.home.error.title}"
+   - **button** (#retry_button) — label: "{strings.home.error.retry_button}", on_click: { action: retry_load }
 
-**Component 3 — Chip Row** (full width minus 32dp insets, 40dp): single shimmer bar spanning width, background surface_variant #44483D, radius 999dp; represents total-balance aggregate row.
+## State-specific behavior
+- Show shimmer/skeleton loaders matching the content layout block-for-block — no real text, no images. This is the screen's initial state.
 
-**Component 4 — Card** (full width minus 32dp insets, 56dp each, repeat for 3 transaction rows): each Card is a shimmer skeleton_screen row with icon circle 40dp, two shimmer text bars (merchant name 140dp wide, date/category 100dp wide), and amount + badge shimmer on trailing edge; surface_container_high #282A24 fill.
+## Content source manifest
+- (no demo collections bound for this state)
 
-**Component 5 — Grid** (full width minus 32dp insets, 3 columns, 80dp tall): three shimmer tiles for Standing Orders, ATM and Branches, FX Rates; icon circle 32dp, label bar 48dp wide below each; surface_container #1E201A fill, radius 12dp.
+## Components (vocabulary used in this prompt)
+- (no named components extracted — see composition)
 
-Do not use em-dash anywhere in text. Do not make any headline more than 3 lines or any subtitle more than 25 words. Do not break the page theme between sections. Do not place light text on light buttons or dark text on dark buttons.
+## Shell (app-shell resolved for this state)
+- Home: navigates to home
+- Accounts: navigates to accounts
+- Pay: navigates to send-money
+- More: navigates to settings
+- Render MUST keep nav/bar elements consistent with the list above — present or absent, never partial.
 
-The earth-green accent #4C662B saturates this skeleton_screen with calm assurance, each shimmer pulse a quiet promise that financial data loads with care and precision.
+## Tokens (design-tokens roles consumed)
+- Colors: primary / secondary / surface / on-surface / on-surface-variant / error (M3 standard roles).
+- Typography: body-large / title-large (M3 standard roles).
+- Spacing: gap.sm / gap.md / gap.lg.
+- ALL token references are by name from the uploaded design system — no hex literals, no inline size values.
+
+## Self-Validation Checklist (MANDATORY)
+
+Before returning the rendered mockup, verify ALL of these are true. If any fails, FIX the output and re-render.
+
+- [ ] **Per-state shape:** the render shows ONLY this state ("loading"). Do not blend multiple states into one mockup.
+- [ ] **Real content:** every text label, image, and data point reflects the content source manifest above — no numbered generic items, no filler text, no dummy text, no empty strings.
+- [ ] **Token fidelity:** colors come from the uploaded design system (primary/secondary/surface/etc.) by name; spacing comes from declared scale tokens. No invented hex codes, no invented size literals.
+- [ ] **Component vocabulary:** every component in the render maps to a named design-system component (Card, FAB, BottomBar, etc.) — no invented or off-system components.
+- [ ] **Archetype honored:** the layout follows the "dashboard" archetype skeleton — composition order top → bottom matches the Composition section.
+- [ ] **App-shell parity:** if a bottom nav, top app bar, or FAB appears in the render, it matches the resolved shell from the app-shell config. Shell elements are either present-and-consistent OR absent — never partial.
+
+If any of these fail and the fix isn't clear → halt rendering and surface "Self-validation failed at: {checkpoint}."
+
+Return ONLY when all 6 checkpoints pass.
 
 ↑↑↑ MOCKUP PROMPT

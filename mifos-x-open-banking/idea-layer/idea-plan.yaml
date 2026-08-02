@@ -1,1180 +1,1025 @@
-# idea-plan.yaml — Single source of truth for product vision + plan
-# Created by /idea-plan --from-source on 2026-05-20
-# Updated: 2026-05-27 — full rebuild for Open Banking dual-persona app (39 screens)
-# _source_url: https://github.com/openMF/mifos-x-open-banking.git
+# idea-plan.yaml — mifos-x-open-banking
+# UK Open Banking AISP reference app (Compose Multiplatform, HSBC UK sandbox).
+# Authored 2026-06-29 from a clean slate, grounded in: HSBC AIS endpoint catalogue,
+# OBIE/UK Open Banking standards research, and the verified de-templated KMP source.
+# First draft for review — refine via /idea-plan (MATRIX MODE) then /idea sync.
 
-_creation_mode: source
-_source_url: https://github.com/openMF/mifos-x-open-banking.git
-_overall_quality: 93
+_schema_version: "1.1"
 _wizard_state:
   current_phase: 15
   completed_phases: [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15]
+  skipped_phases: []
+_tags: [§identity, §domain, §repository, §branding, §vision, §personas, §requirements, §features, §screens, §flows, §api_surface, §design_tokens, §technical_decisions, §layers, §release_plan, §release_phases]
+_overall_quality: 74
+_creation_mode: wizard
+_source_url: https://github.com/openMF/mifos-x-open-banking.git
+_api_sources:
+  - id: API-001
+    type: openapi
+    url: https://github.com/openMF/mifos-x-open-banking
+    spec_url: /home/kalpesh/OpenBankingProject/specs/hsbc-sandbox/openapi/account-info-4.0-personal.yaml
+    name: HSBC UK Open Banking — Account & Transaction API (AIS)
+    version: "4.0"
+    auth_schemes: [oauth2-fapi-1.0-advanced, mtls, private_key_jwt]
+    local_path: /home/kalpesh/OpenBankingProject/specs/hsbc-sandbox/openapi/account-info-4.0-personal.yaml
+  - id: API-002
+    type: openapi
+    url: /home/kalpesh/OpenBankingProject/specs/hsbc-sandbox/openapi/dcr-uk.yaml
+    spec_url: /home/kalpesh/OpenBankingProject/specs/hsbc-sandbox/openapi/dcr-uk.yaml
+    name: HSBC UK Open Banking — Dynamic Client Registration (DCR)
+    version: "3.2.1"
+    auth_schemes: [private_key_jwt, jws-ssa]
+    local_path: /home/kalpesh/OpenBankingProject/specs/hsbc-sandbox/openapi/dcr-uk.yaml
+  # Added 2026-07-30 (/idea-evolve PISP scope reversal).
+  - id: API-003
+    type: openapi
+    url: /home/kalpesh/OpenBankingProject/HSBC_Sandbox/specs/hsbc-sandbox/openapi/payment-initiation-4.0-personal.yaml
+    spec_url: /home/kalpesh/OpenBankingProject/HSBC_Sandbox/specs/hsbc-sandbox/openapi/payment-initiation-4.0-personal.yaml
+    name: HSBC UK Open Banking — Payment Initiation API (PIS)
+    version: "4.0"
+    auth_schemes: [oauth2-fapi-1.0-advanced, mtls, private_key_jwt, detached-jws]
+    local_path: /home/kalpesh/OpenBankingProject/HSBC_Sandbox/specs/hsbc-sandbox/openapi/payment-initiation-4.0-personal.yaml
+    scoped_to: "Domestic single payment only — see §vision.scope.out_of_scope for the deferred variants."
+    key_schemas:
+      OBInternalPaymentContext1Code: >-
+        Six-value enum at :2281-2299. Only TransferToThirdParty and TransferToSelf are valid
+        for this consumer app; the other four are merchant contexts.
+      OBRisk1: "Declares no required properties (:2244-2280) — every merchant field is optional and omitted."
+      OBWriteDomestic2DataInitiation: >-
+        Requires InstructionIdentification, EndToEndIdentification, InstructedAmount and
+        CreditorAccount (:2387-2391). DebtorAccount is optional but always supplied here.
+_auto_approved: false
+_context_resources:
+  - id: CR-001
+    type: text
+    source: /home/kalpesh/OpenBankingProject/HSBC_Sandbox/docs/00-HOW-TO-USE-THE-SANDBOX.md
+    local_path: external/HSBC_Sandbox/docs/00-HOW-TO-USE-THE-SANDBOX.md
+    label: HSBC sandbox onboarding + FAPI auth model
+    intent: specification
+    relevant_to: [§api_surface, §technical_decisions, §flows]
+  - id: CR-002
+    type: text
+    source: /home/kalpesh/OpenBankingProject/HSBC_Sandbox/docs/01-account-information-sharing.md
+    local_path: external/HSBC_Sandbox/docs/01-account-information-sharing.md
+    label: HSBC AIS endpoint catalogue (v4.0)
+    intent: specification
+    relevant_to: [§api_surface, §features, §requirements]
 
-# ─── DESIGN READ (canonical brand brief — RULE-DESIGN-READ-001) ────────────
+# ═══════════════════════════════════════════════════════════════════
+# DESIGN READ
+# ═══════════════════════════════════════════════════════════════════
 design_read:
   _schema_version: "1.0"
-  _last_inferred_at: "2026-05-27T00:00:00Z"
-  _signal_sources:
-    - idea-layer/idea-plan.yaml#identity.one_liner
-    - idea-layer/idea-plan.yaml#domain.regulation
-    - idea-layer/idea-plan.yaml#branding
-    - idea-layer/idea-plan.yaml#vision.elevator_pitch
-    - idea-layer/design-system/DESIGN.md
-  reading: "Professional open banking super-app — earth-green M3 palette, card-based layouts, trust-first density with measured motion for consumer + field officer financial workflows"
+  reading: "Trustworthy UK Open Banking account-information app; calm, secure, data-legible retail banking; minimalist Material 3, accessibility-first regulated fintech."
   page_kind: consumer-mobile
-  audience: "Retail banking consumers + microfinance field officers in emerging markets"
-  vibe_language: "professional, trustworthy, clean, financial-stability, accessible, growth"
-  aesthetic_family: taste-default
+  audience: "UK retail bank customers (PSUs) sharing account data, plus Open Banking developers/reviewers evaluating full AISP capability."
+  vibe_language: "trustworthy, calm, secure, clear, minimalist, data-legible, regulated"
+  aesthetic_family: minimalist-ui
   dials:
-    variance: 4
-    motion: 3
+    variance: 3
+    motion: 2
     density: 5
   brand_constraints:
-    accent_color: "#4C662B"
-    typography: "Outfit"
+    accent_color: "#266489"
+    typography: "Roboto"
     theme: auto
     radius_system: soft
-  quiet_constraints: [regulated-industry]
+  quiet_constraints: [accessibility-first, regulated-industry]
+  _last_inferred_at: "2026-06-29T00:00:00Z"
+  _signal_sources: [PROJECT_CONFIG.yaml, "idea-plan.identity.one_liner", "OB-standards research", "HSBC AIS catalogue", "material-theme/ui/theme (Material Theme Builder export — seed primary #266489)"]
 
-# ─── §1 IDENTITY ────────────────────────────────────────────────────────────
-identity:
-  _status: approved
-  _quality_score: 96
-  _source: source_analysis
-  _last_updated: "2026-05-27"
-  _enriched_at: "2026-05-27"
-  _approved_at: "2026-05-27"
-  content:
-    name: mifos-x-open-banking
-    workspace: mifos-x
-    project_type: kmp
-    subtype: kmp-app
-    package_name: org.mifos
-    organization: "Mifos Initiative (openMF)"
-    one_liner: "Open Banking KMP super-app — consumer retail banking + field officer agent banking powered by Open Bank Project API v7, built with Compose Multiplatform across Android, iOS, Desktop, and Web"
-    keywords: [open-banking, kmp, compose-multiplatform, fintech, mifos, obp-api, agent-banking, retail-banking]
+# ═══════════════════════════════════════════════════════════════════
+# SECTIONS
+# ═══════════════════════════════════════════════════════════════════
+sections:
 
-# ─── §2 DOMAIN ──────────────────────────────────────────────────────────────
-domain:
-  _status: approved
-  _quality_score: 92
-  _source: source_analysis
-  _last_updated: "2026-05-27"
-  _enriched_at: "2026-05-27"
-  _approved_at: "2026-05-27"
-  content:
-    category: fintech
-    app_type: production-app
-    subcategory: open-banking
-    industry: banking
-    regulation: "PSD2/Open Banking compliant via OBP API; consent-based data access"
-    competitor_refs:
-      - name: "Mifos Mobile"
-        url: "https://github.com/openMF/mifos-mobile"
-        notes: "Android-only, Fineract API, no OBP — predecessor project"
-      - name: "Revolut"
-        notes: "Consumer-focused neobank — UX benchmark for PFM and cards"
-      - name: "Field Buzz"
-        notes: "Agent banking reference — field officer workflow patterns"
-    notes: "Dual-persona KMP app consuming the Open Bank Project (OBP) REST API v7.0.0. Consumer persona for retail self-service banking; Field Officer persona for agent-assisted onboarding, KYC, and application management."
+  identity:
+    _tag: "§identity"
+    _status: draft
+    _quality_score: 90
+    _source: wizard
+    content:
+      name: mifos-x-open-banking
+      slug: mifos-x-open-banking
+      workspace: mifos-x
+      project_type: kmp
+      # Updated 2026-07-30 (/idea-evolve): the app is no longer AISP-only.
+      one_liner: "UK Open Banking AISP + PISP reference app — read account & transaction data from the HSBC sandbox via the OBIE standard, and send a domestic payment."
+      package_name: org.mifosx.openbanking
 
-# ─── §3 VISION ──────────────────────────────────────────────────────────────
-vision:
-  _status: approved
-  _quality_score: 93
-  _source: source_analysis
-  _last_updated: "2026-05-27"
-  _enriched_at: "2026-05-27"
-  _approved_at: "2026-05-27"
-  content:
-    elevator_pitch: "A production-ready Kotlin Multiplatform open banking application providing consumer self-service banking (accounts, payments, cards, PFM) and field officer agent banking (customer onboarding, KYC review, application management) — powered by Open Bank Project API v7."
-    problem_statement: "Financial institutions adopting open banking standards need a cross-platform reference app that demonstrates both consumer-facing digital banking and agent-assisted field operations, while remaining compliant with OBP API v7 specifications."
-    target_users: "Retail banking consumers managing accounts, payments, and cards across devices; field officers performing customer onboarding, KYC verification, and account application reviews in the field."
-    success_criteria:
-      - "All 21 OBP API tags integrated with Ktorfit service interfaces"
-      - "Both product flavors (consumer + fieldOfficer) ship on Android, iOS, Desktop, Web"
-      - "Offline-first via Room KMP with sync-on-reconnect for critical flows"
-      - "KYC onboarding flow end-to-end in under 5 minutes on field officer persona"
-      - "Consumer can complete send-money flow in under 3 taps from home"
-    scope:
-      - Consumer retail banking (accounts, transactions, payments, cards)
-      - Field officer agent banking (onboarding, KYC, applications)
-      - Personal finance management (spending insights, budgets)
-      - Multi-platform deployment (Android, iOS, Desktop, Web)
-    known_limitations:
-      - No real-time push notifications (polling-based)
-      - OBP sandbox only — production bank integration requires bank-specific OAuth setup
-      - Biometric auth not yet implemented
-    differentiators:
-      - "Dual-persona architecture via product flavors — single codebase, two distinct apps"
-      - "OBP API v7 (not Fineract) — open banking standard, not microfinance-specific"
-      - "Full KMP coverage: Android + iOS + Desktop + Web from shared Kotlin"
+  domain:
+    _tag: "§domain"
+    _status: draft
+    _quality_score: 85
+    _source: wizard
+    content:
+      classification: fintech
+      sub_categories: [open-banking, account-information, aisp, personal-finance]
+      competitor_refs:
+        - name: Emma
+          strengths: [multi-bank aggregation, clean UX]
+        - name: Money Dashboard
+          strengths: [categorisation, PFM]
+        - name: Yolt
+          strengths: [consent-first AIS, smart insights]
 
-# ─── §4 PERSONAS ────────────────────────────────────────────────────────────
-personas:
-  _status: approved
-  _quality_score: 93
-  _source: idea_layer_rebuild
-  _last_updated: "2026-05-27"
-  _enriched_at: "2026-05-27"
-  _approved_at: "2026-05-27"
-  content:
-    - name: Priya
-      role: Consumer (Retail Banking)
-      description: "A retail banking customer who manages multiple accounts, sends money to beneficiaries, tracks spending, and monitors card activity across devices."
-      needs: [Account overview, Transaction history with search, Send money to saved beneficiaries, Card management and freeze, Standing order management, ATM/branch locator, Personal finance insights]
-      jobs_to_be_done:
-        - "When I receive my salary, I want to see it reflected across all my accounts instantly so I can plan my spending."
-        - "When I need to pay rent, I want to send money to my landlord in under 3 taps from the home screen."
-        - "When I travel abroad, I want to check FX rates and find nearby ATMs so I never run out of cash."
-      pain_points: ["Slow cross-platform sync", "Too many taps to complete payments", "No spending categorization"]
-      primary_screens: [home, accounts, transactions, send-money, cards, pfm-dashboard]
-    - name: Kwame
-      role: Field Officer (Agent Banking)
-      description: "A microfinance field officer who visits rural communities to onboard new customers, verify KYC documents, process account applications, and maintain customer relationships."
-      needs: [Customer search and 360-view, KYC document verification, Account application review, Customer onboarding (individual and corporate), Meeting scheduling, Secure messaging with customers]
-      jobs_to_be_done:
-        - "When I visit a village, I want to onboard a new customer end-to-end on my phone before I leave."
-        - "When a customer submits KYC documents, I want to verify them in the field so they don't wait weeks."
-        - "When I have 20 pending applications, I want to review and approve them sorted by urgency."
-      pain_points: ["Limited connectivity in rural areas", "Paper-based fallback for KYC", "No offline queue for applications"]
-      primary_screens: [fo-dashboard, customer-search, customer-onboarding, kyc-review, account-applications]
-    - name: Anika
-      role: Operations Manager
-      description: "A branch or regional manager who monitors field officer performance, reviews agent registrations, and oversees application pipelines."
-      needs: [Dashboard metrics, Application pipeline overview, Agent registration approval, Consent management oversight]
-      jobs_to_be_done:
-        - "When new agents register, I want to verify credentials and approve them before they start field work."
-        - "When I review weekly metrics, I want to see which field officers are falling behind on onboarding targets."
-      pain_points: ["No centralized view of all field officers", "Manual reporting"]
-      primary_screens: [fo-dashboard, account-applications, agent-registration]
+  repository:
+    _tag: "§repository"
+    _status: draft
+    _quality_score: 88
+    _source: wizard
+    content:
+      repo_strategy: existing
+      git_url: https://github.com/openMF/mifos-x-open-banking.git
+      branch: dev
+      fork_workflow: true
+      license: "MPL-2.0"
 
-# ─── §5 BRANDING ────────────────────────────────────────────────────────────
-branding:
-  _status: approved
-  _quality_score: 85
-  _source: source_analysis
-  _last_updated: "2026-05-27"
-  _enriched_at: "2026-05-27"
-  _approved_at: "2026-05-27"
-  content:
-    app_name: "Mifos X Open Banking"
-    primary_color: "#1800B1"
-    accent_color: "#575899"
-    secondary_color: "#5C0068"
-    surface_color: "#FCF8FF"
-    error_color: "#BA1A1A"
-    logo_style: "Material Design 3 — Mifos brand identity"
-    icon_path: "cmp-android/src/main/res/ (launcher icons)"
-    typography_family: "System default (platform-native font stack)"
-    shape_system: "M3 RoundedCornerShape — 8dp cards, 16dp sheets, circle avatars"
-    dark_mode: true
-    consumer_theme: "Deep indigo (#1800B1) — trust, stability, professional banking"
-    field_officer_theme: "Same palette — unified brand across personas"
+  branding:
+    _tag: "§branding"
+    _status: draft
+    _quality_score: 70
+    _source: wizard
+    content:
+      app_name_display: "Open Banking"
+      logo_path: null
+      primary_color: "#266489"
+      accent_color: "#64597B"
+      app_icon_style: rounded
 
-# ─── §6 REPOSITORY ──────────────────────────────────────────────────────────
-repository:
-  _status: approved
-  _quality_score: 95
-  _source: source_analysis
-  _approved_at: "2026-05-27"
-  content:
-    repo_strategy: existing
-    git_url: https://github.com/openMF/mifos-x-open-banking.git
-    fork_url: git@github.com:TheKalpeshPawar/mifos-x-open-banking.git
-    branch: dev
-    fork_workflow: true
-    license: MPL-2.0
+  vision:
+    _tag: "§vision"
+    _status: draft
+    _quality_score: 80
+    _source: wizard
+    content:
+      elevator_pitch: "A reference Account Information app that shows the full power of UK Open Banking — with your consent, securely read every account, balance, transaction, standing order and direct debit from your bank, with no passwords shared."
+      problem_statement: "Bank account data is locked inside each bank's own app, and the only way to share it used to be insecure password sharing. UK Open Banking provides a regulated, consent-based, API-first alternative — but few apps demonstrate the standard's full AISP surface end to end."
+      target_users:
+        - "UK retail bank customers (PSUs) who want to view and share their account information securely."
+        - "Open Banking / fintech developers and reviewers evaluating a complete, standards-strict AISP implementation."
+      success_metrics:
+        - "Every HSBC sandbox AIS resource (accounts, balances, transactions, beneficiaries, standing-orders, direct-debits, scheduled-payments, statements, product, party) is reachable and renders real sandbox data."
+        - "End-to-end FAPI consent journey (DCR → create consent → app-to-app authorize → token → resource) completes against the live HSBC sandbox."
+        - "Consent dashboard supports revoke + 90-day reconfirmation."
+      solution_statement: "A Kotlin Multiplatform (Compose) AISP client that performs the OBIE FAPI 1.0 Advanced consent journey against HSBC and surfaces the complete Account & Transaction API as clear, accessible screens — read-only, no money movement."
+      value_propositions:
+        - "Complete UK Open Banking AISP coverage in one reference app."
+        - "Standards-strict: OBIE Read/Write v4.0 + FAPI 1.0 Advanced security."
+        - "Consent-first and transparent — clear permissions, expiry, and revocation."
+        - "Cross-platform: Android, iOS, Desktop, Web from one codebase."
+      scope:
+        # ── SCOPE REVERSAL 2026-07-30 (/idea-evolve) ────────────────────────
+        # PISP moved out_of_scope -> in_scope. Rationale: core/network already shipped a
+        # complete unconsumed PISP wire-model surface for six payment types, and the Pay
+        # bottom-nav tab already pointed at it via the SendMoneyRoute placeholder — recorded
+        # as §api_surface.out_of_scope_drift on 2026-07-28. This reversal closes that drift
+        # by making the declaration match both the shipped code and the product intent.
+        # Scoped to DOMESTIC single payments only; scheduled, standing-order and every
+        # international variant stay out of scope for now.
+        in_scope:
+          - "AISP read-only account information across all HSBC sandbox AIS resources."
+          - "Full FAPI consent journey + consent lifecycle management (dashboard, revoke, 90-day reconfirm)."
+          # Reworded 2026-07-30 (/idea-sync): the old claim was "Multi-currency account
+          # display (Global Money / Global Wallet)", which implied a dedicated surface that
+          # was never built. What ships is list rendering, so the claim now says only that.
+          - >-
+            Global Money / Global Wallet accounts rendered in the accounts list and account
+            detail — no dedicated multi-currency surface and no Global filter chip.
+          - >-
+            PISP consumer-initiated domestic single payments — the PSU pays a person from
+            their own authorised account. Risk.PaymentContextCode is restricted to the
+            consumer values TransferToThirdParty and TransferToSelf; the merchant-checkout
+            contexts and the merchant Risk fields are forbidden (see
+            screens/send-money/docs.yaml#consumer_context_constraint).
+          - "Detached JWS (x-jws-signature, PS256, b64:false) and x-idempotency-key on every PISP write."
+        out_of_scope:
+          - "PISP domestic scheduled payments and domestic standing orders (wire models ship; no UI)."
+          - "PISP international payments — single, scheduled and standing order (wire models ship, untested)."
+          - "Merchant-initiated / e-commerce checkout payment contexts — this is a consumer app."
+          - "Variable Recurring Payments (VRP), file payments and multi-bill payments."
+          - "Confirmation of Funds (CBPII) as a standalone capability — funds-confirmation is used only inside the payment flow."
+          - "Beneficiary edits — the beneficiaries surface stays read-only."
+          - "Field-officer / agent-banking surfaces (removed — consumer-only app)."
+          - "Production TPP enrolment (sandbox only; production hosts are TBD)."
+          # Moved from in_scope 2026-07-30 (/idea-sync): declared in scope but never built.
+          - >-
+            ATM / branch locator via HSBC Open Data. No screen, repository or Aisp call
+            exists. AccountDetailChip.AtmLocator ships and navigates, but only to
+            PlaceholderScreen("ATM locator").
+          - >-
+            PFM dashboard, spending-by-category, budgets and recurring-subscriptions
+            screens. The client-side primitives ship (SpendingCalculator, SpendingSnapshot,
+            TransactionCategory) but have no production caller and no surface; only the
+            per-transaction category tag under FR-011 remains in scope.
+        scope_change_log:
+          - at: "2026-07-30"
+            by: "/idea-evolve"
+            change: "PISP domestic single payment moved out_of_scope -> in_scope"
+            drift_closed: "§api_surface.out_of_scope_drift (recorded 2026-07-28)"
+            regulatory_note: >-
+              PISP is a distinct FCA permission from AISP. Sandbox operation is unaffected;
+              production payment initiation would require payment-initiation authorisation
+              this project does not hold. Tracked as an ADR, not a blocker.
+      constraints:
+        technical:
+          - "Mutual TLS (mTLS) with HSBC-issued sandbox certs — platform-specific TLS config (expect/actual)."
+          - "FAPI 1.0 Advanced: signed request object, PKCE S256, private_key_jwt client auth, app-to-app redirect."
+          - "Read-only — AIS GETs require no detached x-jws-signature."
+        business:
+          - "Credentials never hardcoded (RULE-CREDS-LIFECYCLE-001); env-var / gitignored materials only."
+          - "GDPR / consent transparency per OBIE Customer Experience Guidelines."
+        assumptions:
+          - "Developer has HSBC sandbox certs + client_id + SSA at /home/kalpesh/OpenBankingProject/HSBC_Sandbox/."
+          - "Target brand: HSBC UK Personal, OBIE v4.0."
+      known_limitations:
+        - description: "Sandbox account subtypes limited to CurrentAccount, Savings, CreditCard, Global Money, Global Wallet (no loans/FD)."
+          planned_version: null
 
-# ─── §7 TECHNICAL_DECISIONS ─────────────────────────────────────────────────
-technical_decisions:
-  _status: approved
-  _quality_score: 96
-  _source: source_analysis
-  _approved_at: "2026-05-27"
-  content:
-    language: kotlin
-    language_version: "2.1.20"
-    ui_framework: compose-multiplatform
-    ui_framework_version: "1.8.2"
-    architecture: mvi
-    state_pattern: "BaseViewModel + ScreenDataStream + Store5"
-    di: koin
-    di_version: "4.1.0"
-    network: ktor-ktorfit
-    network_version: "Ktor 3.2.0 + Ktorfit 2.5.2"
-    database: room-kmp
-    database_version: "Room 2.7.2"
-    navigation: androidx-navigation
-    kmp_arch: stream-first@latest
-    backend_provider: rest
-    backend_api: "Open Bank Project (OBP) API v7.0.0"
-    backend_base_url: "https://apisandbox.openbankproject.com"
-    product_flavors:
-      plugin: "io.github.mobilebytelabs.kmp-product-flavors"
-      flavors: [consumer, fieldOfficer]
+  personas:
+    _tag: "§personas"
+    _status: draft
+    _quality_score: 78
+    _source: wizard
+    content:
+      personas:
+        - name: Priya
+          role: Retail bank customer (PSU)
+          jobs_to_be_done:
+            - "See all my balances and recent transactions in one place."
+            - "Understand and control exactly what data I'm sharing, and revoke it anytime."
+          pain_points:
+            - "Juggling multiple banking apps."
+            - "Not knowing what a third party can see."
+          goals:
+            - "A clear, trustworthy view of my money."
+            - "Confidence that sharing is secure and reversible."
+        - name: Sam
+          role: Open Banking developer / reviewer
+          jobs_to_be_done:
+            - "Evaluate a complete, standards-strict AISP implementation against the HSBC sandbox."
+            - "See the full FAPI consent journey and every AIS resource working end to end."
+          pain_points:
+            - "Most demos cover only accounts + balances."
+            - "FAPI security details (mTLS, JWS, PKCE) are hard to get right."
+          goals:
+            - "A reference that proves the full UK Open Banking AISP surface."
 
-# ─── §8 FEATURES ────────────────────────────────────────────────────────────
-features:
-  _status: approved
-  _quality_score: 93
-  _source: idea_layer_screens
-  _last_updated: "2026-05-27"
-  _enriched_at: "2026-05-27"
-  _approved_at: "2026-05-27"
-  content:
-    # ── Shared Features ──
-    - name: splash
-      flavor: shared
-      description: "App startup screen with logo animation and auth state resolution"
-      priority: P0
-      screen_refs: [splash]
-      api_refs: []
-    - name: login
-      flavor: shared
-      description: "Username/password authentication with OAuth sign-in support via OBP DirectLogin"
-      priority: P0
-      screen_refs: [login]
-      api_refs: [Authentication]
-    - name: forgot-password
-      flavor: shared
-      description: "Self-service password reset via email verification"
-      priority: P1
-      screen_refs: [forgot-password]
-      api_refs: [Authentication]
-    - name: change-password
-      flavor: shared
-      description: "Authenticated password change with current password validation"
-      priority: P1
-      screen_refs: [change-password]
-      api_refs: [Authentication]
-    - name: profile
-      flavor: shared
-      description: "User profile with editable personal information (name, email, phone)"
-      priority: P0
-      screen_refs: [profile]
-      api_refs: [Users]
-    - name: settings
-      flavor: shared
-      description: "App preferences — appearance, notification toggles, security settings"
-      priority: P0
-      screen_refs: [settings]
-      api_refs: []
-    - name: about
-      flavor: shared
-      description: "Application information, version, legal links, open-source licenses"
-      priority: P2
-      screen_refs: [about]
-      api_refs: []
+  requirements:
+    _tag: "§requirements"
+    _status: draft
+    _quality_score: 75
+    _source: wizard
+    content:
+      functional_requirements:
+        - id: FR-001
+          description: "Perform Dynamic Client Registration (DCR) once per brand using the signed SSA to obtain client credentials."
+          priority: must
+          acceptance_criteria: ["POST /register with PS256-signed JWS returns a client_id stored securely."]
+        - id: FR-002
+          description: "Run the FAPI consent journey: client_credentials token → create account-access-consent → app-to-app authorize (auth code + PKCE + signed request object) → token exchange."
+          priority: must
+          acceptance_criteria: ["Consent reaches Authorised; PSU-bound access token + refresh token obtained against the HSBC sandbox."]
+        - id: FR-003
+          description: "List authorised accounts and show account detail."
+          priority: must
+          acceptance_criteria: ["GET /accounts and GET /accounts/{id} render real sandbox data."]
+        - id: FR-004
+          description: "Show balances per account."
+          priority: must
+        - id: FR-005
+          description: "Show transactions with date and credit/debit filtering, plus transaction detail."
+          priority: must
+        - id: FR-006
+          description: "Show beneficiaries, standing orders, direct debits, scheduled payments (read-only)."
+          priority: should
+        - id: FR-007
+          description: "Show statements (list + detail) and account product information and party (account holder) details."
+          priority: should
+        - id: FR-008
+          description: "Provide a consent dashboard: active consents, granted permissions, expiry, revoke, and 90-day reconfirmation."
+          priority: must
+          acceptance_criteria: ["DELETE /account-access-consents/{id} revokes; reconfirm re-runs authorize before 90 days."]
+        # ── FR-009 + FR-010 REMOVED 2026-07-30 (/idea-sync stale reconciliation) ──
+        # Both were orphaned: no features[] entry referenced either, because the
+        # multi-currency and atm-locator features were deleted in the 2026-07-28
+        # reverse sync while their requirements were left behind.
+        #
+        #   FR-009 "Display multi-currency accounts (Global Money / Global Wallet)."
+        #     Removed as a REQUIREMENT, not as behaviour. There is no dedicated
+        #     multi-currency surface and AccountFilter deliberately offers no Global
+        #     chip (a Global Money wallet reports CACC, indistinguishable from a
+        #     current account, so the chip could never match). Global Money and Global
+        #     Wallet accounts DO render in the accounts list under Current, and
+        #     AccountUiType still carries GLOBAL_MONEY / GLOBAL_WALLET — that behaviour
+        #     stays documented in screens/accounts and screens/home.
+        #
+        #   FR-010 "ATM locator via HSBC Open Data (unauthenticated)."
+        #     No screen, no repository, no Aisp call. AccountDetailChip.AtmLocator
+        #     ships and navigates, but only to PlaceholderScreen("ATM locator"); that
+        #     chip stays documented in screens/account-detail as an explicit
+        #     placeholder binding.
+        - id: FR-011
+          description: "Client-side personal finance management derived from AIS transactions: categorization, spending-by-category, monthly budgets, recurring/subscription detection, income-vs-expense, and net worth. No payment initiation; no additional API."
+          priority: should
+          acceptance_criteria: ["Transactions are categorized and summarized in-app; budgets track against category spend; recurring payments are detected from transaction patterns."]
+          retained_because: >-
+            NOT orphaned — the transactions feature still claims it, and the client-side
+            primitives genuinely ship: SpendingCalculator.computeSpendingSnapshot,
+            SpendingSnapshot and the 7-value TransactionCategory enum all exist in
+            core/data. Only the four PFM SCREENS were removed. Scoped down accordingly:
+            the dashboard, budgets and drill-down surfaces are out of scope; the
+            per-transaction category tag is not.
+        # ── PISP requirements added 2026-07-30 (/idea-evolve scope reversal) ──
+        - id: FR-012
+          description: >-
+            Initiate a consumer domestic payment (PISP): the PSU selects one of their own
+            authorised accounts as debtor, a saved payee or a manually entered sort code and
+            account number as creditor, an amount and an optional reference, reviews the
+            payment, and confirms.
+          priority: must
+          acceptance_criteria:
+            - "POST /domestic-payment-consents returns 201 with Status AwaitingAuthorisation."
+            - "POST /domestic-payments returns 201 with a DomesticPaymentId after authorisation."
+            - "Amount is validated against the selected account's available balance before the review step."
+        - id: FR-013
+          description: >-
+            Complete the PISP app-to-app authorisation round trip on scope=payments: validate
+            the redirect state and nonce, exchange the code for a PSU access token, and poll
+            the payment consent until it reaches Authorised.
+          priority: must
+          acceptance_criteria:
+            - "A state or nonce mismatch is rejected before any token exchange is attempted."
+            - "The payments-scope token is never persisted into ConsentSession — the AIS session token is untouched."
+            - "Submit is gated on the consent reaching Authorised, since a non-Authorised consent returns 400 U009."
+        - id: FR-014
+          description: >-
+            Track a submitted payment to settlement via GET /domestic-payments/{PaymentId},
+            mapping OBIE status onto an in-progress / terminal-success / terminal-failure
+            disposition.
+          priority: must
+          acceptance_criteria:
+            - "AcceptedSettlementInProcess renders as in progress and is never described as sent or complete."
+            - "Polling stops on a terminal disposition and never starts on one."
+            - "An unrecognised status fails open to in progress rather than being guessed as success or failure."
+        - id: FR-015
+          description: >-
+            Restrict every payment this app initiates to a consumer payment context.
+            Risk.PaymentContextCode must be TransferToThirdParty or TransferToSelf; the
+            merchant fields MerchantCategoryCode, MerchantCustomerIdentification and
+            DeliveryAddress must never be sent.
+          priority: must
+          rationale: >-
+            OBInternalPaymentContext1Code offers six contexts, four of which describe a
+            merchant collecting from a customer. HSBC's own Postman examples use the merchant
+            shape, so copying them verbatim — the obvious thing to do — would model the wrong
+            application.
+          acceptance_criteria:
+            - "Every staged consent and submitted payment carries a consumer PaymentContextCode."
+            - "No request body contains any of the three merchant Risk fields."
+        - id: FR-016
+          description: >-
+            Sign every PISP write with a detached JWS in the x-jws-signature header (PS256,
+            b64:false plus the crit claims), extending the existing signPs256 primitive.
+          priority: must
+          acceptance_criteria:
+            - "POST /domestic-payment-consents and POST /domestic-payments both carry x-jws-signature."
+            - "Absence of the header is verified to produce 400 U019, and that error is surfaced as non-recoverable with a support reference rather than a Retry."
+        - id: FR-017
+          description: >-
+            Attach an x-idempotency-key (max 40 characters) to every PISP write, generated
+            once per staged payment and reused across the consent stage, the submit, and every
+            retry of either.
+          priority: must
+          acceptance_criteria:
+            - "A retry after a network failure reuses the original key and creates no second payment."
+            - "The same key is used for the consent stage and the subsequent submit."
+      third_party_services:
+        - name: HSBC UK Open Banking sandbox
+          purpose: "Account & Transaction (AIS) API — the data source."
+          integration_type: api
+        - name: Firebase
+          purpose: "Crash + performance observability only."
+          integration_type: sdk
 
-    # ── Consumer Features ──
-    - name: home
-      flavor: consumer
-      description: "Consumer home dashboard with account summary, recent transactions, and quick action shortcuts"
-      priority: P0
-      screen_refs: [home]
-      api_refs: [Accounts, Transactions]
-    - name: accounts
-      flavor: consumer
-      description: "List of all consumer accounts (savings, current, loan) with balance overview"
-      priority: P0
-      screen_refs: [accounts]
-      api_refs: [Accounts]
-    - name: account-detail
-      flavor: consumer
-      description: "Individual account details — balance, recent transactions, account information"
-      priority: P0
-      screen_refs: [account-detail]
-      api_refs: [Accounts, Transactions]
-    - name: transactions
-      flavor: consumer
-      description: "Full transaction history with date filtering, search, and category display"
-      priority: P0
-      screen_refs: [transactions]
-      api_refs: [Transactions]
-    - name: transaction-detail
-      flavor: consumer
-      description: "Individual transaction details, receipt view, and metadata"
-      priority: P0
-      screen_refs: [transaction-detail]
-      api_refs: [Transactions]
-    - name: transaction-tags
-      flavor: consumer
-      description: "Tag, categorize, and annotate transactions for personal finance tracking"
-      priority: P1
-      screen_refs: [transaction-tags]
-      api_refs: [Transactions]
-    - name: send-money
-      flavor: consumer
-      description: "Money transfer — recipient selection, amount entry, and validation"
-      priority: P0
-      screen_refs: [send-money, send-money-amount, sca-challenge, payment-result]
-      api_refs: [TransactionRequests, Counterparties]
-    - name: send-money-confirm
-      flavor: consumer
-      description: "Payment review and confirmation before submission"
-      priority: P0
-      screen_refs: [send-money-confirm]
-      api_refs: [TransactionRequests]
-    - name: beneficiaries
-      flavor: consumer
-      description: "Saved money transfer recipients with search and management"
-      priority: P0
-      screen_refs: [beneficiaries]
-      api_refs: [Counterparties]
-    - name: cards
-      flavor: consumer
-      description: "List of active and inactive payment cards with status indicators"
-      priority: P0
-      screen_refs: [cards]
-      api_refs: [Cards]
-    - name: card-detail
-      flavor: consumer
-      description: "Individual card details — balance, recent transactions, freeze/unfreeze"
-      priority: P0
-      screen_refs: [card-detail]
-      api_refs: [Cards]
-    - name: standing-orders
-      flavor: consumer
-      description: "Recurring automated payment schedules with management actions"
-      priority: P1
-      screen_refs: [standing-orders, standing-order-create]
-      api_refs: [Standing-Orders]
-    - name: direct-debits
-      flavor: consumer
-      description: "Recurring direct debit mandates with cancel/pause actions"
-      priority: P1
-      screen_refs: [direct-debits]
-      api_refs: [Direct-Debits]
-    - name: direct-debit-detail
-      flavor: consumer
-      description: "Individual mandate details, payment history, and cancellation"
-      priority: P1
-      screen_refs: [direct-debit-detail]
-      api_refs: [Direct-Debits]
-    - name: atm-locator
-      flavor: consumer
-      description: "Geolocation-based ATM and branch finder with map and list view"
-      priority: P1
-      screen_refs: [atm-locator]
-      api_refs: [ATM, Branch]
-    - name: fx-rates
-      flavor: consumer
-      description: "Real-time foreign exchange rates dashboard with currency converter"
-      priority: P1
-      screen_refs: [fx-rates]
-      api_refs: [FX]
-    - name: consent-manager
-      flavor: consumer
-      description: "Connected third-party apps management with OAuth consent revocation"
-      priority: P1
-      screen_refs: [consent-manager]
-      api_refs: [Consents]
-    - name: notifications
-      flavor: consumer
-      description: "In-app notification feed for payments, KYC status, and system alerts"
-      priority: P1
-      screen_refs: [notifications]
-      api_refs: [Notifications]
-    - name: pfm-dashboard
-      flavor: consumer
-      description: "Personal Finance Management — spending insights, budgets, category breakdown"
-      priority: P1
-      screen_refs: [pfm-dashboard]
-      api_refs: [Transactions, Products]
-    - name: products
-      flavor: consumer
-      description: "Browsable product catalog — savings accounts, loans, cards, insurance"
-      priority: P1
-      screen_refs: [products]
-      api_refs: [Products]
+  features:
+    _tag: "§features"
+    _status: draft
+    _quality_score: 82
+    _source: wizard
+    content:
+      features:
+        - name: consent-onboarding
+          priority: must
+          description: "User onboarding → OAuth login with HSBC. The app stages an account-access-consent (Permissions array); the PSU authenticates, approves the permission set and selects accounts on HSBC's portal; callback → token. No in-app bank picker (HSBC only) and no in-app permission toggles (approval is on the bank)."
+          acceptance_criteria: ["Consent created with explicit permission list; PSU authenticates + approves on HSBC; token obtained on accept; rejection yields no token and surfaces a clear retry."]
+          requirement_refs: [FR-001, FR-002]
+        - name: consent-dashboard
+          priority: must
+          description: "Active consents, granted permissions, expiry, revoke, and 90-day reconfirmation."
+          acceptance_criteria: ["Revoke calls DELETE consent; reconfirm re-runs authorize."]
+          requirement_refs: [FR-008]
+        - name: home
+          priority: must
+          description: "Home landing tab (bottom-nav order 0) showing the currently selected account — hero balance card, quick actions (Transactions, Statements, Manage consents), recent transactions, and a spending snapshot. An account switcher changes the selected account, which drives the whole screen. Aggregates AIS accounts/balances/transactions client-side; no new endpoint. Consents are surfaced here (and in Settings) since they were removed from the bottom-nav rail."
+          requirement_refs: [FR-003, FR-004, FR-005]
+          dependencies: [accounts, balances, transactions]
+        - name: accounts
+          priority: must
+          description: "List of authorised accounts + account detail."
+          requirement_refs: [FR-003]
+        - name: balances
+          priority: must
+          description: "Current/available balances per account."
+          requirement_refs: [FR-004]
+          dependencies: [accounts]
+        - name: transactions
+          priority: must
+          description: "Transaction history with date + credit/debit filters, search, and per-transaction detail; transactions carry a category tag (auto-categorized) that feeds the PFM feature."
+          requirement_refs: [FR-005, FR-011]
+          dependencies: [accounts]
+        - name: beneficiaries
+          priority: should
+          description: "Saved payees (read-only)."
+          requirement_refs: [FR-006]
+          dependencies: [accounts]
+        - name: standing-orders
+          priority: should
+          description: "Recurring outbound orders (read-only)."
+          requirement_refs: [FR-006]
+          dependencies: [accounts]
+        - name: direct-debits
+          priority: should
+          description: "Direct-debit mandates (read-only)."
+          requirement_refs: [FR-006]
+          dependencies: [accounts]
+        - name: scheduled-payments
+          priority: should
+          description: "Future-dated one-off payments (read-only)."
+          requirement_refs: [FR-006]
+          dependencies: [accounts]
+        - name: statements
+          priority: should
+          description: "Statement list + statement detail."
+          requirement_refs: [FR-007]
+          dependencies: [accounts]
+        - name: product
+          priority: could
+          description: "Account product terms (fees/rates) for BCA/PCA accounts."
+          requirement_refs: [FR-007]
+          dependencies: [accounts]
+        - name: account-holder
+          priority: could
+          description: "Account holder / PSU party details. Renamed from `party` 2026-07-28 to match the shipped module feature/account-holder."
+          requirement_refs: [FR-007]
+          dependencies: [accounts]
+        - name: settings
+          priority: should
+          description: "App settings: appearance (theme dropdown), a Manage Consents shortcut, and About & Legal (privacy policy in a browser, in-app open-source licences, static app version). Reverse-synced 2026-07-28 — biometric app-lock, session timeout and notification preferences were specified but never built."
+          dependencies: [consent-dashboard]
+        - name: licences
+          priority: should
+          description: "Open-source licence readout — a pushed, arg-less screen inside the settings module rendering the bundled MPL text. Source-originated; added to the plan 2026-07-28 because it ships but was never specified."
+          dependencies: [settings]
 
-    # ── Field Officer Features ──
-    - name: fo-dashboard
-      flavor: fieldOfficer
-      description: "Field officer home with daily metrics, pending tasks, and quick action cards"
-      priority: P0
-      screen_refs: [fo-dashboard]
-      api_refs: [Customers, Account-Applications]
-    - name: customer-search
-      flavor: fieldOfficer
-      description: "Find customers by ID, name, or phone with instant search results"
-      priority: P0
-      screen_refs: [customer-search]
-      api_refs: [Customers]
-    - name: customer-detail
-      flavor: fieldOfficer
-      description: "Comprehensive customer 360-degree view — accounts, KYC status, history"
-      priority: P0
-      screen_refs: [customer-detail]
-      api_refs: [Customers, Accounts]
-    - name: customer-profile
-      flavor: fieldOfficer
-      description: "Customer personal information view and edit (address, contact, ID)"
-      priority: P0
-      screen_refs: [customer-profile]
-      api_refs: [Customers]
-    - name: customer-onboarding
-      flavor: fieldOfficer
-      description: "Multi-step individual customer onboarding with KYC document capture"
-      priority: P0
-      screen_refs: [customer-onboarding]
-      api_refs: [Customers]
-    - name: corporate-onboarding
-      flavor: fieldOfficer
-      description: "Multi-step corporate/group customer onboarding with business documentation"
-      priority: P0
-      screen_refs: [corporate-onboarding]
-      api_refs: [Customers]
-    - name: kyc-review
-      flavor: fieldOfficer
-      description: "KYC document verification workflow with approve/reject and notes"
-      priority: P0
-      screen_refs: [kyc-review]
-      api_refs: [KYC]
-    - name: account-applications
-      flavor: fieldOfficer
-      description: "Pipeline of pending account applications with status filters"
-      priority: P0
-      screen_refs: [account-applications]
-      api_refs: [Account-Applications]
-    - name: application-detail
-      flavor: fieldOfficer
-      description: "Individual application review with approval/rejection workflow"
-      priority: P0
-      screen_refs: [application-detail]
-      api_refs: [Account-Applications]
-    - name: customer-messages
-      flavor: fieldOfficer
-      description: "Secure messaging inbox between field officer and assigned customers"
-      priority: P1
-      screen_refs: [customer-messages]
-      api_refs: [Customer-Messages]
-    - name: meetings
-      flavor: fieldOfficer
-      description: "Calendar of scheduled customer meetings with creation and management"
-      priority: P1
-      screen_refs: [meetings]
-      api_refs: [Meetings]
-    - name: agent-registration
-      flavor: fieldOfficer
-      description: "Field officer/agent registration with validation and approval workflow"
-      priority: P1
-      screen_refs: [agent-registration]
-      api_refs: [Agent-Registration]
+        # ── PISP features added 2026-07-30 (/idea-evolve scope reversal) ─────
+        - name: send-money
+          id: send-money
+          priority: must
+          status: scaffold
+          scaffolded_at: "2026-07-30T00:00:00Z"
+          category: payment-initiation
+          description: >-
+            Consumer-initiated domestic payment. Three-step form — funding account, payee,
+            amount — then review and confirm, which stages a domestic-payment-consent and hands
+            off to payment-consent for the bank authorisation. Replaces the Pay tab placeholder
+            (SendMoneyRoute -> PlaceholderScreen("Pay")). Composes with two already-shipped
+            surfaces: accounts supplies the debtor, beneficiaries supplies the creditor.
+          acceptance_criteria:
+            - "Payment stages and submits against the HSBC sandbox with a detached JWS and an idempotency key."
+            - "Risk carries a consumer PaymentContextCode and no merchant fields."
+            - "A retry after a network failure cannot create a duplicate payment."
+          requirement_refs: [FR-012, FR-015, FR-016, FR-017]
+          dependencies: [accounts, beneficiaries, payment-consent, payment-status]
 
-# ─── §9 REQUIREMENTS ────────────────────────────────────────────────────────
-requirements:
-  _status: approved
-  _quality_score: 88
-  _source: idea_layer_screens
-  _last_updated: "2026-05-27"
-  _enriched_at: "2026-05-27"
-  _approved_at: "2026-05-27"
-  content:
-    # Authentication
-    - id: FR-001
-      feature_ref: login
-      description: "User authenticates via OBP DirectLogin (username + password + consumer key) to obtain a session token."
-    - id: FR-002
-      feature_ref: forgot-password
-      description: "User can request a password reset link sent to their registered email."
-    - id: FR-003
-      feature_ref: change-password
-      description: "Authenticated user can change password with current-password verification."
-    # Consumer Banking
-    - id: FR-010
-      feature_ref: home
-      description: "Consumer sees account summary cards, recent transactions, and quick-action shortcuts on the home dashboard."
-    - id: FR-011
-      feature_ref: accounts
-      description: "Consumer can view all accounts (savings, current, loan) with balance and status."
-    - id: FR-012
-      feature_ref: account-detail
-      description: "Consumer can view individual account details including balance history and recent transactions."
-    - id: FR-013
-      feature_ref: transactions
-      description: "Consumer can browse transaction history with date range filtering and text search."
-    - id: FR-014
-      feature_ref: send-money
-      description: "Consumer can initiate a money transfer by selecting a beneficiary, entering amount, and confirming."
-    - id: FR-015
-      feature_ref: beneficiaries
-      description: "Consumer can add, edit, and delete saved transfer recipients."
-    - id: FR-016
-      feature_ref: cards
-      description: "Consumer can view all payment cards, see balances, and navigate to card details."
-    - id: FR-017
-      feature_ref: card-detail
-      description: "Consumer can freeze/unfreeze a card and view card-specific transaction history."
-    - id: FR-018
-      feature_ref: standing-orders
-      description: "Consumer can view and manage recurring automated payments."
-    - id: FR-019
-      feature_ref: direct-debits
-      description: "Consumer can view active direct debit mandates and cancel unwanted ones."
-    - id: FR-020
-      feature_ref: atm-locator
-      description: "Consumer can find nearby ATMs and branches using geolocation."
-    - id: FR-021
-      feature_ref: fx-rates
-      description: "Consumer can view live foreign exchange rates and convert between currencies."
-    - id: FR-022
-      feature_ref: consent-manager
-      description: "Consumer can review and revoke OAuth consents granted to third-party apps."
-    - id: FR-023
-      feature_ref: notifications
-      description: "Consumer receives in-app notifications for payment status, KYC updates, and alerts."
-    - id: FR-024
-      feature_ref: pfm-dashboard
-      description: "Consumer can view spending insights, budget progress, and category breakdowns."
-    - id: FR-025
-      feature_ref: products
-      description: "Consumer can browse available banking products and view terms."
-    - id: FR-026
-      feature_ref: transaction-tags
-      description: "Consumer can tag and categorize transactions for personal tracking."
-    # Field Officer
-    - id: FR-030
-      feature_ref: fo-dashboard
-      description: "Field officer sees daily metrics (customers onboarded, applications pending, meetings today)."
-    - id: FR-031
-      feature_ref: customer-search
-      description: "Field officer can search customers by name, ID number, or phone."
-    - id: FR-032
-      feature_ref: customer-detail
-      description: "Field officer views customer 360: accounts, KYC status, application history."
-    - id: FR-033
-      feature_ref: customer-onboarding
-      description: "Field officer completes multi-step individual customer onboarding (personal info, KYC docs, account selection)."
-    - id: FR-034
-      feature_ref: corporate-onboarding
-      description: "Field officer completes multi-step corporate onboarding (business info, directors, documentation)."
-    - id: FR-035
-      feature_ref: kyc-review
-      description: "Field officer reviews uploaded KYC documents and approves/rejects with notes."
-    - id: FR-036
-      feature_ref: account-applications
-      description: "Field officer reviews pending account applications with filtering by status."
-    - id: FR-037
-      feature_ref: application-detail
-      description: "Field officer approves or rejects an individual account application with comments."
-    - id: FR-038
-      feature_ref: customer-messages
-      description: "Field officer can send and receive secure messages with assigned customers."
-    - id: FR-039
-      feature_ref: meetings
-      description: "Field officer can schedule, view, and manage customer meetings."
-    - id: FR-040
-      feature_ref: agent-registration
-      description: "New agent/field officer can register with required credentials for admin approval."
-    # Consumer Banking — send-money + standing-orders (reverse-engineered from source 2026-06-11)
-    - id: FR-041
-      feature_ref: send-money
-      description: "Consumer enters the transfer amount, selects the beneficiary and payment rail, and sees a live funds check against the source account balance before continuing."
-    - id: FR-042
-      feature_ref: send-money
-      description: "Consumer enters the one-time SCA code to authorise an above-threshold payment (Strong Customer Authentication step) before submission."
-    - id: FR-043
-      feature_ref: send-money
-      description: "Consumer sees a terminal payment confirmation showing the amount, payee, and transaction id, with links to the transaction detail and back to home."
-    - id: FR-044
-      feature_ref: standing-orders
-      description: "Consumer authors a new recurring standing order (amount, frequency, start/end date, beneficiary) and submits it via POST."
+        - name: payment-consent
+          id: payment-consent
+          priority: must
+          status: scaffold
+          scaffolded_at: "2026-07-30T00:00:00Z"
+          category: payment-initiation
+          description: >-
+            Return leg of the PISP app-to-app authorisation on scope=payments — the analogue of
+            the shipped consent-callback, but for a domestic-payment-consent. Validates state and
+            nonce, exchanges the code, and polls the consent to Authorised before handing back to
+            send-money. Deliberately does NOT persist its token into ConsentSession, which holds
+            the AIS data-sharing session.
+          acceptance_criteria:
+            - "State or nonce mismatch is rejected before the single-use authorisation code is spent."
+            - "ConsentSession is never written to."
+            - "Return to send-money is gated on the consent reaching Authorised."
+          requirement_refs: [FR-013]
+          dependencies: [send-money]
 
-# ─── §10 SCREENS ────────────────────────────────────────────────────────────
-screens:
-  _status: approved
-  _quality_score: 95
-  _source: idea_layer_screens
-  _last_updated: "2026-05-27"
-  _enriched_at: "2026-05-27"
-  _approved_at: "2026-05-27"
-  content:
-    # ── Shared (7) ──
-    - name: splash
-      archetype: loading
-      feature_ref: splash
-      flavor: shared
-      states: [loading, navigating]
-    - name: login
-      archetype: form
-      feature_ref: login
-      flavor: shared
-      states: [idle, authenticating, oauth_redirecting, oauth_exchanging, error, content, empty]
-    - name: forgot-password
-      archetype: form
-      feature_ref: forgot-password
-      flavor: shared
-      states: [idle, submitting, success, error, content, empty]
-    - name: change-password
-      archetype: form
-      feature_ref: change-password
-      flavor: shared
-      states: [idle, submitting, success, error, content, empty]
-    - name: profile
-      archetype: profile
-      feature_ref: profile
-      flavor: shared
-      states: [loading, viewing, editing, saving, saved, content, empty, error]
-    - name: settings
-      archetype: settings
-      feature_ref: settings
-      flavor: shared
-      states: [loading, content]
-    - name: about
-      archetype: settings
-      feature_ref: about
-      flavor: shared
-      states: [content]
+        - name: payment-status
+          id: payment-status
+          priority: must
+          status: scaffold
+          scaffolded_at: "2026-07-30T00:00:00Z"
+          category: payment-initiation
+          description: >-
+            Settlement tracking for a submitted payment. Exists because a successful submit
+            returns AcceptedSettlementInProcess, not a completed settlement — without it the PSU
+            is told "sent" with no way to learn whether the money actually moved. Maps OBIE
+            status onto a three-way disposition and polls only while in progress.
+          acceptance_criteria:
+            - "An in-progress payment is never described as sent, complete or successful."
+            - "Polling stops on a terminal disposition and never starts on one."
+            - "An unmapped status fails open to in progress."
+          requirement_refs: [FR-014]
+          dependencies: [send-money]
 
-    # ── Consumer (20) ──
-    - name: home
-      archetype: dashboard
-      feature_ref: home
-      flavor: consumer
-      states: [loading, content, error, empty]
-    - name: accounts
-      archetype: index_list
-      feature_ref: accounts
-      flavor: consumer
-      states: [loading, content, empty, error]
-    - name: account-detail
-      archetype: detail_screen
-      feature_ref: account-detail
-      flavor: consumer
-      states: [loading, content, error, empty]
-    - name: transactions
-      archetype: index_list
-      feature_ref: transactions
-      flavor: consumer
-      states: [loading, content, empty, error, searching]
-    - name: transaction-detail
-      archetype: detail_screen
-      feature_ref: transaction-detail
-      flavor: consumer
-      states: [loading, content, error, empty]
-    - name: transaction-tags
-      archetype: form
-      feature_ref: transaction-tags
-      flavor: consumer
-      states: [loading, view_tags, edit_mode, save_success, content, empty, error]
-    - name: send-money
-      archetype: form
-      feature_ref: send-money
-      flavor: consumer
-      states: [loading, draft, validating, content, empty, error]
-    - name: send-money-amount
-      archetype: form
-      feature_ref: send-money
-      flavor: consumer
-      states: [loading, content, empty, error, no_network, unauthenticated]
-    - name: send-money-confirm
-      archetype: detail_screen
-      feature_ref: send-money-confirm
-      flavor: consumer
-      states: [loading, review, submitting, success, content, empty, error]
-    - name: sca-challenge
-      archetype: form
-      feature_ref: send-money
-      flavor: consumer
-      states: [content, submitting, error]
-    - name: payment-result
-      archetype: detail_screen
-      feature_ref: send-money
-      flavor: consumer
-      states: [content]
-    - name: beneficiaries
-      archetype: index_list
-      feature_ref: beneficiaries
-      flavor: consumer
-      states: [loading, content, empty, searching, error]
-    - name: cards
-      archetype: index_list
-      feature_ref: cards
-      flavor: consumer
-      states: [loading, content, empty, error]
-    - name: card-detail
-      archetype: detail_screen
-      feature_ref: card-detail
-      flavor: consumer
-      states: [loading, content, frozen, error, empty]
-    - name: standing-orders
-      archetype: index_list
-      feature_ref: standing-orders
-      flavor: consumer
-      states: [loading, content, empty, error]
-    - name: standing-order-create
-      archetype: form
-      feature_ref: standing-orders
-      flavor: consumer
-      states: [loading, content, submitting, error]
-    - name: direct-debits
-      archetype: index_list
-      feature_ref: direct-debits
-      flavor: consumer
-      states: [loading, populated, empty, cancel_confirm, error]
-    - name: direct-debit-detail
-      archetype: detail_screen
-      feature_ref: direct-debit-detail
-      flavor: consumer
-      states: [loading, content, error, empty]
-    - name: atm-locator
-      archetype: index_list
-      feature_ref: atm-locator
-      flavor: consumer
-      states: [loading, content, error, empty, location_denied]
-    - name: fx-rates
-      archetype: dashboard
-      feature_ref: fx-rates
-      flavor: consumer
-      states: [loading, content, error, empty]
-    - name: consent-manager
-      archetype: index_list
-      feature_ref: consent-manager
-      flavor: consumer
-      states: [loading, populated, content, empty, revoke_confirm, error]
-    - name: notifications
-      archetype: index_list
-      feature_ref: notifications
-      flavor: consumer
-      states: [loading, populated, empty, error]
-    - name: pfm-dashboard
-      archetype: dashboard
-      feature_ref: pfm-dashboard
-      flavor: consumer
-      states: [loading, populated, empty, no_budget_set, content, error]
-    - name: products
-      archetype: index_list
-      feature_ref: products
-      flavor: consumer
-      states: [loading, populated, empty, error]
+# ── REMOVED 2026-07-28 (reverse sync from source) ────────────────────
+# The following features were specified but have no source implementation.
+# Their screens, exports and mockups were deleted from the idea-layer so the
+# layer describes only what the app actually does.
+#
+#   atm-locator  (FR-010) — AtmLocatorRoute exists but resolves to PlaceholderScreen;
+#                           still reachable from the account-detail Explore chip.
+#   profile      (FR-007) — no route, no module. Sign-out exists only as a side
+#                           effect of revoking a consent (AppLogout).
+#   pfm          (FR-011) — no pfm-dashboard / spending-by-category / budgets /
+#                           recurring-subscriptions screens. Partial primitives DO
+#                           ship in core: SpendingCalculator.computeSpendingSnapshot,
+#                           SpendingSnapshot and the 7-value TransactionCategory enum,
+#                           consumed only by the home spending snapshot.
+#   multi-currency        — no dedicated surface; AccountUiType carries GLOBAL_MONEY
+#                           and GLOBAL_WALLET but AccountFilter offers no Global chip.
 
-    # ── Field Officer (12) ──
-    - name: fo-dashboard
-      archetype: dashboard
-      feature_ref: fo-dashboard
-      flavor: fieldOfficer
-      states: [loading, content, error, empty]
-    - name: customer-search
-      archetype: search
-      feature_ref: customer-search
-      flavor: fieldOfficer
-      states: [idle, searching, results, no_results, error, content, empty]
-    - name: customer-detail
-      archetype: detail_screen
-      feature_ref: customer-detail
-      flavor: fieldOfficer
-      states: [loading, content, error, empty]
-    - name: customer-profile
-      archetype: detail_screen
-      feature_ref: customer-profile
-      flavor: fieldOfficer
-      states: [loading, content, editing, saving, error, empty]
-    - name: customer-onboarding
-      archetype: form
-      feature_ref: customer-onboarding
-      flavor: fieldOfficer
-      states: [submitting, submitted, error, content, empty]
-    - name: corporate-onboarding
-      archetype: form
-      feature_ref: corporate-onboarding
-      flavor: fieldOfficer
-      states: [submitting, submitted, error, content, empty]
-    - name: kyc-review
-      archetype: detail_screen
-      feature_ref: kyc-review
-      flavor: fieldOfficer
-      states: [loading, reviewing, verifying, approved, rejected, content, empty, error]
-    - name: account-applications
-      archetype: index_list
-      feature_ref: account-applications
-      flavor: fieldOfficer
-      states: [loading, content, empty, error]
-    - name: application-detail
-      archetype: detail_screen
-      feature_ref: application-detail
-      flavor: fieldOfficer
-      states: [loading, reviewing, approved, rejected, content, empty, error]
-    - name: customer-messages
-      archetype: index_list
-      feature_ref: customer-messages
-      flavor: fieldOfficer
-      states: [loading, content, empty, error]
-    - name: meetings
-      archetype: index_list
-      feature_ref: meetings
-      flavor: fieldOfficer
-      states: [loading, content, empty, error]
-    - name: agent-registration
-      archetype: form
-      feature_ref: agent-registration
-      flavor: fieldOfficer
-      states: [loading, idle, submitting, validation_error, pending_approval, confirmed, content, empty, error]
+  screens:
+    _tag: "§screens"
+    _status: draft
+    _quality_score: 72
+    _source: wizard
+    content:
+      screens:
+        - name: user-onboarding
+          archetype: onboarding
+          feature_refs: [consent-onboarding]
+          description: "Intro to the app + UK Open Banking — what account data is requested and why, before connecting. No bank picker (HSBC only)."
+        - name: login
+          archetype: login
+          feature_refs: [consent-onboarding]
+          description: "Start OAuth with HSBC. The app stages an account-access-consent (Permissions array), then app-to-app redirects to HSBC where the PSU authenticates (SCA), approves the requested permission set and selects which accounts to share. Permission approval happens on HSBC's portal, not in-app."
+        - name: consent-callback
+          archetype: empty_state
+          feature_refs: [consent-onboarding]
+          description: "Return leg from the bank's app-to-app authorize; exchanges code for token."
+        - name: consent-list
+          archetype: index_list
+          feature_refs: [consent-dashboard]
+          description: "Active consents with status and expiry."
+        - name: consent-detail
+          archetype: detail_screen
+          feature_refs: [consent-dashboard]
+          description: "Granted permissions, expiry, revoke, reconfirm."
+        - name: home
+          archetype: dashboard
+          feature_refs: [home, accounts, balances, transactions]
+          description: "Home landing — currently selected account hero balance, quick actions, recent transactions, spending snapshot, account switcher."
+        - name: accounts
+          # feature_refs cleaned 2026-07-30 (/idea-sync): multi-currency was deleted from
+          # features[] in the 2026-07-28 reverse sync but left dangling here.
+          feature_refs: [accounts]
+          archetype: index_list
+          description: >-
+            Authorised accounts with balance preview. Global Money / Global Wallet accounts
+            render in this list under the Current filter — there is deliberately no Global
+            filter chip, because such a wallet reports AccountTypeCode CACC and is
+            indistinguishable here from an ordinary current account.
+        - name: account-detail
+          archetype: detail_screen
+          feature_refs: [accounts, balances]
+          description: "Account info + balances + entry points to transactions/statements/recurring."
+        - name: transactions
+          archetype: index_list
+          feature_refs: [transactions]
+          description: "Transaction history with date + credit/debit filters."
+        - name: transaction-detail
+          archetype: detail_screen
+          feature_refs: [transactions]
+          description: "Single transaction details."
+        - name: beneficiaries
+          archetype: index_list
+          feature_refs: [beneficiaries]
+          description: "Saved payees on the account (read-only) — name, account identifier and reference."
+        - name: standing-orders
+          archetype: index_list
+          feature_refs: [standing-orders]
+          description: "Recurring outbound orders — amount, frequency, next payment date and payee (read-only)."
+        - name: direct-debits
+          archetype: index_list
+          feature_refs: [direct-debits]
+          description: "Direct-debit mandates — originator, status and most-recent amount (read-only)."
+        - name: scheduled-payments
+          archetype: index_list
+          feature_refs: [scheduled-payments]
+          description: "Future-dated one-off payments — amount, execution date and payee (read-only)."
+        - name: statements
+          archetype: index_list
+          feature_refs: [statements]
+          description: "Statement list for the account — period, type and available dates."
+        - name: statement-detail
+          archetype: detail_screen
+          feature_refs: [statements]
+          description: "Single statement — period, opening/closing balances and statement transactions."
+        - name: product
+          archetype: detail_screen
+          feature_refs: [product]
+          description: "Account product terms — fees, rates and features (BCA/PCA accounts)."
+        - name: account-holder
+          archetype: detail_screen
+          feature_refs: [account-holder]
+          description: "Account holder / PSU details — display name, role label, email, mobile and a single flattened address line (gated by ReadParty). Renamed from `party` 2026-07-28."
+        - name: settings
+          archetype: settings
+          feature_refs: [settings]
+          description: "Settings hub — appearance (theme), manage consents, and about & legal (privacy, licences, app version)."
+        - name: licences
+          archetype: detail_screen
+          feature_refs: [licences]
+          description: "Open-source licence readout, pushed from the settings About section. Source-originated screen."
 
-# ─── §11 FLOWS ──────────────────────────────────────────────────────────────
-flows:
-  _status: approved
-  _quality_score: 88
-  _source: idea_layer_flows
-  _last_updated: "2026-05-27"
-  _enriched_at: "2026-05-27"
-  _approved_at: "2026-05-27"
-  content:
-    - name: consumer_banking_flow
-      feature_ref: home
-      steps:
-        - Login (DirectLogin auth)
-        - Home dashboard (account summary + quick actions)
-        - Navigate to Accounts list
-        - Select account → Account Detail
-        - View transactions → Transaction Detail
-        - Send Money → Select beneficiary → Confirm → Success
-    - name: field_officer_flow
-      feature_ref: fo-dashboard
-      steps:
-        - Login (DirectLogin auth)
-        - FO Dashboard (metrics + pending tasks)
-        - Customer Search → Customer Detail
-        - Start Customer Onboarding (multi-step)
-        - KYC Review → Approve/Reject
-        - Account Applications → Application Detail → Approve
-    - name: send_money_flow
-      feature_ref: send-money
-      steps:
-        - Open Send Money from Home or Accounts
-        - Select beneficiary from saved list (or add new)
-        - Enter amount and reference
-        - Validate via OBP TransactionRequests API
-        - Review on Confirm screen
-        - Submit → Success notification
-    - name: customer_onboarding_flow
-      feature_ref: customer-onboarding
-      steps:
-        - FO opens Customer Onboarding
-        - Step 1 — Personal information
-        - Step 2 — Address and contact
-        - Step 3 — KYC document upload
-        - Step 4 — Account type selection
-        - Submit to OBP Customers API
-        - Pending approval state
+        # ── PISP screens added 2026-07-30 (/idea-evolve scope reversal) ──────
+        - name: send-money
+          archetype: form
+          feature_refs: [send-money, accounts, beneficiaries]
+          description: >-
+            Three-step consumer payment form reached from the Pay tab — choose the funding
+            account from the PSU's own authorised accounts, choose a saved payee or enter a sort
+            code and account number, then enter amount and reference. A review step stages the
+            payment consent and hands off to the bank authorisation.
+        - name: payment-consent
+          archetype: empty_state
+          feature_refs: [payment-consent]
+          description: >-
+            Headless return leg of the PISP authorisation — validates the redirect, exchanges the
+            code, polls the payment consent to Authorised, then hands control back to send-money.
+            Renders progress and terminal error only.
+        - name: payment-status
+          archetype: detail_screen
+          feature_refs: [payment-status]
+          description: >-
+            Settlement tracking for a submitted payment — status disposition chip, the echoed
+            payment details, and a bounded poll that runs only while the payment is still moving.
 
-# ─── §12 API_SURFACE ────────────────────────────────────────────────────────
-api_surface:
-  _status: approved
-  _quality_score: 88
-  _source: idea_layer_rebuild
-  _last_updated: "2026-05-27"
-  _enriched_at: "2026-05-27"
-  _approved_at: "2026-05-27"
-  content:
-    base_url: "https://apisandbox.openbankproject.com"
-    api_version: v7.0.0
-    auth_method: DirectLogin
-    endpoints:
-      - tag: Authentication
-        description: "DirectLogin token exchange"
-        methods: [POST]
-      - tag: Accounts
-        description: "Account listing, details, balances"
-        methods: [GET]
-      - tag: Transactions
-        description: "Transaction history, details, metadata"
-        methods: [GET, POST]
-      - tag: TransactionRequests
-        description: "Initiate and confirm money transfers"
-        methods: [GET, POST, PUT]
-      - tag: Counterparties
-        description: "Beneficiary/payee management"
-        methods: [GET, POST, DELETE]
-      - tag: Cards
-        description: "Card listing, details, freeze/unfreeze"
-        methods: [GET, PUT]
-      - tag: Standing-Orders
-        description: "Recurring payment schedules"
-        methods: [GET]
-      - tag: Direct-Debits
-        description: "Direct debit mandate management"
-        methods: [GET, DELETE]
-      - tag: ATM
-        description: "ATM location data"
-        methods: [GET]
-      - tag: Branch
-        description: "Branch location data"
-        methods: [GET]
-      - tag: FX
-        description: "Foreign exchange rates"
-        methods: [GET]
-      - tag: Consents
-        description: "OAuth consent management"
-        methods: [GET, DELETE]
-      - tag: Notifications
-        description: "In-app notification feed"
-        methods: [GET, PUT]
-      - tag: Products
-        description: "Product catalog"
-        methods: [GET]
-      - tag: Customers
-        description: "Customer CRUD and search"
-        methods: [GET, POST, PUT]
-      - tag: KYC
-        description: "KYC document and status management"
-        methods: [GET, POST, PUT]
-      - tag: Account-Applications
-        description: "Account application pipeline"
-        methods: [GET, POST, PUT]
-      - tag: Customer-Messages
-        description: "Secure messaging"
-        methods: [GET, POST]
-      - tag: Meetings
-        description: "Meeting scheduling"
-        methods: [GET, POST, PUT, DELETE]
-      - tag: Agent-Registration
-        description: "Agent/FO registration"
-        methods: [POST]
-      - tag: Users
-        description: "User profile management"
-        methods: [GET, PUT]
-    repositories:
-      - name: AccountsRepository
-        description: "Account listing and details via OBP Accounts API"
-      - name: TransactionsRepository
-        description: "Transaction history and details via OBP Transactions API"
-      - name: PaymentsRepository
-        description: "Money transfers via OBP TransactionRequests API"
-      - name: CardsRepository
-        description: "Card management via OBP Cards API"
-      - name: CustomersRepository
-        description: "Customer CRUD via OBP Customers API"
-      - name: KycRepository
-        description: "KYC verification via OBP KYC API"
+# ── REMOVED 2026-07-28 (reverse sync from source) ────────────────────
+# Screens with no source implementation: atm-locator, profile, pfm-dashboard,
+# spending-by-category, budgets, recurring-subscriptions.
 
-# ─── §13 DESIGN_TOKENS ──────────────────────────────────────────────────────
-design_tokens:
-  _status: approved
-  _quality_score: 90
-  _source: source_analysis
-  _approved_at: "2026-05-27"
-  content:
-    palette:
-      primary: "#1800B1"
-      on_primary: "#FFFFFF"
-      primary_container: "#403CD8"
-      secondary: "#575899"
-      on_secondary: "#FFFFFF"
-      secondary_container: "#BEBEFF"
-      tertiary: "#5C0068"
-      on_tertiary: "#FFFFFF"
-      error: "#BA1A1A"
-      on_error: "#FFFFFF"
-      background: "#FCF8FF"
-      on_background: "#1B1B24"
-      surface: "#FCF8FF"
-      on_surface: "#1B1B24"
-      surface_variant: "#E3E0F4"
-      dark_primary: "#C1C1FF"
-      dark_background: "#13131B"
-    typography:
-      scales: [display, headline, title, body, label]
-      system: "Material Design 3 Typography"
-    spacing: "Material Design 3 default (4dp base): xs=4, sm=8, md=16, lg=24, xl=32"
-    shapes: "RoundedCornerShape defaults: 8.dp for cards, CircleShape for icons"
+  flows:
+    _tag: "§flows"
+    _status: draft
+    _quality_score: 74
+    _source: wizard
+    content:
+      flows:
+        - name: onboarding-consent
+          type: happy
+          feature_ref: consent-onboarding
+          steps:
+            - "Splash → user onboarding (what Open Banking is + what data is requested)"
+            - "Login — start OAuth with HSBC"
+            - "App stages an account-access-consent with the requested Permissions array"
+            - "App-to-app redirect to HSBC: PSU authenticates (SCA), approves the requested permission set, selects accounts to share"
+            - "Callback exchanges authorization code for PSU access token (rejection → error, no token, no data access)"
+            - "Land on Accounts"
+        # Added 2026-07-31 (/idea-sync Phase B). flows/home-dashboard.yaml has existed since
+        # the 2026-07-28 reverse sync and is bound by screens/home/flow.yaml#flow_ref, but the
+        # plan's flow inventory never declared it — 8 declared vs 9 on disk. The plan is the
+        # docset SoT for that inventory, so the omission made the app's start-destination flow
+        # invisible to every consumer that reads flows from here.
+        - name: home-dashboard
+          type: happy
+          feature_ref: home
+          release_phase: P0
+          steps:
+            - "Home tab (bottom-nav order 0) — also the authenticated NavHost start destination"
+            - "Hero balance card renders the selected account"
+            - "Tap the account switcher — AccountSelectorSheet opens in-screen, no navigation"
+            - "Pick an account chip — persists selectedAccountId and re-drives the whole screen"
+            - "Tap a recent transaction row → transaction-detail (cross-flow → transaction-review)"
+            - "Tap 'View all' → transactions (cross-flow → transaction-review)"
+          # homeGraph exposes exactly two outward callbacks; the account-detail, statements,
+          # consent-list and pfm-dashboard exits were struck in the 07-28 reverse sync and are
+          # recorded under removed_in_sync in flows/home-dashboard.yaml.
+        - name: account-browsing
+          type: happy
+          feature_ref: accounts
+          steps: ["Accounts list", "Open account detail", "View balances", "Open transactions / statements / recurring"]
+        - name: transaction-review
+          type: happy
+          feature_ref: transactions
+          steps: ["Transactions list", "Apply date / credit-debit filter", "Open transaction detail"]
+        - name: consent-management
+          type: happy
+          feature_ref: consent-dashboard
+          steps: ["More → Consents", "Open consent detail", "Revoke or reconfirm before 90 days"]
+        - name: recurring-and-statements
+          type: happy
+          feature_ref: standing-orders
+          steps: ["Account detail", "Standing orders / Direct debits / Scheduled payments", "Statements → statement detail"]
+        - name: consent-expired
+          type: error
+          feature_ref: consent-dashboard
+          steps: ["Resource call returns consent expired/revoked", "Prompt re-consent", "Re-run onboarding-consent"]
+        - name: settings-and-profile
+          type: happy
+          feature_ref: settings
+          steps: ["More tab", "Open Settings (appearance, manage consents, about & legal)", "Open Licences", "Shortcut to Consents"]
+          # Reverse-synced 2026-07-28: the profile step was removed — no profile screen ships.
+        # pfm-review flow removed 2026-07-28 — none of its four screens were built.
 
-# ─── §14 LAYERS ─────────────────────────────────────────────────────────────
-layers:
-  _status: approved
-  _quality_score: 100
-  _source: source_analysis
-  _approved_at: "2026-05-27"
-  content:
-    enabled: [plan, design-spec, server, client, feature, infrastructure, platform, testing]
+        # ── PISP flow added 2026-07-30 (/idea-evolve scope reversal) ─────────
+        - name: send-money-payment
+          type: happy
+          feature_ref: send-money
+          steps:
+            - "Pay tab → send-money (replaces the SendMoneyRoute placeholder)"
+            - "Choose the funding account from the PSU's own authorised accounts"
+            - "Choose a saved payee, or enter a sort code and account number manually"
+            - "Enter amount and optional reference; validated against available balance"
+            - "Review the payment and confirm"
+            - "App stages a domestic-payment-consent (payments-scope CC token + detached JWS + idempotency key)"
+            - "App-to-app redirect to HSBC: PSU authenticates (SCA) and approves the payment"
+            - "payment-consent validates the redirect, exchanges the code and polls the consent to Authorised"
+            - "App submits the payment reusing the same idempotency key and the byte-identical staged Initiation"
+            - "Success state → View status opens payment-status to track settlement"
 
-# ─── §15 RELEASE_PLAN ───────────────────────────────────────────────────────
-release_plan:
-  _status: approved
-  _quality_score: 92
-  _source: enrichment
-  _last_updated: "2026-05-27"
-  _enriched_at: "2026-05-27"
-  _approved_at: "2026-05-27"
-  content:
-    total_weeks: 16
-    phases:
-      - name: "Phase 1 — Foundation & Auth (P0 Core)"
-        weeks: "W1–W3"
-        priority: P0
-        features:
-          - splash
-          - login
-          - forgot-password
-          - change-password
-          - profile
-          - settings
-          - about
-        deliverables:
-          - "OBP DirectLogin auth flow (token exchange + session management)"
-          - "Shared navigation shell (bottom nav per flavor)"
-          - "Design system + theme (M3 tokens, dark mode)"
-          - "CI pipeline (pr-check.yml, build matrix)"
-        exit_criteria: "User can login, view profile, toggle theme on Android + Desktop"
+  api_surface:
+    _tag: "§api_surface"
+    _status: draft
+    _quality_score: 80
+    _source: wizard
+    content:
+      external_api_ref: API-001
+      endpoints:
+        - { path: /account-access-consents, method: POST, description: "Create account-access-consent (permissions + expiry).", auth_required: true, source: external_api, source_ref: API-001 }
+        - { path: "/account-access-consents/{ConsentId}", method: GET, description: "Consent status.", auth_required: true, source: external_api, source_ref: API-001 }
+        - { path: "/account-access-consents/{ConsentId}", method: DELETE, description: "Revoke consent.", auth_required: true, source: external_api, source_ref: API-001 }
+        - { path: /accounts, method: GET, description: "List authorised accounts.", auth_required: true, source: external_api, source_ref: API-001 }
+        - { path: "/accounts/{AccountId}", method: GET, description: "Account detail.", auth_required: true, source: external_api, source_ref: API-001 }
+        - { path: "/accounts/{AccountId}/balances", method: GET, description: "Account balances.", auth_required: true, source: external_api, source_ref: API-001 }
+        - { path: "/accounts/{AccountId}/transactions", method: GET, description: "Transactions (date/credit-debit filters).", auth_required: true, source: external_api, source_ref: API-001 }
+        - { path: "/accounts/{AccountId}/beneficiaries", method: GET, description: "Beneficiaries.", auth_required: true, source: external_api, source_ref: API-001 }
+        - { path: "/accounts/{AccountId}/standing-orders", method: GET, description: "Standing orders.", auth_required: true, source: external_api, source_ref: API-001 }
+        - { path: "/accounts/{AccountId}/direct-debits", method: GET, description: "Direct debits.", auth_required: true, source: external_api, source_ref: API-001 }
+        - { path: "/accounts/{AccountId}/scheduled-payments", method: GET, description: "Scheduled payments.", auth_required: true, source: external_api, source_ref: API-001 }
+        - { path: "/accounts/{AccountId}/statements", method: GET, description: "Statements list.", auth_required: true, source: external_api, source_ref: API-001 }
+        - { path: "/accounts/{AccountId}/statements/{StatementId}", method: GET, description: "Statement detail.", auth_required: true, source: external_api, source_ref: API-001 }
+        - { path: "/accounts/{AccountId}/statements/{StatementId}/transactions", method: GET, description: "Transactions within a single statement.", auth_required: true, source: external_api, source_ref: API-001 }
+        - { path: "/accounts/{AccountId}/statements/{StatementId}/file", method: GET, description: "Statement file / PDF download.", auth_required: true, source: external_api, source_ref: API-001 }
+        - { path: "/accounts/{AccountId}/product", method: GET, description: "Account product.", auth_required: true, source: external_api, source_ref: API-001 }
+        - { path: "/accounts/{AccountId}/party", method: GET, description: "Account holder — single party (OBReadParty2).", auth_required: true, source: external_api, source_ref: API-001 }
+        - { path: "/accounts/{AccountId}/parties", method: GET, description: "Account owner(s)/holder(s)/operator(s) — multiple parties (OBReadParty3).", auth_required: true, source: external_api, source_ref: API-001 }
+        - { path: /oauth2/token, method: POST, description: "Token endpoint — OAuth2 v1.1 (client_credentials + authorization_code; private_key_jwt). From the OIDC well-known config, not the AIS swagger.", auth_required: false, source: external_api, source_ref: null }
+        - { path: /oauth2/authorize, method: GET, description: "PSU authorisation — OAuth2 v1.1 (signed request object, PKCE, app-to-app). From the OIDC well-known config, not the AIS swagger.", auth_required: false, source: external_api, source_ref: null }
+        - { path: /register, method: POST, description: "Dynamic Client Registration — DCR v3.2.1, signed SSA (separate dcr-uk.yaml spec).", auth_required: false, source: external_api, source_ref: API-002 }
+        # ── PISP endpoints added 2026-07-30 (/idea-evolve scope reversal) ────
+        # Base path v4.0/pisp (AIS resources are v4.0/aisp). The two POSTs are the app's
+        # FIRST writes — everything above is a read — and both require a detached
+        # x-jws-signature plus an x-idempotency-key. Omitting the signature returns 400 U019.
+        - { path: /domestic-payment-consents, method: POST, description: "Stage a domestic payment consent. Client-credentials token on scope=payments. Requires x-jws-signature + x-idempotency-key. Risk.PaymentContextCode restricted to TransferToThirdParty | TransferToSelf.", auth_required: true, source: external_api, source_ref: API-003 }
+        - { path: "/domestic-payment-consents/{ConsentId}", method: GET, description: "Payment consent status — polled to AUTH before submit (a non-Authorised consent returns 400 U009).", auth_required: true, source: external_api, source_ref: API-003 }
+        - { path: "/domestic-payment-consents/{ConsentId}/funds-confirmation", method: GET, description: "Pre-submit funds check. PSU token; requires an Authorised consent.", auth_required: true, source: external_api, source_ref: API-003 }
+        - { path: /domestic-payments, method: POST, description: "Submit the payment. PSU token. Requires x-jws-signature + the SAME x-idempotency-key used to stage, and a byte-identical echo of the staged Initiation (mismatch returns U008).", auth_required: true, source: external_api, source_ref: API-003 }
+        - { path: "/domestic-payments/{DomesticPaymentId}", method: GET, description: "Payment resource with current settlement Status — the payment-status read. Pure read: no JWS, no idempotency key.", auth_required: true, source: external_api, source_ref: API-003 }
+      api_gap_analysis:
+        # Reverse-synced 2026-07-28 against core/network/api/Aisp.kt + OAuth.kt.
+        total_features: 15
+        api_covered: 13
+        coverage_percent: 86.7
+        gaps:
+          - feature: settings
+            needed_endpoints: []
+            gap_strategy: client_only
+            notes: "Settings reads and writes UserDataRepository only — no external API."
+          - feature: licences
+            needed_endpoints: []
+            gap_strategy: client_only
+            notes: "Static bundled asset read from module Compose resources."
+      implemented_client_surface:
+        # Aisp.kt — every method that ships on the network client.
+        aisp: [createConsent, getConsent, deleteConsent, getAccounts, getAccountDetails,
+               getBalances, getBeneficiaries, getDirectDebits, getProduct, getParty,
+               getParties, getTransactions, getTransactionsPage, getStandingOrders,
+               getScheduledPayments, getStatements, getStatementDetails,
+               getStatementTransactions, getStatementFile]
+        oauth: [clientCredentialsToken, exchangeAuthorizationCode, refreshToken]
+        unconsumed:
+          - method: getParties
+            note: "No store, repository or feature consumes it. account-holder reads getParty (singular) only."
+      out_of_scope_drift:
+        - area: PISP
+          status: resolved
+          resolved_at: "2026-07-30"
+          resolved_by: "/idea-evolve — scope reversal; PISP domestic single payment moved in_scope"
+          finding: >-
+            §vision.scope.out_of_scope declares payment initiation out of scope, but
+            core/network ships a complete PISP wire-model surface — domestic payment,
+            domestic scheduled payment, domestic standing order, international payment,
+            international scheduled payment and international standing order, each with
+            request + response models and serialization tests. No feature module or
+            repository consumes any of it, so nothing is reachable from the UI; the Pay
+            bottom-nav tab points at a SendMoneyRoute placeholder in that direction.
+          consumed_by: [send-money, payment-consent, payment-status]
+          recorded_at: "2026-07-28"
+          resolution_note: >-
+            Only the DOMESTIC SINGLE payment models are brought into scope. The domestic
+            scheduled, domestic standing order and three international model sets remain
+            shipped-but-unconsumed and are now declared out_of_scope explicitly rather than
+            implicitly, so this is narrowed drift rather than closed drift. Re-audit if those
+            surfaces stay unconsumed.
+          residual_unconsumed:
+            - "core/network/.../pisp/domesticScheduledPayment (request + response, serialization-tested)"
+            - "core/network/.../pisp/domesticStandingOrder (request + response)"
+            - "core/network/.../pisp/internationalPayment (request + response, no serialization tests)"
+            - "core/network/.../pisp/internationalScheduledPayment (request + response, no serialization tests)"
+            - "core/network/.../pisp/internationalStandingOrder (request + response, no serialization tests)"
 
-      - name: "Phase 2 — Consumer Banking Core (P0)"
-        weeks: "W4–W7"
-        priority: P0
-        features:
-          - home
-          - accounts
-          - account-detail
-          - transactions
-          - transaction-detail
-          - send-money
-          - send-money-confirm
-          - beneficiaries
-          - cards
-          - card-detail
-        deliverables:
-          - "Accounts + Transactions via OBP API (Ktorfit services + Store5 repos)"
-          - "Send Money flow end-to-end (TransactionRequests API)"
-          - "Card management with freeze/unfreeze"
-          - "Consumer bottom nav: Home, Accounts, Pay, Cards, More"
-        exit_criteria: "Consumer can view accounts, browse transactions, send money, manage cards"
+  design_tokens:
+    _tag: "§design_tokens"
+    _status: draft
+    _quality_score: 70
+    _source: wizard
+    content:
+      color_palette:
+        primary: "#266489"
+        secondary: "#50606E"
+        tertiary: "#64597B"
+        surface: "#F7F9FF"
+        background: "#F7F9FF"
+        error: "#BA1A1A"
+      typography:
+        font_family: "Roboto"
+        scale: default
+      spacing_preference: comfortable
+      density: comfortable
 
-      - name: "Phase 3 — Field Officer Core (P0)"
-        weeks: "W8–W10"
-        priority: P0
-        features:
-          - fo-dashboard
-          - customer-search
-          - customer-detail
-          - customer-profile
-          - customer-onboarding
-          - corporate-onboarding
-          - kyc-review
-          - account-applications
-          - application-detail
-        deliverables:
-          - "Customer CRUD via OBP Customers API"
-          - "KYC verification workflow (approve/reject with notes)"
-          - "Multi-step onboarding (individual + corporate)"
-          - "Application pipeline with status filters"
-          - "FO bottom nav: Dashboard, Customers, Applications, Messages, More"
-        exit_criteria: "Field officer can search customers, onboard new ones, review KYC, process applications"
+  technical_decisions:
+    _tag: "§technical_decisions"
+    _status: draft
+    _quality_score: 88
+    _source: wizard
+    content:
+      architecture: "MVI (stream-first: BaseViewModel<S,E,A> + ScreenDataStream + Store5)"
+      di_framework: koin
+      state_management: compose-state
+      navigation: androidx-navigation
+      backend_provider: rest
+      platform_targets: [android, ios, desktop, web]
+      kmp_arch: "stream-first@latest"
 
-      - name: "Phase 4 — Consumer Extended (P1)"
-        weeks: "W11–W13"
-        priority: P1
-        features:
-          - standing-orders
-          - direct-debits
-          - direct-debit-detail
-          - atm-locator
-          - fx-rates
-          - consent-manager
-          - notifications
-          - pfm-dashboard
-          - products
-          - transaction-tags
-        deliverables:
-          - "Recurring payments (standing orders + direct debits)"
-          - "Location services (ATM/branch finder)"
-          - "FX rates dashboard"
-          - "PFM spending insights + budget tracking"
-          - "Product catalog browser"
-          - "Notification feed"
-          - "Consent management (OAuth revocation)"
-        exit_criteria: "Consumer has full-featured banking experience beyond core transactions"
+  layers:
+    _tag: "§layers"
+    _status: draft
+    _quality_score: 85
+    _source: wizard
+    content:
+      enabled: [idea, design-spec, server, client, feature, infrastructure, platform, testing, release]
+      disabled: []
+      auto_derived: true
+      suggestion_source: source_analysis
+      layer_rationale:
+        server:
+          status: enabled
+          reason: "Holds CLIENT contracts for the external HSBC AIS API (Ktorfit interfaces) — no owned DB."
+          can_enable_later: true
+        platform:
+          status: enabled
+          reason: "expect/actual for mTLS, secure storage, and app-to-app redirect handling."
 
-      - name: "Phase 5 — FO Extended + Polish (P1)"
-        weeks: "W14–W15"
-        priority: P1
-        features:
-          - customer-messages
-          - meetings
-          - agent-registration
-        deliverables:
-          - "Secure messaging between FO and customers"
-          - "Meeting scheduler with calendar view"
-          - "Agent registration + approval workflow"
-          - "iOS build + Fastlane setup"
-          - "Web (Wasm) deployment to GitHub Pages"
-        exit_criteria: "FO has complete toolset; all 4 platforms build and deploy"
+  release_plan:
+    _tag: "§release_plan"
+    _status: draft
+    _quality_score: 72
+    _source: wizard
+    content:
+      milestones:
+        - version: "0.1.0"
+          features: [consent-onboarding, consent-dashboard, accounts, balances, transactions]
+        - version: "0.2.0"
+          features: [beneficiaries, standing-orders, direct-debits, scheduled-payments]
+        - version: "0.3.0"
+          features: [statements, product, account-holder, settings, licences]
+      epic_breakdown:
+        - epic_name: "FAPI consent + core account information"
+          features: [consent-onboarding, consent-dashboard, accounts, balances, transactions]
+          milestone_ref: "0.1.0"
+        - epic_name: "Payments-context read surfaces"
+          features: [beneficiaries, standing-orders, direct-debits, scheduled-payments]
+          milestone_ref: "0.2.0"
+        - epic_name: "Statements, product, account holder & settings"
+          features: [statements, product, account-holder, settings, licences]
+          milestone_ref: "0.3.0"
+      # Reverse-synced 2026-07-28: multi-currency and atm-locator dropped from 0.3.0 —
+      # neither was built. settings + licences moved in, since both ship.
 
-      - name: "Phase 6 — Hardening & Release (P0)"
-        weeks: "W16"
-        priority: P0
-        deliverables:
-          - "End-to-end testing on all platforms"
-          - "Performance profiling (startup, scrolling, API latency)"
-          - "Security audit (token storage, certificate pinning)"
-          - "Release builds (signed APK/AAB, IPA, Desktop installers)"
-          - "Store metadata + screenshots"
-        exit_criteria: "All platforms pass smoke tests; release artifacts signed and ready"
+  release_phases:
+    _tag: "§release_phases"
+    _status: draft
+    _quality_score: 70
+    _source: wizard
+    content:
+      phases:
+        # Reverse-synced 2026-07-28: statuses reflect what is actually built in source.
+        - id: P0
+          label: "MVP — Consent + core account information"
+          flows: [onboarding-consent, account-browsing, transaction-review, consent-management, settings-and-profile, consent-expired]
+          target_features: [consent-onboarding, consent-dashboard, accounts, balances, transactions, settings, licences]
+          status: implemented
+          derived_by: claude-subagent
+          sync_note: "profile dropped — never built. licences added — ships in source."
+        - id: P1
+          label: "Payments-context read surfaces"
+          flows: [recurring-and-statements]
+          target_features: [beneficiaries, standing-orders, direct-debits, scheduled-payments]
+          status: implemented
+          dependencies: [P0]
+          derived_by: claude-subagent
+        - id: P2
+          label: "Statements, product & account holder"
+          flows: []
+          target_features: [statements, product, account-holder]
+          status: implemented
+          dependencies: [P1]
+          derived_by: claude-subagent
+          sync_note: "multi-currency, atm-locator and pfm dropped — none were built. The pfm-review flow was removed with its screens."
+        - id: P3
+          label: "PISP — consumer domestic payment initiation"
+          flows: [send-money-payment]
+          target_features: [send-money, payment-consent, payment-status]
+          status: planned
+          dependencies: [P2]
+          derived_by: /idea-evolve
+          scaffolded_at: "2026-07-30"
+          note: >-
+            The app's first WRITE phase — P0 through P2 are entirely read-only AIS. Two
+            cross-cutting prerequisites gate every feature in it and are not per-feature work:
+            a Pisp.kt Ktorfit client (core/network/api ships only Aisp.kt and OAuth.kt), and a
+            detached-JWS signer plus idempotency-key handling. Without the signer every write
+            returns 400 U019, so nothing in P3 can be device-verified until it lands.
+          prerequisites:
+            - "core/network/api/Pisp.kt — Ktorfit interface for the five PISP endpoints"
+            - "Detached JWS (PS256, b64:false + crit) extending the shipped signPs256"
+            - "x-idempotency-key generation, persisted across retries of a staged payment"
+            - "payments-scope client-credentials token path (OAuth.kt mints accounts scope only)"
 
-    milestones:
-      - name: "v0.1.0 — Auth + Shell"
-        target: "W3"
-        platforms: [android, desktop]
-        features_complete:
-          - splash
-          - login
-          - forgot-password
-          - change-password
-          - profile
-          - settings
-          - about
-      - name: "v0.2.0 — Consumer MVP"
-        target: "W7"
-        platforms: [android, desktop]
-        features_complete:
-          - home
-          - accounts
-          - account-detail
-          - transactions
-          - transaction-detail
-          - send-money
-          - send-money-confirm
-          - beneficiaries
-          - cards
-          - card-detail
-      - name: "v0.3.0 — FO MVP"
-        target: "W10"
-        platforms: [android, desktop]
-        features_complete:
-          - fo-dashboard
-          - customer-search
-          - customer-detail
-          - customer-profile
-          - customer-onboarding
-          - corporate-onboarding
-          - kyc-review
-          - account-applications
-          - application-detail
-      - name: "v0.4.0 — Feature Complete"
-        target: "W15"
-        platforms: [android, ios, desktop, web]
-        features_complete:
-          - standing-orders
-          - direct-debits
-          - direct-debit-detail
-          - atm-locator
-          - fx-rates
-          - consent-manager
-          - notifications
-          - pfm-dashboard
-          - products
-          - transaction-tags
-          - customer-messages
-          - meetings
-          - agent-registration
-      - name: "v1.0.0 — Production Release"
-        target: "W16"
-        platforms: [android, ios, desktop, web]
-        artifact_types: [apk, aab, ipa, exe, msi, dmg, deb, wasm]
-        features_complete: "all 39 features — hardened + signed"
+# ═══════════════════════════════════════════════════════════════════
+# NETWORK POLICY
+# ═══════════════════════════════════════════════════════════════════
+network_policy:
+  default: cellular_allowed
+  large_download_threshold_kb: 500
 
-    versioning_strategy: "Semantic versioning — 0.x.0 for dev milestones, 1.0.0 for production release"
-    ci_platforms:
-      - "GitHub Actions: pr-check.yml (PR validation — lint, test, build)"
-      - "GitHub Actions: multi-platform-build-and-publish.yml (platform builds on tag)"
-      - "GitHub Actions: build-and-deploy-site.yml (web deploy → GitHub Pages)"
-      - "Fastlane: android (APK/AAB signing), ios (IPA + App Store), desktop (installers), web (static)"
+# ═══════════════════════════════════════════════════════════════════
+# DEFERRED ROUTES  (RULE-IMPL-NAVIGATION-CONNECTED-001 NAV-2)
+# ═══════════════════════════════════════════════════════════════════
+# Routes that ship in cmp-navigation but resolve to PlaceholderScreen. Declaring
+# them here is what makes the deferral an explicit product decision rather than
+# dead code, and exempts them from NAV-1.
+#
+# Added 2026-07-31: account-detail/ui.yaml drove the AtmLocator chip through a
+# project-local `target: _placeholder:atm-locator` string. That prefix is not a
+# registered framework convention — no evaluator recognises it, so the target was
+# simultaneously unresolvable to the dead-nav gate and invisible to NAV-2. The
+# declaration below is the sanctioned form; the ui.yaml target now points at it.
+deferred_routes:
+  - feature: account-detail
+    route_class: AtmLocatorRoute
+    reason: >-
+      Chip renders and navigates, but resolves to PlaceholderScreen("ATM locator")
+      in cmp-navigation. The atm-locator idea-layer screen was removed in the
+      2026-07-28 reverse sync because no feature module implements it. AtmLocatorRoute
+      is an arg-less data object — no accountId is passed.
+    target_milestone: unscheduled
+
+# ═══════════════════════════════════════════════════════════════════
+# SHIP GATE
+# ═══════════════════════════════════════════════════════════════════
+ship_gate:
+  requires_converge: true
+  requires_smoke_run: false
+  coverage_threshold: 80
+  max_staleness_hours: 24
+  requires_behavior_verification: true
+  permission_codegen_platforms: [android, ios]
+
+# ═══════════════════════════════════════════════════════════════════
+# /idea-agent CONFIGURATION
+# ═══════════════════════════════════════════════════════════════════
+agent:
+  approve_quality_threshold: 95
+  max_token_budget: null
+  max_iterations: 100
+  t3_self_heal_enabled: true

@@ -1,72 +1,83 @@
 sibling: demo-data
-schema_version: "4.0"
+schema_version: "2.1.0"
 feature_id: direct-debits
-content:
-  obp_get_direct_debits:
-    items:
-      - direct_debit_id: "dd-ke-001-kplc"
-        bank_id: "ke.equity.001"
-        account_id: "acct-ke-001-savings"
-        counterparty_id: "cp-ke-kplc-001"
-        amount_value: "4500.00"
-        amount_currency: "KES"
-        start_date: "2026-01-01"
-        end_date: "2026-12-31"
-        active: true
-        to:
-          name: "Kenya Power & Lighting Co."
-          bank_routing:
-            scheme: "SORT"
-            address: "KCBL-001"
-          account_routing:
-            scheme: "ACCOUNT_NUMBER"
-            address: "1100023456"
-      - direct_debit_id: "dd-ke-002-nairobi-water"
-        bank_id: "ke.equity.001"
-        account_id: "acct-ke-001-savings"
-        counterparty_id: "cp-ke-nwsc-001"
-        amount_value: "1800.00"
-        amount_currency: "KES"
-        start_date: "2026-02-01"
-        end_date: "2027-01-31"
-        active: true
-        to:
-          name: "Nairobi City Water & Sewerage Co."
-          bank_routing:
-            scheme: "SORT"
-            address: "SCBL-002"
-          account_routing:
-            scheme: "ACCOUNT_NUMBER"
-            address: "9900345678"
-      - direct_debit_id: "dd-ke-003-safaricom"
-        bank_id: "ke.equity.001"
-        account_id: "acct-ke-001-savings"
-        counterparty_id: "cp-ke-safaricom-001"
-        amount_value: "2500.00"
-        amount_currency: "KES"
-        start_date: "2025-07-01"
-        end_date: "2026-06-30"
-        active: false
-        to:
-          name: "Safaricom PLC — Home Fibre"
-          bank_routing:
-            scheme: "SORT"
-            address: "EQBL-003"
-          account_routing:
-            scheme: "ACCOUNT_NUMBER"
-            address: "0110987654"
 
-  obp_create_direct_debit:
-    _template:
-      start_date: "2026-06-01"
-      end_date: "2027-05-31"
-      amount_value: "3000.00"
-      amount_currency: "KES"
-      to:
-        name: "NHIF — National Hospital Insurance Fund"
-        bank_routing:
-          scheme: "SORT"
-          address: "KCBL-005"
-        account_routing:
-          scheme: "ACCOUNT_NUMBER"
-          address: "5500112233"
+screen_id: direct-debits
+_content_policy: "RULE-PROTO-CONTENT-001 — zero placeholders; real HSBC-sandbox-style OBIE OBReadDirectDebit2 data only."
+
+# Computed summary (derived by ViewModel from directDebits list; mirrored here for demo fixture)
+activeCount: 3
+inactiveCount: 1
+
+directDebits:
+  # Active mandates — sorted first per ViewModel sort
+  - AccountId: "40051512345678"
+    DirectDebitId: "DD-001"
+    MandateIdentification: "DD-BG-44120"
+    DirectDebitStatusCode: "Active"
+    status_variant: "primary"
+    Name: "British Gas"
+    PreviousPaymentDateTime: "2026-06-15T00:00:00Z"
+    PreviousPaymentAmount:
+      Amount: "78.00"
+      Currency: "GBP"
+
+  - AccountId: "40051512345678"
+    DirectDebitId: "DD-002"
+    MandateIdentification: "DD-VF-88301"
+    DirectDebitStatusCode: "Active"
+    status_variant: "primary"
+    Name: "Vodafone"
+    PreviousPaymentDateTime: "2026-06-20T00:00:00Z"
+    PreviousPaymentAmount:
+      Amount: "29.00"
+      Currency: "GBP"
+
+  - AccountId: "40051512345678"
+    DirectDebitId: "DD-003"
+    MandateIdentification: "DD-AV-10293"
+    DirectDebitStatusCode: "Active"
+    status_variant: "primary"
+    Name: "Aviva Insurance"
+    PreviousPaymentDateTime: "2026-06-05T00:00:00Z"
+    PreviousPaymentAmount:
+      Amount: "41.50"
+      Currency: "GBP"
+
+  # Inactive mandates — sorted last per ViewModel sort
+  - AccountId: "40051512345678"
+    DirectDebitId: "DD-004"
+    MandateIdentification: "DD-TVL-55667"
+    DirectDebitStatusCode: "Inactive"
+    status_variant: "outline"
+    Name: "TV Licensing"
+    PreviousPaymentDateTime: "2026-03-01T00:00:00Z"
+    PreviousPaymentAmount:
+      Amount: "13.25"
+      Currency: "GBP"
+
+# Error fixture scenarios (used by TC-DD-004, TC-DD-006, TC-DD-007, TC-DD-008)
+error_fixtures:
+  - scenario_id: token_expired_401
+    error_id: TokenExpired
+    http_status: 401
+    userMessage: "Session expired. Please log in again."
+    isRetriable: true
+
+  - scenario_id: consent_revoked_403
+    error_id: ConsentRevoked
+    http_status: 403
+    userMessage: "Account access consent has been revoked. Re-authorise in Consents."
+    isRetriable: false
+
+  - scenario_id: rate_limited_429
+    error_id: RateLimited
+    http_status: 429
+    userMessage: "Too many requests. Please wait a moment and try again."
+    isRetriable: true
+
+  - scenario_id: network_error
+    error_id: NetworkError
+    http_status: null
+    userMessage: "No network connection. Check your connection and retry."
+    isRetriable: true

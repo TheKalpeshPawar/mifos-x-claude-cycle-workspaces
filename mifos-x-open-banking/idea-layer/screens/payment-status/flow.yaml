@@ -1,0 +1,48 @@
+sibling: flow
+schema_version: "4.0"
+feature_id: payment-status
+
+feature: payment-status
+flow_ref: send-money-payment
+
+entry_points:
+  - source: send-money
+    label: "Tap View status on the payment success state"
+    params: [paymentId]
+
+  # Renamed 2026-07-31 (/idea-sync) — same normalisation as send-money/flow.yaml:
+  # non-screen entry sources are snake_case; `app-shell` read as a screen slug.
+  - source: app_shell_bottom_nav
+    label: "Pay tab (order 2), when a payment is already in progress"
+    params: [paymentId]
+    condition: "the most recent payment has an in_progress disposition"
+    notes: >-
+      Secondary entry so a PSU who leaves the app mid-settlement can find the payment again
+      rather than being dropped back onto an empty send-money form.
+
+transitions:
+  - from: payment-status
+    to: send-money
+    trigger: "Back button (top-app-bar leading)"
+    params: []
+
+  - from: payment-status
+    to: send-money
+    trigger: "New payment button (shown only on a Rejected status)"
+    params: []
+    condition: "disposition == terminal_failure"
+    notes: >-
+      Opens send-money with a cleared form. Deliberately a fresh instruction rather than a
+      resubmit — a rejected payment must not be retried against the same consent.
+
+# Moved verbatim from ui.yaml 2026-07-31 (CROSS_LEAK repair).
+dependencies:
+  tier: feature
+  features:
+    - name: send-money
+      relation: parent
+      params: [paymentId]
+  libraries:
+    - name: ktorfit
+      coords: "de.jensklingenberg.ktorfit:ktorfit-lib:2.x"
+      purpose: "REST client for GET /domestic-payments/{PaymentId}"

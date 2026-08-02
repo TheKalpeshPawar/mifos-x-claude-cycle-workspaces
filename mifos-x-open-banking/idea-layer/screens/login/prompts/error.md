@@ -1,68 +1,106 @@
 ---
-ui_yaml_sha: 7e3c1f0a9b2d4e6f
-design_md_hash: 71b53c295bf863d34057f16264caf37a11512e794d356b3bec219352550d05ec
-app_shell_hash: ad7a6b42b2ae10e63ef270f15d857bd44445d775e8d9b09313b31e6569df95b4
-design_read_hash: 1639ea0545fdbc1ba9ce1eef5369eae224a6f4f57f07f0639b699652daeb8558
-content_hash: login-error-2026-06-02
+ui_yaml_sha: 756edf92099e2eafcb8c9a49babda159b83b5fd95f7dc6f3fdcc4d4890cba9d2
+design_md_hash: f734ecfba28b3b0688cbd7ca6f3d7fca27febb15fd021d72a4518ae0e3a4200d
+app_shell_hash: 7b9c63f9aee4f5b5005b1d7533e7f5feab6427f398954987c34ee0f382b0ed69
+design_read_hash: 513c061d12f3a90e84d6e98e1e037b131e59fa3ca5c5f3c0abfc6ba87d24bcaf
+content_hash: 57802c1b5a64b64eec11c8202a008a4fca9675a58852a8d02cd0abb7c8cada5d
 
-design_read_aesthetic: taste-default
-design_read_dials: {variance: 4, motion: 3, density: 5}
+design_read_aesthetic: minimalist-ui
+design_read_dials: {variance: 3, motion: 2, density: 5}
 aesthetic_variant_override: null
-archetype: form
+archetype: error_state
 
 feature: login
 state: error
 state_visibility: error
-viewmodel: LoginViewModel
 
 project_id: 'null'
 design_system_id: 'null'
 
-generated_by: /idea export
+generated_by: stitch-prompt-build.ts v2.0.0
 prompt_template_version: stitch-per-state-v3.0.0
-generated_at: "2026-06-02"
+craft_rules_version: v1.0.0
 ---
 
 # login — error state
 
-> Auto-generated from screens/login/ui.yaml @ SHA 7e3c1f0a9b2d4e6f
-> Stitch DesignSystem: (pending DESIGN.md upload — run /idea-export-stitch sub-plan 02)
+> Auto-generated from screens/login/ui.yaml @ SHA 54ba89efe391669f
+> Stitch DesignSystem: (pending DESIGN.md upload — run /idea-feature-stitch sub-plan 02)
 > DO NOT redeclare colors / fonts / spacing — they live in DESIGN.md.
 
 ↓↓↓ MOCKUP PROMPT
 
-Design the error state of the Login screen for **Mifos Open Banking**, a Kotlin Multiplatform open-banking super-app for consumer retail banking and field officer agent banking. An error banner appears above the Sign In button; inputs are re-enabled for retry.
+> DO NOT invent navigation, tabs, or screens beyond the declared app-shell (Home, Accounts, Pay, More) plus the composition below. Every nav item you render MUST come from that list.
+> Only elements that navigate or perform an action may look tappable (cursor, ripple, pressed state). DO NOT add tap affordances to decorative content — page titles, section headings, avatars, standalone icons, badges, and static labels are NOT interactive.
 
-Palette: primary #B2D188, on_primary #1F3701, primary_container #354E16, on_primary_container #CDEDA3, secondary #A0CFCB, background #12140E, on_surface #E3E3D8, surface_container #1E201A, surface_container_high #282A24, outline #8F9285, error #FFB4AB, on_surface_variant #C5C8BA.
+## Archetype: form
 
-**Component 1 — Logo** (80dp square, centered, top margin 48dp): Mifos X mark tinted #B2D188, 16dp bottom margin.
+## Layout
+- type: scrollable_column
+- padding: default
+- alignment: start
+- responsive: any multi-column region MUST be mobile-first and collapse to a single column at narrow/phone widths — never a fixed multi-column grid with no single-column fallback.
 
-**Component 2 — Headline** (full width minus 32dp insets, centered): "Welcome Back" Outfit SemiBold 24sp #B2D188. No subtitle below it.
+## Composition (top → bottom)
+1. **progress_indicator** (#loading_indicator)
+2. **text** (#loading_label)
+3. **progress_indicator** (#authorising_spinner)
+4. **text** (#authorising_label)
+5. **text** (#authorising_hint)
+6. **card** (#hsbc_explainer_card) — "hsbc_explainer_card"
+   - **image** (#hsbc_logo)
+   - **text** (#ob_regulated_badge)
+   - **text** (#explainer_headline)
+   - **text** (#explainer_body)
+   - **divider** (#card_divider)
+   - **text** (#security_notice)
+7. **section_header** (#permissions_header) — label: "{strings.screen.login.permissions.header}"
+8. **list** (#permissions_list) — "permissions_list"
+   - **list_item** (#permission_row) — icon: "check_circle_outline"
+9. **text** (#consent_validity_note)
+10. **text** (#consent_expiry_display)
+11. **button** (#continue_hsbc_button) — label: "{strings.screen.login.cta.continue}", icon: "open_in_new", on_click: { action: start_oauth }
+12. **button** (#cancel_button) — label: "{strings.screen.login.cta.cancel}", on_click: { action: navigate_back, target: user-onboarding }
+13. **empty_state** (#error_state) — "{strings.screen.login.error.title}"
+   - **button** (#retry_button) — label: "{strings.screen.login.error.retry}", on_click: { action: start_oauth }
+14. **empty_state** (#login_empty_state) — "{strings.screen.login.empty.title}"
+   - **button** (#login_empty_back_button) — label: "{strings.screen.login.empty.go_back}", on_click: { action: navigate_back, target: user-onboarding }
 
-**Component 3 — Username Field** (full width minus 32dp insets, top margin 24dp): Outlined Text Field 56dp tall, 4dp corner radius, outline #8F9285, background #1E201A, value "john.doe" 16sp #E3E3D8.
+## State-specific behavior
+- Show an error illustration, a short message, and a single Retry action. No content rails visible.
 
-**Component 4 — Password Field** (full width minus 32dp insets, top margin 12dp): Outlined Text Field same style showing masked dots, trailing eye visibility-toggle icon #C5C8BA.
+## Content source manifest
+- (no demo collections bound for this state)
 
-**Component 5 — Remember Row** (full width minus 32dp insets, top margin 8dp): Left-aligned row — checkbox tint #B2D188 plus label "Keep me signed in" Outfit Regular 14sp #E3E3D8.
+## Components (vocabulary used in this prompt)
+- (no named components extracted — see composition)
 
-**Component 6 — Error Banner** (full width minus 32dp insets, top margin 16dp): Filled card background #4A0E0C, 8dp corner radius, 16dp padding, leading alert icon #FFB4AB 20dp plus message "Invalid username or password. Please check your credentials and try again." Outfit Regular 13sp #FFB4AB.
+## Shell (app-shell resolved for this state)
+- Home: navigates to home
+- Accounts: navigates to accounts
+- Pay: navigates to send-money
+- More: navigates to settings
+- Render MUST keep nav/bar elements consistent with the list above — present or absent, never partial.
 
-**Component 7 — Sign In Button** (full width minus 32dp insets, top margin 16dp): Filled Button 48dp tall, 8dp corner radius, background #B2D188, label "Sign In" Outfit SemiBold 16sp #1F3701 centered, enabled for retry.
+## Tokens (design-tokens roles consumed)
+- Colors: primary / secondary / surface / on-surface / on-surface-variant / error (M3 standard roles).
+- Typography: body-large / title-large (M3 standard roles).
+- Spacing: gap.sm / gap.md / gap.lg.
+- ALL token references are by name from the uploaded design system — no hex literals, no inline size values.
 
-**Component 8 — OR Divider Row** (full width minus 32dp insets, top margin 24dp): Centered row — thin #282A24 line, "OR" Outfit Medium 12sp #C5C8BA with 16dp horizontal padding, thin #282A24 line.
+## Self-Validation Checklist (MANDATORY)
 
-**Component 9 — OAuth Button** (full width minus 32dp insets, top margin 24dp): Outlined Button 48dp tall, 8dp corner radius, outline #B2D188, leading open-in-browser icon, label "Sign in with OBP Account" Outfit Medium 16sp #B2D188 centered.
+Before returning the rendered mockup, verify ALL of these are true. If any fails, FIX the output and re-render.
 
-**Component 10 — OAuth Hint** (full width minus 32dp insets, top margin 4dp, centered): "Redirects to Open Bank Project for secure authentication" Outfit Regular 13sp #C5C8BA.
+- [ ] **Per-state shape:** the render shows ONLY this state ("error"). Do not blend multiple states into one mockup.
+- [ ] **Real content:** every text label, image, and data point reflects the content source manifest above — no numbered generic items, no filler text, no dummy text, no empty strings.
+- [ ] **Token fidelity:** colors come from the uploaded design system (primary/secondary/surface/etc.) by name; spacing comes from declared scale tokens. No invented hex codes, no invented size literals.
+- [ ] **Component vocabulary:** every component in the render maps to a named design-system component (Card, FAB, BottomBar, etc.) — no invented or off-system components.
+- [ ] **Archetype honored:** the layout follows the "form" archetype skeleton — composition order top → bottom matches the Composition section.
+- [ ] **App-shell parity:** if a bottom nav, top app bar, or FAB appears in the render, it matches the resolved shell from the app-shell config. Shell elements are either present-and-consistent OR absent — never partial.
 
-**Component 11 — Bottom Divider** (full width minus 32dp insets, top margin 16dp): Thin #282A24 line.
+If any of these fail and the fix isn't clear → halt rendering and surface "Self-validation failed at: {checkpoint}."
 
-**Component 12 — Forgot Link** (full width minus 32dp insets, top margin 16dp, centered): "Forgot Password?" Outfit Regular 14sp #A0CFCB, 44dp tap height.
-
-**Component 13 — Footer** (full width minus 32dp insets, top margin 8dp, bottom margin 32dp, centered): "Powered by Mifos" Outfit Bold 14sp #B2D188, weight 700.
-
-Do not use em-dash anywhere in text. Do not make any headline more than 3 lines or any subtitle more than 25 words. Do not break the page theme between sections. Do not place light text on light buttons or dark text on dark buttons.
-
-Scrollable layout on #12140E. The #FFB4AB error tint stays restrained against the calm sage theme, while the bold footer keeps the brand grounded at the base.
+Return ONLY when all 6 checkpoints pass.
 
 ↑↑↑ MOCKUP PROMPT

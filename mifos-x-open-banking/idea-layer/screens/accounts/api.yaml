@@ -1,48 +1,57 @@
 sibling: api
 schema_version: "4.0"
 feature_id: accounts
-api:
-  - id: obp_get_accounts
-    endpoint: "GET /obp/v3.0.0/banks/{bankId}/accounts"
-    tag: Accounts
-    auth: DirectLogin
-    note: "Cross-bank list read is /obp/v3.0.0/my/accounts (listAccounts/myAccounts); accountsStream feeds the screen. Account DTO is a superset."
-    params:
-      - name: bankId
-        type: path
-        value: "gh.29.uk"
-    response:
-      fields:
-        - name: id
-          type: String
-        - name: label
-          type: String
-        - name: account_type
-          type: String
-        - name: bank_id
-          type: String
-        - name: number
-          type: String
-        - name: iban
-          type: String
-        - name: balance
-          type: object
-          children:
-            - name: currency
-              type: String
-            - name: amount
-              type: String
-        - name: account_routings
-          type: "List<AccountRouting>"
-          children:
-            - name: scheme
-              type: String
-            - name: address
-              type: String
-    errors:
+
+screen_id: accounts
+
+endpoints:
+  - id: accounts-list
+    method: GET
+    path: "/accounts"
+    response_dto: OBReadAccount6
+    response_dto_path: "Data.Account[]"
+    permission: ReadAccountsDetail
+    requires_auth: true
+    network_policy: cellular_allowed
+    notes: "Returns all accounts the PSU authorised. Always the first resource call after consent. Empty Data.Account[] → empty state."
+    error_codes:
       - code: 401
-        message: "Unauthorized — DirectLogin token missing or expired"
+        cause: "Access token expired or invalid."
+        recovery: "Clear token store → navigate to login."
+      - code: 403
+        cause: "Consent rejected, revoked, or ReadAccountsDetail permission absent."
+        recovery: "Navigate to consent-list for re-authorisation."
+      - code: 429
+        cause: "HSBC rate-limit exceeded (OBIE mandates 500 calls/5 min PSU limit)."
+        recovery: "Exponential back-off + surface retry CTA."
+      - code: 503
+        cause: "HSBC sandbox unavailable."
+        recovery: "Surface retry CTA after brief delay."
+
+  - id: balances
+    method: GET
+    path: "/accounts/{AccountId}/balances"
+    response_dto: OBReadBalance1
+    response_dto_path: "Data.Balance[]"
+    permission: ReadBalances
+    requires_auth: true
+    network_policy: cellular_allowed
+    path_params:
+      AccountId:
+        type: string
+        description: "OBAccount6.AccountId — returned from accounts-list."
+    notes: >
+      Called for each AccountId returned by accounts-list. Parallel fan-out per account
+      via coroutineScope async/awaitAll. Balance type preference order: InterimAvailable
+      → InterimBooked → OpeningBooked. Multi-currency accounts (GlobalWallet) return
+      native currency balance — display as-is without GBP conversion.
+    error_codes:
+      - code: 401
+        cause: "Access token expired."
+        recovery: "Mark all accounts as balance_unavailable; surface session-expired error."
+      - code: 403
+        cause: "ReadBalances permission not granted in consent."
+        recovery: "Show account card without balance row; surface advisory chip."
       - code: 404
-        message: "Bank not found"
-      - code: 500
-        message: "OBP server error"
+        cause: "AccountId not found — stale reference (consent revoked mid-session)."
+        recovery: "Remove stale account card from list; show snackbar advisory."

@@ -1,12 +1,12 @@
 ---
-ui_yaml_sha: f78a3dba3aff3089e2451e41f32781ab4fe14bcec47d87ec57ad572302aa3a0c
-design_md_hash: 71b53c295bf863d34057f16264caf37a11512e794d356b3bec219352550d05ec
-app_shell_hash: ad7a6b42b2ae10e63ef270f15d857bd44445d775e8d9b09313b31e6569df95b4
-design_read_hash: 1639ea0545fdbc1ba9ce1eef5369eae224a6f4f57f07f0639b699652daeb8558
-content_hash: 9c538df3792798dfc4d8c388b31b30c16c0ab06d6f53e5aea99a68c9495535e3
+ui_yaml_sha: c36795ca8c8fa8dd5422e791622215153a0b133b94e0c9eaae9f77172b33187d
+design_md_hash: f734ecfba28b3b0688cbd7ca6f3d7fca27febb15fd021d72a4518ae0e3a4200d
+app_shell_hash: 7b9c63f9aee4f5b5005b1d7533e7f5feab6427f398954987c34ee0f382b0ed69
+design_read_hash: 513c061d12f3a90e84d6e98e1e037b131e59fa3ca5c5f3c0abfc6ba87d24bcaf
+content_hash: 26214d56a61fca92b80ddaa57d0ddf708e1bdd9aa341d668e67117e0cdc9515a
 
-design_read_aesthetic: taste-default
-design_read_dials: {variance: 4, motion: 3, density: 5}
+design_read_aesthetic: minimalist-ui
+design_read_dials: {variance: 3, motion: 2, density: 5}
 aesthetic_variant_override: null
 archetype: empty_state
 
@@ -24,26 +24,77 @@ craft_rules_version: v1.0.0
 
 # standing-orders — empty state
 
-> Auto-generated from screens/standing-orders/ui.yaml @ SHA 83b8314f858f8c16
-> Stitch DesignSystem: (pending DESIGN.md upload — run /idea-export-stitch sub-plan 02)
+> Auto-generated from screens/standing-orders/ui.yaml @ SHA 0b8cd1b5b4a67477
+> Stitch DesignSystem: (pending DESIGN.md upload — run /idea-feature-stitch sub-plan 02)
 > DO NOT redeclare colors / fonts / spacing — they live in DESIGN.md.
 
 ↓↓↓ MOCKUP PROMPT
-Design the empty state of the standing-orders screen for **Mifos X Open Banking**, a Open Banking KMP super-app — consumer retail banking + field officer agent banking powered by Open Bank Project API v7, built with Compose Multiplatform across Android, iOS, Desktop, and Web.
 
-Palette: primary #B2D188, on_primary #1F3701, primary_container #354E16, on_primary_container #CDEDA3, secondary #A0CFCB, on_secondary #003735, secondary_container #1F4E4B, on_secondary_container #BCEBE7, background #12140E, surface #12140E, on_surface #E3E3D8, surface_variant #44483D, on_surface_variant #C5C8BA, surface_container #1E201A, surface_container_high #282A24, outline #8F9285, outline_variant #44483D, error #FFB4AB, pending #E8A317.
+> DO NOT invent navigation, tabs, or screens beyond the declared app-shell (Home, Accounts, Pay, More) plus the composition below. Every nav item you render MUST come from that list.
+> Only elements that navigate or perform an action may look tappable (cursor, ripple, pressed state). DO NOT add tap affordances to decorative content — page titles, section headings, avatars, standalone icons, badges, and static labels are NOT interactive.
 
-**Component 1 — App Bar** (64dp tall, full width): Title "Standing Orders" Outfit Medium 18sp #E3E3D8 centered. Zero elevation, background #12140E.
+## Archetype: index_list
 
-**Component 2 — Hero** (centered, top margin 80dp): 120dp wide illustration of a calendar with a recurring arrow rendered in #44483D / #8F9285 on #12140E background, conveying "no scheduled payments yet" in neutral muted tones. empty_state archetype.
+## Layout
+- type: scrollable_column
+- padding: default
+- alignment: start
+- responsive: any multi-column region MUST be mobile-first and collapse to a single column at narrow/phone widths — never a fixed multi-column grid with no single-column fallback.
 
-**Component 3 — Text** (centered, top margin 24dp, horizontal padding 48dp): "No Standing Orders Yet" Outfit SemiBold 20sp #E3E3D8 centered, max 2 lines.
+## Composition (top → bottom)
+1. **progress_indicator**
+2. **icon_button** (#back_button) — icon: "arrow_back", on_click: { action: navigate_back, target: account-detail }
+3. **text** (#summary_row)
+4. **list** (#standing_orders_list) — "standing_orders_list"
+   - **card** (#standing_order_card) — "standing_order_card"
+      - **text** (#so_payee_name)
+      - **badge** (#so_status_badge)
+      - **text** (#so_amount)
+      - **text** (#so_frequency)
+      - **text** (#so_next_date)
+      - **text** (#so_final_date)
+      - **text** (#so_sort_code)
+      - **text** (#so_payment_ref)
+5. **empty_state** (#empty_standing_orders) — title: "{strings.standing_orders_empty_title}", icon: "autorenew"
+6. **empty_state** (#unsupported_standing_orders) — title: "{strings.standing_orders_unsupported_title}", icon: "info_outline"
+7. **empty_state** (#error_state) — "{strings.standing_orders_error_title}"
+   - **button** (#retry_button) — label: "{strings.standing_orders_retry}", on_click: { action: retryload }
 
-**Component 4 — Text** (centered, top margin 8dp, horizontal padding 48dp): "Set up recurring payments for rent, subscriptions, or regular bills and they will appear here." Outfit Regular 14sp #8F9285 centered, max 25 words, line-height 20sp.
+## State-specific behavior
+- Show an empty-state illustration, a friendly message, and one primary call-to-action button.
 
-**Component 5 — Button** (full width minus 64dp insets, top margin 32dp): Filled button 48dp tall, 24dp corner radius, background #B2D188, leading plus-circle icon 20dp #1F3701, label "Create Standing Order" Outfit SemiBold 15sp #1F3701.
+## Content source manifest
+- (no demo collections bound for this state)
 
-Do not use em-dash anywhere in text. Do not make any headline more than 3 lines or any subtitle more than 25 words. Do not break the page theme between sections. Do not place light text on light buttons or dark text on dark buttons.
+## Components (vocabulary used in this prompt)
+- (no named components extracted — see composition)
 
-Centered layout on #12140E with generous vertical breathing room. The earth-green accent #B2D188 on the primary button provides clear forward momentum calibrated to the trustworthy open banking aesthetic; muted neutrals on the illustration keep the empty state calm rather than alarming.
+## Shell (app-shell resolved for this state)
+- Home: navigates to home
+- Accounts: navigates to accounts
+- Pay: navigates to send-money
+- More: navigates to settings
+- Render MUST keep nav/bar elements consistent with the list above — present or absent, never partial.
+
+## Tokens (design-tokens roles consumed)
+- Colors: primary / secondary / surface / on-surface / on-surface-variant / error (M3 standard roles).
+- Typography: body-large / title-large (M3 standard roles).
+- Spacing: gap.sm / gap.md / gap.lg.
+- ALL token references are by name from the uploaded design system — no hex literals, no inline size values.
+
+## Self-Validation Checklist (MANDATORY)
+
+Before returning the rendered mockup, verify ALL of these are true. If any fails, FIX the output and re-render.
+
+- [ ] **Per-state shape:** the render shows ONLY this state ("empty"). Do not blend multiple states into one mockup.
+- [ ] **Real content:** every text label, image, and data point reflects the content source manifest above — no numbered generic items, no filler text, no dummy text, no empty strings.
+- [ ] **Token fidelity:** colors come from the uploaded design system (primary/secondary/surface/etc.) by name; spacing comes from declared scale tokens. No invented hex codes, no invented size literals.
+- [ ] **Component vocabulary:** every component in the render maps to a named design-system component (Card, FAB, BottomBar, etc.) — no invented or off-system components.
+- [ ] **Archetype honored:** the layout follows the "index_list" archetype skeleton — composition order top → bottom matches the Composition section.
+- [ ] **App-shell parity:** if a bottom nav, top app bar, or FAB appears in the render, it matches the resolved shell from the app-shell config. Shell elements are either present-and-consistent OR absent — never partial.
+
+If any of these fail and the fix isn't clear → halt rendering and surface "Self-validation failed at: {checkpoint}."
+
+Return ONLY when all 6 checkpoints pass.
+
 ↑↑↑ MOCKUP PROMPT

@@ -1,11 +1,86 @@
 sibling: flow
 schema_version: "4.0"
 feature_id: send-money
-flow_ids:
-  - consumer-banking
-navigates_to:
-  - send-money-amount
-flow_logic: []
-journey_ids:
-  - consumer-accounts-payments
-  - consumer-insights-utilities
+
+feature: send-money
+flow_ref: send-money-payment
+
+entry_points:
+  # Renamed 2026-07-31 (/idea-sync): source was `app-shell`. Every other non-screen entry
+  # source in this project is snake_case (app_shell_bottom_nav, app_shell_more_menu,
+  # app_launch_no_consent, nav_host_start, back_stack_pop, hsbc_oauth_redirect,
+  # post_revoke_redirect); hyphens are the SCREEN-slug namespace, so `app-shell` was
+  # indistinguishable from a nav reference to a screen that does not exist — nav resolvers
+  # flagged it as dead before it could be confirmed legitimate against app-shell.yaml.
+  - source: app_shell_bottom_nav
+    label: "Tap the Pay tab (bottom-nav order 2)"
+    params: []
+    notes: >-
+      The Pay tab already exists in app-shell.yaml#bottom_navigation.items[2] with
+      target_screen: send-money and implementation_status: placeholder. In source it is
+      AuthenticatedNavBarTabItem.PayTab pointing at SendMoneyRoute, which renders
+      PlaceholderScreen("Pay"). This feature replaces that placeholder — no new nav edge
+      is introduced, the existing one is filled.
+
+transitions:
+  - from: send-money
+    to: payment-consent
+    trigger: "Confirm button on the review step, after the consent is staged"
+    params: [consentId]
+    condition: "consent staged successfully (HTTP 201, Status = AwaitingAuthorisation)"
+    notes: >-
+      Leaves the app for the bank's authorise page. The return leg re-enters through
+      payment-consent, mirroring how login hands off to consent-callback for AIS.
+
+  - from: payment-consent
+    to: send-money
+    trigger: "Authorisation completed; PSU access token obtained"
+    params: [consentId]
+    notes: "Re-entry point that triggers SubmitPayment with the reused idempotency key."
+
+  - from: send-money
+    to: payment-status
+    trigger: "View status button on the success state"
+    params: [paymentId]
+    condition: "payment submitted successfully (HTTP 201)"
+
+  - from: send-money
+    to: consent-list
+    trigger: "View Consents button (shown on 403 ConsentRevoked)"
+    params: []
+    condition: "error.type == ConsentRevoked"
+
+  - from: send-money
+    to: send-money
+    trigger: "Edit amount button (shown on U014 OutsideControlParameters or InsufficientFunds)"
+    params: []
+    condition: "error.type in {OutsideControlParameters, InsufficientFunds}"
+    notes: "Self-transition back to the amount step; debtor and creditor selections are preserved."
+
+# Moved verbatim from ui.yaml 2026-07-31 (CROSS_LEAK repair).
+dependencies:
+  tier: feature
+  features:
+    - name: accounts
+      relation: data-source
+      params: []
+      notes: "Supplies the debtor account list — the PSU's own authorised accounts."
+    - name: beneficiaries
+      relation: data-source
+      params: [accountId]
+      notes: "Supplies saved payees as creditor candidates."
+    - name: payment-consent
+      relation: child
+      params: [consentId]
+      notes: "Owns the app-to-app authorise leg on scope=payments."
+    - name: payment-status
+      relation: child
+      params: [paymentId]
+      notes: "Receives DomesticPaymentId after a successful submit."
+    - name: consent-list
+      relation: error-recovery
+      condition: "error.type == ConsentRevoked"
+  libraries:
+    - name: ktorfit
+      coords: "de.jensklingenberg.ktorfit:ktorfit-lib:2.x"
+      purpose: "REST client for the HSBC PISP domestic-payment endpoints"

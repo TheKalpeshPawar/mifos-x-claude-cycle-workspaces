@@ -1,92 +1,64 @@
 sibling: data-flow
-schema_version: "4.0"
+schema_version: "2.1.0"
 feature_id: account-detail
-entries:
-  - screen_id: account-detail
-    trigger: on_mount
-    endpoints:
-      - obp_get_account_detail
-    direction: read
-    dtos:
-      - name: Account
-        role: response
-        api_id: obp_get_account_detail
-    produces_state: content
-    error_paths:
-      - error_code: 401
-        behavior: navigate_login
-      - error_code: 404
-        behavior: error_state
 
-  - screen_id: account-detail
-    trigger: on_mount
-    endpoints:
-      - obp_get_account_transactions
-    direction: read
-    dtos:
-      - name: Transaction
-        role: response
-        api_id: obp_get_account_transactions
-    produces_state: content
-    error_paths:
-      - error_code: 401
-        behavior: navigate_login
-      - error_code: 404
-        behavior: error_state
+screen_id: account-detail
 
-  - screen_id: account-detail
-    trigger: on_interact
-    event: RetryLoad
-    endpoints:
-      - obp_get_account_detail
-      - obp_get_account_transactions
-    direction: read
-    dtos:
-      - name: Account
-        role: response
-        api_id: obp_get_account_detail
-      - name: Transaction
-        role: response
-        api_id: obp_get_account_transactions
-    produces_state: content
-    error_paths:
-      - error_code: 401
-        behavior: navigate_login
-      - error_code: 404
-        behavior: error_state
+params:
+  - name: accountId
+    type: string
+    required: true
+    source: route
 
-  - screen_id: account-detail
-    trigger: on_interact
-    event: CopyIban
-    endpoints: []
-    direction: read
-    dtos: []
-    produces_state: content
-    notes: "Clipboard write; no network call"
+on_mount:
+  - trigger: account_detail_load
+    description: "Load account metadata and all balance types in parallel coroutines via ktorfit."
+    steps:
+      - call: account-detail
+        path_params:
+          AccountId: "{params.accountId}"
+        store_as: account
+      - call: balances
+        path_params:
+          AccountId: "{params.accountId}"
+        store_as: balances
+    on_loading: loading
+    on_success:
+      condition: "balances.length > 0"
+      true_route: content
+      false_route: empty         # zero-balance edge case → empty state, not content
+    on_error:
+      # Typed routing: ViewModel reads HTTP status from the thrown exception and
+      # sets error.code + error.message + error.recoverable before entering error state.
+      routes:
+        - code: 401
+          error_id: TokenExpiredError
+          message: "Session expired. Please log in again."
+          recoverable: true
+          route_to: error
+        - code: 403
+          error_id: ConsentWithdrawnError
+          message: "Access to this account has been withdrawn."
+          recoverable: false
+          route_to: error
+        - code: 404
+          error_id: AccountNotFoundError
+          message: "Account not found in your authorised account set."
+          recoverable: false
+          route_to: error
+        - code: network
+          error_id: NetworkError
+          message: "No network connection. Please check your connection and retry."
+          recoverable: true
+          route_to: error
+        - code: default
+          error_id: UnexpectedError
+          message: "Something went wrong. Please try again."
+          recoverable: true
+          route_to: error
 
-  - screen_id: account-detail
-    trigger: on_interact
-    event: CopyBic
-    endpoints: []
-    direction: read
-    dtos: []
-    produces_state: content
-    notes: "Clipboard write; no network call"
-
-  - screen_id: account-detail
-    trigger: on_interact
-    event: NavigateToSendMoney
-    endpoints: []
-    direction: read
-    dtos: []
-    produces_state: content
-    notes: "Navigation event to send-money; no network call"
-
-  - screen_id: account-detail
-    trigger: on_interact
-    event: NavigateToTransactions
-    endpoints: []
-    direction: read
-    dtos: []
-    produces_state: content
-    notes: "Navigation event to transactions; no network call"
+on_user_action:
+  - trigger: retry_load
+    re_runs: [account_detail_load]
+    visible_when: "error.recoverable == true"
+    description: "Only shown and wired for recoverable errors (401, network). Hidden for 403/404."

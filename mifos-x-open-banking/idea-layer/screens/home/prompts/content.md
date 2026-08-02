@@ -1,12 +1,12 @@
 ---
-ui_yaml_sha: b89d839e6c9e3be9d2a9ef40cf53bd6b62a21124885037343b404ee39dd8d76d
-design_md_hash: 71b53c295bf863d34057f16264caf37a11512e794d356b3bec219352550d05ec
-app_shell_hash: ad7a6b42b2ae10e63ef270f15d857bd44445d775e8d9b09313b31e6569df95b4
-design_read_hash: 1639ea0545fdbc1ba9ce1eef5369eae224a6f4f57f07f0639b699652daeb8558
-content_hash: 82418c61623a94e83e07736e5b8b71c568501b572e100b802a8d4624be8bc455
+ui_yaml_sha: 10606eacf96bb4546025d80be9b0028a47285eff63bbf206884f9ae45e53a4c8
+design_md_hash: f734ecfba28b3b0688cbd7ca6f3d7fca27febb15fd021d72a4518ae0e3a4200d
+app_shell_hash: 7b9c63f9aee4f5b5005b1d7533e7f5feab6427f398954987c34ee0f382b0ed69
+design_read_hash: 513c061d12f3a90e84d6e98e1e037b131e59fa3ca5c5f3c0abfc6ba87d24bcaf
+content_hash: c4c454be5b3cccd6cdab79a7a4e8a8c4f4535a6d34cf5a50e8463177acd029fb
 
-design_read_aesthetic: taste-default
-design_read_dials: {variance: 4, motion: 3, density: 5}
+design_read_aesthetic: minimalist-ui
+design_read_dials: {variance: 3, motion: 2, density: 5}
 aesthetic_variant_override: null
 archetype: dashboard
 
@@ -14,8 +14,8 @@ feature: home
 state: content
 state_visibility: content
 
-project_id: '17153754672098888646'
-design_system_id: '2005644667042354169'
+project_id: 'null'
+design_system_id: 'null'
 
 generated_by: stitch-prompt-build.ts v2.0.0
 prompt_template_version: stitch-per-state-v3.0.0
@@ -24,28 +24,96 @@ craft_rules_version: v1.0.0
 
 # home — content state
 
-> Auto-generated from screens/home/ui.yaml @ SHA 39c82f1bfadd4407
-> Stitch DesignSystem: 2005644667042354169
+> Auto-generated from screens/home/ui.yaml @ SHA d442ca62f155748f
+> Stitch DesignSystem: (pending DESIGN.md upload — run /idea-feature-stitch sub-plan 02)
 > DO NOT redeclare colors / fonts / spacing — they live in DESIGN.md.
 
 ↓↓↓ MOCKUP PROMPT
 
-Design the content state of the home screen for **mifos-x-open-banking**, a Kotlin Multiplatform open-banking super-app for consumer retail banking and field officer agent banking.
+> DO NOT invent navigation, tabs, or screens beyond the declared app-shell (Home, Accounts, Pay, More) plus the composition below. Every nav item you render MUST come from that list.
+> Only elements that navigate or perform an action may look tappable (cursor, ripple, pressed state). DO NOT add tap affordances to decorative content — page titles, section headings, avatars, standalone icons, badges, and static labels are NOT interactive.
 
-Palette: primary #B2D188, on_primary #1F3701, primary_container #354E16, on_primary_container #CDEDA3, secondary #A0CFCB, on_secondary #003735, secondary_container #1F4E4B, background #12140E, surface #12140E, on_surface #E3E3D8, surface_variant #44483D, outline #8F9285, pending #E8A317.
+## Archetype: dashboard
 
-**Component 1 — App Bar** (full width, 56dp tall): Outfit medium 22sp "Good morning, Alex" in on_surface #E3E3D8; subtitle Outfit regular 14sp "Monday, 25 May 2026" in on_surface_variant #C5C8BA; background surface #12140E.
+## Layout
+- type: scrollable_column
+- padding: default
+- alignment: start
+- responsive: any multi-column region MUST be mobile-first and collapse to a single column at narrow/phone widths — never a fixed multi-column grid with no single-column fallback.
 
-**Component 2 — Balance Card** (full width minus 32dp insets, radius 16dp): dashboard card on surface_container #1E201A; Outfit medium 14sp "Primary Checking" in on_surface_variant; Outfit bold 28sp "£4,250.00" in primary #B2D188; Outfit regular 14sp ".... .... .... 0130" in on_surface_variant. Chip Row of 3 filled buttons (Send Money, Beneficiaries, View Cards), background primary_container #354E16, label on_primary_container #CDEDA3, height 36dp, spacing 8dp.
+## Composition (top → bottom)
+1. **stack** (#loading_skeleton) — "loading_skeleton"
+   - **shimmer** (#skeleton_hero)
+   - **shimmer** (#skeleton_actions)
+   - **shimmer** (#skeleton_tx_header)
+   - **shimmer** (#skeleton_tx_1)
+   - **shimmer** (#skeleton_tx_2)
+   - **shimmer** (#skeleton_tx_3)
+2. **bottom_sheet** (#account_selector_sheet) — "account_selector_sheet"
+   - **list_item** (#account_selector_row) — 3 items: "40051512345678", "60161331926819", "40060512987654"
+3. **card** (#hero_balance_card) — "hero_balance_card"
+   - **stack**
+      - **stack**
+         - **text** (#hero_account_subtype)
+         - **icon** (#hero_account_icon)
+      - **text** (#hero_nickname)
+      - **text** (#hero_balance)
+      - **stack**
+         - **text** (#hero_available_label)
+         - **text** (#hero_available_amount)
+      - **text** (#hero_identification)
+4. **stack** (#recent_transactions_section) — "recent_transactions_section"
+   - **stack**
+      - **section_header** (#recent_tx_header) — 5 items: "TX-20260627-0002", "TX-20260627-0001", "TX-20260626-0001", "TX-20260626-0002", "TX-20260625-0001"
+      - **text_button** (#view_all_transactions_link) — label: "{strings.home.recent_transactions.view_all}", on_click: { action: navigate_transactions, target: transactions }
+   - **list** (#recent_transactions_list) — "recent_transactions_list"
+      - **card** (#recent_tx_row) — "recent_tx_row"
+         - **stack**
+            - **icon** (#tx_category_icon)
+            - **stack**
+               - **text** (#tx_description)
+               - **text** (#tx_date)
+            - **text** (#tx_amount)
+5. **empty_state** (#empty_home) — title: "{strings.home.empty.title}", icon: "account_balance_wallet"
+6. **error_state** (#error_home) — "{strings.home.error.title}"
+   - **button** (#retry_button) — label: "{strings.home.error.retry_button}", on_click: { action: retry_load }
 
-**Component 3 — Chip Row** (full width minus 32dp insets, 40dp, radius 999dp): wallet icon + Outfit regular 14sp "Total across 3 accounts: £12,480.50" in on_surface #E3E3D8; background surface_variant #44483D.
+## State-specific behavior
+- Fully populated with the real demo content listed below.
 
-**Component 4 — Card** (full width minus 32dp insets, 64dp each): 3 transaction Cards on surface_container_high #282A24. Row: icon circle 40dp outline #8F9285; leading stack with merchant name Outfit medium 16sp on_surface + category/date Outfit regular 12sp on_surface_variant; trailing amount Outfit medium 16sp (debit on_surface, credit primary #B2D188) + badge chip. Txn1: Tesco Supermarket, 23 May 2026, Groceries, -£42.50 DEBIT. Txn2: Salary Payment, 22 May 2026, Income, +£3,200.00 CREDIT. Txn3: EDF Energy, 20 May 2026, Utilities, -£94.20 DEBIT.
+## Content source manifest
+- demo-data.allAccounts[0..2]
+- demo-data.recentTransactions[0..4]
 
-**Component 5 — Grid** (full width minus 32dp insets, 3 columns, 88dp tall): icon tile cards on surface_container #1E201A, radius 12dp. Standing Orders (repeat icon), ATM and Branches (location_on), FX Rates (currency_exchange). Icon 24dp on_primary_container #CDEDA3, label Outfit regular 12sp on_surface below.
+## Components (vocabulary used in this prompt)
+- (no named components extracted — see composition)
 
-Do not use em-dash anywhere in text. Do not make any headline more than 3 lines or any subtitle more than 25 words. Do not break the page theme between sections. Do not place light text on light buttons or dark text on dark buttons.
+## Shell (app-shell resolved for this state)
+- Home: navigates to home
+- Accounts: navigates to accounts
+- Pay: navigates to send-money
+- More: navigates to settings
+- Render MUST keep nav/bar elements consistent with the list above — present or absent, never partial.
 
-The earth-green accent #4C662B grounds this dashboard in financial stability, its warm and balanced presence across cards and action chips conveying reliable growth for every retail banking consumer.
+## Tokens (design-tokens roles consumed)
+- Colors: primary / secondary / surface / on-surface / on-surface-variant / error (M3 standard roles).
+- Typography: body-large / title-large (M3 standard roles).
+- Spacing: gap.sm / gap.md / gap.lg.
+- ALL token references are by name from the uploaded design system — no hex literals, no inline size values.
+
+## Self-Validation Checklist (MANDATORY)
+
+Before returning the rendered mockup, verify ALL of these are true. If any fails, FIX the output and re-render.
+
+- [ ] **Per-state shape:** the render shows ONLY this state ("content"). Do not blend multiple states into one mockup.
+- [ ] **Real content:** every text label, image, and data point reflects the content source manifest above — no numbered generic items, no filler text, no dummy text, no empty strings.
+- [ ] **Token fidelity:** colors come from the uploaded design system (primary/secondary/surface/etc.) by name; spacing comes from declared scale tokens. No invented hex codes, no invented size literals.
+- [ ] **Component vocabulary:** every component in the render maps to a named design-system component (Card, FAB, BottomBar, etc.) — no invented or off-system components.
+- [ ] **Archetype honored:** the layout follows the "dashboard" archetype skeleton — composition order top → bottom matches the Composition section.
+- [ ] **App-shell parity:** if a bottom nav, top app bar, or FAB appears in the render, it matches the resolved shell from the app-shell config. Shell elements are either present-and-consistent OR absent — never partial.
+
+If any of these fail and the fix isn't clear → halt rendering and surface "Self-validation failed at: {checkpoint}."
+
+Return ONLY when all 6 checkpoints pass.
 
 ↑↑↑ MOCKUP PROMPT

@@ -1,0 +1,74 @@
+schema_version: "1.0"
+project: "mifos-x/mifos-x-open-banking"
+last_run: "2026-08-02T13:40:00Z"
+last_run_by: "claude"
+command: "/idea-migrate-schema"
+
+# ═══════════════════════════════════════════════════════════════════════════
+# 2026-08-02 /idea-migrate-schema — no-op, both axes. First entry in this log.
+# ═══════════════════════════════════════════════════════════════════════════
+runs:
+  - at: "2026-08-02T13:40:00Z"
+    command: "/idea-migrate-schema"
+    args: ""
+    actor: claude
+    status: success
+    outcome: already-current
+    engine_invoked: false
+    features_migrated: 0
+    features_in_scope: 23
+    errors: 0
+    warnings: 0
+
+    axes_evaluated:
+      - axis: schema-contract
+        outcome: already-current
+        engine_invoked: false
+        declared_version_at: "idea-layer/screens/*/docs.yaml#contract_version"
+        framework_version_at: "VERSION_MANIFEST.yaml#contract_versions.current"
+        declared: "2.0.0"
+        framework: "2.0.0"
+        artifacts: 23
+        detail: >-
+          All 23 docs.yaml declare contract_version "2.0.0", equal to the framework current.
+          _shared/idea-migration-apply.md STEP 1.VERSION-COMPARE short-circuits on equality
+          BEFORE the dry-run gate and BEFORE any engine load (AC-IDEMPOTENCY), so the
+          two-context engine was never invoked and no artifact was read for merge. The
+          dry-run and --confirm paths collapse to the same outcome on this branch — the
+          short-circuit precedes STEP 1.5, so --confirm changes nothing here.
+
+      - axis: schema-split
+        outcome: no-scope
+        engine_invoked: false
+        declared_version_at: "idea-layer/screens/*.yaml#contract_version"
+        artifacts: 0
+        detail: >-
+          The schema-split axis targets MONOLITHS at screens/*.yaml. This project holds zero
+          monoliths — all 23 features are already split into 7 siblings each. Nothing in scope.
+
+    post_migration_health:
+      staleness: >-
+        `staleness-resolve.sh {feature} --status` returns "never" for every feature sampled —
+        no staleness baseline has ever been recorded for this project. Informational, not a
+        failure: the axis short-circuited so no baseline was owed by this run.
+
+    sh1_not_addressed:
+      finding: SH-1
+      note: >-
+        This run does NOT close SH-1 (161 sibling YAMLs missing the v4.0 header triple
+        sibling/schema_version/feature_id), and no invocation of this command could.
+      why:
+        - >-
+          schema-contract axis — engine_writes is [contract_version, status, approve_hash,
+          last_verify] per core/registries/idea-migration/schema-contract/transform_ref.yaml.
+          The header triple is not in the engine's authorised write set, so even a version
+          mismatch would not have added it.
+        - >-
+          schema-split axis — scoped to monoliths, of which this project has none. The header
+          triple is emitted by that axis only when SPLITTING a monolith into siblings; files
+          already in sibling form are never revisited.
+      disposition: >-
+        Hand-applied in the follow-on step as a purely additive 3-line prepend per file.
+        Recorded there as a DOWNGRADE to warn, not a close — the sibling bodies still use this
+        project's screen_id/endpoints/scenarios dialect rather than the v4.0 schema shape, so
+        the files remain non-validating against core/schemas/contract/siblings/*.json.

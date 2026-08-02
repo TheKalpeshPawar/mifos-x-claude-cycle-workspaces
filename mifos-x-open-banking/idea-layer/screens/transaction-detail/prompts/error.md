@@ -1,12 +1,12 @@
 ---
-ui_yaml_sha: 072302937affa0a5d51a3d0dd438194f1a10aa3208c5b5674c6dca31ef5e5945
-design_md_hash: 71b53c295bf863d34057f16264caf37a11512e794d356b3bec219352550d05ec
-app_shell_hash: ad7a6b42b2ae10e63ef270f15d857bd44445d775e8d9b09313b31e6569df95b4
-design_read_hash: 1639ea0545fdbc1ba9ce1eef5369eae224a6f4f57f07f0639b699652daeb8558
-content_hash: 3ef1b5dd04af74c044534d6db32c34053e37c0b340e93d3591c86b8646bb4e43
+ui_yaml_sha: 665c79cd80277398aafe72b729e55732ce546cd4fac43f61b83ec45e21148ea4
+design_md_hash: f734ecfba28b3b0688cbd7ca6f3d7fca27febb15fd021d72a4518ae0e3a4200d
+app_shell_hash: 7b9c63f9aee4f5b5005b1d7533e7f5feab6427f398954987c34ee0f382b0ed69
+design_read_hash: 513c061d12f3a90e84d6e98e1e037b131e59fa3ca5c5f3c0abfc6ba87d24bcaf
+content_hash: f6d94cc4089444c89769214a39694578e56481b92ee817835112994487b95a0e
 
-design_read_aesthetic: taste-default
-design_read_dials: {variance: 4, motion: 3, density: 5}
+design_read_aesthetic: minimalist-ui
+design_read_dials: {variance: 3, motion: 2, density: 5}
 aesthetic_variant_override: null
 archetype: error_state
 
@@ -24,30 +24,87 @@ craft_rules_version: v1.0.0
 
 # transaction-detail — error state
 
-> Auto-generated from screens/transaction-detail/ui.yaml @ SHA 369149ccf4416589
-> Stitch DesignSystem: (pending DESIGN.md upload — run /idea-export-stitch sub-plan 02)
+> Auto-generated from screens/transaction-detail/ui.yaml @ SHA dd775f09e4ce3773
+> Stitch DesignSystem: (pending DESIGN.md upload — run /idea-feature-stitch sub-plan 02)
 > DO NOT redeclare colors / fonts / spacing — they live in DESIGN.md.
 
 ↓↓↓ MOCKUP PROMPT
 
-Design the **error** state of the Transaction-detail screen for **mifos-x-open-banking**, a Open Banking KMP super-app - consumer retail banking + field officer agent banking powered by Open Bank Project API v7, built with Compose Multiplatform across Android, iOS, Desktop, and Web Material 3 balanced dark theme, 393×852dp (Pixel 5), Outfit font throughout.
+> DO NOT invent navigation, tabs, or screens beyond the declared app-shell (Home, Accounts, Pay, More) plus the composition below. Every nav item you render MUST come from that list.
+> Only elements that navigate or perform an action may look tappable (cursor, ripple, pressed state). DO NOT add tap affordances to decorative content — page titles, section headings, avatars, standalone icons, badges, and static labels are NOT interactive.
 
-Palette: primary #B2D188, on_primary #1F3701, primary_container #354E16, on_primary_container #CDEDA3, secondary #A0CFCB, on_secondary #003735, secondary_container #1F4E4B, on_secondary_container #BCEBE7, tertiary #A0CFCB, on_tertiary #003735, tertiary_container #1F4E4B, on_tertiary_container #BCEBE7, error #FFB4AB, on_error #690005.
+## Archetype: detail_screen
 
-**Component 1 - Box** (centered, generous vertical breathing room): rendered per design system component spec. error_state archetype.
+## Layout
+- type: scrollable_column
+- padding: default
+- alignment: start
+- responsive: any multi-column region MUST be mobile-first and collapse to a single column at narrow/phone widths — never a fixed multi-column grid with no single-column fallback.
 
-**Component 2 - Box** (centered, generous vertical breathing room): rendered per design system component spec.
+## Composition (top → bottom)
+1. **progress_indicator**
+2. **icon_button** (#back_button) — icon: "arrow_back", on_click: { action: navigate_back, target: transactions }
+3. **text** (#amount_header)
+4. **text** (#transaction_currency_meta)
+5. **text** (#merchant_name)
+6. **chip** (#status_badge) — label: "{transaction.Status}"
+7. **divider** (#header_separator)
+8. **card** (#detail_card) — "detail_card"
+   - **text** (#detail_card_header)
+   - **list_item** (#booking_date_row) — label: "{strings.transaction_detail_booking_date}"
+   - **divider**
+   - **list_item** (#value_date_row) — label: "{strings.transaction_detail_value_date}"
+   - **divider**
+   - **list_item** (#category_row) — label: "{strings.transaction_detail_category}"
+   - **divider**
+   - **list_item** (#mcc_row) — label: "{strings.transaction_detail_mcc}"
+   - **divider**
+   - **list_item** (#balance_after_row) — label: "{strings.transaction_detail_balance_after}"
+   - **divider**
+   - **list_item** (#reference_row) — label: "{strings.transaction_detail_reference}", on_click: { action: copy_to_clipboard }
+   - **divider**
+   - **list_item** (#bank_code_row) — label: "{strings.transaction_detail_bank_code}"
+9. **empty_state** (#error_state) — "{strings.transaction_detail_error_title}"
+   - **button** (#retry_button) — label: "{strings.transaction_detail_retry}", on_click: { action: retry_load }
+   - **button** (#go_back_button) — label: "{strings.transaction_detail_go_back}", on_click: { action: navigate_back }
+10. **empty_state** (#transaction_empty_state) — "{strings.transaction_detail_empty_title}"
+   - **button** (#transaction_empty_back_button) — label: "{strings.transaction_detail_go_back}", on_click: { action: navigate_back, target: transactions }
 
-**Component 3 - Box** (centered, generous vertical breathing room): rendered per design system component spec.
+## State-specific behavior
+- Show an error illustration, a short message, and a single Retry action. No content rails visible.
 
-**Component 4 - Button** (centered, generous vertical breathing room): rendered per design system component spec.
+## Content source manifest
+- (no demo collections bound for this state)
 
-**Component 5 - Stack** (centered, generous vertical breathing room): rendered per design system component spec.
+## Components (vocabulary used in this prompt)
+- (no named components extracted — see composition)
 
-**Component 6 - Spacer** (centered, generous vertical breathing room): rendered per design system component spec.
+## Shell (app-shell resolved for this state)
+- Home: navigates to home
+- Accounts: navigates to accounts
+- Pay: navigates to send-money
+- More: navigates to settings
+- Render MUST keep nav/bar elements consistent with the list above — present or absent, never partial.
 
-DO NOT use em-dash anywhere in text. DO NOT make any headline >3 lines or any subtitle >25 words. DO NOT break the page theme between sections. DO NOT place light text on light buttons or dark text on dark buttons.
+## Tokens (design-tokens roles consumed)
+- Colors: primary / secondary / surface / on-surface / on-surface-variant / error (M3 standard roles).
+- Typography: body-large / title-large (M3 standard roles).
+- Spacing: gap.sm / gap.md / gap.lg.
+- ALL token references are by name from the uploaded design system — no hex literals, no inline size values.
 
-Full scrollable layout on #B2D188. The #B2D188 accent creates a balanced and premium feel calibrated to the taste-default aesthetic.
+## Self-Validation Checklist (MANDATORY)
+
+Before returning the rendered mockup, verify ALL of these are true. If any fails, FIX the output and re-render.
+
+- [ ] **Per-state shape:** the render shows ONLY this state ("error"). Do not blend multiple states into one mockup.
+- [ ] **Real content:** every text label, image, and data point reflects the content source manifest above — no numbered generic items, no filler text, no dummy text, no empty strings.
+- [ ] **Token fidelity:** colors come from the uploaded design system (primary/secondary/surface/etc.) by name; spacing comes from declared scale tokens. No invented hex codes, no invented size literals.
+- [ ] **Component vocabulary:** every component in the render maps to a named design-system component (Card, FAB, BottomBar, etc.) — no invented or off-system components.
+- [ ] **Archetype honored:** the layout follows the "detail_screen" archetype skeleton — composition order top → bottom matches the Composition section.
+- [ ] **App-shell parity:** if a bottom nav, top app bar, or FAB appears in the render, it matches the resolved shell from the app-shell config. Shell elements are either present-and-consistent OR absent — never partial.
+
+If any of these fail and the fix isn't clear → halt rendering and surface "Self-validation failed at: {checkpoint}."
+
+Return ONLY when all 6 checkpoints pass.
 
 ↑↑↑ MOCKUP PROMPT

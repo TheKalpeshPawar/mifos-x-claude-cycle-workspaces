@@ -1,522 +1,352 @@
-id: direct-debits
-name: Direct Debits
-feature: direct-debits
-flavor: consumer
-status: approved
-quality_score: 97
-contract_version: "1.1.0"
-approve_hash: "sha256:11af12bd8c96e4f037af12bd8c96e4f037af12bd8c96e4f037af12bd8c96e4f0"
-approved_at: "2026-06-11T14:45:00Z"
-approved_by: "/idea approve"
-approve_predicate_version: "1.0.0"
-approve_contract_version: "1.1.0"
-capabilities:
-  - has_ui
-status_history:
-  - status: draft
-    timestamp: "2026-05-25T00:00:00Z"
-  - status: enriched
-    timestamp: "2026-05-25T00:00:00Z"
-  - status: designed
-    at: "2026-05-25T00:00:00Z"
-    by: "/idea export"
-    exports: [spec_md, api_md, mockup_md]
-  - from: designed
-    to: approved
-    at: "2026-05-25T13:45:00Z"
-    by: "/idea approve"
-    contract_version: "1.1.0"
-    bypass_flags: []
-  - from: approved
-    to: approved
-    at: "2026-06-07T22:00:00Z"
-    by: "domain correction (user directive)"
-    contract_version: "1.1.0"
-    note: "Set-Up Direct Debit FAB removed — direct debits are merchant-initiated; a consumer surface can only view + cancel."
-  - from: approved
-    to: enriched
-    at: "2026-06-11"
-    by: "/idea verify --source-drift (write-back)"
-    contract_version: "1.1.0"
-    note: >
-      SOURCE→SPEC reconciliation to shipped Kotlin (code = truth). Mandates are DERIVED from
-      TXN_TYPE=DD transaction history (no OBP GET endpoint, live-verified 404). ADDED: "Your
-      mandates" header row, inline per-card Cancel icon shown only on active mandates. REMOVED:
-      Set Up Direct Debit FAB + setup_direct_debit action (DDs are merchant-initiated), the
-      more_vert top-bar action, and the hardcoded Netflix/Spotify/PureGym demo cards (now a
-      data-driven LazyColumn keyed by mandate id). state_model is a single uiState
-      ScreenState<DirectDebitsContent>{mandates, activeCount, cancelDialogFor}; cancel is
-      LOCAL-ONLY (Room cache) — no server DELETE. DI gained UserPreferencesRepository; route
-      carries bankId/accountId.
-  - from: enriched
-    to: approved
-    at: "2026-06-11T14:45:00Z"
-    by: "/idea approve"
-    contract_version: "1.1.0"
-    bypass_flags: []
-    note: "Approved after source→spec reconciliation (spec matches shipped Kotlin) + /idea verify PASS. Write-back shape (no approve_hash), consistent with project pattern. Previews for reconciled screens may lag the YAML pending a separate re-render."
+sibling: ui
+schema_version: "4.0"
+feature_id: direct-debits
+
+screen_id: direct-debits
+archetype: index_list
+name: "Direct Debits"
+status: implemented
+initial_state: loading
+i18n_coverage: true
 
 shell:
-  top_app_bar:
-    show: true
-    title: "Direct Debits"
-    navigation_icon: arrow_back
-    navigation_action: navigate_back
-    actions: []
-  bottom_nav: false
+  bottom_navigation_visible: true
+  top_app_bar_visible: true
+  top_app_bar_title: "{strings.direct_debits.title}"
+  top_app_bar_leading: back
+  fab_visible: false
 
-screens:
-  - id: direct-debits
-    name: Direct Debits
-    archetype: index_list
-    viewmodel: "DirectDebitsViewModel"
-    route: /direct-debits
-    scroll: vertical
+states: [loading, content, empty, unsupported, error]
 
-archetype: index_list
+# TEST TAGS — reconciled against source 2026-08-02 by /idea-sync (source-truth pass).
+# The 4 state-root tags were already correct; 11 more were backfilled this pass.
+test_tags:
+  source: "feature/direct-debits/src/commonMain/kotlin/org/mifosx/openbanking/feature/directdebits/DirectDebitsTestTags.kt"
+  declared_in_source: 21         # 16 const val + 5 per-mandate builder fns
+  bound: 15
+  interpolated:
+    # Every builder keys on mandateId — DirectDebitsContent.kt passes mandate.mandateId to all five.
+    - { tag: "directDebits:card:{item.mandateId}",              builder: "fun card(mandateId)" }
+    - { tag: "directDebits:statusBadge:{item.mandateId}",       builder: "fun statusBadge(mandateId)" }
+    - { tag: "directDebits:amount:{item.mandateId}",            builder: "fun amount(mandateId)" }
+    - { tag: "directDebits:lastCollected:{item.mandateId}",     builder: "fun lastCollected(mandateId)" }
+    - { tag: "directDebits:mandateReference:{item.mandateId}",  builder: "fun mandateReference(mandateId)" }
+  unbound:
+    - { tag: "directDebits:skeletonChipRow", parent: loading_skeleton,
+        why: "Tags the chip-row placeholder INSIDE the skeleton; the idea-layer models loading as one skeleton component with no children." }
+    - { tag: "directDebits:emptyTitle",       parent: empty_direct_debits,      why: "Text node modelled as the parent's `title:` field." }
+    - { tag: "directDebits:emptyBody",        parent: empty_direct_debits,      why: "Text node modelled as the parent's `body:` field." }
+    - { tag: "directDebits:unsupportedTitle", parent: unsupported_direct_debits, why: "Text node modelled as the parent's `title:` field." }
+    - { tag: "directDebits:unsupportedBody",  parent: unsupported_direct_debits, why: "Text node modelled as the parent's `body:` field." }
+    - { tag: "directDebits:errorTitle",       parent: error_state,              why: "Text node modelled as the parent's `title:` field." }
+    - { tag: "directDebits:errorBody",        parent: error_state,              why: "Text node modelled as the parent's `body:` field." }
 
-components:
-  # ── Header row: "Your mandates" + active-count chip ──────────────────────────
-  - type: stack
-    id: mandates_header_row
-    label: "Your mandates header"
-    variant: row
-    style:
-      orientation: horizontal
-      padding_horizontal: 20
-      padding_vertical: 8
-      align: center
-    a11y:
-      label: "Your mandates header with active count"
-      role: row
-    test_context:
-      tag: mandates_header_row
-      purpose: "Header row holding the 'Your mandates' title and the active-count chip"
-      interaction_type: display
-      data_driven: true
+business_logic:
+  kind: crud
+  description: "Calls GET /accounts/{AccountId}/direct-debits via ktorfit to retrieve OBReadDirectDebit2. Maps each Data.DirectDebit using Name, DirectDebitStatusCode, PreviousPaymentAmount, PreviousPaymentDateTime, and MandateIdentification. ViewModel derives status_variant (Active → primary badge, Inactive → outline badge), computes activeCount / inactiveCount summary, sorts list Active-first then Inactive, and maps HTTP error codes to typed user-facing messages (TokenExpired 401, ConsentRevoked 403, RateLimited 429, NetworkError). Read-only under AISP ReadDirectDebits consent; retry is suppressed for 403 ConsentRevoked."
+  external_library_refs:
+    - "ktorfit"
+    - "hsbc-obie-ais-v4.0:direct-debits"
+  description_author: claude
+  description_authored_at: "2026-06-29T12:00:00Z"
 
-  - type: text
-    id: mandates_title
-    label: "Your mandates"
-    content: "Your mandates"
-    style:
-      typography: "Outfit/title_medium"
-      color: "#1A1C16"
-      font_weight: semibold
-    a11y:
-      label: "Your mandates"
-      role: heading
-    test_context:
-      tag: mandates_title
-      assert_text: "Your mandates"
-      purpose: "List header label"
-      interaction_type: display
-      data_driven: false
-
-  - type: badge
-    id: active_count_chip
-    label: "active count"
-    content: "3 active"
-    variant: tonal
-    style:
-      background: "#CDEDA3"
-      border_radius: 12
-      padding_horizontal: 10
-      padding_vertical: 4
-      text_color: "#4C662B"
-      typography: "Outfit/label_medium"
-      font_weight: semibold
-    a11y:
-      label: "3 active direct debits"
-      role: status
-    test_context:
-      tag: active_count_chip
-      assert_text: "3 active"
-      purpose: "Chip showing the count of active mandates; drops when one is cancelled"
-      interaction_type: display
-      data_driven: true
-
-  # ── Data-driven mandate list ─────────────────────────────────────────────────
-  - type: list
-    id: mandates_list
-    label: "Direct debit mandates"
-    variant: lazy_column
-    style:
-      padding_bottom: 24
-    a11y:
-      label: "List of direct debit mandates"
-      role: list
-    test_context:
-      tag: mandates_list
-      purpose: "LazyColumn of derived mandates keyed by id; no hardcoded merchant rows"
-      interaction_type: display
-      data_driven: true
-
-  - type: card
-    id: mandate_card
-    label: "Mandate card"
-    variant: outlined
-    supported_states: [idle, hover, focus_visible, pressed]
-    style:
-      background: "#FFFFFF"
-      border_radius: 16
-      border_color: "#E1E4D5"
-      border_width: 1
-      padding: 16
-      margin_horizontal: 20
-      margin_bottom: 12
-    on_click:
-      action: navigate
-      target: direct-debit-detail
-    a11y:
-      label: "Direct debit mandate. Tap to view details."
-      role: button
-    keyboard:
-      focusable: true
-    test_context:
-      tag: mandate_card
-      purpose: "Tappable mandate card: merchant, status badge, inline Cancel icon (active only), amount/frequency, next-collection, reference. Muted background when cancelled. Navigates to direct-debit-detail with bankId/accountId/mandateId."
-      interaction_type: action
-      data_driven: true
-
-  - type: text
-    id: mandate_merchant
-    label: "Merchant name"
-    content: "Netflix"
-    style:
-      typography: "Outfit/title_medium"
-      color: "#1A1C16"
-      font_weight: semibold
-    a11y:
-      label: "Merchant name"
-      role: text
-    test_context:
-      tag: mandate_merchant
-      purpose: "Merchant name from the transaction description (never the login-username holder placeholder). Muted when cancelled."
-      interaction_type: display
-      data_driven: true
-
-  - type: badge
-    id: mandate_status_badge
-    label: "Status badge"
-    content: "Active"
-    variant: tonal
-    style:
-      background: "#CDEDA3"
-      border_radius: 10
-      padding_horizontal: 8
-      padding_vertical: 3
-      text_color: "#4C662B"
-      typography: "Outfit/label_small"
-    a11y:
-      label: "Status"
-      role: status
-    test_context:
-      tag: mandate_status_badge
-      purpose: "Status pill: Active (green) / Cancelled (grey). Drives inline Cancel-icon visibility."
-      interaction_type: display
-      data_driven: true
-
-  - type: icon
-    id: mandate_cancel_icon
-    label: "Cancel mandate"
-    variant: icon_button
-    supported_states: [idle, hover, focus_visible, pressed]
-    style:
-      icon_name: cancel_outlined
-      size: 22
-      color: "#BA1A1A"
-      padding: spacing.xs
-    on_click:
-      action: cancel_requested
-      target: cancel_confirm_dialog
-    a11y:
-      label: "Cancel this direct debit"
-      role: button
-    keyboard:
-      focusable: true
-    test_context:
-      tag: mandate_cancel_icon
-      purpose: "Inline cancel icon shown ONLY on active mandates; opens the cancel confirmation dialog"
-      interaction_type: action
-      data_driven: true
-
-  - type: text
-    id: mandate_amount
-    label: "Amount / frequency"
-    content: "£15.99 / month"
-    style:
-      typography: "Outfit/body_large"
-      color: "#4C662B"
-      font_weight: semibold
-    a11y:
-      label: "Amount per period"
-      role: text
-    test_context:
-      tag: mandate_amount
-      purpose: "'{symbol}{amount} / {period}' (day/week/2 weeks/month/year). Muted when cancelled."
-      interaction_type: display
-      data_driven: true
-
-  - type: text
-    id: mandate_next_date
-    label: "Next collection"
-    content: "Next: 3 Jun 2026"
-    style:
-      typography: "Outfit/body_small"
-      color: "#44483D"
-    a11y:
-      label: "Next collection date"
-      role: text
-    test_context:
-      tag: mandate_next_date
-      purpose: "'Next: {date}' shown only for active mandates with a derivable next-collection date"
-      interaction_type: display
-      data_driven: true
-
-  - type: text
-    id: mandate_ref
-    label: "Mandate reference"
-    content: "Ref: DD-NF-20240301"
-    style:
-      typography: "Outfit/label_small"
-      color: "#44483D"
-    a11y:
-      label: "Mandate reference"
-      role: text
-    test_context:
-      tag: mandate_ref
-      purpose: "'Ref: {mandateReference}' (DD-{initials}-{first collection date}); shown when non-blank"
-      interaction_type: display
-      data_driven: true
-
-  # ── Cancel confirmation dialog (local-only cancel) ───────────────────────────
-  - type: dialog
-    id: cancel_confirm_dialog
-    label: "Cancel Direct Debit?"
-    variant: alert
-    title: "Cancel Direct Debit?"
-    style:
-      border_radius: 20
-      background: "#FFFFFF"
-      padding_horizontal: 24
-      padding_vertical: 24
-    a11y:
-      label: "Cancel direct debit confirmation dialog"
-      role: dialog
-    keyboard:
-      focusable: true
-      shortcuts: [Escape]
-    test_context:
-      tag: cancel_confirm_dialog
-      purpose: "Destructive-action guard. Body: '{merchant} ({reference}) will stop collecting payments. This cannot be undone.' Confirm records the cancellation LOCALLY (Room cache) — no server DELETE — then reprojects the list."
-      interaction_type: action
-      data_driven: true
-
-  - type: button
-    id: cancel_confirm_cta
-    label: "Yes, Cancel Mandate"
-    variant: filled
-    supported_states: [idle, hover, focus_visible, pressed, disabled]
-    style:
-      background: "#BA1A1A"
-      text_color: "#FFFFFF"
-      border_radius: 12
-      full_width: true
-    on_click:
-      action: cancel_confirmed
-      target: direct-debits
-    a11y:
-      label: "Confirm cancellation of this direct debit"
-      role: button
-    keyboard:
-      focusable: true
-    test_context:
-      tag: cancel_confirm_cta
-      assert_text: "Yes, Cancel Mandate"
-      purpose: "Records the cancellation locally then reloads mandates (mandate flips to Cancelled, active count drops)"
-      interaction_type: action
-      data_driven: true
-
-  - type: button
-    id: cancel_dismiss_cta
-    label: "Keep Mandate"
-    variant: outlined
-    supported_states: [idle, hover, focus_visible, pressed]
-    style:
-      border_color: "#4C662B"
-      text_color: "#4C662B"
-      border_radius: 12
-      full_width: true
-    on_click:
-      action: cancel_dismissed
-      target: ""
-    a11y:
-      label: "Keep the direct debit active"
-      role: button
-    keyboard:
-      focusable: true
-    test_context:
-      tag: cancel_dismiss_cta
-      assert_text: "Keep Mandate"
-      purpose: "Aborts the cancel flow with no side effects"
-      interaction_type: action
-      data_driven: false
-
-  # ── Empty / Error ────────────────────────────────────────────────────────────
-  - type: empty_state
-    id: empty_state
-    label: "No direct debits"
-    style:
-      empty_icon: account_balance_wallet
-    a11y:
-      label: "No direct debits on this account"
-      role: status
-    test_context:
-      tag: empty_state
-      purpose: "'No direct debits on this account' + 'Mandates from merchants you have authorised — like Netflix or your utility providers — will appear here once they start collecting'"
-      interaction_type: display
-      data_driven: false
-
-  - type: error_state
-    id: error_state
-    label: "Unable to load"
-    style:
-      error_icon: cloud_off
-    on_click:
-      action: retry
-      target: direct-debits
-    a11y:
-      label: "Unable to load direct debits. Retry."
-      role: status
-    test_context:
-      tag: error_state
-      purpose: "Error/no-network/unauthenticated state with Retry"
-      interaction_type: action
-      data_driven: false
-
-initial_state: loading
-
-responsive:
-  mobile_only: true
-  baseline_width: 390
-
-states:
-  loading:
-    motion:
-      shimmer_duration: short4
-      reduced_motion_fallback: static_placeholder
-    layout:
-      visible_components: []
-      show_skeleton_list: true
-      skeleton_count: 3
-      note: "Centered CircularProgressIndicator while DirectDebitsRepository.listMandates() resolves."
-  content:
-    layout:
-      visible_components:
-        - mandates_header_row
-        - mandates_title
-        - active_count_chip
-        - mandates_list
-        - mandate_card
-        - mandate_merchant
-        - mandate_status_badge
-        - mandate_cancel_icon
-        - mandate_amount
-        - mandate_next_date
-        - mandate_ref
-  cancel_confirm:
-    layout:
-      visible_components:
-        - mandates_header_row
-        - mandates_title
-        - active_count_chip
-        - mandates_list
-        - mandate_card
-        - mandate_merchant
-        - mandate_status_badge
-        - mandate_cancel_icon
-        - mandate_amount
-        - mandate_next_date
-        - mandate_ref
-        - cancel_confirm_dialog
-        - cancel_confirm_cta
-        - cancel_dismiss_cta
-      overlay: true
-      overlay_alpha: 0.5
-      note: "cancelDialogFor != null — dialog overlays the content list."
-  empty:
-    layout:
-      visible_components:
-        - empty_state
-  error:
-    layout:
-      visible_components:
-        - error_state
-  no_network:
-    layout:
-      visible_components:
-        - error_state
-  unauthenticated:
-    layout:
-      visible_components:
-        - error_state
+# ─────────────────────────────────────────────────────────────────────
+# STATE MODEL — DirectDebitsViewModel contract
+# Derived from docs.yaml#vm_actions + error_cases for implementation.
+# Satisfies QUALITY_FORMULA.md Category 10 (State Model, 5 pts).
+# ─────────────────────────────────────────────────────────────────────
+# ─────────────────────────────────────────────────────────────────────
+# SOURCE BINDING — reverse-synced from source 2026-07-28
+# ─────────────────────────────────────────────────────────────────────
+implementation:
+  status: implemented
+  source_module: "feature/direct-debits"
+  package: "org.mifosx.openbanking.feature.directdebits"
+  route: "DirectDebitsRoute(accountId: String)"
+  viewmodel: DirectDebitsViewModel
+  screen: DirectDebitsScreen
+  test_tags_object: DirectDebitsTestTags
+  reachable_from:
+    - "account-detail — AccountDetailChip.DirectDebits -> navigate(DirectDebitsRoute(accountId))"
+  synced_from_source_at: "2026-07-28"
+  added_in_sync:
+    - "unsupported state — DirectDebitsUiState.Unsupported(message) ships in source and renders DirectDebitsUnsupported.kt; the idea-layer never declared it"
+  removed_in_sync:
+    - "loadDirectDebits and navigateBack actions — DirectDebitsAction declares only RetryLoad; back is a nav-host onBack callback, and the initial load is stream collection in init{}"
+    - "NavigationController DI — source injects no navigation abstraction; navigation is callback-based"
 
 state_model:
-  view_model: DirectDebitsViewModel
-  route_params:
-    - { name: bankId, type: String, default: "\"\"" }
-    - { name: accountId, type: String, default: "\"\"", note: "blank → resolve persisted-default, else checking-first, else first account" }
-  flows:
-    - name: uiState
-      type: "StateFlow<ScreenState<DirectDebitsContent>>"
-      default: "ScreenState.Loading"
-  content_type:
-    name: DirectDebitsContent
-    fields:
-      - { name: mandates, type: "List<DirectDebitRow>" }
-      - { name: activeCount, type: Int }
-      - { name: cancelDialogFor, type: "DirectDebitRow?" }
-  model_type:
-    name: DirectDebitMandate
-    note: "Derived from TXN_TYPE=DD history. Status ACTIVE/CANCELLED (cancelled = locally recorded)."
-  supporting_types:
-    - name: DirectDebitRow
+  DirectDebitsViewModel:
+    state:
+      name: DirectDebitsState
       fields:
-        - { name: id, type: String }
-        - { name: merchantName, type: String }
-        - { name: amountLabel, type: String }
-        - { name: nextCollectionLabel, type: String }
-        - { name: referenceLabel, type: String }
-        - { name: statusLabel, type: String }
-        - { name: isActive, type: Boolean }
-        - { name: mandateReference, type: String }
-  methods:
-    - onRetry
-    - onCancelRequested
-    - onCancelDismissed
-    - onCancelConfirmed
-  di:
-    - DirectDebitsRepository
-    - AccountsRepository
-    - UserPreferencesRepository
+        - name: accountId
+          type: String
+        - name: uiState
+          type: DirectDebitsUiState
+    screen_state:
+      sealed_class: DirectDebitsUiState
+      members:
+        - Loading
+        - Content      # mandates: List<DirectDebitRowUi>, activeCount: Int, inactiveCount: Int
+        - Empty        # no mandates returned
+        - Unsupported  # message: String — servicer does not expose direct debits for this account
+        - Error        # kind: DirectDebitsErrorKind
+    row_model:
+      name: DirectDebitRowUi
+      fields:
+        - name: mandateId
+          type: String
+        - name: name
+          type: String
+        - name: statusLabel
+          type: String
+        - name: isActive
+          type: Boolean
+        - name: amountLabel
+          type: String
+        - name: lastCollectedLabel
+          type: String
+    errors:
+      types:
+        - DirectDebitsErrorKind.TokenExpired   # Unauthorized — isRetriable = true
+        - DirectDebitsErrorKind.ConsentRevoked # Forbidden — isRetriable = false
+        - DirectDebitsErrorKind.RateLimited    # RateLimited — isRetriable = true
+        - DirectDebitsErrorKind.ServerError    # fallback — isRetriable = true
+        - DirectDebitsErrorKind.NetworkError   # NetworkError.Network — isRetriable = true
+    actions:
+      members:
+        - RetryLoad
+    di:
+      - SavedStateHandle          # supplies the accountId route arg
+      - DirectDebitsRepository    # Koin single; stream over the direct-debits store
 
-api:
-  note: >
-    GET does not exist on OBP — mandates are DERIVED from TXN_TYPE=DD history via
-    DirectDebitsRepository.listMandates(). Cancel is LOCAL-ONLY (Room cache); there is no
-    server DELETE. See api.yaml.
+components:
 
-dependencies:
-  tier: feature
-  features:
-    - accounts
-    - transactions
+  # ── LOADING STATE ───────────────────────────────────────────────────
+  - type: skeleton
+    id: loading_skeleton
+    test_tag: "directDebits:loadingSkeleton"
+    variant: list_card
+    item_count: 4
+    state_binding: [loading]
+    accessibility_label: "{strings.direct_debits.loading_a11y}"
+    test_context:
+      purpose: "List-shaped skeleton (4 cards) during HSBC AIS direct-debits fetch; visually anchors layout before data arrives"
+      required_fields: []
+      interaction_type: display
+      data_driven: false
 
-navigation:
-  - action: navigate
-    target: direct-debit-detail
-    description: "Open mandate detail for the tapped mandate (passes bankId/accountId/mandateId)"
-  - action: navigate_back
-    target: accounts
-    description: "Back to the previous screen"
+  # ── GLOBAL (ALL STATES) ─────────────────────────────────────────────
+  - type: icon_button
+    id: back_button
+    icon: arrow_back
+    accessibility_label: "{strings.direct_debits.back_a11y}"
+    on_click:
+      action: navigate_back
+      target: account-detail
+      action_contract:
+        effect: navigate
+        description: "Invokes the directDebitsScreen onBack callback, which calls popBackStack(), returning the user to account-detail. A nav-host callback, not a DirectDebitsAction member."
+    test_context:
+      purpose: "Return user to account-detail screen, discarding direct-debits context"
+      required_fields: []
+      interaction_type: navigate
+      data_driven: false
+
+  # ── CONTENT STATE — mandate summary chips ───────────────────────────
+  - type: chip_group
+    id: mandate_summary_chips
+    test_tag: "directDebits:summaryChips"
+    state_binding: [content]
+    accessibility_label: "{strings.direct_debits.summary_a11y}"
+    chips:
+      - type: chip
+        id: active_count_chip
+        test_tag: "directDebits:activeChip"
+        label: "{strings.direct_debits.active_count_label} ({activeCount})"
+        variant: tonal
+        accessibility_label: "{activeCount} {strings.direct_debits.active_count_label} direct debits"
+        test_context:
+          purpose: "Displays ViewModel-computed count of Active mandates as a tonal chip"
+          required_fields: ["activeCount"]
+          interaction_type: display
+          data_driven: true
+      - type: chip
+        id: inactive_count_chip
+        test_tag: "directDebits:inactiveChip"
+        label: "{strings.direct_debits.inactive_count_label} ({inactiveCount})"
+        variant: outline
+        accessibility_label: "{inactiveCount} {strings.direct_debits.inactive_count_label} direct debits"
+        test_context:
+          purpose: "Displays ViewModel-computed count of Inactive mandates as an outline chip"
+          required_fields: ["inactiveCount"]
+          interaction_type: display
+          data_driven: true
+
+  # ── CONTENT STATE — mandate list ────────────────────────────────────
+  - type: list
+    id: direct_debits_list
+    test_tag: "directDebits:content"      # CONTENT tags the content list root here, not a wrapper column
+    state_binding: [content]
+    scroll_direction: vertical
+    items_source: "{mandates}"
+    accessibility_label: "{strings.direct_debits.list_a11y}"
+    test_context:
+      purpose: "Render full OBReadDirectDebit2 Data.DirectDebit array sorted Active-first"
+      required_fields: ["directDebits"]
+      interaction_type: display
+      data_driven: true
+    children:
+      - type: card
+        id: direct_debit_card
+        test_tag: "directDebits:card:{item.mandateId}"
+        elevation: 1
+        accessibility_label: "{item.name}, {item.statusLabel}"
+        test_context:
+          purpose: "Container per direct debit mandate; groups all mandate fields with accessible card label from originator name + status"
+          required_fields: ["item"]
+          interaction_type: display
+          data_driven: true
+        children:
+          - type: text
+            id: dd_originator_name
+            role: heading
+            value: "{item.name}"
+            style: titleMedium
+            test_context:
+              purpose: "Originator name from OBReadDirectDebit2 Data.DirectDebit.Name; heading role for in-card navigation"
+              required_fields: ["item.Name"]
+              interaction_type: display
+              data_driven: true
+
+          - type: badge
+            id: dd_status_badge
+            test_tag: "directDebits:statusBadge:{item.mandateId}"
+            value: "{item.statusLabel}"
+            variant: "{item.isActive}"
+            accessibility_label: "{strings.direct_debits.status_prefix} {item.statusLabel}"
+            test_context:
+              purpose: "Mandate status badge; variant from ViewModel: Active→primary, Inactive→outline; never decorative-only (has a11y label)"
+              required_fields: ["item.DirectDebitStatusCode", "item.status_variant"]
+              interaction_type: display
+              data_driven: true
+
+          - type: text
+            id: dd_previous_amount
+            test_tag: "directDebits:amount:{item.mandateId}"
+            role: amount
+            value: "{item.amountLabel}"
+            style: headlineSmall
+            test_context:
+              purpose: "Pre-formatted last-collected amount; the mapper resolves currency into the label. Neutral on-surface colour (NOT error — amounts are not inherently negative)"
+              required_fields: ["item.amountLabel"]
+              interaction_type: display
+              data_driven: true
+
+          - type: text
+            id: dd_previous_date
+            test_tag: "directDebits:lastCollected:{item.mandateId}"
+            role: body
+            value: "{strings.direct_debits.last_collected_prefix} {item.lastCollectedLabel}"
+            style: bodySmall
+            color: "onSurfaceVariant"
+            test_context:
+              purpose: "Pre-formatted last-collected date resolved by the mapper; label from i18n key"
+              required_fields: ["item.lastCollectedLabel"]
+              interaction_type: display
+              data_driven: true
+
+          - type: text
+            id: dd_mandate_id
+            test_tag: "directDebits:mandateReference:{item.mandateId}"
+            role: caption
+            value: "{strings.direct_debits.mandate_prefix} {item.mandateId}"
+            style: labelSmall
+            color: "onSurfaceVariant"
+            test_context:
+              purpose: "Mandate reference from MandateIdentification for identification and support; label from i18n key"
+              required_fields: ["item.MandateIdentification"]
+              interaction_type: display
+              data_driven: true
+
+  # ── EMPTY STATE ─────────────────────────────────────────────────────
+  - type: empty_state
+    id: empty_direct_debits
+    state_binding: [empty]
+    icon: subscriptions
+    title: "{strings.direct_debits.empty_title}"
+    body: "{strings.direct_debits.empty_body}"
+    test_tag: "directDebits:emptyState"
+    accessibility_label: "{strings.direct_debits.empty_a11y}"
+    test_context:
+      purpose: "Zero-result state when Data.DirectDebit[] is empty in OBIE response"
+      required_fields: []
+      interaction_type: display
+      data_driven: false
+
+  # ── UNSUPPORTED STATE ───────────────────────────────────────────────
+  # DirectDebitsUiState.Unsupported(message) — rendered by DirectDebitsUnsupported.kt.
+  # Distinct from empty: the servicer does not expose direct debits for this account
+  # at all, so there is nothing to retry.
+  - type: empty_state
+    id: unsupported_direct_debits
+    variant: info
+    state_binding: [unsupported]
+    icon: info_outline
+    title: "{strings.direct_debits.unsupported_title}"
+    body: "{uiState.message}"
+    test_tag: "directDebits:unsupportedState"
+    accessibility_label: "{strings.direct_debits.unsupported_a11y}"
+    test_context:
+      purpose: "Servicer does not support the direct-debits resource for this account. No retry CTA — the capability registry refused the call rather than the network failing."
+      required_fields: ["uiState.message"]
+      interaction_type: display
+      data_driven: true
+
+  # ── ERROR STATE ─────────────────────────────────────────────────────
+  - type: empty_state
+    id: error_state
+    variant: error
+    state_binding: [error]
+    icon: error_outline
+    title: "{strings.direct_debits.error_title}"
+    body: "{strings.direct_debits.error_body}"
+    test_tag: "directDebits:errorState"
+    accessibility_label: "{strings.direct_debits.error_a11y}"
+    test_context:
+      purpose: "Typed API error display. classifyDirectDebitsError maps Unauthorized→TokenExpired, Forbidden→ConsentRevoked, RateLimited→RateLimited, NetworkError.Network→NetworkError, else→ServerError. Body copy is selected per kind."
+      required_fields: ["uiState.kind"]
+      interaction_type: display
+      data_driven: true
+    children:
+      - type: button
+        id: retry_button
+        variant: filled
+        label: "{strings.direct_debits.retry_label}"
+        test_tag: "directDebits:retryButton"
+        accessibility_label: "{strings.direct_debits.retry_a11y}"
+        visible: "{uiState.kind.isRetriable}"
+        on_click:
+          action: RetryLoad
+          action_contract:
+            effect: call_api
+            reads_from: ["direct-debits-list"]
+            external_library_refs: ["ktorfit", "hsbc-obie-ais-v4.0:direct-debits"]
+            description: "Dispatches DirectDebitsAction.RetryLoad, refreshing the direct-debits stream after a retriable failure and returning the screen to Loading then Content or Empty."
+        test_context:
+          purpose: "Retry button shown only when DirectDebitsErrorKind.isRetriable is true; hidden for ConsentRevoked (retry won't help; the user must re-authorise consent)"
+          required_fields: ["uiState.kind.isRetriable"]
+          interaction_type: action
+          data_driven: true
+
+quality_score: 95
+status_history:
+  - from: draft
+    to: enriched
+    at: "2026-06-29"
+    by: "/idea-enrich"
+  - from: enriched
+    to: enriched
+    at: "2026-06-29"
+    by: "/idea-enrich (quality push: i18n, skeleton, a11y, chip summary, error types, fixed amount color)"

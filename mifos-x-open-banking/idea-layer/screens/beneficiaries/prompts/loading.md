@@ -1,12 +1,12 @@
 ---
-ui_yaml_sha: a37ab086ed21a953df7bf0a7272221f8d846dd091086643f77aeaf43d90882ef
-design_md_hash: 71b53c295bf863d34057f16264caf37a11512e794d356b3bec219352550d05ec
-app_shell_hash: ad7a6b42b2ae10e63ef270f15d857bd44445d775e8d9b09313b31e6569df95b4
-design_read_hash: 1639ea0545fdbc1ba9ce1eef5369eae224a6f4f57f07f0639b699652daeb8558
-content_hash: 50f04c2c22d3b19553531501673534e29cf5efcd8edf502464b8bd17740e6925
+ui_yaml_sha: f2024f90acbe4d0a6b705409df46c7abec270a8332520995cbbf59b66d8a7b7d
+design_md_hash: f734ecfba28b3b0688cbd7ca6f3d7fca27febb15fd021d72a4518ae0e3a4200d
+app_shell_hash: 7b9c63f9aee4f5b5005b1d7533e7f5feab6427f398954987c34ee0f382b0ed69
+design_read_hash: 513c061d12f3a90e84d6e98e1e037b131e59fa3ca5c5f3c0abfc6ba87d24bcaf
+content_hash: 3b8c5043ef9b432b7e0bf5f8ad278922a57f3796ed379a66a35ce76846ee8fce
 
-design_read_aesthetic: taste-default
-design_read_dials: {variance: 4, motion: 3, density: 5}
+design_read_aesthetic: minimalist-ui
+design_read_dials: {variance: 3, motion: 2, density: 5}
 aesthetic_variant_override: null
 archetype: skeleton_screen
 
@@ -24,34 +24,70 @@ craft_rules_version: v1.0.0
 
 # beneficiaries — loading state
 
-> Auto-generated from screens/beneficiaries/ui.yaml @ SHA 7c34bc96f845e53a
-> Stitch DesignSystem: (pending DESIGN.md upload — run /idea-export-stitch sub-plan 02)
+> Auto-generated from screens/beneficiaries/ui.yaml @ SHA 0324699bde93cffc
+> Stitch DesignSystem: (pending DESIGN.md upload — run /idea-feature-stitch sub-plan 02)
 > DO NOT redeclare colors / fonts / spacing — they live in DESIGN.md.
 
 ↓↓↓ MOCKUP PROMPT
-Design the loading state of the Beneficiaries screen for **Mifos X Open Banking**, a open banking KMP super-app for consumer retail banking and field officer agent banking powered by Open Bank Project API v7.
 
-Palette: primary #B2D188, on_primary #1F3701, primary_container #354E16, on_primary_container #CDEDA3, secondary #A0CFCB, on_secondary #003735, background #12140E, on_surface #E3E3D8, on_surface_variant #C5C8BA, surface_container #1E201A, surface_container_high #282A24, outline #8F9285, error #FFB4AB.
+> DO NOT invent navigation, tabs, or screens beyond the declared app-shell (Home, Accounts, Pay, More) plus the composition below. Every nav item you render MUST come from that list.
+> Only elements that navigate or perform an action may look tappable (cursor, ripple, pressed state). DO NOT add tap affordances to decorative content — page titles, section headings, avatars, standalone icons, badges, and static labels are NOT interactive.
 
-**Component 1 — App Bar Shimmer** (64dp tall, full width): Shimmer rectangle 120dp wide by 24dp tall, centered. Base #1E201A, highlight #282A24, 1200ms horizontal sweep. Background #12140E. skeleton_screen archetype.
+## Archetype: index_list
 
-**Component 2 — Text Field Shimmer** (full width minus 32dp insets, top margin 16dp): Rectangular shimmer 48dp tall, 24dp corner radius pill. Same sweep.
+## Layout
+- type: scrollable_column
+- padding: default
+- alignment: start
+- responsive: any multi-column region MUST be mobile-first and collapse to a single column at narrow/phone widths — never a fixed multi-column grid with no single-column fallback.
 
-**Component 3 — Section Header Shimmer** (full width minus 32dp insets, top margin 16dp): Single shimmer rectangle 100dp wide by 14dp tall.
+## Composition (top → bottom)
+1. **progress_indicator**
+2. **icon_button** (#back_button) — icon: "arrow_back", on_click: { action: navigate_back, target: account-detail }
+3. **search_bar** (#beneficiary_search)
+4. **list** (#beneficiaries_list) — "beneficiaries_list"
+   - **list_item** (#beneficiary_row)
+5. **empty_state** (#search_no_results) — title: "{strings.beneficiaries.search_empty_title}", icon: "search_off"
+6. **empty_state** (#empty_beneficiaries) — title: "{strings.beneficiaries.empty_title}", icon: "people_outline"
+7. **empty_state** (#error_state) — "{strings.beneficiaries.error_title}"
+   - **button** (#retry_button) — label: "{strings.beneficiaries.retry}", on_click: { action: retry_load }
+   - **button** (#view_consents_button) — label: "{strings.beneficiaries.view_consents}", on_click: { action: navigate, target: consent-list }
 
-**Component 4 — List Row Shimmer** (full width minus 32dp insets, top margin 8dp, 72dp tall): Leading 40dp circular shimmer avatar. Title shimmer 160dp by 16dp, subtitle shimmer 80dp by 12dp stacked on right, trailing shimmer 60dp by 12dp.
+## State-specific behavior
+- Show shimmer/skeleton loaders matching the content layout block-for-block — no real text, no images. This is the screen's initial state.
 
-**Component 5 — List Row Shimmer** (full width minus 32dp insets, top margin 4dp, 72dp tall): Same row shimmer shape.
+## Content source manifest
+- (no demo collections bound for this state)
 
-**Component 6 — List Row Shimmer** (full width minus 32dp insets, top margin 4dp, 72dp tall): Same row shimmer shape.
+## Components (vocabulary used in this prompt)
+- (no named components extracted — see composition)
 
-**Component 7 — Section Header Shimmer** (full width minus 32dp insets, top margin 16dp): Single shimmer 120dp by 14dp.
+## Shell (app-shell resolved for this state)
+- Home: navigates to home
+- Accounts: navigates to accounts
+- Pay: navigates to send-money
+- More: navigates to settings
+- Render MUST keep nav/bar elements consistent with the list above — present or absent, never partial.
 
-**Component 8 — Card Shimmer** (full width minus 32dp insets, top margin 8dp, 80dp tall): Leading 32dp square shimmer. Two text-line shimmers 180dp and 120dp, trailing 60dp by 12dp.
+## Tokens (design-tokens roles consumed)
+- Colors: primary / secondary / surface / on-surface / on-surface-variant / error (M3 standard roles).
+- Typography: body-large / title-large (M3 standard roles).
+- Spacing: gap.sm / gap.md / gap.lg.
+- ALL token references are by name from the uploaded design system — no hex literals, no inline size values.
 
-**Component 9 — Card Shimmer** (full width minus 32dp insets, top margin 8dp, bottom 24dp): Same shape, 80dp tall.
+## Self-Validation Checklist (MANDATORY)
 
-Do not use em-dash anywhere in text. Do not make any headline more than 3 lines or any subtitle more than 25 words. Do not break the dark theme between sections. Do not place light text on light buttons or dark text on dark buttons.
+Before returning the rendered mockup, verify ALL of these are true. If any fails, FIX the output and re-render.
 
-Full scrollable layout on #12140E. Shimmer placeholders use surfaceContainer #1E201A rest with #282A24 sweep, keeping the loading state calm and restrained, anchored by the #B2D188 primary token for a minimal, balanced banking experience.
+- [ ] **Per-state shape:** the render shows ONLY this state ("loading"). Do not blend multiple states into one mockup.
+- [ ] **Real content:** every text label, image, and data point reflects the content source manifest above — no numbered generic items, no filler text, no dummy text, no empty strings.
+- [ ] **Token fidelity:** colors come from the uploaded design system (primary/secondary/surface/etc.) by name; spacing comes from declared scale tokens. No invented hex codes, no invented size literals.
+- [ ] **Component vocabulary:** every component in the render maps to a named design-system component (Card, FAB, BottomBar, etc.) — no invented or off-system components.
+- [ ] **Archetype honored:** the layout follows the "index_list" archetype skeleton — composition order top → bottom matches the Composition section.
+- [ ] **App-shell parity:** if a bottom nav, top app bar, or FAB appears in the render, it matches the resolved shell from the app-shell config. Shell elements are either present-and-consistent OR absent — never partial.
+
+If any of these fail and the fix isn't clear → halt rendering and surface "Self-validation failed at: {checkpoint}."
+
+Return ONLY when all 6 checkpoints pass.
+
 ↑↑↑ MOCKUP PROMPT

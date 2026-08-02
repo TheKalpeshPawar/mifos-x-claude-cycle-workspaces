@@ -1,12 +1,12 @@
 ---
-ui_yaml_sha: 3031319309686a8a3dd9969b6f6dbd16af12fef0d67577b0c9585cb6b7dbd0a8
-design_md_hash: 71b53c295bf863d34057f16264caf37a11512e794d356b3bec219352550d05ec
-app_shell_hash: ad7a6b42b2ae10e63ef270f15d857bd44445d775e8d9b09313b31e6569df95b4
-design_read_hash: 1639ea0545fdbc1ba9ce1eef5369eae224a6f4f57f07f0639b699652daeb8558
-content_hash: cfd129e7b2715ce0cde3a235908bed1eb5c9bc70f2ae0cba8f85b3f081e6af22
+ui_yaml_sha: b0a8906dc25b9f832385d9e739b65145e6c1da058133602996736d6c0ff0a54e
+design_md_hash: f734ecfba28b3b0688cbd7ca6f3d7fca27febb15fd021d72a4518ae0e3a4200d
+app_shell_hash: 7b9c63f9aee4f5b5005b1d7533e7f5feab6427f398954987c34ee0f382b0ed69
+design_read_hash: 513c061d12f3a90e84d6e98e1e037b131e59fa3ca5c5f3c0abfc6ba87d24bcaf
+content_hash: 06d640188affb9fe7fac372fe473b3464c57520e87413a51e237d23c7df7a3a8
 
-design_read_aesthetic: taste-default
-design_read_dials: {variance: 4, motion: 3, density: 5}
+design_read_aesthetic: minimalist-ui
+design_read_dials: {variance: 3, motion: 2, density: 5}
 aesthetic_variant_override: null
 archetype: empty_state
 
@@ -24,39 +24,91 @@ craft_rules_version: v1.0.0
 
 # account-detail — empty state
 
-> Auto-generated from screens/account-detail/ui.yaml @ SHA 168b59679e97a224
-> Stitch DesignSystem: (pending DESIGN.md upload — run /idea-export-stitch sub-plan 02)
+> Auto-generated from screens/account-detail/ui.yaml @ SHA 32d58e09ebb23cf2
+> Stitch DesignSystem: (pending DESIGN.md upload — run /idea-feature-stitch sub-plan 02)
 > DO NOT redeclare colors / fonts / spacing — they live in DESIGN.md.
 
 ↓↓↓ MOCKUP PROMPT
 
-Design the **empty** state of the Account-detail screen for **mifos-x-open-banking**, a Open Banking KMP super-app - consumer retail banking + field officer agent banking powered by Open Bank Project API v7, built with Compose Multiplatform across Android, iOS, Desktop, and Web Material 3 balanced dark theme, 393×852dp (Pixel 5), Outfit font throughout.
+> DO NOT invent navigation, tabs, or screens beyond the declared app-shell (Home, Accounts, Pay, More) plus the composition below. Every nav item you render MUST come from that list.
+> Only elements that navigate or perform an action may look tappable (cursor, ripple, pressed state). DO NOT add tap affordances to decorative content — page titles, section headings, avatars, standalone icons, badges, and static labels are NOT interactive.
 
-Palette: primary #B2D188, on_primary #1F3701, primary_container #354E16, on_primary_container #CDEDA3, secondary #A0CFCB, on_secondary #003735, secondary_container #1F4E4B, on_secondary_container #BCEBE7, tertiary #A0CFCB, on_tertiary #003735, tertiary_container #1F4E4B, on_tertiary_container #BCEBE7, error #FFB4AB, on_error #690005.
+## Archetype: detail_screen
 
-**Component 1 - Box** (centered, generous vertical breathing room): rendered per design system component spec. empty_state archetype.
+## Layout
+- type: scrollable_column
+- padding: default
+- alignment: start
+- responsive: any multi-column region MUST be mobile-first and collapse to a single column at narrow/phone widths — never a fixed multi-column grid with no single-column fallback.
 
-**Component 2 - Box** (centered, generous vertical breathing room): rendered per design system component spec.
+## Composition (top → bottom)
+1. **progress_indicator** (#loading_spinner)
+2. **icon_button** (#back_button) — icon: "arrow_back", on_click: { action: navigate_back, target: accounts }
+3. **card** (#account_header_card) — "account_header_card"
+   - **text** (#account_subtype_label)
+   - **text** (#account_nickname)
+   - **text** (#account_identification)
+   - **text** (#account_currency)
+   - **text** (#account_servicer)
+   - **text** (#account_last_updated)
+4. **card** (#open_banking_badge) — "open_banking_badge"
+   - **text** (#open_banking_badge_text)
+5. **card** (#account_description_card) — "account_description_card"
+   - **text** (#account_description_label)
+   - **text** (#account_description_value)
+6. **section_header** (#balances_header) — label: "{strings.account_detail_section_balances}"
+7. **list** (#balances_list) — "balances_list"
+   - **list_item** (#balance_row)
+8. **empty_state** (#balances_empty_state) — title: "{strings.account_detail_balances_empty_title}", icon: "account_balance_wallet"
+9. **section_header** (#actions_header) — label: "{strings.account_detail_section_explore}"
+10. **chip_row** (#action_chips) — "action_chips"
+   - **chip** (#chip_transactions) — label: "{strings.nav_chip_transactions}", icon: "receipt_long", on_click: { action: navigate_transactions, target: transactions }
+   - **chip** (#chip_statements) — label: "{strings.nav_chip_statements}", icon: "description", on_click: { action: navigate_statements, target: statements }
+   - **chip** (#chip_standing_orders) — label: "{strings.nav_chip_standing_orders}", icon: "autorenew", on_click: { action: navigate_standing_orders, target: standing-orders }
+   - **chip** (#chip_direct_debits) — label: "{strings.nav_chip_direct_debits}", icon: "subscriptions", on_click: { action: navigate_direct_debits, target: direct-debits }
+   - **chip** (#chip_scheduled_payments) — label: "{strings.nav_chip_scheduled}", icon: "schedule", on_click: { action: navigate_scheduled_payments, target: scheduled-payments }
+   - **chip** (#chip_beneficiaries) — label: "{strings.nav_chip_beneficiaries}", icon: "people", on_click: { action: navigate_beneficiaries, target: beneficiaries }
+   - **chip** (#chip_atm_locator) — label: "{strings.account_detail.nav_chip_atm_label}", icon: "atm", on_click: { action: navigate_atm_locator, target: _placeholder-atm-locator }
+   - **chip** (#chip_product) — label: "{strings.nav_chip_product}", icon: "description", on_click: { action: navigate_product, target: product }
+   - **chip** (#chip_party) — label: "{strings.nav_chip_party}", icon: "person", on_click: { action: navigate_party, target: account-holder }
+11. **empty_state** (#error_state) — "{strings.account_detail_error_title}"
+   - **button** (#retry_button) — label: "{strings.account_detail_retry}", on_click: { action: retry_load }
 
-**Component 3 - Stack** (centered, generous vertical breathing room): rendered per design system component spec.
+## State-specific behavior
+- Show an empty-state illustration, a friendly message, and one primary call-to-action button.
 
-**Component 4 - Divider** (centered, generous vertical breathing room): rendered per design system component spec.
+## Content source manifest
+- (no demo collections bound for this state)
 
-**Component 5 - Stack** (centered, generous vertical breathing room): rendered per design system component spec.
+## Components (vocabulary used in this prompt)
+- (no named components extracted — see composition)
 
-**Component 6 - Box** (centered, generous vertical breathing room): rendered per design system component spec.
+## Shell (app-shell resolved for this state)
+- Home: navigates to home
+- Accounts: navigates to accounts
+- Pay: navigates to send-money
+- More: navigates to settings
+- Render MUST keep nav/bar elements consistent with the list above — present or absent, never partial.
 
-**Component 7 - Box** (centered, generous vertical breathing room): rendered per design system component spec.
+## Tokens (design-tokens roles consumed)
+- Colors: primary / secondary / surface / on-surface / on-surface-variant / error (M3 standard roles).
+- Typography: body-large / title-large (M3 standard roles).
+- Spacing: gap.sm / gap.md / gap.lg.
+- ALL token references are by name from the uploaded design system — no hex literals, no inline size values.
 
-**Component 8 - Box** (centered, generous vertical breathing room): rendered per design system component spec.
+## Self-Validation Checklist (MANDATORY)
 
-**Component 9 - Box** (centered, generous vertical breathing room): rendered per design system component spec.
+Before returning the rendered mockup, verify ALL of these are true. If any fails, FIX the output and re-render.
 
-**Component 10 - Box** (centered, generous vertical breathing room): rendered per design system component spec.
+- [ ] **Per-state shape:** the render shows ONLY this state ("empty"). Do not blend multiple states into one mockup.
+- [ ] **Real content:** every text label, image, and data point reflects the content source manifest above — no numbered generic items, no filler text, no dummy text, no empty strings.
+- [ ] **Token fidelity:** colors come from the uploaded design system (primary/secondary/surface/etc.) by name; spacing comes from declared scale tokens. No invented hex codes, no invented size literals.
+- [ ] **Component vocabulary:** every component in the render maps to a named design-system component (Card, FAB, BottomBar, etc.) — no invented or off-system components.
+- [ ] **Archetype honored:** the layout follows the "detail_screen" archetype skeleton — composition order top → bottom matches the Composition section.
+- [ ] **App-shell parity:** if a bottom nav, top app bar, or FAB appears in the render, it matches the resolved shell from the app-shell config. Shell elements are either present-and-consistent OR absent — never partial.
 
-**Component 11 - Spacer** (centered, generous vertical breathing room): rendered per design system component spec.
+If any of these fail and the fix isn't clear → halt rendering and surface "Self-validation failed at: {checkpoint}."
 
-DO NOT use em-dash anywhere in text. DO NOT make any headline >3 lines or any subtitle >25 words. DO NOT break the page theme between sections. DO NOT place light text on light buttons or dark text on dark buttons.
+Return ONLY when all 6 checkpoints pass.
 
-Full scrollable layout on #B2D188. The #B2D188 accent creates a balanced and premium feel calibrated to the taste-default aesthetic.
 ↑↑↑ MOCKUP PROMPT

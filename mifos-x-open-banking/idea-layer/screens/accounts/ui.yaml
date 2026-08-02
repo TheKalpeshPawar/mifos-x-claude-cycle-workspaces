@@ -1,838 +1,347 @@
-id: accounts
-name: My Accounts
-feature: accounts
-flavor: consumer
-status: approved
-quality_score: 100
-contract_version: "1.1.0"
-approve_hash: "sha256:04af12bd8c96e4f037af12bd8c96e4f037af12bd8c96e4f037af12bd8c96e4f0"
-approved_at: "2026-06-11T14:45:00Z"
-approved_by: "/idea approve"
-approve_predicate_version: "1.0.0"
-approve_contract_version: "1.1.0"
-capabilities:
-  - has_ui
-status_history:
-  - status: designed
-    at: "2026-05-25T00:00:00Z"
-    by: "/idea export"
-    exports: [spec_md, api_md, mockup_md]
-  - from: designed
-    to: approved
-    at: "2026-05-25T13:45:00Z"
-    by: "/idea approve"
-    contract_version: "1.1.0"
-    bypass_flags: []
-  - from: approved
-    to: draft
-    at: "2026-06-02T00:00:00Z"
-    by: "design-resync"
-    note: "Implementation replaced account-type filter tabs with free-text search and grouped accounts by bank; back-propagated to source."
-  - from: draft
-    to: enriched
-    at: "2026-06-02T00:00:00Z"
-    by: "/idea enrich"
-    note: "Re-enriched after search-bar + bank-grouping redesign; set initial_state=loading (api-backed), aligned accounts_search supported_states to text_field registry pattern. quality_score 100."
-  - from: enriched
-    to: designed
-    at: "2026-06-02T09:40:47Z"
-    by: "/idea export"
-    exports: [spec_md, api_md, mockup_md, prompts_stitch_loading, prompts_stitch_content, prompts_stitch_empty, prompts_stitch_error]
-    note: "Regenerated all exports reflecting search-bar + bank-grouping redesign. Filter tabs removed."
-  - from: designed
-    to: enriched
-    at: "2026-06-11"
-    by: "/idea verify --source-drift (write-back)"
-    note: "Reconciled spec to shipped Kotlin — removed add_account_fab/total_balance_footer/footer_divider/per-bank subtotals/help-icon action; rewrote state_model to ScreenState<AccountsContent>; added no_network+unauthenticated states + NoMatchRow; DI=AccountsRepository only; DTO=Account; nav onAccountClick(bankId,accountId); pending re-render + re-approve."
-  - from: enriched
-    to: approved
-    at: "2026-06-11T14:45:00Z"
-    by: "/idea approve"
-    contract_version: "1.1.0"
-    bypass_flags: []
-    note: "Approved after source→spec reconciliation (spec matches shipped Kotlin) + /idea verify PASS. Write-back shape (no approve_hash), consistent with project pattern. Previews for reconciled screens may lag the YAML pending a separate re-render."
+sibling: ui
+schema_version: "4.0"
+feature_id: accounts
 
-exports:
-  spec_md:
-    source_hash: "redesign-search-bank-grouping-2026-06-02"
-    at: "2026-06-02T09:40:47Z"
-  api_md:
-    source_hash: "redesign-search-bank-grouping-2026-06-02"
-    at: "2026-06-02T09:40:47Z"
-  mockup_md:
-    source_hash: "redesign-search-bank-grouping-2026-06-02"
-    at: "2026-06-02T09:40:47Z"
-  prompts_stitch_content:
-    source_hash: "redesign-search-bank-grouping-2026-06-02"
-    at: "2026-06-02T09:40:47Z"
-  prompts_stitch_loading:
-    source_hash: "redesign-search-bank-grouping-2026-06-02"
-    at: "2026-06-02T09:40:47Z"
-  prompts_stitch_empty:
-    source_hash: "redesign-search-bank-grouping-2026-06-02"
-    at: "2026-06-02T09:40:47Z"
-  prompts_stitch_error:
-    source_hash: "redesign-search-bank-grouping-2026-06-02"
-    at: "2026-06-02T09:40:47Z"
-
-shell:
-  bottom_nav: true
-  nav_items:
-    - id: nav_home
-      label: Home
-      icon: home
-      target: home
-    - id: nav_accounts
-      label: Accounts
-      icon: account_balance
-      target: accounts
-      active: true
-    - id: nav_pay
-      label: Pay
-      icon: send
-      target: send-money
-    - id: nav_cards
-      label: Cards
-      icon: credit_card
-      target: cards
-    - id: nav_more
-      label: More
-      icon: more_horiz
-      target: settings
-
-screens:
-  - id: accounts_content
-    label: My Accounts
-    route: /accounts
-    scroll: vertical
-
+screen_id: accounts
 archetype: index_list
+name: "Accounts"
+status: implemented
+quality_score: 95
+initial_state: loading
+i18n: true
 
-components:
-  - type: stack
-    id: accounts_header
-    style:
-      direction: horizontal
-      align: center
-      justify: space_between
-      padding_horizontal: 20
-      padding_top: spacing.lg
-      padding_bottom: spacing.sm
-    a11y:
-      role: group
-    test_context:
-      tag: accounts_header
-    children:
-      - type: text
-        id: accounts_title
-        content: "My Accounts"
-        style:
-          typography: "Outfit/headline_large"
-          color: "#1A1C16"
-        a11y:
-          role: heading
-          level: 1
-          label: "My Accounts"
-        test_context:
-          tag: accounts_title
-          assert_content: "My Accounts"
+# ─────────────────────────────────────────────────────────────────────
+# SOURCE BINDING — reverse-synced from source 2026-07-28
+# ─────────────────────────────────────────────────────────────────────
+implementation:
+  status: implemented
+  source_module: "feature/accounts"
+  package: "org.mifosx.openbanking.feature.accounts"
+  graph: "accountsGraph(onNavigateToAccountDetail)"
+  route: "AccountsRoute (data object) inside AccountsDestination graph"
+  viewmodel: AccountsViewModel
+  screen: AccountsScreen
+  test_tags_object: AccountsTestTags
+  bottom_nav_tab: "AccountsTab (order 1)"
+  synced_from_source_at: "2026-07-28"
+  removed_in_sync:
+    - "consent_expiring state — no such ScreenState or UiState member in source"
+    - "navigateReconfirmConsent action — AccountsAction has only FilterAccounts and RetryLoad"
+    - "total_balance_summary stat_block — AccountsContent renders only the filter row and the card list; AccountsState carries no total-balance fields"
+    - "filter_global chip — AccountFilter declares only ALL, CURRENT, SAVINGS, CREDIT"
 
-      - type: icon
-        id: accounts_help_icon
-        content: "help_outline"
-        supported_states: [idle, hover, focus_visible, pressed, disabled]
-        style:
-          size: 24
-          color: "#44483D"
-        a11y:
-          role: img
-          label: "Account help"
-        test_context:
-          tag: accounts_help_icon
+status_history:
+  - { from: draft, to: enriched, at: "2026-06-29", by: "/idea-enrich" }
+  - { from: enriched, to: enriched, at: "2026-06-29", by: "/idea-enrich (quality push)", quality_before: 88, quality_after: 94 }
+  - { from: enriched, to: enriched, at: "2026-07-14", by: "/idea-enrich (quality push)", quality_before: 94, quality_after: 95 }
+  - { from: enriched, to: implemented, at: "2026-07-28", by: "/gap-analysis-project (reverse sync from source)" }
 
-  - type: text_field
-    id: accounts_search
-    supported_states: [idle, hover, focus, focus_visible, disabled, error]
-    style:
-      variant: outlined
-      leading_icon: search
-      trailing_icon: close
-      placeholder: "Search by name, number or label"
-      border_radius: 28
-      background: "#F0F1E6"
-      border_color: "#C5C8BA"
-      focus_border_color: "#4C662B"
-      text_color: "#1A1C16"
-      placeholder_color: "#44483D"
-      margin_horizontal: 20
-      padding_vertical: spacing.md
-    on_click:
-      action: search_accounts
-      params:
-        query: "{search_query}"
-    a11y:
-      role: searchbox
-      label: "Search accounts by name, number or label"
-    keyboard:
-      focusable: true
-    test_context:
-      tag: accounts_search
-      assert_clickable: true
+business_logic:
+  kind: crud
+  description: "AccountsViewModel collects AccountsOverviewRepository through combineContent, producing a ScreenState<AccountsData>. Each AccountWithBalance is projected into an AccountRowUi carrying a canonicalised AccountUiType (CURRENT / SAVINGS / CREDIT / GLOBAL_MONEY / GLOBAL_WALLET / OTHER), a formatted identifier via formatAccountIdentifier, and a balanceLabel via formatMoney — GBP renders bare, other currencies are prefixed with the ISO code, and an unavailable balance falls back to an em dash. isBalanceOwed drives the 'balance owed' badge on credit cards. AccountFilter.matches applies the chip filter client-side against the canonical subtype with no API round-trip; the active filter lives inside AccountsData, so filtering re-emits Content rather than mutating a separate field. Tapping a card navigates to account-detail with the AccountId."
+  external_library_refs:
+    - "ktorfit"
+    - "hsbc-obie-ais-v4.0:accounts"
+    - "hsbc-obie-ais-v4.0:balances"
+  description_author: claude
+  description_authored_at: "2026-07-28T00:00:00Z"
 
-  - type: stack
-    id: bank_group_1_header
-    style:
-      direction: horizontal
-      align: center
-      padding_horizontal: 20
-      padding_top: spacing.lg
-      padding_bottom: spacing.sm
-    a11y:
-      role: heading
-      level: 2
-      label: "Mifos Bank UK, 2 accounts"
-    test_context:
-      tag: bank_group_1_header
-    children:
-      - type: stack
-        id: bank_group_1_title_row
-        style:
-          direction: horizontal
-          align: center
-          spacing: spacing.sm
-        children:
-          - type: icon
-            id: bank_group_1_icon
-            content: "account_balance"
-            supported_states: [idle, hover, focus_visible, pressed, disabled]
-            style:
-              size: 18
-              color: "#4C662B"
-            a11y:
-              role: img
-              label: "Bank"
-            test_context:
-              tag: bank_group_1_icon
-          - type: stack
-            id: bank_group_1_title_col
-            style:
-              direction: vertical
-            children:
-              - type: text
-                id: bank_group_1_name
-                content: "Mifos Bank UK"
-                style:
-                  typography: "Outfit/title_small"
-                  color: "#1A1C16"
-                a11y:
-                  role: text
-                test_context:
-                  tag: bank_group_1_name
-                  assert_content: "Mifos Bank UK"
-              - type: text
-                id: bank_group_1_count
-                content: "2 accounts"
-                style:
-                  typography: "Outfit/label_small"
-                  color: "#44483D"
-                a11y:
-                  role: text
-                test_context:
-                  tag: bank_group_1_count
-
-  - type: box
-    id: account_card_1
-    supported_states: [idle, hover, focus_visible, pressed]
-    style:
-      background: "#FFFFFF"
-      border_radius: 16
-      padding: spacing.lg
-      margin_horizontal: 20
-      margin_bottom: spacing.md
-      elevation: 2
-      border_left_width: 4
-      border_left_color: "#4C662B"
-    on_click:
-      action: navigate
-      target: account-detail
-      params:
-        bank_id: "gh.29.uk"
-        account_id: "acc_checking_primary"
-    a11y:
-      role: button
-      label: "Primary Checking account, balance four thousand two hundred fifty pounds, tap to view details"
-    keyboard:
-      focusable: true
-    test_context:
-      tag: account_card_1
-      assert_clickable: true
-    children:
-      - type: stack
-        id: acct1_header_row
-        style:
-          direction: horizontal
-          align: center
-          justify: space_between
-          padding_bottom: spacing.md
-        children:
-          - type: text
-            id: acct1_label
-            content: "Primary Checking"
-            style:
-              typography: "Outfit/title_medium"
-              color: "#1A1C16"
-              font_weight: 600
-            a11y:
-              role: text
-            test_context:
-              tag: acct1_label
-              assert_content: "Primary Checking"
-
-          - type: box
-            id: acct1_type_badge
-            style:
-              background: "#CDEDA3"
-              border_radius: 6
-              padding_horizontal: spacing.sm
-              padding_vertical: spacing.xs
-            children:
-              - type: text
-                id: acct1_type_label
-                content: "CHECKING"
-                style:
-                  typography: "Outfit/label_small"
-                  color: "#4C662B"
-                a11y:
-                  role: text
-                  label: "Account type: Checking"
-                test_context:
-                  tag: acct1_type_label
-
-      - type: text
-        id: acct1_balance
-        content: "£4,250.00"
-        style:
-          typography: "Outfit/display_small"
-          color: "#4C662B"
-          padding_bottom: spacing.sm
-        a11y:
-          role: text
-          label: "Balance: four thousand two hundred fifty pounds"
-        test_context:
-          tag: acct1_balance
-          assert_content: "£4,250.00"
-
-      - type: stack
-        id: acct1_iban_row
-        style:
-          direction: horizontal
-          align: center
-          spacing: spacing.sm
-        children:
-          - type: icon
-            id: acct1_iban_icon
-            content: "account_box"
-            supported_states: [idle, hover, focus_visible, pressed, disabled]
-            style:
-              size: 16
-              color: "#44483D"
-            a11y:
-              role: img
-              label: "IBAN icon"
-            test_context:
-              tag: acct1_iban_icon
-
-          - type: text
-            id: acct1_iban
-            content: "DE89 3704 0044 0532 0130 00"
-            style:
-              typography: "Outfit/body_small"
-              color: "#44483D"
-              font_family: monospace
-            a11y:
-              role: text
-              label: "IBAN: DE89 3704 0044 0532 0130 00"
-            test_context:
-              tag: acct1_iban
-
-  - type: box
-    id: account_card_2
-    supported_states: [idle, hover, focus_visible, pressed]
-    style:
-      background: "#FFFFFF"
-      border_radius: 16
-      padding: spacing.lg
-      margin_horizontal: 20
-      margin_bottom: spacing.md
-      elevation: 2
-      border_left_width: 4
-      border_left_color: "#386663"
-    on_click:
-      action: navigate
-      target: account-detail
-      params:
-        bank_id: "gh.29.uk"
-        account_id: "acc_savings_goal"
-    a11y:
-      role: button
-      label: "Holiday Savings account, balance six thousand one hundred eighty pounds fifty, tap to view details"
-    keyboard:
-      focusable: true
-    test_context:
-      tag: account_card_2
-      assert_clickable: true
-    children:
-      - type: stack
-        id: acct2_header_row
-        style:
-          direction: horizontal
-          align: center
-          justify: space_between
-          padding_bottom: spacing.md
-        children:
-          - type: text
-            id: acct2_label
-            content: "Holiday Savings"
-            style:
-              typography: "Outfit/title_medium"
-              color: "#1A1C16"
-              font_weight: 600
-            a11y:
-              role: text
-            test_context:
-              tag: acct2_label
-              assert_content: "Holiday Savings"
-
-          - type: box
-            id: acct2_type_badge
-            style:
-              background: "#CDEDA3"
-              border_radius: 6
-              padding_horizontal: spacing.sm
-              padding_vertical: spacing.xs
-            children:
-              - type: text
-                id: acct2_type_label
-                content: "SAVINGS"
-                style:
-                  typography: "Outfit/label_small"
-                  color: "#386663"
-                a11y:
-                  role: text
-                  label: "Account type: Savings"
-                test_context:
-                  tag: acct2_type_label
-
-      - type: text
-        id: acct2_balance
-        content: "£6,180.50"
-        style:
-          typography: "Outfit/display_small"
-          color: "#386663"
-          padding_bottom: spacing.sm
-        a11y:
-          role: text
-          label: "Balance: six thousand one hundred eighty pounds fifty"
-        test_context:
-          tag: acct2_balance
-          assert_content: "£6,180.50"
-
-      - type: stack
-        id: acct2_iban_row
-        style:
-          direction: horizontal
-          align: center
-          spacing: spacing.sm
-        children:
-          - type: icon
-            id: acct2_iban_icon
-            content: "account_box"
-            supported_states: [idle, hover, focus_visible, pressed, disabled]
-            style:
-              size: 16
-              color: "#44483D"
-            a11y:
-              role: img
-              label: "IBAN icon"
-            test_context:
-              tag: acct2_iban_icon
-
-          - type: text
-            id: acct2_iban
-            content: "DE89 3704 0044 0532 0131 00"
-            style:
-              typography: "Outfit/body_small"
-              color: "#44483D"
-              font_family: monospace
-            a11y:
-              role: text
-              label: "IBAN: DE89 3704 0044 0532 0131 00"
-            test_context:
-              tag: acct2_iban
-
-  - type: stack
-    id: bank_group_2_header
-    style:
-      direction: horizontal
-      align: center
-      padding_horizontal: 20
-      padding_top: spacing.lg
-      padding_bottom: spacing.sm
-    a11y:
-      role: heading
-      level: 2
-      label: "Mifos Business UK, 1 account"
-    test_context:
-      tag: bank_group_2_header
-    children:
-      - type: stack
-        id: bank_group_2_title_row
-        style:
-          direction: horizontal
-          align: center
-          spacing: spacing.sm
-        children:
-          - type: icon
-            id: bank_group_2_icon
-            content: "account_balance"
-            supported_states: [idle, hover, focus_visible, pressed, disabled]
-            style:
-              size: 18
-              color: "#4C662B"
-            a11y:
-              role: img
-              label: "Bank"
-            test_context:
-              tag: bank_group_2_icon
-          - type: stack
-            id: bank_group_2_title_col
-            style:
-              direction: vertical
-            children:
-              - type: text
-                id: bank_group_2_name
-                content: "Mifos Business UK"
-                style:
-                  typography: "Outfit/title_small"
-                  color: "#1A1C16"
-                a11y:
-                  role: text
-                test_context:
-                  tag: bank_group_2_name
-                  assert_content: "Mifos Business UK"
-              - type: text
-                id: bank_group_2_count
-                content: "1 account"
-                style:
-                  typography: "Outfit/label_small"
-                  color: "#44483D"
-                a11y:
-                  role: text
-                test_context:
-                  tag: bank_group_2_count
-
-  - type: box
-    id: account_card_3
-    supported_states: [idle, hover, focus_visible, pressed]
-    style:
-      background: "#FFFFFF"
-      border_radius: 16
-      padding: spacing.lg
-      margin_horizontal: 20
-      margin_bottom: spacing.md
-      elevation: 2
-      border_left_width: 4
-      border_left_color: "#E8A317"
-    on_click:
-      action: navigate
-      target: account-detail
-      params:
-        bank_id: "gh.29.uk"
-        account_id: "acc_business_main"
-    a11y:
-      role: button
-      label: "Business Current account, balance two thousand fifty pounds, tap to view details"
-    keyboard:
-      focusable: true
-    test_context:
-      tag: account_card_3
-      assert_clickable: true
-    children:
-      - type: stack
-        id: acct3_header_row
-        style:
-          direction: horizontal
-          align: center
-          justify: space_between
-          padding_bottom: spacing.md
-        children:
-          - type: text
-            id: acct3_label
-            content: "Business Current"
-            style:
-              typography: "Outfit/title_medium"
-              color: "#1A1C16"
-              font_weight: 600
-            a11y:
-              role: text
-            test_context:
-              tag: acct3_label
-              assert_content: "Business Current"
-
-          - type: box
-            id: acct3_type_badge
-            style:
-              background: "#CDEDA3"
-              border_radius: 6
-              padding_horizontal: spacing.sm
-              padding_vertical: spacing.xs
-            children:
-              - type: text
-                id: acct3_type_label
-                content: "BUSINESS"
-                style:
-                  typography: "Outfit/label_small"
-                  color: "#44483D"  # fix A11Y-002: was #E8A317 (1.68:1 on CDEDA3, FAIL); #44483D = 7.25:1 PASS
-                a11y:
-                  role: text
-                  label: "Account type: Business"
-                test_context:
-                  tag: acct3_type_label
-
-      - type: text
-        id: acct3_balance
-        content: "£2,050.00"
-        style:
-          typography: "Outfit/display_small"
-          color: "#44483D"  # fix A11Y-002: was #E8A317 (2.17:1 on white, FAIL); #44483D = 8.91:1 PASS
-          padding_bottom: spacing.sm
-        a11y:
-          role: text
-          label: "Balance: two thousand fifty pounds"
-        test_context:
-          tag: acct3_balance
-          assert_content: "£2,050.00"
-
-      - type: stack
-        id: acct3_iban_row
-        style:
-          direction: horizontal
-          align: center
-          spacing: spacing.sm
-        children:
-          - type: icon
-            id: acct3_iban_icon
-            content: "account_box"
-            supported_states: [idle, hover, focus_visible, pressed, disabled]
-            style:
-              size: 16
-              color: "#44483D"
-            a11y:
-              role: img
-              label: "IBAN icon"
-            test_context:
-              tag: acct3_iban_icon
-
-          - type: text
-            id: acct3_iban
-            content: "DE89 3704 0044 0532 0132 00"
-            style:
-              typography: "Outfit/body_small"
-              color: "#44483D"
-              font_family: monospace
-            a11y:
-              role: text
-              label: "IBAN: DE89 3704 0044 0532 0132 00"
-            test_context:
-              tag: acct3_iban
-
-  - type: text
-    id: accounts_no_match_row
-    visible_in_states: [content]
-    style:
-      typography: "Outfit/body_medium"
-      color: "#44483D"
-      text_align: center
-      padding: spacing.xl
-      margin_horizontal: 20
-    content: "No accounts match your search."
-    a11y:
-      role: text
-      label: "No accounts match your search."
-    test_context:
-      tag: accounts_no_match_row
-
-responsive:
-  mobile_only: false
-  baseline_width: 390
-  tablet:
-    min_width: 600
-    columns: 2
-
-states:
-  initial_state: loading
-  loading:
-    motion:
-      shimmer_duration: short4
-      reduced_motion_fallback: static_placeholder
-    layout:
-      components_visible:
-        - accounts_header
-        - accounts_search
-      skeleton:
-        - id: skeleton_card_1
-          type: box
-          style:
-            background: "#E1E4D5"
-            border_radius: 16
-            height: 120
-            margin_horizontal: 20
-            margin_bottom: spacing.md
-        - id: skeleton_card_2
-          type: box
-          style:
-            background: "#E1E4D5"
-            border_radius: 16
-            height: 120
-            margin_horizontal: 20
-            margin_bottom: spacing.md
-        - id: skeleton_card_3
-          type: box
-          style:
-            background: "#E1E4D5"
-            border_radius: 16
-            height: 120
-            margin_horizontal: 20
-            margin_bottom: spacing.md
-
-  content:
-    layout:
-      components_visible:
-        - accounts_header
-        - accounts_search
-        - bank_group_1_header
-        - account_card_1
-        - account_card_2
-        - bank_group_2_header
-        - account_card_3
-
-  empty:
-    layout:
-      components_visible: []
-      empty_card:
-        id: empty_state_card
-        icon: account_balance_wallet
-        title: "No accounts found"
-        message: "Your accounts will appear here once your profile is set up."
-
-  error:
-    layout:
-      components_visible: []
-      error_card:
-        id: error_state_card
-        title: "Could not load accounts"
-        message: "We were unable to fetch your account list. Please check your connection and try again."
-        action_label: "Retry"
-        action: retry_load
-        icon: error_outline
-
-  no_network:
-    layout:
-      components_visible: []
-      error_card:
-        id: no_network_state_card
-        title: "Could not load accounts"
-        message: "We were unable to fetch your account list. Please check your connection and try again."
-        action_label: "Retry"
-        action: retry_load
-        icon: error_outline
-
-  unauthenticated:
-    layout:
-      components_visible: []
-      error_card:
-        id: unauthenticated_state_card
-        title: "Could not load accounts"
-        message: "We were unable to fetch your account list. Please check your connection and try again."
-        action_label: "Retry"
-        action: retry_load
-        icon: error_outline
-
+# ─────────────────────────────────────────────────────────────────────
+# STATE MODEL — AccountsViewModel contract
+# Mirrors ui/AccountsViewModel.kt verbatim.
+# ─────────────────────────────────────────────────────────────────────
 state_model:
-  view_model: AccountsViewModel
-  screen_state: "ScreenState<AccountsContent>"
-  state_wrapper: ScreenState
-  state_wrapper_states: [Loading, Content, Empty, Error, NoNetwork, Unauthenticated]
-  content_class: AccountsContent
-  content_fields:
-    - name: filteredAccounts
-      type: "List<Account>"
-      note: "client-side search result over the offline-first account stream"
-    - name: query
-      type: String
-    - name: accountCount
-      type: Int
-      note: "total accounts before search filter; Empty when 0"
-  dto: org.mifosx.openbanking.core.model.obp.Account
-  data_source:
-    pattern: ScreenDataStream
-    stream: "accountsRepository.accountsStream(viewModelScope)"
-    note: "Store5 cache-then-network, auto-refresh on reconnect; search re-derives Content without a network call. A search matching nothing stays Content (search bar operable) with an empty list; Empty means zero accounts."
-  events:
-    - "onSearchQueryChanged(query: String)"
-    - onRetry
-    - onRefresh
-  nav_callbacks:
-    - "onAccountClick(bankId: String, accountId: String)"
-  di:
-    - AccountsRepository
-
-api:
-  - endpoint: "GET /obp/v3.0.0/banks/{bankId}/accounts"
-    tag: Accounts
-    auth: DirectLogin
-    note: "Account DTO is a superset of fields used here (id, label, account_type, balance, account_routings, number, iban). Repository also exposes /obp/v3.0.0/my/accounts as the cross-bank list read — listAccounts()/myAccounts() both call my/accounts; the accountsStream feeds this screen."
-    params:
-      - name: bankId
-        type: path
-        value: "gh.29.uk"
-    response:
+  AccountsViewModel:
+    state:
+      name: AccountsState
+      fields:
+        - name: uiState
+          type: ScreenState<AccountsData>
+    data_model:
+      name: AccountsData
+      fields:
+        - name: rows
+          type: List<AccountRowUi>
+        - name: activeFilter
+          type: AccountFilter
+    row_model:
+      name: AccountRowUi
       fields:
         - name: id
           type: String
-        - name: label
+        - name: type
+          type: AccountUiType
+        - name: nickname
           type: String
-        - name: account_type
+        - name: identifier
           type: String
-        - name: bank_id
+        - name: balanceLabel
           type: String
-        - name: number
+        - name: isBalanceOwed
+          type: Boolean
+        - name: accountSubType
           type: String
-        - name: iban
+        - name: accountNumber
           type: String
-        - name: balance
-          type: object
-          children:
-            - name: currency
-              type: String
-            - name: amount
-              type: String
-        - name: account_routings
-          type: "List<AccountRouting>"
-          children:
-            - name: scheme
-              type: String
-            - name: address
-              type: String
-    errors:
-      - code: 401
-        message: "Unauthorized — DirectLogin token missing or expired"
-      - code: 404
-        message: "Bank not found"
-      - code: 500
-        message: "OBP server error"
+        - name: rawIdentification
+          type: String
+    screen_state:
+      sealed_class: ScreenState        # shared core-base type, not a feature-local sealed interface
+      members:
+        - Loading
+        - Content                      # AccountsData
+        - Empty
+        - Error
+        - NoNetwork
+        - Unauthenticated
+    enums:
+      AccountUiType: [CURRENT, SAVINGS, CREDIT, GLOBAL_MONEY, GLOBAL_WALLET, OTHER]
+      AccountFilter: [ALL, CURRENT, SAVINGS, CREDIT]
+    actions:
+      members:
+        - FilterAccounts               # data class — client-side chip filter, no API round-trip
+        - RetryLoad
+    di:
+      - AccountsOverviewRepository     # Koin single; combineContent over accounts + balances
 
-dependencies:
-  tier: feature
-  features:
-    - account-detail
+shell:
+  bottom_navigation_visible: true
+  top_app_bar_visible: true
+  top_app_bar_title: "{strings.accounts.screen.title}"
+  fab_visible: false
+
+states: [loading, content, empty, error]
+
+# TEST TAGS — reconciled against source 2026-08-02 by /idea-sync (source-truth pass).
+# VERIFIED COMPLETE, nothing changed. Recorded because a naive count reads 12 declared here
+# against 9 consts in source and looks over-declared — it is not.
+test_tags:
+  source: "feature/accounts/src/commonMain/kotlin/org/mifosx/openbanking/feature/accounts/AccountsTestTags.kt"
+  declared_in_source: 9          # 7 applied consts + 2 PREFIX consts consumed at render time
+  bound: 12
+  why_more_than_source: >-
+    Two of the nine source entries are prefixes, not finished tags: "accounts_card_" is
+    concatenated with the account id per row, and "accounts_filter_" with the AccountFilter
+    enum case. The idea-layer expands them to the concrete surfaces they produce — one
+    interpolated card binding plus the four real filter chips — so 7 flat + 5 expanded = 12.
+    The expansion is correct; collapsing it back to 9 would lose which filters actually exist.
+  interpolated:
+    - { tag: "accounts_card_{item.id}", prefix_const: "accounts_card_" }
+  expanded_from_prefix:
+    prefix_const: "accounts_filter_"
+    builder_note: "suffix is the AccountFilter enum case — ALL / CURRENT / SAVINGS / CREDIT"
+    values: [accounts_filter_ALL, accounts_filter_CURRENT, accounts_filter_SAVINGS, accounts_filter_CREDIT]
+    no_global_entry: >-
+      There is deliberately no accounts_filter_GLOBAL. AccountFilter has no GLOBAL member
+      (AccountsViewModel.kt:82-87): HSBC UK Personal AIS v4.0 dropped AccountSubType from
+      OBAccount6, so a Global Money account arrives as CACC and is already listed under
+      CURRENT. A GLOBAL chip could never match and would render a permanently empty list.
+
+components:
+
+  # ── LOADING STATE — AccountsSkeleton ───────────────────────────────
+  - type: stack
+    id: loading_skeleton
+    state_binding: [loading]
+    direction: vertical
+    gap: spacing.sm
+    padding: spacing.md
+    test_tag: "accounts_skeleton"
+    accessibility_label: "{strings.accounts.loading.description}"
+    children:
+      - type: shimmer
+        id: skeleton_card_1
+        variant: card
+        height: "96dp"
+        corner_radius: radius.md
+      - type: shimmer
+        id: skeleton_card_2
+        variant: card
+        height: "96dp"
+        corner_radius: radius.md
+      - type: shimmer
+        id: skeleton_card_3
+        variant: card
+        height: "96dp"
+        corner_radius: radius.md
+
+  # ── CONTENT: account type filter chips (AccountTypeFilterRow) ──────
+  # Rendered from AccountFilter.entries — four chips, no Global option.
+  - type: chip_group
+    id: account_type_filter
+    state_binding: [content]
+    selection_mode: single
+    scroll_direction: horizontal
+    padding: { horizontal: spacing.md, bottom: spacing.sm }
+    test_tag: "accounts_filter_row"
+    accessibility_label: "{strings.accounts.filter.label}"
+    # `type: chip` added to all four entries 2026-07-30 (/idea-verify check 13 -> /idea-heal).
+    # They previously carried id/test_tag/label/on_click but NO type, so action-contract-walk.ts
+    # reported them as "type=<none> — NOT evaluated", which the walker itself labels "a coverage
+    # hole, not a pass": each has an on_click that was neither passed nor failed, just skipped.
+    # account-detail's chips already declare `type: chip` (the walker reads them as type=chip),
+    # so this aligns with the existing convention rather than inventing one. The action_contract
+    # blocks were already present and correct — only the type was missing to make them visible
+    # to RULE-IDEA-ACTION-CONTRACT-001.
+    chips:
+      - id: filter_all
+        type: chip
+        test_tag: "accounts_filter_ALL"
+        label: "{strings.accounts.filter.all_label}"
+        selected_by_default: true
+        on_click:
+          action: FilterAccounts
+          params:
+            filter: "ALL"
+          action_contract:
+            effect: transform_state
+            external_library_refs: [kotlinx-coroutines]
+            description: "Dispatches AccountsAction.FilterAccounts(ALL), re-emitting AccountsData with every row and activeFilter = ALL. Purely client-side; no API round-trip."
+      - id: filter_current
+        type: chip
+        test_tag: "accounts_filter_CURRENT"
+        label: "{strings.accounts.filter.current_label}"
+        on_click:
+          action: FilterAccounts
+          params:
+            filter: "CURRENT"
+          action_contract:
+            effect: transform_state
+            external_library_refs: [kotlinx-coroutines]
+            description: "Dispatches AccountsAction.FilterAccounts(CURRENT), re-emitting AccountsData filtered by AccountFilter.matches against the canonical CurrentAccount subtype."
+      - id: filter_savings
+        type: chip
+        test_tag: "accounts_filter_SAVINGS"
+        label: "{strings.accounts.filter.savings_label}"
+        on_click:
+          action: FilterAccounts
+          params:
+            filter: "SAVINGS"
+          action_contract:
+            effect: transform_state
+            external_library_refs: [kotlinx-coroutines]
+            description: "Dispatches AccountsAction.FilterAccounts(SAVINGS), re-emitting AccountsData filtered to the canonical Savings subtype."
+      - id: filter_credit
+        type: chip
+        test_tag: "accounts_filter_CREDIT"
+        label: "{strings.accounts.filter.credit_label}"
+        on_click:
+          action: FilterAccounts
+          params:
+            filter: "CREDIT"
+          action_contract:
+            effect: transform_state
+            external_library_refs: [kotlinx-coroutines]
+            description: "Dispatches AccountsAction.FilterAccounts(CREDIT), re-emitting AccountsData filtered to the canonical CreditCard subtype."
+
+  # ── CONTENT: account list (LazyColumn of AccountCard) ──────────────
+  - type: list
+    id: accounts_list
+    state_binding: [content]
+    scroll_direction: vertical
+    padding: { horizontal: spacing.md }
+    gap: spacing.sm
+    items_source: "{rows}"
+    item_key: "{item.id}"
+    test_tag: "accounts_content"
+    accessibility_label: "{strings.accounts.list.accessibility}"
+    children:
+      - type: card
+        id: account_card
+        test_tag: "accounts_card_{item.id}"
+        elevation: 1
+        padding: spacing.md
+        corner_radius: radius.md
+        accessibility_label: "{strings.accounts.card.accessibility.account_card}"
+        children:
+          - type: stack
+            direction: horizontal
+            alignment: center_vertical
+            gap: spacing.md
+            children:
+              - type: icon
+                id: account_type_icon
+                name: "{item.type}"
+                size: icon.lg
+                color: "primary"
+                decorative: true
+              - type: stack
+                id: account_text_column
+                direction: vertical
+                gap: spacing.xs
+                weight: 1
+                children:
+                  - type: text
+                    id: account_subtype
+                    value: "{item.accountSubType}"
+                    style: labelSmall
+                    color: "secondary"
+                  - type: text
+                    id: account_nickname
+                    value: "{item.nickname}"
+                    style: titleMedium
+                  - type: text
+                    id: account_number
+                    value: "{item.identifier}"
+                    style: bodySmall
+                    color: "onSurfaceVariant"
+                    accessibility_label: "{strings.accounts.card.account_number.label}"
+              - type: stack
+                id: balance_column
+                direction: vertical
+                alignment: end
+                gap: spacing.xxs
+                children:
+                  - type: text
+                    id: balance_amount
+                    value: "{item.balanceLabel}"
+                    style: headlineSmall
+                    alignment: end
+                  - type: badge
+                    id: balance_owed_badge
+                    test_tag: "accounts_balance_owed_badge"
+                    label: "{strings.accounts.card.balance.owed_label}"
+                    variant: tonal
+                    visible_when: "{item.isBalanceOwed}"
+        on_click:
+          action: navigate_account_detail
+          target: account-detail
+          params:
+            accountId: "{item.id}"
+          action_contract:
+            effect: navigate
+            description: "Invokes the accountsGraph onNavigateToAccountDetail callback, which navigates to AccountDetailRoute(accountId) — a nav-host callback, not an AccountsAction member."
+
+  # ── EMPTY STATE — AccountsEmpty ────────────────────────────────────
+  - type: empty_state
+    id: empty_accounts
+    state_binding: [empty]
+    icon: account_balance_wallet
+    title: "{strings.accounts.empty.title}"
+    body: "{strings.accounts.empty.body}"
+    test_tag: "accounts_empty"
+    accessibility_label: "{strings.accounts.empty.title}"
+
+  # ── ERROR STATE — AccountsError ────────────────────────────────────
+  - type: error_state
+    id: error_accounts
+    state_binding: [error]
+    icon: error_outline
+    title: "{strings.accounts.error.title}"
+    body: "{strings.accounts.error.body}"
+    test_tag: "accounts_error"
+    accessibility_label: "{strings.accounts.error.title}"
+    children:
+      - type: button
+        id: retry_button
+        variant: filled
+        label: "{strings.accounts.error.retry_button}"
+        test_tag: "accounts_error_retry"
+        accessibility_label: "{strings.accounts.error.accessibility.retry}"
+        on_click:
+          action: RetryLoad
+          action_contract:
+            effect: call_api
+            reads_from: [accounts-list, balances]
+            external_library_refs: [ktorfit, "hsbc-obie-ais-v4.0:accounts", "hsbc-obie-ais-v4.0:balances"]
+            description: "Dispatches AccountsAction.RetryLoad, re-running the AccountsOverviewRepository combineContent stream over the accounts and balances sources to rebuild AccountsData."

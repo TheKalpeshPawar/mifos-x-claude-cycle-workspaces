@@ -1,0 +1,195 @@
+sibling: docs
+schema_version: "4.0"
+feature_id: payment-status
+
+feature: payment-status
+contract_version: "2.0.0"
+status: enriched
+score: 88
+cluster: payment-initiation
+acceptance_refs:
+  - FR-014
+scaffolded_by: /idea-evolve
+archetype: detail_screen
+flow_ref: send-money-payment
+description: >-
+  Settlement tracking for a submitted domestic payment. Reads GET /domestic-payments/{PaymentId}
+  and renders the payment's current status alongside the echoed Initiation — amount, payee,
+  reference and the debtor account it was funded from. Exists because a successful submit almost
+  never means the money has landed: HSBC returns AcceptedSettlementInProcess, and the terminal
+  AcceptedSettlementCompleted arrives later. Without this screen the PSU is told "sent" and given
+  no way to find out whether it actually settled. Reached from the send-money success state and,
+  once a payment has been made, from the Pay tab.
+has_ui: true
+has_server: false
+# NOT has_offline_cache despite data-flow cache_strategy: memory — that capability means
+# OFFLINE read with conflict resolution, and demands a stale-data indicator, eviction
+# policy and a conflict strategy. This is an ephemeral in-memory cache, not offline support.
+capabilities: [has_ui, has_api, has_flow]
+
+# ─────────────────────────────────────────────────────────────────────
+# SPEC AHEAD OF SOURCE — declared 2026-08-02 by /idea-sync (source-truth pass)
+# ─────────────────────────────────────────────────────────────────────
+# The 2026-08-02 reverse pass aligned every AIS feature to shipped source. This feature is
+# exempt BY DESIGN: it is part of the 2026-07-30 payment-initiation scope reversal and is
+# specified ahead of source on purpose. Absence of a feature module is queued work, not drift.
+spec_ahead_of_source:
+  scope: feature
+  cluster: payment-initiation
+  declared_at: "2026-08-02"
+  declared_by: "/idea-sync (source-truth reverse pass)"
+  owed_by: /kmp-implement
+  reason: >-
+    Settlement tracking for a submitted domestic payment, introduced by the 2026-07-30 scope
+    reversal. Required because HSBC returns AcceptedSettlementInProcess on submit and the
+    terminal AcceptedSettlementCompleted arrives later.
+  source_state_measured:
+    present:
+      - "PISP payment-status wire DTOs — core/network/.../model/pisp/domesticPayment/response/DomesticPaymentResponse.kt"
+    absent:
+      - "no feature/payment-status module, no ViewModel, no TestTags.kt"
+      - "no GET /domestic-payments/{PaymentId} service binding in core/network"
+  consequence_for_verification: "drift and source-test checks are UNASSERTABLE — score N/A, not 0."
+
+metadata:
+  category: detail
+  implementation_ready: true
+  quality_score: 88
+  scaffold_origin: "/idea-evolve — PISP scope reversal, 2026-07-30"
+
+# ─────────────────────────────────────────────────────────────────────────
+# STATUS VOCABULARY — OBIE payment statuses are not a simple success/fail pair
+# ─────────────────────────────────────────────────────────────────────────
+payment_status_vocabulary:
+  - code: "AcceptedSettlementInProcess"
+    disposition: in_progress
+    psu_meaning: "Accepted by the bank; the money has not moved yet."
+    ui_treatment: "Progress chip; keep polling"
+  - code: "AcceptedSettlementCompleted"
+    disposition: terminal_success
+    psu_meaning: "The money has left the account."
+    ui_treatment: "Success chip; stop polling"
+  - code: "AcceptedCreditSettlementCompleted"
+    disposition: terminal_success
+    psu_meaning: "The money has reached the payee."
+    ui_treatment: "Success chip; stop polling"
+  - code: "AcceptedWithoutPosting"
+    disposition: in_progress
+    psu_meaning: "Accepted but not yet posted to the account."
+    ui_treatment: "Progress chip; keep polling"
+  - code: "Pending"
+    disposition: in_progress
+    psu_meaning: "Still being processed by the bank."
+    ui_treatment: "Progress chip; keep polling"
+  - code: "Rejected"
+    disposition: terminal_failure
+    psu_meaning: "The bank did not make the payment."
+    ui_treatment: "Error chip; stop polling; offer to start a new payment"
+
+payment_status_vocabulary_note: >-
+  Never collapse this to a boolean. Telling a PSU a payment "succeeded" when the status is
+  AcceptedSettlementInProcess is a false statement about their money.
+
+regulatory:
+  note: >-
+    PISP is a distinct FCA permission from AISP; production payment initiation requires
+    payment-initiation authorisation. Sandbox unaffected. Captured as an ADR.
+  affects_production: true
+  affects_sandbox: false
+  adr_required: true
+
+contracts: []
+
+libraries:
+  - capability: rest-client
+    library: ktorfit
+    version: latest
+    targets: [android, ios, desktop, web]
+
+vm_actions:
+  - name: LoadPaymentStatus
+    signature: 'suspend fun loadPaymentStatus(paymentId: String)'
+    state_mutations:
+      - uiState = Loading
+      - uiState = Content(status, disposition, amountLabel, creditorName, referenceLabel, submittedAtLabel)
+    side_effects:
+      - "GET /domestic-payments/{PaymentId} via the Pisp client"
+    error_handling:
+      on_404: uiState = Error(type=PaymentNotFound, message=strings.error.payment_status.not_found)
+      on_401: uiState = Error(type=TokenExpired, message=strings.error.payment_status.token_expired)
+      on_403: uiState = Error(type=ConsentRevoked, message=strings.error.payment_status.consent_revoked)
+      on_network: uiState = Error(type=NetworkError, message=strings.error.payment_status.network_error)
+
+  - name: RefreshStatus
+    signature: fun refreshStatus()
+    state_mutations:
+      - re-invokes LoadPaymentStatus with the same paymentId
+    side_effects: []
+    error_handling: {}
+    notes: >-
+      Also driven automatically while the disposition is in_progress, on a backing-off interval,
+      and stopped the moment a terminal disposition is reached.
+
+  - name: StartNewPayment
+    signature: fun startNewPayment()
+    state_mutations: []
+    side_effects:
+      - "Emits NavigationEvent to send-money with a cleared form"
+    error_handling: {}
+    visibility_condition: "disposition == terminal_failure"
+
+  - name: NavigateBack
+    signature: fun navigateBack()
+    state_mutations: []
+    side_effects:
+      - "Emits NavigationEvent.Back to NavController"
+    error_handling: {}
+
+error_cases:
+  - id: PaymentNotFound
+    trigger: "HTTP 404 or 400 U011 — the PaymentId is unknown"
+    user_message: '{strings.error.payment_status.not_found}'
+    recovery: "Back CTA; no retry — the resource does not exist"
+  - id: TokenExpired
+    trigger: HTTP 401
+    user_message: '{strings.error.payment_status.token_expired}'
+    recovery: "Retry CTA after token refresh"
+  - id: ConsentRevoked
+    trigger: HTTP 403 — the payment consent was revoked
+    user_message: '{strings.error.payment_status.consent_revoked}'
+    recovery: >-
+      Informational only. A revoked consent does not undo a payment that already settled, so the
+      copy must not imply the money came back.
+  - id: NetworkError
+    trigger: IOException / timeout
+    user_message: '{strings.error.payment_status.network_error}'
+    recovery: "Retry CTA"
+
+test_fixtures:
+  source: idea-layer/screens/payment-status/demo-data.yaml
+  # Updated 2026-08-02 (/idea-sync ST-1): TC-PSTAT-009 added to cover the `loading` state,
+  # which ui.yaml declared but no scenario targeted. Counts re-derived from tests.yaml, not
+  # incremented on faith — the actual tally is p0:3 p1:5 p2:1 = 9.
+  scenario_count: 9
+  priority_distribution:
+    p0: 3
+    p1: 5
+    p2: 1
+
+status_history:
+  - from: null
+    to: draft
+    at: "2026-07-30"
+    by: "/idea-evolve -> /idea-plan-add add-feature"
+
+# ── /idea-sync enrichment 2026-07-30 ────────────────────────────────────
+# draft -> enriched. What landed this pass:
+#   - i18n: every {strings.*} key this feature references is now declared in
+#     _strings/strings.yaml (catalogue 471 -> 554 keys, 0 missing, 0 orphans)
+#   - analytics: action tags registered in TAG_REGISTRY.yaml, flagged
+#     status: specified because no feature module exists yet
+#   - navigation: edges present in the regenerated APP_FLOW.mmd
+# Score 88 and not higher: the specification is complete, but the derived
+# artifacts (preview HTML, mockups, exports/SPEC.md) are deferred project-wide
+# since the 2026-07-28 reverse sync, and nothing here is verified against source
+# because P3 is not implemented. Approval remains a human gate (/idea approve).

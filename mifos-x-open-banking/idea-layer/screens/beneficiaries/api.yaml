@@ -1,144 +1,51 @@
 sibling: api
 schema_version: "4.0"
 feature_id: beneficiaries
-# Contract verified against live OBP sandbox 2026-06-03 (bank ac.bank.uk, account
-# ac.checking.001, view owner). Field names + types reflect the real response, not the
-# earlier draft (which had a non-existent `id` field).
-api:
-  - id: obp_get_counterparties
-    endpoint: "GET /obp/v4.0.0/banks/{bankId}/accounts/{accountId}/{viewId}/counterparties"
-    tag: Counterparties
-    description: "List the explicit counterparties (payees / beneficiaries) for an account. viewId is owner."
-    response:
-      fields:
-        - name: counterparties
-          type: List<Counterparty>
-        - name: counterparty_id
-          type: String
-        - name: name
-          type: String
-        - name: description
-          type: String
-        - name: currency
-          type: String
-        - name: this_bank_id
-          type: String
-        - name: this_account_id
-          type: String
-        - name: this_view_id
-          type: String
-        - name: other_bank_routing_scheme
-          type: String
-        - name: other_bank_routing_address
-          type: String
-        - name: other_branch_routing_scheme
-          type: String
-        - name: other_branch_routing_address
-          type: String
-        - name: other_account_routing_scheme
-          type: String
-        - name: other_account_routing_address
-          type: String
-        - name: other_account_secondary_routing_scheme
-          type: String
-        - name: other_account_secondary_routing_address
-          type: String
-        - name: is_beneficiary
-          type: Boolean
-        - name: created_by_user_id
-          type: String
-        - name: bespoke
-          type: List<Bespoke>
-    errors:
-      - code: 401
-        message: "OBP-20001: User not logged in"
-      - code: 404
-        message: "OBP-30018: Bank Account not found"
-      - code: 404
-        message: "OBP-30005: View not found for Account"
 
-  # Last-payment metadata source — TransactionsRepository.listTransactions(bankId, accountId).
-  # The screen joins the transaction description to each counterparty name to derive the
-  # last-payment amount/date/recency. Verified shipped 2026-06-11.
-  - id: obp_get_account_transactions
-    endpoint: "GET /obp/v3.0.0/my/banks/{bankId}/accounts/{accountId}/transactions"
-    tag: Transaction
-    description: "Owner transactions for the selected account; used only to derive last-payment per beneficiary."
-    response:
-      fields:
-        - name: transactions
-          type: List<Transaction>
-    errors:
-      - code: 401
-        message: "OBP-20001: User not logged in"
+screen_id: beneficiaries
 
-  # Account list source — AccountsRepository.myAccounts(). Drives the AccountSelector and
-  # the per-account scoping of the whole screen. Verified shipped 2026-06-11.
-  - id: obp_get_my_accounts
-    endpoint: "GET /obp/v3.0.0/my/accounts"
-    tag: Account
-    description: "The user's accounts; populates the AccountSelector and picks the default account."
-    response:
-      fields:
-        - name: accounts
-          type: List<Account>
-        - name: id
-          type: String
-        - name: bank_id
-          type: String
-        - name: label
-          type: String
-    errors:
-      - code: 401
-        message: "OBP-20001: User not logged in"
+endpoints:
+  - id: beneficiaries-list
+    method: GET
+    path: "/accounts/{AccountId}/beneficiaries"
+    response_dto: OBReadBeneficiary5
+    permission: ReadBeneficiariesDetail
+    requires_auth: true
+    auth_scheme: bearer_access_token
+    path_params:
+      AccountId: string
+    query_params: {}
+    request_headers:
+      x-fapi-interaction-id: string   # optional; HSBC echoes it back for tracing
+    notes: "Returns saved payees authorised under the PSU consent for the given AccountId. Requires ReadBeneficiariesDetail permission in the active account-access-consent."
+    error_responses:
+      - status_code: 401
+        error_code: "UK.OBIE.Header.Invalid"
+        description: "Access token expired or invalid. Route to login to re-run the FAPI consent journey."
+        ui_action: "Show error state with Retry CTA; ViewModel clears stale token."
+      - status_code: 403
+        error_code: "UK.OBIE.Resource.ConsentMismatch"
+        description: "ReadBeneficiariesDetail permission absent from active consent, or consent has been revoked/expired."
+        ui_action: "Show error state with View Consents CTA; navigate to consent-list."
+      - status_code: 429
+        error_code: "UK.OBIE.Rules.TooManyRequests"
+        description: "Rate-limited by HSBC. Retry after the Retry-After header interval."
+        ui_action: "Show error state with Retry CTA; ViewModel applies exponential back-off."
+      - status_code: 500
+        error_code: "UK.OBIE.Unexpected.ServerError"
+        description: "Unexpected HSBC server error."
+        ui_action: "Show error state with Retry CTA."
 
-  # DEFERRED — Add Beneficiary never shipped. No create path exists in the UI, so this
-  # endpoint is NOT called by this screen. Retained as a deferred reference for a future
-  # Add-Beneficiary flow (verified shipped 2026-06-11).
-  - id: obp_create_counterparty
-    deferred: true
-    deferred_reason: "Add Beneficiary FAB + create sheet never shipped — no UI write path. Endpoint exists but is unused by this screen."
-    endpoint: "POST /obp/v4.0.0/banks/{bankId}/accounts/{accountId}/{viewId}/counterparties"
-    tag: Counterparties
-    description: "Create an explicit counterparty (Add Beneficiary). viewId is owner. NOT wired."
-    request:
-      fields:
-        - name: name
-          type: String
-        - name: other_account_routing_scheme
-          type: String
-        - name: other_account_routing_address
-          type: String
-        - name: is_beneficiary
-          type: Boolean
-    response:
-      fields:
-        - name: counterparty_id
-          type: String
-    errors:
-      - code: 400
-        message: "OBP-10001: Incorrect json format"
-      - code: 400
-        message: "OBP-30014: Counterparty already exists"
-
-  - id: obp_get_bank
-    endpoint: "GET /obp/v4.0.0/banks/{bankId}"
-    tag: Bank
-    description: "Resolve a bank id to its display name. Used to turn other_bank_routing_address (when scheme is OBP) into a human bank name."
-    response:
-      fields:
-        - name: id
-          type: String
-        - name: short_name
-          type: String
-        - name: full_name
-          type: String
-        - name: logo
-          type: String
-    errors:
-      - code: 404
-        message: "OBP-30001: Bank not found"
-
-# Cross-feature dependency: last-payment amount/date + recency are derived from the
-# account's owner transactions (GET /obp/v3.0.0/my/banks/{bankId}/accounts/{accountId}/transactions),
-# owned by the transactions screen, by joining transaction description to counterparty name.
+response_shape:
+  OBReadBeneficiary5:
+    Data:
+      Beneficiary:
+        - AccountId: string           # Echoes request AccountId
+          BeneficiaryId: string       # Unique identifier for this payee record
+          Reference: string           # Payment reference the PSU assigned (e.g. "RENT-FLAT12")
+          CreditorAccount:
+            SchemeName: string        # UK.OBIE.SortCodeAccountNumber | UK.OBIE.IBAN | UK.OBIE.Paym | UK.OBIE.PAN
+            Identification: string    # Account number in the scheme format (e.g. "40-12-09 65872310")
+            Name: string              # Account holder name as registered
+    Meta:
+      TotalPages: integer

@@ -1,12 +1,12 @@
 ---
-ui_yaml_sha: b89d839e6c9e3be9d2a9ef40cf53bd6b62a21124885037343b404ee39dd8d76d
-design_md_hash: 71b53c295bf863d34057f16264caf37a11512e794d356b3bec219352550d05ec
-app_shell_hash: ad7a6b42b2ae10e63ef270f15d857bd44445d775e8d9b09313b31e6569df95b4
-design_read_hash: 1639ea0545fdbc1ba9ce1eef5369eae224a6f4f57f07f0639b699652daeb8558
-content_hash: 3c532ddc96d9a043cd1228cb0c87b5dd693d839e1385de24c41182313e0c5ec1
+ui_yaml_sha: 10606eacf96bb4546025d80be9b0028a47285eff63bbf206884f9ae45e53a4c8
+design_md_hash: f734ecfba28b3b0688cbd7ca6f3d7fca27febb15fd021d72a4518ae0e3a4200d
+app_shell_hash: 7b9c63f9aee4f5b5005b1d7533e7f5feab6427f398954987c34ee0f382b0ed69
+design_read_hash: 513c061d12f3a90e84d6e98e1e037b131e59fa3ca5c5f3c0abfc6ba87d24bcaf
+content_hash: 3f854ef722997a77d0419bad85e543258ea1382b1801cd80bdbb03b0bbaa2c02
 
-design_read_aesthetic: taste-default
-design_read_dials: {variance: 4, motion: 3, density: 5}
+design_read_aesthetic: minimalist-ui
+design_read_dials: {variance: 3, motion: 2, density: 5}
 aesthetic_variant_override: null
 archetype: empty_state
 
@@ -14,8 +14,8 @@ feature: home
 state: empty
 state_visibility: empty
 
-project_id: '17153754672098888646'
-design_system_id: '2005644667042354169'
+project_id: 'null'
+design_system_id: 'null'
 
 generated_by: stitch-prompt-build.ts v2.0.0
 prompt_template_version: stitch-per-state-v3.0.0
@@ -24,26 +24,95 @@ craft_rules_version: v1.0.0
 
 # home — empty state
 
-> Auto-generated from screens/home/ui.yaml @ SHA bc24b44103d76175
-> Stitch DesignSystem: 2005644667042354169
+> Auto-generated from screens/home/ui.yaml @ SHA c44f80fe2b025a49
+> Stitch DesignSystem: (pending DESIGN.md upload — run /idea-feature-stitch sub-plan 02)
 > DO NOT redeclare colors / fonts / spacing — they live in DESIGN.md.
 
 ↓↓↓ MOCKUP PROMPT
 
-Design the empty state of the home screen for **mifos-x-open-banking**, a Kotlin Multiplatform open-banking super-app for consumer retail banking and field officer agent banking.
+> DO NOT invent navigation, tabs, or screens beyond the declared app-shell (Home, Accounts, Pay, More) plus the composition below. Every nav item you render MUST come from that list.
+> Only elements that navigate or perform an action may look tappable (cursor, ripple, pressed state). DO NOT add tap affordances to decorative content — page titles, section headings, avatars, standalone icons, badges, and static labels are NOT interactive.
 
-Palette: primary #B2D188, on_primary #1F3701, primary_container #354E16, on_primary_container #CDEDA3, secondary #A0CFCB, on_secondary #003735, secondary_container #1F4E4B, background #12140E, surface #12140E, on_surface #E3E3D8, surface_variant #44483D, on_surface_variant #C5C8BA, outline #8F9285, pending #E8A317.
+## Archetype: dashboard
 
-**Component 1 — App Bar** (full width, 56dp): Outfit medium 20sp "mifos-x-open-banking" in on_surface #E3E3D8; background surface #12140E.
+## Layout
+- type: scrollable_column
+- padding: default
+- alignment: start
+- responsive: any multi-column region MUST be mobile-first and collapse to a single column at narrow/phone widths — never a fixed multi-column grid with no single-column fallback.
 
-**Component 2 — Hero** (full width, centered, 220dp vertical space): empty_state illustration centered; account_balance_wallet icon 64dp in on_primary_container #CDEDA3 on primary_container #354E16 circle 96dp; Outfit medium 20sp "No accounts linked yet" in on_surface #E3E3D8 below, 16dp gap; Outfit regular 14sp "Connect your bank to start managing payments, cards and transactions." in on_surface_variant #C5C8BA, max 2 lines, centered; 32dp below illustration.
+## Composition (top → bottom)
+1. **stack** (#loading_skeleton) — "loading_skeleton"
+   - **shimmer** (#skeleton_hero)
+   - **shimmer** (#skeleton_actions)
+   - **shimmer** (#skeleton_tx_header)
+   - **shimmer** (#skeleton_tx_1)
+   - **shimmer** (#skeleton_tx_2)
+   - **shimmer** (#skeleton_tx_3)
+2. **bottom_sheet** (#account_selector_sheet) — "account_selector_sheet"
+   - **list_item** (#account_selector_row) — on_click: { action: select_account }
+3. **card** (#hero_balance_card) — "hero_balance_card"
+   - **stack**
+      - **stack**
+         - **text** (#hero_account_subtype)
+         - **icon** (#hero_account_icon)
+      - **text** (#hero_nickname)
+      - **text** (#hero_balance)
+      - **stack**
+         - **text** (#hero_available_label)
+         - **text** (#hero_available_amount)
+      - **text** (#hero_identification)
+4. **stack** (#recent_transactions_section) — "recent_transactions_section"
+   - **stack**
+      - **section_header** (#recent_tx_header)
+      - **text_button** (#view_all_transactions_link) — label: "{strings.home.recent_transactions.view_all}", on_click: { action: navigate_transactions, target: transactions }
+   - **list** (#recent_transactions_list) — "recent_transactions_list"
+      - **card** (#recent_tx_row) — "recent_tx_row"
+         - **stack**
+            - **icon** (#tx_category_icon)
+            - **stack**
+               - **text** (#tx_description)
+               - **text** (#tx_date)
+            - **text** (#tx_amount)
+5. **empty_state** (#empty_home) — title: "{strings.home.empty.title}", icon: "account_balance_wallet"
+6. **error_state** (#error_home) — "{strings.home.error.title}"
+   - **button** (#retry_button) — label: "{strings.home.error.retry_button}", on_click: { action: retry_load }
 
-**Component 3 — FAB** (centered, 48dp height, radius 999dp): primary filled FAB "Link a Bank Account", background primary_container #354E16, label Outfit medium 16sp on_primary_container #CDEDA3; 24dp below Hero text; min touch target 48dp.
+## State-specific behavior
+- Show an empty-state illustration, a friendly message, and one primary call-to-action button.
 
-**Component 4 — Card** (full width minus 32dp insets, 48dp, radius 12dp): secondary info Card on surface_container #1E201A; Outfit regular 14sp "You can link accounts from any Open Bank Project v7 supported institution." in on_surface_variant #C5C8BA; 24dp top margin; outline border #8F9285 1dp.
+## Content source manifest
+- (no demo collections bound for this state)
 
-Do not use em-dash anywhere in text. Do not make any headline more than 3 lines or any subtitle more than 25 words. Do not break the page theme between sections. Do not place light text on light buttons or dark text on dark buttons.
+## Components (vocabulary used in this prompt)
+- (no named components extracted — see composition)
 
-The primary green #B2D188 on deep surface #12140E transforms this empty_state into an invitation, the FAB's warm earth-green accent promising accessible growth for first-time banking consumers.
+## Shell (app-shell resolved for this state)
+- Home: navigates to home
+- Accounts: navigates to accounts
+- Pay: navigates to send-money
+- More: navigates to settings
+- Render MUST keep nav/bar elements consistent with the list above — present or absent, never partial.
+
+## Tokens (design-tokens roles consumed)
+- Colors: primary / secondary / surface / on-surface / on-surface-variant / error (M3 standard roles).
+- Typography: body-large / title-large (M3 standard roles).
+- Spacing: gap.sm / gap.md / gap.lg.
+- ALL token references are by name from the uploaded design system — no hex literals, no inline size values.
+
+## Self-Validation Checklist (MANDATORY)
+
+Before returning the rendered mockup, verify ALL of these are true. If any fails, FIX the output and re-render.
+
+- [ ] **Per-state shape:** the render shows ONLY this state ("empty"). Do not blend multiple states into one mockup.
+- [ ] **Real content:** every text label, image, and data point reflects the content source manifest above — no numbered generic items, no filler text, no dummy text, no empty strings.
+- [ ] **Token fidelity:** colors come from the uploaded design system (primary/secondary/surface/etc.) by name; spacing comes from declared scale tokens. No invented hex codes, no invented size literals.
+- [ ] **Component vocabulary:** every component in the render maps to a named design-system component (Card, FAB, BottomBar, etc.) — no invented or off-system components.
+- [ ] **Archetype honored:** the layout follows the "dashboard" archetype skeleton — composition order top → bottom matches the Composition section.
+- [ ] **App-shell parity:** if a bottom nav, top app bar, or FAB appears in the render, it matches the resolved shell from the app-shell config. Shell elements are either present-and-consistent OR absent — never partial.
+
+If any of these fail and the fix isn't clear → halt rendering and surface "Self-validation failed at: {checkpoint}."
+
+Return ONLY when all 6 checkpoints pass.
 
 ↑↑↑ MOCKUP PROMPT

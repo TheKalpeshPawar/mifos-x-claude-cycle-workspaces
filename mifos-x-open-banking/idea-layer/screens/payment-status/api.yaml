@@ -1,0 +1,108 @@
+sibling: api
+schema_version: "4.0"
+feature_id: payment-status
+
+screen_id: payment-status
+
+api_base_path: "/obie/open-banking/v4.0/pisp"
+
+endpoints:
+  - id: domestic-payment-read
+    method: GET
+    path: "/domestic-payments/{DomesticPaymentId}"
+    response_dto: OBWriteDomesticResponse5
+    requires_auth: true
+    auth_scheme: bearer_client_credentials_token
+    auth_scope: payments
+    requires_jws_signature: false
+    requires_idempotency_key: false
+    path_params:
+      DomesticPaymentId: string
+    query_params: {}
+    request_headers:
+      x-fapi-interaction-id: string   # UUID per request; HSBC echoes it back for tracing
+    notes: >-
+      A pure read — no JWS and no idempotency key, unlike the two PISP writes. Readable on the
+      client-credentials payments token, so tracking survives the expiry of the single-payment PSU
+      token obtained during authorisation.
+    error_responses:
+      - status_code: 400
+        error_code: "U011"
+        description: "Resource cannot be found — unknown DomesticPaymentId."
+        ui_action: "Show PaymentNotFound; no Retry CTA, the resource does not exist."
+      - status_code: 401
+        error_code: "UK.OBIE.Header.Invalid"
+        description: "Payments-scope token expired."
+        ui_action: "Retry CTA after the client re-mints the token."
+      - status_code: 403
+        error_code: "UK.OBIE.Resource.ConsentMismatch"
+        description: "The payment consent was revoked."
+        ui_action: >-
+          Informational message only. A revoked consent does NOT reverse a payment that already
+          settled — the copy must not imply the money came back.
+      - status_code: 429
+        error_code: "UK.OBIE.Rules.TooManyRequests"
+        description: "Rate-limited — most likely the automatic poll is too aggressive."
+        ui_action: "Back off the poll interval; keep the last known status on screen."
+
+response_shape:
+  OBWriteDomesticResponse5:
+    Data:
+      DomesticPaymentId: string
+      ConsentId: string
+      Status: string                 # see status_dispositions below
+      StatusUpdateDateTime: string
+      CreationDateTime: string
+      Initiation:                    # echoed from the submitted payment
+        InstructionIdentification: string
+        EndToEndIdentification: string
+        InstructedAmount:
+          Amount: string
+          Currency: string
+        DebtorAccount:
+          SchemeName: string
+          Identification: string
+          Name: string
+        CreditorAccount:
+          SchemeName: string
+          Identification: string
+          Name: string
+        RemittanceInformation:
+          Unstructured: [string]
+    Links:
+      Self: string
+    Meta:
+      TotalPages: integer
+
+# ─────────────────────────────────────────────────────────────────────────
+# STATUS -> DISPOSITION MAP — the mapping the ViewModel applies
+# ─────────────────────────────────────────────────────────────────────────
+status_dispositions:
+  in_progress:
+    - AcceptedSettlementInProcess
+    - AcceptedWithoutPosting
+    - Pending
+  terminal_success:
+    - AcceptedSettlementCompleted
+    - AcceptedCreditSettlementCompleted
+  terminal_failure:
+    - Rejected
+  unknown_status_policy: >-
+    Treat an unrecognised status as in_progress and keep polling. Failing open toward
+    "still working" is safer than declaring an unknown status a success or a failure.
+
+poll_contract:
+  runs_while: "disposition == in_progress"
+  stops_when: "disposition is terminal_success or terminal_failure"
+  initial_interval_ms: 3000
+  backoff: "x1.5 per attempt, capped at 30000"
+  max_duration_ms: 600000
+  on_429: "double the current interval and keep the last known status on screen"
+
+existing_source_surface:
+  wire_models:
+    path: "core/network/.../model/pisp/domesticPayment/response/DomesticPaymentResponse.kt"
+    state: "ships complete and serialization-tested; consumed by nothing"
+  missing:
+    - "Pisp.kt Ktorfit client — core/network/api/ ships only Aisp.kt and OAuth.kt"
+    - "payments-scope client-credentials token path"

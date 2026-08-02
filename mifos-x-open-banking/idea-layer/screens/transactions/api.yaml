@@ -1,111 +1,61 @@
 sibling: api
 schema_version: "4.0"
 feature_id: transactions
-api:
-  # Booked rows — shipped list call. v6.0.0 returns transaction_attributes inline (TXN_TYPE →
-  # category badge), no N+1 fetch. The sandbox caps the window at the 50 newest transactions and
-  # ignores limit/offset/from_date/to_date/type/sort_direction, so filter/search/date-range/paging
-  # all run client-side. The v3.0.0 .../owner/transactions sibling endpoint still exists in the
-  # client but is consumed only by CounterpartyNameResolver's mirror-join, not by this screen.
-  - id: obp_list_transactions_with_attributes
-    endpoint: "GET /obp/v6.0.0/banks/{bankId}/accounts/{accountId}/owner/transactions"
-    tag: Transactions
-    auth: DirectLogin
-    params:
-      - name: bankId
-        type: path
-      - name: accountId
-        type: path
-      - name: limit
-        type: query
-        optional: true
-        note: "ignored by sandbox"
-      - name: offset
-        type: query
-        optional: true
-        note: "ignored by sandbox"
-    response:
-      fields:
-        - name: transactions
-          type: "List<Transaction>"
-          children:
-            - name: id
-              type: String
-            - name: this_account
-              type: object
-            - name: other_account
-              type: object
-              children:
-                - name: id
-                  type: String
-                - name: holder
-                  type: object
-            - name: details
-              type: object
-              children:
-                - name: type
-                  type: String
-                - name: description
-                  type: String
-                - name: posted
-                  type: String
-                - name: completed
-                  type: String
-                - name: value
-                  type: object
-                  children:
-                    - name: currency
-                      type: String
-                    - name: amount
-                      type: String
-            - name: transaction_attributes
-              type: "List<TransactionAttribute>"
-              note: "TXN_TYPE drives the category badge"
-    errors:
-      - code: 401
-        message: "Unauthorized"
-      - code: 404
-        message: "Account not found"
-      - code: 500
-        message: "OBP server error"
 
-  # Pending payments — transaction-requests still INITIATED (no booked transaction). Filtered
-  # client-side to isPending; shown muted above the booked groups and excluded from monthly totals.
-  - id: obp_list_transaction_requests
-    endpoint: "GET /obp/v4.0.0/banks/{bankId}/accounts/{accountId}/owner/transaction-requests"
-    tag: Transaction-Requests
-    auth: DirectLogin
-    params:
-      - name: bankId
-        type: path
-      - name: accountId
-        type: path
-    response:
-      fields:
-        - name: transaction_requests
-          type: "List<TransactionRequestSummary>"
-          children:
-            - name: id
-              type: String
-            - name: status
-              type: String
-              note: "INITIATED → isPending"
-            - name: start_date
-              type: String
-            - name: details
-              type: object
-              children:
-                - name: description
-                  type: String
-                - name: value
-                  type: object
-                  children:
-                    - name: currency
-                      type: String
-                    - name: amount
-                      type: String
-    errors:
-      - code: 401
-        message: "Unauthorized"
-      - code: 404
-        message: "Account not found"
+screen_id: transactions
+
+endpoints:
+  - id: transactions
+    method: GET
+    path: "/accounts/{AccountId}/transactions"
+    response_dto: OBReadTransaction6
+    permission: ReadTransactionsDetail
+    requires_auth: true
+    network_policy: cellular_allowed
+    # future: a "Load more only on Wi-Fi" settings toggle could gate pagination calls for users on limited data plans
+    path_params:
+      AccountId: string
+    query_params:
+      fromBookingDateTime:
+        type: string
+        format: date-time
+        required: false
+        description: "ISO-8601 lower bound for BookingDateTime filter (e.g. 2026-06-01T00:00:00Z)."
+      toBookingDateTime:
+        type: string
+        format: date-time
+        required: false
+        description: "ISO-8601 upper bound for BookingDateTime filter (e.g. 2026-06-28T23:59:59Z)."
+    response_shape:
+      Data:
+        Transaction:
+          type: array
+          items: OBTransaction6
+          description: "Booked and pending transactions for the account within the optional date range."
+      Links:
+        Self:
+          type: string
+          description: "Absolute URL for the current page."
+        Next:
+          type: string
+          nullable: true
+          description: >
+            Absolute URL for the next page of results. Absent (null) when no further pages exist.
+            Client stores this as next_link state and uses it as the URL override for
+            load_more_transactions trigger. Page size is HSBC-controlled (~100 transactions/page).
+        Last:
+          type: string
+          nullable: true
+          description: "Absolute URL for the final page of results."
+      Meta:
+        TotalPages:
+          type: integer
+          nullable: true
+          description: "Total number of pages available for this account's transaction list."
+    notes: >
+      Returns booked and pending transactions for the account within the optional date range.
+      Supports OBIE-standard Links.Next pagination cursor — the client stores Links.Next from
+      each response as next_link state and presents a 'Load more' affordance when non-null.
+      Credit/debit filtering and text search are applied client-side against the accumulated
+      in-memory list. Date-range changes reset the pagination cursor and trigger a fresh
+      first-page fetch.

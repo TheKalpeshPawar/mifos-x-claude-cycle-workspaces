@@ -1,74 +1,211 @@
 sibling: data-flow
-schema_version: "4.0"
+schema_version: "2.1.0"
 feature_id: send-money
-entries:
-  - screen_id: send-money
-    trigger: on_mount
-    endpoints:
-      - obp_get_sender_accounts
-      - obp_get_beneficiary_counterparties
-    direction: read
-    dtos:
-      - name: Account
-        role: response
-        api_id: obp_get_sender_accounts
-      - name: Counterparty
-        role: response
-        api_id: obp_get_beneficiary_counterparties
-    produces_state: content
-    error_paths:
-      - error_code: 401
-        behavior: navigate_login
-      - error_code: 500
-        behavior: error_state
 
-  - screen_id: send-money
-    trigger: on_interact
-    event: ValidateIban
-    endpoints:
-      - obp_iban_check
-    direction: read
-    dtos:
-      - name: IbanCheckResult
-        role: response
-        api_id: obp_iban_check
-    produces_state: content
-    error_paths:
-      - error_code: 400
-        behavior: error_state
+screen_id: send-money
 
-  - screen_id: send-money
-    trigger: on_interact
-    event: ContinueClicked
-    endpoints:
-      - obp_funds_available
-    direction: read
-    dtos:
-      - name: MoneyAmount
-        role: response
-        api_id: obp_funds_available
-    produces_state: content
-    error_paths:
-      - error_code: 400
-        behavior: error_state
-      - error_code: 401
-        behavior: navigate_login
+# Payment staging and submission are one-shot writes, never cached.
+# A cached payment response would be actively dangerous: it could show a PSU a stale
+# "accepted" for a payment that later failed, or invite a duplicate submission.
+cache_strategy: none
+cache_rationale: >-
+  PISP writes are not idempotent reads. Store5 caching is deliberately not used here —
+  duplicate-submission protection comes from the x-idempotency-key, not from a cache.
+  The debtor-account and saved-payee lists this screen reads ARE cached, but they are
+  read through the already-shipped AccountsRepository and BeneficiariesRepository
+  streams rather than owned by this feature.
 
-  - screen_id: send-money
-    trigger: on_interact
-    event: ConfirmTransfer
-    endpoints:
-      - obp_create_sepa_transfer
-    direction: write
-    dtos:
-      - name: SepaTransactionRequest
-        role: response
-        api_id: obp_create_sepa_transfer
-    produces_state: content
-    error_paths:
-      - error_code: 400
-        behavior: error_state
-      - error_code: 401
-        behavior: navigate_login
-      - error_code: 500
-        behavior: error_state
+on_mount:
+  - trigger: payment_sources_load
+    description: "Load the PSU's own authorised accounts (debtor candidates) and saved payees (creditor candidates)."
+    steps:
+      - call: "accounts-list (via the shipped AccountsRepository stream)"
+        store_as: debtor_accounts
+      - call: "beneficiaries-list (via the shipped BeneficiariesRepository stream)"
+        store_as: beneficiaries
+    on_loading: loading
+    on_success: content
+    on_error: error
+    error_type_mapping:
+      - http_status: 401
+        error_type: TokenExpired
+        message_key: "error.send_money.token_expired"
+      - http_status: 403
+        error_type: ConsentRevoked
+        message_key: "error.send_money.consent_revoked"
+      - default: NetworkError
+        message_key: "error.send_money.network_error"
+
+on_user_action:
+  - trigger: select_debtor_account
+    description: "Record the funding account. Pure in-memory selection; no API call."
+    param: accountId
+    steps:
+      - compute:
+          debtor_account_id: "{accountId}"
+    state_stays: content
+
+  - trigger: select_creditor
+    description: "Record the payee, either a saved beneficiary or a validated manual entry."
+    param: creditorSelection
+    steps:
+      - compute:
+          creditor: "{creditorSelection}"
+          step: "Amount"
+    state_stays: content
+
+  - trigger: enter_amount
+    description: "Capture the amount in minor units and validate locally before allowing advance."
+    param: minorUnits
+    steps:
+      - compute:
+          amount_minor_units: "{minorUnits}"
+          amount_label: "formatMinorUnits(minorUnits, debtorAccount.currency)"
+          validation_error: >
+            minorUnits.toLongOrNull() == null      ? InvalidAmount
+            : minorUnits.toLong() <= 0             ? AmountNotPositive
+            : minorUnits.toLong() > availableMinor ? ExceedsAvailableBalance
+            : null
+    state_stays: content
+
+  - trigger: review_payment
+    description: "Advance to the review step. No network call — the PSU has not confirmed yet."
+    steps:
+      - compute:
+          step: "Review"
+    state_stays: content
+
+  - trigger: confirm_and_stage_consent
+    description: >-
+      Stage the payment consent. Generates the idempotency key once, here, and stores it on
+      state so every later retry and the eventual submit reuse the same value.
+    steps:
+      - compute:
+          idempotency_key: "stableKeyFor(debtorAccountId, creditor, amountMinorUnits, reference)"
+      - call: domestic-payment-consent-create
+        auth: client_credentials_payments_scope
+        headers:
+          x-jws-signature: "detachedPs256(requestBody)"
+          x-idempotency-key: "{idempotency_key}"
+        body:
+          Data:
+            Initiation:
+              InstructionIdentification: "{generated}"
+              EndToEndIdentification: "{generated}"
+              InstructedAmount:
+                Amount: "{amount_minor_units | toMajorUnits}"
+                Currency: "{debtor_account.currency}"
+              DebtorAccount: "{debtor_account | toObieAccount}"
+              CreditorAccount: "{creditor | toObieAccount}"
+              RemittanceInformation:
+                Unstructured: ["{reference}"]
+          Risk:
+            # Consumer context ONLY. Merchant fields are deliberately absent —
+            # see docs.yaml#consumer_context_constraint.
+            PaymentContextCode: "{creditorIsOwnAccount ? 'TransferToSelf' : 'TransferToThirdParty'}"
+        store_as: staged_consent
+      - emit_event: "LaunchAuthorisation(url = buildAuthoriseUrl(staged_consent.Data.ConsentId))"
+    on_loading: submitting
+    on_error: error
+    error_type_mapping:
+      - http_status: 400
+        error_code: U019
+        error_type: SignatureMissing
+        message_key: "error.send_money.signature_missing"
+      - http_status: 400
+        error_code: U014
+        error_type: OutsideControlParameters
+        message_key: "error.send_money.outside_limits"
+      - http_status: 400
+        error_code: U002
+        error_type: InvalidField
+        message_key: "error.send_money.invalid_field"
+      - http_status: 401
+        error_type: TokenExpired
+        message_key: "error.send_money.token_expired"
+      - http_status: 429
+        error_type: RateLimited
+        message_key: "error.send_money.rate_limited"
+      - default: NetworkError
+        message_key: "error.send_money.network_error"
+
+  - trigger: submit_payment
+    description: >-
+      Executes the payment after the authorise leg returns. Data.Initiation must be
+      byte-identical to the staged Initiation or the bank returns U008.
+    param: consentId
+    steps:
+      - call: domestic-payment-funds-confirmation
+        path_params:
+          ConsentId: "{consentId}"
+        auth: psu_access_token
+        store_as: funds
+        optional: true
+        on_false: "error(InsufficientFunds) — do not submit"
+      - call: domestic-payment-submit
+        auth: psu_access_token
+        headers:
+          x-jws-signature: "detachedPs256(requestBody)"
+          x-idempotency-key: "{idempotency_key}"   # SAME key as the consent stage
+        body:
+          Data:
+            ConsentId: "{consentId}"
+            Initiation: "{staged_consent.Data.Initiation}"   # verbatim echo
+          Risk:
+            PaymentContextCode: "{same as staged}"
+        store_as: payment
+    on_loading: submitting
+    on_success: success
+    on_error: error
+    error_type_mapping:
+      - http_status: 400
+        error_code: U008
+        error_type: ConsentMismatch
+        message_key: "error.send_money.consent_mismatch"
+      - http_status: 400
+        error_code: U009
+        error_type: ConsentNotAuthorised
+        message_key: "error.send_money.consent_not_authorised"
+      - http_status: 400
+        error_code: U019
+        error_type: SignatureMissing
+        message_key: "error.send_money.signature_missing"
+      - http_status: 401
+        error_type: TokenExpired
+        message_key: "error.send_money.token_expired"
+      - http_status: 403
+        error_type: ConsentRevoked
+        message_key: "error.send_money.consent_revoked"
+      - default: NetworkError
+        message_key: "error.send_money.network_error"
+
+  - trigger: retry_submit
+    description: >-
+      Re-runs the failed call with the SAME idempotency key. Safe by construction: same key
+      plus same body returns the original result instead of creating a duplicate payment.
+    re_runs: [submit_payment]
+
+  - trigger: cancel_payment
+    description: "Discard the in-progress payment before any consent is staged. No API call."
+    steps:
+      - compute:
+          step: "Recipient"
+          staged_consent: null
+    state_stays: content
+
+  - trigger: back_step
+    description: "Return to the amount step after a limit rejection, preserving debtor and creditor."
+    steps:
+      - compute:
+          step: "Amount"
+    state_stays: content
+
+  - trigger: navigate_to_payment_status
+    description: "Open payment-status for the returned DomesticPaymentId."
+    navigates_to: payment-status
+    params:
+      paymentId: "{payment.Data.DomesticPaymentId}"
+
+  - trigger: navigate_to_consents
+    description: "Navigate to consent-list after a 403 ConsentRevoked."
+    navigates_to: consent-list

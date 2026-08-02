@@ -1,622 +1,425 @@
-id: standing-orders
-name: Standing Orders
-feature: standing-orders
-flavor: consumer
-status: approved
-quality_score: 93
-contract_version: "1.1.0"
-approve_hash: "sha256:0daf12bd8c96e4f037af12bd8c96e4f037af12bd8c96e4f037af12bd8c96e4f0"
-approved_at: "2026-06-11T14:45:00Z"
-approved_by: "/idea approve"
-approve_predicate_version: "1.0.0"
-approve_contract_version: "1.1.0"
-capabilities:
-  - has_ui
-impl_status: implemented
-impl_notes: >
-  Reconciled to shipped feature/standing-orders module (2026-06-11). OBP reality: POST-create
-  is the ONLY standing-order endpoint — no list/get/pause/resume/delete at any version
-  (live-verified 404). The list is DERIVED from transaction history (TXN_TYPE=SO grouped by
-  description). The screen is per-account: an AccountSelector (AccountPickerBottomSheet when
-  more than one account) scopes the list, a stats row shows ACTIVE / MONTHLY TOTAL / PAUSED,
-  and StandingOrderFilter chips (All/Active/Paused/Cancelled) filter. The extended FAB
-  ("New order") checks the selected account's beneficiaries first: no payees shows a
-  "No payees" dialog (CreateGate.NoPayees), otherwise navigates to standing-order-create
-  (CreateStandingOrderScreen, wired via StandingOrderEditRoute(accountId)). Per-card inline
-  edit/delete icons were NEVER built (no server mutation possible). Entry point: Standing
-  Orders tile in Home "Banking Services".
-status_history:
-  - status: designed
-    at: "2026-05-25T00:00:00Z"
-    by: "/idea export"
-    exports: [spec_md, api_md, mockup_md]
-  - from: designed
-    to: approved
-    at: "2026-05-25T13:45:00Z"
-    by: "/idea approve"
-    contract_version: "1.1.0"
-    bypass_flags: []
-  - from: approved
-    to: enriched
-    at: "2026-06-11"
-    by: "/idea verify --source-drift (write-back)"
-    contract_version: "1.1.0"
-    note: >
-      SOURCE→SPEC reconciliation to shipped Kotlin (code = truth). Added account picker,
-      stats row, filter chips, no-payees CreateGate dialog, per-card "From {account}" line
-      and masked counterparty hint. Removed per-card edit/delete icons + edit/delete actions
-      (never built — no OBP mutation), the filter_list top-bar action (replaced by chips), and
-      the hardcoded rent/netflix/gym demo cards (now data-driven LazyColumn). Split state_model
-      into StandingOrdersHeader StateFlow + uiState ScreenState<List<StandingOrder>> + createGate
-      StateFlow. api.yaml: list is derived from transaction history (no GET); POST create only.
-  - from: enriched
-    to: approved
-    at: "2026-06-11T14:45:00Z"
-    by: "/idea approve"
-    contract_version: "1.1.0"
-    bypass_flags: []
-    note: "Approved after source→spec reconciliation (spec matches shipped Kotlin) + /idea verify PASS. Write-back shape (no approve_hash), consistent with project pattern. Previews for reconciled screens may lag the YAML pending a separate re-render."
+sibling: ui
+schema_version: "4.0"
+feature_id: standing-orders
 
-screens:
-  - id: standing-orders
-    name: Standing Orders
-    archetype: index_list
-    viewmodel: "StandingOrdersViewModel"
-    shell:
-      top_bar:
-        title: "Standing Orders"
-        navigation_icon: arrow_back
-      bottom_nav: false
-
+screen_id: standing-orders
 archetype: index_list
+name: "Standing Orders"
+status: implemented
+initial_state: loading
+quality_score: 95
 
-components:
-  # ── Pinned header: account picker + stats + filter chips ──────────────────────
-  - type: card
-    id: account_selector
-    label: "From account"
-    variant: outlined
-    supported_states: [idle, hover, focus_visible, pressed]
-    style:
-      background: "#FFFFFF"
-      border_radius: 12
-      border_color: "#E1E4D5"
-      border_width: 1
-      padding: spacing.md
-      margin_top: spacing.sm
-    on_click:
-      action: open_account_picker
-      target: account_picker_sheet
-    a11y:
-      label: "From account selector. Tap to change which account these standing orders belong to."
-      role: button
-    test_context:
-      tag: account_selector
-      purpose: "Per-account scoping card — opens AccountPickerBottomSheet when the user has more than one account"
-      interaction_type: action
-      data_driven: true
+shell:
+  bottom_navigation_visible: true
+  top_app_bar_visible: true
+  top_app_bar_title: "{strings.standing_orders_screen_title}"
+  top_app_bar_leading: back
+  fab_visible: false
 
-  - type: text
-    id: account_selector_label
-    label: "From account"
-    content: "From account"
-    style:
-      typography: "Outfit/label_small"
-      color: "#44483D"
-    a11y:
-      label: "From account label"
-      role: text
-    test_context:
-      tag: account_selector_label
-      purpose: "Caption above the selected account name"
-      interaction_type: display
-      data_driven: false
+states: [loading, content, empty, unsupported, error]
 
-  - type: text
-    id: account_selector_value
-    label: "Selected account name"
-    content: "Current Account"
-    style:
-      typography: "Outfit/title_small"
-      color: "#1A1C16"
-      font_weight: semibold
-    a11y:
-      label: "Selected account"
-      role: text
-    test_context:
-      tag: account_selector_value
-      purpose: "Display name of the selected account (label, else type + masked last-4)"
-      interaction_type: display
-      data_driven: true
+# TEST TAGS — reconciled against source 2026-08-02 by /idea-sync (source-truth pass).
+# 5 state-root tags were already correct; 10 more were backfilled this pass.
+test_tags:
+  source: "feature/standing-orders/src/commonMain/kotlin/org/mifosx/openbanking/feature/standingorders/StandingOrdersTestTags.kt"
+  declared_in_source: 22         # 14 const val + 8 per-order builder fns
+  bound: 15
+  interpolated:
+    # All eight builders key on standingOrderId — StandingOrdersContent.kt passes order.standingOrderId.
+    - { tag: "standingOrders:card:{item.standingOrderId}",        builder: "fun card(orderId)" }
+    - { tag: "standingOrders:statusBadge:{item.standingOrderId}", builder: "fun statusBadge(orderId)" }
+    - { tag: "standingOrders:amount:{item.standingOrderId}",      builder: "fun amount(orderId)" }
+    - { tag: "standingOrders:frequency:{item.standingOrderId}",   builder: "fun frequency(orderId)" }
+    - { tag: "standingOrders:nextDate:{item.standingOrderId}",    builder: "fun nextDate(orderId)" }
+    - { tag: "standingOrders:finalDate:{item.standingOrderId}",   builder: "fun finalDate(orderId)" }
+    - { tag: "standingOrders:sortCode:{item.standingOrderId}",    builder: "fun sortCode(orderId)" }
+    - { tag: "standingOrders:reference:{item.standingOrderId}",   builder: "fun reference(orderId)" }
+  unbound:
+    - { tag: "standingOrders:skeletonSummary", why: "Tags the summary-row placeholder INSIDE the loading skeleton; the idea-layer models loading as one progress_circular with no children." }
+    - { tag: "standingOrders:emptyTitle",       parent: empty_standing_orders,       why: "Text node modelled as the parent's `title:` field." }
+    - { tag: "standingOrders:emptyBody",        parent: empty_standing_orders,       why: "Text node modelled as the parent's `body:` field." }
+    - { tag: "standingOrders:unsupportedTitle", parent: unsupported_standing_orders, why: "Text node modelled as the parent's `title:` field." }
+    - { tag: "standingOrders:unsupportedBody",  parent: unsupported_standing_orders, why: "Text node modelled as the parent's `body:` field." }
+    - { tag: "standingOrders:errorTitle",       parent: error_state,                 why: "Text node modelled as the parent's `title:` field." }
+    - { tag: "standingOrders:errorBody",        parent: error_state,                 why: "Text node modelled as the parent's `body:` field." }
 
-  - type: stack
-    id: title_count_row
-    label: "Stats row"
-    variant: row
-    style:
-      orientation: horizontal
-      spacing: spacing.sm
-      padding_top: spacing.sm
-      padding_bottom: spacing.md
-      align: center
-    a11y:
-      label: "Standing orders summary stats"
-      role: row
-    test_context:
-      tag: title_count_row
-      purpose: "Stats row holding the ACTIVE / MONTHLY TOTAL / PAUSED cards"
-      interaction_type: display
-      data_driven: true
+business_logic:
+  kind: crud
+  description: "Calls GET /accounts/{AccountId}/standing-orders via ktorfit to retrieve OBReadStandingOrder6. Maps CreditorAccount.Name, CreditorAccount.Identification, NextPaymentAmount, NextPaymentDateTime, FinalPaymentDateTime (when non-null), Reference, and StandingOrderStatusCode per Data.StandingOrder. OBIE ISO 20022 frequency codes (IntrvlMnthDay, IntrvlWkDay, IntrvlDay, IntrvlYear) are decoded to human-readable labels in StandingOrdersViewModel via a sealed FrequencyDecoder; Active/Inactive status drives badge variant (primary/secondary); hasFinalPayment flag controls FinalPaymentDateTime row visibility; summary label (e.g. '3 Active · 1 Inactive') is computed as SummaryLabel and emitted in UiState.Content."
+  external_library_refs:
+    - "ktorfit"
+    - "hsbc-obie-ais-v4.0:standing-orders"
+  description_author: claude
+  description_authored_at: "2026-06-29T15:00:00Z"
 
-  - type: card
-    id: stat_active
-    label: "ACTIVE stat"
-    variant: outlined
-    style:
-      background: "#FFFFFF"
-      border_radius: 14
-      border_color: "#E1E4D5"
-      border_width: 1
-      padding: spacing.md
-    a11y:
-      label: "Active standing orders count"
-      role: status
-    test_context:
-      tag: stat_active
-      purpose: "Card showing the count of active standing orders"
-      interaction_type: display
-      data_driven: true
-
-  - type: card
-    id: stat_monthly_total
-    label: "MONTHLY TOTAL stat"
-    variant: outlined
-    style:
-      background: "#FFFFFF"
-      border_radius: 14
-      border_color: "#E1E4D5"
-      border_width: 1
-      padding: spacing.md
-    a11y:
-      label: "Total monthly amount of active standing orders"
-      role: status
-    test_context:
-      tag: stat_monthly_total
-      purpose: "Card showing the summed amount of active standing orders"
-      interaction_type: display
-      data_driven: true
-
-  - type: card
-    id: stat_paused
-    label: "PAUSED stat"
-    variant: outlined
-    style:
-      background: "#FFFFFF"
-      border_radius: 14
-      border_color: "#E1E4D5"
-      border_width: 1
-      padding: spacing.md
-    a11y:
-      label: "Paused standing orders count"
-      role: status
-    test_context:
-      tag: stat_paused
-      purpose: "Card showing the count of paused standing orders"
-      interaction_type: display
-      data_driven: true
-
-  - type: chip_group
-    id: filter_chips
-    label: "Status filter chips"
-    variant: filter
-    style:
-      orientation: horizontal
-      spacing: spacing.sm
-      padding_bottom: spacing.md
-      scroll: horizontal
-    on_click:
-      action: filter_changed
-      target: standing_orders_filter
-    a11y:
-      label: "Filter standing orders by status: All, Active, Paused, Cancelled"
-      role: tablist
-    test_context:
-      tag: filter_chips
-      purpose: "FilterChip row driving StandingOrderFilter (All/Active/Paused/Cancelled)"
-      interaction_type: action
-      data_driven: true
-
-  # ── Data-driven list ─────────────────────────────────────────────────────────
-  - type: list
-    id: orders_list
-    label: "Standing orders list"
-    variant: lazy_column
-    style:
-      padding_horizontal: 16
-      padding_bottom: 96
-    a11y:
-      label: "List of standing orders for the selected account"
-      role: list
-    test_context:
-      tag: orders_list
-      purpose: "LazyColumn of derived standing orders under the active filter; data-driven, no hardcoded rows"
-      interaction_type: display
-      data_driven: true
-
-  - type: card
-    id: order_card
-    label: "Standing order card"
-    variant: outlined
-    supported_states: [idle, hover, focus_visible, pressed]
-    style:
-      background: "#FFFFFF"
-      border_radius: 16
-      border_color: "#E1E4D5"
-      border_width: 1
-      padding: 16
-      margin_bottom: 12
-    on_click:
-      action: navigate
-      target: standing-order-detail
-    a11y:
-      label: "Standing order. Tap to view details."
-      role: button
-    keyboard:
-      focusable: true
-    test_context:
-      tag: order_card
-      purpose: "Tappable per-order card — name, status badge, 'To {counterparty}', 'From {account}', amount, frequency, schedule line. Navigates to standing-order-detail with the selected account's bankId/accountId."
-      interaction_type: action
-      data_driven: true
-
-  - type: text
-    id: order_name
-    label: "Order name"
-    content: "Standing order name"
-    style:
-      typography: "Outfit/title_medium"
-      color: "#1A1C16"
-      font_weight: semibold
-    a11y:
-      label: "Standing order name"
-      role: text
-    test_context:
-      tag: order_name
-      purpose: "Order display name (recurring transaction description / counterparty)"
-      interaction_type: display
-      data_driven: true
-
-  - type: badge
-    id: order_status_badge
-    label: "Status badge"
-    content: "Active"
-    variant: tonal
-    style:
-      background: "#CDEDA3"
-      border_radius: 10
-      padding_horizontal: spacing.sm
-      padding_vertical: 3
-      text_color: "#4C662B"
-      typography: "Outfit/label_small"
-    a11y:
-      label: "Status"
-      role: status
-    test_context:
-      tag: order_status_badge
-      purpose: "Status badge: Active / Paused / Cancelled"
-      interaction_type: display
-      data_driven: true
-
-  - type: text
-    id: order_counterparty
-    label: "To counterparty"
-    content: "To Landlord Holdings Ltd · Acc ••s001"
-    style:
-      typography: "Outfit/body_small"
-      color: "#44483D"
-    a11y:
-      label: "Recipient and masked account hint"
-      role: text
-    test_context:
-      tag: order_counterparty
-      purpose: "'To {counterpartyName} · Acc ••{last4}' — shown only when counterparty resolved (never the login username, per counterparty rule)"
-      interaction_type: display
-      data_driven: true
-
-  - type: text
-    id: order_from_account
-    label: "From account line"
-    content: "From Current Account"
-    style:
-      typography: "Outfit/body_small"
-      color: "#44483D"
-    a11y:
-      label: "Source account"
-      role: text
-    test_context:
-      tag: order_from_account
-      purpose: "'From {selected account display name}' line"
-      interaction_type: display
-      data_driven: true
-
-  - type: text
-    id: order_amount
-    label: "Amount"
-    content: "£1,200.00"
-    style:
-      typography: "Outfit/headline_small"
-      color: "#4C662B"
-      font_weight: semibold
-    a11y:
-      label: "Payment amount"
-      role: text
-    test_context:
-      tag: order_amount
-      purpose: "Formatted payment amount (muted when not active)"
-      interaction_type: display
-      data_driven: true
-
-  - type: text
-    id: order_frequency
-    label: "Frequency"
-    content: "Monthly"
-    style:
-      typography: "Outfit/body_small"
-      color: "#44483D"
-    a11y:
-      label: "Frequency"
-      role: text
-    test_context:
-      tag: order_frequency
-      purpose: "Human frequency label (Fortnightly for BI-WEEKLY)"
-      interaction_type: display
-      data_driven: true
-
-  - type: text
-    id: order_schedule_line
-    label: "Schedule line"
-    content: "Next: 1 Jun 2026"
-    style:
-      typography: "Outfit/body_small"
-      color: "#44483D"
-    a11y:
-      label: "Schedule"
-      role: text
-    test_context:
-      tag: order_schedule_line
-      purpose: "Calendar/pause icon + schedule text: 'Next: {date}' / 'Paused since {date}' / 'Last paid {date}'"
-      interaction_type: display
-      data_driven: true
-
-  # ── Create FAB (gated) ───────────────────────────────────────────────────────
-  - type: button
-    id: create_standing_order_fab
-    label: "New order"
-    content: "New order"
-    variant: extended_fab
-    supported_states: [idle, hover, focus_visible, pressed, disabled]
-    style:
-      background: "#4C662B"
-      text_color: "#FFFFFF"
-      border_radius: 16
-      leading_icon: add
-      elevation: 6
-      position: floating_action_button
-    on_click:
-      action: create_clicked
-      target: standing-order-create
-    a11y:
-      label: "Create a new standing order"
-      role: button
-    keyboard:
-      focusable: true
-    test_context:
-      tag: create_standing_order_fab
-      assert_text: "New order"
-      purpose: "Extended FAB. Checks the selected account's beneficiaries (CreateGate): no payees → no-payees dialog; otherwise navigates to standing-order-create."
-      interaction_type: action
-      data_driven: false
-
-  # ── No-payees gate dialog ────────────────────────────────────────────────────
-  - type: dialog
-    id: no_payees_dialog
-    label: "No payees"
-    variant: alert
-    title: "No payees"
-    message: "This account has no beneficiaries yet. Add a beneficiary first — standing orders pay an existing payee."
-    supported_states: [idle, visible, dismissed]
-    style:
-      background: "#FFFFFF"
-      border_radius: 16
-      padding: spacing.lg
-    on_click:
-      action: dismiss_no_payees
-      target: no_payees_dialog
-    a11y:
-      label: "No payees on this account"
-      role: dialog
-    test_context:
-      tag: no_payees_dialog
-      purpose: "Shown when the New order FAB is tapped on an account with no beneficiaries (CreateGate.NoPayees); single OK dismiss"
-      interaction_type: action
-      data_driven: false
-
-  # ── Empty / Error placeholders (list area) ───────────────────────────────────
-  - type: empty_state
-    id: empty_state
-    label: "No standing orders"
-    style:
-      empty_icon: event_repeat
-    a11y:
-      label: "No standing orders"
-      role: status
-    test_context:
-      tag: empty_state
-      purpose: "Empty list-area state: 'No standing orders' + 'Set up recurring payments to automate your regular bills'"
-      interaction_type: display
-      data_driven: false
-
-  - type: error_state
-    id: error_state
-    label: "Unable to load"
-    style:
-      error_icon: cloud_off
-    on_click:
-      action: retry
-      target: standing-orders
-    a11y:
-      label: "Unable to load standing orders. Retry."
-      role: status
-    test_context:
-      tag: error_state
-      purpose: "List-area error/no-network/unauthenticated state with Retry — header (picker + zeroed stats + chips) stays visible above it"
-      interaction_type: action
-      data_driven: false
-
-responsive:
-  mobile_only: true
-  baseline_width: 390
-
-states:
-  initial_state: loading
-  loading:
-    motion:
-      shimmer_duration: short4
-      reduced_motion_fallback: static_placeholder
-    layout:
-      visible_components:
-        - account_selector
-        - account_selector_label
-        - account_selector_value
-        - title_count_row
-        - stat_active
-        - stat_monthly_total
-        - stat_paused
-        - filter_chips
-        - create_standing_order_fab
-      show_skeleton_list: true
-      skeleton_count: 3
-      note: "Header (picker + zeroed stats + chips) stays pinned; list area shows centered progress."
-  content:
-    layout:
-      visible_components:
-        - account_selector
-        - account_selector_label
-        - account_selector_value
-        - title_count_row
-        - stat_active
-        - stat_monthly_total
-        - stat_paused
-        - filter_chips
-        - orders_list
-        - order_card
-        - order_name
-        - order_status_badge
-        - order_counterparty
-        - order_from_account
-        - order_amount
-        - order_frequency
-        - order_schedule_line
-        - create_standing_order_fab
-  empty:
-    layout:
-      visible_components:
-        - account_selector
-        - account_selector_label
-        - account_selector_value
-        - title_count_row
-        - stat_active
-        - stat_monthly_total
-        - stat_paused
-        - filter_chips
-        - empty_state
-        - create_standing_order_fab
-  error:
-    layout:
-      visible_components:
-        - account_selector
-        - account_selector_label
-        - account_selector_value
-        - title_count_row
-        - stat_active
-        - stat_monthly_total
-        - stat_paused
-        - filter_chips
-        - error_state
-        - create_standing_order_fab
-  no_network:
-    layout:
-      visible_components:
-        - account_selector
-        - title_count_row
-        - filter_chips
-        - error_state
-        - create_standing_order_fab
-      note: "ScreenState.NoNetwork — same Retry treatment as error."
-  unauthenticated:
-    layout:
-      visible_components:
-        - account_selector
-        - title_count_row
-        - filter_chips
-        - error_state
-        - create_standing_order_fab
-      note: "ScreenState.Unauthenticated — same Retry treatment as error."
+# ─────────────────────────────────────────────────────────────────────
+# STATE MODEL — StandingOrdersViewModel contract
+# Derived from docs.yaml#vm_actions + error_cases for implementation.
+# Satisfies QUALITY_FORMULA.md Category 10 (State Model, 5 pts).
+# ─────────────────────────────────────────────────────────────────────
+# ─────────────────────────────────────────────────────────────────────
+# SOURCE BINDING — reverse-synced from source 2026-07-28
+# ─────────────────────────────────────────────────────────────────────
+implementation:
+  status: implemented
+  source_module: "feature/standing-orders"
+  package: "org.mifosx.openbanking.feature.standingorders"
+  route: "StandingOrdersRoute(accountId: String)"
+  viewmodel: StandingOrdersViewModel
+  screen: StandingOrdersScreen
+  test_tags_object: StandingOrdersTestTags
+  reachable_from:
+    - "account-detail — AccountDetailChip.StandingOrders -> navigate(StandingOrdersRoute(accountId))"
+  synced_from_source_at: "2026-07-28"
+  added_in_sync:
+    - "unsupported state — StandingOrdersUiState.Unsupported(message) ships in source and renders StandingOrdersUnsupported.kt; the idea-layer never declared it"
+  removed_in_sync:
+    - "loadStandingOrders and navigateBack actions — StandingOrdersAction declares only RetryLoad"
+    - "NavigationController DI — navigation is callback-based via the nav host"
+  note: "StandingOrdersErrorKind carries no isRetriable flag (unlike DirectDebitsErrorKind), so the retry CTA is not conditionally hidden on this screen."
 
 state_model:
-  view_model: StandingOrdersViewModel
-  state_contract:
-    note: >
-      Three independent StateFlows. The pinned header lives OUTSIDE uiState so the
-      account picker + stats + chips stay visible (with zeroed stats) while the list
-      below shows loading/empty/error. uiState carries only the list area.
-  flows:
-    - name: header
-      type: "StateFlow<StandingOrdersHeader>"
+  StandingOrdersViewModel:
+    state:
+      name: StandingOrdersState
       fields:
-        - { name: accounts, type: "List<Account>", default: "emptyList()" }
-        - { name: selectedAccountId, type: String, default: "\"\"" }
-        - { name: activeCount, type: Int, default: 0 }
-        - { name: pausedCount, type: Int, default: 0 }
-        - { name: monthlyTotal, type: String, default: "\"0.00\"" }
-        - { name: filter, type: StandingOrderFilter, default: "StandingOrderFilter.All" }
-    - name: uiState
-      type: "StateFlow<ScreenState<List<StandingOrder>>>"
-      default: "ScreenState.Loading"
-    - name: createGate
-      type: "StateFlow<CreateGate>"
-      default: "CreateGate.Idle"
-  supporting_types:
-    - name: StandingOrderFilter
-      kind: enum
-      values: [All, Active, Paused, Cancelled]
-    - name: CreateGate
-      kind: sealed_interface
-      cases: [Idle, Checking, NoPayees, "Ready(accountId: String)"]
-  methods:
-    - onRetry
-    - onRefresh
-    - onFilterChanged
-    - onCreateClicked
-    - onCreateGateConsumed
-    - onAccountSelected
-  di:
-    - StandingOrdersRepository
-    - AccountsRepository
-    - UserPreferencesRepository
-    - PaymentsRepository
+        - name: accountId
+          type: String
+        - name: uiState
+          type: StandingOrdersUiState
+    screen_state:
+      sealed_class: StandingOrdersUiState
+      members:
+        - Loading
+        - Content      # orders: List<StandingOrderRowUi>, activeCount: Int, inactiveCount: Int
+        - Empty        # no standing orders returned
+        - Unsupported  # message: String — servicer does not expose standing orders for this account
+        - Error        # kind: StandingOrdersErrorKind
+      # Folded in from docs.yaml#state_model 2026-07-31 (CROSS_LEAK repair). docs.yaml
+      # carried a SECOND, competing declaration of this same sealed class — stale: it
+      # described only 4 variants and never knew about Unsupported. This block here is
+      # authoritative (right sibling per sibling-layout.json, and the canonical MVI shape
+      # every other feature uses), so only the prose docs.yaml uniquely held was kept.
+      member_notes:
+        Loading: "OBReadStandingOrder6 fetch in flight; no standing order data available yet."
+        Content: >-
+          Non-empty response; all transforms applied by StandingOrdersViewModel.
+          standingOrders (List<StandingOrderViewModel>) is the mapped OBIE order list with
+          frequency_label, status_variant and hasFinalPayment flags; summaryLabel (String)
+          is the computed "3 Active · 1 Inactive" string from StandingOrderStatusCode counts.
+        Empty: "Data.StandingOrder[] returned by HSBC is an empty array; zero-result UI shown."
+        Error: >-
+          Typed error state; Retry button always visible. errorType
+          (TokenExpired | ConsentRevoked | RateLimited | NetworkError | ServerError) resolves
+          to a localised message String in the ViewModel.
+    row_model:
+      name: StandingOrderRowUi
+      fields:
+        - name: standingOrderId
+          type: String
+        - name: payeeName
+          type: String
+        - name: statusLabel
+          type: String
+        - name: isActive
+          type: Boolean
+        - name: amountLabel
+          type: String
+        - name: currencyLabel
+          type: String
+        - name: frequencyLabel
+          type: String
+        - name: nextDateLabel
+          type: String
+        - name: finalDateLabel
+          type: String
+        - name: hasFinalPayment
+          type: Boolean
+        - name: sortCodeLabel
+          type: String
+        - name: referenceLabel
+          type: String
+    errors:
+      types:
+        - StandingOrdersErrorKind.TokenExpired    # Unauthorized
+        - StandingOrdersErrorKind.ConsentRevoked  # Forbidden
+        - StandingOrdersErrorKind.RateLimited     # RateLimited
+        - StandingOrdersErrorKind.ServerError     # fallback
+        - StandingOrdersErrorKind.NetworkError    # NetworkError.Network
+    actions:
+      members:
+        - RetryLoad
+    di:
+      - SavedStateHandle           # supplies the accountId route arg
+      - StandingOrdersRepository   # Koin single; stream over the standing-orders store
 
-api:
-  - endpoint: "POST /obp/v4.0.0/banks/{bankId}/accounts/{accountId}/owner/standing-order"
-    note: >
-      The ONLY OBP standing-order endpoint (verified against v6.0.0 spec: no list/get/delete
-      at any version). Invoked from standing-order-create, not this screen. The list here is
-      DERIVED from transaction history — see api.yaml.
-    tag: Standing-Orders
+components:
+  # ── LOADING STATE ────────────────────────────────────────────────
+  - type: progress_circular
+    state_binding: [loading]
+    accessibility_label: "{strings.standing_orders_loading_a11y}"
+    test_tag: "standingOrders:loadingSkeleton"
+    test_context:
+      purpose: "Indicate async fetch of OBReadStandingOrder6 from HSBC AIS endpoint"
+      required_fields: []
+      interaction_type: display
+      data_driven: false
 
-dependencies:
-  tier: feature
-  features:
-    - accounts
-    - beneficiaries
-    - transactions
+  # ── NAVIGATION ───────────────────────────────────────────────────
+  - type: icon_button
+    id: back_button
+    icon: arrow_back
+    accessibility_label: "{strings.standing_orders_nav_back_a11y}"
+    on_click:
+      action: navigate_back
+      target: account-detail
+      action_contract:
+        effect: navigate
+        description: "Pops the standing-orders screen from the back stack, returning the user to account-detail."
+    test_context:
+      purpose: "Return user to account-detail screen, emitting NavigationEvent.Back to NavController"
+      required_fields: []
+      interaction_type: navigate
+      data_driven: false
+
+  # ── CONTENT STATE — summary bar ──────────────────────────────────
+  - type: text
+    id: summary_row
+    test_tag: "standingOrders:summaryRow"
+    state_binding: [content]
+    role: subtitle
+    value: "{strings.standing_orders_summary_format}"
+    style: labelMedium
+    color: "onSurfaceVariant"
+    accessibility_label: "{strings.standing_orders_summary_format}"
+    test_context:
+      purpose: "ViewModel-computed summary label (e.g. '3 Active · 1 Inactive') from StandingOrderStatusCode counts; uses {strings.standing_orders_summary_format} internally"
+      required_fields: ["standingOrders_summary_label"]
+      interaction_type: display
+      data_driven: true
+
+  # ── CONTENT STATE — standing orders list ─────────────────────────
+  - type: list
+    id: standing_orders_list
+    state_binding: [content]
+    scroll_direction: vertical
+    items_source: "{orders}"
+    test_tag: "standingOrders:content"
+    pull_to_refresh: true
+    pull_to_refresh_action: RetryLoad
+    pull_to_refresh_binding: "rememberKptPullToRefreshState in StandingOrdersScreen.kt"
+    pull_to_refresh_a11y: "{strings.standing_orders_pull_refresh_a11y}"
+    accessibility_label: "{strings.standing_orders_list_a11y}"
+    test_context:
+      purpose: "Render full OBReadStandingOrder6 Data.StandingOrder array; pull-to-refresh re-triggers LoadStandingOrders"
+      required_fields: ["standingOrders"]
+      interaction_type: display
+      data_driven: true
+    children:
+      - type: card
+        id: standing_order_card
+        test_tag: "standingOrders:card:{item.standingOrderId}"
+        elevation: 1
+        accessibility_label: "{strings.standing_orders_card_a11y} {item.payeeName}"
+        test_context:
+          purpose: "Per-standing-order container grouping all payment fields for one recurring instruction"
+          required_fields: ["item"]
+          interaction_type: display
+          data_driven: true
+        children:
+          # Row 1: payee name + status badge (inline)
+          - type: text
+            id: so_payee_name
+            role: title
+            value: "{item.payeeName}"
+            style: titleMedium
+            accessibility_label: "{strings.standing_orders_payee_a11y_prefix} {item.payeeName}"
+            test_context:
+              purpose: "Beneficiary name from CreditorAccount.Name in OBReadStandingOrder6"
+              required_fields: ["item.CreditorAccount.Name"]
+              interaction_type: display
+              data_driven: true
+
+          - type: badge
+            id: so_status_badge
+            test_tag: "standingOrders:statusBadge:{item.standingOrderId}"
+            value: "{item.statusLabel}"
+            variant: "{item.isActive}"
+            accessibility_label: "{strings.standing_orders_status_prefix} {item.statusLabel}"
+            test_context:
+              purpose: "Active (variant=primary) / Inactive (variant=secondary) badge; variant mapped in ViewModel from StandingOrderStatusCode enum"
+              required_fields: ["item.StandingOrderStatusCode", "item.status_variant"]
+              interaction_type: display
+              data_driven: true
+
+          # Row 2: next payment amount (headline)
+          - type: text
+            id: so_amount
+            test_tag: "standingOrders:amount:{item.standingOrderId}"
+            role: amount
+            value: "{item.amountLabel} {item.currencyLabel}"
+            style: headlineSmall
+            color: "onSurface"
+            accessibility_label: "{strings.standing_orders_amount_a11y_prefix} {item.amountLabel} {item.currencyLabel}"
+            test_context:
+              purpose: "Next payment amount + currency from NextPaymentAmount OB object; on-surface color (read-only banking view — not error)"
+              required_fields: ["item.NextPaymentAmount.Amount", "item.NextPaymentAmount.Currency"]
+              interaction_type: display
+              data_driven: true
+
+          # Row 3: frequency label (human-readable)
+          - type: text
+            id: so_frequency
+            test_tag: "standingOrders:frequency:{item.standingOrderId}"
+            role: body
+            value: "{item.frequencyLabel}"
+            style: bodySmall
+            color: "onSurfaceVariant"
+            accessibility_label: "{strings.standing_orders_frequency_a11y_prefix} {item.frequencyLabel}"
+            test_context:
+              purpose: "Human-readable frequency decoded in ViewModel; covers IntrvlMnthDay, IntrvlWkDay, IntrvlDay, IntrvlYear OBIE patterns"
+              required_fields: ["item.frequency_label"]
+              interaction_type: display
+              data_driven: true
+
+          # Row 4: next payment date
+          - type: text
+            id: so_next_date
+            test_tag: "standingOrders:nextDate:{item.standingOrderId}"
+            role: body
+            value: "{strings.standing_orders_next_prefix} {item.nextDateLabel}"
+            style: bodySmall
+            color: "onSurfaceVariant"
+            accessibility_label: "{strings.standing_orders_next_date_a11y_prefix} {item.nextDateLabel}"
+            test_context:
+              purpose: "ISO-8601 NextPaymentDateTime with localised 'Next:' prefix; ViewModel formats to dd MMM yyyy"
+              required_fields: ["item.NextPaymentDateTime"]
+              interaction_type: display
+              data_driven: true
+
+          # Row 5 (conditional): final payment date — only when hasFinalPayment=true
+          - type: text
+            id: so_final_date
+            test_tag: "standingOrders:finalDate:{item.standingOrderId}"
+            role: body
+            value: "{strings.standing_orders_final_prefix} {item.finalDateLabel}"
+            style: bodySmall
+            color: "onSurfaceVariant"
+            visibility: "{item.hasFinalPayment}"
+            accessibility_label: "{strings.standing_orders_final_date_a11y_prefix} {item.finalDateLabel}"
+            test_context:
+              purpose: "FinalPaymentDateTime shown only when non-null; signals last scheduled payment; hasFinalPayment flag set in ViewModel transform"
+              required_fields: ["item.FinalPaymentDateTime", "item.hasFinalPayment"]
+              interaction_type: display
+              data_driven: true
+
+          # Row 6: creditor sort-code / account number
+          - type: text
+            id: so_sort_code
+            test_tag: "standingOrders:sortCode:{item.standingOrderId}"
+            role: body
+            value: "{item.sortCodeLabel}"
+            style: bodySmall
+            color: "onSurfaceVariant"
+            accessibility_label: "{strings.standing_orders_sort_code_a11y_prefix} {item.sortCodeLabel}"
+            test_context:
+              purpose: "CreditorAccount.Identification (UK.OBIE.SortCodeAccountNumber scheme, format '40-12-09 65872310'); aids user recognition of destination"
+              required_fields: ["item.CreditorAccount.Identification"]
+              interaction_type: display
+              data_driven: true
+
+          # Row 7: payment reference
+          - type: text
+            id: so_payment_ref
+            test_tag: "standingOrders:reference:{item.standingOrderId}"
+            role: body
+            value: "{strings.standing_orders_ref_prefix} {item.referenceLabel}"
+            style: bodySmall
+            color: "onSurfaceVariant"
+            accessibility_label: "{strings.standing_orders_ref_a11y_prefix} {item.referenceLabel}"
+            test_context:
+              purpose: "Payment reference string (e.g. RENT-FLAT12, ISA-TOPUP) from OB Reference field; helps distinguish multiple orders to same creditor"
+              required_fields: ["item.Reference"]
+              interaction_type: display
+              data_driven: true
+
+  # ── EMPTY STATE ──────────────────────────────────────────────────
+  - type: empty_state
+    id: empty_standing_orders
+    state_binding: [empty]
+    icon: autorenew
+    title: "{strings.standing_orders_empty_title}"
+    body: "{strings.standing_orders_empty_body}"
+    test_tag: "standingOrders:emptyState"
+    accessibility_label: "{strings.standing_orders_empty_a11y}"
+    test_context:
+      purpose: "Zero-result state when Data.StandingOrder[] is empty in OBIE response"
+      required_fields: []
+      interaction_type: display
+      data_driven: false
+
+  # ── UNSUPPORTED STATE ────────────────────────────────────────────
+  # StandingOrdersUiState.Unsupported(message) — rendered by StandingOrdersUnsupported.kt.
+  # Distinct from empty: the servicer does not expose standing orders for this
+  # account at all, so there is nothing to retry.
+  - type: empty_state
+    id: unsupported_standing_orders
+    variant: info
+    state_binding: [unsupported]
+    icon: info_outline
+    title: "{strings.standing_orders_unsupported_title}"
+    body: "{uiState.message}"
+    test_tag: "standingOrders:unsupportedState"
+    accessibility_label: "{strings.standing_orders_unsupported_a11y}"
+    test_context:
+      purpose: "Servicer does not support the standing-orders resource for this account. No retry CTA — the capability registry refused the call rather than the network failing."
+      required_fields: ["uiState.message"]
+      interaction_type: display
+      data_driven: true
+
+  # ── ERROR STATE ──────────────────────────────────────────────────
+  - type: empty_state
+    id: error_state
+    variant: error
+    state_binding: [error]
+    icon: error_outline
+    title: "{strings.standing_orders_error_title}"
+    body: "{strings.standing_orders_error_body}"
+    test_tag: "standingOrders:errorState"
+    accessibility_label: "{strings.standing_orders_error_a11y}"
+    test_context:
+      purpose: "Surface typed API errors. classifyStandingOrdersError maps Unauthorized→TokenExpired, Forbidden→ConsentRevoked, RateLimited→RateLimited, NetworkError.Network→NetworkError, else→ServerError. StandingOrdersErrorKind carries no isRetriable flag, so the retry CTA is always shown."
+      required_fields: ["uiState.kind"]
+      interaction_type: display
+      data_driven: true
+    children:
+      - type: button
+        id: retry_button
+        variant: filled
+        label: "{strings.standing_orders_retry}"
+        test_tag: "standingOrders:retryButton"
+        accessibility_label: "{strings.standing_orders_retry_a11y}"
+        on_click:
+          action: RetryLoad
+          action_contract:
+            effect: call_api
+            reads_from: standing-orders-list
+            external_library_refs: ["ktorfit", "hsbc-obie-ais-v4.0:standing-orders"]
+            description: "Dispatches StandingOrdersAction.RetryLoad, refreshing the standing-orders stream and returning the screen to Loading then Content or Empty."
+        test_context:
+          purpose: "Dispatch StandingOrdersAction.RetryLoad after a failure; also reachable via pull-to-refresh on the content list"
+          required_fields: []
+          interaction_type: action
+          data_driven: false
+
+i18n_covered: true
+a11y_covered: true
+status_history:
+  - from: draft
+    to: enriched
+    at: "2026-06-29"
+    by: "/idea-enrich"
+  - from: enriched
+    to: enriched
+    at: "2026-06-29"
+    by: "/idea-enrich (re-enrich: +i18n x20 keys, +sort-code row, +reference row, +final-date conditional row, +summary_row, +pull-to-refresh, fix amount color error→on-surface; quality 85→93)"

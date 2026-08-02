@@ -1,1068 +1,345 @@
-id: settings
-name: "Settings"
-feature: settings
-flavor: shared
-status: approved
-quality_score: 93
-contract_version: "1.1.0"
-approve_hash: "sha256:17af12bd8c96e4f037af12bd8c96e4f037af12bd8c96e4f037af12bd8c96e4f0"
-approved_at: "2026-06-11T14:45:00Z"
-approved_by: "/idea approve"
-approve_predicate_version: "1.0.0"
-approve_contract_version: "1.1.0"
-capabilities:
-  - has_ui
-tags: [FR-003, FR-004]
-status_history:
-  - { from: draft, to: enriched, at: "2026-05-25", by: "/idea enrich" }
-  - status: designed
-    at: "2026-05-25T00:00:00Z"
-    by: "/idea export"
-    exports: [spec_md, api_md, mockup_md]
-  - from: designed
-    to: approved
-    at: "2026-05-25T13:45:00Z"
-    by: "/idea approve"
-    contract_version: "1.1.0"
-    bypass_flags: []
-  - from: approved
-    to: enriched
-    at: "2026-06-11"
-    by: "/idea verify --source-drift (write-back)"
-    note: "SOURCE→SPEC reconciliation to shipped SettingsScreen.kt + SettingsViewModel.kt. Major divergence. ADDED shipped surfaces: a tappable Profile header card (name/email/initials → Profile); THREE mutually-exclusive theme-mode toggle rows (Follow System / Light / Dark) bound to DarkThemeConfig (replacing the single dark-mode boolean); a Security 'Reset Password' row that opens an in-screen AlertDialog (ResetPasswordDialog → authRecoveryRepository.initiateReset, then a result AlertDialog) instead of navigating; a Sign-out OutlinedButton at the bottom that CLEARS the session (obpAuthRepository.logout() + userDataRepository.clearUserData()); the About entries rendered as individual tappable cards (About/Terms/Privacy/Licenses); and a centered footer 'Mifos X Open Banking · v1.0.0'. REMOVED never-built surfaces: the ENTIRE Notifications section (group + push/transaction-alerts/marketing toggles + their dividers), settings_change_password_row (replaced by the Reset Password dialog), settings_consent_manager_row (Data & Consent → consent-manager), the single settings_dark_mode_toggle boolean, and the App Version row (replaced by the footer text). LanguageRow and the Biometric toggle ARE rendered but DISABLED (enabled=false) — kept and marked disabled_until. state_model rewritten to ScreenState<SettingsUiState>{profileName, profileEmail, profileInitials, themeConfig:DarkThemeConfig, selectedLanguage, isBiometricLoginEnabled, isBiometricAvailableOnDevice, appVersion, isLoading} — the three notification booleans removed. actions = onThemeConfigSelected/onLanguageSelected/onBiometricToggled/onSignOut/onResetPassword/onResetMessageConsumed. DI = UserDataRepository, ProfileRepository, AuthRecoveryRepository, ObpAuthRepository. api: was []; shipped has no fetch endpoints but performs runtime auth side-effects (logout token revoke + AuthRecoveryRepository.initiateReset password-reset email) — noted."
-  - from: enriched
-    to: approved
-    at: "2026-06-11T14:45:00Z"
-    by: "/idea approve"
-    contract_version: "1.1.0"
-    bypass_flags: []
-    note: "Approved after source→spec reconciliation (spec matches shipped Kotlin) + /idea verify PASS. Write-back shape (no approve_hash), consistent with project pattern. Previews for reconciled screens may lag the YAML pending a separate re-render."
+sibling: ui
+schema_version: "4.0"
+feature_id: settings
 
-screens:
-  - id: settings
-    name: "Settings"
-    viewmodel: "SettingsViewModel"
-    impl_status: implemented
-    impl_at: "2026-06-03"
-    impl_notes: "Reuses UserDataRepository as the single source of truth for theme/language/biometric prefs; profile header from ProfileRepository.current(); reset-password via AuthRecoveryRepository; sign-out via ObpAuthRepository.logout() + clearUserData(). Notification prefs were never built. Nav targets default no-op pending destination screens; Language + Biometric rows render disabled."
-
+screen_id: settings
 archetype: settings
+name: "{strings.settings.title}"
+status: implemented
+initial_state: content
+quality_score: 95
 
-components:
-  - type: stack
-    id: settings_root
-    variant: column
-    style:
-      background: "#F9FAEF"
-      padding: spacing.lg
-    children:
-      - settings_profile_header_card
-      - settings_appearance_header
-      - settings_appearance_group
-      - settings_security_header
-      - settings_security_group
-      - settings_about_header
-      - settings_about_about_card
-      - settings_about_terms_card
-      - settings_about_privacy_card
-      - settings_about_licenses_card
-      - settings_sign_out_button
-      - settings_footer
+# ─────────────────────────────────────────────────────────────────────
+# SOURCE BINDING — reverse-synced from source 2026-07-28
+#
+# The former `ui_source_override: preview` pin is removed: the rendered previews
+# were deleted in this pass and SOURCE is now the sole design truth for this screen.
+# ─────────────────────────────────────────────────────────────────────
+implementation:
+  status: implemented
+  source_module: "feature/settings"
+  package: "org.mifosx.openbanking.feature.settings"
+  route: "SettingsRoute (data object)"
+  viewmodel: SettingsViewModel
+  screen: SettingsScreen
+  test_tags_object: SettingsTestTags
+  bottom_nav_tab: "MoreTab (order 3) — graphRoute == startDestinationRoute == SettingsRoute"
+  sibling_screen: "licences (LicencesRoute) — lives in the same module, modelled as screens/licences/"
+  nav_callbacks:
+    - "onNavigateToConsents -> navigate(ConsentListRoute)"
+    - "onNavigateToLicences -> navigate(LicencesRoute)"
+    - "onOpenUrl -> LocalUriHandler.openUri(url)"
+  synced_from_source_at: "2026-07-28"
+  removed_in_sync:
+    - "loading state — SettingsUiState declares only Content, Empty and Error"
+    - "clear_confirm state and the clearLocalDataConfirm / dismissClearLocalData / executeClearLocalData actions — no destructive cache-erasure surface exists in source"
+    - "toggleBiometricLock, updateSessionTimeout — no Security section is rendered"
+    - "toggleConsentExpiryNotification, toggleSecurityAlertsNotification — no Notifications section is rendered"
+    - "navigateProfile — the profile screen was never built and no such callback exists"
+    - "openAppSystemSettings, clearPfmCache — no such rows or actions"
+    - "SettingsPreferences / gpsPermissionState state fields — SettingsState carries only uiState"
+  note_unused_prefs: "UserData carries isBiometricsEnabled, isPasscodeEnabled, passcode, enableScreenCapture and appLanguage, but the settings screen exposes none of them — they are template-inherited fields with no UI surface."
 
-  # ── Profile Header ──────────────────────────────────────────────────────────
+shell:
+  bottom_navigation_visible: true
+  top_app_bar_visible: true
+  top_app_bar_title: "{strings.settings.title}"
+  top_app_bar_leading: null
+  fab_visible: false
 
-  - type: card
-    id: settings_profile_header_card
-    variant: filled
-    supported_states: [idle, hover, focus_visible, pressed]
-    style:
-      background: "#CDEDA3"
-      border_radius: "16dp"
-      padding: spacing.md
-      margin_bottom: spacing.md
-    on_click:
-      action: navigate
-      target: profile
-    children:
-      - settings_profile_initials
-      - settings_profile_name
-      - settings_profile_email
-    a11y:
-      role: button
-      label: "Open your profile"
-    test_context:
-      purpose: "Tappable header card showing the signed-in user's initials, name, and email; navigates to Profile. Data from ProfileRepository.current() merged into SettingsUiState (profileName/profileEmail/profileInitials)."
-      interaction_type: navigate
-      data_driven: true
+business_logic:
+  kind: nav_only
+  description: "Settings hub over UserDataRepository. SettingsViewModel maps the user-data stream into SettingsUiState.Content carrying themeConfig (DarkThemeConfig), a resolved themeLabel StringResource, appVersionLabel from the injected SettingsAppVersion, and isThemeMenuExpanded. The only persisted mutation is SelectTheme, which writes DarkThemeConfig back through UserDataRepository; ToggleThemeMenu and DismissThemeMenu are pure local UI state for the dropdown. Three sections render: Appearance (theme dropdown), Account (a single consents row) and About (privacy link opening a browser, licences opening in-app, and a static app-version readout with no click handler). A preferences read failure surfaces SettingsErrorKind.PreferencesUnavailable; both error kinds are retriable."
+  external_library_refs:
+    - "androidx.datastore"
+    - "kotlinx-serialization"
+  description_author: claude
+  description_authored_at: "2026-07-28T00:00:00Z"
 
-  - type: box
-    id: settings_profile_initials
-    content: "M"
-    style:
-      width: "48dp"
-      height: "48dp"
-      shape: circle
-      background: "#4C662B"
-      color: "#FFFFFF"
-      typography: "Outfit/title_medium"
-      font_weight: 700
-      alignment: center
-    a11y:
-      role: image
-      label: "Your initials"
-    test_context:
-      purpose: "Circular initials badge in the profile header (SettingsUiState.profileInitials; 'M' fallback)"
-      interaction_type: display
-      data_driven: true
-
-  - type: text
-    id: settings_profile_name
-    content: "Mifos User"
-    variant: title_medium
-    style:
-      typography: "Outfit/title_medium"
-      color: "#1A1C16"
-      font_weight: 600
-    a11y:
-      role: text
-      label: "Your name"
-    test_context:
-      purpose: "Profile display name in the header (SettingsUiState.profileName; 'Mifos User' fallback)"
-      interaction_type: display
-      data_driven: true
-
-  - type: text
-    id: settings_profile_email
-    content: "user@example.com"
-    variant: body_small
-    style:
-      typography: "Outfit/body_small"
-      color: "#44483D"
-    a11y:
-      role: text
-      label: "Your email"
-    test_context:
-      purpose: "Profile email in the header (SettingsUiState.profileEmail); hidden when blank"
-      interaction_type: display
-      data_driven: true
-
-  # ── Appearance Section ──────────────────────────────────────────────────────
-
-  - type: text
-    id: settings_appearance_header
-    content: "Appearance"
-    variant: label_medium
-    style:
-      typography: "Outfit/label_medium"
-      color: "#4C662B"
-      font_weight: 600
-      padding_bottom: spacing.xs
-      padding_top: spacing.sm
-    a11y:
-      role: heading
-      label: "Appearance settings section"
-    test_context:
-      purpose: "Uppercased section header above the Appearance card"
-      interaction_type: display
-      data_driven: false
-
-  - type: card
-    id: settings_appearance_group
-    variant: outlined
-    style:
-      background: "#FFFFFF"
-      border_radius: "12dp"
-      padding: spacing.sm
-      margin_bottom: spacing.md
-    children:
-      - settings_theme_follow_system_row
-      - settings_divider_theme_1
-      - settings_theme_light_row
-      - settings_divider_theme_2
-      - settings_theme_dark_row
-      - settings_divider_appearance
-      - settings_language_row
-
-  - type: stack
-    id: settings_theme_follow_system_row
-    variant: row
-    style:
-      alignment: center_space_between
-      padding_top: spacing.sm
-      padding_bottom: spacing.sm
-    children:
-      - settings_theme_follow_system_label
-      - settings_theme_follow_system_toggle
-
-  - type: text
-    id: settings_theme_follow_system_label
-    content: "Follow System"
-    variant: body_large
-    style:
-      typography: "Outfit/body_large"
-      color: "#1A1C16"
-    a11y:
-      role: text
-      label: "Follow System"
-    test_context:
-      purpose: "Label for the Follow System theme-mode row (description: 'Match your device's light or dark setting')"
-      interaction_type: display
-      data_driven: false
-
-  - type: input
-    id: settings_theme_follow_system_toggle
-    label: "Follow System"
-    variant: switch
-    supported_states: [idle, hover, focus_visible, pressed]
-    style:
-      color_active: "#4C662B"
-      color_inactive: "#C5C8BA"
-    prefill: "themeConfig == FOLLOW_SYSTEM"
-    on_click:
-      action: select_theme
-      value: FOLLOW_SYSTEM
-    a11y:
-      role: switch
-      label: "Use the system theme"
-    keyboard:
-      focusable: true
-    test_context:
-      purpose: "One of three mutually-exclusive theme switches. Checked when themeConfig == DarkThemeConfig.FOLLOW_SYSTEM; toggling calls onThemeConfigSelected(FOLLOW_SYSTEM)."
-      interaction_type: action
-      data_driven: true
-
-  - type: divider
-    id: settings_divider_theme_1
-    style:
-      color: "#E1E4D5"
-    a11y:
-      role: separator
-    test_context:
-      purpose: "Separator between Follow System and Light Mode theme rows"
-      interaction_type: display
-      data_driven: false
-
-  - type: stack
-    id: settings_theme_light_row
-    variant: row
-    style:
-      alignment: center_space_between
-      padding_top: spacing.sm
-      padding_bottom: spacing.sm
-    children:
-      - settings_theme_light_label
-      - settings_theme_light_toggle
-
-  - type: text
-    id: settings_theme_light_label
-    content: "Light Mode"
-    variant: body_large
-    style:
-      typography: "Outfit/body_large"
-      color: "#1A1C16"
-    a11y:
-      role: text
-      label: "Light Mode"
-    test_context:
-      purpose: "Label for the Light Mode theme-mode row (description: 'Always use the light theme')"
-      interaction_type: display
-      data_driven: false
-
-  - type: input
-    id: settings_theme_light_toggle
-    label: "Light Mode"
-    variant: switch
-    supported_states: [idle, hover, focus_visible, pressed]
-    style:
-      color_active: "#4C662B"
-      color_inactive: "#C5C8BA"
-    prefill: "themeConfig == LIGHT"
-    on_click:
-      action: select_theme
-      value: LIGHT
-    a11y:
-      role: switch
-      label: "Always use the light theme"
-    keyboard:
-      focusable: true
-    test_context:
-      purpose: "Checked when themeConfig == DarkThemeConfig.LIGHT; toggling calls onThemeConfigSelected(LIGHT)."
-      interaction_type: action
-      data_driven: true
-
-  - type: divider
-    id: settings_divider_theme_2
-    style:
-      color: "#E1E4D5"
-    a11y:
-      role: separator
-    test_context:
-      purpose: "Separator between Light Mode and Dark Mode theme rows"
-      interaction_type: display
-      data_driven: false
-
-  - type: stack
-    id: settings_theme_dark_row
-    variant: row
-    style:
-      alignment: center_space_between
-      padding_top: spacing.sm
-      padding_bottom: spacing.sm
-    children:
-      - settings_theme_dark_label
-      - settings_theme_dark_toggle
-
-  - type: text
-    id: settings_theme_dark_label
-    content: "Dark Mode"
-    variant: body_large
-    style:
-      typography: "Outfit/body_large"
-      color: "#1A1C16"
-    a11y:
-      role: text
-      label: "Dark Mode"
-    test_context:
-      purpose: "Label for the Dark Mode theme-mode row (description: 'Always use the dark theme')"
-      interaction_type: display
-      data_driven: false
-
-  - type: input
-    id: settings_theme_dark_toggle
-    label: "Dark Mode"
-    variant: switch
-    supported_states: [idle, hover, focus_visible, pressed]
-    style:
-      color_active: "#4C662B"
-      color_inactive: "#C5C8BA"
-    prefill: "themeConfig == DARK"
-    on_click:
-      action: select_theme
-      value: DARK
-    a11y:
-      role: switch
-      label: "Always use the dark theme"
-    keyboard:
-      focusable: true
-    test_context:
-      purpose: "Checked when themeConfig == DarkThemeConfig.DARK; toggling calls onThemeConfigSelected(DARK)."
-      interaction_type: action
-      data_driven: true
-
-  - type: divider
-    id: settings_divider_appearance
-    style:
-      color: "#E1E4D5"
-    a11y:
-      role: separator
-    test_context:
-      purpose: "Separator between the theme rows and the Language row"
-      interaction_type: display
-      data_driven: false
-
-  - type: stack
-    id: settings_language_row
-    variant: row
-    style:
-      alignment: center_space_between
-      padding_top: spacing.sm
-      padding_bottom: spacing.sm
-    children:
-      - settings_language_label
-      - settings_language_select
-
-  - type: text
-    id: settings_language_label
-    content: "Language"
-    variant: body_large
-    style:
-      typography: "Outfit/body_large"
-      color: "#1A1C16"
-    a11y:
-      role: text
-      label: "Language"
-    test_context:
-      purpose: "Label for the Language row (description: 'Choose your preferred display language')"
-      interaction_type: display
-      data_driven: false
-
-  - type: input
-    id: settings_language_select
-    label: "Language"
-    variant: select
-    enabled: false
-    disabled_until: "app-wide locale switching applied"
-    supported_states: [disabled]
-    options:
-      - { label: "English", value: "en" }
-      - { label: "Spanish", value: "es" }
-      - { label: "French", value: "fr" }
-      - { label: "Hindi", value: "hi" }
-      - { label: "Arabic", value: "ar" }
-    prefill: "selectedLanguage"
-    style:
-      typography: "Outfit/body_medium"
-      color: "#1A1C16"
-    a11y:
-      role: combobox
-      label: "Select language (not yet available)"
-    test_context:
-      purpose: "Language dropdown — the picker + onLanguageSelected persistence is fully wired in shipped, but the row renders DISABLED (enabled=false) until locale switching applies app-wide. Marked deferred."
-      interaction_type: display
-      data_driven: true
-
-  # ── Security Section ─────────────────────────────────────────────────────────
-
-  - type: text
-    id: settings_security_header
-    content: "Security"
-    variant: label_medium
-    style:
-      typography: "Outfit/label_medium"
-      color: "#4C662B"
-      font_weight: 600
-      padding_bottom: spacing.xs
-      padding_top: spacing.sm
-    a11y:
-      role: heading
-      label: "Security settings section"
-    test_context:
-      purpose: "Uppercased section header above the Security card"
-      interaction_type: display
-      data_driven: false
-
-  - type: card
-    id: settings_security_group
-    variant: outlined
-    style:
-      background: "#FFFFFF"
-      border_radius: "12dp"
-      padding: spacing.sm
-      margin_bottom: spacing.md
-    children:
-      - settings_biometric_row
-      - settings_divider_security
-      - settings_reset_password_row
-
-  - type: stack
-    id: settings_biometric_row
-    variant: row
-    style:
-      alignment: center_space_between
-      padding_top: spacing.sm
-      padding_bottom: spacing.sm
-    children:
-      - settings_biometric_label
-      - settings_biometric_toggle
-
-  - type: text
-    id: settings_biometric_label
-    content: "Biometric Login"
-    variant: body_large
-    style:
-      typography: "Outfit/body_large"
-      color: "#1A1C16"
-    a11y:
-      role: text
-      label: "Biometric Login"
-    test_context:
-      purpose: "Label for the Biometric Login row (description: 'Use fingerprint or face ID to sign in faster')"
-      interaction_type: display
-      data_driven: false
-
-  - type: input
-    id: settings_biometric_toggle
-    label: "Biometric Login"
-    variant: switch
-    enabled: false
-    disabled_until: "biometric login flow wired end-to-end"
-    supported_states: [disabled]
-    style:
-      color_active: "#4C662B"
-      color_inactive: "#C5C8BA"
-    prefill: "isBiometricLoginEnabled"
-    a11y:
-      role: switch
-      label: "Toggle biometric login (not yet available)"
-    test_context:
-      purpose: "Biometric toggle — bound to SettingsUiState.isBiometricLoginEnabled and onBiometricToggled, but shipped renders it DISABLED (enabled=false). Marked deferred. (isBiometricAvailableOnDevice is surfaced in state but the row is hard-disabled today.)"
-      interaction_type: display
-      data_driven: true
-
-  - type: divider
-    id: settings_divider_security
-    style:
-      color: "#E1E4D5"
-    a11y:
-      role: separator
-    test_context:
-      purpose: "Separator between Biometric Login and Reset Password rows"
-      interaction_type: display
-      data_driven: false
-
-  - type: stack
-    id: settings_reset_password_row
-    variant: row
-    style:
-      alignment: center_space_between
-      padding_top: spacing.sm
-      padding_bottom: spacing.sm
-    children:
-      - settings_reset_password_label
-      - settings_reset_password_chevron
-
-  - type: text
-    id: settings_reset_password_label
-    content: "Reset Password"
-    variant: body_large
-    style:
-      typography: "Outfit/body_large"
-      color: "#1A1C16"
-    a11y:
-      role: text
-      label: "Reset Password"
-    test_context:
-      purpose: "Label for the Reset Password row (description: 'Email yourself a password reset link'). Replaces the old change-password navigation row."
-      interaction_type: display
-      data_driven: false
-
-  - type: icon
-    id: settings_reset_password_chevron
-    content: "chevron_right"
-    variant: default
-    style:
-      color: "#C5C8BA"
-      size: "20dp"
-    on_click:
-      action: open_reset_password_dialog
-    a11y:
-      role: button
-      label: "Email yourself a password reset link"
-    keyboard:
-      focusable: true
-    test_context:
-      purpose: "Tapping the Reset Password row opens an in-screen ResetPasswordDialog (AlertDialog). Confirm calls onResetPassword() → authRecoveryRepository.initiateReset; result is shown in a second AlertDialog. NO navigation."
-      interaction_type: action
-      data_driven: false
-
-  # ── Reset Password dialogs (in-screen) ───────────────────────────────────────
-
-  - type: dialog
-    id: settings_reset_password_dialog
-    variant: alert
-    style:
-      title: "Reset password?"
-    visible_when: "showResetDialog"
-    children:
-      - settings_reset_password_dialog_body
-      - settings_reset_password_dialog_confirm
-      - settings_reset_password_dialog_cancel
-    a11y:
-      role: dialog
-      label: "Reset password confirmation"
-    test_context:
-      purpose: "AlertDialog asking to confirm sending a reset link. Body: 'We'll email a password reset link to {email}.' (or generic copy when email is blank)."
-      interaction_type: display
-      data_driven: true
-
-  - type: text
-    id: settings_reset_password_dialog_body
-    content: "We'll email a password reset link to your registered address."
-    variant: body_medium
-    style:
-      typography: "Outfit/body_medium"
-      color: "#44483D"
-    a11y:
-      role: text
-      label: "Reset link will be emailed"
-    test_context:
-      purpose: "Dialog body copy; shipped interpolates the email when present"
-      interaction_type: display
-      data_driven: true
-
-  - type: button
-    id: settings_reset_password_dialog_confirm
-    label: "Send link"
-    variant: text
-    supported_states: [idle, hover, focus_visible, pressed]
-    style:
-      color: "#4C662B"
-    on_click:
-      action: confirm_reset_password
-    a11y:
-      role: button
-      label: "Send the password reset link"
-    keyboard:
-      focusable: true
-    test_context:
-      purpose: "Confirm button — dismisses the dialog and calls onResetPassword()"
-      interaction_type: action
-      data_driven: false
-
-  - type: button
-    id: settings_reset_password_dialog_cancel
-    label: "Cancel"
-    variant: text
-    supported_states: [idle, hover, focus_visible, pressed]
-    style:
-      color: "#44483D"
-    on_click:
-      action: dismiss_reset_password_dialog
-    a11y:
-      role: button
-      label: "Cancel password reset"
-    keyboard:
-      focusable: true
-    test_context:
-      purpose: "Dismisses the ResetPasswordDialog without sending"
-      interaction_type: action
-      data_driven: false
-
-  - type: dialog
-    id: settings_reset_message_dialog
-    variant: alert
-    style:
-      title: "Password reset"
-    visible_when: "resetMessage != null"
-    children:
-      - settings_reset_message_body
-      - settings_reset_message_ok
-    a11y:
-      role: dialog
-      label: "Password reset result"
-    test_context:
-      purpose: "Result AlertDialog shown after onResetPassword(); body is SettingsViewModel.resetMessage (success or failure copy)."
-      interaction_type: display
-      data_driven: true
-
-  - type: text
-    id: settings_reset_message_body
-    content: "If your account is valid, a password reset link has been emailed to you."
-    variant: body_medium
-    style:
-      typography: "Outfit/body_medium"
-      color: "#44483D"
-    a11y:
-      role: alert
-      label: "Password reset result message"
-    test_context:
-      purpose: "Result message body bound to resetMessage"
-      interaction_type: display
-      data_driven: true
-
-  - type: button
-    id: settings_reset_message_ok
-    label: "OK"
-    variant: text
-    supported_states: [idle, hover, focus_visible, pressed]
-    style:
-      color: "#4C662B"
-    on_click:
-      action: dismiss_reset_message
-    a11y:
-      role: button
-      label: "Dismiss"
-    keyboard:
-      focusable: true
-    test_context:
-      purpose: "Dismisses the result dialog — calls onResetMessageConsumed()"
-      interaction_type: action
-      data_driven: false
-
-  # ── About Section (one tappable card per entry) ──────────────────────────────
-
-  - type: text
-    id: settings_about_header
-    content: "About"
-    variant: label_medium
-    style:
-      typography: "Outfit/label_medium"
-      color: "#4C662B"
-      font_weight: 600
-      padding_bottom: spacing.xs
-      padding_top: spacing.sm
-    a11y:
-      role: heading
-      label: "About section"
-    test_context:
-      purpose: "Uppercased section header above the About cards"
-      interaction_type: display
-      data_driven: false
-
-  - type: card
-    id: settings_about_about_card
-    variant: outlined
-    supported_states: [idle, hover, focus_visible, pressed]
-    style:
-      background: "#FFFFFF"
-      border_radius: "12dp"
-      padding: spacing.md
-      margin_bottom: spacing.sm
-    on_click:
-      action: navigate
-      target: about
-    children:
-      - settings_about_about_icon
-      - settings_about_about_label
-    a11y:
-      role: button
-      label: "About Mifos X Open Banking"
-    test_context:
-      purpose: "Tappable card (info icon + label) navigating to the About screen"
-      interaction_type: navigate
-      data_driven: false
-
-  - type: icon
-    id: settings_about_about_icon
-    content: "info"
-    variant: default
-    style:
-      color: "#4C662B"
-      size: "20dp"
-    a11y:
-      role: image
-      label: ""
-    test_context:
-      purpose: "Leading icon for the About card"
-      interaction_type: display
-      data_driven: false
-
-  - type: text
-    id: settings_about_about_label
-    content: "About Mifos X Open Banking"
-    variant: body_large
-    style:
-      typography: "Outfit/body_large"
-      color: "#1A1C16"
-    a11y:
-      role: text
-      label: "About Mifos X Open Banking"
-    test_context:
-      purpose: "Label for the About card"
-      interaction_type: display
-      data_driven: false
-
-  - type: card
-    id: settings_about_terms_card
-    variant: outlined
-    supported_states: [idle, hover, focus_visible, pressed]
-    style:
-      background: "#FFFFFF"
-      border_radius: "12dp"
-      padding: spacing.md
-      margin_bottom: spacing.sm
-    on_click:
-      action: navigate
-      target: terms-of-service
-    children:
-      - settings_about_terms_icon
-      - settings_about_terms_label
-    a11y:
-      role: button
-      label: "Terms of Service"
-    test_context:
-      purpose: "Tappable card (article icon + label) navigating to Terms of Service"
-      interaction_type: navigate
-      data_driven: false
-
-  - type: icon
-    id: settings_about_terms_icon
-    content: "article"
-    variant: default
-    style:
-      color: "#4C662B"
-      size: "20dp"
-    a11y:
-      role: image
-      label: ""
-    test_context:
-      purpose: "Leading icon for the Terms of Service card"
-      interaction_type: display
-      data_driven: false
-
-  - type: text
-    id: settings_about_terms_label
-    content: "Terms of Service"
-    variant: body_large
-    style:
-      typography: "Outfit/body_large"
-      color: "#1A1C16"
-    a11y:
-      role: text
-      label: "Terms of Service"
-    test_context:
-      purpose: "Label for the Terms of Service card"
-      interaction_type: display
-      data_driven: false
-
-  - type: card
-    id: settings_about_privacy_card
-    variant: outlined
-    supported_states: [idle, hover, focus_visible, pressed]
-    style:
-      background: "#FFFFFF"
-      border_radius: "12dp"
-      padding: spacing.md
-      margin_bottom: spacing.sm
-    on_click:
-      action: navigate
-      target: privacy-policy
-    children:
-      - settings_about_privacy_icon
-      - settings_about_privacy_label
-    a11y:
-      role: button
-      label: "Privacy Policy"
-    test_context:
-      purpose: "Tappable card (privacy icon + label) navigating to Privacy Policy"
-      interaction_type: navigate
-      data_driven: false
-
-  - type: icon
-    id: settings_about_privacy_icon
-    content: "privacy_tip"
-    variant: default
-    style:
-      color: "#4C662B"
-      size: "20dp"
-    a11y:
-      role: image
-      label: ""
-    test_context:
-      purpose: "Leading icon for the Privacy Policy card"
-      interaction_type: display
-      data_driven: false
-
-  - type: text
-    id: settings_about_privacy_label
-    content: "Privacy Policy"
-    variant: body_large
-    style:
-      typography: "Outfit/body_large"
-      color: "#1A1C16"
-    a11y:
-      role: text
-      label: "Privacy Policy"
-    test_context:
-      purpose: "Label for the Privacy Policy card"
-      interaction_type: display
-      data_driven: false
-
-  - type: card
-    id: settings_about_licenses_card
-    variant: outlined
-    supported_states: [idle, hover, focus_visible, pressed]
-    style:
-      background: "#FFFFFF"
-      border_radius: "12dp"
-      padding: spacing.md
-      margin_bottom: spacing.md
-    on_click:
-      action: navigate
-      target: licenses
-    children:
-      - settings_about_licenses_icon
-      - settings_about_licenses_label
-    a11y:
-      role: button
-      label: "Open-source Licences"
-    test_context:
-      purpose: "Tappable card (gavel icon + label) navigating to Open-source Licences"
-      interaction_type: navigate
-      data_driven: false
-
-  - type: icon
-    id: settings_about_licenses_icon
-    content: "gavel"
-    variant: default
-    style:
-      color: "#4C662B"
-      size: "20dp"
-    a11y:
-      role: image
-      label: ""
-    test_context:
-      purpose: "Leading icon for the Open-source Licences card"
-      interaction_type: display
-      data_driven: false
-
-  - type: text
-    id: settings_about_licenses_label
-    content: "Open-source Licences"
-    variant: body_large
-    style:
-      typography: "Outfit/body_large"
-      color: "#1A1C16"
-    a11y:
-      role: text
-      label: "Open-source Licences"
-    test_context:
-      purpose: "Label for the Open-source Licences card"
-      interaction_type: display
-      data_driven: false
-
-  # ── Sign out + footer ────────────────────────────────────────────────────────
-
-  - type: button
-    id: settings_sign_out_button
-    label: "Sign out"
-    variant: outlined
-    supported_states: [idle, hover, focus_visible, pressed]
-    style:
-      border_color: "#BA1A1A"
-      color: "#BA1A1A"
-      typography: "Outfit/label_large"
-      font_weight: 600
-      border_radius: "12dp"
-      padding: spacing.md
-      width: "match_parent"
-      icon_start: "logout"
-      margin_top: spacing.sm
-    on_click:
-      action: sign_out
-    a11y:
-      role: button
-      label: "Sign out of your account"
-    keyboard:
-      focusable: true
-    test_context:
-      purpose: "OutlinedButton at the bottom. Calls onSignOut() → obpAuthRepository.logout() (revokes/clears the held token) + userDataRepository.clearUserData(). REACTIVE: RootNavViewModel observes userData and routes back to auth. No imperative nav."
-      interaction_type: action
-      data_driven: false
-
-  - type: text
-    id: settings_footer
-    content: "Mifos X Open Banking  ·  v1.0.0"
-    variant: body_small
-    style:
-      typography: "Outfit/body_small"
-      color: "#44483D"
-      alignment: center
-      padding_top: spacing.md
-      padding_bottom: spacing.lg
-    a11y:
-      role: text
-      label: "Mifos X Open Banking version 1.0.0"
-    test_context:
-      purpose: "Centered footer combining the app name and version (SettingsUiState.appVersion). Replaces the old App Version row."
-      interaction_type: display
-      data_driven: true
-
-responsive:
-  mobile_only: true
-  baseline_width: 390
-
-states:
-  initial_state: loading
-  loading:
-    layout: { type: column, padding: spacing.lg }
-    visible_components: []
-    note: "ScreenState.Loading — four skeleton cards while UserData + profile load."
-  content:
-    layout: { type: column, padding: spacing.lg }
-    visible_components: [settings_profile_header_card, settings_appearance_header, settings_appearance_group, settings_security_header, settings_security_group, settings_about_header, settings_about_about_card, settings_about_terms_card, settings_about_privacy_card, settings_about_licenses_card, settings_sign_out_button, settings_footer]
-    note: "ScreenState.Content — profile header + Appearance/Security/About + Sign out + footer. The two Reset Password dialogs overlay this state when triggered."
-
+# ─────────────────────────────────────────────────────────────────────
+# STATE MODEL — SettingsViewModel contract
+# Mirrors ui/SettingsState.kt verbatim.
+# ─────────────────────────────────────────────────────────────────────
 state_model:
   SettingsViewModel:
-    screen_state: "ScreenState<SettingsUiState>"
-    content_type: SettingsUiState
     state:
-      - field: profileName
-        type: String
-        default: "\"\""
-      - field: profileEmail
-        type: String
-        default: "\"\""
-      - field: profileInitials
-        type: String
-        default: "\"\""
-      - field: themeConfig
-        type: DarkThemeConfig
-        default: "DarkThemeConfig.FOLLOW_SYSTEM"
-        note: "enum DarkThemeConfig { FOLLOW_SYSTEM, LIGHT, DARK } — drives the three theme-mode switches"
-      - field: selectedLanguage
-        type: String
-        default: "\"en\""
-      - field: isBiometricLoginEnabled
-        type: Boolean
-        default: "false"
-      - field: isBiometricAvailableOnDevice
-        type: Boolean
-        default: "false"
-      - field: appVersion
-        type: String
-        default: "\"v1.0.0\""
-      - field: isLoading
-        type: Boolean
-        default: "false"
-    side_effect_state:
-      - field: resetMessage
-        type: "String?"
-        default: "null"
-        note: "separate StateFlow<String?> — drives the result AlertDialog after a password-reset request"
-    state_wrapper:
-      type: "ScreenState<SettingsUiState>"
-      variants: [Loading, "Content(SettingsUiState, DataFreshness)"]
-      note: "Error variant unused — profile load failure falls back to a 'Mifos User' header rather than an error screen."
+      name: SettingsState
+      fields:
+        - name: uiState
+          type: SettingsUiState
+    screen_state:
+      sealed_class: SettingsUiState
+      members:
+        - Content   # themeConfig, themeLabel, appVersionLabel, isThemeMenuExpanded
+        - Empty
+        - Error     # kind: SettingsErrorKind
+    errors:
+      types:
+        - SettingsErrorKind.PreferencesUnavailable  # isRetriable = true
+        - SettingsErrorKind.Unknown                 # isRetriable = true
     actions:
-      - "onThemeConfigSelected(config: DarkThemeConfig)"
-      - "onLanguageSelected(language: String)"
-      - "onBiometricToggled()"
-      - "onSignOut() — obpAuthRepository.logout() + userDataRepository.clearUserData()"
-      - "onResetPassword() — authRecoveryRepository.initiateReset(username, email)"
-      - "onResetMessageConsumed()"
-    di: [UserDataRepository, ProfileRepository, AuthRecoveryRepository, ObpAuthRepository]
-    base: "androidx.lifecycle.ViewModel (exposes StateFlow<ScreenState<SettingsUiState>> + StateFlow<String?> resetMessage)"
-    note: "Preference state is the single source of truth in UserDataRepository.userData; UI state is derived reactively (combine), so toggles persist and flow straight back. Profile header is loaded once from ProfileRepository.current(). Sign-out + theme/language/biometric persistence all go through the repositories; RootNavViewModel observes UserData for post-logout routing."
+      members:
+        - SelectTheme        # data class(config: DarkThemeConfig) — persists via UserDataRepository
+        - ToggleThemeMenu    # local dropdown expand
+        - DismissThemeMenu   # local dropdown collapse
+        - RetryLoad
+    di:
+      - UserDataRepository   # Koin single; theme + user preference stream and writes
+      - SettingsAppVersion   # supplies appVersionLabel
 
-navigation:
-  - id: nav_to_profile
-    target: profile
-    trigger: profile_header_click
-    on_click:
-      action: navigate
-      target: profile
-  - id: nav_to_about
-    target: about
-    on_click:
-      action: navigate
-      target: about
-  - id: nav_to_terms_of_service
-    target: terms-of-service
-    on_click:
-      action: navigate
-      target: terms-of-service
-  - id: nav_to_privacy_policy
-    target: privacy-policy
-    on_click:
-      action: navigate
-      target: privacy-policy
-  - id: nav_to_licenses
-    target: licenses
-    on_click:
-      action: navigate
-      target: licenses
-  - id: sign_out_reactive
-    trigger: on_sign_out
-    note: "No imperative nav. onSignOut() clears the session (obpAuthRepository.logout() + userDataRepository.clearUserData()); RootNavViewModel observes UserData and routes back to the auth graph."
+status_history:
+  - from: enriched
+    to: implemented
+    at: "2026-07-28"
+    by: "/gap-analysis-project (reverse sync from source)"
+    note: "11 of 15 declared actions had no source implementation and were removed; loading and clear_confirm states removed; ui_source_override: preview pin dropped with the previews."
 
-api:
-  - id: settings_runtime_auth_side_effects
-    status: runtime-side-effect
-    description: "Settings has no fetch endpoints, but two user actions trigger auth-repository calls at runtime:"
-    operations:
-      - id: obp_initiate_password_reset
-        endpoint: "POST /obp/v6.0.0/users/password-reset-url"
-        trigger: on_reset_password_confirmed
-        via: "AuthRecoveryRepository.initiateReset(username, email)"
-        note: "Emails a password-reset link for the signed-in user; result surfaced via resetMessage dialog."
-      - id: obp_logout_revoke
-        endpoint: "POST /obp/v5.1.0/logout (or OIDC revoke)"
-        trigger: on_sign_out
-        via: "ObpAuthRepository.logout()"
-        note: "Clears/revokes the held OBP token on sign-out; exact endpoint depends on the auth method (DirectLogin vs OIDC)."
+states: [content, empty, error]
 
-dependencies:
-  tier: feature
-  features: [shared-core, obp-auth]
+# TEST TAGS — reconciled against source 2026-08-02 by /idea-sync (source-truth pass).
+# 17 tags were already correct; themeDropdown + the 3 themeOption values were added.
+test_tags:
+  source: "feature/settings/src/commonMain/kotlin/org/mifosx/openbanking/feature/settings/SettingsTestTags.kt"
+  declared_in_source: 28         # 25 const val + 3 builder fns
+  bound_here: 21
+  bound_in_licences_screen: 2    # settings:licences:screen + :list — see screens/licences/ui.yaml
+  interpolated:
+    - { tag: "settings:themeOption:{FOLLOW_SYSTEM|LIGHT|DARK}", builder: "fun themeOption(config: DarkThemeConfig)",
+        note: "suffix is the enum CASE, not DarkThemeConfig.configName ('Follow System' / 'Light' / 'Dark')" }
+    - { tag: "{rowTag}:chevron",      builder: "fun chevron(rowTag: String)",
+        note: "composed onto the row's own tag — e.g. settings:row:consents:chevron. Already declared on consents_row and licences_row." }
+    - { tag: "{rowTag}:externalLink", builder: "fun externalLink(rowTag: String)",
+        note: "same composition — settings:row:privacy:externalLink. Already declared on privacy_row." }
+  unbound:
+    - { tag: "settings:content", why: "Tags the content column wrapping the three sections; modelled here as siblings bound to [content] with no wrapper." }
+    - { tag: "settings:section",     why: "Generic BASE value, not applied to any node on its own — the applied values are the three settings:section:* consts." }
+    - { tag: "settings:row",         why: "Generic BASE value, same as settings:section — the applied values are the four settings:row:* consts." }
+    - { tag: "settings:sectionTitle", why: "Tags the title Text inside a section header; modelled here as the section_header component's `label:` field." }
+    - { tag: "settings:emptyTitle", parent: settings_empty, why: "Text node modelled as the parent's `title:` field." }
+    - { tag: "settings:emptyBody",  parent: settings_empty, why: "Text node modelled as the parent's `body:` field." }
+    - { tag: "settings:errorTitle", parent: settings_error, why: "Text node modelled as the parent's `title:` field." }
+    - { tag: "settings:errorBody",  parent: settings_error, why: "Text node modelled as the parent's `body:` field." }
+
+components:
+
+  # ══ APPEARANCE SECTION ═════════════════════════════════════════════
+  - type: section_header
+    id: appearance_header
+    state_binding: [content]
+    label: "{strings.settings.section.appearance}"
+    test_tag: "settings:section:appearance"
+    accessibility_label: "{strings.settings.section.appearance.a11y}"
+    test_context:
+      purpose: "SettingsSection title for the appearance group"
+      required_fields: []
+      interaction_type: display
+      data_driven: false
+
+  - type: select
+    id: theme_row
+    state_binding: [content]
+    label: "{strings.settings.theme.label}"
+    value: "{themeLabel}"
+    test_tag: "settings:row:theme"
+    value_test_tag: "settings:themeValue"
+    menu_test_tag: "settings:themeMenu"
+    # Added 2026-08-02 (/idea-sync source-truth pass). components/ThemeDropdownRow.kt:100
+    # tags the ExposedDropdownMenuBox anchor separately from the row and the menu; all three
+    # are distinct nodes and the UI tests use each for a different assertion.
+    dropdown_test_tag: "settings:themeDropdown"
+    expanded_binding: "{isThemeMenuExpanded}"
+    options:
+      # fun themeOption(config: DarkThemeConfig) = "settings:themeOption:${config.name}"
+      # @ ThemeDropdownRow.kt:150. Suffix is the enum CASE (FOLLOW_SYSTEM / LIGHT / DARK),
+      # not its display configName ("Follow System" / "Light" / "Dark").
+      - { id: FOLLOW_SYSTEM, label: "{strings.settings.theme.option_system}", test_tag: "settings:themeOption:FOLLOW_SYSTEM" }
+      - { id: LIGHT,         label: "{strings.settings.theme.option_light}",  test_tag: "settings:themeOption:LIGHT" }
+      - { id: DARK,          label: "{strings.settings.theme.option_dark}",   test_tag: "settings:themeOption:DARK" }
+    accessibility_label: "{strings.settings.theme.select_a11y}"
+    test_context:
+      purpose: "ThemeDropdownRow — the only persisted preference on this screen"
+      required_fields: [themeConfig, themeLabel, isThemeMenuExpanded]
+      interaction_type: action
+      data_driven: true
+    on_click:
+      action: ToggleThemeMenu
+      action_contract:
+        effect: transform_state
+        # library_refs added 2026-07-31 (AC3). These two contracts were the only
+        # transform_state entries in the project without them — not because they
+        # differ, but because `select` was outside G-ACTION-CONTRACT's interactive
+        # vocabulary, so the component was never evaluated. Matches the house
+        # convention used by the other 19 transform_state contracts: the action
+        # dispatches through the ViewModel's coroutine-backed state holder.
+        external_library_refs: [kotlinx-coroutines]
+        description: "Dispatches SettingsAction.ToggleThemeMenu, flipping isThemeMenuExpanded on the Content state. Purely local UI state — nothing is persisted."
+    on_dismiss:
+      action: DismissThemeMenu
+      action_contract:
+        effect: transform_state
+        external_library_refs: [kotlinx-coroutines]
+        description: "Dispatches SettingsAction.DismissThemeMenu, collapsing the dropdown without changing the selected theme."
+    on_select:
+      action: SelectTheme
+      params:
+        config: "{option.id}"
+      action_contract:
+        effect: persist_db
+        writes_to: ["user_preferences.darkThemeConfig"]
+        external_library_refs: ["androidx.datastore"]
+        description: "Dispatches SettingsAction.SelectTheme(config), writing the chosen DarkThemeConfig back through UserDataRepository. The stream re-emits and the whole app retints."
+
+  # ══ ACCOUNT SECTION ════════════════════════════════════════════════
+  - type: section_header
+    id: account_header
+    state_binding: [content]
+    label: "{strings.settings.section.account}"
+    test_tag: "settings:section:account"
+    accessibility_label: "{strings.settings.section.account.a11y}"
+    test_context:
+      purpose: "SettingsSection title for the account group"
+      required_fields: []
+      interaction_type: display
+      data_driven: false
+
+  - type: list_item
+    id: consents_row
+    state_binding: [content]
+    title: "{strings.settings.consents.title}"
+    subtitle: "{strings.settings.consents.subtitle}"
+    leading_icon: policy
+    trailing: chevron
+    test_tag: "settings:row:consents"
+    trailing_test_tag: "settings:row:consents:chevron"
+    accessibility_label: "{strings.settings.opens_in_app.a11y}"
+    test_context:
+      purpose: "Only outbound in-app navigation from the account group"
+      required_fields: []
+      interaction_type: action
+      data_driven: false
+    on_click:
+      action: navigate_consent_list
+      target: consent-list
+      action_contract:
+        effect: navigate
+        description: "Invokes the settingsScreen onNavigateToConsents callback, which navigates to ConsentListRoute. A nav-host callback, not a SettingsAction member."
+
+  # ══ ABOUT SECTION ══════════════════════════════════════════════════
+  - type: section_header
+    id: about_header
+    state_binding: [content]
+    label: "{strings.settings.section.about_legal}"
+    test_tag: "settings:section:about"
+    accessibility_label: "{strings.settings.section.about_legal.a11y}"
+    test_context:
+      purpose: "SettingsSection title for the about group"
+      required_fields: []
+      interaction_type: display
+      data_driven: false
+
+  - type: list_item
+    id: privacy_row
+    state_binding: [content]
+    title: "{strings.settings.privacy.title}"
+    leading_icon: privacy_tip
+    trailing: external_link
+    test_tag: "settings:row:privacy"
+    trailing_test_tag: "settings:row:privacy:externalLink"
+    accessibility_label: "{strings.settings.opens_externally.a11y}"
+    test_context:
+      purpose: "Leaves the app for a browser; carries the external-link glyph rather than a chevron"
+      required_fields: []
+      interaction_type: action
+      data_driven: false
+    on_click:
+      action: open_privacy_url
+      action_contract:
+        effect: share_external
+        external_library_refs: ["compose.ui.platform.LocalUriHandler"]
+        description: "Invokes the settingsScreen onOpenUrl callback, which calls LocalUriHandler.openUri(url) to open the privacy policy in the platform browser."
+
+  - type: list_item
+    id: licences_row
+    state_binding: [content]
+    title: "{strings.settings.licences.title}"
+    leading_icon: info
+    trailing: chevron
+    test_tag: "settings:row:licences"
+    trailing_test_tag: "settings:row:licences:chevron"
+    accessibility_label: "{strings.settings.opens_in_app.a11y}"
+    test_context:
+      purpose: "Opens the in-app OSS licences screen"
+      required_fields: []
+      interaction_type: action
+      data_driven: false
+    on_click:
+      action: navigate_licences
+      target: licences
+      action_contract:
+        effect: navigate
+        description: "Invokes the settingsScreen onNavigateToLicences callback, which navigates to LicencesRoute — a sibling destination in the same feature module."
+
+  - type: list_item
+    id: app_version_row
+    state_binding: [content]
+    title: "{strings.settings.app_version.title}"
+    subtitle: "{appVersionLabel}"
+    test_tag: "settings:row:appVersion"
+    subtitle_test_tag: "settings:appVersionValue"
+    test_context:
+      purpose: "Static build-identity readout — deliberately no icon, no trailing affordance and no click handler"
+      required_fields: [appVersionLabel]
+      interaction_type: display
+      data_driven: true
+
+  # ══ EMPTY STATE ════════════════════════════════════════════════════
+  - type: empty_state
+    id: settings_empty
+    state_binding: [empty]
+    title: "{strings.settings.empty.title}"
+    body: "{strings.settings.empty.body}"
+    test_tag: "settings:emptyState"
+    accessibility_label: "{strings.settings.empty.title}"
+    test_context:
+      purpose: "SettingsUiState.Empty — no preferences resolved"
+      required_fields: []
+      interaction_type: display
+      data_driven: false
+
+  # ══ ERROR STATE ════════════════════════════════════════════════════
+  - type: error_state
+    id: settings_error
+    state_binding: [error]
+    icon: error_outline
+    title: "{strings.settings.error.title}"
+    body: "{strings.settings.error.body}"
+    test_tag: "settings:errorState"
+    accessibility_label: "{strings.settings.error.title}"
+    test_context:
+      purpose: "Both SettingsErrorKind values render here; both are retriable"
+      required_fields: [uiState.kind]
+      interaction_type: display
+      data_driven: true
+    children:
+      - type: button
+        id: retry_button
+        variant: filled
+        label: "{strings.settings.error.retry}"
+        test_tag: "settings:retryButton"
+        accessibility_label: "{strings.settings.error.retry.a11y}"
+        on_click:
+          action: RetryLoad
+          action_contract:
+            effect: transform_state
+            external_library_refs: ["androidx.datastore"]
+            description: "Dispatches SettingsAction.RetryLoad, re-reading the UserDataRepository preference stream to rebuild Content."
+
+# Moved verbatim from docs.yaml 2026-07-31 (CROSS_LEAK repair — sibling-layout.json
+# assigns `preferences` to the ui sibling, capability_gate has_local_preferences).
+preferences:
+  - key: dark_theme_config
+    type: string
+    default: "System"          # V3 — never starts null; AppTheme falls back to the OS setting
+    scope: device              # not user-scoped: it is not synced and does not follow the PSU across devices
+    allowed: ["Light", "Dark", "System"]
+    surface: "settings#theme_row"

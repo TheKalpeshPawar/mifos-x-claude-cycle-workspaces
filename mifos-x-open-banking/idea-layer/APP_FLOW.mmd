@@ -1,198 +1,124 @@
-%% APP_FLOW.mmd — mifos-x-open-banking full navigation graph
-%% Generated 2026-05-25 by /idea sync STEP 4a
-%% Updated 2026-05-28 by /idea sync — 43 screens (added terms-of-service, privacy-policy, licenses, standing-order-detail)
-%% Updated 2026-05-29 by /idea sync — nav-graph wiring: +Settings→ConsentManager, +Settings→ChangePassword, +FoDashboard→AgentRegistration, +FoDashboard→CorporateOnboarding
-%% Updated 2026-06-11 by /idea sync — added standing-order-edit, pfm-settings, business-insights (PFM v2 epic)
-%% Updated 2026-06-11 by /idea sync — added send-money-amount, sca-challenge, payment-result, standing-order-create (source-drift write-back)
-%% OBP Sandbox: https://apisandbox.openbankproject.com
-
-flowchart TB
-
-  %% ──────────── Entry ────────────
-  Launch([App Launch]) --> Splash
-
-  subgraph shared_group ["Shared Screens"]
-    direction TB
-    Splash[Splash\nbootstrap]
-    Login[Login\nDirectLogin / OIDC]
-    Profile[Profile]
-    Settings[Settings]
-    ChangePassword[Change\nPassword]
-    TermsOfService[Terms of\nService]
-    PrivacyPolicy[Privacy\nPolicy]
-    Licenses[Licenses]
-  end
-
-  Splash -->|consumer| Home
-  Splash -->|field officer| FoDashboard
-  Splash -->|unauthenticated| Login
-  Login -->|consumer| Home
-  Login -->|field officer| FoDashboard
-
-  %% ──────────── Consumer Banking ────────────
-  subgraph consumer_group ["Consumer Persona"]
-    direction TB
-
-    subgraph core_banking ["Core Banking"]
-      Home[Home\nDashboard]
-      Accounts[Accounts]
-      AccountDetail[Account\nDetail]
-      Transactions[Transactions]
-      TransactionDetail[Transaction\nDetail]
-      SendMoney[Send Money]
-      SendMoneyAmount[Send Money\nAmount]
-      SendMoneyConfirm[Send Money\nConfirm]
-      ScaChallenge[SCA\nChallenge]
-      PaymentResult[Payment\nResult]
-      Beneficiaries[Beneficiaries]
-      Cards[Cards]
-      CardDetail[Card Detail]
-      StandingOrders[Standing\nOrders]
-      StandingOrderCreate[Create Standing\nOrder]
-      StandingOrderDetail[Standing Order\nDetail]
-      StandingOrderEdit[Standing Order\nEdit]
-    end
-
-    subgraph enhancements ["Enhancement Features"]
-      AtmLocator[ATM Locator]
-      FxRates[FX Rates]
-      Notifications[Notifications]
-      DirectDebits[Direct Debits]
-      PfmDashboard[Spending\nInsights]
-      PfmSettings[PFM\nSettings]
-      BusinessInsights[Business\nInsights]
-      Products[Products]
-      ConsentManager[Connected Apps]
-      TransactionTags[Transaction\nTags]
-    end
-  end
-
-  %% Consumer navigation
-  Home --> Accounts
-  Home --> SendMoney
-  Home --> Transactions
-  Home --> Beneficiaries
-  Home --> Cards
-  Home --> StandingOrders
-  Home --> AtmLocator
-  Home --> FxRates
-  Home --> Notifications
-  Home --> PfmDashboard
-
-  Accounts --> AccountDetail
-  AccountDetail --> Transactions
-  AccountDetail --> SendMoney
-
-  Transactions --> TransactionDetail
-  TransactionDetail --> TransactionTags
-
-  SendMoney --> SendMoneyAmount
-  SendMoneyAmount --> SendMoneyConfirm
-  SendMoneyConfirm -->|success| PaymentResult
-  SendMoneyConfirm -->|SCA required| ScaChallenge
-  ScaChallenge -->|verified| PaymentResult
-  SendMoneyConfirm -->|edit| SendMoneyAmount
-  PaymentResult --> TransactionDetail
-  PaymentResult -->|done| Home
-  Beneficiaries --> SendMoney
-
-  Cards --> CardDetail
-  CardDetail --> Transactions
-  Cards --> TransactionDetail
-
-  StandingOrders --> StandingOrderCreate
-  StandingOrderCreate -->|back / created| StandingOrders
-  StandingOrders --> StandingOrderDetail
-  StandingOrderDetail -->|back| StandingOrders
-  StandingOrderDetail --> StandingOrderEdit
-  StandingOrderEdit -->|back| StandingOrderDetail
-
-  FxRates --> SendMoney
-  DirectDebits --> Accounts
-  PfmDashboard --> Accounts
-  PfmDashboard --> Transactions
-  PfmDashboard -.->|settings| PfmSettings
-  ConsentManager --> Settings
-  Products --> Accounts
-
-  %% ──────────── Field Officer ────────────
-  subgraph fo_group ["Field Officer Persona"]
-    direction TB
-
-    subgraph fo_core ["Core Agent Banking"]
-      FoDashboard[FO Dashboard]
-      CustomerSearch[Customer Search]
-      CustomerDetail[Customer Detail]
-      CustomerProfile[Customer Profile]
-      CustomerOnboarding[Customer\nOnboarding]
-      CorporateOnboarding[Corporate\nOnboarding]
-      KycReview[KYC Review]
-      AccountApplications[Account\nApplications]
-      ApplicationDetail[Application\nDetail]
-      CustomerMessages[Customer\nMessages]
-      Meetings[Meetings]
-    end
-
-    subgraph fo_setup ["FO Setup"]
-      AgentRegistration[Agent\nRegistration]
-    end
-  end
-
-  %% FO navigation
-  FoDashboard --> CustomerSearch
-  FoDashboard --> AccountApplications
-  FoDashboard --> KycReview
-  FoDashboard --> Meetings
-  FoDashboard --> CorporateOnboarding
-  FoDashboard --> AgentRegistration
-
-  CustomerSearch --> CustomerDetail
-  CustomerSearch --> CustomerOnboarding
-  CustomerSearch --> CorporateOnboarding
-
-  CustomerDetail --> CustomerProfile
-  CustomerDetail --> CustomerMessages
-  CustomerDetail --> KycReview
-  CustomerDetail --> AccountApplications
-
-  CustomerOnboarding --> KycReview
-  CorporateOnboarding --> AccountApplications
-
-  KycReview --> CustomerDetail
-  KycReview --> CustomerMessages
-
-  AccountApplications --> ApplicationDetail
-  AccountApplications --> CustomerOnboarding
-
-  ApplicationDetail --> CustomerDetail
-  ApplicationDetail --> CustomerMessages
-
-  AgentRegistration --> FoDashboard
-
-  %% Shared nav (accessible from both personas via bottom nav More)
-  Home -.->|more| Profile
-  Home -.->|more| Settings
-  FoDashboard -.->|more| Profile
-  FoDashboard -.->|more| Settings
-  Profile -->|logout| Login
-
-  %% Settings sub-navigation
-  Settings --> ConsentManager
-  Settings --> ChangePassword
-  ChangePassword -->|back| Profile
-
-  %% Legal screens (accessible from About / Settings)
-  Settings -.->|legal| TermsOfService
-  Settings -.->|legal| PrivacyPolicy
-  Settings -.->|legal| Licenses
-
-  %% Styling
-  classDef shared fill:#575899,stroke:#403CD8,color:#fff
-  classDef consumer fill:#1800B1,stroke:#403CD8,color:#fff
-  classDef fo fill:#5C0068,stroke:#403CD8,color:#fff
-  classDef entry fill:#FCF8FF,stroke:#1B1B24,color:#1B1B24
-
-  class Splash,Login,Profile,Settings,ChangePassword,TermsOfService,PrivacyPolicy,Licenses shared_style
-  class Home,Accounts,AccountDetail,Transactions,TransactionDetail,SendMoney,SendMoneyAmount,SendMoneyConfirm,ScaChallenge,PaymentResult,Beneficiaries,Cards,CardDetail,StandingOrders,StandingOrderCreate,StandingOrderDetail,StandingOrderEdit,AtmLocator,FxRates,Notifications,DirectDebits,PfmDashboard,PfmSettings,BusinessInsights,Products,ConsentManager,TransactionTags consumer_style
-  class FoDashboard,CustomerSearch,CustomerDetail,CustomerProfile,CustomerOnboarding,CorporateOnboarding,KycReview,AccountApplications,ApplicationDetail,CustomerMessages,Meetings,AgentRegistration fo_style
-  class Launch entry
+%% APP_FLOW.mmd — mifos-x-open-banking screen navigation graph
+%% Regenerated 2026-07-31 by /idea-sync STEP 4 (mtime-stale against the 07-31 screen edits).
+%% Changes this pass:
+%%   - accounts bottom-nav label corrected 0 -> 1. The previous diagram asserted home AND
+%%     accounts both sat at bottom-nav order 0; app-shell.yaml declares home 0, accounts 1,
+%%     pay 2, more 3. Fixed at the source (screens/accounts/flow.yaml), not just here.
+%%   - app_shell / app-shell entry sources normalised onto the snake_case app_shell_bottom_nav
+%%     node the rest of the graph already used. The hyphenated spelling made a non-screen
+%%     source render as if it were a screen slug.
+%% 23 screens. Dashed = non-screen endpoints (app shell, OAuth redirect, back stack).
+%% P3 nodes (dashed border) are specified, not implemented.
+flowchart TD
+    account_detail["account-detail"]
+    account_holder["account-holder"]
+    accounts["accounts"]
+    beneficiaries["beneficiaries"]
+    consent_callback["consent-callback"]
+    consent_detail["consent-detail"]
+    consent_list["consent-list"]
+    direct_debits["direct-debits"]
+    home["home"]
+    licences["licences"]
+    login["login"]
+    payment_consent["payment-consent"]:::p3
+    payment_status["payment-status"]:::p3
+    product["product"]
+    scheduled_payments["scheduled-payments"]
+    send_money["send-money"]:::p3
+    settings["settings"]
+    standing_orders["standing-orders"]
+    statement_detail["statement-detail"]
+    statements["statements"]
+    transaction_detail["transaction-detail"]
+    transactions["transactions"]
+    user_onboarding["user-onboarding"]
+    app_launch_no_consent("app_launch_no_consent"):::ext
+    app_shell_bottom_nav("app_shell_bottom_nav"):::ext
+    app_shell_more_menu("app_shell_more_menu"):::ext
+    back_stack_pop("back_stack_pop"):::ext
+    hsbc_oauth_redirect("hsbc_oauth_redirect"):::ext
+    nav_host_start("nav_host_start"):::ext
+    post_revoke_redirect("post_revoke_redirect"):::ext
+    accounts -->|"Tap account card"| account_detail
+    account_detail -->|"Back button"| accounts
+    account_detail -->|"AccountDetailChip.Transactions"| transactions
+    account_detail -->|"AccountDetailChip.Statements"| statements
+    account_detail -->|"AccountDetailChip.StandingOrders"| standing_orders
+    account_detail -->|"AccountDetailChip.DirectDebits"| direct_debits
+    account_detail -->|"AccountDetailChip.ScheduledPayments"| scheduled_payments
+    account_detail -->|"AccountDetailChip.Beneficiaries"| beneficiaries
+    account_detail -->|"AccountDetailChip.Product"| product
+    account_detail -->|"AccountDetailChip.Party -> AccountHold"| account_holder
+    account_detail -->|"Explore chip 'Party' in account-detail"| account_holder
+    account_holder -->|"Back navigation (top_app_bar leading i"| account_detail
+    app_shell_bottom_nav -->|"Accounts tab (bottom-nav order 1)"| accounts
+    consent_callback -->|"Successful OAuth callback → land on Ac"| accounts
+    back_stack_pop -->|"Back from account-detail → return to A"| accounts
+    accounts -->|"401 — access token expired or no activ"| login
+    accounts -->|"Tap 'Reconfirm access' in consent_expi"| consent_detail
+    accounts -->|"403 — consent revoked mid-session"| consent_list
+    account_detail -->|"Tap Beneficiaries chip"| beneficiaries
+    beneficiaries -->|"Back button (top-app-bar leading)"| account_detail
+    beneficiaries -->|"View Consents button (shown on 403 Con"| consent_list
+    hsbc_oauth_redirect -->|"Deep-link callback from HSBC authorisa"| consent_callback
+    consent_callback -->|"Consent status confirmed Authorised — "| accounts
+    consent_callback -->|"PSU rejected consent or token exchange"| login
+    consent_callback -->|"PSU chose not to share data at HSBC po"| login
+    consent_callback -->|"FAPI state parameter mismatch detected"| login
+    consent_list -->|"Tap a consent card in the Connected Ba"| consent_detail
+    consent_detail -->|"Consent successfully revoked — back to"| consent_list
+    consent_detail -->|"Tap 'Reconfirm before expiry' — initia"| login
+    app_shell_more_menu -->|"More / Settings → Consents"| consent_list
+    consent_list -->|"Tap a consent card (active or history)"| consent_detail
+    consent_list -->|"Tap 'Connect HSBC' on empty state"| user_onboarding
+    consent_list -->|"Tap 'Sign in again' on auth error stat"| login
+    account_detail -->|"Tap Direct Debits chip"| direct_debits
+    direct_debits -->|"Back button"| account_detail
+    app_shell_bottom_nav -->|"Home tab (bottom-nav order 0)"| home
+    nav_host_start -->|"HomeDestination is the authenticated N"| home
+    home -->|"Tap 'View all' in the recent transacti"| transactions
+    home -->|"Tap a recent transaction row"| transaction_detail
+    settings -->|"About section -> 'Licences' row"| licences
+    licences -->|"Back navigation (top app bar leading i"| settings
+    user_onboarding -->|"User taps 'Connect with HSBC' on the o"| login
+    login -->|"HSBC authorisation redirect returns (O"| consent_callback
+    login -->|"User taps Cancel"| user_onboarding
+    send_money -->|"Redirect return from HSBC after the PS"| payment_consent
+    payment_consent -->|"Consent status reached AUTH — emits Pa"| send_money
+    payment_consent -->|"Restart authorisation button"| send_money
+    payment_consent -->|"Abandon button, or a state mismatch th"| send_money
+    send_money -->|"Tap View status on the payment success"| payment_status
+    app_shell_bottom_nav -->|"Pay tab (order 2), payment already in progress"| payment_status
+    payment_status -->|"Back button (top-app-bar leading)"| send_money
+    payment_status -->|"New payment button (shown only on a Re"| send_money
+    account_detail -->|"Product chip or menu entry in account-"| product
+    product -->|"Back navigation"| account_detail
+    account_detail -->|"Tap Scheduled chip"| scheduled_payments
+    scheduled_payments -->|"Back button"| account_detail
+    app_shell_bottom_nav -->|"Pay tab (order 2)"| send_money
+    send_money -->|"Confirm button on the review step, aft"| payment_consent
+    payment_consent -->|"Authorisation completed; PSU access to"| send_money
+    send_money -->|"View status button on the success stat"| payment_status
+    send_money -->|"View Consents button (shown on 403 Con"| consent_list
+    send_money -->|"Edit amount button (shown on U014 Outs"| send_money
+    app_shell_bottom_nav -->|"More tab (order 3)"| settings
+    settings -->|"Tap Manage Consents row (Account secti"| consent_list
+    settings -->|"Tap Licences row (About section)"| licences
+    account_detail -->|"Tap Standing Orders chip"| standing_orders
+    standing_orders -->|"Back button"| account_detail
+    statements -->|"Tap statement row in statements list"| statement_detail
+    statement_detail -->|"Back navigation"| statements
+    statement_detail -->|"Tap transaction row in statement trans"| transaction_detail
+    account_detail -->|"Statements chip in account-detail Expl"| statements
+    statements -->|"Tap statement row"| statement_detail
+    statements -->|"Back navigation"| account_detail
+    transactions -->|"Tap transaction row"| transaction_detail
+    transaction_detail -->|"Back button"| transactions
+    account_detail -->|"Tap Transactions chip"| transactions
+    transactions -->|"Back button"| account_detail
+    app_launch_no_consent -->|"App launched with no active consent — "| user_onboarding
+    post_revoke_redirect -->|"Consent revoked from consent dashboard"| user_onboarding
+    user_onboarding -->|"Tap 'Connect with HSBC' on step 3 (con"| login
+    classDef p3 stroke-dasharray: 4 3,stroke-width:2px;
+    classDef ext stroke-dasharray: 2 2,fill:none;

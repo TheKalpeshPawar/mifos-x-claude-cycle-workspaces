@@ -1,109 +1,24 @@
 sibling: api
 schema_version: "4.0"
 feature_id: transaction-detail
-api:
-  # Booked path — single-transaction read (v3.0.0, no attributes inline).
-  - id: obp_get_transaction_detail
-    endpoint: "GET /obp/v3.0.0/banks/{bankId}/accounts/{accountId}/owner/transactions/{transactionId}/transaction"
-    tag: Transactions
-    auth: DirectLogin
-    used_for: booked
-    params:
-      - name: bankId
-        type: path
-      - name: accountId
-        type: path
-      - name: transactionId
-        type: path
-    response:
-      fields:
-        - name: id
-          type: String
-        - name: this_account
-          type: object
-        - name: other_account
-          type: object
-          children:
-            - name: id
-              type: String
-            - name: holder
-              type: object
-        - name: details
-          type: object
-          children:
-            - name: type
-              type: String
-            - name: description
-              type: String
-            - name: posted
-              type: String
-            - name: completed
-              type: String
-            - name: value
-              type: object
-              children:
-                - name: currency
-                  type: String
-                - name: amount
-                  type: String
-        - name: metadata
-          type: object
-          children:
-            - name: narrative
-              type: "String?"
-    errors:
-      - code: 401
-        message: "Unauthorized — DirectLogin token missing or expired"
-      - code: 404
-        message: "Transaction not found"
-      - code: 500
-        message: "OBP server error"
 
-  # Pending path — the request is found in the account's transaction-request list by requestId
-  # (no per-request OBP read endpoint).
-  - id: obp_list_transaction_requests
-    endpoint: "GET /obp/v4.0.0/banks/{bankId}/accounts/{accountId}/owner/transaction-requests"
-    tag: Transaction-Requests
-    auth: DirectLogin
-    used_for: pending
-    params:
-      - name: bankId
-        type: path
-      - name: accountId
-        type: path
-    response:
-      fields:
-        - name: transaction_requests
-          type: "List<TransactionRequestSummary>"
-          children:
-            - name: id
-              type: String
-            - name: type
-              type: String
-            - name: status
-              type: String
-            - name: start_date
-              type: String
-            - name: details
-              type: object
-              children:
-                - name: description
-                  type: String
-                - name: to_sepa
-                  type: "object?"
-                - name: to_counterparty
-                  type: "object?"
-                - name: to_sandbox_tan
-                  type: "object?"
-                - name: value
-                  type: object
-                  children:
-                    - name: currency
-                      type: String
-                    - name: amount
-                      type: String
-    errors:
-      - code: 401
-        message: "Unauthorized"
-      - code: 404
-        message: "Account not found"
+screen_id: transaction-detail
+
+endpoints:
+  - id: transactions
+    method: GET
+    path: "/accounts/{AccountId}/transactions"
+    response_dto: OBReadTransaction6
+    permission: ReadTransactionsDetail
+    requires_auth: true
+    path_params:
+      AccountId: string
+    notes: >
+      OBIE v4.0 AIS provides no single-transaction endpoint. The client resolves
+      the transaction by filtering the cached or freshly-fetched list by
+      transactionId passed as a route param. If the list is already cached from
+      the transactions screen, no network call is made.
+
+# Moved verbatim from docs.yaml 2026-07-31 (CROSS_LEAK repair — sibling-layout.json
+# assigns `cache_strategy` to the api sibling, capability_gate has_offline_cache).
+cache_strategy: cache-first

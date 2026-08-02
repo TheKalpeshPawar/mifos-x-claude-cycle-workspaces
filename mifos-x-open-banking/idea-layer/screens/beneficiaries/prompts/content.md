@@ -1,14 +1,14 @@
 ---
-ui_yaml_sha: a37ab086ed21a953df7bf0a7272221f8d846dd091086643f77aeaf43d90882ef
-design_md_hash: 71b53c295bf863d34057f16264caf37a11512e794d356b3bec219352550d05ec
-app_shell_hash: ad7a6b42b2ae10e63ef270f15d857bd44445d775e8d9b09313b31e6569df95b4
-design_read_hash: 1639ea0545fdbc1ba9ce1eef5369eae224a6f4f57f07f0639b699652daeb8558
-content_hash: e97f6122a8f2576f1c7f27128cb98f5511b5b2a355f2e74067555d69d89c239a
+ui_yaml_sha: f2024f90acbe4d0a6b705409df46c7abec270a8332520995cbbf59b66d8a7b7d
+design_md_hash: f734ecfba28b3b0688cbd7ca6f3d7fca27febb15fd021d72a4518ae0e3a4200d
+app_shell_hash: 7b9c63f9aee4f5b5005b1d7533e7f5feab6427f398954987c34ee0f382b0ed69
+design_read_hash: 513c061d12f3a90e84d6e98e1e037b131e59fa3ca5c5f3c0abfc6ba87d24bcaf
+content_hash: d4a1154248c67ed91b7973062274ec520b9fdf77fb5030e29417fbcb4d423a6f
 
-design_read_aesthetic: taste-default
-design_read_dials: {variance: 4, motion: 3, density: 5}
+design_read_aesthetic: minimalist-ui
+design_read_dials: {variance: 3, motion: 2, density: 5}
 aesthetic_variant_override: null
-archetype: screen
+archetype: index_list
 
 feature: beneficiaries
 state: content
@@ -24,36 +24,70 @@ craft_rules_version: v1.0.0
 
 # beneficiaries — content state
 
-> Auto-generated from screens/beneficiaries/ui.yaml @ SHA 9ede893bad343e00
-> Stitch DesignSystem: (pending DESIGN.md upload — run /idea-export-stitch sub-plan 02)
+> Auto-generated from screens/beneficiaries/ui.yaml @ SHA 63133bb4b9a66001
+> Stitch DesignSystem: (pending DESIGN.md upload — run /idea-feature-stitch sub-plan 02)
 > DO NOT redeclare colors / fonts / spacing — they live in DESIGN.md.
 
 ↓↓↓ MOCKUP PROMPT
-Design the content state of the Beneficiaries screen for **Mifos X Open Banking**, a open banking KMP super-app for consumer retail banking and field officer agent banking powered by Open Bank Project API v7.
 
-Palette: primary #B2D188, on_primary #1F3701, primary_container #354E16, on_primary_container #CDEDA3, secondary #A0CFCB, on_secondary #003735, background #12140E, on_surface #E3E3D8, on_surface_variant #C5C8BA, surface_container #1E201A, surface_container_high #282A24, outline #8F9285, error #FFB4AB.
+> DO NOT invent navigation, tabs, or screens beyond the declared app-shell (Home, Accounts, Pay, More) plus the composition below. Every nav item you render MUST come from that list.
+> Only elements that navigate or perform an action may look tappable (cursor, ripple, pressed state). DO NOT add tap affordances to decorative content — page titles, section headings, avatars, standalone icons, badges, and static labels are NOT interactive.
 
-**Component 1 — App Bar** (64dp tall, full width): Title "Beneficiaries" Outfit Medium 18sp #E3E3D8 centered. Leading back-arrow icon 24dp tinted #B2D188. Zero elevation, background #12140E.
+## Archetype: index_list
 
-**Component 2 — Text Field** (full width minus 32dp insets, top margin 16dp): Outlined lookup field 48dp tall, 24dp corner radius pill shape, label "Search" Outfit Regular 14sp #8F9285, leading lookup icon 20dp #C5C8BA, outline 1dp #44483D.
+## Layout
+- type: scrollable_column
+- padding: default
+- alignment: start
+- responsive: any multi-column region MUST be mobile-first and collapse to a single column at narrow/phone widths — never a fixed multi-column grid with no single-column fallback.
 
-**Component 3 — List Row** (full width minus 32dp insets, top margin 16dp): Section label "Recently Used" Outfit SemiBold 13sp #8F9285 uppercase.
+## Composition (top → bottom)
+1. **progress_indicator**
+2. **icon_button** (#back_button) — icon: "arrow_back", on_click: { action: navigate_back, target: account-detail }
+3. **search_bar** (#beneficiary_search)
+4. **list** (#beneficiaries_list) — "beneficiaries_list"
+   - **list_item** (#beneficiary_row) — 5 items: "40051512345678", "40051512345678", "40051512345678", "40051512345678", "40051512345678"
+5. **empty_state** (#search_no_results) — title: "{strings.beneficiaries.search_empty_title}", icon: "search_off"
+6. **empty_state** (#empty_beneficiaries) — title: "{strings.beneficiaries.empty_title}", icon: "people_outline"
+7. **empty_state** (#error_state) — "{strings.beneficiaries.error_title}"
+   - **button** (#retry_button) — label: "{strings.beneficiaries.retry}", on_click: { action: retry_load }
+   - **button** (#view_consents_button) — label: "{strings.beneficiaries.view_consents}", on_click: { action: navigate, target: consent-list }
 
-**Component 4 — List Row** (full width minus 32dp insets, top margin 8dp, 72dp tall): Leading 40dp circular avatar background #354E16, initials "JS" Outfit SemiBold 16sp #CDEDA3. Title "John Smith" Outfit SemiBold 15sp #E3E3D8. Subtitle "Barclays UK" Outfit Regular 13sp #C5C8BA. Trailing metadata "500 GBP, 2 days ago" Outfit Regular 12sp #8F9285.
+## State-specific behavior
+- Fully populated with the real demo content listed below.
 
-**Component 5 — List Row** (full width minus 32dp insets, top margin 4dp, 72dp tall): Leading 40dp circular avatar #1F4E4B, initials "SW" Outfit SemiBold 16sp #BCEBE7. Title "Sarah Williams" Outfit SemiBold 15sp #E3E3D8. Subtitle "HSBC UK" Outfit Regular 13sp #C5C8BA. Trailing "1200 GBP, 5 days ago" Outfit Regular 12sp #8F9285.
+## Content source manifest
+- demo-data.beneficiaries[0..4]
 
-**Component 6 — List Row** (full width minus 32dp insets, top margin 4dp, 72dp tall): Leading 40dp circular avatar #44483D, initials "MC" Outfit SemiBold 16sp #C5C8BA. Title "Michael Chen" Outfit SemiBold 15sp #E3E3D8. Subtitle "Lloyds Bank" Outfit Regular 13sp #C5C8BA.
+## Components (vocabulary used in this prompt)
+- (no named components extracted — see composition)
 
-**Component 7 — List Row** (full width minus 32dp insets, top margin 16dp): Row with label "All Beneficiaries" Outfit SemiBold 15sp #E3E3D8 left-aligned, sort icon 20dp #C5C8BA right-aligned.
+## Shell (app-shell resolved for this state)
+- Home: navigates to home
+- Accounts: navigates to accounts
+- Pay: navigates to send-money
+- More: navigates to settings
+- Render MUST keep nav/bar elements consistent with the list above — present or absent, never partial.
 
-**Component 8 — Card** (full width minus 32dp insets, top margin 8dp): surfaceContainer #1E201A background, 12dp corner radius, 16dp padding. Leading NatWest bank logo 32dp rounded square. Title "James Anderson" Outfit SemiBold 15sp #E3E3D8. Subtitle "GB29 NWBK 8819" Outfit Regular 13sp #C5C8BA. Footer "Last payment: 12 May 2026" Outfit Regular 12sp #8F9285.
+## Tokens (design-tokens roles consumed)
+- Colors: primary / secondary / surface / on-surface / on-surface-variant / error (M3 standard roles).
+- Typography: body-large / title-large (M3 standard roles).
+- Spacing: gap.sm / gap.md / gap.lg.
+- ALL token references are by name from the uploaded design system — no hex literals, no inline size values.
 
-**Component 9 — Card** (full width minus 32dp insets, top margin 8dp, bottom 80dp): Same shape. Leading Santander logo. Title "Priya Patel" Outfit SemiBold 15sp #E3E3D8. Subtitle "GB72 ABBY 4421" Outfit Regular 13sp #C5C8BA.
+## Self-Validation Checklist (MANDATORY)
 
-**Component 10 — FAB** (56dp diameter, anchored bottom-right 16dp from edges): Circular FAB background #B2D188, plus icon 24dp #1F3701.
+Before returning the rendered mockup, verify ALL of these are true. If any fails, FIX the output and re-render.
 
-Do not use em-dash anywhere in text. Do not make any headline more than 3 lines or any subtitle more than 25 words. Do not break the dark theme between sections. Do not place light text on light buttons or dark text on dark buttons.
+- [ ] **Per-state shape:** the render shows ONLY this state ("content"). Do not blend multiple states into one mockup.
+- [ ] **Real content:** every text label, image, and data point reflects the content source manifest above — no numbered generic items, no filler text, no dummy text, no empty strings.
+- [ ] **Token fidelity:** colors come from the uploaded design system (primary/secondary/surface/etc.) by name; spacing comes from declared scale tokens. No invented hex codes, no invented size literals.
+- [ ] **Component vocabulary:** every component in the render maps to a named design-system component (Card, FAB, BottomBar, etc.) — no invented or off-system components.
+- [ ] **Archetype honored:** the layout follows the "index_list" archetype skeleton — composition order top → bottom matches the Composition section.
+- [ ] **App-shell parity:** if a bottom nav, top app bar, or FAB appears in the render, it matches the resolved shell from the app-shell config. Shell elements are either present-and-consistent OR absent — never partial.
 
-Full scrollable layout on #12140E. Anchored by the earth-green accent #B2D188 on the FAB and avatar highlights, the layout stays calm, balanced, and refined throughout the regulated-industry banking experience.
+If any of these fail and the fix isn't clear → halt rendering and surface "Self-validation failed at: {checkpoint}."
+
+Return ONLY when all 6 checkpoints pass.
+
 ↑↑↑ MOCKUP PROMPT
