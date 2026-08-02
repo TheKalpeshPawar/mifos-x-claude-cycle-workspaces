@@ -1,3 +1,7 @@
+sibling: docs
+schema_version: "4.0"
+feature_id: beneficiaries
+
 feature: beneficiaries
 contract_version: "2.0.0"
 status: approved
@@ -55,21 +59,32 @@ libraries:
       - ios
       - desktop
       - web
+# vm_actions RELOCATED 2026-08-01 (/idea-sync): loadBeneficiaries -> initial_load;
+# navigateToConsents + navigateBack -> nav_callbacks. Nothing deleted — each moved to the block
+# that states how it actually works. ui.yaml#state_model declares members [RetryLoad, Search].
+# FilterBeneficiaries is retained: it is the same behaviour ui.yaml names `Search`.
+initial_load:
+  mechanism: init-stream-collection
+  what: "GET /accounts/{accountId}/beneficiaries via Ktorfit AisApiService"
+  states: "Loading -> Content(beneficiaries, beneficiariesFiltered) | Empty when the list is empty"
+  error_handling:
+    on_401: uiState = Error(type=TokenExpired, message=strings.error.beneficiaries.token_expired)
+    on_403: uiState = Error(type=ConsentRevoked, message=strings.error.beneficiaries.consent_revoked)
+    on_429: uiState = Error(type=RateLimited, message=strings.error.beneficiaries.rate_limited)
+    on_500: uiState = Error(type=ServerError, message=strings.error.beneficiaries.server_error)
+    on_network: uiState = Error(type=NetworkError, message=strings.error.beneficiaries.network_error)
+  note: >-
+    NOT a dispatched action. ui.yaml#implementation.removed_in_sync: "loadBeneficiaries action —
+    the initial load is stream collection in init{}".
+
+nav_callbacks:
+  # ui.yaml#implementation.removed_in_sync: "navigateToConsents / navigateBack actions — both are
+  # nav-host callbacks, not action members".
+  - signature: "onNavigateToConsents -> navigate(ConsentListRoute)"
+    shown_when: "error.type == ConsentRevoked"
+  - signature: "onBack -> popBackStack()"
+
 vm_actions:
-  - name: LoadBeneficiaries
-    signature: 'suspend fun loadBeneficiaries(accountId: String)'
-    state_mutations:
-      - uiState = Loading
-      - uiState = Content(beneficiaries = response.Data.Beneficiary, beneficiariesFiltered = response.Data.Beneficiary)
-      - uiState = Empty (when list is empty)
-    side_effects:
-      - GET /accounts/{accountId}/beneficiaries via Ktorfit AisApiService
-    error_handling:
-      on_401: uiState = Error(type=TokenExpired, message=strings.error.beneficiaries.token_expired)
-      on_403: uiState = Error(type=ConsentRevoked, message=strings.error.beneficiaries.consent_revoked)
-      on_429: uiState = Error(type=RateLimited, message=strings.error.beneficiaries.rate_limited)
-      on_500: uiState = Error(type=ServerError, message=strings.error.beneficiaries.server_error)
-      on_network: uiState = Error(type=NetworkError, message=strings.error.beneficiaries.network_error)
   - name: FilterBeneficiaries
     signature: 'fun filterBeneficiaries(query: String)'
     state_mutations:
@@ -86,19 +101,6 @@ vm_actions:
     side_effects: []
     error_handling: {}
     visibility_condition: error.type in {TokenExpired, RateLimited, NetworkError}
-  - name: NavigateToConsents
-    signature: fun navigateToConsents()
-    state_mutations: []
-    side_effects:
-      - Emits NavigationEvent.NavigateTo(Screen.ConsentList) to NavController
-    error_handling: {}
-    visibility_condition: error.type == ConsentRevoked
-  - name: NavigateBack
-    signature: fun navigateBack()
-    state_mutations: []
-    side_effects:
-      - Emits NavigationEvent.Back to NavController
-    error_handling: {}
 scheme_label_mapping:
   description: 'ViewModel-layer helper: maps OBIE SchemeName to human-readable display label.'
   entries:

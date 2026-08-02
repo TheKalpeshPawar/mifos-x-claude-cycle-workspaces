@@ -14,3 +14,5 @@
 
 - [design-system] 2026-06-29 — Generated "Open Banking — Trust Blue" M3 design system from the exact Material Theme Builder export (seed #266489): DESIGN.md (@google/design.md spec), design-tokens.yaml (29 light + 29 dark roles verbatim), COMPONENTS.md, components/_index.yaml. Minimalist-ui, accessibility-first, theme auto.
 - [design-system-stitch] 2026-06-29 — DESIGN.md uploaded to Stitch (asset_id=8085591672064527850, design_md_sha=a3958d1ca6f3)
+- 2026-08-02 [design] design-system — claude — 1.2.0 / tokens 2.2.0: added the named spacing steps + icon, border, opacity and touch_targets families and promoted radius to top level, closing design-validate F-004 (49 unresolvable token references)
+- 2026-08-02 [design] design-system — claude — 1.3.0 / tokens 2.3.0: added semantic.status mapping warning onto tertiary and success onto primary, with four measured contrast pairs, rather than adding amber and green tonal families

@@ -1,5 +1,5 @@
 schema_version: "1.0.0"
-generated_at: "2026-07-31T21:15:00Z"
+generated_at: "2026-08-02T13:20:00Z"
 command: "/design-validate"
 actor: claude
 validated: true
@@ -8,318 +8,294 @@ scope:
   project: mifos-x-open-banking
   screens_count: 23
   categories_requested: [all]
-  design_system_version: "1.1.0"
-  tokens_version: "2.1.0"
+  design_system_version: "1.3.0"
+  tokens_version: "2.3.0"
 
 # ═══════════════════════════════════════════════════════════════════════
 # VERDICT
 # ═══════════════════════════════════════════════════════════════════════
-score: 99.5
-pass: true
-pass_reason: "No open critical or warning findings. Hard gate satisfied."
-band: excellent       # thresholds: excellent 90 / good 75 / acceptable 60 / poor 0
-findings: { critical: 0, warning: 0, info: 1, total: 1 }
-
-fix_pass:
-  at: "2026-07-31T21:15:00Z"
-  applied: "all 4 findings from the 20:30 pass"
-  note: >-
-    This run is the FIX pass over the 20:30 report in the same session — the four findings
-    it opened were resolved rather than carried. The single remaining info is new and is a
-    disclosure about how F-003 was closed, not a leftover.
-
-previous_run:
-  at: "2026-07-31T20:30:00Z"
-  score: 93.0
-  findings: { critical: 0, warning: 2, info: 2, total: 4 }
-  delta: "+6.5 — 2 warnings and 2 infos closed; 1 new info opened (see F-005)."
-run_before_that:
-  at: "2026-07-30T03:00:00Z"
-  score: 89.5
-  findings: { critical: 0, warning: 3, info: 3, total: 6 }
+score: 63.5
+pass: false
+pass_reason: "2 critical findings open (R-1, F-005). Both are deliberate carry-overs, not regressions."
+band: acceptable      # thresholds: excellent 90 / good 75 / acceptable 60 / poor 0
+findings: { critical: 2, warning: 2, info: 1, total: 5 }
 
 per_category:
-  REG:    { critical: 0, warning: 0, info: 0 }
+  REG:    { critical: 1, warning: 2, info: 0 }
   A11Y:   { critical: 0, warning: 0, info: 0 }
-  STATE:  { critical: 0, warning: 0, info: 1 }
+  STATE:  { critical: 1, warning: 0, info: 0 }
   MOTION: { critical: 0, warning: 0, info: 0 }
   RESP:   { critical: 0, warning: 0, info: 0 }
-  COLOR:  { critical: 0, warning: 0, info: 0 }
-fixable_count: 1
-non_fixable_count: 0
+  COLOR:  { critical: 0, warning: 0, info: 1 }
+fixable_count: 3
+non_fixable_count: 2      # R-1's framework half and F-002 need a decision first
+auto_fix_applied: false
 
 # ═══════════════════════════════════════════════════════════════════════
-# COVERAGE HONESTY — what actually ran
+# TIMELINE
+# ═══════════════════════════════════════════════════════════════════════
+timeline:
+  - { at: "2026-07-30T03:00Z", score: 89.5, findings: "0C 3W 3I" }
+  - { at: "2026-07-31T21:15Z", score: 99.5, findings: "0C 0W 1I", note: "partial-corpus — REG-002, properties_schema and token resolution never ran" }
+  - { at: "2026-08-02T11:04Z", score: 33.5, findings: "3C 7W 1I", note: "those three checks executed for the first time" }
+  - { at: "2026-08-02T11:40Z", score: 60.5, findings: "2C 3W 1I", note: "--category color; F-004 verified closed; colour-role resolution executed for the first time" }
+  - { at: "2026-08-02T12:05Z", score: 12.0, findings: "4C 9W 2I", note: "consolidated both, +2 new, +1 correction" }
+  - { at: "2026-08-02T12:55Z", score: null, note: "REPAIR PASS — 10 findings closed, R-1 half-closed" }
+  - { at: "2026-08-02T13:20Z", score: 63.5, findings: "2C 2W 1I", note: "THIS RUN — first score movement driven by actual repair rather than coverage change" }
+
+score_movement_explained: >-
+  12.0 -> 63.5 is the first movement in this sequence caused by fixing things rather than by
+  measuring more. Every earlier drop was coverage expansion against an unchanged corpus. This
+  rise is 10 findings genuinely closed, verified against the live files.
+
+# ═══════════════════════════════════════════════════════════════════════
+# COVERAGE
 # ═══════════════════════════════════════════════════════════════════════
 coverage:
   partial_corpus: true
-  statement: >-
-    This score is over an EXECUTABLE SUBSET, not the declared rule set. The framework gap
-    first recorded 2026-07-16 is UNCHANGED: validation-rules.json checks fields that exist
-    in neither core/schemas/ui-yaml.schema.json nor any project ui.yaml, so those rules
-    cannot evaluate at all. Treat 99.5 as "99.5 on the rules that can run" — a high score
-    here is NOT a claim that motion, responsive and keyboard-a11y are in good shape; those
-    rules never ran.
   corpus_walked:
     ui_yaml_files: 23
-    typed_components: 532      # 526 before the fix pass added 6 components to send-money
-    interactive_components: 131
+    sibling_files_total: 161
+    typed_components: 541
+    used_component_types: 38      # 39 raw, minus `string` which is a preferences-block artifact
+    colour_role_references: 93
+    non_colour_token_references: 18
+    on_click_blocks: 95
   rules_executed:
-    - "REG-001 component type resolves against the merged 3-tier registry"
-    - "REG-unused project registry + design catalog entries with no screen consumer"
-    - "A11Y accessible name on interactive components"
-    - "A11Y alt/decorative/accessibility_label on image, icon, avatar"
-    - "AC1 on_click carries a sibling action_contract (RULE-IDEA-ACTION-CONTRACT-001)"
-    - "STATE-001 screens with declared api operations compose loading/content/error/empty"
-    - "STRUCT-state-model block present"
-    - "touch targets — explicit *_dp declarations below 44"
-    - "{strings.*} references resolve against _strings/"
-    - "token references in screen YAML resolve against design-tokens.yaml"
+    - "REG-001 type resolution — 38/38 resolve, incl. the new progress_circular / progress_linear"
+    - "REG-002 variant exists on the resolved entry"
+    - "REG-003/004 project registry extends-chains valid, no cycles"
+    - "properties_schema.required + slots.required at each call site"
+    - "token resolution across screens + components.yaml + design-system/components/*.yaml"
+    - "colour-role NAME resolution — now including demo-data.yaml, which supplies live colour values"
+    - "semantic-colour contract (semantic.money, semantic.payment_disposition, semantic.status)"
+    - "STATE-001 canonical state coverage · STATE-002 loading mirrors content"
+    - "STATE-internal states[] vs state_model.screen_state.members"
+    - "STRUCT container components declare renderable children"
+    - "A11Y accessible name, media alt/decorative, touch targets"
+    - "AC1 action_contract on every on_click"
+    - "authoring-key drift"
+  scope_widened_this_run: >-
+    The colour walk now covers demo-data.yaml. The 12:55 repair discovered that
+    consent-list/demo-data.yaml supplies status_color / expiry_color values consumed directly by
+    ui.yaml bindings — live colour data that every prior run's ui.yaml-only walk could not see.
   rules_not_executable:
-    count: 14
-    reason: "field referenced by the rule exists in no schema and no ui.yaml"
-    ids: [A11Y-001, A11Y-004, A11Y-005, A11Y-007, A11Y-008, STATE-002, STATE-004,
+    count: 12
+    ids: [A11Y-001, A11Y-004, A11Y-005, A11Y-008, STATE-004,
           MOTION-001, MOTION-002, MOTION-003, MOTION-004, RESP-001, RESP-002, RESP-003]
-    fields_absent: [keyboard.focusable, label_source, supported_states, heading_level,
-                    keyboard.shortcuts, motion.enter, motion.exit, motion.reduced_motion_fallback,
-                    breakpoints]
   a11y_002_contrast:
     executed_at_screen_level: false
-    reason: >-
-      Screens carry no raw colour values — 0 literal token references found across all 23
-      ui.yaml. Contrast was validated one layer up during /design-system 1.1.0: 15 pairs,
-      0 failures, range 4.24-10.90:1, recorded in state/DESIGN_SYSTEM_STATE.yaml#wcag.
-      Satisfied transitively, NOT re-measured here.
-  shipped_validator_unusable:
-    path: layers/idea/templates/design-system/validation/validator.ts
-    reason: >-
-      Has no CLI entry point (no import.meta.main, no Deno.args, no process.argv) and its
-      input type is a `Mockup` element tree documented as "parsed from Stitch/Figma/Chrome
-      DevTools". No ui.yaml adapter exists, so it cannot be invoked against screen YAML.
-      The walk was therefore performed inline per the runtime's Step 4 — same as the prior
-      run, which described its rules_executed in prose rather than by rule id for the same
-      reason.
-
-# ═══════════════════════════════════════════════════════════════════════
-# CORRECTED DURING THIS RUN — recorded so the error is not repeatable
-# ═══════════════════════════════════════════════════════════════════════
-self_correction:
-  - id: SC-1
-    initial_finding: "REG-001 — 32 of 34 component types unresolved"
-    corrected_to: "REG-001 — 0 of 34 unresolved"
-    cause: >-
-      The first extraction pass used a key regex (`id|name` at two-space indent) that does
-      not match the registry file shape (`- type:` under a `primitives:` / `patterns:`
-      root), recovering only 9 of 123 registry ids. This is the SAME class as the
-      2026-07-30 SC-1: a bad registry resolution manufactures mass critical false positives.
-    lesson: "Sanity-check the extracted registry SIZE before trusting any REG-001 result."
-  - id: SC-2
-    initial_finding: "A11Y — 2 interactive components without an accessible name"
-    corrected_to: "0"
-    cause: >-
-      The name predicate checked label/text/content but not `title`. settings/app_version_row
-      carries title: {strings.settings.app_version.title} and is interaction_type: display.
-  - id: SC-3
-    initial_finding: "A11Y — 3 media components missing alt/decorative"
-    corrected_to: "0"
-    cause: >-
-      The media predicate accepted only `alt` or `decorative: true`. This project's schema
-      expresses the accessible name as `accessibility_label`; all three declare one, and
-      consent-detail/expiry_warning_icon uses the ARIA-correct empty name ("") for a
-      decorative icon whose sibling text carries the same message.
+    reason: "0 literal colour values in screens. Satisfied transitively via DESIGN_SYSTEM_STATE#wcag — 19 pairs, 0 failures, after the 4 added at design-system 1.3.0."
+  not_re_run:
+    - { check: "i18n {strings.*} parity", reason: "belongs to /idea-verify's gate; carried, not verified" }
 
 # ═══════════════════════════════════════════════════════════════════════
 # RESULTS
 # ═══════════════════════════════════════════════════════════════════════
 results:
+
+  - id: R-1
+    rule: REG-schema
+    category: registry
+    severity: critical
+    status: PARTIALLY-CLOSED — project half done, framework half held
+    title: "The corpus is authored against a different property contract than the registry declares"
+    closed_portion:
+      component: section_header
+      detail: >-
+        components.yaml#section_header's required property renamed value -> label, and home's
+        single dissenting call site aligned. 21 of 21 sites now conform. The registry was
+        corrected rather than 20 screens, because it was the outlier: the design catalog already
+        calls this a "Labelled group divider" and sibling info_row already uses `label`.
+    open_portion:
+      - component: text
+        registry_requires: "content (required); variant for typography; level 1-6 for headings"
+        corpus_uses: "value (92) · style (82) · role (27)"
+        level_usage: 0
+        consequence: >-
+          `style` bypasses the variant mechanism that carries the semantic_html h1/h2/h3 mapping,
+          and `level` is unused — so no text node in this app has a machine-readable heading
+          level. That is why A11Y-007 returns nothing rather than passing.
+      - component: list_item
+        registry_requires: "headline (slots.required; a11y.label_source: slot:headline)"
+        corpus_uses: "headline (5) · headline_text (6) · title · label · none (~12)"
+        mitigating: "nearly all carry an explicit accessibility_label, so the accessible NAME is present"
+      - component: chip
+        registry_requires: "label, icon_leading, icon_trailing, removable, selected"
+        corpus_uses: "icon · color (4) · color_map (1) · icon_map (1)"
+        new_this_run: true
+        note: >-
+          Discovered while verifying the 12:55 repair. `color_map` was pre-existing; `icon_map`
+          was ADDED BY THAT REPAIR while fixing C-5. Deliberate and, on inspection, correct for
+          this screen: the C-5 fix_hint said to bind per status the way consent-list does, but
+          consent-list's `{item.status_icon}` depends on a ViewModel-derived field that
+          consent-detail's data model does not have — its demo-data carries only the raw OBIE
+          Status. icon_map is self-contained and resolves against data that exists. It does,
+          however, add one more instance of exactly the divergence this finding is about, so it
+          is recorded here rather than quietly banked.
+    ownership_split:
+      project_fixable: "section_header — DONE"
+      framework_question: >-
+        text, list_item and chip are FRAMEWORK registry entries shared by every project. 82 text
+        components did not diverge by accident — value + style is a coherent vocabulary someone
+        authored deliberately. Either the shipped properties_schema is aspirational and should be
+        corrected to what projects use, or every project on this registry is non-conforming and
+        needs a migration. That is FW-3, and it determines the direction of a ~190-site sweep.
+    fix_hint: "HOLD the framework half pending FW-3. Do not mass-rename on this report alone."
+    fixable: false
+
   - id: F-005
-    rule: STATE-001
+    rule: STRUCT-empty-container
     category: state
-    severity: info
-    title: "`state_roles` is declared intent, not yet an enforced contract"
-    locations: [screens/payment-consent/ui.yaml]
+    severity: critical
+    status: OPEN — out of scope for a mechanical pass
+    title: "payment-status#payment_summary is a content card with zero children"
+    locations: ["screens/payment-status/ui.yaml:128"]
     detail: >-
-      F-003 was closed by adding a `state_roles:` block to payment-consent that maps its
-      journey states onto the canonical roles (loading <- validating/exchanging/checking,
-      content <- authorised, empty <- null). The root of ui.yaml is
-      additionalProperties:true by design, so the key is schema-valid — but NO shipped
-      framework evaluator reads it. This validator was extended in the same pass to honour
-      it, which means the mapping currently satisfies the check because it was taught to,
-      not because the framework independently enforces it. Recorded rather than left
-      implicit: a reader comparing this score against a different STATE-001 implementation
-      would otherwise see a discrepancy with no explanation.
-    provenance: new
-    fix_hint: >-
-      Promote `state_roles` into core/schemas/ui-yaml.schema.json and teach the shipped
-      STATE-001 evaluator to resolve canonical roles through it — a framework change with
-      cross-project blast radius, so not done unilaterally here.
+      Declares required_fields [amountLabel, creditorName, debtorAccountLabel, submittedAtLabel]
+      and an accessibility_label, then declares no children. It is the screen's only rendering of
+      the echoed Data.Initiation, so a PSU tracking a payment sees an empty box.
+    same_class_as: "the send-money#review_summary defect fixed 07-31; both screens landed in the same 07-30 PISP materialisation and only one was swept"
+    why_still_open: "needs authored content — four or five info_row children — not a rename. Deliberately excluded from the 12:55 mechanical batch."
+    fix_hint: "Mirror send-money#review_summary: info_row children for amount (emphasis: true), payee, reference, funding account, submitted-at."
     fixable: true
-    auto_fix_applied: false
+
+  - id: F-002
+    rule: REG-002
+    category: registry
+    severity: warning
+    status: OPEN — the defect is mechanical, the fix is a decision
+    title: "Undeclared `variant:` values across 6 component types (~89 sites)"
+    breakdown:
+      empty_state: { declared: "none", used: "error, info, informational, neutral, success", sites: 30 }
+      button:      { declared: "none (primitive)", used: "filled, text, tonal, outlined", sites: 53 }
+      badge:       { declared: "dot, count", used: "tonal + TWO boolean interpolations", sites: 4 }
+      card:        { declared: "none", used: "outlined, filled", sites: 2 }
+      chip:        { declared: "assist, filter, input, suggestion", used: "outline", sites: 1 }
+      skeleton:    { declared: "none", used: "list, list_card", sites: 2 }
+    resolved_this_cycle: "progress_indicator's 21 variant sites — closed by F-001's retype"
+    worst_case: >-
+      direct-debits#dd_status_badge and standing-orders#so_status_badge declare
+      `variant: "{item.isActive}"` — a boolean in a variant slot, resolving to "true"/"false".
+      Each component's own test_context states the intent (Active->primary, Inactive->outline),
+      and `badge` declares only {dot, count}, so NEITHER the current value NOR the documented
+      intent is a valid variant. There is no mechanically-correct target, which is why this was
+      excluded from the repair batch.
+    fix_hint: >-
+      The two boolean bindings need a decision: bind a colour instead of a variant, or register a
+      Tier-3 badge override. For the rest, pick one strategy per type — retype to the registry's
+      real types, or declare the used variants as Tier-3 overrides.
+    fixable: false
+
+  - id: F-008
+    rule: AUTHORING-DRIFT
+    category: registry
+    severity: warning
+    status: OPEN
+    title: "Six spellings for two predicates, and four conditions are English prose"
+    breakdown:
+      show_hide: { visible_when: 27, visibility_condition: 27, visible: 4, visibility: 5 }
+      enablement: { enabled_when: 1, enabled_condition: 1 }
+    substantive_half: >-
+      4 of the 5 `visibility:` values are prose, not expressions — account-holder#email_row /
+      #mobile_row / #address_row carry "visible when profile.email is non-empty" and #retry_button
+      "visible when uiState.kind.isRetriable — hidden for ConsentMissingParty and ProfileNotFound".
+      Prose in a predicate slot cannot be evaluated, so those four rows render unconditionally.
+    fix_hint: "Convert the four prose conditions first — a defect regardless of which spelling wins. Then normalise on visibility_condition + enabled_condition."
+    fixable: true
+
+  - id: C-6
+    rule: color-006
+    category: color
+    severity: info
+    status: OPEN
+    title: "send-money#payment_success uses the terminal-success glyph for a usually-unsettled payment"
+    locations: ["screens/send-money/ui.yaml:512"]
+    detail: >-
+      `variant: success` + `icon: check_circle` is the pair reserved for
+      payment_disposition.terminal_success, while send-money's own contract says the initial
+      status is usually AcceptedSettlementInProcess.
+    why_only_info: >-
+      The copy is honest and carries the meaning: "Payment submitted" / "Your bank has accepted
+      this payment. It may take a short time to reach %1$s." The title is also the accessible
+      name. Only the glyph and variant overstate what the words correctly hedge.
+    fix_hint: "Use the in_progress pair (icon: schedule, secondaryContainer) unless the ViewModel can prove a terminal status — matching the unknown_status_policy already in the token file."
+    fixable: true
 
 # ═══════════════════════════════════════════════════════════════════════
-# FIXES APPLIED THIS PASS
-# ═══════════════════════════════════════════════════════════════════════
-fixes_applied:
-  - prior_id: F-001
-    rule: STATE-001
-    was: "warning — send-money declares no `empty` state despite two data-driven lists"
-    fix: >-
-      Added an inline `no_saved_payees` empty_state bound to content with
-      visibility_condition "{content.beneficiaries | isEmpty}", plus the two strings and
-      TC-SEND-013.
-    why_not_a_screen_state: >-
-      The obvious reading of the finding — add `empty` to states[] — would have been WRONG.
-      manual_creditor_button is visible for the whole recipient step, not gated on the list
-      being non-empty, so a PSU with zero saved payees already has a working path via manual
-      sort-code entry. Promoting the empty list to a screen-level state would have replaced
-      a usable screen with a dead end. The gap was an unexplained blank list, not a broken
-      screen, so the fix is an inline affordance in the codebase's own idiom
-      (beneficiaries/ui.yaml:180 uses the same empty_state + isEmpty pattern).
-    status: RESOLVED
-
-  - prior_id: F-002
-    rule: REG-drift
-    was: "warning — design catalog v1.1.0 payment components not instantiated by the PISP screens"
-    fix: >-
-      Resolved per-component rather than wholesale, because the four entries were not the
-      same kind of gap.
-    per_component:
-      - { id: review_card, action: ADOPTED,
-          detail: "send-money#review_summary retyped from generic `card` to review_card and given four labelled children. It had NO children at all before — it declared required_fields and rendered no structure, so the last surface before an irreversible transfer showed nothing. Registered at Tier 3 in components.yaml (extends card, elevated + outlined, trust_critical)." }
-      - { id: step_indicator, action: ADOPTED,
-          detail: "Added send-money#form_step_indicator (Step N of 3). Registered at Tier 3 (extends text). Textual, not a progress bar — the motion dial is 2. The 3-step form previously gave no position feedback." }
-      - { id: payment_summary_row, action: MAPPED,
-          detail: "NOT minted as a new type. components.yaml#info_row already modelled label + value + secondary exactly, and was one of the two unconsumed entries in F-004. The review rows use info_row, which closes both findings with one decision instead of duplicating a registered concept." }
-      - { id: field_error, action: MAPPED,
-          detail: "Already realized — send-money#amount_field carries error_text: {content.validationError.message}, which IS M3 supportingText. The catalog models it as a component; a field property is the correct model. No screen change." }
-    also: >-
-      Added a `realized_as:` block to design-system/components/_index.yaml recording each
-      mapping, so a catalog concept realized under a different name is not rediscovered as
-      drift on every future run.
-    status: RESOLVED
-
-  - prior_id: F-003
-    rule: STATE-001
-    was: "info — payment-consent declares no literal `loading` or `content` state"
-    fix: "Added a `state_roles:` block mapping the journey states onto canonical roles."
-    why_not_renamed: >-
-      Renaming validating/exchanging/checking to a single `loading` would have erased three
-      phases that fail differently and each render their own preview — a failed token
-      exchange would become indistinguishable from a failed status check. The roles are
-      declared; the journey granularity survives.
-    status: RESOLVED
-    caveat: "See F-005 — the mapping is not yet enforced by any shipped evaluator."
-
-  - prior_id: F-004
-    rule: REG-unused
-    was: "info — bar_chart and info_row have zero screen consumers"
-    fix: >-
-      info_row is now consumed by the four send-money review rows. bar_chart was STRUCK from
-      components.yaml — it was declared for the pfm-dashboard income/spend comparison, a
-      screen deleted 2026-07-28 and never built. Removed on the reasoning
-      design-system/components/_index.yaml gives for its own `removed:` block: an
-      aspirational registry entry is worse than no entry, because a codegen pass reads the
-      registry as a contract and will try to satisfy it. The commented stub records where to
-      restore it from if PFM ever returns.
-    result: "All 5 Tier-3 entries now have at least one consumer."
-    status: RESOLVED
-
-# ═══════════════════════════════════════════════════════════════════════
-# POST-FIX MEASUREMENTS
-# ═══════════════════════════════════════════════════════════════════════
-post_fix_gates:
-  - { gate: "REG-001 type resolution", result: pass, detail: "35 used types, 124 merged registry ids, 0 unresolved" }
-  - { gate: "REG-unused", result: pass, detail: "5 of 5 Tier-3 entries consumed" }
-  - { gate: "G-ACTION-CONTRACT", result: pass, detail: "23 ui.yaml, 420 blocks, 0 violations (was 414 before the new components)" }
-  - { gate: "A11Y accessible name", result: pass, detail: "131 interactive, 0 missing" }
-  - { gate: "A11Y media alt/decorative", result: pass, detail: "0 missing" }
-  - { gate: "touch targets", result: pass, detail: "0 below 44dp" }
-  - { gate: "STATE-001", result: pass, detail: "0 of 20 api-backed screens incomplete" }
-  - { gate: "i18n parity", result: pass, detail: "554 declared keys, 608 refs, 0 unresolved (was 545/595)" }
-  - { gate: "YAML parse", result: pass, detail: "193 files, 0 failures" }
-  - { gate: "G-ILC state coherence", result: pass, detail: "fail=0 warn=0" }
-
-# ═══════════════════════════════════════════════════════════════════════
-# CLOSED IN THE 20:30 PASS (retained for history)
+# CLOSED — verified against the live files this run
 # ═══════════════════════════════════════════════════════════════════════
 closed:
-  - prior_id: F-001
-    rule: REG-001
-    was: "critical — component type `section_header` resolves in no registry tier (19 sites, 9 screens)"
-    status: RESOLVED
-    evidence: >-
-      section_header is now registered at Tier 3 in both components.yaml and
-      design-system/components/_index.yaml (added 1.1.1). Re-measured this run: all 34 used
-      types resolve against the 123-id merged registry (12 primitives + 102 framework
-      patterns + 5 aliases + 4 project). 0 unresolved.
-  - prior_id: F-005
-    rule: STRUCT-state-model
-    was: "info — no state_model block (licences, user-onboarding)"
-    status: RESOLVED
-    evidence: "All 23 screens now carry a state_model block; licences has 2 references, user-onboarding 3."
-  - prior_id: F-002
-    rule: A11Y-label
-    was: "warning — interactive component without accessibility_label (app_version_row, tx_category_tag)"
-    status: WITHDRAWN
-    reason: >-
-      Both were false positives, and the prior run had already flagged the doubt on one
-      ("app_version_row is arguably non-interactive... which would make it a false
-      positive"). Confirmed this run: app_version_row is a list_item with
-      title: {strings.settings.app_version.title}, interaction_type: display, and no
-      on_click. tx_category_tag is a chip with label: {item.Category}, interaction_type:
-      display. Neither is interactive and both carry an accessible name. No label should be
-      added — announcing a row users cannot act on would be the worse outcome.
+  - { id: C-1, was: critical, evidence: "0 kebab colour roles remain across all 161 sibling files; 14/14 distinct roles resolve" }
+  - { id: C-2, was: critical, evidence: "0 references to the warning family remain; consent-detail and consent-list now share status.warning_container" }
+  - { id: F-001, was: warning, evidence: "0 progress_indicator remain; 18 progress_circular + 3 progress_linear, both types resolve in feedback.yaml; 0 orphaned variant keys" }
+  - { id: F-006, was: warning, evidence: "Unsupported present in scheduled-payments state_model.screen_state.members" }
+  - { id: F-007, was: warning, evidence: "ui / flow / data-flow / tests siblings all agree on `login`" }
+  - { id: F-013, was: warning, evidence: "skeleton_actions gone; home loading state mirrors its 3-component content state" }
+  - { id: C-3, was: warning, evidence: "0 tertiary money refs in statement-detail; both wrong 'Credit=green' prose strings corrected" }
+  - { id: C-4, was: warning, evidence: "payment-status#status_chip carries a per-disposition icon binding" }
+  - { id: C-5, was: warning, evidence: "consent-detail#status_chip icon_map present; no check_circle on Revoked/Rejected/Expired" }
+  - { id: F-010, was: info,    evidence: "0 library_refs remain; both sites use external_library_refs" }
+  - { id: F-004, was: critical, closed_at: "11:22", evidence: "18/18 token refs resolve; re-verified again this run" }
 
 # ═══════════════════════════════════════════════════════════════════════
 # CLEAN
 # ═══════════════════════════════════════════════════════════════════════
 clean:
-  - "REG-001 — all 34 component types resolve across the merged 3-tier registry (0 unresolved)"
-  - "AC1 action_contract — 414 component blocks across 23 screens, 0 violations"
-  - "A11Y accessible name — 131 interactive components, 0 missing"
-  - "A11Y media — every image, icon and avatar carries accessibility_label, alt or an ARIA-correct empty name"
-  - "touch targets — no explicit dimension below 44dp anywhere"
-  - "i18n — 545 declared string keys, 595 references in ui.yaml, 0 unresolved"
-  - "token references — 0 unresolved (screens reference semantic roles, not literals)"
-  - "removed components — no screen references category_chip, chart_donut or progress_budget"
-  - "state_model — present on all 23 screens"
-  - "STATE-001 — 16 of 20 api-backed screens compose the full canonical set"
+  - "REG-001 — 38/38 used component types resolve (the 39th, `string`, is a preferences-block artifact, not a component)"
+  - "REG-003/004 — all 5 Tier-3 extends-chains valid, no cycles"
+  - "REG-unused — all 5 Tier-3 entries have >=1 consumer"
+  - "TOKEN — 18/18 non-colour refs resolve across screens + both registries"
+  - "COLOR — 14/14 colour roles resolve, now including demo-data-supplied values"
+  - "COLOR — 0 literal hex; full 29-role dark set; theme_mode auto"
+  - "AC1 — 95 on_click blocks, 0 missing action_contract"
+  - "A11Y — 307 accessibility_label declarations; 0 interactive components without an accessible name"
+  - "A11Y — contrast satisfied transitively, 19 pairs / 0 failures"
+  - "A11Y-003 — no explicit interactive dimension below 44dp"
+  - "STATE-001 — every api-backed screen composes the canonical set or documents why not"
+  - "STATE-002 — 23 of 23 screens' loading states mirror their content"
+  - "YAML — 161 sibling files readable, 0 problems"
+  - "no test assertion was invalidated by the repair (payment-status' 'circular progress indicator' prose stays accurate after the retype)"
 
 # ═══════════════════════════════════════════════════════════════════════
-# NOT DEFECTS — evaluated and dismissed with reason
+# NOT DEFECTS
 # ═══════════════════════════════════════════════════════════════════════
 dismissed:
-  - finding: "consent-callback and payment-status declare no `empty` state"
-    reason: >-
-      Archetype-inappropriate. Neither renders any list or lazy_column, so there is no
-      collection that can be empty. consent-callback is a redirect-return screen and
-      payment-status a single-result readout. Flagging these would be a schema-literal
-      reading of STATE-001 against screens its intent does not cover — which is why
-      send-money (F-001) IS flagged and these two are not.
+  - { finding: "consent-callback and payment-status declare no `empty` state", reason: "neither renders a collection" }
+  - { finding: "send-money declares no screen-level `empty` state", reason: "manual_creditor_button is always visible; the inline no_saved_payees affordance is correct" }
+  - { finding: "settings declares no `loading` state", reason: "SettingsUiState has no Loading member in source" }
+  - { finding: "licences and user-onboarding carry `state_model: {}`", reason: "both are stateless composables" }
+  - { finding: "AC1 miss at account-detail:601", reason: "scanner artifact — a 9-line comment pushed action_contract past a 12-line lookahead. Re-run at 25 lines: 0 missing." }
 
 # ═══════════════════════════════════════════════════════════════════════
-# CARRIED FORWARD — framework-side, not project-side
+# OPEN DIVERGENCE — recorded, deliberately not resolved
 # ═══════════════════════════════════════════════════════════════════════
-carried_forward_framework_gap:
-  finding: >-
-    validation-rules.json is v2.0.0 / lastUpdated 2026-02-10 and checks fields
-    (keyboard.focusable, label_source, supported_states, motion.*, breakpoints) that exist
-    neither in core/schemas/ui-yaml.schema.json nor in any project ui.yaml.
-  corpus_size_inconsistency:
-    runtime_prose_says: 102
-    categories_block_holds: 124
-    metadata_says: 147
-    note: >-
-      Three different counts in the same capability. The 2026-07-16 record reported
-      102 / 67 / 147; the categories block has since grown to 124 while the runtime prose
-      and _metadata were not updated. The inconsistency is unresolved, only shifted.
-  consequence: "14 of the declared rules cannot execute. Any score is partial-corpus."
-  owner: framework
-  first_recorded: "2026-07-16"
-  still_open: true
+open_divergence:
+  - id: expired-status-treatment
+    detail: >-
+      consent-detail#status_chip maps Expired to `error`; consent-list/demo-data.yaml fixture 3
+      keeps the Expired history row muted on onSurfaceVariant with a schedule icon. Both are
+      defensible — a History section below a divider de-emphasises terminated consents by design,
+      whereas the detail screen states the status in focus. Not unified by the mechanical pass.
+    recorded_in: "design-tokens.yaml#semantic.status._open_divergence"
+
+# ═══════════════════════════════════════════════════════════════════════
+# FRAMEWORK-OWNED
+# ═══════════════════════════════════════════════════════════════════════
+framework_items:
+  - { id: FW-1, item: "validation-rules.json v2.0.0 checks fields absent from every schema; corpus counts disagree three ways (102/124/147)", first_recorded: "2026-07-16" }
+  - { id: FW-2, item: "DESIGN_TOKENS_SCHEMA.md declares the t-shirt vocabulary the registry uses; templates/shared/m3-tokens.yaml declares spacing.step_N/shape.* instead. This project is now conformant; every project from those templates inherits the divergence.", first_recorded: "2026-08-02" }
+  - { id: FW-3, item: "R-1's framework half — is the shipped properties_schema for text/list_item/chip the contract, or aspirational? Gates a ~190-site sweep here and in every project on this registry.", first_recorded: "2026-08-02", blocking: true }
+  - { id: FW-4, item: "design-md-audit.ts steps [2] and [3] fail on parser defects, not content", first_recorded: "2026-08-02" }
+  - { id: FW-5, item: "the registry references success_container / on_success_container and a `success` state colour that M3 does not declare — the mirror of C-2. Project half closed by semantic.status.success.", first_recorded: "2026-08-02" }
+  - { id: FW-6, item: "/design-validate --fix is declared in the Usage table (design-validate.md:43) with no implementation in Steps 0-6 — the same class as validator.ts having no CLI entry point. A repair pass has no sanctioned vehicle, so it falls to direct Read/Edit.", first_recorded: "2026-08-02" }
 
 next_actions:
-  - "F-005 — promote `state_roles` into ui-yaml.schema.json + the shipped STATE-001 evaluator (info; framework, cross-project)"
-  - "FRAMEWORK — close the validation-rules.json schema gap or retire the 14 dead rules"
-  - "FRAMEWORK — decide whether text_button and select join the action-contract interactive vocabulary (2 components still unevaluated)"
-  - "PROJECT — the 6 new/retyped send-money components have no rendered preview yet; re-render before the next mockup or stitch pass"
+  - "PROJECT critical — F-005: author payment_summary's info_row children (the only fully-unblocked critical)"
+  - "PROJECT warning  — F-008: convert the 4 account-holder prose conditions to expressions"
+  - "DECIDE           — F-002's two boolean badge bindings (no mechanically-correct target exists)"
+  - "DECIDE           — the expired-status divergence above"
+  - "PROJECT info     — C-6"
+  - "BLOCKED          — R-1's text/list_item/chip half, pending FW-3"
+  - "FRAMEWORK        — FW-1..FW-6"
+  - "PROCESS          — /idea-verify to confirm the repair introduced no coherence regression; /idea-feature-render since every preview predates tokens 2.2.0"

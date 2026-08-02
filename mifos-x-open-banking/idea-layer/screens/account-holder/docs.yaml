@@ -1,3 +1,7 @@
+sibling: docs
+schema_version: "4.0"
+feature_id: account-holder
+
 feature: account-holder
 contract_version: "2.0.0"
 status: approved
@@ -13,6 +17,8 @@ scaffolded_by: "/idea-heal"
 enriched_by: "/idea-enrich"
 enriched_at: "2026-06-29"
 archetype: detail_screen
+# flow_ref backfilled 2026-08-02 (/idea-sync) from flows/*.yaml#screens[] membership.
+flow_ref: account-browsing
 description: "Account holder / PSU details screen, gated by ReadParty permission. Renders the flat PartyProfile domain model — displayName, roleLabel, initials, email, mobile and a single pre-flattened addressLine — streamed from ProfileRepository. Four states: loading, content, empty (blank displayName via emptyIfContent), and error. A 403 PermissionNotGranted is classified as AccountHolderErrorKind.ConsentMissingParty and rendered on the shared error surface with retry suppressed; it is not a separate state."
 has_ui: true
 has_server: false
@@ -64,21 +70,9 @@ libraries:
     version: latest
     targets: [android, ios, desktop, web]
 
-dependencies:
-  tier: 1
-  features:
-    - "account-detail — parent screen; supplies accountId as navigation argument via AccountDetailChip.Party"
-  external:
-    - "hsbc-obie-ais-v4.0 GET /accounts/{AccountId}/party — requires ReadParty in active consent"
-    - "hsbc-obie-ais-v4.0 GET /accounts/{AccountId}/parties — requires ReadParty in active consent"
+# dependencies: MOVED to flow.yaml · screens: MOVED to ui.yaml — 2026-07-31
+# (CROSS_LEAK repair; sibling-layout.json assigns `dependencies`->flow, `screens`->ui).
 
-screens:
-  - id: account-holder
-    name: "Account Holder"
-    viewmodel: AccountHolderViewModel
-    entry_points:
-      - from: account-detail
-        via: nav_chip_party
 
 capability_completeness:
   storage_location: "No local storage — party data is read-only and not cached on device. Both endpoints fetched fresh on every screen mount."
@@ -129,11 +123,17 @@ error_cases:
     description: "Device offline or AIS endpoint unreachable."
 
 test_fixtures:
-  source: "idea-layer/screens/party/tests.yaml"
-  scenario_count: 6
+  # `source` path repaired 2026-08-01 (/idea-sync). It read screens/party/tests.yaml — a
+  # DANGLING path: the 2026-07-28 reverse sync renamed the party screen to account-holder and
+  # screens/party/ no longer exists (verified). Another artifact of the same sweep that left
+  # the vm_actions and scenario counts stale across this project.
+  source: "idea-layer/screens/account-holder/tests.yaml"
+  # Corrected 2026-08-01 (from /idea-verify XS-1): was 6 / critical:4 normal:2. tests.yaml holds
+  # 7 scenarios (TC-ACCOUNT-HOLDER-001..007).
+  scenario_count: 7
   priority_distribution:
     critical: 4
-    normal: 2
+    normal: 3
 
 exports:
   spec_md:

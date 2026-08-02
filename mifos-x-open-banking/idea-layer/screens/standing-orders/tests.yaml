@@ -1,3 +1,7 @@
+sibling: tests
+schema_version: "4.0"
+feature_id: standing-orders
+
 screen_id: standing-orders
 _last_enriched_at: "2026-06-29T15:00:00Z"
 
@@ -159,3 +163,16 @@ scenarios:
       - "Frequency row displays the raw OBIE code 'IntrvlMnthDay:02:10' (fallback={Frequency})"
       - "No crash or empty label; decoder gracefully falls back to raw value"
       - "Frequency accessibility label reads 'Frequency: IntrvlMnthDay:02:10'"
+
+  # ── UNSUPPORTED STATE ─────────────────────────────────────────────
+  - id: TC-SO-014
+    priority: p1
+    description: "Unsupported state shown when capability registry refuses standing orders for account type"
+    state: unsupported
+    given: "The servicer does not expose standing orders for this account type; ViewModel receives StandingOrdersUiState.Unsupported with a capability-refused message"
+    when: "Screen mounts with accountId for an account that does not support standing orders"
+    then:
+      - "Unsupported empty-state component (standingOrders:unsupportedState) renders with info_outline icon and info variant"
+      - "Title reads 'Standing orders unavailable' (strings.standing_orders_unsupported_title)"
+      - "Body renders the runtime message from StandingOrdersUiState.Unsupported(message) — not a static i18n key"
+      - "No Retry button present — the capability registry refused the call outright; this is not a transient network or auth failure"

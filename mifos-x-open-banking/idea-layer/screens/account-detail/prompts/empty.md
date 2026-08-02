@@ -1,9 +1,9 @@
 ---
-ui_yaml_sha: 63022c4bdb68924065a26c8c126bffa4abfdb1db245af70354bf6aab55c6d4ba
+ui_yaml_sha: b0a8906dc25b9f832385d9e739b65145e6c1da058133602996736d6c0ff0a54e
 design_md_hash: f734ecfba28b3b0688cbd7ca6f3d7fca27febb15fd021d72a4518ae0e3a4200d
 app_shell_hash: 7b9c63f9aee4f5b5005b1d7533e7f5feab6427f398954987c34ee0f382b0ed69
 design_read_hash: 513c061d12f3a90e84d6e98e1e037b131e59fa3ca5c5f3c0abfc6ba87d24bcaf
-content_hash: 1bbf0f9d02a1cca1ee5673382697fc013c40d3aa334f6cbe4147bb06f43541dc
+content_hash: 06d640188affb9fe7fac372fe473b3464c57520e87413a51e237d23c7df7a3a8
 
 design_read_aesthetic: minimalist-ui
 design_read_dials: {variance: 3, motion: 2, density: 5}
@@ -24,7 +24,7 @@ craft_rules_version: v1.0.0
 
 # account-detail — empty state
 
-> Auto-generated from screens/account-detail/ui.yaml @ SHA 03d9854cb23127f6
+> Auto-generated from screens/account-detail/ui.yaml @ SHA 32d58e09ebb23cf2
 > Stitch DesignSystem: (pending DESIGN.md upload — run /idea-feature-stitch sub-plan 02)
 > DO NOT redeclare colors / fonts / spacing — they live in DESIGN.md.
 
@@ -53,12 +53,15 @@ craft_rules_version: v1.0.0
    - **text** (#account_last_updated)
 4. **card** (#open_banking_badge) — "open_banking_badge"
    - **text** (#open_banking_badge_text)
-5. **section_header** (#balances_header) — label: "{strings.account_detail_section_balances}"
-6. **list** (#balances_list) — "balances_list"
+5. **card** (#account_description_card) — "account_description_card"
+   - **text** (#account_description_label)
+   - **text** (#account_description_value)
+6. **section_header** (#balances_header) — label: "{strings.account_detail_section_balances}"
+7. **list** (#balances_list) — "balances_list"
    - **list_item** (#balance_row)
-7. **empty_state** (#balances_empty_state) — title: "{strings.account_detail_balances_empty_title}", icon: "account_balance_wallet"
-8. **section_header** (#actions_header) — label: "{strings.account_detail_section_explore}"
-9. **chip_row** (#action_chips) — "action_chips"
+8. **empty_state** (#balances_empty_state) — title: "{strings.account_detail_balances_empty_title}", icon: "account_balance_wallet"
+9. **section_header** (#actions_header) — label: "{strings.account_detail_section_explore}"
+10. **chip_row** (#action_chips) — "action_chips"
    - **chip** (#chip_transactions) — label: "{strings.nav_chip_transactions}", icon: "receipt_long", on_click: { action: navigate_transactions, target: transactions }
    - **chip** (#chip_statements) — label: "{strings.nav_chip_statements}", icon: "description", on_click: { action: navigate_statements, target: statements }
    - **chip** (#chip_standing_orders) — label: "{strings.nav_chip_standing_orders}", icon: "autorenew", on_click: { action: navigate_standing_orders, target: standing-orders }
@@ -68,7 +71,7 @@ craft_rules_version: v1.0.0
    - **chip** (#chip_atm_locator) — label: "{strings.account_detail.nav_chip_atm_label}", icon: "atm", on_click: { action: navigate_atm_locator, target: _placeholder-atm-locator }
    - **chip** (#chip_product) — label: "{strings.nav_chip_product}", icon: "description", on_click: { action: navigate_product, target: product }
    - **chip** (#chip_party) — label: "{strings.nav_chip_party}", icon: "person", on_click: { action: navigate_party, target: account-holder }
-10. **empty_state** (#error_state) — "{strings.account_detail_error_title}"
+11. **empty_state** (#error_state) — "{strings.account_detail_error_title}"
    - **button** (#retry_button) — label: "{strings.account_detail_retry}", on_click: { action: retry_load }
 
 ## State-specific behavior

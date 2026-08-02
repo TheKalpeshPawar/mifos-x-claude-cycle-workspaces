@@ -1,3 +1,7 @@
+sibling: docs
+schema_version: "4.0"
+feature_id: payment-status
+
 feature: payment-status
 contract_version: "2.0.0"
 status: enriched
@@ -22,6 +26,30 @@ has_server: false
 # OFFLINE read with conflict resolution, and demands a stale-data indicator, eviction
 # policy and a conflict strategy. This is an ephemeral in-memory cache, not offline support.
 capabilities: [has_ui, has_api, has_flow]
+
+# ─────────────────────────────────────────────────────────────────────
+# SPEC AHEAD OF SOURCE — declared 2026-08-02 by /idea-sync (source-truth pass)
+# ─────────────────────────────────────────────────────────────────────
+# The 2026-08-02 reverse pass aligned every AIS feature to shipped source. This feature is
+# exempt BY DESIGN: it is part of the 2026-07-30 payment-initiation scope reversal and is
+# specified ahead of source on purpose. Absence of a feature module is queued work, not drift.
+spec_ahead_of_source:
+  scope: feature
+  cluster: payment-initiation
+  declared_at: "2026-08-02"
+  declared_by: "/idea-sync (source-truth reverse pass)"
+  owed_by: /kmp-implement
+  reason: >-
+    Settlement tracking for a submitted domestic payment, introduced by the 2026-07-30 scope
+    reversal. Required because HSBC returns AcceptedSettlementInProcess on submit and the
+    terminal AcceptedSettlementCompleted arrives later.
+  source_state_measured:
+    present:
+      - "PISP payment-status wire DTOs — core/network/.../model/pisp/domesticPayment/response/DomesticPaymentResponse.kt"
+    absent:
+      - "no feature/payment-status module, no ViewModel, no TestTags.kt"
+      - "no GET /domestic-payments/{PaymentId} service binding in core/network"
+  consequence_for_verification: "drift and source-test checks are UNASSERTABLE — score N/A, not 0."
 
 metadata:
   category: detail
@@ -139,10 +167,13 @@ error_cases:
 
 test_fixtures:
   source: idea-layer/screens/payment-status/demo-data.yaml
-  scenario_count: 8
+  # Updated 2026-08-02 (/idea-sync ST-1): TC-PSTAT-009 added to cover the `loading` state,
+  # which ui.yaml declared but no scenario targeted. Counts re-derived from tests.yaml, not
+  # incremented on faith — the actual tally is p0:3 p1:5 p2:1 = 9.
+  scenario_count: 9
   priority_distribution:
     p0: 3
-    p1: 4
+    p1: 5
     p2: 1
 
 status_history:

@@ -1,3 +1,7 @@
+sibling: docs
+schema_version: "4.0"
+feature_id: consent-detail
+
 feature: consent-detail
 contract_version: "2.0.0"
 status: approved
@@ -12,6 +16,8 @@ acceptance_refs:
   - FR-008
 scaffolded_by: /idea-heal
 archetype: detail_screen
+# flow_ref backfilled 2026-08-02 (/idea-sync) from flows/*.yaml#screens[] membership.
+flow_ref: consent-management
 description: >-
   Full consent detail screen showing the HSBC OBIE status badge (color-coded: primary=Authorised, warning=Expired,
   error=Revoked/Rejected), all 11 granted permissions with human-readable labels,
@@ -37,25 +43,31 @@ libraries:
       - ios
       - desktop
       - web
+# vm_actions RELOCATED 2026-08-01 (/idea-sync): loadConsentDetail -> initial_load;
+# navigateReconfirm -> nav_callbacks. Nothing deleted. ui.yaml#state_model declares members
+# [RetryLoad, ConfirmRevoke, DismissRevokeConfirm, ExecuteRevoke] — all four retained below.
+initial_load:
+  mechanism: init-stream-collection
+  what:
+    - ConsentService.getConsentStatus(consentId)
+    - PermissionsMapper.toReadableLabels(permissions)
+    - "Compute expiryWarningDays from Data.ExpirationDateTime (null if > 7 days)"
+  states: "Loading -> Content(consent, permissionsDetail, expiryWarningDays)"
+  error_handling:
+    HttpException(401): Transition to Error(ConsentDetailErrorCode.TokenExpired)
+    HttpException(404): Transition to Error(ConsentDetailErrorCode.ConsentNotFound)
+    NetworkError: Transition to Error(ConsentDetailErrorCode.NetworkError)
+  note: >-
+    NOT a dispatched action. ui.yaml#implementation.removed_in_sync: "loadConsentDetail action —
+    the initial load is stream collection in init{}".
+
+nav_callbacks:
+  # ui.yaml#implementation.removed_in_sync: "navigateReconfirm action — reconfirm is the
+  # onReconfirm nav-host callback".
+  - signature: "onReconfirm -> navigate(Route.Login(reconfirmMode = true))"
+    surface: "reconfirm_button — shown while the consent is inside its expiry window"
+
 vm_actions:
-  - name: LoadConsentDetail
-    signature: 'suspend fun loadConsentDetail(consentId: String): Unit'
-    state_mutations:
-      - uiState = Loading
-    side_effects:
-      - ConsentService.getConsentStatus(consentId)
-      - PermissionsMapper.toReadableLabels(permissions)
-      - Compute expiryWarningDays from Data.ExpirationDateTime (null if > 7 days)
-    error_handling:
-      HttpException(401): Transition to Error(ConsentDetailErrorCode.TokenExpired)
-      HttpException(404): Transition to Error(ConsentDetailErrorCode.ConsentNotFound)
-      NetworkError: Transition to Error(ConsentDetailErrorCode.NetworkError)
-  - name: NavigateReconfirm
-    signature: 'fun navigateReconfirm(): Unit'
-    state_mutations: []
-    side_effects:
-      - Navigator.navigate(Route.Login(reconfirmMode = true))
-    error_handling: {}
   - name: ConfirmRevoke
     signature: 'fun confirmRevoke(): Unit'
     state_mutations:
@@ -99,10 +111,13 @@ error_cases:
   - RevokeServerError
 test_fixtures:
   source: screens/consent-detail/tests.yaml
-  scenario_count: 9
+  # Corrected 2026-08-01 (/idea-sync, from /idea-verify XS-1): was 9 / high:5 medium:3 low:1.
+  # tests.yaml holds 11 scenarios (TC-CDETAIL-001..011). Drifted upward — scenarios were added
+  # without updating the count.
+  scenario_count: 11
   priority_distribution:
-    high: 5
-    medium: 3
+    high: 6
+    medium: 4
     low: 1
 status_history:
   - from: enriched

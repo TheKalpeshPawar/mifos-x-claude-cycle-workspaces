@@ -1,3 +1,7 @@
+sibling: docs
+schema_version: "4.0"
+feature_id: payment-consent
+
 feature: payment-consent
 contract_version: "2.0.0"
 status: enriched
@@ -24,6 +28,33 @@ has_server: false
 # iap_identifiers[], receipt verification, restore-purchases, App Store 5.1.1 cancel path).
 # This is bank payment initiation over OBIE rails; none of those sub-checks apply.
 capabilities: [has_ui, has_api, has_flow, has_system_integration]
+
+# ─────────────────────────────────────────────────────────────────────
+# SPEC AHEAD OF SOURCE — declared 2026-08-02 by /idea-sync (source-truth pass)
+# ─────────────────────────────────────────────────────────────────────
+# The 2026-08-02 reverse pass aligned every AIS feature to shipped source. This feature is
+# exempt BY DESIGN: it is part of the 2026-07-30 payment-initiation scope reversal and is
+# specified ahead of source on purpose. Absence of a feature module is queued work, not drift.
+spec_ahead_of_source:
+  scope: feature
+  cluster: payment-initiation
+  declared_at: "2026-08-02"
+  declared_by: "/idea-sync (source-truth reverse pass)"
+  owed_by: /kmp-implement
+  reason: >-
+    Return leg of the PISP app-to-app authorisation, introduced by the 2026-07-30 scope reversal.
+    Its AIS analogue (consent-callback) IS shipped and can be mirrored when this is generated.
+  source_state_measured:
+    present:
+      - "PISP consent wire DTOs — core/network/.../model/pisp/domesticPayment/{request,response}/DomesticPaymentConsent*.kt"
+    absent:
+      - "no feature/payment-consent module, no ViewModel, no TestTags.kt"
+      - "no token-exchange or consent-poll service for scope=payments"
+  mirror_when_implemented: >-
+    feature/consent-callback — same state vocabulary (loading / awaiting / access_denied /
+    security_error), same state+nonce validation, differing only in scope=payments and in polling
+    a domestic-payment-consent rather than an account-access-consent.
+  consequence_for_verification: "drift and source-test checks are UNASSERTABLE — score N/A, not 0."
 # V1. V2/V3 N/A — zero device permissions app-wide (see login/docs.yaml).
 system_capabilities:
   - kind: deep_link
@@ -170,11 +201,11 @@ error_cases:
 
 test_fixtures:
   source: idea-layer/screens/payment-consent/demo-data.yaml
-  scenario_count: 8
+  scenario_count: 11
   priority_distribution:
-    p0: 4
-    p1: 3
-    p2: 1
+    p0: 5
+    p1: 6
+    p2: 0
 
 status_history:
   - from: null

@@ -1,3 +1,7 @@
+sibling: ui
+schema_version: "4.0"
+feature_id: settings
+
 screen_id: settings
 archetype: settings
 name: "{strings.settings.title}"
@@ -92,6 +96,30 @@ status_history:
 
 states: [content, empty, error]
 
+# TEST TAGS — reconciled against source 2026-08-02 by /idea-sync (source-truth pass).
+# 17 tags were already correct; themeDropdown + the 3 themeOption values were added.
+test_tags:
+  source: "feature/settings/src/commonMain/kotlin/org/mifosx/openbanking/feature/settings/SettingsTestTags.kt"
+  declared_in_source: 28         # 25 const val + 3 builder fns
+  bound_here: 21
+  bound_in_licences_screen: 2    # settings:licences:screen + :list — see screens/licences/ui.yaml
+  interpolated:
+    - { tag: "settings:themeOption:{FOLLOW_SYSTEM|LIGHT|DARK}", builder: "fun themeOption(config: DarkThemeConfig)",
+        note: "suffix is the enum CASE, not DarkThemeConfig.configName ('Follow System' / 'Light' / 'Dark')" }
+    - { tag: "{rowTag}:chevron",      builder: "fun chevron(rowTag: String)",
+        note: "composed onto the row's own tag — e.g. settings:row:consents:chevron. Already declared on consents_row and licences_row." }
+    - { tag: "{rowTag}:externalLink", builder: "fun externalLink(rowTag: String)",
+        note: "same composition — settings:row:privacy:externalLink. Already declared on privacy_row." }
+  unbound:
+    - { tag: "settings:content", why: "Tags the content column wrapping the three sections; modelled here as siblings bound to [content] with no wrapper." }
+    - { tag: "settings:section",     why: "Generic BASE value, not applied to any node on its own — the applied values are the three settings:section:* consts." }
+    - { tag: "settings:row",         why: "Generic BASE value, same as settings:section — the applied values are the four settings:row:* consts." }
+    - { tag: "settings:sectionTitle", why: "Tags the title Text inside a section header; modelled here as the section_header component's `label:` field." }
+    - { tag: "settings:emptyTitle", parent: settings_empty, why: "Text node modelled as the parent's `title:` field." }
+    - { tag: "settings:emptyBody",  parent: settings_empty, why: "Text node modelled as the parent's `body:` field." }
+    - { tag: "settings:errorTitle", parent: settings_error, why: "Text node modelled as the parent's `title:` field." }
+    - { tag: "settings:errorBody",  parent: settings_error, why: "Text node modelled as the parent's `body:` field." }
+
 components:
 
   # ══ APPEARANCE SECTION ═════════════════════════════════════════════
@@ -115,11 +143,18 @@ components:
     test_tag: "settings:row:theme"
     value_test_tag: "settings:themeValue"
     menu_test_tag: "settings:themeMenu"
+    # Added 2026-08-02 (/idea-sync source-truth pass). components/ThemeDropdownRow.kt:100
+    # tags the ExposedDropdownMenuBox anchor separately from the row and the menu; all three
+    # are distinct nodes and the UI tests use each for a different assertion.
+    dropdown_test_tag: "settings:themeDropdown"
     expanded_binding: "{isThemeMenuExpanded}"
     options:
-      - { id: FOLLOW_SYSTEM, label: "{strings.settings.theme.option_system}" }
-      - { id: LIGHT,         label: "{strings.settings.theme.option_light}" }
-      - { id: DARK,          label: "{strings.settings.theme.option_dark}" }
+      # fun themeOption(config: DarkThemeConfig) = "settings:themeOption:${config.name}"
+      # @ ThemeDropdownRow.kt:150. Suffix is the enum CASE (FOLLOW_SYSTEM / LIGHT / DARK),
+      # not its display configName ("Follow System" / "Light" / "Dark").
+      - { id: FOLLOW_SYSTEM, label: "{strings.settings.theme.option_system}", test_tag: "settings:themeOption:FOLLOW_SYSTEM" }
+      - { id: LIGHT,         label: "{strings.settings.theme.option_light}",  test_tag: "settings:themeOption:LIGHT" }
+      - { id: DARK,          label: "{strings.settings.theme.option_dark}",   test_tag: "settings:themeOption:DARK" }
     accessibility_label: "{strings.settings.theme.select_a11y}"
     test_context:
       purpose: "ThemeDropdownRow — the only persisted preference on this screen"
@@ -130,11 +165,19 @@ components:
       action: ToggleThemeMenu
       action_contract:
         effect: transform_state
+        # library_refs added 2026-07-31 (AC3). These two contracts were the only
+        # transform_state entries in the project without them — not because they
+        # differ, but because `select` was outside G-ACTION-CONTRACT's interactive
+        # vocabulary, so the component was never evaluated. Matches the house
+        # convention used by the other 19 transform_state contracts: the action
+        # dispatches through the ViewModel's coroutine-backed state holder.
+        external_library_refs: [kotlinx-coroutines]
         description: "Dispatches SettingsAction.ToggleThemeMenu, flipping isThemeMenuExpanded on the Content state. Purely local UI state — nothing is persisted."
     on_dismiss:
       action: DismissThemeMenu
       action_contract:
         effect: transform_state
+        external_library_refs: [kotlinx-coroutines]
         description: "Dispatches SettingsAction.DismissThemeMenu, collapsing the dropdown without changing the selected theme."
     on_select:
       action: SelectTheme
@@ -290,3 +333,13 @@ components:
             effect: transform_state
             external_library_refs: ["androidx.datastore"]
             description: "Dispatches SettingsAction.RetryLoad, re-reading the UserDataRepository preference stream to rebuild Content."
+
+# Moved verbatim from docs.yaml 2026-07-31 (CROSS_LEAK repair — sibling-layout.json
+# assigns `preferences` to the ui sibling, capability_gate has_local_preferences).
+preferences:
+  - key: dark_theme_config
+    type: string
+    default: "System"          # V3 — never starts null; AppTheme falls back to the OS setting
+    scope: device              # not user-scoped: it is not synced and does not follow the PSU across devices
+    allowed: ["Light", "Dark", "System"]
+    surface: "settings#theme_row"

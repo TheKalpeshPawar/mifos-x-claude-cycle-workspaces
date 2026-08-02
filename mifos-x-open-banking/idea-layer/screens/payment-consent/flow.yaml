@@ -1,3 +1,7 @@
+sibling: flow
+schema_version: "4.0"
+feature_id: payment-consent
+
 feature: payment-consent
 flow_ref: send-money-payment
 
@@ -32,3 +36,18 @@ transitions:
     params: []
     condition: "error.type in {StateMismatch, NoPendingAuthorisation, ConsentRejected}"
     notes: "The staged consent is left unauthorised and expires on its own; no revocation call."
+
+# Moved verbatim from ui.yaml 2026-07-31 (CROSS_LEAK repair).
+dependencies:
+  tier: feature
+  features:
+    - name: send-money
+      relation: parent
+      params: [consentId]
+    - name: consent-list
+      relation: error-recovery
+      condition: "error.type == ConsentRejected"
+  libraries:
+    - name: ktorfit
+      coords: "de.jensklingenberg.ktorfit:ktorfit-lib:2.x"
+      purpose: "Token exchange and payment-consent status polling"

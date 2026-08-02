@@ -1,3 +1,7 @@
+sibling: docs
+schema_version: "4.0"
+feature_id: direct-debits
+
 feature: direct-debits
 contract_version: "2.0.0"
 status: approved
@@ -38,42 +42,41 @@ libraries:
       - ios
       - desktop
       - web
+# vm_actions RELOCATED 2026-08-01 (/idea-sync): loadDirectDebits -> initial_load; navigateBack
+# -> nav_callbacks. Nothing deleted. ui.yaml#implementation.removed_in_sync: "loadDirectDebits
+# and navigateBack actions — DirectDebitsAction declares only RetryLoad; back is a nav-host
+# onBack callback". RetryLoad is retained below — it is the surviving member, not a removed one.
+initial_load:
+  mechanism: init-stream-collection
+  what: "GET /accounts/{accountId}/direct-debits via Ktorfit AisApiService"
+  derivations:
+    - rawList = response.Data.DirectDebit.map { it.withStatusVariant() }
+    - directDebits = rawList.sortedBy { if (it.DirectDebitStatusCode == 'Active') 0 else 1 }
+    - activeCount = directDebits.count { it.DirectDebitStatusCode == 'Active' }
+    - inactiveCount = directDebits.count { it.DirectDebitStatusCode == 'Inactive' }
+  states: "Loading -> Content(directDebits, activeCount, inactiveCount) | Empty when the list is empty"
+  error_handling:
+    on_401: uiState = Error(TokenExpired, userMessage = 'Session expired. Please log in again.', isRetriable = true)
+    on_403: >-
+      uiState = Error(ConsentRevoked, userMessage = 'Account access consent has been revoked. Re-authorise in
+      Consents.', isRetriable = false)
+    on_429: >-
+      uiState = Error(RateLimited, userMessage = 'Too many requests. Please wait a moment and try again.', isRetriable
+      = true)
+    on_network: >-
+      uiState = Error(NetworkError, userMessage = 'No network connection. Check your connection and retry.',
+      isRetriable = true)
+
+nav_callbacks:
+  - signature: "onBack -> popBackStack() returning to account-detail"
+
 vm_actions:
-  - name: LoadDirectDebits
-    signature: 'suspend fun loadDirectDebits(accountId: String)'
-    state_mutations:
-      - uiState = Loading
-      - rawList = response.Data.DirectDebit.map { it.withStatusVariant() }
-      - directDebits = rawList.sortedBy { if (it.DirectDebitStatusCode == 'Active') 0 else 1 }
-      - activeCount = directDebits.count { it.DirectDebitStatusCode == 'Active' }
-      - inactiveCount = directDebits.count { it.DirectDebitStatusCode == 'Inactive' }
-      - uiState = Content(directDebits, activeCount, inactiveCount) (when list non-empty)
-      - uiState = Empty (when list is empty)
-    side_effects:
-      - GET /accounts/{accountId}/direct-debits via Ktorfit AisApiService
-    error_handling:
-      on_401: uiState = Error(TokenExpired, userMessage = 'Session expired. Please log in again.', isRetriable = true)
-      on_403: >-
-        uiState = Error(ConsentRevoked, userMessage = 'Account access consent has been revoked. Re-authorise in
-        Consents.', isRetriable = false)
-      on_429: >-
-        uiState = Error(RateLimited, userMessage = 'Too many requests. Please wait a moment and try again.', isRetriable
-        = true)
-      on_network: >-
-        uiState = Error(NetworkError, userMessage = 'No network connection. Check your connection and retry.',
-        isRetriable = true)
   - name: RetryLoad
     signature: fun retryLoad()
     precondition: error.isRetriable == true (403 ConsentRevoked does not allow retry)
     state_mutations:
       - re-invokes LoadDirectDebits with same accountId
     side_effects: []
-    error_handling: {}
-  - name: NavigateBack
-    signature: fun navigateBack()
-    state_mutations: []
-    side_effects:
-      - Emits NavigationEvent.Back to NavController
     error_handling: {}
 error_cases:
   - id: TokenExpired
@@ -103,10 +106,10 @@ error_cases:
     recovery: Empty state shown; no action needed; back button returns to account-detail
 test_fixtures:
   source: screens/direct-debits/tests.yaml
-  scenario_count: 9
+  scenario_count: 10
   priority_distribution:
     high: 3
-    medium: 5
+    medium: 6
     low: 1
 exports:
   spec_md:

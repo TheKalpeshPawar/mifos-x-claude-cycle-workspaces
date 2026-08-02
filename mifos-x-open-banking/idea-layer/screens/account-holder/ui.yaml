@@ -1,3 +1,7 @@
+sibling: ui
+schema_version: "4.0"
+feature_id: account-holder
+
 screen_id: account-holder
 archetype: detail_screen
 name: "Account Holder"
@@ -82,6 +86,36 @@ status_history:
 
 states: [loading, content, empty, error]
 
+# ─────────────────────────────────────────────────────────────────────
+# TEST TAGS — reconciled against source 2026-08-02 by /idea-sync (source-truth pass)
+# ─────────────────────────────────────────────────────────────────────
+# The 13 component-level `test_tag:` values below were already correct and are unchanged.
+# This block records the FULL source inventory so the 5-tag shortfall is explained rather
+# than silently carried: all five are structural nodes the idea-layer models as fields, not
+# as components, so none of them has an anchor to bind to.
+test_tags:
+  source: "feature/account-holder/src/commonMain/kotlin/org/mifosx/openbanking/feature/accountholder/AccountHolderTestTags.kt"
+  declared_in_source: 18
+  bound_to_components: 13
+  unbound:
+    - tag: "accountHolder:content"
+      source_ref: "AccountHolderContent.kt:82"
+      why: >-
+        Tags the content Column wrapping identity_card + identity_section. The idea-layer
+        models those as sibling components bound to [content] with no wrapper.
+    - tag: "accountHolder:emptyTitle"
+      source_ref: "AccountHolderEmpty.kt:73"
+      why: "Text node modelled as the empty_state component's `title:` field, not a child component."
+    - tag: "accountHolder:emptyBody"
+      source_ref: "AccountHolderEmpty.kt:82"
+      why: "Text node modelled as the empty_state component's `body:` field, not a child component."
+    - tag: "accountHolder:errorTitle"
+      source_ref: "AccountHolderError.kt:84"
+      why: "Text node modelled as the error_state component's `title:` field, not a child component."
+    - tag: "accountHolder:errorBody"
+      source_ref: "AccountHolderError.kt:93"
+      why: "Text node modelled as the error_state component's `body:` field, not a child component."
+
 state_layouts:
   loading:
     type: column
@@ -107,9 +141,8 @@ state_layouts:
 components:
 
   # ─── LOADING STATE ───────────────────────────────────────────────
-  - type: progress_indicator
+  - type: progress_circular
     id: loading_indicator
-    variant: circular
     state_binding: [loading]
     test_tag: "accountHolder:loading"
     accessibility_label: "{strings.account_holder.loading_description}"
@@ -124,7 +157,7 @@ components:
     state_binding: [loading]
     value: "{strings.account_holder.loading_caption}"
     style: bodyMedium
-    color: "on-surface-variant"
+    color: "onSurfaceVariant"
     test_tag: "accountHolder:loadingCaption"
     test_context:
       purpose: "Caption beneath the spinner"
@@ -171,7 +204,7 @@ components:
         role: subtitle
         value: "{profile.roleLabel}"
         style: bodyMedium
-        color: "on-surface-variant"
+        color: "onSurfaceVariant"
         test_tag: "accountHolder:roleLabel"
         accessibility_label: "{strings.account_holder.role_prefix}: {profile.roleLabel}"
         test_context:
@@ -292,5 +325,16 @@ components:
           action: RetryLoad
           action_contract:
             effect: call_api
+            reads_from: ["party"]
             external_library_refs: ["ktorfit", "hsbc-obie-ais-v4.0:party"]
             description: "Dispatches AccountHolderAction.RetryLoad, which calls refresh() on the ScreenDataStream the view model already holds, re-running the party fetch and returning the screen to Loading then Content or Empty."
+
+# Moved verbatim from docs.yaml 2026-07-31 (CROSS_LEAK repair — sibling-layout.json
+# assigns `screens` to the ui sibling).
+screens:
+  - id: account-holder
+    name: "Account Holder"
+    viewmodel: AccountHolderViewModel
+    entry_points:
+      - from: account-detail
+        via: nav_chip_party

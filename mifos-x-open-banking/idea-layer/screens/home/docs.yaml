@@ -1,3 +1,7 @@
+sibling: docs
+schema_version: "4.0"
+feature_id: home
+
 feature: home
 contract_version: "2.0.0"
 status: approved
@@ -18,6 +22,8 @@ acceptance_refs:
 scaffolded_by: /idea-add
 scaffolded_from_context: false
 archetype: dashboard
+# flow_ref backfilled 2026-08-02 (/idea-sync) from flows/*.yaml#screens[] membership.
+flow_ref: home-dashboard
 is_primary_flow: true
 # ── Description corrected 2026-07-30 (/idea-feature-export stale-artifact fix) ──
 # The prior text claimed a quick-action row, a spending snapshot and a route to consent-list.
@@ -117,18 +123,10 @@ vm_actions:
     side_effects:
       - Persists accountId to DataStore
       - Triggers parallel balance + transactions fetch for new accountId
-  - name: LoadHome
-    signature: fun loadHome()
-    state_mutations:
-      - allAccounts
-      - selectedAccount
-      - selectedAccountBalance
-      - availableBalance
-      - recentTransactions
-      - uiState
-    side_effects:
-      - GET /accounts to populate switcher list
-      - 'Parallel: GET /accounts/{id}/balances + GET /accounts/{id}/transactions?limit=5'
+  # LoadHome RELOCATED 2026-08-01 (/idea-sync) to initial_load below — see that block.
+  # ui.yaml#implementation.removed_in_sync: "loadHome action — the initial load is stream
+  # collection in init{}, not a dispatched action". HomeAction's four members are
+  # SelectAccount, OpenAccountSelector, DismissAccountSelector and RetryLoad.
   - name: RetryLoad
     signature: fun retryLoad()
     state_mutations:
@@ -151,6 +149,24 @@ vm_actions:
     state_mutations:
       - isAccountSelectorVisible = false
     side_effects: []
+
+initial_load:
+  mechanism: init-stream-collection
+  what:
+    - GET /accounts to populate the switcher list
+    - "Parallel: GET /accounts/{id}/balances + GET /accounts/{id}/transactions?limit=5"
+  populates: [allAccounts, selectedAccount, selectedAccountBalance, availableBalance, recentTransactions, uiState]
+  note: >-
+    NOT a dispatched action. ui.yaml#implementation.removed_in_sync: "loadHome action — the
+    initial load is stream collection in init{}, not a dispatched action". RetryLoad re-drives
+    this same sequence, which is why it remains a real Action member.
+
+nav_callbacks:
+  # Host-owned; homeGraph takes exactly these two lambdas. The five Navigate* actions once
+  # declared here were removed on 2026-07-30 — see the comment above.
+  - signature: "onNavigateToTransactions(accountId) -> TransactionsRoute(accountId)"
+  - signature: "onNavigateToTransactionDetail(transactionId, accountId) -> TransactionDetailRoute(...)"
+
 error_cases:
   - id: EC-HOME-001
     trigger: 401 from /balances or /transactions — token expired
@@ -172,11 +188,17 @@ error_cases:
     handling: Error state; recoverable; Retry CTA.
 test_fixtures:
   source: screens/home/tests.yaml
-  scenario_count: 17
+  # Corrected 2026-08-01 (/idea-sync, from /idea-verify XS-1): was 17. tests.yaml holds 13
+  # scenarios, and their ids are non-contiguous (001,002,003,006,007,010-015,017,018) — the
+  # gaps are the scenarios removed alongside the quick_actions_card, the spending snapshot and
+  # the connect_bank_button, none of whose removals updated this count.
+  scenario_count: 13
+  # Recorded as measured, not reconstructed: only 2 of the 13 scenarios carry a `priority:`
+  # key at all. Inventing high/medium/low buckets to fill the old shape would be fabricating
+  # data this suite does not contain, so the unset majority is stated plainly instead.
   priority_distribution:
-    high: 12
-    medium: 3
-    low: 2
+    medium: 2
+    unset: 11
 
 capability_completeness:
   storage_location:

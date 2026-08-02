@@ -2,6 +2,7 @@
 
 Schema: `core/schemas/journeys/journey.schema.json` (x-contract-version: 1.0.0)
 Reverse-synced: 2026-07-28 by `/gap-analysis-project` against the shipped source.
+Refreshed: 2026-08-02 by `/idea-sync` (source-truth pass) — roster 20 → 23, `send-money-payment` journey added.
 Flow linkage: run `/idea journey link` to wire `flows[]` bidirectional refs to `idea-layer/flows/*.yaml`.
 
 ---
@@ -18,8 +19,19 @@ Flow linkage: run `/idea journey link` to wire `flows[]` bidirectional refs to `
 | [recurring-and-statements](recurring-and-statements.yaml) | Priya | commitments reviewer | 6 | medium | P1 | standing-orders, direct-debits, scheduled-payments, statements, accounts (account-detail entry) |
 | [settings-and-profile](settings-and-profile.yaml) | Priya | personalisation manager | 2 | minimal | P0 | settings, licences |
 | [developer-full-surface](developer-full-surface.yaml) | Sam | expert AISP auditor | 5 | maximum | P2 | account-holder, product, beneficiaries, accounts (entry) |
+| [send-money-payment](send-money-payment.yaml) | Priya | first-time payer | 6 | maximum | P3 | send-money, payment-consent, payment-status |
 
-Total: 8 journeys, 24 screen-sequence slots.
+Total: 9 journeys, 30 screen-sequence slots.
+
+**Added 2026-08-02:** `send-money-payment` — `flows/send-money-payment.yaml` is `type: happy`
+and was the only happy-path flow with no journey counterpart. Its narrative screen_sequence
+had been authored INTO the flow file (a key that belongs to the journey schema); it is
+preserved verbatim in the new journey and the flow was reshaped to match its eight siblings.
+It describes a **specified, not shipped** surface — all three features carry
+`docs.yaml#spec_ahead_of_source`.
+
+`consent-expired` still has no journey deliberately: it is `type: error`, and journeys model
+happy-path persona narratives.
 
 **Removed 2026-07-28:** `pfm-review` — all four of its screens (pfm-dashboard,
 spending-by-category, budgets, recurring-subscriptions) were spec-only and have been
@@ -28,7 +40,7 @@ deleted. `settings-and-profile` lost its profile step and gained licences;
 
 ---
 
-## Screen Coverage (20 / 20)
+## Screen Coverage (23 / 23)
 
 | screen | covered by journey(s) |
 |--------|-----------------------|
@@ -52,8 +64,15 @@ deleted. `settings-and-profile` lost its profile step and gained licences;
 | account-holder | developer-full-surface |
 | product | developer-full-surface |
 | beneficiaries | developer-full-surface |
+| send-money | send-money-payment |
+| payment-consent | send-money-payment |
+| payment-status | send-money-payment |
 
-Coverage: **20 / 20** (100%). All shipped screens covered.
+Coverage: **23 / 23** (100%).
+
+The denominator was stale at 20 — it predated the 2026-07-30 PISP scope reversal that added
+the three payment-initiation screens. 20/20 read as complete while three roster members were
+outside the table entirely. The last three rows are covered by SPEC, not by shipped source.
 
 ---
 
@@ -63,11 +82,15 @@ Coverage: **20 / 20** (100%). All shipped screens covered.
 |-------|--------|-------|
 | J1 — every journey YAML has required top-level fields | PASS | id, version, persona, goal, success_metric, screen_sequence, expected_outcome present in all 9 |
 | J2 — id matches filename stem | PASS | all 9 file stems match their `id:` value |
-| J3 — screen_sequence minItems=1 | PASS | minimum 1 screen (home-overview); maximum 6 |
+| J3 — screen_sequence minItems=1 | PASS | minimum 1 screen (home-overview); maximum 6 (recurring-and-statements, send-money-payment) |
 | J4 — success_metric.kind ∈ enum | PASS | all use valid enum values (activation, task_completion, retention, satisfaction, time_to_value) |
 | J5 — tier ∈ enum | PASS | maximum / medium / minimal used correctly |
 | J6 — preconditions and failure_modes present on high-risk journeys | PASS | all maximum-tier journeys have both; minimal-tier journeys have failure_modes |
-| J7 — INDEX.md covers all journey ids | PASS | all 8 journeys listed above |
+| J7 — INDEX.md covers all journey ids | PASS | all 9 journeys listed above |
+
+The J1/J2 rows already read "all 9" before this pass while the inventory table listed 8 and
+the total said 8 — the compliance section had been written against a 9-journey roster that
+the rest of the file did not describe. Adding `send-money-payment` makes all three agree.
 
 ---
 

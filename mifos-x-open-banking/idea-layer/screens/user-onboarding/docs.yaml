@@ -1,3 +1,7 @@
+sibling: docs
+schema_version: "4.0"
+feature_id: user-onboarding
+
 feature: consent-onboarding
 contract_version: "2.0.0"
 screen_id: user-onboarding
@@ -14,6 +18,8 @@ acceptance_refs:
   - FR-002
 scaffolded_by: /idea-heal
 archetype: onboarding
+# flow_ref backfilled 2026-08-02 (/idea-sync) from flows/*.yaml#screens[] membership.
+flow_ref: onboarding-consent
 # ── Description corrected 2026-07-30 (/idea-feature-export stale-artifact fix) ──
 # The prior text described a THREE-STEP pager (intro -> permissions_overview ->
 # consent_explainer) plus an ob_explainer bottom sheet. Source ships ONE stateless screen:
@@ -42,48 +48,43 @@ metadata:
   impl_ready_schema: v2
 contracts: []
 libraries: []
-vm_actions:
-  - name: StepNext
-    signature: fun stepNext() -> Unit
-    state_mutations:
-      - currentStep = min(currentStep + 1, 3)
-    side_effects: []
-    error_handling: {}
-    note: 'Maps currentStep to UI state: 1→intro, 2→permissions_overview, 3→consent_explainer'
-  - name: StepBack
-    signature: fun stepBack() -> Unit
-    state_mutations:
-      - currentStep = max(currentStep - 1, 1)
-    side_effects: []
-    error_handling: {}
-    note: 'No-op guard: currentStep already 1 → does nothing'
-  - name: OpenObExplainer
-    signature: fun openObExplainer() -> Unit
-    state_mutations:
-      - showObExplainerSheet = true
-    side_effects: []
-    error_handling: {}
-  - name: CloseObExplainer
-    signature: fun closeObExplainer() -> Unit
-    state_mutations:
-      - showObExplainerSheet = false
-    side_effects: []
-    error_handling: {}
-  - name: NavigateToLogin
-    signature: fun navigateToLogin() -> Unit
-    state_mutations: []
-    side_effects:
-      - Navigator.navigate(Route.Login)
-    error_handling: {}
-    note: Only callable from consent_explainer state (step 3)
+# vm_actions EMPTIED 2026-08-01 (/idea-sync, from /idea-verify XS-3).
+#
+# This block still declared five actions — StepNext, StepBack, OpenObExplainer,
+# CloseObExplainer, NavigateToLogin — driving a three-step pager and a bottom sheet that
+# do not exist. Three of them named states this screen does not declare:
+#   StepNext        -> "1→intro, 2→permissions_overview, 3→consent_explainer"
+#   NavigateToLogin -> "Only callable from consent_explainer state (step 3)"
+#   Open/CloseObExplainer -> showObExplainerSheet
+# ui.yaml:66 declares states: [intro]. ui.yaml:34-40 records every one of these actions,
+# both extra states and the sheet, as removed in the 2026-07-28 reverse sync because source
+# never built them.
+#
+# The contradiction was INTERNAL to this file: the `description` above was corrected on
+# 2026-07-30 to read "Stateless: no ViewModel, no I/O — the continue button is a nav-host
+# callback, not a dispatched action", and these five actions survived directly beneath that
+# correction. A codegen consumer reading vm_actions would have emitted a ViewModel for a
+# screen the spec says has none.
+#
+# Empty is the correct value, not a placeholder: ui.yaml sets `state_model: {}` and
+# `implementation.viewmodel: null`, and TC-ONB-003 asserts "No ViewModel is resolved — the
+# composable takes only onContinue and a Modifier".
+vm_actions: []
+nav_callbacks:
+  # The screen's only outward edge. Host-owned, NOT a dispatched action — which is precisely
+  # why it does not appear in vm_actions above.
+  - "onContinue -> navController.navigate(LoginRoute)"
 error_cases: []
 test_fixtures:
   source: screens/user-onboarding/tests.yaml
-  scenario_count: 12
+  # Corrected 2026-08-01 (/idea-sync, from /idea-verify XS-1): was scenario_count 12 with
+  # priority_distribution high:7/medium:5. tests.yaml holds 4 scenarios (TC-ONB-001..004) and
+  # uses the critical/normal vocabulary, not high/medium — the buckets were as stale as the
+  # total. The 12 counted the pre-07-28 pager suite that was reverse-synced away.
+  scenario_count: 4
   priority_distribution:
-    high: 7
-    medium: 5
-    low: 0
+    critical: 2
+    normal: 2
 status_history:
   - from: enriched
     to: designed

@@ -1,3 +1,7 @@
+sibling: docs
+schema_version: "4.0"
+feature_id: settings
+
 feature: settings
 contract_version: "2.0.0"
 status: approved
@@ -11,6 +15,8 @@ cluster: settings
 acceptance_refs: []
 scaffolded_by: /idea-heal
 archetype: settings
+# flow_ref backfilled 2026-08-02 (/idea-sync) from flows/*.yaml#screens[] membership.
+flow_ref: settings-and-profile
 # ── Description corrected 2026-07-30 (/idea-feature-export stale-artifact fix) ──
 # Listed security (biometric lock + session timeout), notifications, a Profile row and a
 # Clear Local Data row. None ships: components are appearance_header/theme_row,
@@ -34,13 +40,8 @@ has_server: false
 capabilities: [has_ui, has_flow, has_local_preferences]
 # RULE-CAP-HAS-LOCAL-PREFERENCES-001 V1/V3. DataStore-backed, read and written by
 # SettingsViewModel via UserDataRepository.setDarkThemeConfig.
-preferences:
-  - key: dark_theme_config
-    type: string
-    default: "System"          # V3 — never starts null; AppTheme falls back to the OS setting
-    scope: device              # not user-scoped: it is not synced and does not follow the PSU across devices
-    allowed: ["Light", "Dark", "System"]
-    surface: "settings#theme_row"
+# preferences: MOVED to ui.yaml 2026-07-31 (CROSS_LEAK repair — sibling-layout.json
+# assigns `preferences` to the ui sibling, capability_gate has_local_preferences).
 # V2 schema migration: none needed yet — dark_theme_config is the only key and has never
 # been renamed or removed. Declared explicitly so a future rename records a migration here
 # rather than silently orphaning a stored value.
@@ -75,100 +76,66 @@ libraries:
   - name: kotlinx-serialization
     module: org.jetbrains.kotlinx:kotlinx-serialization-json
     purpose: Serialization for structured preference types held in preferences
+# vm_actions REWRITTEN 2026-08-01 (/idea-sync, from /idea-verify XS-3).
+#
+# /idea-verify flagged ONE action here — clearLocalDataConfirm, caught because it named the
+# removed `clear_confirm` state. Reading the block revealed the finding was NARROWER than the
+# defect: all 12 actions described the pre-2026-07-28 design, and 8 of them drove surfaces
+# ui.yaml:29-37 explicitly records as removed in the reverse sync:
+#
+#   toggleBiometricLock, updateSessionTimeout          -> no Security section is rendered
+#   toggleConsentExpiryNotification,                   -> no Notifications section is rendered
+#     toggleSecurityAlertsNotification
+#   navigateProfile                                    -> the profile screen was never built
+#   clearLocalDataConfirm, dismissClearLocalData,      -> no destructive cache-erasure surface
+#     executeClearLocalData                               exists; clear_confirm is not a state
+#
+# The remaining four were real behaviours under the wrong shape: `updateTheme(theme: String)`
+# is the pre-sync name for SelectTheme(config: DarkThemeConfig), and navigateConsentList /
+# openExternalUrl / openOssLicences are not SettingsActions at all — they are nav-host
+# callbacks, which is why they are moved to nav_callbacks below rather than deleted.
+#
+# The block now mirrors ui.yaml#state_model.SettingsViewModel.actions verbatim: four members.
 vm_actions:
-  - name: updateTheme
-    signature: 'suspend fun updateTheme(theme: String)'
+  - name: SelectTheme
+    signature: 'fun selectTheme(config: DarkThemeConfig)'
     state_mutations:
-      - settings.theme
+      - "content.themeConfig = config; content.themeLabel re-resolved from the new config"
     side_effects:
-      - Writes theme key to DataStore preferences atomically
-      - Dynamic theming reacts via collectAsStateWithLifecycle in AppTheme
+      - Writes DarkThemeConfig back through UserDataRepository (androidx.datastore)
+      - The user-data stream re-emits and AppTheme retints the whole app
     error_handling:
       on_error: log_only
-  - name: toggleBiometricLock
-    signature: suspend fun toggleBiometricLock()
+    notes: "The only persisted mutation on this screen. Surface: ui.yaml#theme_row on_select."
+  - name: ToggleThemeMenu
+    signature: fun toggleThemeMenu()
     state_mutations:
-      - settings.biometric_lock_enabled
-    side_effects:
-      - Flips biometric_lock_enabled in DataStore atomically
-      - If no enrolled biometrics detected, emits BiometricUnavailable event — no DataStore write
-    error_handling:
-      on_error: show_informational_dialog
-  - name: updateSessionTimeout
-    signature: 'suspend fun updateSessionTimeout(duration: String)'
-    state_mutations:
-      - settings.session_timeout
-    side_effects:
-      - Writes session_timeout key to DataStore; value must be one of [2 minutes, 5 minutes, 10 minutes, 30 minutes]
-    error_handling:
-      on_error: log_only
-  - name: toggleConsentExpiryNotification
-    signature: suspend fun toggleConsentExpiryNotification()
-    state_mutations:
-      - settings.notify_consent_expiry
-    side_effects:
-      - Persists notify_consent_expiry flag to DataStore atomically
-    error_handling:
-      on_error: log_only
-  - name: toggleSecurityAlertsNotification
-    signature: suspend fun toggleSecurityAlertsNotification()
-    state_mutations:
-      - settings.notify_security_alerts
-    side_effects:
-      - Persists notify_security_alerts flag to DataStore atomically
-    error_handling:
-      on_error: log_only
-  - name: navigateConsentList
-    signature: fun navigateConsentList()
-    state_mutations: []
-    side_effects:
-      - Emits navigation event to consent-list route
+      - "content.isThemeMenuExpanded = !content.isThemeMenuExpanded"
+    side_effects: []
     error_handling: {}
-  - name: navigateProfile
-    signature: fun navigateProfile()
-    state_mutations: []
-    side_effects:
-      - Emits navigation event to profile route
-    error_handling: {}
-  - name: clearLocalDataConfirm
-    signature: fun clearLocalDataConfirm()
+    notes: "Pure local dropdown state — nothing is persisted."
+  - name: DismissThemeMenu
+    signature: fun dismissThemeMenu()
     state_mutations:
-      - state = clear_confirm
-    side_effects:
-      - Emits ShowClearDataConfirmation event; SettingsScreen observes, sets state to clear_confirm, and reveals clear_local_data_sheet
+      - "content.isThemeMenuExpanded = false"
+    side_effects: []
     error_handling: {}
-  - name: dismissClearLocalData
-    signature: fun dismissClearLocalData()
+    notes: "Collapses the dropdown without changing the selected theme."
+  - name: RetryLoad
+    signature: fun retryLoad()
     state_mutations:
-      - state = content
+      - "uiState = Content on recovery, or Error again on repeat failure"
     side_effects:
-      - Dismisses clear_local_data_sheet bottom-sheet; screen returns to content state; no data erased
+      - Re-reads the UserDataRepository preference stream to rebuild Content
     error_handling: {}
-  - name: executeClearLocalData
-    signature: suspend fun executeClearLocalData()
-    state_mutations:
-      - state = content
-    side_effects:
-      - Deletes all locally cached account and transaction rows from Room/SQLDelight (transactional delete)
-      - Resets DataStore cached-at timestamp keys to null (only after Room delete succeeds)
-      - Emits LocalDataCleared event; UI shows success snackbar
-      - Open Banking consent authorisations on the server are NOT affected
-    error_handling:
-      on_room_delete_failure: show_error_snackbar_with_retry
-      on_error: DataStore timestamps NOT reset until Room deletion succeeds (transactional ordering)
-  - name: openExternalUrl
-    signature: 'fun openExternalUrl(url: String)'
-    state_mutations: []
-    side_effects:
-      - Fires platform intent / openURL to system browser with provided URL
-    error_handling:
-      on_no_browser: show_snackbar
-  - name: openOssLicences
-    signature: fun openOssLicences()
-    state_mutations: []
-    side_effects:
-      - Emits navigation event to AboutLibraries OSS licences destination
-    error_handling: {}
+    notes: "Both SettingsErrorKind values are retriable, so this is reachable from either."
+
+nav_callbacks:
+  # Host-owned; invoked by settingsScreen, NOT members of SettingsAction. Previously misfiled
+  # in vm_actions as navigateConsentList / openExternalUrl / openOssLicences.
+  - "onNavigateToConsents -> navigate(ConsentListRoute)   [surface: consents_row]"
+  - "onNavigateToLicences -> navigate(LicencesRoute)      [surface: licences_row]"
+  - "onOpenUrl -> LocalUriHandler.openUri(url)            [surface: privacy_row]"
 error_cases:
   - trigger: load_settings_on_mount
     condition: DataStore preferences Flow throws IOException on initial collection (storage corruption, disk full)
@@ -182,20 +149,15 @@ error_cases:
       Show snackbar — URL not opened silently; no crash. Snackbar offers no retry (no viable action available without a
       browser).
     severity: warning
-  - trigger: toggle_biometric_lock
-    condition: >-
-      Device has no biometric hardware or no enrolled biometrics (BiometricManager.BIOMETRIC_ERROR_NONE_ENROLLED /
-      NO_HARDWARE)
-    handling: >-
-      Emit BiometricUnavailable event; Settings screen shows informational AlertDialog explaining unavailability.
-      DataStore not written; switch remains Off.
-    severity: info
-  - trigger: clear_local_data
-    condition: Room/SQLDelight delete transaction fails (IOException, disk full)
-    handling: >-
-      Show error snackbar with Retry action. DataStore timestamps are not reset until Room deletion succeeds
-      (transactional ordering preserved).
-    severity: error
+  # REMOVED 2026-08-01 (/idea-sync, same XS-3 sweep as vm_actions above): the
+  # `toggle_biometric_lock` and `clear_local_data` error cases described failure modes of the
+  # two surfaces the 2026-07-28 reverse sync deleted (no Security section, no cache-erasure
+  # sheet). An error case for an action that cannot be dispatched is unreachable by
+  # construction. Swept in the SAME edit as the actions that raised them rather than left for
+  # a later pass — leaving them is how this file came to contradict its own ui.yaml.
+  #
+  # The two surviving cases below are the real ones, and they map to the two SettingsErrorKind
+  # members ui.yaml declares: PreferencesUnavailable and Unknown. Both are retriable.
 exports:
   spec_md:
     source_hash: regenerated-2026-07-14
@@ -222,9 +184,15 @@ status_history:
     reason: ""
 
 test_fixtures:
-  source: FakeSettingsDataStore in-memory preferences; FakeLocalCacheRepository
-  scenario_count: 17
+  # Corrected 2026-08-01 (/idea-sync, from /idea-verify XS-1). Was scenario_count 17 with
+  # priority_distribution high:7/medium:5/low:2 — which summed to 14, so the block did not even
+  # agree with itself. tests.yaml holds 9 scenarios (TC-SET-001..009) using the critical/normal
+  # vocabulary. The 17 counted the pre-07-28 suite for the Security, Notifications, Permissions
+  # and Storage sections that no longer exist.
+  #
+  # FakeLocalCacheRepository dropped from source: it backed executeClearLocalData, removed above.
+  source: FakeSettingsDataStore in-memory preferences
+  scenario_count: 9
   priority_distribution:
-    high: 7
-    medium: 5
-    low: 2
+    critical: 4
+    normal: 5

@@ -1,3 +1,7 @@
+sibling: api
+schema_version: "4.0"
+feature_id: payment-consent
+
 screen_id: payment-consent
 
 api_base_path: "/obie/open-banking/v4.0/pisp"
@@ -117,19 +121,27 @@ response_shape:
 
 # ─────────────────────────────────────────────────────────────────────────
 # REUSE MAP — what already ships and must not be rebuilt
+#
+# Key renamed `path:` -> `source_ref:` on 2026-08-02. These are Kotlin SOURCE
+# references, never HTTP endpoints, but framework-verify-api-contract-orphan.sh
+# ACO-1 matches every `- path:` line in an api.yaml regardless of its parent
+# block, so all five were reported as orphan endpoints with no matching
+# Service.kt method. The gate defect is framework-side and stays open there
+# (FW-2); this rename is the project-side fix, and `source_ref` reads truer for
+# a file reference than `path` did.
 # ─────────────────────────────────────────────────────────────────────────
 existing_source_surface:
   reusable:
-    - path: "core/data/.../callback/PendingAuthStore.kt"
+    - source_ref: "core/data/.../callback/PendingAuthStore.kt"
       note: "state/nonce/consentId stash with a single-use consume(); reuse the contract verbatim"
-    - path: "cmp-navigation ConsentRedirectBus (per-platform publish/collect)"
+    - source_ref: "cmp-navigation ConsentRedirectBus (per-platform publish/collect)"
       note: "Android onCreate/onNewIntent, desktop loopback, iOS bridge — already wired"
-    - path: "core/network/api/OAuth.kt exchangeAuthorizationCode"
+    - source_ref: "core/network/api/OAuth.kt exchangeAuthorizationCode"
       note: "Token-exchange call shape; needs a payments-scope variant"
-    - path: "core/network/BuildClientAssertion.kt"
+    - source_ref: "core/network/BuildClientAssertion.kt"
       note: "private_key_jwt client assertion — unchanged for this flow"
   must_not_reuse:
-    - path: "core/data/.../callback/ConsentSession.kt saveConsentMeta / token persistence"
+    - source_ref: "core/data/.../callback/ConsentSession.kt saveConsentMeta / token persistence"
       note: >-
         Persisting a payment token here would flip isActive() semantics and overwrite the AIS
         session token. The payment token is held in memory for the life of the payment only.

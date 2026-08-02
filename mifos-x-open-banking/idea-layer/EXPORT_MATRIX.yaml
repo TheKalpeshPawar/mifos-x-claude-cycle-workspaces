@@ -17,15 +17,29 @@
 
 schema_version: "2.0"
 project: "mifos-x-open-banking"
-generated: "2026-07-30"
-generated_by: "/idea-sync (feature roster refresh)"
+generated: "2026-08-02"
+generated_by: "/idea-sync (source-truth reverse pass)"
+previous_generation: { at: "2026-07-30", by: "/idea-sync (feature roster refresh)" }
 
 summary:
   features_total: 23
-  cells_total: 73          # 27 data_flow + 46 export cells (all 5 batches — 23/23 features)
-  fresh: 73
+  # Counted, not carried forward. The prior `cells_total: 73` was a hand-sum ("27 data_flow +
+  # 46 export") that did not match the file: the __all__ / __project__ rows each stand for
+  # `count` artifacts, so the row count and the artifact count are two different numbers and
+  # only one of them was ever written down. Both are recorded now.
+  ledger_rows: 58          # 46 per-feature + 12 aggregate (__all__ / __project__)
+  artifacts_tracked: 436   # sum of (count // 1) across all rows
+  fresh: 436
   stale: 0
   pending: 0
+  # Measured against each artifact's DECLARED SOURCE, never file mtime — the lesson
+  # CAPABILITY_GAPS#artifact_sync records this project learning the hard way (a first pass
+  # compared everything against max(ui.yaml, docs.yaml) and reported all 23 features stale
+  # when only 2 were). This pass touched every ui.yaml, but only via test_tag additions and
+  # sibling-layout relocations; no export renders test_tag, so nothing downstream went stale.
+  staleness_basis: declared-source
+  regenerated_this_pass:
+    - "screens/{feature}/prompts/{state}.md — 95 files, genuinely stale since 2026-07-30T19:54"
 
 cells:
   # data_flow cells regenerated 2026-07-30 by /idea-data-flow. These are the FIRST
@@ -104,14 +118,59 @@ cells:
       output_path: "idea-layer/_cache/data-flow-views/per-table/_none.yaml",
       command: "/idea-data-flow", generated: "2026-07-30",
       note: "Project owns no server-side tables — server-layer holds client contracts for the external HSBC API only." }
-# Still empty by design. exports/ and mockups/ remain absent project-wide since the
-# 2026-07-28 reverse sync; generation is deferred, not stale. The 2026-07-30 roster
-# refresh raises the denominator 20 -> 23 (send-money, payment-consent, payment-status)
-# so the pending counts describe the real corpus.
+
+  # STEP 4.MATRIX cells (added 2026-07-31 /idea-sync). These three project-level artifacts are
+  # what layer0 mtime-staleness actually watches, but they had no EXPORT_MATRIX row at all — so
+  # the matrix could never report them stale and the only staleness signal was the audit's
+  # separate precondition queue. Registering them closes that blind spot.
+  - { feature: __project__, output_type: app_flow, status: fresh, count: 1,
+      output_path: "idea-layer/APP_FLOW.mmd",
+      inputs: ["idea-layer/flows/*.yaml", "idea-layer/screens/*/flow.yaml"],
+      command: "/idea-sync", generated: "2026-07-31",
+      note: "Corrected the duplicated bottom-nav order-0 claim and folded the two app-shell entry sources onto app_shell_bottom_nav." }
+  - { feature: __project__, output_type: tag_registry, status: fresh, count: 86,
+      output_path: "idea-layer/TAG_REGISTRY.yaml",
+      inputs: ["idea-layer/screens/*/ui.yaml", "idea-layer/screens/*/data-flow.yaml", "idea-layer/idea-plan.yaml"],
+      command: "/idea-sync", generated: "2026-07-31",
+      note: "82 -> 86. Added the 4 send-money manual-entry/reference actions introduced by the 07-31 design-validate fixes; verified by name, not by count." }
+  - { feature: __project__, output_type: dev_status, status: fresh, count: 1,
+      output_path: "idea-layer/dashboard/DEV_STATUS.md",
+      inputs: ["idea-layer/state/PIPELINE_STATE.yaml", "idea-layer/idea-plan.yaml"],
+      command: "/idea-sync", generated: "2026-07-31" }
+
+  # ── Cells registered 2026-08-02 (/idea-sync source-truth pass) ─────────────
+  # These three artifact groups existed on disk with NO ledger row at all, which is how
+  # pending_generation could keep calling them absent: nothing was watching them, so nothing
+  # could contradict it. Registering them closes that blind spot the same way the 07-31 pass
+  # closed it for APP_FLOW / TAG_REGISTRY / DEV_STATUS.
+  - { feature: __all__, output_type: mockup, status: fresh, count: 23,
+      output_path: "idea-layer/mockups/{feature}/MOCKUP.md",
+      inputs: ["idea-layer/screens/{feature}/ui.yaml", "idea-layer/screens/{feature}/docs.yaml"],
+      command: "/idea-feature-mockup", generated: "2026-07-31" }
+  - { feature: __all__, output_type: prompts_figma, status: fresh, count: 23,
+      output_path: "idea-layer/mockups/{feature}/PROMPTS_FIGMA.md",
+      inputs: ["idea-layer/screens/{feature}/ui.yaml", "idea-layer/screens/{feature}/docs.yaml"],
+      command: "/idea-feature-mockup", generated: "2026-07-31" }
+  - { feature: __all__, output_type: preview_html, status: fresh, count: 95,
+      output_path: "idea-layer/screens/{feature}/preview/{state}.html",
+      inputs: ["idea-layer/screens/{feature}/ui.yaml", "idea-layer/design-system/design-tokens.yaml"],
+      command: "/idea-feature-render", generated: "2026-07-31",
+      note: "one file per declared state; per-feature counts range 1 (licences, user-onboarding) to 6 (consent-callback, consent-detail)" }
+  - { feature: __all__, output_type: prompts_per_state, status: fresh, count: 95,
+      output_path: "idea-layer/screens/{feature}/prompts/{state}.md",
+      inputs: ["idea-layer/screens/{feature}/ui.yaml", "idea-layer/screens/{feature}/demo-data.yaml"],
+      command: "stitch-prompt-build.ts --all-features --all-states --force", generated: "2026-08-02",
+      note: "rebuilt this pass — the 07-30 build predated the 07-31 component changes" }
+# ── HEADER CORRECTED 2026-08-02 (/idea-sync source-truth pass) ──────────────
+# This comment used to read "Still empty by design. exports/ and mockups/ remain absent
+# project-wide since the 2026-07-28 reverse sync". That stopped being true on 2026-07-30
+# (exports regenerated 23/23) and again on 2026-07-31 (mockups + previews generated). Only
+# the Stitch-SDK mockups under mockups/{feature}/stitch/ are still absent, and that one is a
+# settled user deferral. Everything else in pending_generation below is COMPLETE.
 
 pending_generation:
-  # What must be regenerated and by which command. Nothing below is stale —
-  # all of it is absent, deliberately.
+  # What still needs generating, and by which command. Re-verified against disk 2026-08-02:
+  # 4 of the 5 rows are COMPLETE; only mockup_stitch remains deferred.
   - output_type: spec
     path_template: "idea-layer/exports/{feature}/SPEC.md"
     features: 23
@@ -132,31 +191,74 @@ pending_generation:
     path_template: "idea-layer/exports/{feature}/API.md"
     features: 23
     produced_by: "/idea-feature-export --all"
+  # ── CORRECTED 2026-08-02 by /idea-sync (source-truth pass) ──────────────────
+  # Three of the four rows below claimed `status: absent, deferred: true` for artifacts that
+  # ALL exist on disk — 23 MOCKUP.md, 23 PROMPTS_FIGMA.md and 95 preview HTML files. The
+  # deferral was real when written (2026-07-30) but was worked off afterwards and the ledger
+  # was never re-stamped, so the file that exists to answer "what still needs generating"
+  # named three output types that need nothing. Counts below were taken from disk, not
+  # inferred from the prior entries.
   - output_type: mockup
     path_template: "idea-layer/mockups/{feature}/MOCKUP.md"
     features: 23
+    generated: 23
+    remaining: 0
     produced_by: "/idea-feature-mockup"
-    status: absent
-    deferred: true
-    deferred_reason: "design generation — grouped with the deferred stitch work"
+    status: COMPLETE
+    verified_at: "2026-08-02"
   - output_type: prompts_figma
     path_template: "idea-layer/mockups/{feature}/PROMPTS_FIGMA.md"
     features: 23
+    generated: 23
+    remaining: 0
     produced_by: "/idea-feature-mockup"
-    status: absent
-    deferred: true
-    deferred_reason: "design generation — grouped with the deferred stitch work"
-  - output_type: mockup_stitch
-    path_template: "idea-layer/mockups/{feature}/stitch/"
-    features: 23
-    produced_by: "/idea-feature-stitch"
-    status: absent
-    deferred: true
-    deferred_reason: "heavy generation — explicitly deferred; may not be generated at all (open decision)"
+    status: COMPLETE
+    verified_at: "2026-08-02"
   - output_type: preview_html
     path_template: "idea-layer/screens/{feature}/preview/*.html"
     features: 23
+    generated: 95        # one per declared state — 23/23 features complete, counts vary 1..6
+    remaining: 0
     produced_by: "/idea-feature-render"
+    status: COMPLETE
+    verified_at: "2026-08-02"
+    freshness_note: >-
+      Rendered 2026-07-31 21:55. The 14 ui.yaml files with later mtimes were touched ONLY by
+      the CROSS_LEAK sibling-layout repairs (api / dependencies / screens block relocations)
+      and by this pass's test_tag backfill — no component, state or string changed, so the
+      previews are not content-stale. Verified by content probe, not by mtime: the newest
+      send-money components (review_summary, form_step_indicator, no_saved_payees) are all
+      present in send-money/preview/content.html.
+  - output_type: prompts_per_state
+    path_template: "idea-layer/screens/{feature}/prompts/{state}.md"
+    features: 23
+    generated: 95
+    remaining: 0
+    produced_by: ".claude-runtime/scripts/stitch-prompt-build.ts (BUILD stage of /idea-feature-stitch)"
+    status: COMPLETE
+    regenerated_at: "2026-08-02"
+    regeneration_reason: >-
+      The 2026-07-30T19:54 build predated the 07-31 component changes. Content-confirmed
+      stale on two features: send-money prompts lacked form_step_indicator / no_saved_payees /
+      the four review_* rows, and transactions prompts never mentioned search_bar after the
+      text_field -> search_bar retype. Rebuilt with --force (STN7 cache-freshness refuses
+      otherwise): 95 written, 0 failed. No Stitch SDK call — BUILD stage only.
+    known_renderer_omission: >-
+      11 component ids across 5 features still do not appear in their prompts after a forced
+      rebuild, so this is a BUILDER limitation, not staleness: stitch-prompt-build.ts walks
+      only `children:` when rendering the component tree, and these 11 live under other
+      container keys — `chips:` (accounts 4, direct-debits 2, user-onboarding 2), `stats:`
+      (transactions 2) and `leading:` (beneficiaries 1). Framework-side; recorded in
+      CAPABILITY_GAPS rather than papered over by renaming legitimate project keys.
+  - output_type: mockup_stitch
+    path_template: "idea-layer/mockups/{feature}/stitch/"
+    features: 23
+    generated: 0
+    produced_by: "/idea-feature-stitch (GENERATE stage, Stitch SDK)"
     status: absent
     deferred: true
-    deferred_reason: "heavy generation — explicitly deferred"
+    deferred_reason: >-
+      Settled user deferral 2026-07-30 (CAPABILITY_GAPS#deferred_by_design.stitch_coverage,
+      PROJECT_CONFIG#idea.visual_tier_deferred_scope). This is the ONLY row of the five that
+      is still genuinely deferred. Verified absent on disk 2026-08-02: 0 stitch/ dirs. Do not
+      re-raise as a gap.

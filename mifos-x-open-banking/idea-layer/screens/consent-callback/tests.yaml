@@ -1,3 +1,7 @@
+sibling: tests
+schema_version: "4.0"
+feature_id: consent-callback
+
 screen_id: consent-callback
 
 scenarios:
@@ -26,12 +30,17 @@ scenarios:
       - "App navigates to accounts screen after 1.5 s delay"
       - "loading_layout hidden"
 
+  # state corrected `empty` -> `awaiting` 2026-08-01 (/idea-sync, from /idea-verify XS-2b).
+  # ui.yaml:30 declares [loading, awaiting, content, access_denied, security_error, error] —
+  # there is no `empty` state on this screen. Only the LABEL was wrong: every assertion below
+  # already targets awaiting_state and the consent_callback_awaiting_* strings, so the test
+  # was renamed rather than rewritten.
   - id: TC-CALLBACK-003
-    description: "Empty state shown when consent still AwaitingAuthorisation after exchange"
-    state: empty
+    description: "Awaiting state shown when consent still AwaitingAuthorisation after exchange"
+    state: awaiting
     priority: medium
     given: "Token exchange succeeded but HSBC consent-status still returns AwaitingAuthorisation"
-    when: "exchange_and_verify completes with empty condition"
+    when: "exchange_and_verify completes with an AwaitingAuthorisation consent status"
     then:
       - "hourglass_empty icon visible in awaiting_state"
       - "'{strings.consent_callback_awaiting_title}' title visible"

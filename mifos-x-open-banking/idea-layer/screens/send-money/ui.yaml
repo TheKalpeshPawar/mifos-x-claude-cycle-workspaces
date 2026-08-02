@@ -1,3 +1,7 @@
+sibling: ui
+schema_version: "4.0"
+feature_id: send-money
+
 screen_id: send-money
 archetype: form
 name: "{strings.send_money.screen_title}"
@@ -21,8 +25,21 @@ shell:
 
 states: [loading, content, submitting, success, error]
 
+# TEST TAGS — deferred, not missing. Recorded 2026-08-02 by /idea-sync (source-truth pass).
+test_tags:
+  status: deferred-until-implemented
+  reason: >-
+    This feature has no source module yet (see docs.yaml#spec_ahead_of_source), so there is no
+    SendMoneyTestTags.kt to copy from. Every other feature's tags were backfilled FROM source
+    this pass; authoring them here first would invert that direction and invent a contract the
+    generator has no reason to honour.
+  owed_by: /kmp-implement
+  expectation: >-
+    The implementing pass emits SendMoneyTestTags.kt, then a follow-up /idea-sync binds the
+    values back onto these components — the same direction used for the 18 shipped modules.
+
 business_logic:
-  kind: form
+  kind: composite
   description: >-
     Three-step consumer payment form backed by the HSBC PISP domestic-payment endpoints.
     Step 1 (Recipient) lists the PSU's own authorised accounts as debtor candidates (from the
@@ -109,36 +126,11 @@ state_model:
       - AccountsRepository         # already shipped — debtor candidates
       - BeneficiariesRepository    # already shipped — creditor candidates
 
-dependencies:
-  tier: feature
-  features:
-    - name: accounts
-      relation: data-source
-      params: []
-      notes: "Supplies the debtor account list — the PSU's own authorised accounts."
-    - name: beneficiaries
-      relation: data-source
-      params: [accountId]
-      notes: "Supplies saved payees as creditor candidates."
-    - name: payment-consent
-      relation: child
-      params: [consentId]
-      notes: "Owns the app-to-app authorise leg on scope=payments."
-    - name: payment-status
-      relation: child
-      params: [paymentId]
-      notes: "Receives DomesticPaymentId after a successful submit."
-    - name: consent-list
-      relation: error-recovery
-      condition: "error.type == ConsentRevoked"
-  libraries:
-    - name: ktorfit
-      coords: "de.jensklingenberg.ktorfit:ktorfit-lib:2.x"
-      purpose: "REST client for the HSBC PISP domestic-payment endpoints"
+# dependencies: MOVED to flow.yaml 2026-07-31 (CROSS_LEAK repair —
+# sibling-layout.json assigns `dependencies` to the flow sibling).
 
 components:
-  - type: progress_indicator
-    variant: circular
+  - type: progress_circular
     state_binding: [loading]
     accessibility_label: "{strings.send_money.loading_label}"
     test_context:
@@ -469,6 +461,7 @@ components:
       action: confirm_and_stage_consent
       action_contract:
         effect: call_api
+        writes_to: /domestic-payment-consents
         external_library_refs: [ktorfit, "hsbc-obie-pisp-v4.0:domestic-payment-consents"]
         description: >-
           Stages the payment by POSTing a domestic-payment-consent with a payments-scope
@@ -503,9 +496,8 @@ components:
       data_driven: false
 
   # ── Submitting ────────────────────────────────────────────────────────
-  - type: progress_indicator
+  - type: progress_circular
     id: submitting_indicator
-    variant: circular
     state_binding: [submitting]
     accessibility_label: "{strings.send_money.submitting_label}"
     test_context:
@@ -574,6 +566,7 @@ components:
           action: retry_submit
           action_contract:
             effect: call_api
+            writes_to: /domestic-payments
             external_library_refs: [ktorfit, "hsbc-obie-pisp-v4.0:domestic-payments"]
             description: >-
               Re-sends the failed PISP call reusing the SAME idempotency key, so a retry after a

@@ -11,8 +11,14 @@
 
 schema_version: "1.0.0"
 project: mifos-x-open-banking
-generated_at: "2026-07-31T19:50:00Z"
-generated_by: "/idea-sync STEP 0.TRAIN.GEN"
+generated_at: "2026-08-02T05:29:21Z"
+generated_by: "/idea-sync STEP 0.TRAIN.GEN (source-truth reverse pass)"
+previous_generation:
+  at: "2026-07-31T19:50:00Z"
+  what_changed: >-
+    component_inventory re-measured (414 -> 430, plus the walker/components[] reconciliation),
+    action_contract.coverage_holes closed, and a new test_tags section added recording the
+    259 source-derived bindings this pass wrote across 20 features.
 roster_size: 23
 sources:
   - idea-layer/screens/*/ui.yaml          # component + state inventory
@@ -27,11 +33,24 @@ sources:
 # Frequency across all 23 ui.yaml files. Reuse the established type before
 # inventing one; a new type needs a registry row (see registry_tiers below).
 component_inventory:
-  total_typed_components: 414           # == G-ACTION-CONTRACT evaluated block count
+  # Re-measured 2026-08-02 by /idea-sync (source-truth pass). The prior figures were one pass
+  # behind: they predated the 07-31 design-validate fixes (6 components added to send-money,
+  # transactions#search_field retyped text_field -> search_bar), the 07-31 CROSS_LEAK sibling
+  # repairs, and the account_description_card this pass added to account-detail.
+  total_typed_components: 430
+  walker_block_count: 431               # G-ACTION-CONTRACT, re-run 2026-08-02: 23 files, 0 violations
+  count_reconciliation: >-
+    The two numbers differ by one and both are correct. action-contract-walk.ts counts EVERY
+    node declaring a string `type:` anywhere in the document, which sweeps in two nodes that
+    are not components: settings/ui.yaml#preferences[dark_theme_config].type (a value type,
+    "string") and statements/ui.yaml#layout.content.type (a per-state layout hint,
+    "lazy_column"). by_type below counts components[] entries only. Recorded because
+    "total_typed_components: 414 # == G-ACTION-CONTRACT block count" asserted the two were the
+    same measure, and they are not.
   by_type:
-    text: 80
+    text: 82
     button: 53
-    empty_state: 44
+    empty_state: 45
     list_item: 35
     chip: 27
     list: 25
@@ -43,22 +62,28 @@ component_inventory:
     shimmer: 9
     icon_button: 8
     column: 7
-    text_field: 5
     image: 5
     icon: 5
+    text_field: 4                       # was 5 — transactions#search_field retyped to search_bar (07-31)
     spacer: 4
     row: 4
+    info_row: 4                         # new 2026-07-31 — the four send-money review rows
     error_state: 4
     badge: 4
     chip_group: 3
     skeleton: 2
+    search_bar: 2                       # was 1 — beneficiaries + transactions
     chip_row: 2
     avatar: 2
     text_button: 1
+    step_indicator: 1                   # new 2026-07-31 — send-money#form_step_indicator
     stat_block: 1
     snackbar: 1
     select: 1
-    search_bar: 1
+    review_card: 1                      # new 2026-07-31 — send-money#review_summary
+    dialog: 1
+    bottom_sheet: 1
+    banner: 1
 
   registry_tiers:
     note: >-
@@ -92,13 +117,56 @@ component_inventory:
       / dynamic content / coming soon) even when describing a genuinely unbuilt
       route — record that fact in implementation_status instead.
     coverage_holes:
-      note: >-
-        Two on_click components sit outside the rule's interactive vocabulary and are
-        therefore NOT evaluated by the gate. Widening the vocabulary is a rule-semantics
-        change with cross-project blast radius; recorded here so the hole stays visible.
-      unevaluated:
-        - { screen: home,     component: view_all_transactions_link, type: text_button }
-        - { screen: settings, component: theme_row,                  type: select }
+      # CLOSED 2026-07-31 framework-side, removed from this file 2026-08-02.
+      # The block used to list home#view_all_transactions_link (text_button) and
+      # settings#theme_row (select) as unevaluated. action-contract-walk.ts widened its
+      # INTERACTIVE set on 2026-07-31 to include text_button, select and the other types
+      # registered in layers/idea/templates/registry/actions.yaml; both now evaluate and PASS.
+      # Verified 2026-08-02 by re-running the walker: 431 blocks, 0 violations, 0 unevaluated.
+      status: none
+      last_verified: "2026-08-02"
+
+# ─── Test tags ────────────────────────────────────────────────────────────────
+# Added 2026-08-02 by /idea-sync (source-truth pass). Before that pass only 7 of 23 features
+# declared any test_tag at all while source carried 282 TestTags constants across 18 modules —
+# so a generator had no way to emit a tag a shipped test already asserts on.
+test_tags:
+  rule: RULE-KMP-COMPOSE-UITEST-001
+  direction: source-is-truth
+  bound_across_roster: 259
+  coverage: "20 of 23 features bound; the 3 PISP features are deferred until their modules exist"
+  contract: >-
+    Copy the tag string VERBATIM from feature/{f}/.../{F}TestTags.kt onto the matching
+    ui.yaml component's `test_tag:`. The value is what onNodeWithTag asserts on, so a
+    "tidied" string silently breaks every Robolectric and instrumented test for that screen.
+  conventions_in_use:
+    # Three coexist and ALL are source truth. Do not harmonise them.
+    - { form: "feature:camelCase", examples: ["accountDetail:headerCard", "consentDetail:statusChip"], features: 11 }
+    - { form: "feature_snake_case", examples: ["transactions_period_summary", "home_hero_card"], features: 5 }
+    - { form: "bare",              examples: ["hsbc_explainer_card", "intro_continue", "authorising_spinner"], features: 2 }
+  intra_file_breaks:
+    note: >-
+      Two modules mix forms WITHIN one TestTags object: statements uses "statements:camelCase"
+      for flat consts but "statements_snake_$id" for its three per-row builders, and
+      statement-detail does the same with txnRow. Both are source truth.
+  builder_keys:
+    note: >-
+      Per-row tags come from builder fns, so the suffix is whatever source passes — not always
+      the obvious domain id. Three cases worth knowing before authoring a test:
+    cases:
+      - "transactions row/pendingBadge -> transactionId.ifBlank { \"txn-$index\" }, because OBIE makes TransactionId optional"
+      - "account-detail chip -> the AccountDetailChip ENUM CASE (Transactions, StandingOrders, ...), not a slug"
+      - "consent-detail dateRow -> a private DateSlot enum's slug (connected / expires / txnFrom / txnTo)"
+  unbound_class:
+    note: >-
+      ~60 source tags have no component to bind to and are recorded per feature under
+      ui.yaml#test_tags.unbound rather than dropped. They are almost all one of three shapes:
+      a content-root tag on a wrapper column the idea-layer does not model, a *Title / *Body
+      tag on a Text node modelled as the parent component's `title:` / `body:` FIELD, or a
+      generic BASE const (settings:section, settings:row) never applied on its own.
+    do_not: >-
+      Do NOT synthesise child components to give these tags an anchor — it would inflate the
+      component inventory this file counts, and design-validate's REG checks with it.
 
 # ─── State patterns ───────────────────────────────────────────────────────────
 state_patterns:

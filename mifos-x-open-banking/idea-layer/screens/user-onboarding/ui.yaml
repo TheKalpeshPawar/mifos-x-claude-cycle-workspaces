@@ -1,3 +1,7 @@
+sibling: ui
+schema_version: "4.0"
+feature_id: user-onboarding
+
 screen_id: user-onboarding
 archetype: onboarding
 name: "Welcome to Open Banking"
@@ -65,10 +69,34 @@ shell:
 
 states: [intro]
 
+# TEST TAGS — reconciled against source 2026-08-02 by /idea-sync (source-truth pass).
+test_tags:
+  # This feature has NO module of its own. Its screen ships as IntroScreen.kt inside
+  # feature/login (PIPELINE_STATE#capabilities.kmp-implement records it under
+  # screens_without_own_module), so there is no UserOnboardingTestTags.kt to read.
+  source: "feature/login/src/commonMain/kotlin/org/mifosx/openbanking/feature/login/onboarding/IntroScreen.kt"
+  hosted_in_module: "feature/login"
+  declared_in_source: 2
+  bound: 2
+  no_testtags_object: >-
+    IntroScreen.kt applies both tags as INLINE STRING LITERALS (IntroScreen.kt:72 and :119),
+    not as consts in a TestTags object — the only screen in the codebase that does. Recorded
+    because a reader looking for the object will not find one, and because the /implement pass
+    that gives this feature its own module should promote them to a real TestTags object.
+  bound_tags:
+    - { tag: "intro_hero_illustration", component: hero_illustration, source_ref: "IntroScreen.kt:72" }
+    - { tag: "intro_continue",          component: continue_button,   source_ref: "IntroScreen.kt:119" }
+  untagged_in_source:
+    # Recorded so a future pass does not read these as MISSING bindings — source genuinely
+    # applies no tag to them, so there is nothing to bind.
+    - "trust_chips + its fapi_chip / fca_chip children — onboarding/AssistChip.kt applies no testTag"
+    - "intro_headline, intro_body — plain Text nodes, untagged in source"
+
 components:
 
   - type: image
     id: hero_illustration
+    test_tag: "intro_hero_illustration"
     state_binding: [intro]
     source: OnboardingHeroIllustration
     decorative: false
@@ -96,7 +124,7 @@ components:
     state_binding: [intro]
     value: "{strings.user_onboarding.intro_body}"
     style: bodyMedium
-    color: "on-surface-variant"
+    color: "onSurfaceVariant"
     test_context:
       purpose: "feature_login_intro_body — establishes FCA regulation and password-free access"
       required_fields: []
@@ -121,6 +149,7 @@ components:
 
   - type: button
     id: continue_button
+    test_tag: "intro_continue"
     state_binding: [intro]
     variant: filled
     label: "{strings.user_onboarding.intro_continue}"

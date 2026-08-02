@@ -1,3 +1,7 @@
+sibling: ui
+schema_version: "4.0"
+feature_id: consent-list
+
 screen_id: consent-list
 archetype: index_list
 name: "{strings.consent_list_title}"
@@ -90,11 +94,35 @@ shell:
 
 states: [loading, content, empty, error, error_auth]
 
+# TEST TAGS — reconciled against source 2026-08-02 by /idea-sync (source-truth pass).
+test_tags:
+  source: "feature/consent-list/src/commonMain/kotlin/org/mifosx/openbanking/feature/consentlist/ConsentListTestTags.kt"
+  declared_in_source: 19         # 16 const val + 3 per-consent builder fns
+  bound: 15
+  interpolated:
+    - { tag: "consentList:card:{item.Data.ConsentId}",       builder: "fun card(consentId)" }
+    - { tag: "consentList:statusChip:{item.Data.ConsentId}", builder: "fun statusChip(consentId)" }
+    - { tag: "consentList:urgencyChip:{item.Data.ConsentId}", builder: "fun urgencyChip(consentId)" }
+  shared_builders_note: >-
+    The active and history sections carry the SAME card/statusChip tags rather than distinct
+    ones. That is source behaviour, not a copy-paste slip: ConsentListContent.kt renders both
+    sections through one card composable keyed by consentId, so the tag is unique per consent
+    even though two idea components reference the same builder.
+  unbound:
+    # Six title/body Text nodes across the three terminal states, all modelled as the parent
+    # component's `title:` / `body:` fields rather than child components.
+    - { tag: "consentList:emptyTitle",     parent: empty_state }
+    - { tag: "consentList:emptyBody",      parent: empty_state }
+    - { tag: "consentList:errorTitle",     parent: error_state }
+    - { tag: "consentList:errorBody",      parent: error_state }
+    - { tag: "consentList:authErrorTitle", parent: auth_error_state }
+    - { tag: "consentList:authErrorBody",  parent: auth_error_state }
+
 components:
 
   # ── LOADING STATE ─────────────────────────────────────────────────────────
-  - type: progress_indicator
-    variant: circular
+  - type: progress_circular
+    test_tag: "consentList:loading"
     state_binding: [loading]
     accessibility_label: "{strings.consent_list_loading}"
     test_context:
@@ -106,12 +134,20 @@ components:
   # ── CONTENT: reconfirm banner (only when a near-expiry consent exists) ─────
   - type: banner
     id: reconfirm_banner
+    test_tag: "consentList:reconfirmBanner"
     state_binding: [content]
     visible_when: "{has_near_expiry_consents}"
     icon: warning_amber
     title: "{strings.consent_list_reconfirm_banner_title}"
     body: "{strings.consent_list_reconfirm_banner_body}"
-    color: "error-container"
+    # Repointed 2026-08-02 (/design-validate C-2). Was `error-container`. This banner fires at
+    # days_until_expiry <= 14 — a live, healthy consent the PSU can still reconfirm. Error-red
+    # framed a working connection as broken, the same overstatement the system refuses for
+    # in-progress payments. semantic.status.warning_container (tertiary, 7.27:1) is the
+    # "act soon" token; error stays reserved for Revoked / Rejected / Expired.
+    # This also closes the _known_inconsistency the token file records: consent-detail and
+    # consent-list disagreed about near-expiry, and both now land on the same token.
+    color: "tertiaryContainer"
     accessibility_label: "{strings.consent_list_reconfirm_banner_title}"
     test_context:
       purpose: "Warning banner at top of content area when at least one active consent has days_until_expiry ≤ 14 — prompts PSU reconfirmation per OBIE 90-day rule (FR-008)"
@@ -122,11 +158,12 @@ components:
   # ── CONTENT: Active section label ──────────────────────────────────────────
   - type: text
     id: active_section_label
+    test_tag: "consentList:activeSectionLabel"
     state_binding: [content]
     visible_when: "{has_active_consents}"
     value: "{strings.consent_list_section_active}"
     style: labelLarge
-    color: "on-surface-variant"
+    color: "onSurfaceVariant"
     accessibility_label: "{strings.consent_list_section_active}"
     test_context:
       purpose: "Section label rendered above the list of Authorised consent cards"
@@ -137,6 +174,7 @@ components:
   # ── CONTENT: Active consents list ──────────────────────────────────────────
   - type: list
     id: active_consents_list
+    test_tag: "consentList:contentList"
     state_binding: [content]
     visible_when: "{has_active_consents}"
     scroll_direction: vertical
@@ -149,6 +187,7 @@ components:
     children:
       - type: card
         id: consent_card
+        test_tag: "consentList:card:{item.Data.ConsentId}"
         elevation: 1
         on_click:
           action: navigate_consent_detail
@@ -186,6 +225,7 @@ components:
                   data_driven: false
               - type: chip
                 id: status_chip
+                test_tag: "consentList:statusChip:{item.Data.ConsentId}"
                 label: "{item.Data.Status}"
                 variant: assist
                 icon: "{item.status_icon}"
@@ -200,10 +240,12 @@ components:
           # Reconfirm urgency chip — only appears when days_until_expiry ≤ 14
           - type: chip
             id: reconfirm_urgency_chip
+            test_tag: "consentList:urgencyChip:{item.Data.ConsentId}"
             label: "{strings.consent_list_reconfirm_chip}"
             variant: assist
             icon: "warning_amber"
-            color: "error"
+            # Repointed 2026-08-02 (/design-validate C-2) — same reasoning as the banner above.
+            color: "tertiary"
             visible_when: "{item.days_until_expiry <= 14}"
             accessibility_label: "{strings.consent_list_reconfirm_chip}"
             test_context:
@@ -216,7 +258,7 @@ components:
             id: permission_summary
             value: "{strings.consent_list_permissions}"
             style: bodyMedium
-            color: "on-surface"
+            color: "onSurface"
             test_context:
               purpose: "Count of OBIE permissions granted — e.g. '11 data types shared' for a full consent"
               required_fields: [value]
@@ -238,7 +280,7 @@ components:
             id: granted_since
             value: "{strings.consent_list_connected_on}"
             style: labelSmall
-            color: "on-surface-variant"
+            color: "onSurfaceVariant"
             test_context:
               purpose: "Human-readable connection date formatted from OBReadConsentResponse1.Data.CreationDateTime (e.g. '28 Jun 2026')"
               required_fields: [value]
@@ -263,7 +305,7 @@ components:
     visible_when: "{has_history_consents}"
     value: "{strings.consent_list_section_history}"
     style: labelLarge
-    color: "on-surface-variant"
+    color: "onSurfaceVariant"
     accessibility_label: "{strings.consent_list_section_history}"
     test_context:
       purpose: "Section label rendered above expired and revoked consent cards"
@@ -286,6 +328,7 @@ components:
     children:
       - type: card
         id: history_consent_card
+        test_tag: "consentList:card:{item.Data.ConsentId}"   # same builder — ConsentListContent.kt renders active and history rows through one card composable
         elevation: 0
         on_click:
           action: navigate_consent_detail
@@ -318,6 +361,7 @@ components:
                   data_driven: false
               - type: chip
                 id: history_status_chip
+                test_tag: "consentList:statusChip:{item.Data.ConsentId}"
                 label: "{item.Data.Status}"
                 variant: assist
                 icon: "{item.status_icon}"
@@ -333,7 +377,7 @@ components:
             id: history_expiry_label
             value: "{strings.consent_list_expired_on}"
             style: labelMedium
-            color: "on-surface-variant"
+            color: "onSurfaceVariant"
             test_context:
               purpose: "Human-readable date when the consent expired or was revoked"
               required_fields: [value]
@@ -344,7 +388,7 @@ components:
             id: history_connected_on
             value: "{strings.consent_list_connected_on}"
             style: labelSmall
-            color: "on-surface-variant"
+            color: "onSurfaceVariant"
             test_context:
               purpose: "Original connection date for the now-expired consent"
               required_fields: [value]
@@ -354,6 +398,7 @@ components:
   # ── EMPTY STATE ────────────────────────────────────────────────────────────
   - type: empty_state
     id: empty_state
+    test_tag: "consentList:emptyState"
     state_binding: [empty]
     icon: link_off
     title: "{strings.consent_list_empty_title}"
@@ -367,17 +412,26 @@ components:
     children:
       - type: button
         id: connect_button
+        test_tag: "consentList:connectButton"
         variant: filled
         label: "{strings.consent_list_connect}"
         accessibility_label: "{strings.consent_list_connect_a11y}"
         on_click:
           action: navigate_connect
-          target: user-onboarding
+          # Retargeted 2026-08-02 (/design-validate F-007). Was `user-onboarding`, which
+          # contradicted THIS FILE in two places: state_model.nav_callbacks declares
+          # "onConnectBank -> navigate(LoginRenewRoute)", and implementation.corrected_in_sync
+          # states outright that source routes it there. The correction was recorded in the
+          # 2026-07-28 sync notes and never applied to the component — the third half-applied
+          # fix in this project, after home#hero_balance_card and account-detail#chip_party.
+          # `login` is the idea-layer screen hosting LoginRenewRoute (login/ui.yaml#implementation.routes)
+          # and is already the target of reauth_button below, which reaches the same source route.
+          target: login
           action_contract:
             effect: navigate
-            description: "Navigates to the user-onboarding screen to begin a fresh FAPI account-access consent flow when no consents exist locally."
+            description: "Navigates to the login screen (LoginRenewRoute) to begin a fresh FAPI account-access consent flow when no consents exist locally — the same destination as the re-authenticate CTA, per the source binding."
         test_context:
-          purpose: "CTA navigating to user-onboarding to begin a fresh FAPI consent flow"
+          purpose: "CTA navigating to login (LoginRenewRoute) to begin a fresh FAPI consent flow"
           required_fields: [on_click.action, on_click.target]
           interaction_type: navigate
           data_driven: false
@@ -385,6 +439,7 @@ components:
   # ── ERROR STATE (network / 500) ───────────────────────────────────────────
   - type: empty_state
     id: error_state
+    test_tag: "consentList:errorState"
     variant: error
     state_binding: [error]
     icon: error_outline
@@ -399,6 +454,7 @@ components:
     children:
       - type: button
         id: retry_button
+        test_tag: "consentList:retryButton"
         variant: filled
         label: "{strings.consent_list_retry}"
         accessibility_label: "{strings.consent_list_retry_a11y}"
@@ -406,6 +462,7 @@ components:
           action: retry_load
           action_contract:
             effect: call_api
+            reads_from: [consent-status]
             external_library_refs: [ktorfit, "hsbc-obie-ais-v4.0:account-access-consents"]
             description: "Re-runs load_consents: re-fetches status for all locally stored ConsentIds from GET /account-access-consents/{ConsentId} after a transient network or server failure."
         test_context:
@@ -417,6 +474,7 @@ components:
   # ── ERROR STATE (401 auth — dedicated, not generic retry) ─────────────────
   - type: empty_state
     id: auth_error_state
+    test_tag: "consentList:authErrorState"
     variant: error
     state_binding: [error_auth]
     icon: lock_open
@@ -431,6 +489,7 @@ components:
     children:
       - type: button
         id: reauth_button
+        test_tag: "consentList:reauthButton"
         variant: filled
         label: "{strings.consent_list_reauth}"
         accessibility_label: "{strings.consent_list_reauth_a11y}"

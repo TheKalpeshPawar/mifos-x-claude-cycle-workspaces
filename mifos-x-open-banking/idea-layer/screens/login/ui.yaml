@@ -1,3 +1,7 @@
+sibling: ui
+schema_version: "4.0"
+feature_id: login
+
 screen_id: login
 archetype: form
 name: "Connect with HSBC"
@@ -64,16 +68,8 @@ state_model:
       - BrowserLauncher   # expect/actual per platform; launches the app-to-app redirect
       - PendingAuthStore  # persists the in-flight authorisation (state, nonce, ConsentId) across the redirect
 
-dependencies:
-  tier: 0
-  features:
-    - consent-callback
-    - user-onboarding
-  libraries:
-    - id: ktorfit
-      purpose: "POST /account-access-consents with OBReadConsent1 payload via client_credentials bearer token"
-    - id: jose4j
-      purpose: "PS256 request object signing for FAPI 1.0 Advanced /authorize URL construction"
+# dependencies: MOVED to flow.yaml 2026-07-31 (CROSS_LEAK repair —
+# sibling-layout.json assigns `dependencies` to the flow sibling).
 
 screens:
   - id: login
@@ -119,14 +115,31 @@ shell:
 
 states: [content, loading, authorising, error, empty]
 
+# TEST TAGS — reconciled against source 2026-08-02 by /idea-sync (source-truth pass).
+test_tags:
+  source: "feature/login/src/commonMain/kotlin/org/mifosx/openbanking/feature/login/LoginTestTags.kt"
+  declared_in_source: 10
+  bound: 9
+  convention_note: >-
+    login_* on every const EXCEPT two — EXPLAINER_CARD is "hsbc_explainer_card" and
+    AUTHORISING_SPINNER is "authorising_spinner", both without the prefix. Copied verbatim;
+    adding the prefix for tidiness would break the tests that already assert on them.
+  unbound:
+    - tag: "login_authorising"
+      source_ref: "LoginScreen.kt:242"
+      why: >-
+        Tags the Box that fills the authorising state and centres the spinner + labels. The
+        idea-layer models authorising_spinner / authorising_label / authorising_hint as three
+        siblings bound to [authorising] with no wrapper component.
+
 components:
 
   # ────────────────────────────────────────
   # LOADING state — consent-create POST in flight
   # ────────────────────────────────────────
-  - type: progress_indicator
+  - type: progress_linear
     id: loading_indicator
-    variant: linear
+    test_tag: "login_loading_progress"     # LoginTestTags.LOADING_PROGRESS @ LoginScreen.kt:114
     state_binding: [loading]
     accessibility_label: "{strings.screen.login.loading.a11y}"
     test_context:
@@ -139,7 +152,7 @@ components:
     id: loading_label
     value: "{strings.screen.login.loading.label}"
     style: bodyMedium
-    color: "on-surface-variant"
+    color: "onSurfaceVariant"
     state_binding: [loading]
     accessibility_label: "{strings.screen.login.loading.a11y}"
     test_context:
@@ -151,9 +164,9 @@ components:
   # ────────────────────────────────────────
   # AUTHORISING state — FAPI redirect launched, user in HSBC
   # ────────────────────────────────────────
-  - type: progress_indicator
+  - type: progress_circular
     id: authorising_spinner
-    variant: circular
+    test_tag: "authorising_spinner"        # LoginTestTags.AUTHORISING_SPINNER @ LoginScreen.kt:244
     state_binding: [authorising]
     accessibility_label: "{strings.screen.login.authorising.a11y}"
     test_context:
@@ -166,7 +179,7 @@ components:
     id: authorising_label
     value: "{strings.screen.login.authorising.label}"
     style: bodyMedium
-    color: "on-surface-variant"
+    color: "onSurfaceVariant"
     state_binding: [authorising]
     accessibility_label: "{strings.screen.login.authorising.a11y}"
     test_context:
@@ -179,7 +192,7 @@ components:
     id: authorising_hint
     value: "{strings.screen.login.authorising.hint}"
     style: bodySmall
-    color: "on-surface-variant"
+    color: "onSurfaceVariant"
     state_binding: [authorising]
     test_context:
       purpose: "Hint telling the user to complete sign-in in HSBC then return; shown below spinner"
@@ -192,6 +205,7 @@ components:
   # ────────────────────────────────────────
   - type: card
     id: hsbc_explainer_card
+    test_tag: "hsbc_explainer_card"        # LoginTestTags.EXPLAINER_CARD — note the value has no login_ prefix, unlike its siblings
     state_binding: [content]
     elevation: 1
     accessibility_label: "{strings.screen.login.card.a11y}"
@@ -231,7 +245,7 @@ components:
         id: explainer_headline
         value: "{strings.screen.login.explainer.headline}"
         style: titleMedium
-        color: "on-surface"
+        color: "onSurface"
         test_context:
           purpose: "Headline confirming the app-to-app redirect destination for informed PSU consent"
           required_fields: [value]
@@ -242,7 +256,7 @@ components:
         id: explainer_body
         value: "{strings.screen.login.explainer.body}"
         style: bodySmall
-        color: "on-surface-variant"
+        color: "onSurfaceVariant"
         test_context:
           purpose: "Clarifies FAPI redirect behaviour and credential-protection guarantee to the PSU"
           required_fields: [value]
@@ -261,9 +275,9 @@ components:
         id: security_notice
         value: "{strings.screen.login.security.notice}"
         style: labelSmall
-        color: "on-surface-variant"
+        color: "onSurfaceVariant"
         icon_leading: lock_outline
-        icon_leading_color: "on-surface-variant"
+        icon_leading_color: "onSurfaceVariant"
         test_context:
           purpose: "FAPI/mTLS/PS256 security notice for technically-aware PSUs and Open Banking developers evaluating AISP capability"
           required_fields: [value]
@@ -311,7 +325,7 @@ components:
     id: consent_validity_note
     value: "{strings.screen.login.consent_validity}"
     style: bodySmall
-    color: "on-surface-variant"
+    color: "onSurfaceVariant"
     state_binding: [content]
     test_context:
       purpose: "OBIE-mandated disclosure of consent validity period and TransactionFromDateTime window"
@@ -335,6 +349,7 @@ components:
   # Primary CTA
   - type: button
     id: continue_hsbc_button
+    test_tag: "login_continue_hsbc"        # LoginTestTags.CONTINUE_HSBC
     variant: filled
     label: "{strings.screen.login.cta.continue}"
     icon: open_in_new
@@ -355,6 +370,7 @@ components:
   # Secondary CTA
   - type: button
     id: cancel_button
+    test_tag: "login_cancel"               # LoginTestTags.CANCEL
     variant: text
     label: "{strings.screen.login.cta.cancel}"
     state_binding: [content]
@@ -376,6 +392,7 @@ components:
   # ────────────────────────────────────────
   - type: empty_state
     id: error_state
+    test_tag: "login_error"                # LoginTestTags.ERROR
     variant: error
     state_binding: [error]
     icon: error_outline
@@ -390,6 +407,7 @@ components:
     children:
       - type: button
         id: retry_button
+        test_tag: "login_error_retry"      # LoginTestTags.ERROR_RETRY
         variant: filled
         label: "{strings.screen.login.error.retry}"
         accessibility_label: "{strings.screen.login.error.retry_a11y}"
@@ -410,6 +428,7 @@ components:
   # ────────────────────────────────────────
   - type: empty_state
     id: login_empty_state
+    test_tag: "login_empty"                # LoginTestTags.EMPTY
     variant: neutral
     state_binding: [empty]
     icon: manage_search
@@ -424,6 +443,7 @@ components:
     children:
       - type: button
         id: login_empty_back_button
+        test_tag: "login_empty_go_back"    # LoginTestTags.EMPTY_GO_BACK
         variant: filled
         label: "{strings.screen.login.empty.go_back}"
         accessibility_label: "{strings.screen.login.empty.go_back_a11y}"

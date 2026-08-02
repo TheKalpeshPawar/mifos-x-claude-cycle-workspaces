@@ -15,13 +15,14 @@ schema_version: "1.0"
 project: "mifos-x-open-banking"
 generated: "2026-07-28"
 generated_by: "/gap-analysis-project (reverse sync)"
-total_tags: 82
+total_tags: 86
 # Count corrected 2026-07-30 (/idea-sync). The field read 65 while the file held 68 —
 # a pre-existing drift of 3 from the 2026-07-28 reverse sync, not introduced here.
-# 68 source-backed + 14 specification-only (PISP, P3) = 82.
+# Updated 2026-07-31 (/idea-sync): 68 source-backed + 18 specification-only = 86, after adding
+# the 4 send-money manual-entry / reference actions the 07-31 design-validate fixes introduced.
 tag_provenance:
   source_backed: 68      # 1:1 with a sealed *Action member in source
-  specified_only: 14     # send-money / payment-consent / payment-status — no feature module yet
+  specified_only: 18     # send-money / payment-consent / payment-status — no feature module yet
 
 tags:
 
@@ -136,6 +137,15 @@ tags:
   - { name: send_money_retry_submit,       screen: send-money, trigger: "SendMoneyAction.RetrySubmit",             description: "Retries a failed submit with the ORIGINAL idempotency key — cannot create a duplicate payment.", status: specified }
   - { name: send_money_cancel,             screen: send-money, trigger: "SendMoneyAction.CancelPayment",           description: "Abandons the payment before any consent is staged.", status: specified }
   - { name: send_money_back_step,          screen: send-money, trigger: "SendMoneyAction.BackStep",                description: "Returns to the amount step after a limit rejection, preserving debtor and creditor.", status: specified }
+  # Added 2026-07-31 (/idea-sync STEP 4). These four on_click actions exist in
+  # screens/send-money/ui.yaml (lines 237, 269, 295, 350) but had no tag — three of them are the
+  # manual-creditor-entry affordance added by the 07-31 design-validate fix pass, which grew the
+  # screen's component set without a matching registry pass. This is exactly the drift the
+  # mtime staleness flag was pointing at, so the artifact was stale in content, not only in mtime.
+  - { name: send_money_show_manual_entry,  screen: send-money, trigger: "SendMoneyAction.ShowManualCreditorEntry", description: "Reveals the manual sort code + account number fields when the PSU has no saved payee, or wants a new one.", status: specified }
+  - { name: send_money_manual_sort_code,   screen: send-money, trigger: "SendMoneyAction.UpdateManualSortCode",    description: "Per-keystroke update of the manual sort code field; drives the inline fieldErrors.sortCode validation.", status: specified }
+  - { name: send_money_manual_account_no,  screen: send-money, trigger: "SendMoneyAction.UpdateManualAccountNumber", description: "Per-keystroke update of the manual account number field; drives fieldErrors.accountNumber.", status: specified }
+  - { name: send_money_enter_reference,    screen: send-money, trigger: "SendMoneyAction.EnterReference",          description: "Captures the optional payment reference, validated separately from amount via fieldErrors.reference.", status: specified }
 
   # payment-consent
   - { name: payment_consent_check_again,   screen: payment-consent, trigger: "PaymentConsentAction.CheckAgain",         description: "Re-polls the payment consent status during the checking window.", status: specified }

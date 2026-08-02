@@ -1,3 +1,7 @@
+sibling: docs
+schema_version: "4.0"
+feature_id: send-money
+
 feature: send-money
 contract_version: "2.0.0"
 status: enriched
@@ -5,6 +9,16 @@ score: 88
 cluster: payment-initiation
 acceptance_refs:
   - FR-012
+  # Added 2026-07-31 (/idea-sync Phase B source C). idea-plan.yaml#features[send-money]
+  # declares requirement_refs [FR-012, FR-015, FR-016, FR-017]; only FR-012 was traced here,
+  # so three of the four read as uncovered project-wide. All three ARE implemented in this
+  # feature's api.yaml — the gap was traceability, not coverage:
+  #   FR-015 consumer payment context -> api.yaml Risk.PaymentContextCode + _forbidden merchant fields
+  #   FR-016 detached JWS on every write -> api.yaml write_header_contract.x-jws-signature
+  #   FR-017 idempotency key reused across retries -> api.yaml write_header_contract.x-idempotency-key
+  - FR-015
+  - FR-016
+  - FR-017
 scaffolded_by: /idea-evolve
 archetype: form
 flow_ref: send-money-payment
@@ -38,6 +52,43 @@ system_capabilities:
 # idempotency-key assertion depends on. Recorded because a reader looking for `disabled:`
 # will not find one and could mistake that for the check failing.
 form_submit_guard: state-transition-unmount
+
+# ─────────────────────────────────────────────────────────────────────
+# SPEC AHEAD OF SOURCE — declared 2026-08-02 by /idea-sync (source-truth pass)
+# ─────────────────────────────────────────────────────────────────────
+# The 2026-08-02 reverse pass aligned every AIS feature to shipped source. The three
+# payment-initiation features are exempt BY DESIGN: they are the 2026-07-30 scope reversal
+# and are specified ahead of source on purpose, to be built later. Absence of a feature
+# module is therefore NOT drift and MUST NOT be scored as such — it is queued work.
+spec_ahead_of_source:
+  scope: feature
+  cluster: payment-initiation
+  declared_at: "2026-08-02"
+  declared_by: "/idea-sync (source-truth reverse pass)"
+  owed_by: /kmp-implement
+  reason: >-
+    New PISP capability introduced by the 2026-07-30 scope reversal (PROJECT_CONFIG#backend.role
+    aisp -> aisp+pisp). The idea-layer is deliberately the leading edge here; source has not been
+    generated yet.
+  # Measured against source on 2026-08-02, not assumed.
+  source_state_measured:
+    present:
+      - "130 PISP wire DTOs under core/network/.../model/pisp/ (24 of them domesticPayment request+response)"
+      - "cmp-navigation/.../placeholder/BankingDestinations.kt:36 SendMoneyRoute + :38 SendMoneyConfirmRoute"
+      - "BankingDestinations.kt:82-83 both routes render PlaceholderScreen(\"Pay\") / (\"Confirm payment\")"
+      - "AuthenticatedNavBarTabItem.kt:78 PayTab is wired into the bottom nav (testTag \"PayTab\")"
+    absent:
+      - "no Ktorfit service — zero @POST /domestic-payment-consents or /domestic-payments in core/network"
+      - "no Store5 store, no repository — zero DomesticPayment references in core/store or core/data"
+      - "no feature/send-money module, so no TestTags.kt to bind test_tag against"
+  consequence_for_verification: >-
+    drift and source-test checks are UNASSERTABLE for this feature, not failing. Score them N/A.
+    test_tag backfill is deferred until the module exists — its TAG_REGISTRY entries remain
+    specification-only (tag_provenance.specified_only).
+  regulatory_blocker: >-
+    PISP is a distinct FCA permission from AISP. The sandbox is unaffected, but production
+    payment initiation needs authorisation this project does not hold. adr_required: true and
+    the ADR is not yet written — see PROJECT_CONFIG.yaml backend notes.
 
 metadata:
   category: form
@@ -240,12 +291,20 @@ error_cases:
     recovery: "Return to the amount step; the payment is not staged"
 
 test_fixtures:
-  source: idea-layer/screens/send-money/demo-data.yaml
-  scenario_count: 12
+  # `source` retargeted 2026-08-01 (/idea-sync): pointed at demo-data.yaml, which holds fixture
+  # DATA (debtor_accounts, beneficiaries, staged_consent_request/response) and zero scenarios.
+  # All 14 TC-SEND-* scenarios live in tests.yaml, which is what scenario_count counts and what
+  # every other feature's source names. demo-data.yaml is kept as the fixture_data pointer.
+  source: idea-layer/screens/send-money/tests.yaml
+  fixture_data: idea-layer/screens/send-money/demo-data.yaml
+  # Corrected 2026-08-01 (from /idea-verify XS-1): was 12 / p0:5 p1:5 p2:2. Drifted UPWARD —
+  # the 07-31 validators[] work added TC-SEND-013/014 without updating the count, so this is
+  # under-reporting rather than the stale-overcount seen elsewhere in this sweep.
+  scenario_count: 14
   priority_distribution:
-    p0: 5
-    p1: 5
-    p2: 2
+    p0: 7
+    p1: 6
+    p2: 1
 
 status_history:
   - from: null

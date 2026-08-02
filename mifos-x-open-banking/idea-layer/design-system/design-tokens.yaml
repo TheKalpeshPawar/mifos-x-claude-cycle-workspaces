@@ -4,7 +4,26 @@
 # This is the rendering source of truth (Compose codegen, /idea-render-screen, prototype).
 # DESIGN.md's front matter is the agent-facing subset derived from this file.
 
-schema_version: "2.1.0"
+schema_version: "2.3.0"
+# 2.3.0 (2026-08-02, /design-system) — closes /design-validate C-2. Added semantic.status,
+# mapping the `warning` and `success` families the app references onto existing M3 roles
+# (tertiary and primary respectively) rather than minting new hues. Four contrast pairs measured
+# and added to DESIGN_SYSTEM_STATE (W-16..W-19). Purely additive: no existing role, scale, radius
+# or spacing value changed. The consuming screens still reference the old undeclared names —
+# see the _expired_is_error_not_warning and _known_inconsistency notes inside the block.
+#
+# 2.2.0 (2026-08-02, /design-system) — closes /design-validate F-004. Every consumer of this
+# file (23 screens, components.yaml, and the framework component registry's own default_style
+# blocks) referenced token families this file did not declare: the named spacing steps
+# (spacing.md, spacing.sm…), a TOP-LEVEL radius block, and icon / border / opacity entirely.
+# 49 references in screen YAML alone resolved against nothing, while this file's own header
+# claims to be the rendering source of truth for Compose codegen. Added the named steps and
+# the four missing families, verbatim from layers/idea/templates/DESIGN_TOKENS_SCHEMA.md so
+# the project and the framework registry finally share ONE namespace.
+# No colour role, type scale, elevation level or motion duration changed. Two structural
+# changes are NOT purely additive and are called out in full below: radius was promoted from
+# spacing.radius to top level, and the value 2 was added to spacing.scale.
+#
 # 2.1.0 (2026-07-30, /design-system) — extended for money MOVEMENT. Every prior version
 # described a strictly read-only AISP app; the PISP scope reversal added the app's first
 # forms and its first irreversible action, neither of which the system covered. Added:
@@ -129,19 +148,121 @@ typography:
     labelSmall:     { size: 11, line: 16, weight: 500 }
 
 # ─── Spacing / shape (M3; density 5 = comfortable) ───────────────────────────
+# Units are dp throughout this file (bare integers, matching elevation and the type scale).
+# The schema doc writes these as "16px" strings; dp integers are the form Compose codegen
+# consumes and the form every other numeric block here already uses.
 spacing:
   base: 4
-  scale: [0, 4, 8, 12, 16, 24, 32, 48, 64]
+  # 2 added in 2.2.0. It is the ONE value below the 4dp grid and is deliberate, not drift:
+  # the framework component registry's badge `dot` variant declares `padding: spacing.xxs`,
+  # and a 4dp dot pad renders a badge nearly twice its M3 size. Permitted ONLY for badge
+  # dots and intra-row text gaps (a label stacked directly above its own value). Anything
+  # structural — component padding, section gaps, screen margins — stays on the 4dp grid.
+  scale: [0, 2, 4, 8, 12, 16, 24, 32, 48, 64]
   screen_padding: 16
-  radius:
-    none: 0
-    extra_small: 4
-    small: 8
-    medium: 12
-    large: 16
-    extra_large: 28
-    full: 9999
   density: comfortable
+  # ── Named steps (NEW 2.2.0) ────────────────────────────────────────────────
+  # Verbatim from DESIGN_TOKENS_SCHEMA.md. This is the namespace the framework component
+  # registry resolves against in its own default_style blocks (registry/*.yaml uses
+  # spacing.xs / spacing.sm / spacing.md / spacing.lg), so matching it exactly is the whole
+  # point — a project-local variant would just recreate F-004 one layer down.
+  none: 0
+  xxs: 2      # sub-grid hairline — see the scale note above
+  xs:  4
+  sm:  8
+  md:  16     # == screen_padding; the default component and screen inset
+  lg:  24
+  xl:  32
+  xxl: 48
+  xxxl: 64
+  _step_12_note: >-
+    The scale carries 12 but the named vocabulary has no slot for it — the schema jumps
+    8 -> 16. 12dp is reachable as a literal and is used as a radius (radius.md), not as a
+    spacing step. No screen references a 12dp gap by name, so no alias was invented for it.
+
+# ─── Corner radius (PROMOTED to top level in 2.2.0) ──────────────────────────
+# STRUCTURAL CHANGE, not additive. This block lived at `spacing.radius.*` through 2.1.0,
+# which is why NOTHING resolved it: components.yaml asks for `radius.none` / `radius.medium`,
+# 12 screen references ask for `radius.md` / `radius.sm` / `radius.lg`, and DESIGN.md asks
+# for `rounded.medium` — every one of them at top level, none of them nested under spacing.
+# The schema declares radius top-level, so the nested location was the non-conforming side
+# and has been promoted rather than duplicated.
+#
+# BOTH spellings are declared, with identical values. The short form is canonical (it is what
+# the framework registry and the screens use); the long form is retained because
+# components.yaml and DESIGN.md's `rounded:` block are authored in it, and silently breaking
+# two live consumers to win a naming argument would be a worse trade than 6 duplicated
+# integers. INVARIANT: the two columns must never diverge — change both or neither.
+radius:
+  # canonical (short) — schema vocabulary, used by screens + framework registry
+  none: 0
+  xs:   4
+  sm:   8
+  md:   12
+  lg:   16
+  xl:   28
+  full: 9999
+  # deprecated aliases (long) — used by components.yaml and DESIGN.md#rounded
+  extra_small: 4     # == xs
+  small:       8     # == sm
+  medium:      12    # == md
+  large:       16    # == lg
+  extra_large: 28    # == xl
+  _xl_deviation: >-
+    Schema declares xl: 24. This system keeps 28, which is M3's actual extra-large corner
+    value and is already in use by DESIGN.md#rounded.extra_large and by every 2.1.0 consumer.
+    Deviating from the schema here is deliberate and narrower than retro-fitting 24 across a
+    shipped system for one digit of conformance.
+  _migration: >-
+    `spacing.radius.*` no longer exists. Anything still reading that path must move to
+    `radius.*`. Known readers at promotion time: components.yaml (radius.none, radius.medium)
+    and 12 screen references — all already top-level, so all are FIXED by this promotion
+    rather than broken by it.
+
+# ─── Icon sizes (NEW 2.2.0) ──────────────────────────────────────────────────
+# Verbatim from the schema. Screens reference icon.md (2 sites) and icon.lg (1 site); the
+# rest are declared so the family is complete rather than exactly-as-currently-used.
+icon:
+  xs: 16
+  sm: 20
+  md: 24    # M3 standard icon — the default for list leading icons and app-bar actions
+  lg: 32
+  xl: 48
+  _rule_tension: >-
+    validation-rules.json iconography-002 (severity: info) wants icon sizes in
+    [18, 24, 36, 48]. md (24) and xl (48) conform; xs/sm/lg do not. Taking the schema values
+    verbatim was chosen over hand-picking conformant ones, because the point of this release
+    is namespace agreement with the framework — and iconography-002 is advisory, not a gate.
+
+# ─── Border widths (NEW 2.2.0) ───────────────────────────────────────────────
+# Not referenced by any screen. Added because the FRAMEWORK component registry references
+# border.thin and border.focus in its default_style / state_styles blocks (every focus_visible
+# state resolves border_width: border.focus), and those resolved against nothing here — the
+# same defect as F-004, one layer up, and invisible from the screen side.
+border:
+  none:   0
+  thin:   1
+  medium: 2
+  thick:  4
+  focus:  2
+
+# ─── Opacity (NEW 2.2.0) ─────────────────────────────────────────────────────
+# Same reasoning as border: the registry's disabled / hover / pressed state_styles resolve
+# opacity.disabled and opacity.loading.
+opacity:
+  disabled: 0.38    # agrees with form.field.disabled_opacity declared below — single value, two names
+  loading:  0.60
+  hover:    0.08
+  focus:    0.12
+  pressed:  0.12
+  dragged:  0.16
+
+# ─── Touch targets (NEW 2.2.0) ───────────────────────────────────────────────
+# accessibility.min_touch_target_dp below is the project's floor and equals `comfortable`.
+touch_targets:
+  minimum:     44   # WCAG 2.5.5 / A11Y-003 gate threshold
+  comfortable: 48   # M3 default — this project's declared floor (accessibility-first)
+  spacious:    56
 
 elevation:
   level0: 0
@@ -227,6 +348,73 @@ semantic:
       unknown_status_policy: >-
         An OBIE status outside the mapped vocabulary renders as in_progress, never as
         success or failure. Failing open toward "still working" is the only safe guess.
+
+  # ─── Status semantics (NEW 2.3.0) ──────────────────────────────────────────
+  # Closes /design-validate C-2. Four references in consent-detail — the expiry banner's
+  # container, its icon and text, and the status_chip's `Expired` entry — named a `warning`
+  # colour family that exists in NO spelling: M3 has no warning role, the Material Theme
+  # Builder export has none, and this file declared none. The consent-expiry banner, which is
+  # the surface that tells a PSU their bank connection is about to lapse, resolved to nothing.
+  #
+  # DECISION: map onto existing M3 roles. Do NOT mint new hues.
+  # This follows the precedent payment_disposition already set — that block solved the same
+  # shape of problem (a vocabulary the theme does not ship) by mapping onto secondary/primary/
+  # error rather than inventing amber and green. Adding a warning hue now would mean a fifth
+  # tonal family to keep accessible in two themes and two contrast variants, to express a state
+  # the existing palette already distinguishes.
+  status:
+    # `warning` as used in consent-detail's status color_map — a plain role, sibling to the
+    # primary / tertiary / error entries beside it.
+    warning:
+      role: tertiary
+      light: "#64597B"
+      dark:  "#CFC0E8"
+      contrast: { light: 6.13, dark: 10.89, target: 4.5, verdict: pass, against: surface }
+      icon: schedule
+    warning_container:
+      container:    { light: "#EADDFF", dark: "#4C4162" }   # tertiaryContainer
+      on_container: { light: "#4C4162", dark: "#EADDFF" }   # onTertiaryContainer
+      role: tertiary
+      contrast: { light: 7.27, dark: 7.27, target: 4.5, verdict: pass }
+    # `success` — closes the mirror gap. The framework component registry's banner variants
+    # reference success_container / on_success_container, and two screens use
+    # `variant: success` on empty_state. Same treatment, same reason.
+    success:
+      role: primary
+      container:    { light: "#C9E6FF", dark: "#004B6F" }   # primaryContainer
+      on_container: { light: "#004B6F", dark: "#C9E6FF" }   # onPrimaryContainer
+      contrast: { light: 7.27, dark: 7.27, target: 4.5, verdict: pass }
+      icon: check_circle
+      note: "Identical to payment_disposition.terminal_success — deliberately the same pair, because they mean the same thing."
+    _why_tertiary_not_error: >-
+      Tertiary, not error, for expiry. A consent expiring in seven days has not failed — the PSU
+      still has full access and a working reconfirm path. Error-red would frame a live, healthy
+      connection as broken, which is the same overstatement the system already refuses elsewhere
+      (see payment_disposition.in_progress, and the colour_note on irreversible_action). Error
+      stays reserved for Revoked, Rejected and Expired — states where access is actually gone.
+    _expired_is_error_not_warning: >-
+      NOTE for the consuming screen: consent-detail's color_map currently maps `Expired: warning`.
+      Expired belongs with Revoked and Rejected on `error` — access is terminated, not at risk.
+      Only the pre-expiry BANNER is warning. Mapping both to the same token would erase the
+      distinction between "act soon" and "too late".
+    _known_inconsistency: >-
+      RESOLVED 2026-08-02. consent-list and consent-detail disagreed about near-expiry:
+      consent-list styled its reconfirm banner and urgency chip with error / error-container,
+      consent-detail with the (undeclared) warning family — so the one that rendered was the one
+      that read wrong. Both now land on this block: consent-detail#expiry_warning_banner and
+      consent-list#reconfirm_banner on tertiaryContainer, consent-list#reconfirm_urgency_chip on
+      tertiary, and consent-list/demo-data.yaml fixture 2 (7 days to expiry) moved off error too.
+    _open_divergence: >-
+      NOT resolved, and deliberately left for a decision: consent-detail#status_chip maps Expired
+      to `error` (access terminated), while consent-list/demo-data.yaml fixture 3 keeps the
+      Expired history row muted on onSurfaceVariant with a schedule icon. Both are defensible —
+      a History section below a divider de-emphasises terminated consents by design, whereas the
+      detail screen states the status in focus — so a mechanical pass should not have unified
+      them. Decide whether "muted in history, error in detail" is the intended rule.
+    _contract:
+      colour_is_never_the_only_signal: true
+      required_per_state: [icon, text_label]
+      rationale: "Same contract as payment_disposition — warning and success each carry their glyph and their words, never colour alone."
 
 # ─── Form & validation (NEW) ─────────────────────────────────────────────────
 # The app had no forms before PISP: every prior screen was read-only, and text_field

@@ -1,3 +1,7 @@
+sibling: ui
+schema_version: "4.0"
+feature_id: accounts
+
 screen_id: accounts
 archetype: index_list
 name: "Accounts"
@@ -107,6 +111,31 @@ shell:
   fab_visible: false
 
 states: [loading, content, empty, error]
+
+# TEST TAGS — reconciled against source 2026-08-02 by /idea-sync (source-truth pass).
+# VERIFIED COMPLETE, nothing changed. Recorded because a naive count reads 12 declared here
+# against 9 consts in source and looks over-declared — it is not.
+test_tags:
+  source: "feature/accounts/src/commonMain/kotlin/org/mifosx/openbanking/feature/accounts/AccountsTestTags.kt"
+  declared_in_source: 9          # 7 applied consts + 2 PREFIX consts consumed at render time
+  bound: 12
+  why_more_than_source: >-
+    Two of the nine source entries are prefixes, not finished tags: "accounts_card_" is
+    concatenated with the account id per row, and "accounts_filter_" with the AccountFilter
+    enum case. The idea-layer expands them to the concrete surfaces they produce — one
+    interpolated card binding plus the four real filter chips — so 7 flat + 5 expanded = 12.
+    The expansion is correct; collapsing it back to 9 would lose which filters actually exist.
+  interpolated:
+    - { tag: "accounts_card_{item.id}", prefix_const: "accounts_card_" }
+  expanded_from_prefix:
+    prefix_const: "accounts_filter_"
+    builder_note: "suffix is the AccountFilter enum case — ALL / CURRENT / SAVINGS / CREDIT"
+    values: [accounts_filter_ALL, accounts_filter_CURRENT, accounts_filter_SAVINGS, accounts_filter_CREDIT]
+    no_global_entry: >-
+      There is deliberately no accounts_filter_GLOBAL. AccountFilter has no GLOBAL member
+      (AccountsViewModel.kt:82-87): HSBC UK Personal AIS v4.0 dropped AccountSubType from
+      OBAccount6, so a Global Money account arrives as CACC and is already listed under
+      CURRENT. A GLOBAL chip could never match and would render a permanently empty list.
 
 components:
 
@@ -255,7 +284,7 @@ components:
                     id: account_number
                     value: "{item.identifier}"
                     style: bodySmall
-                    color: "on-surface-variant"
+                    color: "onSurfaceVariant"
                     accessibility_label: "{strings.accounts.card.account_number.label}"
               - type: stack
                 id: balance_column
@@ -313,5 +342,6 @@ components:
           action: RetryLoad
           action_contract:
             effect: call_api
+            reads_from: [accounts-list, balances]
             external_library_refs: [ktorfit, "hsbc-obie-ais-v4.0:accounts", "hsbc-obie-ais-v4.0:balances"]
             description: "Dispatches AccountsAction.RetryLoad, re-running the AccountsOverviewRepository combineContent stream over the accounts and balances sources to rebuild AccountsData."

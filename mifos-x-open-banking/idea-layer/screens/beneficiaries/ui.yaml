@@ -1,3 +1,7 @@
+sibling: ui
+schema_version: "4.0"
+feature_id: beneficiaries
+
 screen_id: beneficiaries
 archetype: index_list
 name: "{strings.beneficiaries.screen_title}"
@@ -40,6 +44,27 @@ shell:
   fab_visible: false
 
 states: [loading, content, empty, error]
+
+# TEST TAGS — reconciled against source 2026-08-02 by /idea-sync (source-truth pass).
+# Values copied VERBATIM from BeneficiariesTestTags.kt; do not normalise the string form.
+test_tags:
+  source: "feature/beneficiaries/src/commonMain/kotlin/org/mifosx/openbanking/feature/beneficiaries/BeneficiariesTestTags.kt"
+  declared_in_source: 16         # 14 const val + 2 builder fns (row, avatar)
+  bound: 10
+  interpolated:
+    - { tag: "beneficiaries:row:{item.BeneficiaryId}",    builder: "fun row(beneficiaryId: String)" }
+    - { tag: "beneficiaries:avatar:{item.BeneficiaryId}", builder: "fun avatar(beneficiaryId: String)" }
+  unbound:
+    # All six are Text nodes the idea-layer models as the parent empty_state / error_state
+    # component's `title:` / `body:` FIELDS rather than as child components, so none has an
+    # anchor. Recorded rather than synthesising child components, which would inflate the
+    # inventory that TRAINING_MASTER and design-validate both count.
+    - { tag: "beneficiaries:searchEmptyTitle", parent: search_no_results }
+    - { tag: "beneficiaries:searchEmptyBody",  parent: search_no_results }
+    - { tag: "beneficiaries:emptyTitle",       parent: empty_beneficiaries }
+    - { tag: "beneficiaries:emptyBody",        parent: empty_beneficiaries }
+    - { tag: "beneficiaries:errorTitle",       parent: error_state }
+    - { tag: "beneficiaries:errorBody",        parent: error_state }
 
 business_logic:
   kind: crud
@@ -85,25 +110,17 @@ state_model:
       - SavedStateHandle        # supplies the accountId route arg
       - BeneficiariesRepository # Koin single; beneficiaries stream
 
-dependencies:
-  tier: feature
-  features:
-    - name: account-detail
-      relation: parent
-      params: [accountId]
-    - name: consent-list
-      relation: error-recovery
-      condition: "error.type == ConsentRevoked"
-  libraries:
-    - name: ktorfit
-      coords: "de.jensklingenberg.ktorfit:ktorfit-lib:2.x"
-      purpose: "REST client for HSBC AIS GET /accounts/{AccountId}/beneficiaries"
+# dependencies: MOVED to flow.yaml 2026-07-31 — sibling-layout.json#section_ownership
+# assigns `dependencies` to the flow sibling (capability_gate: has_flow). Holding it
+# here was a CROSS_LEAK (SIBLING_LOADER error taxonomy): the loader routes by FILE, so
+# this block surfaced as view.ui.dependencies and every consumer reading the sanctioned
+# view.flow.dependencies saw null.
 
 components:
-  - type: progress_indicator
-    variant: circular
+  - type: progress_circular
     state_binding: [loading]
     accessibility_label: "{strings.beneficiaries.loading_label}"
+    test_tag: "beneficiaries:loading"
     test_context:
       purpose: "Indicate async fetch of OBReadBeneficiary5 from HSBC AIS endpoint"
       required_fields: []
@@ -128,6 +145,7 @@ components:
 
   - type: search_bar
     id: beneficiary_search
+    test_tag: "beneficiaries:searchField"
     state_binding: [content]
     placeholder: "{strings.beneficiaries.search_placeholder}"
     accessibility_label: "{strings.beneficiaries.search_a11y}"
@@ -142,6 +160,7 @@ components:
 
   - type: list
     id: beneficiaries_list
+    test_tag: "beneficiaries:contentList"
     state_binding: [content]
     scroll_direction: vertical
     items_source: "{beneficiaries_filtered}"
@@ -154,10 +173,12 @@ components:
     children:
       - type: list_item
         id: beneficiary_row
+        test_tag: "beneficiaries:row:{item.BeneficiaryId}"    # fun row(beneficiaryId)
         variant: two_line
         leading:
           type: avatar
           id: beneficiary_avatar
+          test_tag: "beneficiaries:avatar:{item.BeneficiaryId}"   # fun avatar(beneficiaryId)
           variant: sm
           initials: "{item.CreditorAccount.Name | initials}"
           color_seed: "{item.BeneficiaryId}"
@@ -176,6 +197,7 @@ components:
 
   - type: empty_state
     id: search_no_results
+    test_tag: "beneficiaries:searchEmptyState"
     state_binding: [content]
     visibility_condition: "{beneficiaries_filtered | isEmpty}"
     icon: search_off
@@ -190,6 +212,7 @@ components:
 
   - type: empty_state
     id: empty_beneficiaries
+    test_tag: "beneficiaries:emptyState"
     state_binding: [empty]
     icon: people_outline
     title: "{strings.beneficiaries.empty_title}"
@@ -203,6 +226,7 @@ components:
 
   - type: empty_state
     id: error_state
+    test_tag: "beneficiaries:errorState"
     variant: error
     state_binding: [error]
     icon: error_outline
@@ -217,6 +241,7 @@ components:
     children:
       - type: button
         id: retry_button
+        test_tag: "beneficiaries:retryButton"
         variant: filled
         label: "{strings.beneficiaries.retry}"
         visibility_condition: "{error.type | isRetryable}"
@@ -225,6 +250,7 @@ components:
           action: retry_load
           action_contract:
             effect: call_api
+            reads_from: beneficiaries-list
             external_library_refs: [ktorfit, "hsbc-obie-ais-v4.0:beneficiaries"]
             description: "Re-fetches GET /accounts/{AccountId}/beneficiaries via ktorfit to recover from a transient failure (HTTP 401 TokenExpired, 429 RateLimited, or NetworkError), resetting the screen to Loading then Content."
         test_context:
@@ -234,6 +260,7 @@ components:
           data_driven: false
       - type: button
         id: view_consents_button
+        test_tag: "beneficiaries:viewConsentsButton"
         variant: tonal
         label: "{strings.beneficiaries.view_consents}"
         visibility_condition: "{error.type | isConsentRevoked}"

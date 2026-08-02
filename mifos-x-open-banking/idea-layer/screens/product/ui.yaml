@@ -1,3 +1,7 @@
+sibling: ui
+schema_version: "4.0"
+feature_id: product
+
 screen_id: product
 archetype: detail_screen
 name: "Product Terms"
@@ -92,10 +96,26 @@ status_history:
 
 states: [loading, content, empty, error]
 
+# TEST TAGS — reconciled against source 2026-08-02 by /idea-sync (source-truth pass).
+test_tags:
+  source: "feature/product/src/commonMain/kotlin/org/mifosx/openbanking/feature/product/ProductTestTags.kt"
+  declared_in_source: 18         # 15 const val + 3 index-keyed builder fns
+  bound: 16
+  interpolated:
+    # These three key on LIST POSITION, not on a domain id — OBIE product tier and feature
+    # entries carry no stable identifier, so source uses the index. A test asserting on a
+    # domain id would find nothing.
+    - { tag: "product:creditTier:{index}",    builder: "fun creditTier(index: Int)" }
+    - { tag: "product:overdraftTier:{index}", builder: "fun overdraftTier(index: Int)" }
+    - { tag: "product:feature:{index}",       builder: "fun feature(index: Int)" }
+  unbound:
+    - { tag: "product:content", why: "Tags the content column wrapping the header card and the four sections; the idea-layer models those as siblings bound to [content] with no wrapper." }
+    - { tag: "product:backButton", why: "The back affordance is the shell's top_app_bar_leading, not a declared component of this screen." }
+
 components:
   # ── LOADING ──────────────────────────────────────────────────────────────────
-  - type: progress_indicator
-    variant: circular
+  - type: progress_circular
+    test_tag: "product:loading"
     state_binding: [loading]
     accessibility_label: "{strings.product_loading_a11y}"
     test_context:
@@ -107,6 +127,7 @@ components:
   # ── CONTENT: product header card ─────────────────────────────────────────────
   - type: card
     id: product_header_card
+    test_tag: "product:headerCard"
     state_binding: [content]
     elevation: 2
     accessibility_label: "{strings.product_header_card_a11y}"
@@ -118,6 +139,7 @@ components:
     children:
       - type: text
         id: product_type_label
+        test_tag: "product:typeBadge"
         role: overline
         value: "{product.ProductType}"
         i18n: skip  # fully dynamic — OBProduct2 enum value (PCA / BCA / Other)
@@ -130,6 +152,7 @@ components:
           data_driven: true
       - type: text
         id: product_name
+        test_tag: "product:productName"
         role: title
         value: "{product.ProductName}"
         i18n: skip  # fully dynamic — e.g. "HSBC Advance Account"
@@ -141,10 +164,11 @@ components:
           data_driven: true
       - type: text
         id: product_id
+        test_tag: "product:productId"
         role: caption
         value: "{strings.product_id_label}"
         style: labelSmall
-        color: "on-surface-variant"
+        color: "onSurfaceVariant"
         test_context:
           purpose: "OBProduct2 ProductId for reference; i18n key value: 'Product ID: {product.ProductId}'"
           required_fields: [product.ProductId]
@@ -154,6 +178,7 @@ components:
   # ── CONTENT: Fees section ─────────────────────────────────────────────────────
   - type: section_header
     id: fees_header
+    test_tag: "product:feesSection"
     state_binding: [content]
     label: "{strings.product_section_fees}"
     test_context:
@@ -164,6 +189,7 @@ components:
 
   - type: list_item
     id: monthly_max_charge_row
+    test_tag: "product:monthlyMaxChargeRow"
     state_binding: [content]
     supporting_text: "{strings.product_monthly_max_charge_label}"
     trailing_content: "{strings.product_monthly_max_charge_amount}"
@@ -178,6 +204,7 @@ components:
   # ── CONTENT: Credit Interest section ──────────────────────────────────────────
   - type: section_header
     id: credit_interest_header
+    test_tag: "product:creditInterestSection"
     state_binding: [content]
     label: "{strings.product_section_credit_interest}"
     test_context:
@@ -208,6 +235,8 @@ components:
         children:
           - type: list_item
             id: tier_band_row
+            test_tag: "product:creditTier:{index}"      # fun creditTier(index: Int) — keyed by POSITION, not id
+
             supporting_text: "{strings.product_tier_band_info}"
             trailing_content: "{strings.product_tier_aer}"
             trailing_style: titleMedium
@@ -221,6 +250,7 @@ components:
   # ── CONTENT: Overdraft section ────────────────────────────────────────────────
   - type: section_header
     id: overdraft_header
+    test_tag: "product:overdraftSection"
     state_binding: [content]
     label: "{strings.product_section_overdraft}"
     test_context:
@@ -251,6 +281,8 @@ components:
         children:
           - type: list_item
             id: overdraft_tier_row
+            test_tag: "product:overdraftTier:{index}"   # fun overdraftTier(index: Int)
+
             supporting_text: "{strings.product_overdraft_type_label}"
             trailing_content: "{strings.product_overdraft_ear}"
             trailing_style: titleMedium
@@ -264,6 +296,7 @@ components:
   # ── CONTENT: Features section ─────────────────────────────────────────────────
   - type: section_header
     id: features_header
+    test_tag: "product:featuresSection"
     state_binding: [content]
     label: "{strings.product_section_features}"
     test_context:
@@ -285,6 +318,8 @@ components:
     children:
       - type: list_item
         id: feature_row
+        test_tag: "product:feature:{index}"            # fun feature(index: Int)
+
         leading_icon: check_circle
         leading_icon_color: "primary"
         supporting_text: "{item}"
@@ -299,6 +334,7 @@ components:
   # ── EMPTY: no product data for account ───────────────────────────────────────
   - type: empty_state
     id: empty_product_state
+    test_tag: "product:empty"
     variant: informational
     state_binding: [empty]
     icon: info_outline
@@ -314,6 +350,7 @@ components:
   # ── ERROR ─────────────────────────────────────────────────────────────────────
   - type: empty_state
     id: error_state
+    test_tag: "product:error"
     variant: error
     state_binding: [error]
     icon: error_outline
@@ -329,6 +366,7 @@ components:
     children:
       - type: button
         id: retry_button
+        test_tag: "product:retryButton"
         variant: filled
         label: "{strings.product_retry_button}"
         accessibility_label: "{strings.product_retry_a11y}"
@@ -341,5 +379,6 @@ components:
           action: retry_load
           action_contract:
             effect: call_api
+            reads_from: ["product"]
             external_library_refs: ["ktorfit", "hsbc-obie-ais-v4.0:product"]
             description: "Re-triggers product_load ViewModel action after a 401, 403, 404, or network error, re-fetching OBReadProduct2 from GET /accounts/{AccountId}/product."

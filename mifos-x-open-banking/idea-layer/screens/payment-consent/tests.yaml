@@ -1,3 +1,7 @@
+sibling: tests
+schema_version: "4.0"
+feature_id: payment-consent
+
 screen_id: payment-consent
 
 scenarios:
@@ -88,6 +92,44 @@ scenarios:
       - "Error state renders with the AuthorisationTimedOut message"
       - "Restart authorisation button is visible"
       - "Check again remains available during the checking state before the deadline"
+
+  - id: TC-PCON-009
+    description: "Validating state is entered on mount before any network call; the progress indicator is visible and the auth code is not spent prematurely"
+    state: validating
+    priority: p1
+    given: "PendingAuthStore holds a pending authorisation (state, nonce, consentId 812774903); the redirect has arrived and on-mount handling has begun"
+    when: "The state-nonce guard has not yet completed"
+    then:
+      - "The authorising_indicator is visible (accessibility label strings.payment_consent.progress_label)"
+      - "The progress_detail text is visible (strings.payment_consent.progress_detail)"
+      - "POST /oauth2/token has NOT been called — the guard must pass before the code is spent"
+      - "GET /domestic-payment-consents/812774903 has NOT been called"
+      - "The check_again_button is NOT visible — its state_binding is [checking] only"
+
+  - id: TC-PCON-010
+    description: "Exchanging state is held while POST /oauth2/token is in-flight; the nonce guard runs only after the exchange returns and the re-poll button is not yet exposed"
+    state: exchanging
+    priority: p1
+    given: "PendingAuthStore validated successfully; POST /oauth2/token is in progress and has not yet returned a token"
+    when: "The code exchange is running"
+    then:
+      - "The authorising_indicator remains visible (accessibility label strings.payment_consent.progress_label)"
+      - "The progress_detail text is visible (strings.payment_consent.progress_detail)"
+      - "The check_again_button is NOT visible — its state_binding is [checking] only, not [exchanging]"
+      - "GET /domestic-payment-consents/{ConsentId} has NOT been called — the poll is gated on the id_token nonce guard which runs after exchange returns"
+
+  - id: TC-PCON-011
+    description: "Checking state exposes the check_again_button so a PSU who finished at the bank after the automatic poll window can advance without restarting"
+    state: checking
+    priority: p1
+    given: "State validation passed, token exchange succeeded, and the first automatic GET /domestic-payment-consents/{ConsentId} poll returned AWAU"
+    when: "The screen enters the checking state with the automatic poll still running"
+    then:
+      - "The authorising_indicator is visible (accessibility label strings.payment_consent.progress_label)"
+      - "The progress_detail text is visible (strings.payment_consent.progress_detail)"
+      - "The check_again_button is visible with label strings.payment_consent.check_again"
+      - "Tapping the check_again_button triggers a fresh GET /domestic-payment-consents/{ConsentId} and keeps the screen in the checking state"
+      - "The check_again_button was NOT visible during validating or exchanging — it appears uniquely in this state"
 
 coverage_notes:
   ordering: >-

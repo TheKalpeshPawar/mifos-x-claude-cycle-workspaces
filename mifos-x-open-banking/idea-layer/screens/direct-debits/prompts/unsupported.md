@@ -1,5 +1,5 @@
 ---
-ui_yaml_sha: dc2ab5eef0fa033108fd25974b00cf51ce36cd386fe8d5a2d65309aaa5ce11d4
+ui_yaml_sha: e4dca33feac32c0cc53f0def5577080303f29461594af968262268672f4de16c
 design_md_hash: f734ecfba28b3b0688cbd7ca6f3d7fca27febb15fd021d72a4518ae0e3a4200d
 app_shell_hash: 7b9c63f9aee4f5b5005b1d7533e7f5feab6427f398954987c34ee0f382b0ed69
 design_read_hash: 513c061d12f3a90e84d6e98e1e037b131e59fa3ca5c5f3c0abfc6ba87d24bcaf
@@ -24,7 +24,7 @@ craft_rules_version: v1.0.0
 
 # direct-debits — unsupported state
 
-> Auto-generated from screens/direct-debits/ui.yaml @ SHA 3383cb6b8195f6cc
+> Auto-generated from screens/direct-debits/ui.yaml @ SHA c09193ec57b9cc08
 > Stitch DesignSystem: (pending DESIGN.md upload — run /idea-feature-stitch sub-plan 02)
 > DO NOT redeclare colors / fonts / spacing — they live in DESIGN.md.
 

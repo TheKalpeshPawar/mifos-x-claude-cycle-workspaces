@@ -1,3 +1,7 @@
+sibling: ui
+schema_version: "4.0"
+feature_id: payment-status
+
 screen_id: payment-status
 archetype: detail_screen
 name: "{strings.payment_status.screen_title}"
@@ -20,8 +24,16 @@ shell:
 
 states: [loading, content, error]
 
+# TEST TAGS — deferred, not missing. Recorded 2026-08-02 by /idea-sync (source-truth pass).
+test_tags:
+  status: deferred-until-implemented
+  reason: >-
+    No source module yet (see docs.yaml#spec_ahead_of_source), so there is no
+    PaymentStatusTestTags.kt to copy from.
+  owed_by: /kmp-implement
+
 business_logic:
-  kind: detail
+  kind: crud
   description: >-
     Reads GET /domestic-payments/{PaymentId} and maps OBIE's payment status onto a three-way
     disposition — in_progress, terminal_success, terminal_failure — rather than a success/failure
@@ -69,20 +81,11 @@ state_model:
       - SavedStateHandle          # supplies the paymentId route arg
       - PaymentStatusRepository
 
-dependencies:
-  tier: feature
-  features:
-    - name: send-money
-      relation: parent
-      params: [paymentId]
-  libraries:
-    - name: ktorfit
-      coords: "de.jensklingenberg.ktorfit:ktorfit-lib:2.x"
-      purpose: "REST client for GET /domestic-payments/{PaymentId}"
+# dependencies: MOVED to flow.yaml 2026-07-31 (CROSS_LEAK repair —
+# sibling-layout.json assigns `dependencies` to the flow sibling).
 
 components:
-  - type: progress_indicator
-    variant: circular
+  - type: progress_circular
     state_binding: [loading]
     accessibility_label: "{strings.payment_status.loading_label}"
     test_context:
@@ -114,6 +117,12 @@ components:
     state_binding: [content]
     label: "{content.statusLabel}"
     variant: "{content.disposition | chipVariant}"
+    # icon added 2026-08-02 (/design-validate C-4). design-tokens.yaml#semantic.payment_disposition
+    # ._contract declares required_per_state: [icon, text_label] with a glyph per disposition
+    # (in_progress: schedule / terminal_success: check_circle / terminal_failure: error), and this
+    # is the one screen that contract was written for — yet the chip declared no icon at all.
+    # Bound per disposition, mirroring consent-list#status_chip's {item.status_icon}.
+    icon: "{content.disposition | dispositionIcon}"
     accessibility_label: "{content.statusLabel}"
     test_context:
       purpose: "Show the payment's disposition as progress, success, or failure — never a bare boolean"
@@ -154,6 +163,7 @@ components:
       action: refresh_status
       action_contract:
         effect: call_api
+        reads_from: domestic-payment-read
         external_library_refs: [ktorfit, "hsbc-obie-pisp-v4.0:domestic-payments"]
         description: >-
           Re-reads GET /domestic-payments/{PaymentId} on demand so a PSU watching an in-progress
@@ -210,6 +220,7 @@ components:
           action: refresh_status
           action_contract:
             effect: call_api
+            reads_from: domestic-payment-read
             external_library_refs: [ktorfit, "hsbc-obie-pisp-v4.0:domestic-payments"]
             description: >-
               Re-reads the payment resource after a transient failure (401 TokenExpired or a

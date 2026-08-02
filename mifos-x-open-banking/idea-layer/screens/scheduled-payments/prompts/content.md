@@ -1,5 +1,5 @@
 ---
-ui_yaml_sha: 0f33ec92119197fb5a4b25ddd0b8f409afd26c694e4df45e44658fed9cb6a5d2
+ui_yaml_sha: ce7c4609b265ed3c61e8d938d7f6158ee7d4bfb65466af3f4872c027640d06ff
 design_md_hash: f734ecfba28b3b0688cbd7ca6f3d7fca27febb15fd021d72a4518ae0e3a4200d
 app_shell_hash: 7b9c63f9aee4f5b5005b1d7533e7f5feab6427f398954987c34ee0f382b0ed69
 design_read_hash: 513c061d12f3a90e84d6e98e1e037b131e59fa3ca5c5f3c0abfc6ba87d24bcaf
@@ -24,7 +24,7 @@ craft_rules_version: v1.0.0
 
 # scheduled-payments — content state
 
-> Auto-generated from screens/scheduled-payments/ui.yaml @ SHA 86c86ea84d0aaa2f
+> Auto-generated from screens/scheduled-payments/ui.yaml @ SHA 2b70aad6c300de58
 > Stitch DesignSystem: (pending DESIGN.md upload — run /idea-feature-stitch sub-plan 02)
 > DO NOT redeclare colors / fonts / spacing — they live in DESIGN.md.
 

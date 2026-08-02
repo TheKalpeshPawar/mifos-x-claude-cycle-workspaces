@@ -1,3 +1,7 @@
+sibling: ui
+schema_version: "4.0"
+feature_id: direct-debits
+
 screen_id: direct-debits
 archetype: index_list
 name: "Direct Debits"
@@ -13,6 +17,29 @@ shell:
   fab_visible: false
 
 states: [loading, content, empty, unsupported, error]
+
+# TEST TAGS — reconciled against source 2026-08-02 by /idea-sync (source-truth pass).
+# The 4 state-root tags were already correct; 11 more were backfilled this pass.
+test_tags:
+  source: "feature/direct-debits/src/commonMain/kotlin/org/mifosx/openbanking/feature/directdebits/DirectDebitsTestTags.kt"
+  declared_in_source: 21         # 16 const val + 5 per-mandate builder fns
+  bound: 15
+  interpolated:
+    # Every builder keys on mandateId — DirectDebitsContent.kt passes mandate.mandateId to all five.
+    - { tag: "directDebits:card:{item.mandateId}",              builder: "fun card(mandateId)" }
+    - { tag: "directDebits:statusBadge:{item.mandateId}",       builder: "fun statusBadge(mandateId)" }
+    - { tag: "directDebits:amount:{item.mandateId}",            builder: "fun amount(mandateId)" }
+    - { tag: "directDebits:lastCollected:{item.mandateId}",     builder: "fun lastCollected(mandateId)" }
+    - { tag: "directDebits:mandateReference:{item.mandateId}",  builder: "fun mandateReference(mandateId)" }
+  unbound:
+    - { tag: "directDebits:skeletonChipRow", parent: loading_skeleton,
+        why: "Tags the chip-row placeholder INSIDE the skeleton; the idea-layer models loading as one skeleton component with no children." }
+    - { tag: "directDebits:emptyTitle",       parent: empty_direct_debits,      why: "Text node modelled as the parent's `title:` field." }
+    - { tag: "directDebits:emptyBody",        parent: empty_direct_debits,      why: "Text node modelled as the parent's `body:` field." }
+    - { tag: "directDebits:unsupportedTitle", parent: unsupported_direct_debits, why: "Text node modelled as the parent's `title:` field." }
+    - { tag: "directDebits:unsupportedBody",  parent: unsupported_direct_debits, why: "Text node modelled as the parent's `body:` field." }
+    - { tag: "directDebits:errorTitle",       parent: error_state,              why: "Text node modelled as the parent's `title:` field." }
+    - { tag: "directDebits:errorBody",        parent: error_state,              why: "Text node modelled as the parent's `body:` field." }
 
 business_logic:
   kind: crud
@@ -99,6 +126,7 @@ components:
   # ── LOADING STATE ───────────────────────────────────────────────────
   - type: skeleton
     id: loading_skeleton
+    test_tag: "directDebits:loadingSkeleton"
     variant: list_card
     item_count: 4
     state_binding: [loading]
@@ -129,11 +157,13 @@ components:
   # ── CONTENT STATE — mandate summary chips ───────────────────────────
   - type: chip_group
     id: mandate_summary_chips
+    test_tag: "directDebits:summaryChips"
     state_binding: [content]
     accessibility_label: "{strings.direct_debits.summary_a11y}"
     chips:
       - type: chip
         id: active_count_chip
+        test_tag: "directDebits:activeChip"
         label: "{strings.direct_debits.active_count_label} ({activeCount})"
         variant: tonal
         accessibility_label: "{activeCount} {strings.direct_debits.active_count_label} direct debits"
@@ -144,6 +174,7 @@ components:
           data_driven: true
       - type: chip
         id: inactive_count_chip
+        test_tag: "directDebits:inactiveChip"
         label: "{strings.direct_debits.inactive_count_label} ({inactiveCount})"
         variant: outline
         accessibility_label: "{inactiveCount} {strings.direct_debits.inactive_count_label} direct debits"
@@ -156,6 +187,7 @@ components:
   # ── CONTENT STATE — mandate list ────────────────────────────────────
   - type: list
     id: direct_debits_list
+    test_tag: "directDebits:content"      # CONTENT tags the content list root here, not a wrapper column
     state_binding: [content]
     scroll_direction: vertical
     items_source: "{mandates}"
@@ -168,6 +200,7 @@ components:
     children:
       - type: card
         id: direct_debit_card
+        test_tag: "directDebits:card:{item.mandateId}"
         elevation: 1
         accessibility_label: "{item.name}, {item.statusLabel}"
         test_context:
@@ -189,6 +222,7 @@ components:
 
           - type: badge
             id: dd_status_badge
+            test_tag: "directDebits:statusBadge:{item.mandateId}"
             value: "{item.statusLabel}"
             variant: "{item.isActive}"
             accessibility_label: "{strings.direct_debits.status_prefix} {item.statusLabel}"
@@ -200,6 +234,7 @@ components:
 
           - type: text
             id: dd_previous_amount
+            test_tag: "directDebits:amount:{item.mandateId}"
             role: amount
             value: "{item.amountLabel}"
             style: headlineSmall
@@ -211,10 +246,11 @@ components:
 
           - type: text
             id: dd_previous_date
+            test_tag: "directDebits:lastCollected:{item.mandateId}"
             role: body
             value: "{strings.direct_debits.last_collected_prefix} {item.lastCollectedLabel}"
             style: bodySmall
-            color: "on-surface-variant"
+            color: "onSurfaceVariant"
             test_context:
               purpose: "Pre-formatted last-collected date resolved by the mapper; label from i18n key"
               required_fields: ["item.lastCollectedLabel"]
@@ -223,10 +259,11 @@ components:
 
           - type: text
             id: dd_mandate_id
+            test_tag: "directDebits:mandateReference:{item.mandateId}"
             role: caption
             value: "{strings.direct_debits.mandate_prefix} {item.mandateId}"
             style: labelSmall
-            color: "on-surface-variant"
+            color: "onSurfaceVariant"
             test_context:
               purpose: "Mandate reference from MandateIdentification for identification and support; label from i18n key"
               required_fields: ["item.MandateIdentification"]
@@ -294,6 +331,7 @@ components:
           action: RetryLoad
           action_contract:
             effect: call_api
+            reads_from: ["direct-debits-list"]
             external_library_refs: ["ktorfit", "hsbc-obie-ais-v4.0:direct-debits"]
             description: "Dispatches DirectDebitsAction.RetryLoad, refreshing the direct-debits stream after a retriable failure and returning the screen to Loading then Content or Empty."
         test_context:

@@ -694,6 +694,25 @@ sections:
             - "App-to-app redirect to HSBC: PSU authenticates (SCA), approves the requested permission set, selects accounts to share"
             - "Callback exchanges authorization code for PSU access token (rejection → error, no token, no data access)"
             - "Land on Accounts"
+        # Added 2026-07-31 (/idea-sync Phase B). flows/home-dashboard.yaml has existed since
+        # the 2026-07-28 reverse sync and is bound by screens/home/flow.yaml#flow_ref, but the
+        # plan's flow inventory never declared it — 8 declared vs 9 on disk. The plan is the
+        # docset SoT for that inventory, so the omission made the app's start-destination flow
+        # invisible to every consumer that reads flows from here.
+        - name: home-dashboard
+          type: happy
+          feature_ref: home
+          release_phase: P0
+          steps:
+            - "Home tab (bottom-nav order 0) — also the authenticated NavHost start destination"
+            - "Hero balance card renders the selected account"
+            - "Tap the account switcher — AccountSelectorSheet opens in-screen, no navigation"
+            - "Pick an account chip — persists selectedAccountId and re-drives the whole screen"
+            - "Tap a recent transaction row → transaction-detail (cross-flow → transaction-review)"
+            - "Tap 'View all' → transactions (cross-flow → transaction-review)"
+          # homeGraph exposes exactly two outward callbacks; the account-detail, statements,
+          # consent-list and pfm-dashboard exits were struck in the 07-28 reverse sync and are
+          # recorded under removed_in_sync in flows/home-dashboard.yaml.
         - name: account-browsing
           type: happy
           feature_ref: accounts
@@ -962,6 +981,28 @@ sections:
 network_policy:
   default: cellular_allowed
   large_download_threshold_kb: 500
+
+# ═══════════════════════════════════════════════════════════════════
+# DEFERRED ROUTES  (RULE-IMPL-NAVIGATION-CONNECTED-001 NAV-2)
+# ═══════════════════════════════════════════════════════════════════
+# Routes that ship in cmp-navigation but resolve to PlaceholderScreen. Declaring
+# them here is what makes the deferral an explicit product decision rather than
+# dead code, and exempts them from NAV-1.
+#
+# Added 2026-07-31: account-detail/ui.yaml drove the AtmLocator chip through a
+# project-local `target: _placeholder:atm-locator` string. That prefix is not a
+# registered framework convention — no evaluator recognises it, so the target was
+# simultaneously unresolvable to the dead-nav gate and invisible to NAV-2. The
+# declaration below is the sanctioned form; the ui.yaml target now points at it.
+deferred_routes:
+  - feature: account-detail
+    route_class: AtmLocatorRoute
+    reason: >-
+      Chip renders and navigates, but resolves to PlaceholderScreen("ATM locator")
+      in cmp-navigation. The atm-locator idea-layer screen was removed in the
+      2026-07-28 reverse sync because no feature module implements it. AtmLocatorRoute
+      is an arg-less data object — no accountId is passed.
+    target_milestone: unscheduled
 
 # ═══════════════════════════════════════════════════════════════════
 # SHIP GATE

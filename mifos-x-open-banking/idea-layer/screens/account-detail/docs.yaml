@@ -1,3 +1,7 @@
+sibling: docs
+schema_version: "4.0"
+feature_id: account-detail
+
 feature: accounts
 contract_version: "2.0.0"
 status: approved
@@ -13,6 +17,9 @@ acceptance_refs:
   - FR-004
 scaffolded_by: /idea-add
 archetype: detail_screen
+# flow_ref backfilled 2026-08-02 (/idea-sync). Derived from flows/*.yaml#screens[] membership,
+# not guessed: 14 of 23 features declared none, which made every flow-contract check partial.
+flow_ref: account-browsing
 description: >-
   Single account detail — account metadata (Nickname, Identification, Currency, AccountSubType, Servicer), all balance
   types from OBCashBalance3, an Open Banking trust badge, and entry-point action chips to transactions, statements,
@@ -58,23 +65,12 @@ libraries:
       - ios
       - desktop
       - web
+# vm_actions RELOCATED 2026-08-01 (/idea-sync). 11 of the 12 entries here were not dispatched
+# Actions. Nothing is deleted — each moved to the block that states how it actually works:
+#   loadAccountDetail  -> initial_load  (init{} stream collection)
+#   navigateBack + the 9 discrete navigate* -> nav_callbacks (host-owned)
+# ui.yaml#state_model.actions.members declares exactly one member: RetryLoad.
 vm_actions:
-  - name: LoadAccountDetail
-    signature: 'suspend fun loadAccountDetail(accountId: String)'
-    state_mutations:
-      - uiState = AccountDetailUiState.Loading
-      - uiState = AccountDetailUiState.Content(account, balances) when balances.isNotEmpty()
-      - uiState = AccountDetailUiState.Empty(account) when balances.isEmpty()
-      - uiState = AccountDetailUiState.Error(code, message, recoverable) on failure
-    side_effects:
-      - 'Parallel coroutines: GET /accounts/{accountId} and GET /accounts/{accountId}/balances via ktorfit'
-      - Error typed by HTTP status from HttpResponseException.response.status
-    error_handling:
-      on_401: emit TokenExpiredError(recoverable=true); surface error state
-      on_403: emit ConsentWithdrawnError(recoverable=false); surface error state
-      on_404: emit AccountNotFoundError(recoverable=false); surface error state
-      on_network: emit NetworkError(recoverable=true); surface error state
-      on_default: emit UnexpectedError(recoverable=true); surface error state
   - name: RetryLoad
     signature: fun retryLoad()
     state_mutations:
@@ -82,66 +78,43 @@ vm_actions:
     side_effects: []
     error_handling: {}
     guard: Only exposed to UI when current error state has recoverable=true
-  - name: NavigateBack
-    signature: fun navigateBack()
-    state_mutations: []
-    side_effects:
-      - Pop nav stack to accounts screen
-    error_handling: {}
-  - name: NavigateTransactions
-    signature: 'fun navigateTransactions(accountId: String)'
-    state_mutations: []
-    side_effects:
-      - Push transactions route with accountId param
-    error_handling: {}
-  - name: NavigateStatements
-    signature: 'fun navigateStatements(accountId: String)'
-    state_mutations: []
-    side_effects:
-      - Push statements route with accountId param
-    error_handling: {}
-  - name: NavigateStandingOrders
-    signature: 'fun navigateStandingOrders(accountId: String)'
-    state_mutations: []
-    side_effects:
-      - Push standing-orders route with accountId param
-    error_handling: {}
-  - name: NavigateDirectDebits
-    signature: 'fun navigateDirectDebits(accountId: String)'
-    state_mutations: []
-    side_effects:
-      - Push direct-debits route with accountId param
-    error_handling: {}
-  - name: NavigateScheduledPayments
-    signature: 'fun navigateScheduledPayments(accountId: String)'
-    state_mutations: []
-    side_effects:
-      - Push scheduled-payments route with accountId param
-    error_handling: {}
-  - name: NavigateBeneficiaries
-    signature: 'fun navigateBeneficiaries(accountId: String)'
-    state_mutations: []
-    side_effects:
-      - Push beneficiaries route with accountId param
-    error_handling: {}
-  - name: NavigateAtmLocator
-    signature: 'onNavigateToChip(AccountDetailChip.AtmLocator, accountId)'
-    state_mutations: []
-    side_effects:
-      - "navigate(AtmLocatorRoute) — an arg-less PLACEHOLDER route in cmp-navigation that renders PlaceholderScreen. accountId is dropped; no feature module exists."
-    error_handling: {}
-  - name: NavigateProduct
-    signature: 'fun navigateProduct(accountId: String)'
-    state_mutations: []
-    side_effects:
-      - Push product route with accountId param; triggers GET /accounts/{accountId}/product on product screen mount
-    error_handling: {}
-  - name: NavigateParty
-    signature: 'fun navigateParty(accountId: String)'
-    state_mutations: []
-    side_effects:
-      - Push party route with accountId param; triggers GET /accounts/{accountId}/party on party screen mount
-    error_handling: {}
+
+initial_load:
+  mechanism: init-stream-collection
+  what: "Parallel GET /accounts/{accountId} and GET /accounts/{accountId}/balances via ktorfit"
+  states: "Loading -> Content(account, balances) | Empty(account) when balances.isEmpty() | Error(code, message, recoverable)"
+  error_typing: "by HTTP status from HttpResponseException.response.status — see error_cases below"
+  note: >-
+    NOT a dispatched action. ui.yaml#implementation.removed_in_sync: "loadAccountDetail action —
+    the initial load is stream collection in init{}". Recorded here rather than deleted because
+    the load genuinely happens; it simply is not an AccountDetailAction member.
+
+nav_callbacks:
+  # Host-owned, resolved by navigateFromChip() in AuthenticatedNavbarNavigationScreen.
+  # ui.yaml#implementation.removed_in_sync: "The nine discrete navigate* actions — source
+  # collapses them into the AccountDetailChip enum plus one onNavigateToChip callback".
+  # They were listed here as nine separate ViewModel methods; source has ONE callback and an
+  # enum, so the nine are folded back into that single signature with their targets kept.
+  - signature: "onNavigateToChip(chip: AccountDetailChip, accountId: String)"
+    chips:
+      Transactions:      "TransactionsRoute(accountId)"
+      Statements:        "StatementsRoute(accountId)"
+      StandingOrders:    "StandingOrdersRoute(accountId)"
+      DirectDebits:      "DirectDebitsRoute(accountId)"
+      ScheduledPayments: "ScheduledPaymentsRoute(accountId)"
+      Beneficiaries:     "BeneficiariesRoute(accountId)"
+      AtmLocator:        "AtmLocatorRoute — arg-less PLACEHOLDER route rendering PlaceholderScreen; accountId is dropped, no feature module exists"
+      Product:           "ProductRoute(accountId) — triggers GET /accounts/{accountId}/product on mount"
+      Party:             "AccountHolderRoute(accountId) — triggers GET /accounts/{accountId}/party on mount"
+    party_rename_note: >-
+      The Party chip's entry previously read "Push party route". The party SCREEN was renamed to
+      account-holder in the 2026-07-28 reverse sync (screens/party/ no longer exists); only the
+      enum MEMBER is still named Party in source. Route corrected here to AccountHolderRoute.
+  - signature: "onBack -> popBackStack() returning to accounts"
+    note: >-
+      ui.yaml#implementation.removed_in_sync: "navigateBack action — back is a nav-host onBack
+      callback".
+
 error_cases:
   - id: TokenExpiredError
     http_status: 401

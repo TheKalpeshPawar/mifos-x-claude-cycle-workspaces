@@ -1,3 +1,7 @@
+sibling: ui
+schema_version: "4.0"
+feature_id: consent-callback
+
 screen_id: consent-callback
 archetype: empty_state
 name: "Authorisation Callback"
@@ -29,11 +33,25 @@ shell:
 
 states: [loading, awaiting, content, access_denied, security_error, error]
 
+# TEST TAGS — reconciled against source 2026-08-02 by /idea-sync (source-truth pass).
+test_tags:
+  source: "feature/consent-callback/src/commonMain/kotlin/org/mifosx/openbanking/feature/consentcallback/ConsentCallbackTestTags.kt"
+  declared_in_source: 10
+  bound: 10                      # complete — every source tag has a component anchor
+  naming_note: >-
+    The const NAMES and their VALUES diverge on two entries and the VALUE is what the tests
+    assert on: SUCCESS_STEP = "callback_content" and ERROR_STEP = "callback_error". Copied
+    verbatim. Also note this screen has two distinct restart affordances that read almost
+    identically — START_OVER_BUTTON ("callback_start_over") on the access-denied state and
+    START_AGAIN_BUTTON ("callback_start_again") on the security-error state. They are not
+    interchangeable.
+
 components:
 
   # ── Loading state — in-progress token exchange + consent poll ─────────
   - type: stack
     id: loading_layout
+    test_tag: "callback_loading"        # ConsentCallbackTestTags.LOADING_STEP
     variant: vertical
     state_binding: [loading]
     style:
@@ -47,9 +65,8 @@ components:
       interaction_type: display
       data_driven: false
     children:
-      - type: progress_indicator
+      - type: progress_circular
         id: loading_spinner
-        variant: circular
         accessibility_label: "{strings.consent_callback_loading_a11y}"
         test_context:
           purpose: "Circular spinner shown while authorization_code exchange and consent-status poll are in flight"
@@ -64,7 +81,7 @@ components:
         id: loading_headline
         value: "{strings.consent_callback_loading_title}"
         style: titleMedium
-        color: "on-surface"
+        color: "onSurface"
         test_context:
           purpose: "Primary headline communicating that the FAPI token exchange is actively processing"
           required_fields: [value]
@@ -78,7 +95,7 @@ components:
         id: loading_body
         value: "{strings.consent_callback_loading_body}"
         style: bodySmall
-        color: "on-surface-variant"
+        color: "onSurfaceVariant"
         test_context:
           purpose: "Supporting copy managing PSU expectations during multi-step FAPI exchange"
           required_fields: [value]
@@ -88,6 +105,7 @@ components:
   # ── Content (success) state — auto-navigate in 1.5 s ─────────────────
   - type: stack
     id: success_layout
+    test_tag: "callback_content"        # ConsentCallbackTestTags.SUCCESS_STEP — the const is SUCCESS_STEP but its VALUE is callback_content; copied verbatim
     variant: vertical
     state_binding: [content]
     style:
@@ -120,7 +138,7 @@ components:
         id: success_headline
         value: "{strings.consent_callback_success_title}"
         style: headlineSmall
-        color: "on-surface"
+        color: "onSurface"
         test_context:
           purpose: "Headline confirming OBIE consent is Authorised and PSU access token stored"
           required_fields: [value]
@@ -134,17 +152,22 @@ components:
         id: success_body
         value: "{strings.consent_callback_success_body}"
         style: bodyMedium
-        color: "on-surface-variant"
+        color: "onSurfaceVariant"
         test_context:
           purpose: "Supporting copy that sets expectation of auto-navigation to accounts after 1.5 s"
           required_fields: [value]
           interaction_type: display
           data_driven: false
 
-  # ── Empty (awaiting) state — bank slow to update consent ──────────────
+  # ── Awaiting state — bank slow to update consent ──────────────────────
+  # state_binding corrected 2026-07-31: was [empty]. The 2026-07-28 reverse sync
+  # removed the `empty` state (ConsentCallbackUiState has no Empty member) and
+  # added `awaiting` (AwaitingStep.kt ships in source), but left this component
+  # bound to the deleted state, so it could never render.
   - type: empty_state
     id: awaiting_state
-    state_binding: [empty]
+    test_tag: "callback_awaiting"       # ConsentCallbackTestTags.AWAITING_STEP
+    state_binding: [awaiting]
     icon: hourglass_empty
     title: "{strings.consent_callback_awaiting_title}"
     body: "{strings.consent_callback_awaiting_body}"
@@ -157,6 +180,7 @@ components:
     children:
       - type: button
         id: poll_again_button
+        test_tag: "callback_check_again"   # ConsentCallbackTestTags.CHECK_AGAIN_BUTTON
         variant: filled
         label: "{strings.consent_callback_poll_again}"
         accessibility_label: "{strings.consent_callback_poll_again_a11y}"
@@ -164,6 +188,7 @@ components:
           action: poll_consent_status
           action_contract:
             effect: call_api
+            reads_from: [consent-status]
             external_library_refs: [ktorfit, "hsbc-obie-ais-v4.0:account-access-consents"]
             description: "Re-polls GET /account-access-consents/{ConsentId} with client_credentials token to check if consent status advanced from AwaitingAuthorisation to Authorised; returns to Loading then Content, or stays Empty if still pending."
         test_context:
@@ -175,6 +200,7 @@ components:
   # ── Error state — token exchange failure or Rejected consent ──────────
   - type: empty_state
     id: error_state
+    test_tag: "callback_error"          # ConsentCallbackTestTags.ERROR_STEP
     variant: error
     state_binding: [error]
     icon: cancel
@@ -189,6 +215,7 @@ components:
     children:
       - type: button
         id: retry_button
+        test_tag: "callback_error_retry"  # ConsentCallbackTestTags.ERROR_RETRY_BUTTON
         variant: filled
         label: "{strings.consent_callback_retry}"
         accessibility_label: "{strings.consent_callback_retry_a11y}"
@@ -207,6 +234,7 @@ components:
   # ── Access Denied state — PSU explicitly declined at HSBC portal ──────
   - type: empty_state
     id: access_denied_state
+    test_tag: "callback_access_denied"  # ConsentCallbackTestTags.ACCESS_DENIED_STEP
     variant: error
     state_binding: [access_denied]
     icon: block
@@ -221,6 +249,7 @@ components:
     children:
       - type: button
         id: denied_cta_button
+        test_tag: "callback_start_over"   # ConsentCallbackTestTags.START_OVER_BUTTON
         variant: outlined
         label: "{strings.consent_callback_denied_cta}"
         accessibility_label: "{strings.consent_callback_denied_cta_a11y}"
@@ -239,6 +268,7 @@ components:
   # ── Security Error state — FAPI state/nonce mismatch (CSRF/replay) ────
   - type: empty_state
     id: security_error_state
+    test_tag: "callback_security_error"  # ConsentCallbackTestTags.SECURITY_ERROR_STEP
     variant: error
     state_binding: [security_error]
     icon: security
@@ -253,6 +283,7 @@ components:
     children:
       - type: button
         id: security_retry_button
+        test_tag: "callback_start_again"  # ConsentCallbackTestTags.START_AGAIN_BUTTON
         variant: filled
         label: "{strings.consent_callback_security_cta}"
         accessibility_label: "{strings.consent_callback_security_cta_a11y}"
@@ -324,11 +355,8 @@ state_model:
       - redirectUri                # String — the registered OAuth redirect URI
 
 # ── Dependencies ───────────────────────────────────────────────────────────
-dependencies:
-  tier: 0
-  features:
-    - accounts
-    - login
+# dependencies: MOVED to flow.yaml 2026-07-31 (CROSS_LEAK repair —
+# sibling-layout.json assigns `dependencies` to the flow sibling).
 
 # ── Screens list ───────────────────────────────────────────────────────────
 screens:

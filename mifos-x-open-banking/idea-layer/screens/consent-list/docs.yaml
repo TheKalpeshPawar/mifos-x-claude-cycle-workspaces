@@ -1,3 +1,7 @@
+sibling: docs
+schema_version: "4.0"
+feature_id: consent-list
+
 feature: consent-list
 contract_version: "2.0.0"
 status: approved
@@ -14,6 +18,8 @@ scaffolded_by: /idea-heal
 enriched_by: /idea-enrich (quality-push)
 enriched_at: '2026-06-29'
 archetype: index_list
+# flow_ref backfilled 2026-08-02 (/idea-sync) from flows/*.yaml#screens[] membership.
+flow_ref: consent-management
 description: >-
   Consent management list screen reachable from More/Settings. Partitions locally-stored HSBC consents into Active
   (Authorised) and History (Expired/Revoked) sections separated by a divider. Active cards show OBIE status chip,
@@ -62,39 +68,43 @@ vm_state:
       note: Computed per consent item; coerced to 0 for already-expired consents in history
     - name: expiry_color
       type: String (design token)
-      derived_from: if (days_until_expiry <= 14) 'error' else 'on-surface-variant'
+      derived_from: if (days_until_expiry <= 14) 'tertiary' else 'onSurfaceVariant'
     - name: formatted_creation_date
       type: String
       derived_from: Data.CreationDateTime.format('d MMM yyyy')
     - name: formatted_expiry_date
       type: String
       derived_from: Data.ExpirationDateTime.format('d MMM yyyy')
+# vm_actions RELOCATED 2026-08-01 (/idea-sync): loadConsents -> initial_load; the three
+# navigate* entries -> nav_callbacks. Nothing deleted. ui.yaml#state_model declares exactly one
+# member: RetryLoad, retained below.
+initial_load:
+  mechanism: init-stream-collection
+  what:
+    - LocalStorage.getAllConsentIds()
+    - ConsentService.getConsentStatus(consentId) for each stored id
+    - Partition results into active_consents and history_consents
+    - Compute days_until_expiry, expiry_color, formatted dates per item
+  states: "Loading -> Content(active, history) | error | error_auth"
+  error_handling:
+    NetworkError: Transition to error state with message
+    HttpException(401): Transition to error_auth state — PSU session expired, prompt re-auth
+    HttpException(500): Transition to error state with generic message
+  note: >-
+    NOT a dispatched action. ui.yaml#implementation.removed_in_sync: "loadConsents action — the
+    initial load is stream collection in init{}".
+
+nav_callbacks:
+  # ui.yaml#implementation.removed_in_sync: "navigateConsentDetail / navigateConnect /
+  # navigateReauth actions — all three are nav-host callbacks".
+  - signature: "onNavigateToConsentDetail(consentId) -> navigate(Route.ConsentDetail(consentId))"
+    surface: "consent card tap"
+  - signature: "onConnect -> navigate(Route.UserOnboarding)"
+    surface: "empty-state Connect HSBC button"
+  - signature: "onReauth -> navigate(Route.Login)"
+    surface: "error_auth state — fired when the PSU access token has expired"
+
 vm_actions:
-  - name: LoadConsents
-    signature: 'suspend fun loadConsents(): Unit'
-    state_mutations:
-      - uiState = Loading
-    side_effects:
-      - LocalStorage.getAllConsentIds()
-      - ConsentService.getConsentStatus(consentId) for each stored id
-      - Partition results into active_consents and history_consents
-      - Compute days_until_expiry, expiry_color, formatted dates per item
-    error_handling:
-      NetworkError: Transition to error state with message
-      HttpException(401): Transition to error_auth state — PSU session expired, prompt re-auth
-      HttpException(500): Transition to error state with generic message
-  - name: NavigateConsentDetail
-    signature: 'fun navigateConsentDetail(consentId: String): Unit'
-    state_mutations: []
-    side_effects:
-      - Navigator.navigate(Route.ConsentDetail(consentId))
-    error_handling: {}
-  - name: NavigateConnect
-    signature: 'fun navigateConnect(): Unit'
-    state_mutations: []
-    side_effects:
-      - Navigator.navigate(Route.UserOnboarding)
-    error_handling: {}
   - name: RetryLoad
     signature: 'suspend fun retryLoad(): Unit'
     state_mutations:
@@ -104,13 +114,6 @@ vm_actions:
     error_handling:
       NetworkError: Transition to error state
       HttpException(401): Transition to error_auth state
-  - name: NavigateReauth
-    signature: 'fun navigateReauth(): Unit'
-    state_mutations: []
-    side_effects:
-      - Navigator.navigate(Route.Login)
-    note: Triggered from error_auth state when PSU access token is expired
-    error_handling: {}
 error_cases:
   - NetworkError
   - TokenExpiredSession

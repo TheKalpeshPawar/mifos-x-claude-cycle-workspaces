@@ -1,3 +1,7 @@
+sibling: docs
+schema_version: "4.0"
+feature_id: standing-orders
+
 feature: standing-orders
 contract_version: "2.0.0"
 status: approved
@@ -101,44 +105,22 @@ error_cases:
     trigger: Data.StandingOrder[] is empty
     user_message: No standing orders are set up for this account.
     recovery: Empty state shown; no action needed
-state_model:
-  sealed_class: StandingOrdersUiState
-  variants:
-    - name: Loading
-      description: "OBReadStandingOrder6 fetch in flight; no standing order data available yet"
-    - name: Content
-      fields:
-        - name: standingOrders
-          type: "List<StandingOrderViewModel>"
-          description: "Mapped OBIE order list with frequency_label, status_variant, hasFinalPayment flags"
-        - name: summaryLabel
-          type: String
-          description: "Computed '3 Active · 1 Inactive' string from StandingOrderStatusCode counts"
-      description: "Non-empty response; all transforms applied by StandingOrdersViewModel"
-    - name: Empty
-      description: "Data.StandingOrder[] returned by HSBC is an empty array; zero-result UI shown"
-    - name: Error
-      fields:
-        - name: errorType
-          type: "StandingOrderErrorType"
-          description: "Sealed enum: TokenExpired | ConsentRevoked | RateLimited | NetworkError | ServerError"
-        - name: message
-          type: String
-          description: "Localised error string resolved from errorType by ViewModel"
-      description: "Typed error state; Retry button always visible"
+# state_model: REMOVED 2026-07-31 (CROSS_LEAK repair). sibling-layout.json assigns
+# `state_model` to the ui sibling, and ui.yaml already carried the authoritative
+# declaration of this same StandingOrdersUiState sealed class in the canonical MVI shape.
+# This copy was additionally STALE — it described 4 variants and never knew about the
+# Unsupported member that ships in source. Not simply deleted: the per-variant prose it
+# uniquely held was folded into ui.yaml#state_model.screen_state.member_notes first.
 
-dependencies:
-  - screen: account-detail
-    relation: parent
-    params_received: [accountId]
-    entry_trigger: "Standing Orders chip tap"
+# dependencies: MOVED to flow.yaml 2026-07-31 (CROSS_LEAK repair —
+# sibling-layout.json assigns `dependencies` to the flow sibling).
 
 test_fixtures:
   source: idea-layer/screens/standing-orders/demo-data.yaml
-  scenario_count: 13
+  scenario_count: 14
   priority_distribution:
     p0: 2
-    p1: 7
+    p1: 8
     p2: 4
 status_history:
   - from: enriched

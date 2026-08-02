@@ -1,3 +1,7 @@
+sibling: tests
+schema_version: "4.0"
+feature_id: accounts
+
 screen_id: accounts
 
 scenarios:
@@ -57,16 +61,22 @@ scenarios:
       - "GlobalWallet balance displays native currency code (USD), not GBP"
       - "Both cards are excluded from GBP total balance calculation (totalBalanceFormatted remains £15,797.63 for GBP accounts)"
 
-  - id: TC-ACCTS-007
-    description: "Consent expiry banner shown when consent expires within 30 days"
-    state: consent_expiring
-    given: "Consent ExpirationDateTime is 14 days from now; accounts loaded successfully"
-    when: "Screen mounts and accounts load"
-    then:
-      - "consent_expiring state active — full account list and filter chips visible"
-      - "Warning banner visible at bottom with 'Consent expiring soon' title"
-      - "Banner body text references 14 days remaining"
-      - "'Reconfirm access' button navigates to consent-detail with activeConsentId param"
+  # TC-ACCTS-007 REMOVED 2026-08-01 (/idea-sync, from /idea-verify XS-2b).
+  #
+  # It asserted `state: consent_expiring` plus a "Consent expiring soon" warning banner and a
+  # "Reconfirm access" button. None of the three exist. ui.yaml:109 declares
+  # [loading, content, empty, error], and _strings/strings.yaml:58 records the matching prune:
+  # "Pruned 2026-07-28: consent_expiring.* (no such state)".
+  #
+  # This is the exact half-applied-sweep the 07-28 reverse sync left behind — it removed the
+  # state and swept the STRINGS in the same edit, but not the TEST that exercised them. The
+  # scenario was unsatisfiable, not merely mislabelled, so it is deleted rather than retargeted:
+  # unlike TC-CALLBACK-003 (a live surface under a wrong name) there is no surviving surface
+  # here to point it at. Consent expiry is covered where it is actually implemented — the
+  # consent-list reconfirm banner and consent-detail expiry warning (see their tests.yaml).
+  #
+  # Ids intentionally left non-contiguous: renumbering 008-010 would break every external
+  # reference to those ids for no gain.
 
   - id: TC-ACCTS-008
     description: "CreditCard account displays 'Balance owed' badge in error colour"

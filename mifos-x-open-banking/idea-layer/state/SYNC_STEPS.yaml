@@ -1,146 +1,448 @@
 schema_version: 1.0.0
-run:
-  at: '2026-07-31T19:46:00Z'
-  args: ''
+
+# ═══════════════════════════════════════════════════════════════════════════
+# 2026-08-02T16:10 /idea-sync "fix the warnings" (LATEST) — ST-1 closed.
+# ═══════════════════════════════════════════════════════════════════════════
+run_2026_08_02_fix_warnings:
+  at: '2026-08-02T15:20:00Z'
+  ended_at: '2026-08-02T16:10:00Z'
+  args: 'fix the warnings.'
   command: /idea-sync
   actor: claude
   status: success
+  trigger: "the 3 open warns carried by /idea-verify at 15:00 — SH-1, ST-1, FW-1"
+
+  scope_decision: >-
+    Only ST-1 was actionable. The other two warns are blocked by standing decisions, not by
+    missing effort, and were NOT silently worked around:
+      SH-1 — the 161 missing sibling headers are already fixed. What remains is the body-shape
+             divergence from the v4.0 sibling schemas, and closing that means the
+             endpoints->api / scenarios->testing / on_mount->entries restructure across all 161
+             files, which the user explicitly declined with the cost in front of them. Reversing
+             that needs a fresh decision, not an inference from "fix the warnings".
+      FW-1 — a defect in the shipped framework-verify-action-contract.sh. Not fixable from this
+             project, and the user's directive is to leave framework files alone.
+
+  steps:
+    - step: STEP 1 (verify)
+      status: complete
+      detail: "Reused the 15:00 cold verify — 0 errors, 3 warns. No corpus change between it and STEP 3.2."
+    - step: STEP 3.0 (scope)
+      status: complete
+      detail: "5 features carrying the 7 untested declared states."
+    - step: STEP 3.2 (enrich delegation)
+      status: complete
+      detail: "One sonnet-router writer per feature, disjoint write-sets."
+    - step: STEP 5.1 (post-completion verification)
+      status: complete
+      detail: "Full gate sweep re-executed at orchestrator level; see gates_after."
+
+  st1_closed:
+    states_covered: 7
+    features_touched: 5
+    scenarios_before: 218
+    scenarios_after: 225
+    per_feature:
+      direct-debits:      { state: unsupported, scenario: TC-DD-010,    count: "9 -> 10" }
+      scheduled-payments: { state: unsupported, scenario: TC-SP-009,    count: "8 -> 9" }
+      standing-orders:    { state: unsupported, scenario: TC-SO-014,    count: "13 -> 14" }
+      payment-status:     { state: loading,     scenario: TC-PSTAT-009, count: "8 -> 9" }
+      payment-consent:    { states: "validating, exchanging, checking", scenarios: "TC-PCON-009/010/011", count: "8 -> 11" }
+    authoring_discipline: >-
+      Every scenario references only components and i18n keys the feature's own ui.yaml already
+      names — no invented {strings.*} token, which is why G-I18N still reports 535/535 resolved
+      rather than a raised-and-broken count. payment-consent and payment-status are
+      spec_ahead_of_source P3 features; their scenarios state plainly that they describe
+      intended behaviour for a screen that does not ship yet.
+
+  interruption_recovery:
+    what_happened: >-
+      A usage limit killed 3 of the 5 writers mid-flight. Two had already written: standing-orders
+      completed both tests.yaml and docs.yaml before dying, and payment-status wrote TC-PSTAT-009
+      into tests.yaml but never updated docs.yaml — leaving scenario_count at 8 against 9 actual.
+    what_was_done: >-
+      On resume the instruction was "restart all tasks", but a blind restart would have appended
+      duplicate scenarios to the three features that had already finished. Ground truth was
+      re-derived from the files first: 3 features complete, 1 half-applied, 1 untouched. The
+      payment-status drift was repaired inline (count and priority_distribution both re-derived
+      from tests.yaml, not incremented), and only payment-consent was re-dispatched.
+    incidental_repair: >-
+      payment-consent's docs.yaml was ALREADY carrying stale counts before this run (p0 declared
+      4 against 5 actual, p2 declared 1 against 0 actual). Its writer re-derived the whole
+      distribution rather than incrementing the stale numbers, so that pre-existing drift is
+      closed too.
+
+  gates_after:
+    yaml_parse: "319 files, 0 failures"
+    schema_closure: "G-IDEA-SCHEMA-CLOSURE all 9 sub-checks PASS"
+    action_contract: "23 ui.yaml, 431 blocks, 0 violations, 0 unevaluated"
+    i18n: "535 references, 0 unresolved"
+    demo_data: "23/23, 0 DD1 violations"
+    state_coherence: "G-ILC fail=0 warn=0"
+    aco: "0 orphans"
+    scenario_count_integrity: "23/23 declared == actual"
+    duplicate_scenario_ids: "0"
+    test_state_refs: "225 references, 0 undeclared"
+    untested_declared_states: "0 — ST-1 CLOSED"
+
+  open_after:
+    - id: SH-1
+      severity: warn
+      note: "sibling bodies still diverge from the v4.0 schemas; needs a fresh decision, not a fix"
+    - id: FW-1
+      severity: error
+      scope: framework
+      note: "framework-verify-action-contract.sh reports 15 blocks vs the .ts walker's 431"
+
+# ═══════════════════════════════════════════════════════════════════════════
+# 2026-08-02 /idea-sync — SOURCE-TRUTH REVERSE PASS (prior run)
+# ═══════════════════════════════════════════════════════════════════════════
+# Direction is DELIBERATELY inverted for this run. RULE-GAP-IDEA-FIRST-001 normally makes the
+# idea-layer the SoT; the user directed "match the idea layer with the source, source is the
+# truth here". This is the project's SECOND reverse pass — the first was /gap-analysis-project
+# on 2026-07-28 (PIPELINE_STATE#capabilities.gap-analysis-project). Unlike that one, this pass
+# did not re-derive features from source; it closed the 8 specific divergences the 2026-08-02
+# /idea-verify-e2e run named.
+run_2026_08_02_source_truth:
+  at: '2026-08-02T05:29:21Z'
+  ended_at: '2026-08-02T07:11:18Z'
+  args: 'match the idea layer with the source. source is the truth here. fix all the above issues. one by one'
+  command: /idea-sync
+  actor: claude
+  status: success
+  trigger: "8 open findings from /idea-verify-e2e 2026-08-02 (roster mean 77/100, range 54-87)"
+
+  user_confirmed_carve_outs:
+    # Two places where source is BEHIND the idea-layer on purpose. Applied literally,
+    # source-is-truth would have DELETED both. Both were put to the user and kept.
+    - id: scheduled-payments-unsupported
+      decision: keep-idea-flag-source
+      why: >-
+        Source already records the U000 refusal (BankingStores.kt:377 recordIfUnsupported) and
+        only fails to RENDER it — ScheduledPaymentsViewModel.kt:64 routes every error to
+        classifyScheduledPaymentsError with no isUnsupportedForProduct() guard, so a PSU on a
+        credit card gets a Retry that can never succeed. Pruning the state would have erased
+        the specification of a live defect. Reclassified in CAPABILITY_GAPS from an open
+        idea-layer finding to `status: source-owed`.
+    - id: pisp-features
+      decision: keep-mark-spec-ahead-of-source
+      why: >-
+        send-money / payment-consent / payment-status are the 2026-07-30 scope reversal, to be
+        built in source later. Each docs.yaml gained a spec_ahead_of_source block recording
+        what source DOES have (130 PISP wire DTOs, SendMoneyRoute + PayTab placeholders) and
+        what it lacks (no service, store, repository or feature module), so absence of a module
+        scores N/A rather than 0.
+
+  findings_closed: 8
+  work:
+    F1_carve_outs: "scheduled-payments ui.yaml + docs.yaml markers; 3 PISP docs.yaml markers; CAPABILITY_GAPS reclassified"
+    F2_accounts_siblings: >-
+      accounts/docs.yaml gained nav_callbacks + vm_actions (from AccountsAction's two members)
+      + test_fixtures (scenario_count 9, priority recorded AS MEASURED: unset:9). Its stale
+      impl_notes was corrected in the same edit — it declared BaseViewModel<..., AccountsEvent,
+      ...> against a source generic of Nothing, a 9-field AccountsState against source's 1, a
+      ConsentExpiring state pruned on 07-28, and three nav edges against source's one.
+    F3_test_tags: >-
+      259 test_tag bindings written across 20 features from the 18 source TestTags.kt objects.
+      Every FLAT const in all 18 modules is now either bound to a component or recorded under
+      ui.yaml#test_tags.unbound with the reason it has no anchor. 23/23 features carry a
+      test_tags reconciliation block.
+    F4_flow_metadata: >-
+      flow_ref backfilled into 14 docs.yaml (23/23 now declare one, derived from
+      flows/*.yaml#screens[] membership); flows/send-money-payment.yaml reshaped from the
+      journey container into the flow container its 8 siblings use; journeys/send-money-payment.yaml
+      authored; journeys/INDEX.md refreshed 20/20 -> 23/23.
+    F5_export_matrix: >-
+      pending_generation corrected — mockup / prompts_figma / preview_html were declared
+      `absent, deferred` while 23 / 23 / 95 files sat on disk. 4 new __all__ cells registered so
+      those groups are watched. summary recounted: 58 ledger rows, 436 tracked artifacts.
+    F6_stitch_prompts: "95 prompts rebuilt via stitch-prompt-build.ts --force. No Stitch SDK call."
+    F7_training_master: >-
+      component_inventory re-measured (414 -> 430 components / 431 walker blocks, with the
+      reconciliation between the two recorded); action_contract.coverage_holes closed; a new
+      test_tags section added carrying the tag conventions, builder-key contracts and the
+      unbound class.
+    F8_journeys: "covered under F4"
+
+  gates_after:
+    yaml_parse: "295 files, 0 failures"
+    action_contract: "23 ui.yaml, 431 component blocks, 0 violations, 0 unevaluated (--report-untyped empty)"
+    i18n: "564 declared keys, 535 referenced, 0 unresolved"
+    nav_targets: "20 distinct targets, 0 dead"
+    initial_state: "23/23 initial_state values are declared states"
+    flow_ref_resolution: "23/23 docs.yaml flow_refs resolve to a flows/*.yaml"
+    journey_screen_ids: "0 dangling screen_ids across 9 journeys"
+    prompt_rebuild: "95 written, 0 cached, 0 failed"
+
+  new_finding_open:
+    id: PROMPT-BUILDER-CHILDREN-ONLY
+    severity: warn
+    owner: framework
+    detail: >-
+      After a FORCED prompt rebuild, 11 component ids across 5 features still do not appear in
+      their prompts — accounts' 4 filter chips, direct-debits' 2 count chips, user-onboarding's
+      2 trust chips, transactions' 2 stat entries and beneficiaries' avatar. All 11 live under
+      a container key other than `children:` (`chips:`, `stats:`, `leading:`), and
+      stitch-prompt-build.ts walks only `children:` when rendering the component tree. So this
+      is a BUILDER limitation, not project staleness — proven by the omission surviving --force.
+    not_fixed_here: >-
+      The obvious project-side "fix" is renaming those keys to `children:`, which would be
+      wrong: `leading:` is a legitimate M3 list-item slot and `stats:` entries are data rows,
+      not components. The real fix is teaching the builder the other container keys, which is a
+      framework change with cross-project reach and wants its own canary.
+
+# ═══════════════════════════════════════════════════════════════════════════
+# 2026-07-31 /idea-sync — prior run, retained
+# ═══════════════════════════════════════════════════════════════════════════
+run:
+  at: '2026-07-31T18:27:46Z'
+  ended_at: '2026-07-31T18:38:31Z'
+  args: ''
+  command: /idea-sync
+  actor: claude
+  status: partial
   status_reason: >-
-    STEP 4.VERIFY passes on all 7 live artifact groups — the first non-partial /idea-sync
-    since the gate started blocking. Nothing was generated to satisfy it: 2 of the 3
-    blockers recorded on 07-30 had already been resolved, and the 3rd was retired as a
-    stale gate row on user decision.
+    Ran directly after the /idea-verify pass that raised 11 cross-sibling errors; STEP 1
+    consumed those findings rather than re-deriving them. All 11 are now CLOSED, plus 2
+    incidental repairs found while editing (a dangling screens/party/ path and a
+    test_fixtures.source pointing at a file holding zero scenarios). Preflight 3/3 PASS. All
+    gates re-run green afterwards: yaml-parse 209/0, xsib-probe NO FINDINGS,
+    G-ACTION-CONTRACT 428 blocks/0 violations, G-I18N 533 refs/0 unresolved.
+
+    `partial` rather than `success` for ONE reason: fixing settings' vm_actions revealed the
+    same class runs wider — 24 entries across 13 features — and those are NOT safely
+    auto-fixable the same way. Where settings and user-onboarding documented surfaces that do
+    not exist, these document behaviours that DO happen via init{} streams and nav-host
+    callbacks; deleting them would destroy true documentation, and the information-preserving
+    remedy (reclassification) is a docs-sibling schema change with cross-project reach. Held
+    OPEN for a decision per RULE-IDEA-AGENT-ZERO-SOFT-FAIL-001 rather than warn-and-continue,
+    and NOT counted as a failed step — no step failed this run.
+  steps_note: >-
+    The `steps:` list below is retained from the 18:07 run. This run was a targeted
+    fix-then-measure pass over an existing findings set, not a fresh 12-step pipeline, so it
+    did not re-enumerate every step. Its per-step detail lives in
+    PIPELINE_STATE#capabilities.idea-sync.run_2026_08_01_fix_verify_findings.
 steps:
 - n: 0
   name: preflight
   status: complete
-  at: '2026-07-31T19:40:00Z'
+  at: '2026-07-31T18:07:23Z'
+  result: PASS
   notes: >-
-    Phase 0 suite (5 locked slugs) = WARN, user acked [P]roceed. Two slugs were repaired at the
-    root cause rather than worked around, because both were reporting on themselves, not on this
-    project: preflight-source-of-truth-sync.ts hard-crashed on the rich (>=2.0) tokens schema
-    (mode-nested colors + map-shaped typography.font_family), and preflight-mockup-theme-consistency.ts
-    scraped its palette from DESIGN.md alone -- the documented agent-facing SUBSET of
-    design-tokens.yaml -- marking all 23 mockups stale on full-role tokens that are current.
-    Both now PASS. Remaining live WARN is failure-log-review: 2 prior failed `release` runs,
-    error_class unspecified, no loop-hash candidates; unrelated to idea-layer coherence.
+    All 5 locked slugs PASS on first run — source-of-truth-sync, llm-preview-truth-gate,
+    mockup-theme-consistency, failure-log-review, dashboard-truth-audit. Overall PASS means
+    auto-proceed with no picker. This is the first run where the suite was clean without
+    repair: the previous run had to fix two evaluators that were reporting on themselves,
+    and left failure-log-review WARN on 2 stale `release` failures — that log window has
+    since rolled past them (failed_count 0).
 - n: '0.PRE'
   name: structure-ensure
   status: complete
-  at: '2026-07-31T19:46:00Z'
-  action: install
+  at: '2026-07-31T18:07:23Z'
+  action: no-op
   notes: >-
-    idea-layer/preview/_shared/preview-runtime.js was absent; installed from the framework template
-    at sha d0199197d60069cecc0c1c6476a105fe0a8a85687f6e177e6f116f63390518a8
-    (RULE-PROTO-CLICK-002 C4-INSTALL).
+    idea-layer/preview/_shared/preview-runtime.js is byte-identical to the framework template
+    (md5 bf4d8e93896f2ee83415449442104f2d). Idempotent no-op per RULE-PROTO-CLICK-002 C4.
 - n: '1.IDEA-MIGRATION'
   name: migration-drift-probe
   status: complete
-  at: '2026-07-31T19:44:00Z'
+  at: '2026-07-31T18:07:23Z'
+  result: PASS
   notes: >-
-    No drift. The probe itself was repaired first: it compared the manifest's `declared_version_at`
-    and `framework_version_at` LOCATOR strings rather than resolving them, so it raised a
-    production-affecting halt on all 4 axes for every project on every run. Now resolved and
-    compared: schema-contract genuinely ran (23 docs.yaml at contract_version 2.0.0 ==
-    VERSION_MANIFEST contract_versions.current 2.0.0); schema-split, json and template report n/a
-    with a reason (no monolith screens/*.yaml, no legacy screens/*.json, no based_on_template key).
+    PF2-5 exit 0, no drift. schema-contract axis passes; schema-split / json / template each
+    report n/a with a stated reason. Probe invoked positionally — it takes a project dir, not
+    --workspace; passing --workspace makes it build a path from the flag string and die in
+    dirname. Worth noting because the sibling preflight scripts all take --workspace, so the
+    inconsistent convention will bite the next caller too.
 - n: '0.TRAIN'
   name: training-context
   status: complete
-  at: '2026-07-31T19:50:00Z'
-  action: generated
+  at: '2026-07-31T18:07:23Z'
+  action: loaded
   notes: >-
-    idea-layer/training/ did not exist. Generated TRAINING_MASTER.yaml + TRAINING_MANIFEST.yaml
-    from measured project state (414 typed components by frequency, the canonical
-    loading/content/error/empty baseline plus the OBIE consent + payment journey states,
-    28 GET / 5 POST / 1 DELETE, the M3 Trust Blue token set, the 23-node / 80-edge nav graph,
-    and the KMP stream-first stack). Built from derived artifacts, not a skeleton — a thin
-    TRAINING_MASTER would be worse than none, since RULE-TRAINING-001 makes it the floor for
-    every later enrichment.
+    TRAINING_MASTER.yaml present at 10035 bytes (>500 threshold) — generation skipped, context
+    loaded. TRAINING_MANIFEST.yaml present.
 - n: 1
   name: verify
   status: complete
-  at: '2026-07-31T19:48:00Z'
+  at: '2026-07-31T18:07:23Z'
+  result: "0 errors, 2 warnings, 2 advisories"
+  detail_ref: state/PIPELINE_STATE.yaml#capabilities.idea-verify
   notes: >-
-    G-ACTION-CONTRACT pass (414 blocks, 0 violations) AFTER wiring the wrapper to the real
-    YAML walker and fixing the AC5 violation it exposed in account-detail; G-ILC pass
-    (fail=0 warn=0) against the project — the earlier green was the framework root, because
-    the script silently swallowed a mistyped flag; yaml-parse pass over 186 files.
-- n: 2
+    Delegated to /idea-verify, which wrote its own capabilities.idea-verify block. Both errors
+    carried by the previous verify are cleared: STATE-BINDING-001 fixed in-project,
+    SIBLING-ENVELOPE-001 cleared framework-side by the 2.1.0 sibling-schema reconciliation.
+    Counts moved since the 19:46 sync run (428 component blocks vs 420, 562 declared string
+    keys vs 554) — the corpus was edited after that run closed, so the deltas are expected.
+- n: '1.B'
+  name: gap-discovery-6-source
+  status: complete
+  at: '2026-07-31T18:12:00Z'
+  gaps_found: 2
+  fixes_applied: 2
+  notes: >-
+    Sources A/B/E/F clean. Source A is covered by the verify nav sweep (42 edges, 41 resolve).
+    Source B found zero modal/dialog/sheet intents project-wide — this app models confirmation
+    as a STATE (consent-detail revoke_confirm), not a dialog, so there is nothing to gap.
+    Source F is subsumed by G-ACTION-CONTRACT (428 blocks, 0 violations). Two real gaps found
+    and fixed:
+      FR_GAP  — send-money/docs.yaml traced only FR-012 of the four requirement_refs the plan
+                declares for it. FR-015/016/017 are all implemented in send-money/api.yaml
+                (Risk.PaymentContextCode, x-jws-signature, x-idempotency-key) but were
+                untraceable, so project-wide FR coverage read 13/17 instead of 16/17. Added.
+      FLOW_GAP— flows/home-dashboard.yaml has existed since the 07-28 reverse sync and is bound
+                by screens/home/flow.yaml#flow_ref, but idea-plan.yaml §flows declared only 8 of
+                the 9 flows on disk. The plan is the docset SoT for that inventory, so the app's
+                own start-destination flow was invisible to every consumer reading flows from it.
+    FR-010 remains the only uncovered requirement; that is the documented atm-locator removal.
+- n: '1.B.D'
+  name: feature-discovery-L1
+  status: complete
+  at: '2026-07-31T18:12:00Z'
+  features_added: 0
+  notes: >-
+    idea-plan §screens declares 23 screens; screens/ holds exactly those 23. No feature-missing
+    gap. Checked against the §screens inventory rather than §features — the 18 features map
+    many-to-one onto screens (consent-onboarding covers 3, accounts covers 2), so a naive
+    features-vs-directories diff would have reported 5 phantom gaps.
+- n: '1.B.G'
+  name: source-g-interaction-audit
+  status: blocked
+  at: '2026-07-31T18:15:00Z'
+  reconcile_gaps: null
+  expand_proposals: null
+  notes: >-
+    Could not produce a verdict. Promoted to open_findings.G-VACUOUS rather than recorded as a
+    pass — the rollup it emits (classified_pct 100, gap_count 0) is indistinguishable from a
+    genuine all-clear, which is exactly why it needed to be run down rather than accepted.
+- n: '2.FD'
+  name: deferred-feature-reconciliation
+  status: complete
+  at: '2026-07-31T18:13:00Z'
+  notes: >-
+    The one deferred route (_placeholder:atm-locator -> AtmLocatorRoute) is correctly recorded in
+    idea-plan.yaml#deferred_routes[] with target_milestone unscheduled. The audit's dispatch_queue
+    proposes /idea-plan-add to scaffold it; that proposal is DECLINED — scaffolding a route the
+    project deliberately deferred would undo a settled decision. Left deferred, not actioned.
+- n: 3
   name: enrichment-scope
   status: skipped
-  at: '2026-07-31T19:49:00Z'
-  notes: "0 features carry content_stale — nothing to enrich. Matches the 07-30 run."
+  at: '2026-07-31T18:13:00Z'
+  notes: >-
+    0 features carry content_stale. Nothing to enrich, so no [A/F/S] scope picker was surfaced.
 - n: 4
+  name: artifacts
+  status: complete
+  at: '2026-07-31T18:18:00Z'
+  notes: >-
+    The audit flagged 4 project-wide artifacts mtime-stale against the 07-31 screen edits. Two
+    were stale in CONTENT, not just mtime, and both were fixed at source rather than in the
+    artifact:
+      APP_FLOW.mmd   — asserted home AND accounts both occupied bottom-nav order 0. app-shell.yaml
+                       declares home 0 / accounts 1 / pay 2 / more 3. The diagram had faithfully
+                       reproduced a wrong label in screens/accounts/flow.yaml; that file was
+                       corrected, then the diagram. Also folded the two hyphenated `app-shell`
+                       entry sources onto app_shell_bottom_nav, in send-money/flow.yaml and
+                       payment-status/flow.yaml as well as the diagram — a hyphenated non-screen
+                       source is indistinguishable from a dead screen reference to any resolver,
+                       and both had been flagged as unresolved before being confirmed legitimate.
+      TAG_REGISTRY   — 82 -> 86. The 4 send-money manual-entry/reference actions added by the
+                       07-31 design-validate fix pass had no tags. Verified by NAME against
+                       ui.yaml lines 237/269/295/350; a per-screen action-count-vs-tag-count
+                       comparison is NOT a reliable signal here (tags include screen_view and
+                       nav-callback rows, actions include generic `navigate`), so the other
+                       screens were not swept on count alone — see next_required.
+    DEV_STATUS.md and server/api_manifest.yaml were mtime-stale only; content re-checked and left
+    unchanged (api_manifest 7 entries coherent, TAG_REGISTRY internal count self-consistent).
+- n: '4.VERIFY'
   name: artifact-existence-gate
   status: complete
-  at: '2026-07-31T19:50:00Z'
+  at: '2026-07-31T18:19:00Z'
   blocks_run: false
   notes: >-
-    7/7 live groups present. Group 2 (prototype/index.html) retired 2026-07-31 — see
-    layers/idea/commands/_shared/idea-sync-step4-artifacts.md.
+    8/8 live groups present (group 2 retired 2026-07-31). Note for future runs: the doc-set check
+    must test adr/ as a DIRECTORY — a plain file test reports it missing, which it is not.
+- n: '4.MATRIX'
+  name: export-matrix-project-cells
+  status: complete
+  at: '2026-07-31T18:19:00Z'
+  notes: >-
+    Wrote the app_flow / tag_registry / dev_status __project__ cells. They had NO row in
+    EXPORT_MATRIX.yaml at all, so the matrix structurally could not report these three stale —
+    the only staleness signal was the graph audit's separate precondition queue. Registering
+    them closes that blind spot.
 - n: 5
   name: state-write
   status: complete
-  at: '2026-07-31T19:50:00Z'
-  notes: "capabilities.idea-sync written with status: success; the 07-30 G-ACTION-CONTRACT row retracted in place."
-verification:
-- check: G-ACTION-CONTRACT
-  before: "16 blocks / 0 violations (false pass — lossy evaluator)"
-  after: "414 blocks / 0 violations, 2 unevaluated"
-  result: pass
-- check: G-ILC idea-layer-state-coherence
-  after: "SC-2 + SC-3 pass, fail=0 warn=0"
-  result: pass
-- check: YAML parse (all project YAML)
-  after: "186 parsed, 0 failed"
-  result: pass
-- check: idea-migration drift (PF2-5)
-  after: "schema-contract 23 docs.yaml @2.0.0 == framework 2.0.0; 3 axes n/a"
-  result: pass
-- check: STEP 4.VERIFY artifact groups
-  before: 4/7
-  after: 7/7 live
-  result: pass
-- n: '4.DOCSET'
-  name: docset-baseline
-  status: complete
-  at: '2026-07-31T21:20:00Z'
-  notes: >-
-    Wrote the missing state/DOC_SET_STATE.yaml. Did NOT regenerate the 10 docs: with no
-    cache there is no engine last-written hash, so the write-protection post-hook
-    (RULE-HAND-EDIT-DRIFT-001) cannot tell hand-edited from generated, and the six `full`
-    docs carry real authored prose. Adopted the current files as the baseline instead —
-    every row marked provenance: adopted, which asserts the hashes but explicitly does NOT
-    assert the bodies were generated from them. Drift detection is correct from here forward.
-- n: '4.FIXES'
-  name: design-validate-fix-pass
-  status: complete
-  at: '2026-07-31T21:15:00Z'
-  notes: >-
-    Applied all 4 findings from the 20:30 /design-validate pass. send-money gained an inline
-    no-payees affordance, a step_indicator, and a review_card with four labelled info_row
-    children (it had none); payment-consent gained a state_roles mapping; bar_chart struck.
-    Score 93.0 -> 99.5. Component blocks 414 -> 420, i18n 545 -> 554 keys, all gates green.
+  at: '2026-07-31T18:19:40Z'
+
+open_findings:
+  - id: G-VACUOUS
+    severity: error
+    scope: framework
+    blocks: "Phase B source G — Layer-6 interaction audit"
+    summary: >-
+      The Layer-6 interaction audit enumerates ZERO components on all 23 screens, then reports
+      classified_pct 100 / gap_count 0 — a vacuous all-clear that reads exactly like a real one.
+    root_cause: >-
+      Producer/consumer attribute mismatch. core/scripts/preview-component-audit.ts selects
+      `[data-component-id], [data-component-type]` (line 62) — the ONLY selector it uses. The
+      rendered previews carry data-nav-to, data-action, data-state and data-screen, and NEITHER
+      data-component-id NOR data-component-type. Confirmed 0 of 95 preview HTML files carry
+      either attribute. The enumerator's own classifyHandler() reads data-nav-to/data-action, so
+      producer and consumer agree on HANDLER attributes and disagree only on the component
+      IDENTITY attributes — which is what the selector keys on.
+    why_it_looked_green: >-
+      per-screen `interaction.fresh: true` with a populated preview_hash, because the read+hash
+      path succeeds; only the querySelectorAll returns empty. buildCoverageRollup over an empty
+      component set computes 0/0 as 100%.
+    ruled_out:
+      - "Incremental cache: cleared .layer6-cache.json and re-ran cold — identical result."
+      - "Missing previews: 95 exist, all parse, all hashed."
+    decision_required: >-
+      Two fixes are possible and they are NOT equivalent. (a) Teach the enumerator to also key on
+      data-nav-to/data-action — no re-render, but it only ever sees components that already have
+      a handler, which is precisely the population the audit exists to find gaps OUTSIDE of, so
+      it would narrow the audit permanently. (b) Emit data-component-id/type from the renderer —
+      correct, but requires re-rendering all 95 previews, and preview render is a SETTLED
+      user deferral (CAPABILITY_GAPS class preview_render, decided_by user 2026-07-30). Not the
+      agent's call; escalated rather than chosen.
+  - id: DEMO-REF-FALSE-POSITIVES
+    severity: warn
+    scope: framework
+    summary: >-
+      16 of the 67 dispatch_queue items are demo_data_ref_unknown against this project, and all
+      the ones inspected are false positives from two independent bugs in the same function
+      (collectFieldKeys, .claude-runtime/lib/idea-graph-audit/layer2-nav-graph.ts:434).
+    bug_1: >-
+      `fields:` is guarded with !Array.isArray(v) and read via Object.keys, so it only resolves a
+      MAP-shaped fields block. This project (and its schema) uses a LIST of {name, type}, so the
+      guard skips it entirely and Object.keys would yield indices anyway. Consequence: `uiState`
+      is flagged unresolved despite being a literally declared state field
+      (send-money/ui.yaml:54 `- name: uiState`).
+    bug_2: >-
+      screen_state sealed-class MEMBER names are never collected as namespaces. Bindings like
+      {content.creditor.name} / {error.message} / {item.id} resolve against a member of
+      SendMoneyUiState, whose fields this project documents as a trailing comment on the member
+      rather than a structured map — so neither the member nor its fields are visible to the
+      resolver.
+    context: >-
+      The detector already carries three dated rounds of false-positive fixes for this exact
+      over-flag family (92 on adhyayan-ai, 26/26 on mifos-x-group-banking, the mtime phantom).
+      These are the 4th and 5th. Not fixed here: patching a shared detector mid-sync would change
+      audit results for every project, which is a framework change wanting its own RED/GREEN
+      canary, not a side effect of one project's sync.
+    consequence_if_unfixed: "16 permanent phantom items in this project's dispatch queue."
+
 not_run:
-- "STEP 3.2 enrichment — nothing content_stale"
-- "STEP 4.DOCSET regeneration — baseline adopted instead; see step 4.DOCSET"
-- "STEP 5.5 preview render — all 23 screens already have preview/, none stale"
-- "STEP 4.DOCSET staleness compare — DOC_SET_STATE.yaml absent (see open_findings)"
+  - "STEP 3.2 enrichment — nothing content_stale"
+  - "STEP 4.DOCSET regeneration — no idea-plan source section that any doc keys on changed materially; baseline from 07-31 21:20 still current"
+  - "STEP 5.5 preview render — user-deferred (CAPABILITY_GAPS class preview_render, settled 2026-07-30)"
+  - "Source G verdict — blocked, see open_findings.G-VACUOUS"
+
 next_required:
-- "/idea approve — send-money, payment-consent, payment-status are status: enriched and await the human gate"
-- "DECISION: whether to widen the action-contract interactive vocabulary (text_button, select) — 2 components unevaluated"
-- "DOC_SET_STATE.yaml — needs a real generation record; the 10 docs exist but their freshness is untracked"
-previous_run:
-  at: '2026-07-30T09:00:00Z'
-  status: partial
-  blocked_on: STEP 4.VERIFY artifact-existence gate
-  recorded_blockers:
-  - group: prototype/index.html
-    still_open: true
-  - group: dashboard/DEV_STATUS.md + dev-status.html
-    still_open: false
-    resolved_note: both files present as of 2026-07-31
-  - group: idea-layer doc set (8 of 10 missing)
-    still_open: false
-    resolved_note: all 10 IDEA_DOC_SET entries present as of 2026-07-31
+  - "DECISION: G-VACUOUS — pick (a) enumerator or (b) renderer. Until then Layer-6 has never actually audited this project."
+  - "DECISION: DEMO-REF false positives — fix collectFieldKeys, or accept 16 phantom dispatch items."
+  - "TAG_REGISTRY sweep — send-money was verified by name; the other 22 screens were not. A name-level sweep is the only reliable check (counts are not comparable)."
+  - "/idea approve — send-money, payment-consent, payment-status are status: enriched and await the human gate"
+  - "NAV-PLACEHOLDER-001 — register the `_placeholder:` nav prefix; the deferred_routes[] side is already correct"

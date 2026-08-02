@@ -1,6 +1,6 @@
 ---
 name: Open Banking — Trust Blue
-version: 1.1.0
+version: 1.3.0
 description: >-
   Material 3 design system for a UK Open Banking AISP + PISP reference app. Calm,
   trustworthy, data-legible retail banking that now also moves money. Accessibility-first,
@@ -28,10 +28,12 @@ typography:
   mono: Roboto Mono
   scale: default
 rounded:
+  none: 0
   small: 8
   medium: 12
   large: 16
   extra_large: 28
+  full: 9999
 spacing:
   base: 4
   screen_padding: 16
@@ -82,10 +84,11 @@ roles in `design-tokens.yaml`). Key roles:
   actions, the active bottom-nav tab, links, and selected states. Sparingly — it should mark
   intent, not fill the screen.
 - **Secondary `#50606E`** — neutral slate for supporting controls and secondary emphasis.
-- **Tertiary `#64597B`** — soft violet. Currently **unused in production**: it was reserved
-  for PFM category accents, and the PFM screens were removed in the 2026-07-28 reverse sync.
-  Kept in the palette as the third M3 role, but do not reach for it to differentiate payment
-  states — those use the secondary/primary/error triad below, which carries meaning.
+- **Tertiary `#64597B`** — soft violet. Carries the **warning / attention-needed** semantic as
+  of 1.3.0 (consent nearing expiry, awaiting authorisation). It was previously reserved for PFM
+  category accents and idle after the PFM screens were removed in the 2026-07-28 reverse sync.
+  Do **not** reach for it to differentiate payment states — those use the secondary/primary/error
+  triad below.
 - **Surface / Background `#F7F9FF`** with the tonal surface-container ladder
   (`#FFFFFF → #E0E3E8`) for cards, sheets, and elevation without shadows.
 - **Error `#BA1A1A`** — also doubles as the **negative/debit** money colour; positive/credit
@@ -111,9 +114,27 @@ label. That is WCAG 1.4.1, and it is also what makes the rule auditable — a re
 the label and see whether a screen is claiming a settlement it does not have. An OBIE status
 outside the mapped vocabulary renders as **in progress**, never as success or failure.
 
-All foreground/background pairs meet **WCAG AA** — 15 pairs measured for 1.1.0, ratios
-recorded in `state/DESIGN_SYSTEM_STATE.yaml`. Theme is **auto** (follows the OS), with dynamic
-colour enabled on Android 12+.
+### Warning and success have no hue of their own
+
+This palette ships M3's five families and no more. There is no amber and no green, so
+**warning maps to tertiary and success maps to primary** — the same move the disposition table
+above makes, for the same reason: a new tonal family is four more pairs to keep accessible
+across two themes and two contrast variants, to say something the existing palette already
+distinguishes.
+
+| Semantic | Role | Container / on-container | Icon | Contrast |
+|---|---|---|---|---|
+| **Warning** (attention needed) | `tertiary` | `#EADDFF` / `#4C4162` | `schedule` | 7.27:1 |
+| **Success** (terminal) | `primary` | `#C9E6FF` / `#004B6F` | `check_circle` | 7.27:1 |
+
+Warning is **tertiary, not error**. A consent expiring in seven days has not failed — the
+customer still has full access and a working reconfirm path. Error-red would frame a live,
+healthy connection as broken. Error stays reserved for **Revoked, Rejected and Expired**, where
+access is actually gone. "Act soon" and "too late" must not share a colour.
+
+All foreground/background pairs meet **WCAG AA** — 19 pairs measured (15 at 1.1.0, 4 more for
+the status semantics at 1.3.0), ratios recorded in `state/DESIGN_SYSTEM_STATE.yaml`. Theme is
+**auto** (follows the OS), with dynamic colour enabled on Android 12+.
 
 ## Typography
 

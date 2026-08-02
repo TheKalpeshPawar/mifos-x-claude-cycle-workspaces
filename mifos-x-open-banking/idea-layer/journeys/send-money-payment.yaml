@@ -1,0 +1,96 @@
+# AUTHORED 2026-08-02 by /idea-sync (source-truth pass).
+#
+# flows/send-money-payment.yaml is `type: happy` and spans three features, but had no
+# journeys/ counterpart — the only happy-path flow in the project without one. Its narrative
+# screen_sequence had been written INTO the flow file (where that key does not belong); it is
+# preserved verbatim here, in the container the journey schema defines.
+#
+# consent-expired deliberately still has no journey: it is `type: error`, and journeys model
+# happy-path persona narratives.
+#
+# NOTE this journey describes a surface that is SPECIFIED, not shipped. All three features
+# carry docs.yaml#spec_ahead_of_source; source has the PISP wire DTOs and a Pay-tab
+# placeholder route but no feature module. Do not read it as a description of running code.
+
+id: send-money-payment
+version: "1.0.0"
+name: "Send Money — Consumer Domestic Payment"
+description: >
+  Priya pays her plumber from her HSBC current account without leaving the app. She picks the
+  funding account and the payee, enters an amount, reviews the finished payment, authorises it
+  at her bank, and watches it settle. This is a consumer payment, not a merchant checkout: the
+  Risk block carries PaymentContextCode TransferToThirdParty and no merchant fields.
+persona:
+  archetype: "returning user — first time moving money through this app"
+  jtbd: "Pay someone I owe, from the account I choose, and know for certain that it actually went."
+  context: "Standing in a hallway with an invoice in hand; wants it done before she forgets."
+  knowledge_level: familiar
+  emotional_state: "cautious — this is irreversible and she has not paid through this app before"
+goal: "Initiate a domestic payment and confirm it reached a settled status."
+success_metric:
+  name: "payment-initiation-completion"
+  kind: task_completion
+  target: ">=85% of sessions that stage a domestic-payment-consent reach an accepted submit status"
+  measurement: "Funnel: send_money_review_confirmed → consent_authorised → payment_submitted, same session"
+screen_sequence:
+  - screen_id: send-money
+    state: "content"
+    user_intent: "Choose the funding account from her own authorised accounts, then a saved payee or a manually typed sort code and account number."
+    success_signal: "A debtor account and a creditor are both selected; the form advances to the amount step."
+    notes: "Saved payees come from the already-shipped beneficiaries surface; manual entry is always available, so a PSU with zero saved payees is not blocked."
+  - screen_id: send-money
+    state: "content"
+    user_intent: "Enter the amount and an optional reference."
+    success_signal: "validationError is null and the Review button is enabled."
+    notes: "Validated locally against the account's available balance — advisory only; funds-confirmation at the bank stays authoritative. Reference is capped at the OBIE 35-char RemittanceInformation limit."
+  - screen_id: send-money
+    state: "content"
+    user_intent: "Confirm the finished payment on the review surface — the last screen before an irreversible transfer."
+    success_signal: "HTTP 201 with Data.Status AwaitingAuthorisation and a ConsentId."
+    notes: "Staging POSTs a domestic-payment-consent with a detached JWS and an x-idempotency-key. Confirming unmounts the button and renders submitting_indicator, so it cannot be tapped twice."
+  - screen_id: payment-consent
+    state: "authorised"
+    user_intent: "Authorise the payment at HSBC via app-to-app redirect, completing SCA."
+    success_signal: "Redirect returns with an authorisation code; a PSU access token is obtained and the consent reaches Authorised."
+    notes: "The PSU authenticates AT their bank — there is no password or OTP in this app."
+  - screen_id: send-money
+    state: "submitting"
+    user_intent: "Submit the authorised payment."
+    success_signal: "HTTP 201 with a DomesticPaymentId and an accepted Status."
+    notes: "Reuses the SAME idempotency key and the byte-identical staged Initiation, so a retry after a network failure cannot produce a duplicate payment."
+  - screen_id: payment-status
+    state: "content"
+    user_intent: "Confirm the money actually landed rather than trusting the submit receipt."
+    success_signal: "Status reaches AcceptedSettlementCompleted."
+    notes: "This step exists because a successful submit almost never means settled — HSBC returns AcceptedSettlementInProcess and the terminal status arrives later."
+expected_outcome: >
+  Priya has moved money to her payee and has seen a settlement status she can trust, without
+  ever leaving the app except for the authorisation leg at her own bank.
+tier: maximum
+preconditions:
+  - "Active account-access consent and valid PSU access token (the AIS leg is already complete)."
+  - "At least one authorised account with a positive available balance returned by GET /accounts."
+  - "A payments-scope client-credentials token for staging the domestic-payment-consent."
+failure_modes:
+  - cause: "400 U019 — missing or malformed detached JWS on the write."
+    recovery_screen: send-money
+    notes: "Non-recoverable for the PSU: shows a support reference and offers no Retry, because retrying an unsigned request cannot succeed."
+  - cause: "400 U009 — consent not Authorised when the submit is attempted."
+    recovery_screen: payment-consent
+    notes: "Re-authorise CTA restarts the authorise leg; the staged consent is kept."
+  - cause: "400 U014 — payment outside the bank's control parameters."
+    recovery_screen: send-money
+    notes: "Returns to the amount step with debtor and creditor preserved, so only the figure needs changing."
+  - cause: "400 U008 — the staged consent does not match the submitted order."
+    recovery_screen: send-money
+    notes: "Discards the staged consent and restarts the form. Never re-submits against a mismatched consent."
+  - cause: "403 — payment consent revoked or expired."
+    recovery_screen: consent-list
+    notes: "View Consents CTA navigates to the consent surfaces (cross-flow → consent-management)."
+  - cause: "funds-confirmation returns FundsAvailable=false."
+    recovery_screen: send-money
+    notes: "InsufficientFunds error; the payment is never submitted."
+  - cause: "Network failure mid-submit — outcome unknown to the client."
+    recovery_screen: send-money
+    notes: "Retry reuses the same idempotency key, so the bank de-duplicates. This is the one failure mode where a blind retry is safe."
+tags: [payments, pisp, domestic-payment, spec-ahead-of-source, p3]

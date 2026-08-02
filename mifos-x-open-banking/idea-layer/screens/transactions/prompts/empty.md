@@ -1,9 +1,9 @@
 ---
-ui_yaml_sha: a078cde13778245b2c6ed5d1d3a29e910c9736ec77272d299b5b6cc6fc1d356a
+ui_yaml_sha: ef7c8e0cc5a6d0f922c8a0771858bde2c382ea9c7e20e39f062788f8afb9a9fa
 design_md_hash: f734ecfba28b3b0688cbd7ca6f3d7fca27febb15fd021d72a4518ae0e3a4200d
 app_shell_hash: 7b9c63f9aee4f5b5005b1d7533e7f5feab6427f398954987c34ee0f382b0ed69
 design_read_hash: 513c061d12f3a90e84d6e98e1e037b131e59fa3ca5c5f3c0abfc6ba87d24bcaf
-content_hash: d3035c48d8a0bccaeb87035fbc0f6b8f0b8355a971780c37444582e2452f9d6d
+content_hash: 9d43bb44c0c332830bf17f50eef221706a9075d4e46d67668899fad073485a55
 
 design_read_aesthetic: minimalist-ui
 design_read_dials: {variance: 3, motion: 2, density: 5}
@@ -24,7 +24,7 @@ craft_rules_version: v1.0.0
 
 # transactions — empty state
 
-> Auto-generated from screens/transactions/ui.yaml @ SHA 015e27331328d41f
+> Auto-generated from screens/transactions/ui.yaml @ SHA 525e161acc7ee96b
 > Stitch DesignSystem: (pending DESIGN.md upload — run /idea-feature-stitch sub-plan 02)
 > DO NOT redeclare colors / fonts / spacing — they live in DESIGN.md.
 
@@ -49,7 +49,7 @@ craft_rules_version: v1.0.0
    - **chip** (#filter_money_in) — label: "{strings.transactions.filter.money_in}", icon: "arrow_downward", on_click: { action: filter_transactions }
    - **chip** (#filter_money_out) — label: "{strings.transactions.filter.money_out}", icon: "arrow_upward", on_click: { action: filter_transactions }
    - **chip** (#filter_date_range) — label: "{strings.transactions.filter.date_range}", icon: "date_range", on_click: { action: open_date_range_picker }
-4. **text_field** (#search_field) — label: "{strings.transactions.search.label}", on_click: { action: search_transactions }
+4. **search_bar** (#search_field) — label: "{strings.transactions.search.label}"
 5. **list** (#transactions_list) — "transactions_list"
    - **section_header** (#date_group_header) — label: "{group.date}"
    - **list_item** (#transaction_row) — "transaction_row"

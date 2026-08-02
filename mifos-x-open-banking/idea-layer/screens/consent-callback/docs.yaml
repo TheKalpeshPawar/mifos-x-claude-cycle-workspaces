@@ -1,3 +1,7 @@
+sibling: docs
+schema_version: "4.0"
+feature_id: consent-callback
+
 feature: consent-callback
 contract_version: "2.0.0"
 status: approved
@@ -12,6 +16,10 @@ acceptance_refs:
   - FR-002
 scaffolded_by: /idea-heal
 archetype: empty_state
+# flow_ref backfilled 2026-08-02 (/idea-sync) from flows/*.yaml#screens[] membership.
+# This screen is reachable ONLY via the flow (an external redirect return), never by a nav
+# edge — which is why orphan-screen checks here must count flow reachability, not nav.
+flow_ref: onboarding-consent
 description: >-
   Return leg from HSBC's authorisation portal. Validates the FAPI state parameter and hybrid-flow id_token nonce on
   arrival; surfaces security_error immediately on mismatch. Handles OAuth error redirects (error=access_denied)
@@ -89,7 +97,7 @@ vm_actions:
     error_handling:
       ConsentStatus.Rejected: Transition to error state
       ConsentStatus.Revoked: Transition to error state
-      ConsentStatus.AwaitingAuthorisation: Transition to empty (awaiting) state
+      ConsentStatus.AwaitingAuthorisation: Transition to awaiting state
       ConsentStatus.Authorised: Transition to content then auto-navigate to accounts
   - name: NavigateRetry
     signature: fun navigateRetry() -> Unit

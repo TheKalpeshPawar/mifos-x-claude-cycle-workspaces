@@ -1,3 +1,7 @@
+sibling: docs
+schema_version: "4.0"
+feature_id: scheduled-payments
+
 feature: scheduled-payments
 contract_version: "2.0.0"
 status: approved
@@ -22,6 +26,16 @@ description: >-
 has_ui: true
 has_server: false
 capabilities: [has_ui, has_api, has_flow]
+
+# Declared 2026-08-02 by /idea-sync (source-truth reverse pass). This feature is aligned to
+# source in every dimension EXCEPT the `unsupported` state, which the idea-layer keeps ahead of
+# source on purpose — source already records the U000 refusal (BankingStores.kt:377) but never
+# renders it, so pruning the state to match source would delete the specification of a live
+# defect rather than resolve it. Full evidence + the exact fix source owes: ui.yaml#spec_ahead_of_source.
+spec_ahead_of_source:
+  scope: "state:unsupported"
+  owed_by: /implement
+  detail_ref: "screens/scheduled-payments/ui.yaml#spec_ahead_of_source"
 metadata:
   category: crud
   implementation_ready: true
@@ -37,36 +51,37 @@ libraries:
       - ios
       - desktop
       - web
+# vm_actions RELOCATED 2026-08-01 (/idea-sync): LoadScheduledPayments -> initial_load;
+# NavigateBack -> nav_callbacks. Nothing deleted. ui.yaml#implementation.removed_in_sync names
+# both. RetryLoad is the only declared ScheduledPaymentsAction member and is retained below.
+initial_load:
+  mechanism: init-stream-collection
+  what: "GET /accounts/{accountId}/scheduled-payments via Ktorfit AisApiService"
+  states: "Loading -> Content(scheduledPayments = response.Data.ScheduledPayment.map { it.toUiModel() }) | Empty when the list is empty"
+  error_handling:
+    on_401: uiState = Error(TokenExpired)
+    on_403: uiState = Error(ConsentRevoked)
+    on_429: uiState = Error(RateLimited)
+    on_network: uiState = Error(NetworkError)
+  notes: >-
+    toUiModel() maps: ScheduledPaymentDateTime ISO-8601 → scheduledDateFormatted (EEE d MMM yyyy); ScheduledType
+    Execution → scheduledTypeLabel='Execution date', scheduledTypeIcon='calendar_today', scheduledTypeA11y='Money
+    leaves your account on {date}'; ScheduledType Arrival → scheduledTypeLabel='Arrival date',
+    scheduledTypeIcon='arrow_downward', scheduledTypeA11y='Funds arrive at {payee} on {date}'.
+  unsupported_note: >-
+    The `unsupported` state (added 2026-07-30) is reached from this same load path on an OBIE
+    U000 product refusal. The refusal CONDITION is still not modelled in api.yaml — see
+    CAPABILITY_GAPS RULE-IDEA-GAP-DISCOVERY-001 steps 2 and 3, both still OPEN.
+
+nav_callbacks:
+  - signature: "onBack -> popBackStack() returning to account-detail"
+
 vm_actions:
-  - name: LoadScheduledPayments
-    signature: 'suspend fun loadScheduledPayments(accountId: String)'
-    state_mutations:
-      - uiState = Loading
-      - uiState = Content(scheduledPayments = response.Data.ScheduledPayment.map { it.toUiModel() })
-      - uiState = Empty (when list is empty)
-    side_effects:
-      - GET /accounts/{accountId}/scheduled-payments via Ktorfit AisApiService
-    error_handling:
-      on_401: uiState = Error(TokenExpired)
-      on_403: uiState = Error(ConsentRevoked)
-      on_429: uiState = Error(RateLimited)
-      on_network: uiState = Error(NetworkError)
-    notes: >-
-      toUiModel() maps: ScheduledPaymentDateTime ISO-8601 → scheduledDateFormatted (EEE d MMM yyyy); ScheduledType
-      Execution → scheduledTypeLabel='Execution date', scheduledTypeIcon='calendar_today', scheduledTypeA11y='Money
-      leaves your account on {date}'; ScheduledType Arrival → scheduledTypeLabel='Arrival date',
-      scheduledTypeIcon='arrow_downward', scheduledTypeA11y='Funds arrive at {payee} on {date}'.
   - name: RetryLoad
     signature: fun retryLoad()
     state_mutations:
       - re-invokes LoadScheduledPayments with same accountId
     side_effects: []
-    error_handling: {}
-  - name: NavigateBack
-    signature: fun navigateBack()
-    state_mutations: []
-    side_effects:
-      - Emits NavigationEvent.Back to NavController
     error_handling: {}
 error_cases:
   - id: TokenExpired
@@ -91,10 +106,10 @@ error_cases:
     recovery: Empty state shown; no action needed
 test_fixtures:
   source: idea-layer/screens/scheduled-payments/demo-data.yaml
-  scenario_count: 8
+  scenario_count: 9
   priority_distribution:
     p0: 3
-    p1: 4
+    p1: 5
     p2: 1
 capability_completeness:
   storage_location: "no-local-storage — screen fetches on mount from HSBC AIS; no Room/SQLDelight writes; data discarded on navigation"

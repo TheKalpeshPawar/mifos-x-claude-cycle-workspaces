@@ -1,3 +1,7 @@
+sibling: docs
+schema_version: "4.0"
+feature_id: login
+
 feature: consent-onboarding
 contract_version: "2.0.0"
 status: approved
@@ -13,6 +17,11 @@ acceptance_refs:
   - FR-002
 scaffolded_by: /idea-heal
 archetype: login
+# flow_ref backfilled 2026-08-02 (/idea-sync) from flows/*.yaml#screens[] membership.
+# login appears in TWO flows. onboarding-consent is primary (first-run consent journey);
+# consent-expired re-enters this same screen on the 90-day reconfirmation path.
+flow_ref: onboarding-consent
+secondary_flow_refs: [consent-expired]
 description: >-
   OAuth/FAPI initiation screen. Displays the 10 OBIE read permissions being staged in OBReadConsent1 so the PSU
   understands what HSBC will ask them to approve. On 'Continue to HSBC', the app POSTs consent-create
@@ -90,12 +99,13 @@ vm_actions:
       FapiRedirectException: >-
         uiState=Error(user_message='Could not open HSBC. Ensure the HSBC Mobile Banking app is installed, or try
         again.')
-  - name: NavigateBack
-    signature: 'fun navigateBack(): Unit'
-    state_mutations: []
-    side_effects:
-      - Navigator.navigateBack()
-    error_handling: {}
+
+nav_callbacks:
+  # RELOCATED 2026-08-01 (/idea-sync) from vm_actions. ui.yaml#implementation.removed_in_sync:
+  # "navigateBack action — LoginAction has no such member; back is a nav-host onBack callback".
+  - signature: "onBack -> Navigator.navigateBack() returning to user-onboarding"
+    surfaces: ["cancel_button", "empty-state go_back button"]
+
 error_cases:
   - NetworkException
   - ConsentCreateBadRequest
@@ -104,11 +114,14 @@ error_cases:
   - FapiRedirectFailed
 test_fixtures:
   source: screens/login/tests.yaml
-  scenario_count: 7
+  # Corrected 2026-08-01 (/idea-sync, from /idea-verify XS-1): was 7 / high:3 medium:4.
+  # tests.yaml holds 8 scenarios (TC-LOGIN-001..008). The 8th is TC-LOGIN-008, the empty-state
+  # test this file's own status_history records adding on 2026-07-14 — added without updating
+  # the count in the same edit.
+  scenario_count: 8
   priority_distribution:
-    high: 3
+    high: 4
     medium: 4
-    low: 0
 capability_completeness:
   answered_at: "2026-07-14"
   answered_by: "/idea-enrich"

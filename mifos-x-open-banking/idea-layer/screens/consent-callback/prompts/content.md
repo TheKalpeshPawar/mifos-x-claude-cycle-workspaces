@@ -1,5 +1,5 @@
 ---
-ui_yaml_sha: a5072ad7771938cebfbecdc81f55f9e9aeb1b3556f681cc1088c0f096deb6e87
+ui_yaml_sha: a8b0526aa1f643ab128c0fb59bc8d9c0c06ea8adbcff9b2c90c0875fefe2d7b9
 design_md_hash: f734ecfba28b3b0688cbd7ca6f3d7fca27febb15fd021d72a4518ae0e3a4200d
 app_shell_hash: 7b9c63f9aee4f5b5005b1d7533e7f5feab6427f398954987c34ee0f382b0ed69
 design_read_hash: 513c061d12f3a90e84d6e98e1e037b131e59fa3ca5c5f3c0abfc6ba87d24bcaf
@@ -24,7 +24,7 @@ craft_rules_version: v1.0.0
 
 # consent-callback — content state
 
-> Auto-generated from screens/consent-callback/ui.yaml @ SHA 4dc10254135916e7
+> Auto-generated from screens/consent-callback/ui.yaml @ SHA b605fc397c6219a2
 > Stitch DesignSystem: (pending DESIGN.md upload — run /idea-feature-stitch sub-plan 02)
 > DO NOT redeclare colors / fonts / spacing — they live in DESIGN.md.
 

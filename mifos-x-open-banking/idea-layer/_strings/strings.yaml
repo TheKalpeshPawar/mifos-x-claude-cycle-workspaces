@@ -13,6 +13,11 @@ account_detail_identification_accessibility: "Account number"
 account_detail_last_updated: "Last updated"
 account_detail_open_banking_badge: "Secured via UK Open Banking"
 account_detail_open_banking_accessibility: "This account data is secured via regulated UK Open Banking"
+# Added 2026-08-02 (/idea-sync source-truth pass) with the account_description_card component.
+# Label value copied from source: feature/account-detail/.../composeResources/values/strings.xml
+# <string name="feature_account_detail_description_label">Account description</string>
+account_detail_description_label: "Account description"
+account_detail_description_accessibility: "Account description from your bank"
 account_detail_section_balances: "Balances"
 account_detail_section_balances_accessibility: "Account balances section"
 account_detail_balances_list_accessibility: "Balance types list"
@@ -419,8 +424,33 @@ transactions.empty.body: "Try adjusting your filters or date range."
 transactions.empty.clear_filters: "Clear filters"
 transactions.error.title: "Could not load transactions"
 transactions.error.retry: "Retry"
-# Pruned 2026-07-28: per-kind error copy (session_expired / consent_withdrawn /
-# rate_limited / no_network) — TransactionsUiState.Error carries no typed kind.
+# ── RESTORED 2026-08-02 (/idea-sync). The 2026-07-28 prune removed the per-kind error
+# copy on the stated grounds that "TransactionsUiState.Error carries no typed kind".
+# That reading was wrong and source contradicts it outright:
+#   ui/TransactionsViewModel.kt:69   data class Error(val kind: TransactionsErrorKind)
+#   ui/TransactionsViewModel.kt:33   enum class TransactionsErrorKind(val recoverable: Boolean)
+#                                    SESSION_EXPIRED(true) CONSENT_WITHDRAWN(false)
+#                                    RATE_LIMITED(true) NETWORK(true)
+# Each kind resolves TWO strings, not one — TransactionsError.kt:139 statusRes() for the
+# chip and :146 bodyRes() for the paragraph — so the restored shape is a status/body pair
+# per kind rather than the single flat key the prune deleted. Values copied VERBATIM from
+# feature/transactions/src/commonMain/composeResources/values/strings.xml.
+# Note `network`, not the pre-prune `no_network`: source names the enum member NETWORK.
+transactions.error.status.session_expired: "401 — Session expired"
+transactions.error.status.consent_withdrawn: "403 — Consent withdrawn"
+transactions.error.status.rate_limited: "429 — Rate limited"
+transactions.error.status.network: "No connection"
+transactions.error.body.session_expired: "Your session has expired. Please retry to sign in again."
+transactions.error.body.consent_withdrawn: "Your Open Banking consent was withdrawn. Re-authorise access to view transactions."
+transactions.error.body.rate_limited: "Too many requests. Please wait a moment and retry."
+transactions.error.body.network: "Something went wrong. Please check your connection and retry."
+transactions.error.consent_hint: "If the problem persists, check your Open Banking consent or contact your bank."
+# Referenced live by the transaction_row accessibility_label (ui.yaml:372) since before the
+# prune, but never declared — so the row's direction announcement resolved to nothing for
+# every screen-reader user. Values are the direction ICON's contentDescription in source
+# (components/TransactionRow.kt:83-90).
+transactions.a11y.credit: "Money in"
+transactions.a11y.debit: "Money out"
 transactions.load_more: "Load more"
 transactions.a11y.loading: "Loading transactions"
 transactions.a11y.loading_more: "Loading more transactions"

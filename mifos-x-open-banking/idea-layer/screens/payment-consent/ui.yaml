@@ -1,3 +1,7 @@
+sibling: ui
+schema_version: "4.0"
+feature_id: payment-consent
+
 screen_id: payment-consent
 archetype: empty_state
 name: "{strings.payment_consent.screen_title}"
@@ -19,6 +23,17 @@ shell:
 
 states: [validating, exchanging, checking, authorised, error]
 
+# TEST TAGS — deferred, not missing. Recorded 2026-08-02 by /idea-sync (source-truth pass).
+test_tags:
+  status: deferred-until-implemented
+  reason: >-
+    No source module yet (see docs.yaml#spec_ahead_of_source), so there is no
+    PaymentConsentTestTags.kt to copy from.
+  owed_by: /kmp-implement
+  mirror_when_implemented: >-
+    feature/consent-callback — its ConsentCallbackTestTags is the closest shape (one tag per
+    journey step plus the restart affordances) and this screen's states map onto it directly.
+
 # Canonical-role mapping for the journey states above.
 #
 # This screen composes no literal `loading` or `content` state, which reads as a STATE-001
@@ -37,7 +52,7 @@ state_roles:
   empty: null   # n/a — no collection is rendered; this screen is a single-outcome readout
 
 business_logic:
-  kind: auth
+  kind: composite
   description: >-
     Handles the return leg of the PISP app-to-app authorisation. Receives the redirect through
     the already-shipped per-platform ConsentRedirectBus, consumes the pending authorisation from
@@ -101,24 +116,12 @@ state_model:
       - PaymentConsentRepository
       - PendingAuthStore           # already shipped for the AIS callback
 
-dependencies:
-  tier: feature
-  features:
-    - name: send-money
-      relation: parent
-      params: [consentId]
-    - name: consent-list
-      relation: error-recovery
-      condition: "error.type == ConsentRejected"
-  libraries:
-    - name: ktorfit
-      coords: "de.jensklingenberg.ktorfit:ktorfit-lib:2.x"
-      purpose: "Token exchange and payment-consent status polling"
+# dependencies: MOVED to flow.yaml 2026-07-31 (CROSS_LEAK repair —
+# sibling-layout.json assigns `dependencies` to the flow sibling).
 
 components:
-  - type: progress_indicator
+  - type: progress_circular
     id: authorising_indicator
-    variant: circular
     state_binding: [validating, exchanging, checking]
     accessibility_label: "{strings.payment_consent.progress_label}"
     test_context:
@@ -148,6 +151,7 @@ components:
       action: check_again
       action_contract:
         effect: call_api
+        reads_from: payment-consent-status
         external_library_refs: [ktorfit, "hsbc-obie-pisp-v4.0:domestic-payment-consents"]
         description: >-
           Re-polls GET /domestic-payment-consents/{ConsentId} so a PSU who finished at the bank

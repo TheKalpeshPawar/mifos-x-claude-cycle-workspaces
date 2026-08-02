@@ -1,3 +1,7 @@
+sibling: tests
+schema_version: "4.0"
+feature_id: scheduled-payments
+
 screen_id: scheduled-payments
 
 scenarios:
@@ -89,4 +93,26 @@ scenarios:
     then:
       - "HMRC card shows '08-32-00 12001039' prefixed with strings.sp_account_prefix"
       - "Westminster card shows '60-23-05 20490017'"
-      - "Field uses labelSmall style with on-surface-variant colour"
+      - "Field uses labelSmall style with onSurfaceVariant colour"
+
+  # Spec-ahead-of-source: source BankingStores.kt:377 already records the OBIE U000 refusal via
+  # recordIfUnsupported(AccountEndpoint.ScheduledPayments), but ScheduledPaymentsViewModel has not
+  # yet added the isUnsupportedForProduct() pre-check or the Unsupported UI branch. This scenario
+  # describes the intended behaviour that /implement owes — mirror: DirectDebitsViewModel.kt:64.
+  # See ui.yaml#spec_ahead_of_source for the full source gap and fix recipe.
+  - id: TC-SP-009
+    description: >-
+      Unsupported state renders when the account product does not expose the scheduled-payments
+      resource (OBIE U000 product-level refusal). Spec-ahead-of-source: this branch is not yet
+      built in ScheduledPaymentsViewModel — scenario describes intended behaviour that /implement
+      owes (mirror: DirectDebitsUiState.Unsupported + DirectDebitsViewModel.kt:64).
+    state: unsupported
+    priority: p1
+    given: "OBIE endpoint returns a U000 product-level refusal for this account (e.g. credit card); BankingStores.kt:377 has already called recordIfUnsupported(AccountEndpoint.ScheduledPayments)"
+    when: "Screen mounts with an accountId whose product does not support the scheduled-payments resource"
+    then:
+      - "Component unsupported_scheduled_payments renders; test_tag scheduledPayments:unsupportedState is present"
+      - "Title reads strings.sp_unsupported_title"
+      - "Body shows the data-driven uiState.message (OBIE U000 message from error.obieMessage()); no i18n key wraps this value"
+      - "No Retry button is shown — the refusal is a permanent product-capability decision, not a transient network failure"
+      - "Accessibility label is strings.sp_unsupported_a11y"

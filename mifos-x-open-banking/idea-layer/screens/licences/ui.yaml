@@ -1,3 +1,7 @@
+sibling: ui
+schema_version: "4.0"
+feature_id: licences
+
 screen_id: licences
 archetype: detail_screen
 name: "{strings.licences.screen_title}"
@@ -46,6 +50,23 @@ state_model: {}
 
 states: [content]
 
+# TEST TAGS — reconciled against source 2026-08-02 by /idea-sync (source-truth pass).
+test_tags:
+  # Like user-onboarding, this feature has no module of its own: LicencesScreen.kt ships
+  # inside feature/settings, so its tags are consts on SettingsTestTags, not a licences object.
+  source: "feature/settings/src/commonMain/kotlin/org/mifosx/openbanking/feature/settings/SettingsTestTags.kt"
+  hosted_in_module: "feature/settings"
+  declared_in_source: 2          # LICENCES_SCREEN + LICENCES_LIST — the only two scoped to this screen
+  bound: 2
+  bound_tags:
+    - { tag: "settings:licences:screen", component: licences_screen, source_ref: "LicencesScreen.kt:65" }
+    - { tag: "settings:licences:list",   component: licences_body,   source_ref: "LicencesScreen.kt:78" }
+  verified_complete: >-
+    Re-checked 2026-08-02: SettingsTestTags declares exactly these two settings:licences:*
+    consts and LicencesScreen.kt applies no other tag. The 2-tag count is complete, not a
+    shortfall — the earlier audit read it as "2 declared vs 0 in its own module" because it
+    looked for feature/licences/, which does not exist.
+
 components:
 
   - type: stack
@@ -67,7 +88,7 @@ components:
         id: licences_intro
         value: "{strings.licences.intro}"
         style: titleMedium
-        color: "on-surface"
+        color: "onSurface"
         test_context:
           purpose: "Intro paragraph above the licence text"
           required_fields: []
@@ -79,10 +100,20 @@ components:
         value: "{licence}"
         style: bodySmall
         font_family: monospace
-        color: "on-surface-variant"
+        color: "onSurfaceVariant"
         test_tag: "settings:licences:list"
         test_context:
           purpose: "Full MPL licence text read from files/mpl_licence.txt in module Compose resources; empty string until produceState resolves"
           required_fields: [licence]
           interaction_type: display
           data_driven: true
+
+# Moved verbatim from docs.yaml 2026-07-31 (CROSS_LEAK repair — sibling-layout.json
+# assigns `screens` to the ui sibling).
+screens:
+  - id: licences
+    name: "Licences"
+    viewmodel: null
+    entry_points:
+      - from: settings
+        via: licences_row

@@ -1,41 +1,47 @@
-flow_id: send-money-payment
-name: "Send money — consumer domestic payment"
-type: happy
-feature_ref: send-money
-is_primary_flow: true
+# RESHAPED 2026-08-02 by /idea-sync (source-truth pass).
+#
+# This file was authored in the JOURNEY shape while living in flows/: it carried
+# `flow_id` / `screen_sequence` / `steps` / `entry_points` / `error_paths` while the other
+# eight flows carry `id` / `name` / `description` / `type` / `feature_ref` / `release_phase` /
+# `screens` / `entry_screen` / `connections`. Nothing about the content was wrong — the
+# container was — so every step description and success signal is preserved rather than
+# rewritten: the narrative screen_sequence moved to journeys/send-money-payment.yaml (where
+# that key belongs and where this flow previously had no counterpart at all), and the graph
+# is expressed here as screens[] + connections[] like its eight siblings.
 
+id: send-money-payment
+name: send-money-payment
 description: >-
   The PSU pays a person from one of their own authorised accounts using the HSBC PISP
-  domestic-payment endpoints. This is a consumer payment, not a merchant checkout — the
-  Risk block carries PaymentContextCode TransferToThirdParty (or TransferToSelf for an
-  own-account move) and no merchant fields. The flow spans three features: send-money owns
-  the form and the two writes, payment-consent owns the out-of-app authorise leg, and
-  payment-status owns settlement tracking.
+  domestic-payment endpoints. This is a consumer payment, not a merchant checkout — the Risk
+  block carries PaymentContextCode TransferToThirdParty (or TransferToSelf for an own-account
+  move) and no merchant fields. The flow spans three features: send-money owns the form and
+  the two writes, payment-consent owns the out-of-app authorise leg, and payment-status owns
+  settlement tracking. All three are specified ahead of source (see each docs.yaml
+  #spec_ahead_of_source) — source has the PISP wire DTOs and a Pay-tab placeholder route, but
+  no feature module yet.
+type: happy
+feature_ref: send-money
+release_phase: P3          # idea-plan.yaml:958-961 — "PISP — consumer domestic payment initiation"
+is_primary_flow: true
 
-screen_sequence:
-  - screen: send-money
-    step: "Recipient — choose the funding account from the PSU's own authorised accounts, then a saved payee or a manual sort code and account number"
-    success_signal: "A debtor account and a creditor are both selected; the form advances to the amount step"
+screens:
+  - send-money
+  - payment-consent
+  - payment-status
 
-  - screen: send-money
-    step: "Amount — enter the amount and an optional reference; validated locally against the account's available balance"
-    success_signal: "validationError is null and the Review button is enabled"
+entry_screen: send-money
 
-  - screen: send-money
-    step: "Review — confirm the finished payment; staging POSTs a domestic-payment-consent with a detached JWS and an idempotency key"
-    success_signal: "HTTP 201 with Data.Status AwaitingAuthorisation and a ConsentId"
+connections:
+  - { from: send-money, to: payment-consent, type: push, label: "Review confirmed — consent staged (201 AwaitingAuthorisation), app-to-app redirect to HSBC for SCA" }
+  - { from: payment-consent, to: send-money, type: push, label: "Consent Authorised — control returns to submit the payment with the same idempotency key" }
+  - { from: send-money, to: payment-status, type: push, label: "View status from the success state" }
+  - { from: payment-status, to: send-money, type: pop, label: "Back navigation" }
+  - { from: send-money, to: consent-list, type: push, label: "403 payment consent revoked or expired — View Consents (cross-flow → consent-management)" }
 
-  - screen: payment-consent
-    step: "Authorise — app-to-app redirect to HSBC where the PSU completes SCA and approves the payment"
-    success_signal: "Redirect returns with an authorisation code; PSU access token obtained and the consent reaches Authorised"
-
-  - screen: send-money
-    step: "Submit — POST the payment reusing the SAME idempotency key and the byte-identical staged Initiation"
-    success_signal: "HTTP 201 with a DomesticPaymentId and an accepted Status"
-
-  - screen: payment-status
-    step: "Track — poll the payment resource until settlement completes"
-    success_signal: "Status reaches AcceptedSettlementCompleted"
+# ── Detail beyond the eight sibling flows ────────────────────────────────────
+# Retained from the pre-reshape revision. No other flow declares these two blocks; they are
+# additive and were not dropped simply because the schema does not require them.
 
 steps:
   - "Pay tab → send-money (replaces the SendMoneyRoute placeholder)"
