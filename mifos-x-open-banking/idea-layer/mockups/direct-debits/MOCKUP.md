@@ -18,27 +18,27 @@
 │ ←  Direct Debits                      ⋮  │  ← TopAppBar: arrow_back | more_vert
 ├──────────────────────────────────────────┤
 │                                          │
-│  Direct Debits          [3 active]       │  ← headline_large #1800B1 bold | #E8F5E9 chip #4CAF50
+│  Direct Debits          [3 active]       │  ← headlineLarge `primary` | chip
+│                                          │    `primary_container`
+│ ┌────────────────────────────────────┐   │
+│ │  Netflix                 [Active]  │   │  ← card `surface`, elevation 2, radius.lg
+│ │  £15.99 / month    Next: 3 Jun 2026│   │  ← `primary` semibold | bodySmall
+│ │  Ref: DD-NF-20240301               │   │  ← labelSmall `on_surface_variant`
+│ └────────────────────────────────────┘   │  ← margin spacing.md h, spacing.md bottom
 │                                          │
 │ ┌────────────────────────────────────┐   │
-│ │  Netflix                 [Active]  │   │  ← white card #FFFFFF, elevation 2, r=16dp
-│ │  £15.99 / month    Next: 3 Jun 2026│   │  ← #1800B1 semibold | body_small #888888
-│ │  Ref: DD-NF-20240301               │   │  ← label_small #AAAAAA
-│ └────────────────────────────────────┘   │  ← margin 20dp h, 12dp bottom
-│                                          │
-│ ┌────────────────────────────────────┐   │
-│ │  Spotify                 [Active]  │   │  ← white card #FFFFFF, elevation 2, r=16dp
+│ │  Spotify                 [Active]  │   │  ← card `surface`, elevation 2, radius.lg
 │ │  £10.99 / month   Next: 12 Jun 2026│   │
 │ │  Ref: DD-SP-20231115               │   │
 │ └────────────────────────────────────┘   │
 │                                          │
 │ ┌────────────────────────────────────┐   │
-│ │  PureGym             [Cancelled]   │   │  ← muted card #FAFAFA, no elevation, r=16dp
-│ │  £29.99 / month                    │   │  ← #AAAAAA normal weight (no next date)
-│ │  Ref: DD-GYM-20220601              │   │  ← label_small #CCCCCC
+│ │  PureGym             [Cancelled]   │   │  ← muted card `surface_container`,
+│ │  £29.99 / month                    │   │    no elevation, radius.lg
+│ │  Ref: DD-GYM-20220601              │   │  ← `on_surface_variant` (no next date)
 │ └────────────────────────────────────┘   │
 │                                          │
-│                    [+ Set Up Direct Debit]│  ← FAB bottom-right, #1800B1, r=16dp, elev 6
+│                    [+ Set Up Direct Debit]│  ← FAB bottom-right, `primary`, elev 6
 └──────────────────────────────────────────┘
 ```
 
@@ -65,6 +65,8 @@
 └──────────────────────────────────────────┘
 ```
 
+Skeleton fills use `surface_container`.
+
 ---
 
 ### State: empty
@@ -78,12 +80,12 @@
 │                                          │
 │                                          │
 │                                          │
-│              [account_balance_wallet]    │  ← icon, large, muted #9E9E9E
+│              [account_balance_wallet]    │  ← icon, large, `outline`
 │                                          │
-│          No direct debits set up         │  ← title_medium, #111111, centered
+│          No direct debits set up         │  ← titleMedium, `on_surface`, centered
 │                                          │
-│  Authorise merchants like Netflix or     │  ← body_medium, #888888, centered
-│  your utility providers to collect       │
+│  Authorise merchants like Netflix or     │  ← bodyMedium, `on_surface_variant`,
+│  your utility providers to collect       │    centered
 │  payments automatically on agreed dates  │
 │                                          │
 │                                          │
@@ -98,20 +100,20 @@
 ```
 ┌──────────────────────────────────────────┐
 │ ←  Direct Debits                      ⋮  │
-├──────────────────────────────────────────┤  ← full list visible behind 50% dim overlay
+├──────────────────────────────────────────┤  ← full list visible behind dim overlay
 │░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░│
-│░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░│  ← scrim alpha 0.5
+│░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░│  ← `scrim` alpha 0.5
 │░░░░                                 ░░░░│
 │░░░░  ┌──────────────────────────┐  ░░░░│
-│░░░░  │   Cancel Direct Debit?   │  ░░░░│  ← dialog r=20dp, elev 8, #FFFFFF bg
-│░░░░  │                          │  ░░░░│  ← headline_small #111111 bold
+│░░░░  │   Cancel Direct Debit?   │  ░░░░│  ← dialog radius.xl, elev 8, `surface` bg
+│░░░░  │                          │  ░░░░│  ← headlineSmall `on_surface` bold
 │░░░░  │  Netflix (DD-NF-20240301)│  ░░░░│
-│░░░░  │  will stop collecting    │  ░░░░│  ← body_medium #555555
+│░░░░  │  will stop collecting    │  ░░░░│  ← bodyMedium `on_surface_variant`
 │░░░░  │  payments. This cannot   │  ░░░░│
 │░░░░  │  be undone.              │  ░░░░│
 │░░░░  │                          │  ░░░░│
-│░░░░  │  [Yes, Cancel Mandate ]  │  ░░░░│  ← filled #D32F2F white text, full-width, r=12dp
-│░░░░  │  [   Keep Mandate     ]  │  ░░░░│  ← outlined #1800B1 border+text, full-width, r=12dp
+│░░░░  │  [Yes, Cancel Mandate ]  │  ░░░░│  ← filled `error`/`on_error`, radius.md
+│░░░░  │  [   Keep Mandate     ]  │  ░░░░│  ← outlined `primary`, radius.md
 │░░░░  └──────────────────────────┘  ░░░░│
 │░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░│
 └──────────────────────────────────────────┘
@@ -129,13 +131,13 @@
 │  Direct Debits                           │
 │                                          │
 │                                          │
-│                 [cloud_off]              │  ← icon, large, #9E9E9E
+│                 [cloud_off]              │  ← icon, large, `outline`
 │                                          │
-│       Unable to load direct debits       │  ← title_medium, #111111, centered
+│       Unable to load direct debits       │  ← titleMedium, `on_surface`, centered
 │                                          │
-│   Check your connection and try again    │  ← body_medium, #888888, centered
+│   Check your connection and try again    │  ← bodyMedium, `on_surface_variant`
 │                                          │
-│              [    Try Again    ]         │  ← outlined button, #1800B1
+│              [    Try Again    ]         │  ← outlined button, `primary`
 │                                          │
 │                    [+ Set Up Direct Debit]│  ← FAB always visible
 └──────────────────────────────────────────┘
@@ -149,14 +151,15 @@
 
 ```
 ┌──────────────────────────────────────────┐
-│  {MerchantName}              [Active]    │  ← title_medium #111111 semibold | badge #E8F5E9/#4CAF50
-│                                          │  ← header row: space_between, align flex_start
-│  £{amount} / month     Next: {date}      │  ← body_large #1800B1 semibold | body_small #888888
-│                                          │  ← amount row: space_between, align center, pt=4dp
-│  Ref: {mandateReference}                 │  ← label_small #AAAAAA
+│  {MerchantName}              [Active]    │  ← titleMedium `on_surface` semibold
+│                                          │    badge `primary_container` + check_circle
+│  £{amount} / month     Next: {date}      │  ← bodyLarge `primary` semibold, Roboto Mono
+│                                          │    | bodySmall `on_surface_variant`
+│  Ref: {mandateReference}                 │  ← labelSmall `on_surface_variant`
 └──────────────────────────────────────────┘
-  Background: #FFFFFF | corner_radius: 16dp | elevation: 2
-  Border: #F0F0F0 1dp | margin: 20dp h, 12dp bottom | padding: 16dp
+  Background: `surface` | corner_radius: radius.lg | elevation: 2
+  Border: `outline` border.thin | margin: spacing.md h, spacing.md bottom
+  Padding: spacing.md
   on_click: view_direct_debit → direct-debit-detail
 ```
 
@@ -164,14 +167,15 @@
 
 ```
 ┌──────────────────────────────────────────┐
-│  {MerchantName}          [Cancelled]     │  ← title_medium #888888 semibold | badge #F5F5F5/#9E9E9E
-│                                          │
-│  £{amount} / month                       │  ← body_large #AAAAAA normal (no next date row)
-│                                          │
-│  Ref: {mandateReference}                 │  ← label_small #CCCCCC
+│  {MerchantName}          [Cancelled]     │  ← titleMedium `on_surface_variant`
+│                                          │    badge `surface_container` + cancel icon
+│  £{amount} / month                       │  ← bodyLarge `on_surface_variant` normal
+│                                          │    (no next date row)
+│  Ref: {mandateReference}                 │  ← labelSmall `on_surface_variant`
 └──────────────────────────────────────────┘
-  Background: #FAFAFA | corner_radius: 16dp | elevation: 0
-  Border: #E0E0E0 1dp | margin: 20dp h, 12dp bottom | padding: 16dp
+  Background: `surface_container` | corner_radius: radius.lg | elevation: 0
+  Border: `outline` border.thin | margin: spacing.md h, spacing.md bottom
+  Padding: spacing.md
   on_click: view_direct_debit → direct-debit-detail
 ```
 
@@ -179,9 +183,9 @@
 
 ```
  [3 active]
-  Background: #E8F5E9 | corner_radius: 12dp
-  Padding: 10dp h, 4dp v
-  Typography: label_medium | Color: #4CAF50 | font_weight: semibold
+  Background: `primary_container` | corner_radius: radius.md
+  Padding: spacing.sm h, spacing.xs v
+  Typography: labelMedium | Color: `on_primary_container` | font_weight: semibold
   Updates when a mandate is cancelled (3 → 2)
 ```
 
@@ -189,22 +193,22 @@
 
 ```
 ┌──────────────────────────────────────────┐
-│        Cancel Direct Debit?              │  ← headline_small #111111 bold
+│        Cancel Direct Debit?              │  ← headlineSmall `on_surface` bold
 │                                          │
-│  {merchantName} ({mandateRef}) will      │  ← body_medium #555555
+│  {merchantName} ({mandateRef}) will      │  ← bodyMedium `on_surface_variant`
 │  stop collecting payments. This          │
 │  cannot be undone.                       │
 │                                          │
-│  ┌──────────────────────────────────┐    │  ← filled #D32F2F, white text, r=12dp
+│  ┌──────────────────────────────────┐    │  ← filled `error`/`on_error`, radius.md
 │  │       Yes, Cancel Mandate        │    │
 │  └──────────────────────────────────┘    │
 │                                          │
-│  ┌──────────────────────────────────┐    │  ← outlined #1800B1 border/text, r=12dp
+│  ┌──────────────────────────────────┐    │  ← outlined `primary`, radius.md
 │  │          Keep Mandate            │    │
 │  └──────────────────────────────────┘    │
 └──────────────────────────────────────────┘
-  corner_radius: 20dp | background: #FFFFFF | elevation: 8
-  padding: 24dp h+v | Overlay scrim: alpha 0.5
+  corner_radius: radius.xl | background: `surface` | elevation: 8
+  padding: spacing.lg h+v | Overlay scrim: `scrim` alpha 0.5
 ```
 
 ---
@@ -228,18 +232,20 @@
 
 ## Design Notes
 
-**Mandate reference on every card:** `mandate_reference` (e.g., "DD-NF-20240301") is surfaced in `label_small` muted text on every card — active and cancelled. This supports user support queries and is injected into the cancel confirm dialog body for explicit confirmation.
+**Mandate reference on every card:** `mandate_reference` (e.g., "DD-NF-20240301") is surfaced in `labelSmall` muted text on every card — active and cancelled. This supports user support queries and is injected into the cancel confirm dialog body for explicit confirmation.
 
-**Cancelled card visual language:** PureGym card uses a differentiated visual treatment: `#FAFAFA` background (vs `#FFFFFF` active), zero elevation, `#E0E0E0` border (vs `#F0F0F0`), greyed merchant name (`#888888`), muted amount (`#AAAAAA`), and ghost mandate ref (`#CCCCCC`). No next-date row — irrelevant for cancelled mandates.
+**Active status is `primary`, cancelled is neutral:** the count chip and Active badge use `primary_container` / `on_primary_container` with a `check_circle` icon — this palette maps the healthy/success semantic onto the trust-blue and ships no green. A cancelled mandate takes the neutral `surface_container` with a `cancel` icon rather than `error`: the customer chose to cancel it, so nothing has gone wrong. `error` on this screen is reserved for the one genuinely destructive action, the confirm CTA.
 
-**Active count chip accuracy:** The "3 active" chip reflects active Netflix + Spotify only — PureGym is cancelled and excluded from the active count. If the user cancels Netflix, the chip should update to "2 active" without a screen reload (optimistic update from ViewModel).
+**Cancelled card visual language:** the PureGym card recedes by tone rather than by a second colour — `surface_container` background (vs `surface` for active), zero elevation, and `on_surface_variant` for the merchant name, amount, and reference. No next-date row, which is irrelevant for a cancelled mandate. Both badges pair tone with an icon and a text label, so status is never colour-only (WCAG 1.4.1).
 
-**Destructive action guard:** The cancel flow is a two-step interaction: (1) user must explicitly choose to cancel from the detail view, (2) the `cancel_confirm` dialog then requires a second explicit confirmation with the red "Yes, Cancel Mandate" CTA. This friction is intentional — direct debit cancellation cannot be undone within the app.
+**Active count chip accuracy:** the "3 active" chip reflects active Netflix + Spotify only — PureGym is cancelled and excluded from the active count. If the user cancels Netflix, the chip updates to "2 active" without a screen reload (optimistic update from ViewModel).
 
-**No quick-delete row icons:** Direct debits differ from standing orders (which are user-controlled). Cancellation requires navigating to detail first. No swipe-to-delete or row-level delete icons — this asymmetry is by design.
+**Destructive action guard:** the cancel flow is a two-step interaction: (1) the user must explicitly choose to cancel from the detail view, (2) the `cancel_confirm` dialog then requires a second explicit confirmation with the `error` "Yes, Cancel Mandate" CTA. This friction is intentional — direct debit cancellation cannot be undone within the app.
 
-**FAB always visible:** The "Set Up Direct Debit" FAB is visible in all states (populated, empty, error). Even when viewing cancelled mandates, users should always have a path to set up new mandates. The FAB is hidden only during the loading skeleton state.
+**No quick-delete row icons:** direct debits differ from standing orders (which are user-controlled). Cancellation requires navigating to detail first. No swipe-to-delete or row-level delete icons — this asymmetry is by design.
 
-**Cancelled mandates in list:** OBP returns both active and cancelled mandates. Cancelled mandates are shown at the bottom of the list in a muted style — they provide audit trail for the user (they can see what was cancelled and when).
+**FAB always visible:** the "Set Up Direct Debit" FAB is visible in all states (populated, empty, error). Even when viewing cancelled mandates, users should always have a path to set up new ones. The FAB is hidden only during the loading skeleton state.
 
-*Generated by /idea export | 2026-05-25*
+**Cancelled mandates in list:** OBP returns both active and cancelled mandates. Cancelled mandates are shown at the bottom of the list in a muted style — they provide an audit trail (the user can see what was cancelled and when).
+
+*Generated by /idea export | 2026-08-03*

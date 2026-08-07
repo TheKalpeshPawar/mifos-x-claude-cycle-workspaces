@@ -63,7 +63,7 @@
 │  │  ─────────────────────────── │  │
 │  │  Privacy Policy            >  │  │  ← link + chevron, navigates privacy-policy
 │  │  ─────────────────────────── │  │
-│  │  Open-source Licences      >  │  │  ← link + chevron, navigates licenses
+│  │  Open-source Licences      >  │  │  ← link + chevron, navigates licences
 │  │  ─────────────────────────── │  │
 │  │  App Version         v1.0.0   │  │  ← label #1A1C16 / value #44483D body_small
 │  └───────────────────────────────┘  │

@@ -10,7 +10,7 @@
 
 No backend API dependencies — static content screen.
 
-The About screen sources all displayed data from `BuildConfig` at compile time via the `AppInfoProvider` dependency. No OBP REST calls are made. The three legal links (`terms-of-service`, `privacy-policy`, `licenses`) resolve to external URLs opened via the platform browser / in-app WebView — no request routing through OBP. The "Rate This App" button invokes the platform ReviewManager API (Google Play In-App Review on Android / StoreKit on iOS) — a system API, not an OBP endpoint.
+The About screen sources all displayed data from `BuildConfig` at compile time via the `AppInfoProvider` dependency. No OBP REST calls are made. The three legal links (`terms-of-service`, `privacy-policy`, `licences`) resolve to external URLs opened via the platform browser / in-app WebView — no request routing through OBP. The "Rate This App" button invokes the platform ReviewManager API (Google Play In-App Review on Android / StoreKit on iOS) — a system API, not an OBP endpoint.
 
 ## Data Sources (Non-API)
 
@@ -25,7 +25,7 @@ The About screen sources all displayed data from `BuildConfig` at compile time v
 |--------------------|-------------------|-----------------------------------------------------|
 | nav_tos            | terms-of-service  | External URL or in-app WebView — URL defined in `AppConfig` |
 | nav_privacy        | privacy-policy    | External URL or in-app WebView — URL defined in `AppConfig` |
-| nav_licenses       | licenses          | External URL or in-app OSS licenses screen (Gradle plugin output) |
+| nav_licenses       | licences          | In-app OSS licence screen (bundled MPL text, feature/settings)   |
 | about_rate_button  | (system)          | `ReviewManager.requestReviewFlow()` — Play Store / App Store rating |
 
 ---

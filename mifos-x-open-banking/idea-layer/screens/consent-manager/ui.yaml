@@ -1,9 +1,17 @@
+sibling: ui
+schema_version: "4.0"
+feature_id: consent-manager
+
 id: consent-manager
 name: Connected Apps
 feature: consent-manager
 flavor: consumer
-status: approved
-quality_score: 95
+# status: REMOVED 2026-08-04 (CROSS_LEAK repair — sibling-layout.json assigns `status` to
+# the docs sibling). This copy held `approved`; docs.yaml is the single owner.
+# RECONCILED 2026-08-07 (/idea-sync): was 95, disagreed with docs.yaml `quality_score: 92`.
+# The matrix averages every top-level quality_score under screens/consent-manager/**.
+# docs.yaml is the owner sibling.
+quality_score: 92
 contract_version: "1.1.0"
 approve_hash: "sha256:14af12bd8c96e4f037af12bd8c96e4f037af12bd8c96e4f037af12bd8c96e4f0"
 approved_at: "2026-05-25T13:45:00Z"
@@ -66,8 +74,8 @@ components:
     label: "Connected Apps"
     content: "Connected Apps"
     style:
-      typography: "Outfit/headline_large"
-      color: "#4C662B"
+      typography: headlineLarge
+      color: primary
       font_weight: bold
       padding_horizontal: spacing.md
       padding_top: spacing.md
@@ -84,8 +92,8 @@ components:
     label: "Manage third-party apps that have access to your account data"
     content: "Manage third-party apps that have access to your account data"
     style:
-      typography: "Outfit/body_medium"
-      color: "#44483D"
+      typography: bodyMedium
+      color: onSurfaceVariant
       padding_horizontal: spacing.md
       padding_bottom: spacing.md
     a11y:
@@ -103,18 +111,25 @@ components:
     content: "MoneyManager Pro consent card"
     supported_states: [idle, hover, focus_visible, pressed]
     style:
-      background: "#FFFFFF"
+      background: surface
       border_radius: 16
       elevation: 2
       padding_horizontal: 16
       padding_vertical: 16
-      border_color: "#F9FAEF"
+      border_color: background
       border_width: 1
       margin_horizontal: 20
       margin_bottom: 12
     on_click:
       action: view_consent_detail
       target: ""
+      action_contract:
+        effect: transform_state
+        external_library_refs: [kotlinx-coroutines]
+        description: >-
+          Opens the consent detail bottom sheet for this connected app, carrying its full scope
+          list, grant date and expiry. An overlay on this screen rather than a route change, so
+          the consent list keeps its scroll position when the sheet is dismissed.
     a11y:
       label: "MoneyManager Pro. Granted 1 March 2026. Expires 1 March 2027. Access: Read Accounts, View Transactions, Check Balances. Status: Active."
       role: region
@@ -132,9 +147,6 @@ components:
       align: center
       spacing: 12
       padding_bottom: 10
-    on_click:
-      action: dismiss
-      target: ""
     a11y:
       label: ""
       role: row
@@ -142,6 +154,7 @@ components:
       tag: moneymanager_header_row
 
   - type: image
+    accessibility_label: "MoneyManager logo"
     id: moneymanager_logo
     label: "MoneyManager Pro logo"
     content: "app_logo_moneymanager"
@@ -149,7 +162,7 @@ components:
       width: 40
       height: 40
       border_radius: 10
-      background: "#DCE7C8"
+      background: secondaryContainer
     a11y:
       alt: "MoneyManager Pro app logo"
       role: img
@@ -162,9 +175,6 @@ components:
     style:
       orientation: vertical
       flex: 1
-    on_click:
-      action: dismiss
-      target: ""
     a11y:
       label: ""
       role: group
@@ -176,8 +186,8 @@ components:
     label: "MoneyManager Pro"
     content: "MoneyManager Pro"
     style:
-      typography: "Outfit/title_medium"
-      color: "#1A1C16"
+      typography: titleMedium
+      color: onSurface
       font_weight: semibold
     a11y:
       label: "App name: MoneyManager Pro"
@@ -191,8 +201,8 @@ components:
     label: "Granted 1 Mar 2026 · Expires 1 Mar 2027"
     content: "Granted 1 Mar 2026 · Expires 1 Mar 2027"
     style:
-      typography: "Outfit/body_small"
-      color: "#44483D"
+      typography: bodySmall
+      color: onSurfaceVariant
     a11y:
       label: "Consent granted 1 March 2026. Expires 1 March 2027."
       role: text
@@ -201,20 +211,19 @@ components:
       assert_text: "Granted 1 Mar 2026 · Expires 1 Mar 2027"
 
   - type: box
+    keyboard:
+      focusable: true
     id: moneymanager_active_badge
     label: "ACTIVE"
     content: "ACTIVE"
     style:
-      background: "#CDEDA3"
+      background: primaryContainer
       border_radius: 10
       padding_horizontal: 8
       padding_vertical: 3
-      text_color: "#4C662B"
-      typography: "Outfit/label_small"
+      text_color: primary
+      typography: labelSmall
       font_weight: semibold
-    on_click:
-      action: dismiss
-      target: ""
     a11y:
       label: "Consent status: Active"
       role: status
@@ -223,6 +232,8 @@ components:
       assert_text: "ACTIVE"
 
   - type: stack
+    keyboard:
+      focusable: true
     id: moneymanager_scopes_row
     label: "MoneyManager Pro consent scopes"
     style:
@@ -230,9 +241,6 @@ components:
       spacing: 6
       padding_bottom: 12
       overflow: scroll_horizontal
-    on_click:
-      action: dismiss
-      target: ""
     a11y:
       label: "Data access scopes: Read Accounts, View Transactions, Check Balances"
       role: list
@@ -240,19 +248,18 @@ components:
       tag: moneymanager_scopes_row
 
   - type: box
+    keyboard:
+      focusable: true
     id: moneymanager_scope_read_accounts
     label: "Read Accounts"
     content: "Read Accounts"
     style:
-      background: "#CDEDA3"
+      background: primaryContainer
       border_radius: 8
       padding_horizontal: 8
       padding_vertical: 4
-      text_color: "#4C662B"
-      typography: "Outfit/label_small"
-    on_click:
-      action: dismiss
-      target: ""
+      text_color: primary
+      typography: labelSmall
     a11y:
       label: "Permission: Read Accounts"
       role: listitem
@@ -261,19 +268,18 @@ components:
       assert_text: "Read Accounts"
 
   - type: box
+    keyboard:
+      focusable: true
     id: moneymanager_scope_view_transactions
     label: "View Transactions"
     content: "View Transactions"
     style:
-      background: "#CDEDA3"
+      background: primaryContainer
       border_radius: 8
       padding_horizontal: 8
       padding_vertical: 4
-      text_color: "#4C662B"
-      typography: "Outfit/label_small"
-    on_click:
-      action: dismiss
-      target: ""
+      text_color: primary
+      typography: labelSmall
     a11y:
       label: "Permission: View Transactions"
       role: listitem
@@ -282,19 +288,18 @@ components:
       assert_text: "View Transactions"
 
   - type: box
+    keyboard:
+      focusable: true
     id: moneymanager_scope_check_balances
     label: "Check Balances"
     content: "Check Balances"
     style:
-      background: "#CDEDA3"
+      background: primaryContainer
       border_radius: 8
       padding_horizontal: 8
       padding_vertical: 4
-      text_color: "#4C662B"
-      typography: "Outfit/label_small"
-    on_click:
-      action: dismiss
-      target: ""
+      text_color: primary
+      typography: labelSmall
     a11y:
       label: "Permission: Check Balances"
       role: listitem
@@ -308,16 +313,22 @@ components:
     supported_states: [idle, hover, focus_visible, pressed, disabled]
     style:
       variant: outlined
-      border_color: "#BA1A1A"
-      text_color: "#BA1A1A"
+      border_color: error
+      text_color: error
       border_radius: 10
       padding_horizontal: 14
       padding_vertical: 8
-      typography: "Outfit/label_medium"
+      typography: labelMedium
       align_self: flex_end
     on_click:
       action: revoke_consent
       target: ""
+      action_contract:
+        effect: transform_state
+        external_library_refs: [kotlinx-coroutines]
+        description: >-
+          Stages the MoneyManager consent as the revoke target and opens the confirmation dialog.
+          Nothing is revoked here — revocation is irreversible, so it is never one tap away.
     a11y:
       label: "Revoke MoneyManager Pro access to your account data"
       role: button
@@ -335,18 +346,25 @@ components:
     content: "TaxHelper consent card"
     supported_states: [idle, hover, focus_visible, pressed]
     style:
-      background: "#FFFFFF"
+      background: surface
       border_radius: 16
       elevation: 2
       padding_horizontal: 16
       padding_vertical: 16
-      border_color: "#F9FAEF"
+      border_color: background
       border_width: 1
       margin_horizontal: 20
       margin_bottom: 12
     on_click:
       action: view_consent_detail
       target: ""
+      action_contract:
+        effect: transform_state
+        external_library_refs: [kotlinx-coroutines]
+        description: >-
+          Opens the consent detail bottom sheet for this connected app, carrying its full scope
+          list, grant date and expiry. An overlay on this screen rather than a route change, so
+          the consent list keeps its scroll position when the sheet is dismissed.
     a11y:
       label: "TaxHelper. Granted 15 January 2026. Expires 15 January 2027. Access: View Transactions, Read Accounts. Status: Active."
       role: region
@@ -364,9 +382,6 @@ components:
       align: center
       spacing: 12
       padding_bottom: 10
-    on_click:
-      action: dismiss
-      target: ""
     a11y:
       label: ""
       role: row
@@ -374,6 +389,7 @@ components:
       tag: taxhelper_header_row
 
   - type: image
+    accessibility_label: "TaxHelper logo"
     id: taxhelper_logo
     label: "TaxHelper logo"
     content: "app_logo_taxhelper"
@@ -381,7 +397,7 @@ components:
       width: 40
       height: 40
       border_radius: 10
-      background: "#CDEDA3"
+      background: primaryContainer
     a11y:
       alt: "TaxHelper app logo"
       role: img
@@ -394,9 +410,6 @@ components:
     style:
       orientation: vertical
       flex: 1
-    on_click:
-      action: dismiss
-      target: ""
     a11y:
       label: ""
       role: group
@@ -408,8 +421,8 @@ components:
     label: "TaxHelper"
     content: "TaxHelper"
     style:
-      typography: "Outfit/title_medium"
-      color: "#1A1C16"
+      typography: titleMedium
+      color: onSurface
       font_weight: semibold
     a11y:
       label: "App name: TaxHelper"
@@ -423,8 +436,8 @@ components:
     label: "Granted 15 Jan 2026 · Expires 15 Jan 2027"
     content: "Granted 15 Jan 2026 · Expires 15 Jan 2027"
     style:
-      typography: "Outfit/body_small"
-      color: "#44483D"
+      typography: bodySmall
+      color: onSurfaceVariant
     a11y:
       label: "Consent granted 15 January 2026. Expires 15 January 2027."
       role: text
@@ -433,20 +446,19 @@ components:
       assert_text: "Granted 15 Jan 2026 · Expires 15 Jan 2027"
 
   - type: box
+    keyboard:
+      focusable: true
     id: taxhelper_active_badge
     label: "ACTIVE"
     content: "ACTIVE"
     style:
-      background: "#CDEDA3"
+      background: primaryContainer
       border_radius: 10
       padding_horizontal: 8
       padding_vertical: 3
-      text_color: "#4C662B"
-      typography: "Outfit/label_small"
+      text_color: primary
+      typography: labelSmall
       font_weight: semibold
-    on_click:
-      action: dismiss
-      target: ""
     a11y:
       label: "Consent status: Active"
       role: status
@@ -455,6 +467,8 @@ components:
       assert_text: "ACTIVE"
 
   - type: stack
+    keyboard:
+      focusable: true
     id: taxhelper_scopes_row
     label: "TaxHelper consent scopes"
     style:
@@ -462,9 +476,6 @@ components:
       spacing: 6
       padding_bottom: 12
       overflow: scroll_horizontal
-    on_click:
-      action: dismiss
-      target: ""
     a11y:
       label: "Data access scopes: View Transactions, Read Accounts"
       role: list
@@ -472,19 +483,18 @@ components:
       tag: taxhelper_scopes_row
 
   - type: box
+    keyboard:
+      focusable: true
     id: taxhelper_scope_view_transactions
     label: "View Transactions"
     content: "View Transactions"
     style:
-      background: "#CDEDA3"
+      background: primaryContainer
       border_radius: 8
       padding_horizontal: 8
       padding_vertical: 4
-      text_color: "#4C662B"
-      typography: "Outfit/label_small"
-    on_click:
-      action: dismiss
-      target: ""
+      text_color: primary
+      typography: labelSmall
     a11y:
       label: "Permission: View Transactions"
       role: listitem
@@ -493,19 +503,18 @@ components:
       assert_text: "View Transactions"
 
   - type: box
+    keyboard:
+      focusable: true
     id: taxhelper_scope_read_accounts
     label: "Read Accounts"
     content: "Read Accounts"
     style:
-      background: "#CDEDA3"
+      background: primaryContainer
       border_radius: 8
       padding_horizontal: 8
       padding_vertical: 4
-      text_color: "#4C662B"
-      typography: "Outfit/label_small"
-    on_click:
-      action: dismiss
-      target: ""
+      text_color: primary
+      typography: labelSmall
     a11y:
       label: "Permission: Read Accounts"
       role: listitem
@@ -519,16 +528,22 @@ components:
     supported_states: [idle, hover, focus_visible, pressed, disabled]
     style:
       variant: outlined
-      border_color: "#BA1A1A"
-      text_color: "#BA1A1A"
+      border_color: error
+      text_color: error
       border_radius: 10
       padding_horizontal: 14
       padding_vertical: 8
-      typography: "Outfit/label_medium"
+      typography: labelMedium
       align_self: flex_end
     on_click:
       action: revoke_consent
       target: ""
+      action_contract:
+        effect: transform_state
+        external_library_refs: [kotlinx-coroutines]
+        description: >-
+          Stages the TaxHelper consent as the revoke target and opens the confirmation dialog; no
+          server call on this tap.
     a11y:
       label: "Revoke TaxHelper access to your account data"
       role: button
@@ -541,22 +556,31 @@ components:
   # ── Expired consent: BudgetWise ───────────────────────────────────────────────
 
   - type: box
+    keyboard:
+      focusable: true
     id: consent_budgetwise
     label: "BudgetWise consent card"
     content: "BudgetWise consent card"
     style:
-      background: "#F9FAEF"
+      background: background
       border_radius: 16
       elevation: 1
       padding_horizontal: 16
       padding_vertical: 16
-      border_color: "#E1E4D5"
+      border_color: surfaceVariant
       border_width: 1
       margin_horizontal: 20
       margin_bottom: 12
     on_click:
       action: state_change
       target: view_consent_detail
+      action_contract:
+        effect: transform_state
+        external_library_refs: [kotlinx-coroutines]
+        description: >-
+          Opens the consent detail bottom sheet for this expired consent, showing the scope it
+          held and the date access lapsed. Read-only: an expired consent exposes no revoke
+          affordance, since access is already gone.
     a11y:
       label: "BudgetWise. Granted 10 October 2025. Expired 10 April 2026. Access: Check Balances. Status: Expired."
       role: region
@@ -572,9 +596,6 @@ components:
       align: center
       spacing: 12
       padding_bottom: 10
-    on_click:
-      action: dismiss
-      target: ""
     a11y:
       label: ""
       role: row
@@ -582,6 +603,7 @@ components:
       tag: budgetwise_header_row
 
   - type: image
+    accessibility_label: "BudgetWise logo"
     id: budgetwise_logo
     label: "BudgetWise logo"
     content: "app_logo_budgetwise"
@@ -589,7 +611,7 @@ components:
       width: 40
       height: 40
       border_radius: 10
-      background: "#CDEDA3"
+      background: primaryContainer
     a11y:
       alt: "BudgetWise app logo"
       role: img
@@ -602,9 +624,6 @@ components:
     style:
       orientation: vertical
       flex: 1
-    on_click:
-      action: dismiss
-      target: ""
     a11y:
       label: ""
       role: group
@@ -616,8 +635,8 @@ components:
     label: "BudgetWise"
     content: "BudgetWise"
     style:
-      typography: "Outfit/title_medium"
-      color: "#44483D"
+      typography: titleMedium
+      color: onSurfaceVariant
       font_weight: semibold
     a11y:
       label: "App name: BudgetWise (expired)"
@@ -631,8 +650,8 @@ components:
     label: "Granted 10 Oct 2025 · Expired 10 Apr 2026"
     content: "Granted 10 Oct 2025 · Expired 10 Apr 2026"
     style:
-      typography: "Outfit/body_small"
-      color: "#44483D"
+      typography: bodySmall
+      color: onSurfaceVariant
     a11y:
       label: "Consent granted 10 October 2025. Expired 10 April 2026."
       role: text
@@ -641,20 +660,19 @@ components:
       assert_text: "Granted 10 Oct 2025 · Expired 10 Apr 2026"
 
   - type: box
+    keyboard:
+      focusable: true
     id: budgetwise_expired_badge
     label: "EXPIRED"
     content: "EXPIRED"
     style:
-      background: "#CDEDA3"
+      background: primaryContainer
       border_radius: 10
       padding_horizontal: 8
       padding_vertical: 3
-      text_color: "#44483D"  # fix A11Y-002: was #E8A317 (1.68:1 on CDEDA3, FAIL); #44483D = 7.25:1 PASS
-      typography: "Outfit/label_small"
+      text_color: onSurfaceVariant  # A11Y-002: the pending/amber hue failed contrast here on a container fill; onSurfaceVariant carries the meaning without it. Ratios re-measure under Trust Blue.
+      typography: labelSmall
       font_weight: semibold
-    on_click:
-      action: dismiss
-      target: ""
     a11y:
       label: "Consent status: Expired"
       role: status
@@ -663,15 +681,14 @@ components:
       assert_text: "EXPIRED"
 
   - type: stack
+    keyboard:
+      focusable: true
     id: budgetwise_scopes_row
     label: "BudgetWise consent scopes"
     style:
       orientation: horizontal
       spacing: 6
       padding_bottom: 12
-    on_click:
-      action: dismiss
-      target: ""
     a11y:
       label: "Data access scopes: Check Balances"
       role: list
@@ -679,19 +696,18 @@ components:
       tag: budgetwise_scopes_row
 
   - type: box
+    keyboard:
+      focusable: true
     id: budgetwise_scope_check_balances
     label: "Check Balances"
     content: "Check Balances"
     style:
-      background: "#F9FAEF"
+      background: background
       border_radius: 8
       padding_horizontal: 8
       padding_vertical: 4
-      text_color: "#44483D"
-      typography: "Outfit/label_small"
-    on_click:
-      action: dismiss
-      target: ""
+      text_color: onSurfaceVariant
+      typography: labelSmall
     a11y:
       label: "Permission: Check Balances (expired)"
       role: listitem
@@ -705,15 +721,21 @@ components:
     supported_states: [idle, hover, focus_visible, pressed, disabled]
     style:
       variant: text
-      text_color: "#44483D"
+      text_color: onSurfaceVariant
       border_radius: 10
       padding_horizontal: 14
       padding_vertical: 8
-      typography: "Outfit/label_medium"
+      typography: labelMedium
       align_self: flex_end
     on_click:
       action: revoke_consent
       target: ""
+      action_contract:
+        effect: transform_state
+        external_library_refs: [kotlinx-coroutines]
+        description: >-
+          Stages the BudgetWise consent as the revoke target and opens the confirmation dialog; no
+          server call on this tap.
     a11y:
       label: "Remove expired BudgetWise consent record"
       role: button
@@ -730,15 +752,12 @@ components:
     label: "Revoke access confirmation dialog"
     content: "Revoke access confirmation dialog"
     style:
-      background: "#FFFFFF"
+      background: surface
       border_radius: 24
       elevation: 8
       padding_horizontal: 24
       padding_vertical: 28
       margin_horizontal: 32
-    on_click:
-      action: dismiss
-      target: ""
     a11y:
       label: "Revoke access confirmation dialog"
       role: dialog
@@ -755,8 +774,8 @@ components:
     label: "Revoke access?"
     content: "Revoke access?"
     style:
-      typography: "Outfit/title_large"
-      color: "#1A1C16"
+      typography: titleLarge
+      color: onSurface
       font_weight: bold
       padding_bottom: spacing.sm
     a11y:
@@ -771,8 +790,8 @@ components:
     label: "This will immediately remove this app's access to your account data. You can reconnect it at any time."
     content: "This will immediately remove this app's access to your account data. You can reconnect it at any time."
     style:
-      typography: "Outfit/body_medium"
-      color: "#44483D"
+      typography: bodyMedium
+      color: onSurfaceVariant
       padding_bottom: spacing.lg
     a11y:
       label: "Revoking will immediately remove this app's access to your account data. You can reconnect it at any time."
@@ -782,15 +801,14 @@ components:
       assert_text: "This will immediately remove this app's access to your account data. You can reconnect it at any time."
 
   - type: stack
+    keyboard:
+      focusable: true
     id: revoke_dialog_actions
     label: "Revoke dialog action buttons"
     style:
       orientation: horizontal
       spacing: 12
       justify: flex_end
-    on_click:
-      action: dismiss
-      target: ""
     a11y:
       label: "Dialog actions"
       role: group
@@ -803,13 +821,18 @@ components:
     supported_states: [idle, hover, focus_visible, pressed, disabled]
     style:
       variant: text
-      text_color: "#4C662B"
-      typography: "Outfit/label_large"
+      text_color: primary
+      typography: labelLarge
       padding_horizontal: spacing.md
       padding_vertical: 10
     on_click:
       action: dismiss_revoke_dialog
       target: ""
+      action_contract:
+        effect: transform_state
+        external_library_refs: [kotlinx-coroutines]
+        description: >-
+          Clears the staged revoke target and dismisses the dialog, leaving the consent untouched.
     a11y:
       label: "Cancel, keep app connected"
       role: button
@@ -825,15 +848,23 @@ components:
     supported_states: [idle, hover, focus_visible, pressed, disabled]
     style:
       variant: filled
-      background: "#BA1A1A"
-      text_color: "#FFFFFF"
-      typography: "Outfit/label_large"
+      background: error
+      text_color: onError
+      typography: labelLarge
       border_radius: 10
       padding_horizontal: spacing.md
       padding_vertical: 10
     on_click:
       action: confirm_revoke_consent
       target: ""
+      action_contract:
+        effect: delete
+        writes_to: [consent-revoke]
+        external_library_refs: [ktorfit, "hsbc-obie-ais-v4.0:account-access-consents"]
+        description: >-
+          Revokes the staged account-access consent through ktorfit against hsbc-obie-
+          ais-v4.0:account-access-consents. Irreversible: re-granting requires the full authorise
+          round trip, not an undo.
     a11y:
       label: "Confirm revoke access"
       role: button
@@ -846,6 +877,7 @@ components:
   # ── Empty state ───────────────────────────────────────────────────────────────
 
   - type: image
+    decorative: true   # the empty-state title and body carry the message
     id: empty_state_icon
     label: "No connected apps illustration"
     content: "ic_link_off"
@@ -854,7 +886,7 @@ components:
       height: 80
       align_self: center
       padding_bottom: 16
-      tint_color: "#E1E4D5"
+      tint_color: surfaceVariant
     a11y:
       alt: "No connected apps"
       role: img
@@ -867,8 +899,8 @@ components:
     label: "No apps connected"
     content: "No apps connected"
     style:
-      typography: "Outfit/title_medium"
-      color: "#44483D"
+      typography: titleMedium
+      color: onSurfaceVariant
       font_weight: semibold
       align: center
       padding_bottom: spacing.sm
@@ -884,8 +916,8 @@ components:
     label: "Third-party apps you authorise will appear here. Visit your bank's app marketplace to connect apps."
     content: "Third-party apps you authorise will appear here. Visit your bank's app marketplace to connect apps."
     style:
-      typography: "Outfit/body_medium"
-      color: "#44483D"
+      typography: bodyMedium
+      color: onSurfaceVariant
       align: center
       padding_horizontal: spacing.xl
     a11y:
@@ -1011,7 +1043,7 @@ states:
         - revoke_dialog_cancel_button
         - revoke_dialog_confirm_button
       overlay: true
-      overlay_scrim: "#BA1A1A00"
+      overlay_scrim: scrim
 
   error:
     layout:
@@ -1070,57 +1102,76 @@ state_model:
   di:
     - ConsentRepository
 
+# ─────────────────────────────────────────────────────────────────────────
+# REWRITTEN 2026-08-06 by /idea-sync (OBP eviction)
+#
+# Was obp_my_consents / obp_revoke_consent against
+# /obp/v4.0.0/consumers/{consumerId}/consents — the Open Bank Project consent model, which
+# listed the consents a CONSUMER (an OBP app registration) had been granted.
+#
+# THE OBIE MODEL IS DIFFERENT IN KIND, and the difference changes what this screen can honestly
+# show. An account-access-consent is one this app itself staged and the PSU approved at the
+# bank. There is NO way for a TPP to enumerate consents a PSU has granted to OTHER TPPs — that
+# view exists only inside the bank's own app. The screen's old framing ("consents granted to
+# third-party apps") promised a list this app cannot obtain.
+# ─────────────────────────────────────────────────────────────────────────
 api:
-  - id: obp_my_consents
-    endpoint: "GET /obp/v4.0.0/consumers/{consumerId}/consents"
-    tag: Consent
-    description: "List all PSD2 consents granted by the consumer user"
+  - id: get_consent_status
+    endpoint: "GET /obie/open-banking/v4.0/aisp/account-access-consents/{ConsentId}"
+    auth: "client_credentials token on scope=accounts"
+    description: "Status, granted Permissions, expiry and transaction window for THIS app's consent"
     response:
       fields:
-        - name: consents
-          type: "List<Consent>"
-        - name: consent_id
+        - { name: ConsentId, type: String }
+        - name: Status
           type: String
-        - name: status
+          note: "AWAU | AUTH | Rejected | Revoked | Expired"
+        - { name: CreationDateTime, type: String, note: "ISO-8601" }
+        - name: StatusUpdateDateTime
           type: String
-          note: "INITIATED | ACCEPTED | REVOKED | EXPIRED"
-        - name: created_at
-          type: String
-          note: "ISO-8601 UTC timestamp"
-        - name: valid_until
-          type: String
-          note: "ISO-8601 UTC expiry timestamp"
-        - name: consumer_id
-          type: String
-        - name: redirects
-          type: "List<ConsentRedirect>"
-        - name: json_web_token
-          type: String
+          note: "Present but UNRELIABLE as a change signal — does not move on AWAU -> AUTH"
+        - name: Permissions
+          type: "List<String>"
+          note: "Approved by the PSU at the bank. NOT editable in this app, and cannot be added to a live consent."
+        - { name: ExpirationDateTime, type: String }
+        - { name: TransactionFromDateTime, type: String }
+        - { name: TransactionToDateTime, type: String }
     errors:
-      - code: 401
-        message: "USER_NOT_LOGGED_IN"
-      - code: 403
-        message: "INSUFFICIENT_AUTHORISATION"
+      - { code: 401, message: "Token expired or invalid" }
+      - { code: 403, message: "Consent revoked" }
 
-  - id: obp_revoke_consent
-    endpoint: "DELETE /obp/v4.0.0/consumers/{consumerId}/consents/{consentId}"
-    tag: Consent
-    description: "Revoke a specific PSD2 consent by ID"
+  - id: revoke_consent
+    endpoint: "DELETE /obie/open-banking/v4.0/aisp/account-access-consents/{ConsentId}"
+    auth: "client_credentials token on scope=accounts"
+    description: "Revoke. Access stops immediately and the local cache and tokens are cleared."
     path_params:
-      - name: consentId
-        type: String
-    response:
-      fields:
-        - name: consent_id
-          type: String
-        - name: status
-          type: String
-          note: "REVOKED"
+      - { name: ConsentId, type: String }
     errors:
-      - code: 401
-        message: "USER_NOT_LOGGED_IN"
-      - code: 404
-        message: "CONSENT_NOT_FOUND"
+      - { code: 401, message: "Token expired or invalid" }
+      - { code: 404, message: "Consent not found" }
+
+  - id: poll_revocation_events
+    endpoint: "POST /obie/open-banking/v4.0/events"
+    auth: "client_credentials token"
+    description: >-
+      Surfaces a consent the PSU revoked at the BANK rather than here. Without it this screen
+      finds out only when the next resource call returns 403.
+    event_type: "UK.OBIE.Consent-Authorization-Revoked"
+
+consent_model_notes:
+  scope_of_visibility: "This app sees ONLY its own consent. Third-party grants are not enumerable under OBIE."
+  permissions_not_editable: "Approved on HSBC's portal at consent time. Adding one needs a NEW consent."
+  ninety_day_reconfirmation: "Required by UK Open Banking. Lapsing is the designed default, not an error."
+  jws_rejection: "The consent CREATE endpoint REJECTS x-jws-signature — the only consent endpoint that does."
+  vrp_exemption: >-
+    VRP consents are exempt from the 90-day expiry and are managed on pay-vrp-mandate, not here.
+
+removed_operations_2026_08_06:
+  - { id: obp_my_consents, was: "GET /obp/v4.0.0/consumers/{consumerId}/consents" }
+  - { id: obp_revoke_consent, was: "DELETE /obp/v4.0.0/consumers/{consumerId}/consents/{consentId}" }
+  - { concept: "consents granted to third-party apps", reason: "Not visible to a TPP under OBIE." }
+  - { field: json_web_token, reason: "OBP consent JWT. No OBIE equivalent on this resource." }
+  - { field: consumer_id, reason: "OBP app-registration identifier." }
 
 dependencies:
   tier: feature

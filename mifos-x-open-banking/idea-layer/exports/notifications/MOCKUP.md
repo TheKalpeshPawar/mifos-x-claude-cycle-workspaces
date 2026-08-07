@@ -94,7 +94,8 @@
 - All icon glyphs: 22dp, #FFFFFF.
 - Each card: 16dp corner radius, 16dp horizontal + 14dp vertical inner padding, 20dp horizontal margin, 8dp bottom margin.
 - "Mark All Read" text button: label_medium, #386663, right-aligned, no horizontal padding.
-- Cards are tappable (focusable: true, keyboard navigable): payment → transaction-detail, KYC → kyc-review, Netflix → accounts, Salary → transaction-detail.
+- Cards are tappable (focusable: true, keyboard navigable): payment → transaction-detail, KYC → profile, Netflix → accounts, Salary → transaction-detail.
+- The tap target is the card itself. The row, icon background, icon, text column and unread dot nested inside it are presentational — they carry no click handler and are not separately focusable, so the whole card reads as one control.
 
 ---
 

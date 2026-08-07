@@ -1,90 +1,104 @@
----
-ui_yaml_sha: 54a097fb67c3115dd7ba3cc68bc7e927709831cbacc5a9ed03ce54409ef99cb3
-design_md_hash: f734ecfba28b3b0688cbd7ca6f3d7fca27febb15fd021d72a4518ae0e3a4200d
-app_shell_hash: 7b9c63f9aee4f5b5005b1d7533e7f5feab6427f398954987c34ee0f382b0ed69
-design_read_hash: 513c061d12f3a90e84d6e98e1e037b131e59fa3ca5c5f3c0abfc6ba87d24bcaf
-content_hash: e7d786c77e95e21b94672517983c32e80c5573f2e45356b4dfee2f92b386ff5b
+# payment-consent · state: exchanging
 
-design_read_aesthetic: minimalist-ui
-design_read_dials: {variance: 3, motion: 2, density: 5}
-aesthetic_variant_override: null
-archetype: empty_state
+> Feature: payment-consent · State role: loading (step 2 of 3)
+> Archetype: headless / transitional
+> Design system: Open Banking — Trust Blue (Material 3, seed #266489)
+> Every quoted string is VERBATIM from `_strings/strings.yaml`. Do not paraphrase.
 
-feature: payment-consent
-state: exchanging
-state_visibility: exchanging
-
-project_id: 'null'
-design_system_id: 'null'
-
-generated_by: stitch-prompt-build.ts v2.0.0
-prompt_template_version: stitch-per-state-v3.0.0
-craft_rules_version: v1.0.0
 ---
 
-# payment-consent — exchanging state
+## What This State Is
 
-> Auto-generated from screens/payment-consent/ui.yaml @ SHA ba6295241a514330
-> Stitch DesignSystem: (pending DESIGN.md upload — run /idea-feature-stitch sub-plan 02)
-> DO NOT redeclare colors / fonts / spacing — they live in DESIGN.md.
+The app is spending the authorisation code: `POST /v1.1/oauth2/token` with
+`grant_type=authorization_code` against `secure.sandbox.ob.hsbc.co.uk`, producing a PSU access
+token scoped to `payments`.
 
-↓↓↓ MOCKUP PROMPT
+This is the most time-critical operation in the feature. The code TTL is documented at 30–60
+seconds and observed as minutes; the shorter figure is the safe one to engineer to. Codes were
+lost twice in the corpus by doing analytics writes, persistence writes, or navigation
+animations between receiving the redirect and issuing this call.
 
-> DO NOT invent navigation, tabs, or screens beyond the declared app-shell (Home, Accounts, Pay, More) plus the composition below. Every nav item you render MUST come from that list.
-> Only elements that navigate or perform an action may look tappable (cursor, ripple, pressed state). DO NOT add tap affordances to decorative content — page titles, section headings, avatars, standalone icons, badges, and static labels are NOT interactive.
+---
 
-## Archetype: empty_state
+## Visual Layout
 
-## Layout
-- type: scrollable_column
-- padding: default
-- alignment: start
-- responsive: any multi-column region MUST be mobile-first and collapse to a single column at narrow/phone widths — never a fixed multi-column grid with no single-column fallback.
+**Shell**: identical to `validating` — same `TopAppBar` titled "Authorising payment", no bottom
+navigation, no leading icon, no trailing action.
 
-## Composition (top → bottom)
-1. **progress_indicator** (#authorising_indicator)
-2. **text** (#progress_detail) — content: "{strings.payment_consent.progress_detail}"
-3. **button** (#check_again_button) — label: "{strings.payment_consent.check_again}", on_click: { action: check_again }
-4. **empty_state** (#authorised_state) — title: "{strings.payment_consent.authorised_title}", icon: "verified_user"
-5. **empty_state** (#error_state) — "{strings.payment_consent.error_title}"
-   - **button** (#restart_authorisation_button) — label: "{strings.payment_consent.restart}", on_click: { action: retry_authorisation }
-   - **button** (#abandon_button) — label: "{strings.payment_consent.abandon}", on_click: { action: abandon_payment }
+**Content area**: vertically centred column, padding `spacing.md`, gap `spacing.lg`.
 
-## State-specific behavior
-- Custom state "Exchanging" — render per the composition below.
+**Component 1 — `CircularProgressIndicator` (id: `authorising_indicator`)**
+- Indeterminate, 48 × 48dp, stroke 4dp, `colors.primary`
+- contentDescription: "Authorising your payment"
 
-## Content source manifest
-- (no demo collections bound for this state)
+**Component 2 — `Text` (id: `progress_detail`)**
+- Content: "Confirming with your bank. This usually takes a few seconds."
+- `bodyLarge`, `colors.on_surface`, centred, max width 280dp
 
-## Components (vocabulary used in this prompt)
-- (no named components extracted — see composition)
+No buttons. The PSU cannot interact with this state.
 
-## Shell (app-shell resolved for this state)
-- Home: navigates to home
-- Accounts: navigates to accounts
-- Pay: navigates to send-money
-- More: navigates to settings
-- Render MUST keep nav/bar elements consistent with the list above — present or absent, never partial.
+---
 
-## Tokens (design-tokens roles consumed)
-- Colors: primary / secondary / surface / on-surface / on-surface-variant / error (M3 standard roles).
-- Typography: body-large / title-large (M3 standard roles).
-- Spacing: gap.sm / gap.md / gap.lg.
-- ALL token references are by name from the uploaded design system — no hex literals, no inline size values.
+## What Changes from `validating`
 
-## Self-Validation Checklist (MANDATORY)
+Visually: nothing. `ui.yaml` binds the SAME `progress_detail` and `progress_label` keys across
+`validating`, `exchanging` and `checking`, and the catalogue holds ONE value for each.
 
-Before returning the rendered mockup, verify ALL of these are true. If any fails, FIX the output and re-render.
+Per-phase wording ("Connecting to your bank…") is **UNSOURCED — no key exists for it.** The
+earlier version of this prompt claimed the label changes between phases; it does not. Render
+the single catalogue value. If per-phase wording is wanted, add the keys first.
 
-- [ ] **Per-state shape:** the render shows ONLY this state ("exchanging"). Do not blend multiple states into one mockup.
-- [ ] **Real content:** every text label, image, and data point reflects the content source manifest above — no numbered generic items, no filler text, no dummy text, no empty strings.
-- [ ] **Token fidelity:** colors come from the uploaded design system (primary/secondary/surface/etc.) by name; spacing comes from declared scale tokens. No invented hex codes, no invented size literals.
-- [ ] **Component vocabulary:** every component in the render maps to a named design-system component (Card, FAB, BottomBar, etc.) — no invented or off-system components.
-- [ ] **Archetype honored:** the layout follows the "empty_state" archetype skeleton — composition order top → bottom matches the Composition section.
-- [ ] **App-shell parity:** if a bottom nav, top app bar, or FAB appears in the render, it matches the resolved shell from the app-shell config. Shell elements are either present-and-consistent OR absent — never partial.
+---
 
-If any of these fail and the fix isn't clear → halt rendering and surface "Self-validation failed at: {checkpoint}."
+## Token Reference
 
-Return ONLY when all 6 checkpoints pass.
+| Token | Light | Dark | Applied to |
+|---|---|---|---|
+| `colors.surface` | #F7F9FF | #101417 | Screen background |
+| `colors.on_surface` | #181C20 | #E0E3E8 | Top bar title, progress label |
+| `colors.primary` | #266489 | #95CDF7 | Progress indicator stroke |
+| `spacing.md` | 16dp | — | Screen padding |
+| `spacing.lg` | 24dp | — | Gap between indicator and text |
+| `icon.xl` | 48dp | — | Indicator size |
 
-↑↑↑ MOCKUP PROMPT
+---
+
+## Strings — verbatim from `_strings/strings.yaml`
+
+| Key | Value |
+|---|---|
+| `payment_consent.screen_title` | "Authorising payment" |
+| `payment_consent.progress_label` | "Authorising your payment" |
+| `payment_consent.progress_detail` | "Confirming with your bank. This usually takes a few seconds." |
+
+---
+
+## Token Exchange Security Contract
+
+The PSU `access_token` produced here is held in the ViewModel only. It is NEVER written to
+`ConsentSession` (which holds the AIS data-sharing token), NEVER logged or emitted to
+analytics, and NEVER persisted. It is passed to the originating screen only via
+`PaymentConsentEvent.Authorised`, used immediately for funds-confirmation and submission, then
+discarded. The `id_token` carries the `nonce`, validated immediately; on mismatch the token is
+discarded and the screen transitions to `error`.
+
+---
+
+## Transitions Out
+
+| Condition | Next state |
+|---|---|
+| 200 and `id_token.nonce` matches | `checking` |
+| 200 but `nonce` does not match | `error` (`StateMismatch`) |
+| `400 invalid_grant` | `error` (`CodeExpired`) |
+| `401 invalid_client` | `error` (`NetworkError`) |
+| Network failure / timeout | `error` (`NetworkError`) |
+
+---
+
+## What This State Must NOT Do
+
+- No navigation animation in front of the API call.
+- No analytics event between receiving the redirect and completing the exchange.
+- No persistence write before the exchange.
+- The token MUST NOT be written to `ConsentSession` at any point.

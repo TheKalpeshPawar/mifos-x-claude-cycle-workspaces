@@ -1,21 +1,21 @@
 ---
-ui_yaml_sha: 3fd23727025f84161f07e7aec5d0eac94651cf54a8c6617a21f7b92e54ebab5a
-design_md_hash: 71b53c295bf863d34057f16264caf37a11512e794d356b3bec219352550d05ec
-app_shell_hash: ad7a6b42b2ae10e63ef270f15d857bd44445d775e8d9b09313b31e6569df95b4
-design_read_hash: 1639ea0545fdbc1ba9ce1eef5369eae224a6f4f57f07f0639b699652daeb8558
-content_hash: 6b793b5b0a3a9f4a25713e6789c1caab17807421b18ce54509216e96b56f5953
+ui_yaml_sha: 4be40d1bcf5b17180d04b20e51e9b692e2cb3642ba257859887d69f302ff9e7e
+design_md_hash: dad4a3ee16afd9663516aa33ebf1647c1d6ede5dc90a1c9bb2c448cd63c225fb
+app_shell_hash: e267a146a693f7d8b57131c73d180b6010ff34beca799edb4ca3c85c5879e0b4
+design_read_hash: 8f83034d22434d75ef7d377035c51c37ef557f4bbb2e0bf510409a4804964a50
+content_hash: 2e84641f5e6875511b4ac7a9b97de1f6b6aecfcaf6ff1450e96851fbb9c030b8
 
-design_read_aesthetic: taste-default
-design_read_dials: {variance: 4, motion: 3, density: 5}
+design_read_aesthetic: minimalist-ui
+design_read_dials: {variance: 3, motion: 2, density: 5}
 aesthetic_variant_override: null
-archetype: screen
+archetype: index_list
 
 feature: notifications
 state: populated
 state_visibility: populated
 
-project_id: 'null'
-design_system_id: 'null'
+project_id: '17153754672098888646'
+design_system_id: '2047482829824847747'
 
 generated_by: stitch-prompt-build.ts v2.0.0
 prompt_template_version: stitch-per-state-v3.0.0
@@ -24,34 +24,108 @@ craft_rules_version: v1.0.0
 
 # notifications — populated state
 
-> Auto-generated from screens/notifications/ui.yaml @ SHA 507a54465bcd7622
-> Stitch DesignSystem: (pending DESIGN.md upload — run /idea-export-stitch sub-plan 02)
+> Auto-generated from screens/notifications/ui.yaml @ SHA 4067c64bee4a7c07
+> Stitch DesignSystem: 2047482829824847747
 > DO NOT redeclare colors / fonts / spacing — they live in DESIGN.md.
 
 ↓↓↓ MOCKUP PROMPT
 
-Design the populated state of the notifications screen for **Mifos X Open Banking**, a professional open banking super-app for consumer retail banking and field officer workflows.
+> DO NOT invent navigation, tabs, or screens beyond the declared app-shell (Home, Accounts, Pay, More) plus the composition below. Every nav item you render MUST come from that list.
+> Only elements that navigate or perform an action may look tappable (cursor, ripple, pressed state). DO NOT add tap affordances to decorative content — page titles, section headings, avatars, standalone icons, badges, and static labels are NOT interactive.
 
-Palette: primary #B2D188, on_primary #1F3701, primary_container #354E16, on_primary_container #CDEDA3, secondary #A0CFCB, on_secondary #003735, secondary_container #1F4E4B, background #12140E, on_surface #E3E3D8, surface_container #1E201A, surface_container_high #282A24, outline #8F9285, pending #E8A317.
+## Archetype: index_list
 
-**Component 1 — App Bar** (64dp tall, full width): Title "Notifications" Outfit Medium 18sp #E3E3D8 left-aligned 16dp. Trailing text Button "Mark all read" Outfit Medium 14sp #B2D188. Background #12140E, 1dp bottom divider #44483D.
+## Layout
+- type: scrollable_column
+- padding: default
+- alignment: start
+- responsive: any multi-column region MUST be mobile-first and collapse to a single column at narrow/phone widths — never a fixed multi-column grid with no single-column fallback.
 
-**Component 2 — Section Label Today** (full width minus 32dp insets, top margin 16dp): "Today" Outfit SemiBold 12sp #8F9285, uppercase letter-spacing 0.5.
+## Composition (top → bottom)
+1. **stack** (#title_action_row) — 2 items: "Transaction Alerts", "Security Alerts" …and 3 more similar cards
+2. **text** (#notifications_title) — label: "Notifications", content: "Notifications"
+3. **button** (#mark_all_read_button) — label: "Mark All Read", on_click: { action: mark_all_read }
+4. **text** (#section_today_label) — label: "Today", content: "Today"
+5. **box** (#notification_payment_james) — label: "Payment received from James Wilson", content: "Payment received from James Wilson", on_click: { action: open_notification, target: transaction-detail }
+6. **stack** (#payment_james_row) — 2 items: "Transaction Alerts", "Security Alerts" …and 3 more similar cards
+7. **box** (#payment_james_icon_bg) — label: "Payment received icon background"
+8. **icon** (#payment_james_icon) — label: "Incoming payment"
+9. **stack** (#payment_james_text_col) — 2 items: "Transaction Alerts", "Security Alerts" …and 3 more similar cards
+10. **text** (#payment_james_title) — label: "Payment received", content: "Payment received"
+11. **text** (#payment_james_message) — label: "Payment of £50.00 received from James Wilson", content: "Payment of £50.00 received from James Wilson"
+12. **text** (#payment_james_time) — label: "10 min ago", content: "10 min ago"
+13. **box** (#unread_dot_payment_james) — label: "Unread indicator"
+14. **box** (#notification_kyc_approved) — label: "KYC verification approved", content: "KYC verification approved", on_click: { action: open_notification, target: profile }
+15. **stack** (#kyc_approved_row) — 2 items: "Transaction Alerts", "Security Alerts" …and 3 more similar cards
+16. **box** (#kyc_approved_icon_bg) — label: "KYC approved icon background"
+17. **icon** (#kyc_approved_icon) — label: "Identity verified"
+18. **stack** (#kyc_approved_text_col) — 2 items: "Transaction Alerts", "Security Alerts" …and 3 more similar cards
+19. **text** (#kyc_approved_title) — label: "KYC verification approved", content: "KYC verification approved"
+20. **text** (#kyc_approved_message) — label: "Your identity has been verified. You now have full access to all account feature", content: "Your identity has been verified. You now have full access to all account feature"
+21. **text** (#kyc_approved_time) — label: "1 hr ago", content: "1 hr ago"
+22. **box** (#unread_dot_kyc) — label: "Unread indicator"
+23. **text** (#section_earlier_label) — label: "Earlier", content: "Earlier"
+24. **box** (#notification_netflix_mandate) — label: "Direct debit mandate created for Netflix", content: "Direct debit mandate created for Netflix", on_click: { action: open_notification, target: accounts }
+25. **stack** (#netflix_mandate_row) — 2 items: "Transaction Alerts", "Security Alerts" …and 3 more similar cards
+26. **box** (#netflix_mandate_icon_bg) — label: "Direct debit mandate icon background"
+27. **icon** (#netflix_mandate_icon) — label: "Direct debit"
+28. **stack** (#netflix_mandate_text_col) — 2 items: "Transaction Alerts", "Security Alerts" …and 3 more similar cards
+29. **text** (#netflix_mandate_title) — label: "Direct debit mandate created", content: "Direct debit mandate created"
+30. **text** (#netflix_mandate_message) — label: "Direct debit mandate created for Netflix — £15.99/month from your Current Accoun", content: "Direct debit mandate created for Netflix — £15.99/month from your Current Accoun"
+31. **text** (#netflix_mandate_time) — label: "3 hr ago", content: "3 hr ago"
+32. **box** (#notification_salary_credited) — label: "Salary credited notification", content: "Salary credited notification", on_click: { action: open_notification, target: transaction-detail }
+33. **stack** (#salary_credited_row) — 2 items: "Transaction Alerts", "Security Alerts" …and 3 more similar cards
+34. **box** (#salary_credited_icon_bg) — label: "Salary credited icon background"
+35. **icon** (#salary_credited_icon) — label: "Incoming payment"
+36. **stack** (#salary_credited_text_col) — 2 items: "Transaction Alerts", "Security Alerts" …and 3 more similar cards
+37. **text** (#salary_credited_title) — label: "Salary credited", content: "Salary credited"
+38. **text** (#salary_credited_message) — label: "£3,200.00 from Acme Ltd has been credited to your Current Account.", content: "£3,200.00 from Acme Ltd has been credited to your Current Account."
+39. **text** (#salary_credited_time) — label: "Yesterday", content: "Yesterday"
+40. **spacer** (#bottom_spacer)
 
-**Component 3 — List Row** (full width minus 32dp insets, 72dp tall, top margin 4dp): Surface #1E201A, 12dp radius. Leading 40dp circle #354E16 with incoming-payment icon 20dp #B2D188. Title "Payment received" Outfit Medium 14sp #E3E3D8. Body "Payment of £50.00 received from James Wilson" Outfit Regular 13sp #C5C8BA, max 2 lines. Timestamp "10 min ago" Outfit Regular 11sp #8F9285 trailing. 8dp filled circle #B2D188 unread indicator trailing-top.
+## State-specific behavior
+- Fully populated with the real demo content listed below.
 
-**Component 4 — List Row** (full width minus 32dp insets, 72dp tall, top margin 4dp): Surface #1E201A, 12dp radius. Leading 40dp circle #1F4E4B with identity-check icon 20dp #A0CFCB. Title "KYC verification approved" Outfit Medium 14sp #E3E3D8. Body "Your identity has been verified. You now have full access to all account features." Outfit Regular 13sp #C5C8BA. Timestamp "1 hr ago" trailing. 8dp unread dot #B2D188 trailing-top.
+## Content source manifest
+- demo-data.signal_channels[0..1] (+3)
+- demo-data.signal_channels[0..1] (+3)
+- demo-data.signal_channels[0..1] (+3)
+- demo-data.signal_channels[0..1] (+3)
+- demo-data.signal_channels[0..1] (+3)
+- demo-data.signal_channels[0..1] (+3)
+- demo-data.signal_channels[0..1] (+3)
+- demo-data.signal_channels[0..1] (+3)
+- demo-data.signal_channels[0..1] (+3)
 
-**Component 5 — Section Label Earlier** (full width minus 32dp insets, top margin 20dp): "Earlier" Outfit SemiBold 12sp #8F9285, uppercase.
+## Components (vocabulary used in this prompt)
+- (no named components extracted — see composition)
 
-**Component 6 — List Row** (full width minus 32dp insets, 72dp tall, top margin 4dp): Surface #1E201A, 12dp radius. Leading 40dp circle #44483D with direct-debit icon 20dp #C5C8BA. Title "Direct debit mandate created" Outfit Medium 14sp #E3E3D8. Body "Netflix £15.99/month from your Current Account." Outfit Regular 13sp #C5C8BA. Timestamp "3 hr ago" trailing. No unread dot (read).
+## Shell (app-shell resolved for this state)
+- Home: navigates to home
+- Accounts: navigates to accounts
+- Pay: navigates to payments
+- More: navigates to settings
+- Render MUST keep nav/bar elements consistent with the list above — present or absent, never partial.
 
-**Component 7 — List Row** (full width minus 32dp insets, 72dp tall, top margin 4dp): Surface #1E201A, 12dp radius. Leading 40dp circle #354E16 with salary icon 20dp #B2D188. Title "Salary credited" Outfit Medium 14sp #E3E3D8. Body "£3,200.00 from Acme Ltd credited to your Current Account." Outfit Regular 13sp #C5C8BA. Timestamp "Yesterday" trailing.
+## Tokens (design-tokens roles consumed)
+- Colors: primary / secondary / surface / on-surface / on-surface-variant / error (M3 standard roles).
+- Typography: body-large / title-large (M3 standard roles).
+- Spacing: gap.sm / gap.md / gap.lg.
+- ALL token references are by name from the uploaded design system — no hex literals, no inline size values.
 
-**Component 8 — Bottom Nav** (64dp tall, full width, anchored bottom): 4 tabs Home, Payments, Notifications (selected indicator #354E16 pill, icon + label #B2D188), Profile. Background #1E201A, 1dp top divider #44483D. Inactive icons #8F9285.
+## Self-Validation Checklist (MANDATORY)
 
-Do not use em-dash anywhere in text. Do not make any headline more than 3 lines or any subtitle more than 25 words. Do not break the dark theme between sections. Do not place light text on light buttons or dark text on dark buttons.
+Before returning the rendered mockup, verify ALL of these are true. If any fails, FIX the output and re-render.
 
-The sage-green #B2D188 unread indicator dots and selected nav state create a consistent, calm accent thread through the notification list, keeping financial awareness balanced and refined at a glance.
+- [ ] **Per-state shape:** the render shows ONLY this state ("populated"). Do not blend multiple states into one mockup.
+- [ ] **Real content:** every text label, image, and data point reflects the content source manifest above — no numbered generic items, no filler text, no dummy text, no empty strings.
+- [ ] **Token fidelity:** colors come from the uploaded design system (primary/secondary/surface/etc.) by name; spacing comes from declared scale tokens. No invented hex codes, no invented size literals.
+- [ ] **Component vocabulary:** every component in the render maps to a named design-system component (Card, FAB, BottomBar, etc.) — no invented or off-system components.
+- [ ] **Archetype honored:** the layout follows the "index_list" archetype skeleton — composition order top → bottom matches the Composition section.
+- [ ] **App-shell parity:** if a bottom nav, top app bar, or FAB appears in the render, it matches the resolved shell from the app-shell config. Shell elements are either present-and-consistent OR absent — never partial.
+
+If any of these fail and the fix isn't clear → halt rendering and surface "Self-validation failed at: {checkpoint}."
+
+Return ONLY when all 6 checkpoints pass.
 
 ↑↑↑ MOCKUP PROMPT

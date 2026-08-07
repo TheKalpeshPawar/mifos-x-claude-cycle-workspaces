@@ -13,24 +13,24 @@
 
 Top app bar: title "Products", back arrow (left), search icon (right).
 Bottom navigation: 5 items — Home | Accounts | **Products (active)** | Send | More.
-Main content: vertically scrollable column, background #FCF8FF.
+Main content: vertically scrollable column, background `surface`.
 
 ```
 ┌─────────────────────────────────┐
 │ ← Products                   🔍 │  ← top app bar
 ├─────────────────────────────────┤
 │                                 │
-│  Products                       │  ← headline_large #1800B1 bold
+│  Products                       │  ← headlineLarge `primary` bold
 │  Explore accounts, savings,     │
 │  loans and cards tailored       │
-│  for you.                       │  ← body_medium #555555
+│  for you.                       │  ← bodyMedium `on_surface_variant`
 │                                 │
 │  [All] [Savings] [Loans]        │
 │        [Cards] [Mortgages]  →   │  ← horizontal scroll chip row
 │                                 │
 │ ┌─────────────────────────────┐ │
 │ │ Instant Access Savings  Savings│ ← product card 1
-│ │ 4.5% AER                    │ │  ← display_small #1800B1 bold
+│ │ 4.5% AER                    │ │  ← displaySmall `primary` bold
 │ │ Earn 4.5% AER on every...   │ │
 │ │ [4.5% AER][Instant access]  │ │  ← feature badge chips
 │ │ [No minimum deposit]        │ │
@@ -65,7 +65,7 @@ Main content: vertically scrollable column, background #FCF8FF.
 │ └─────────────────────────────┘ │
 │                                 │
 │ ┌─────────────────────────────┐ │
-│ │ 🎁 Refer a friend — earn £50 │  ← promo banner #1800B1 bg
+│ │ 🎁 Refer a friend — earn £50 │  ← promo banner `primary` bg
 │ │ When your friend opens any  │ │
 │ │ account before 30 June 2026 │ │
 │ └─────────────────────────────┘ │
@@ -79,10 +79,10 @@ Main content: vertically scrollable column, background #FCF8FF.
 
 ## Category Filter Chip Row
 
-- **Layout:** Horizontally scrollable row, padding_horizontal 20, spacing 8 between chips
-- **Chip style:** corner_radius 20, padding_horizontal 16, padding_vertical 8, label_medium
-- **Active chip (All):** Filled #1800B1, white text
-- **Inactive chips:** Outlined, border #CCCCCC, text #666666
+- **Layout:** Horizontally scrollable row, padding_horizontal `spacing.md`, spacing `spacing.sm` between chips
+- **Chip style:** corner_radius `radius.lg`, padding_horizontal `spacing.md`, padding_vertical `spacing.sm`, `labelMedium`
+- **Active chip (All):** Filled `primary`, `on_primary` text
+- **Inactive chips:** Outlined, border `outline` (`border.thin`), text `on_surface_variant`
 - **Chips (L→R):** All | Savings | Loans | Cards | Mortgages
 
 ---
@@ -93,22 +93,29 @@ All four cards share the same container style:
 
 | Property | Value |
 |---|---|
-| background | #FFFFFF |
-| corner_radius | 16 |
+| background | `surface` |
+| corner_radius | `radius.lg` |
 | elevation | 2 |
-| padding_horizontal | 16 |
-| padding_vertical | 16 |
-| border | #F0F0F0, 1dp |
-| margin_horizontal | 20 |
-| margin_bottom | 12 |
+| padding_horizontal | `spacing.md` |
+| padding_vertical | `spacing.md` |
+| border | `outline`, `border.thin` |
+| margin_horizontal | `spacing.md` |
+| margin_bottom | `spacing.md` |
 
 **Internal layout (top to bottom):**
 
-1. **Header row** (horizontal, space_between): product name (title_medium, #111111, semi-bold) + category badge chip (label_small, colour-coded)
-2. **Rate badge** (display_small, #1800B1, bold) — prominent rate or offer
-3. **Description** (body_medium, #555555) — 1–2 line sentence
-4. **Feature badges row** (horizontal scroll, spacing 8) — 2–3 colour-coded chips
-5. **Actions row** (right-aligned): "Details" (outlined #1800B1) + "Apply Now" (filled #1800B1, white text), both corner_radius 8
+1. **Header row** (horizontal, space_between): product name (`titleMedium`, `on_surface`, semi-bold) + category badge chip (`labelSmall`, `secondary_container`)
+2. **Rate badge** (`displaySmall`, `primary`, bold, Roboto Mono) — the prominent rate or offer
+3. **Description** (`bodyMedium`, `on_surface_variant`) — 1–2 line sentence
+4. **Feature badges row** (horizontal scroll, spacing `spacing.sm`) — 2–3 chips
+5. **Actions row** (right-aligned): "Details" (outlined `primary`) + "Apply Now" (filled `primary` / `on_primary`), both corner_radius `radius.sm`
+
+**Badge role vocabulary** — two roles, assigned by meaning rather than by category:
+
+| Role | Used for | Tokens |
+|---|---|---|
+| **Headline benefit** | the return or offer that is the reason to choose the product | `primary_container` / `on_primary_container` |
+| **Product fact** | access terms, duration, limits, protections, payment features | `secondary_container` / `on_secondary_container` |
 
 ---
 
@@ -116,15 +123,15 @@ All four cards share the same container style:
 
 | Element | Content | Style |
 |---|---|---|
-| Name | Instant Access Savings | title_medium, #111111, semi-bold |
-| Category badge | Savings | #E8F5E9 bg, #2E7D32 text |
-| Rate | 4.5% AER | display_small, #1800B1, bold |
-| Description | "Earn 4.5% AER on every pound you save. Withdraw at any time with no notice period or penalties." | body_medium, #555555 |
-| Badge 1 | 4.5% AER | #E8F5E9 bg, #2E7D32 text |
-| Badge 2 | Instant access | #E3F2FD bg, #1565C0 text |
-| Badge 3 | No minimum deposit | #EDE7F6 bg, #4527A0 text |
-| Button 1 | Details | outlined #1800B1 |
-| Button 2 | Apply Now | filled #1800B1, white text |
+| Name | Instant Access Savings | `titleMedium`, `on_surface`, semi-bold |
+| Category badge | Savings | `secondary_container` bg, `on_secondary_container` text |
+| Rate | 4.5% AER | `displaySmall`, `primary`, bold, Roboto Mono |
+| Description | "Earn 4.5% AER on every pound you save. Withdraw at any time with no notice period or penalties." | `bodyMedium`, `on_surface_variant` |
+| Badge 1 (benefit) | 4.5% AER | `primary_container` bg, `on_primary_container` text |
+| Badge 2 (fact) | Instant access | `secondary_container` bg, `on_secondary_container` text |
+| Badge 3 (fact) | No minimum deposit | `secondary_container` bg, `on_secondary_container` text |
+| Button 1 | Details | outlined `primary` |
+| Button 2 | Apply Now | filled `primary`, `on_primary` text |
 
 ---
 
@@ -132,15 +139,15 @@ All four cards share the same container style:
 
 | Element | Content | Style |
 |---|---|---|
-| Name | Fixed Rate Bond 1yr | title_medium, #111111, semi-bold |
-| Category badge | Savings | #E8F5E9 bg, #2E7D32 text |
-| Rate | 5.1% AER | display_small, #1800B1, bold |
-| Description | "Lock in a market-leading 5.1% AER for 12 months. Minimum deposit £1,000. Interest paid at maturity." | body_medium, #555555 |
-| Badge 1 | 5.1% AER | #E8F5E9 bg, #2E7D32 text |
-| Badge 2 | 12-month term | #FFF3E0 bg, #E65100 text |
-| Badge 3 | FSCS protected | #EDE7F6 bg, #4527A0 text |
-| Button 1 | Details | outlined #1800B1 |
-| Button 2 | Apply Now | filled #1800B1, white text |
+| Name | Fixed Rate Bond 1yr | `titleMedium`, `on_surface`, semi-bold |
+| Category badge | Savings | `secondary_container` bg, `on_secondary_container` text |
+| Rate | 5.1% AER | `displaySmall`, `primary`, bold, Roboto Mono |
+| Description | "Lock in a market-leading 5.1% AER for 12 months. Minimum deposit £1,000. Interest paid at maturity." | `bodyMedium`, `on_surface_variant` |
+| Badge 1 (benefit) | 5.1% AER | `primary_container` bg, `on_primary_container` text |
+| Badge 2 (fact) | 12-month term | `secondary_container` bg, `on_secondary_container` text |
+| Badge 3 (fact) | FSCS protected | `secondary_container` bg, `on_secondary_container` text |
+| Button 1 | Details | outlined `primary` |
+| Button 2 | Apply Now | filled `primary`, `on_primary` text |
 
 ---
 
@@ -148,15 +155,15 @@ All four cards share the same container style:
 
 | Element | Content | Style |
 |---|---|---|
-| Name | Personal Loan | title_medium, #111111, semi-bold |
-| Category badge | Loans | #FFF3E0 bg, #E65100 text |
-| Rate | From 6.9% APR | display_small, #1800B1, bold |
-| Description | "Borrow from £1,000 to £25,000 at a representative 6.9% APR. Flexible repayment terms from 1 to 7 years." | body_medium, #555555 |
-| Badge 1 | From 6.9% APR | #FFF3E0 bg, #E65100 text |
-| Badge 2 | Up to £25,000 | #EDE7F6 bg, #4527A0 text |
-| Badge 3 | 1–7 year terms | #E3F2FD bg, #1565C0 text |
-| Button 1 | Details | outlined #1800B1 |
-| Button 2 | Apply Now | filled #1800B1, white text |
+| Name | Personal Loan | `titleMedium`, `on_surface`, semi-bold |
+| Category badge | Loans | `secondary_container` bg, `on_secondary_container` text |
+| Rate | From 6.9% APR | `displaySmall`, `primary`, bold, Roboto Mono |
+| Description | "Borrow from £1,000 to £25,000 at a representative 6.9% APR. Flexible repayment terms from 1 to 7 years." | `bodyMedium`, `on_surface_variant` |
+| Badge 1 (benefit) | From 6.9% APR | `primary_container` bg, `on_primary_container` text |
+| Badge 2 (fact) | Up to £25,000 | `secondary_container` bg, `on_secondary_container` text |
+| Badge 3 (fact) | 1–7 year terms | `secondary_container` bg, `on_secondary_container` text |
+| Button 1 | Details | outlined `primary` |
+| Button 2 | Apply Now | filled `primary`, `on_primary` text |
 
 ---
 
@@ -164,15 +171,15 @@ All four cards share the same container style:
 
 | Element | Content | Style |
 |---|---|---|
-| Name | Platinum Credit Card | title_medium, #111111, semi-bold |
-| Category badge | Cards | #E3F2FD bg, #1565C0 text |
-| Rate | 0% for 20 months | display_small, #1800B1, bold |
-| Description | "0% interest on purchases for 20 months. No annual fee. Contactless and Apple Pay / Google Pay enabled." | body_medium, #555555 |
-| Badge 1 | 0% for 20 months | #E3F2FD bg, #1565C0 text |
-| Badge 2 | No annual fee | #E8F5E9 bg, #2E7D32 text |
-| Badge 3 | Contactless & Apple/Google Pay | #EDE7F6 bg, #4527A0 text |
-| Button 1 | Details | outlined #1800B1 |
-| Button 2 | Apply Now | filled #1800B1, white text |
+| Name | Platinum Credit Card | `titleMedium`, `on_surface`, semi-bold |
+| Category badge | Cards | `secondary_container` bg, `on_secondary_container` text |
+| Rate | 0% for 20 months | `displaySmall`, `primary`, bold, Roboto Mono |
+| Description | "0% interest on purchases for 20 months. No annual fee. Contactless and Apple Pay / Google Pay enabled." | `bodyMedium`, `on_surface_variant` |
+| Badge 1 (benefit) | 0% for 20 months | `primary_container` bg, `on_primary_container` text |
+| Badge 2 (fact) | No annual fee | `secondary_container` bg, `on_secondary_container` text |
+| Badge 3 (fact) | Contactless & Apple/Google Pay | `secondary_container` bg, `on_secondary_container` text |
+| Button 1 | Details | outlined `primary` |
+| Button 2 | Apply Now | filled `primary`, `on_primary` text |
 
 ---
 
@@ -180,20 +187,20 @@ All four cards share the same container style:
 
 ```
 ┌─────────────────────────────────────┐
-│  🎁  Refer a friend — earn £50      │  ← title_small, #FFFFFF, semi-bold
-│     When your friend opens any      │  ← body_small, #C5C0FF
+│  🎁  Refer a friend — earn £50      │  ← titleSmall, `on_primary`, semi-bold
+│     When your friend opens any      │  ← bodySmall, `primary_container`
 │     account before 30 June 2026     │
 └─────────────────────────────────────┘
 ```
 
 | Property | Value |
 |---|---|
-| Background | #1800B1 |
-| corner_radius | 12 |
-| padding_horizontal | 16 |
-| padding_vertical | 14 |
-| margin_horizontal | 20 |
-| margin_bottom | 16 |
+| Background | `primary` |
+| corner_radius | `radius.md` |
+| padding_horizontal | `spacing.md` |
+| padding_vertical | `spacing.md` |
+| margin_horizontal | `spacing.md` |
+| margin_bottom | `spacing.md` |
 | on_click | navigates to home (referral flow) |
 
 ---
@@ -214,7 +221,7 @@ All four cards share the same container style:
 ```
 
 - Title, subtitle, and all 5 category tabs visible
-- 4 skeleton placeholders matching the card shape (shimmer animation)
+- 4 skeleton placeholders in `surface_container` matching the card shape (shimmer animation)
 - Promotional banner not shown
 
 ---
@@ -227,15 +234,15 @@ All four cards share the same container style:
 │  Explore accounts, savings...   │
 │  [All] [Savings] [Loans] [Cards][Mortgages]→
 │                                 │
-│           🏪                    │  ← store_outlined icon, large
-│    No products available        │  ← title_medium
+│           🏪                    │  ← store_outlined icon, `outline`
+│    No products available        │  ← titleMedium, `on_surface`
 │  No products match the selected │
 │  category. Try a different      │
-│  filter or check back later.    │  ← body_medium #555555
+│  filter or check back later.    │  ← bodyMedium `on_surface_variant`
 └─────────────────────────────────┘
 ```
 
-- Triggered when category filter returns zero matching products
+- Triggered when the category filter returns zero matching products
 - Empty-state icon: `store_outlined`
 - Title: "No products available"
 - Message: "No products match the selected category. Try a different filter or check back later."
@@ -250,20 +257,20 @@ All four cards share the same container style:
 │  Explore accounts, savings...   │
 │  [All] [Savings] [Loans] [Cards][Mortgages]→
 │                                 │
-│           ☁️✗                   │  ← cloud_off icon, large
-│  Unable to load products        │  ← title_medium
+│           ☁️✗                   │  ← cloud_off icon, `outline`
+│  Unable to load products        │  ← titleMedium, `on_surface`
 │  Check your connection and try  │
 │  again. Your saved favourites   │
-│  are still available offline.   │  ← body_medium #555555
+│  are still available offline.   │  ← bodyMedium `on_surface_variant`
 │                                 │
-│            [ Try Again ]        │  ← filled #1800B1 retry button
+│            [ Try Again ]        │  ← filled `primary` retry button
 └─────────────────────────────────┘
 ```
 
 - Error icon: `cloud_off`
 - Title: "Unable to load products"
 - Message: "Check your connection and try again. Your saved favourites are still available offline."
-- Retry button: filled #1800B1, dispatches `RetryLoad` event
+- Retry button: filled `primary` / `on_primary`, dispatches `RetryLoad` event
 
 ---
 
@@ -287,28 +294,24 @@ All four cards share the same container style:
 
 ## Design Notes
 
-**Rate Badge Hierarchy:**
-The `display_small` rate figure is the primary visual anchor on each card. Its #1800B1 colour ties every product back to the brand, while the large size creates an instant value-scanning affordance for the user comparing rates.
+**Rate badge hierarchy:**
+The `displaySmall` rate figure is the primary visual anchor on each card. Its `primary` colour ties every product back to the brand, and the large size creates an instant value-scanning affordance for a user comparing rates. It is set in Roboto Mono so percentages align down the list.
 
-**Category Colour System:**
-Feature badges use a consistent semantic colour palette across all screens:
-- Green (#E8F5E9 / #2E7D32) — financial gain / positive rates
-- Blue (#E3F2FD / #1565C0) — access and convenience
-- Orange (#FFF3E0 / #E65100) — borrowing rates and time constraints
-- Purple (#EDE7F6 / #4527A0) — protection, eligibility, and amounts
+**Badges carry meaning, not taxonomy:**
+The previous spec ran a four-hue semantic system — green for gain, blue for access, orange for borrowing, purple for protection — and none of those families exist in this palette. Worse, the scheme asked colour to encode a distinction the badge text already states. Badges now use exactly two roles: **`primary_container` for the headline benefit** (the rate or offer that is the reason to pick the product) and **`secondary_container` for every product fact** (term, limit, protection, payment features). One glance finds the number that matters; everything else reads as equal-weight detail.
 
-**Category Badge Colour matches Feature Badge Colour:**
-Each product's category badge uses the same semantic colour as the primary feature badge of that category (Savings→green, Loans→orange, Cards→blue), creating a consistent visual language.
+**Category badges are neutral:**
+Savings / Loans / Cards / Mortgages all take `secondary_container`. Category is a taxonomy label, not a status, and the previous colour-per-category scheme would have forced a loan product into the `tertiary` warning role — which DESIGN.md 1.3.0 reserves for attention-needed states. A loan on offer is not a warning.
 
-**Promotional Banner Placement:**
-Placed below all product cards so it does not interrupt the primary browsing flow but is still encountered before the user reaches the bottom of the list. The #C5C0FF secondary text provides enough contrast on the #1800B1 background while feeling softer than pure white.
+**Promotional banner placement:**
+Placed below all product cards so it does not interrupt the primary browsing flow but is still encountered before the user reaches the bottom of the list. The subtitle uses `primary_container` on the `primary` background — enough contrast to read comfortably while sitting softer than full `on_primary`.
 
 **Accessibility:**
-- Each product card has a full accessibility label: name + rate + primary benefit + action hint
-- Category tabs declare `role: tab` and `selected` state for screen readers
-- Apply Now and Details buttons have distinct `content_description` per product
-- Error and empty states are announced as live regions
+- Each product card has a full accessibility label: name + rate + primary benefit + action hint.
+- Category tabs declare `role: tab` and `selected` state for screen readers.
+- Apply Now and Details buttons have distinct `content_description` per product.
+- Error and empty states are announced as live regions.
 
 ---
 
-*Generated by /idea export | 2026-05-25*
+*Generated by /idea export | 2026-08-03*

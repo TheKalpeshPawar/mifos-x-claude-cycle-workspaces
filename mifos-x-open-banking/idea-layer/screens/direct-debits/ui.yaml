@@ -5,7 +5,8 @@ feature_id: direct-debits
 screen_id: direct-debits
 archetype: index_list
 name: "Direct Debits"
-status: implemented
+# status: REMOVED 2026-08-04 (CROSS_LEAK repair — sibling-layout.json assigns `status` to
+# the docs sibling). This copy held `implemented`; docs.yaml is the single owner.
 initial_state: loading
 i18n_coverage: true
 
@@ -139,6 +140,8 @@ components:
 
   # ── GLOBAL (ALL STATES) ─────────────────────────────────────────────
   - type: icon_button
+    keyboard:
+      focusable: true
     id: back_button
     icon: arrow_back
     accessibility_label: "{strings.direct_debits.back_a11y}"
@@ -212,7 +215,7 @@ components:
           - type: text
             id: dd_originator_name
             role: heading
-            value: "{item.name}"
+            content: "{item.name}"
             style: titleMedium
             test_context:
               purpose: "Originator name from OBReadDirectDebit2 Data.DirectDebit.Name; heading role for in-card navigation"
@@ -220,11 +223,14 @@ components:
               interaction_type: display
               data_driven: true
 
-          - type: badge
+          # Retyped badge -> status_chip 2026-08-04 (/idea-sync, findings N-1 + R-1c).
+          # `badge` is the numeric count badge in feedback.yaml — props count/max/variant, no
+          # text slot — so `value:` had nowhere to land and the icon contract was unreachable.
+          - type: status_chip
             id: dd_status_badge
             test_tag: "directDebits:statusBadge:{item.mandateId}"
-            value: "{item.statusLabel}"
-            variant: "{item.isActive}"
+            label: "{item.statusLabel}"
+            variant: "{item.isActive ? 'active' : 'inactive'}"
             accessibility_label: "{strings.direct_debits.status_prefix} {item.statusLabel}"
             test_context:
               purpose: "Mandate status badge; variant from ViewModel: Active→primary, Inactive→outline; never decorative-only (has a11y label)"
@@ -236,7 +242,7 @@ components:
             id: dd_previous_amount
             test_tag: "directDebits:amount:{item.mandateId}"
             role: amount
-            value: "{item.amountLabel}"
+            content: "{item.amountLabel}"
             style: headlineSmall
             test_context:
               purpose: "Pre-formatted last-collected amount; the mapper resolves currency into the label. Neutral on-surface colour (NOT error — amounts are not inherently negative)"
@@ -248,7 +254,7 @@ components:
             id: dd_previous_date
             test_tag: "directDebits:lastCollected:{item.mandateId}"
             role: body
-            value: "{strings.direct_debits.last_collected_prefix} {item.lastCollectedLabel}"
+            content: "{strings.direct_debits.last_collected_prefix} {item.lastCollectedLabel}"
             style: bodySmall
             color: "onSurfaceVariant"
             test_context:
@@ -261,7 +267,7 @@ components:
             id: dd_mandate_id
             test_tag: "directDebits:mandateReference:{item.mandateId}"
             role: caption
-            value: "{strings.direct_debits.mandate_prefix} {item.mandateId}"
+            content: "{strings.direct_debits.mandate_prefix} {item.mandateId}"
             style: labelSmall
             color: "onSurfaceVariant"
             test_context:
@@ -305,9 +311,8 @@ components:
       data_driven: true
 
   # ── ERROR STATE ─────────────────────────────────────────────────────
-  - type: empty_state
+  - type: error_state
     id: error_state
-    variant: error
     state_binding: [error]
     icon: error_outline
     title: "{strings.direct_debits.error_title}"
@@ -321,6 +326,8 @@ components:
       data_driven: true
     children:
       - type: button
+        keyboard:
+          focusable: true
         id: retry_button
         variant: filled
         label: "{strings.direct_debits.retry_label}"

@@ -15,29 +15,29 @@ Top-to-bottom layout on a vertically scrolling list screen with FAB:
 ```
 [ Top App Bar: "Standing Orders"  ← ⚙️ ]  ← filter_list action
 ────────────────────────────────────────
-[ Standing Orders     [3 active]        ]  ← headline_large #1800B1 + green chip
+[ Standing Orders     [3 active]        ]  ← headlineLarge `primary` + `primaryContainer` chip
 ────────────────────────────────────────
 ┌──────────────────────────────────────┐
-│  Rent Payment            [Active ✓]  │  ← white card, elevation 2, r=16dp
-│  To: Landlord Holdings Ltd           │  ← body_medium, #666666
-│  £1,200 / month        Next: 1 Jun   │  ← #1800B1 bold | body_small #888888
-│                      [✏️]  [🗑️]      │  ← edit #1800B1 | delete #FF5252
+│  Rent Payment            [Active ✓]  │  ← surfaceContainerLowest card, elevation 2
+│  To: Landlord Holdings Ltd           │  ← bodyMedium, `onSurfaceVariant`
+│  £1,200 / month        Next: 1 Jun   │  ← `primary` bold | bodySmall `onSurfaceVariant`
+│                      [✏️]  [🗑️]      │  ← edit `primary` | delete `error`
 └──────────────────────────────────────┘
 
 ┌──────────────────────────────────────┐
-│  Netflix Subscription    [Active ✓]  │  ← white card, elevation 2
+│  Netflix Subscription    [Active ✓]  │  ← surfaceContainerLowest card, elevation 2
 │  (no beneficiary label shown)        │
 │  £15.99 / month       Next: 7 Jun   │
 │                      [✏️]  [🗑️]      │
 └──────────────────────────────────────┘
 
-┌──────────────────────────────────────┐  ← dimmed: #FAFAFA bg, #E0E0E0 border
-│  Gym Membership         [Paused]     │  ← grey text #888888 | grey badge
-│  £45.00 / month  Next: 15 Jun (Paused)│ ← #9E9E9E amount | #BBBBBB date
+┌──────────────────────────────────────┐  ← dimmed: surfaceContainerLow bg, outlineVariant border
+│  Gym Membership         [Paused ⏸]   │  ← muted text | neutral badge
+│  £45.00 / month  Next: 15 Jun (Paused)│ ← `onSurfaceVariant` amount + date
 │                      [✏️]  [🗑️]      │
 └──────────────────────────────────────┘
 
-                              [+ Create ]  ← FAB bottom-right, #1800B1, r=16dp
+                              [+ Create ]  ← FAB bottom-right, `primary`
 ────────────────────────────────────────
 ```
 
@@ -46,55 +46,55 @@ Top-to-bottom layout on a vertically scrolling list screen with FAB:
 ## Components
 
 ### title_count_row
-- Horizontal stack, alignment center, spacing 12dp
-- Padding bottom: 16dp, separates header from first card
+- Horizontal stack, alignment center, spacing `spacing.md`
+- Padding bottom: `spacing.md`, separates header from first card
 
 ### standing_orders_title
 - Content: "Standing Orders"
-- Typography: `headline_large`, color `#1800B1`
+- Typography: `headlineLarge`, color `primary`
 - Flex-grows to fill space left of chip
 
 ### active_count_chip
 - Content: "3 active"
-- Background: `#E8F5E9`, corner radius: 12dp
-- Padding: 10dp horizontal, 4dp vertical
-- Text: `label_medium`, color `#4CAF50`, semibold
-- Communicates health at a glance — green = active count, not warning
+- Background: `primaryContainer`, corner radius: `radius.md`
+- Padding: `spacing.sm` horizontal, `spacing.xs` vertical
+- Text: `labelMedium`, color `onPrimaryContainer`, semibold
+- Communicates health at a glance — an active count, not a warning
 
 ### Standing order cards (Active: standing_order_rent, standing_order_netflix)
-- Background: `#FFFFFF`, corner radius: 16dp, elevation: 2
-- Border: `#F0F0F0`, 1dp, margin bottom: 12dp
-- Padding: 16dp horizontal and vertical
+- Background: `surfaceContainerLowest`, corner radius: `radius.lg`, elevation: 2
+- Border: `outlineVariant`, `border.thin`, margin bottom: `spacing.md`
+- Padding: `spacing.md` horizontal and vertical
 - Header row: `space_between` — title left, status badge right
-- Beneficiary text: `body_medium`, `#666666`, prefix "To: "
-- Amount row: `space_between` — amount left (#1800B1 semibold) | next date right (body_small #888888)
-- Actions row: `flex_end` — edit icon then delete icon, 8dp spacing
+- Beneficiary text: `bodyMedium`, `onSurfaceVariant`, prefix "To: "
+- Amount row: `space_between` — amount left (`primary` semibold, Roboto Mono) | next date right (`bodySmall`, `onSurfaceVariant`)
+- Actions row: `flex_end` — edit icon then delete icon, `spacing.sm` spacing
 
 ### Paused card (standing_order_gym)
-- Background: `#FAFAFA` (lighter than active), corner radius: 16dp, elevation: 1
-- Border: `#E0E0E0`, 1dp (slightly more visible = paused border)
-- Title text: `#888888` (dimmed vs active #111111)
-- Badge: "Paused" — background `#F5F5F5`, text `#9E9E9E`
-- Amount: `#9E9E9E` (dimmed primary)
-- Date: `#BBBBBB` — "Next: 15 Jun 2026 (Paused)" with literal "(Paused)" suffix
+- Background: `surfaceContainerLow` (one step up the tonal ladder from active), corner radius: `radius.lg`, elevation: 1
+- Border: `outlineVariant`, `border.thin`
+- Title text: `onSurfaceVariant` (dimmed vs active `onSurface`)
+- Badge: "Paused" — background `surfaceContainerHigh`, text `onSurfaceVariant`, leading `pause_circle` icon
+- Amount: `onSurfaceVariant` at `opacity.disabled`-adjacent weight (dimmed, not primary)
+- Date: `onSurfaceVariant` — "Next: 15 Jun 2026 (Paused)" with literal "(Paused)" suffix
 
 ### Active badge
-- Background `#E8F5E9`, corner radius 10dp, padding 8dp × 3dp
-- Text: `label_small`, color `#4CAF50`
+- Background `primaryContainer`, corner radius `radius.sm`, padding `spacing.sm` × `spacing.xs`
+- Text: `labelSmall`, color `onPrimaryContainer`, leading `check_circle` icon (`icon.xs`)
 
 ### Paused badge
-- Background `#F5F5F5`, corner radius 10dp
-- Text: `label_small`, color `#9E9E9E`
+- Background `surfaceContainerHigh`, corner radius `radius.sm`
+- Text: `labelSmall`, color `onSurfaceVariant`, leading `pause_circle` icon (`icon.xs`)
 
 ### Action icons (edit, delete)
-- Edit: `edit_outlined`, size 22dp, color `#1800B1`, 8dp padding
-- Delete: `delete_outlined`, size 22dp, color `#FF5252`, 8dp padding
-- Actions row: `justify: flex_end`, padding top 12dp
+- Edit: `edit_outlined`, size `icon.md`, color `primary`, `spacing.sm` padding
+- Delete: `delete_outlined`, size `icon.md`, color `error`, `spacing.sm` padding
+- Actions row: `justify: flex_end`, padding top `spacing.md`
 
 ### create_standing_order_fab
 - Position: floating_action_button (bottom-right)
-- Background: `#1800B1`, text: `#FFFFFF`
-- Leading icon: `add`, corner radius 16dp, elevation 6
+- Background: `primary`, text: `onPrimary`
+- Leading icon: `add` (`icon.md`), corner radius `radius.lg`, elevation 6
 
 ---
 
@@ -125,14 +125,16 @@ Top-to-bottom layout on a vertically scrolling list screen with FAB:
 
 ## Design Notes
 
-**Active vs Paused visual differentiation:** Active cards use pure white (#FFFFFF) background; paused use off-white (#FAFAFA). Active text uses full-contrast #111111; paused uses muted #888888. This passive dimming communicates "paused" without requiring users to read the badge text — the card "looks inactive."
+**Active vs Paused visual differentiation:** active cards sit on `surfaceContainerLowest`; paused cards step up the tonal ladder to `surfaceContainerLow`. Active text uses full-contrast `onSurface`; paused uses `onSurfaceVariant`. This passive dimming communicates "paused" without requiring users to read the badge — the card *looks* inactive. Both badges also carry an icon (`check_circle` / `pause_circle`), so state is never conveyed by tone alone (WCAG 1.4.1).
 
-**Amount in primary color:** £ amounts use `#1800B1` (primary) for active orders, `#9E9E9E` for paused — the brand color acts as a visual "this is moving money" signal.
+**Active is `primary`, not green:** the active-count chip and the Active badge use `primaryContainer` / `onPrimaryContainer`. This palette ships no green family — DESIGN.md maps the success/healthy semantic onto the primary blue, and the same pair is used for a settled payment elsewhere in the app, so "active" and "settled" read as one visual language.
 
-**Delete in red, edit in blue:** Icon color assignment at the row level ensures accidental taps result in an edit (reversible) not a delete (irreversible). Edit is on the left, delete on the right — matching the standard swipe-to-delete direction.
+**Amount in primary colour:** £ amounts use `primary` for active orders and `onSurfaceVariant` for paused. The brand colour acts as a "this is moving money" signal. Every amount is set in Roboto Mono per the `amount` component contract so figures align down the column.
 
-**FAB placement:** Bottom-right per MD3 FAB spec, elevation 6, always visible in content, empty, and error states — creation is always available.
+**Delete in `error`, edit in `primary`:** icon colour assignment at the row level ensures accidental taps result in an edit (reversible) not a delete (irreversible). Edit is on the left, delete on the right — matching the standard swipe-to-delete direction. `error` here is correct rather than over-applied: deleting a standing order is genuinely irreversible.
+
+**FAB placement:** bottom-right per MD3 FAB spec, elevation 6, always visible in content, empty, and error states — creation is always available.
 
 **Empty state copy:** "Set up recurring payments to automate your regular bills" — benefit-oriented language, not feature-describing. Pairs with `repeat_off` icon for context.
 
-*Generated by /idea export | 2026-05-25*
+*Generated by /idea export | 2026-08-03*

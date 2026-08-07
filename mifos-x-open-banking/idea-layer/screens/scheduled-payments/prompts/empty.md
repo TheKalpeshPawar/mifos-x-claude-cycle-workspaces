@@ -1,9 +1,9 @@
 ---
-ui_yaml_sha: ce7c4609b265ed3c61e8d938d7f6158ee7d4bfb65466af3f4872c027640d06ff
-design_md_hash: f734ecfba28b3b0688cbd7ca6f3d7fca27febb15fd021d72a4518ae0e3a4200d
-app_shell_hash: 7b9c63f9aee4f5b5005b1d7533e7f5feab6427f398954987c34ee0f382b0ed69
-design_read_hash: 513c061d12f3a90e84d6e98e1e037b131e59fa3ca5c5f3c0abfc6ba87d24bcaf
-content_hash: 4e265f1df2085ad947e5b8c195e68148e05f79d51ab7907cabb5b138b53a3f44
+ui_yaml_sha: 3d52f04f25c3373cdaa362a96aba5eecd86be801c7f2b45ca33ed14fa663051a
+design_md_hash: dad4a3ee16afd9663516aa33ebf1647c1d6ede5dc90a1c9bb2c448cd63c225fb
+app_shell_hash: e267a146a693f7d8b57131c73d180b6010ff34beca799edb4ca3c85c5879e0b4
+design_read_hash: 8f83034d22434d75ef7d377035c51c37ef557f4bbb2e0bf510409a4804964a50
+content_hash: a12a0306d0d9c75508696f890b910795126ef1f3af71d215c6ce92e10e1a69a2
 
 design_read_aesthetic: minimalist-ui
 design_read_dials: {variance: 3, motion: 2, density: 5}
@@ -14,8 +14,8 @@ feature: scheduled-payments
 state: empty
 state_visibility: empty
 
-project_id: 'null'
-design_system_id: 'null'
+project_id: '17153754672098888646'
+design_system_id: '2047482829824847747'
 
 generated_by: stitch-prompt-build.ts v2.0.0
 prompt_template_version: stitch-per-state-v3.0.0
@@ -24,8 +24,8 @@ craft_rules_version: v1.0.0
 
 # scheduled-payments — empty state
 
-> Auto-generated from screens/scheduled-payments/ui.yaml @ SHA 17f418672aa6fa28
-> Stitch DesignSystem: (pending DESIGN.md upload — run /idea-feature-stitch sub-plan 02)
+> Auto-generated from screens/scheduled-payments/ui.yaml @ SHA af173cab67acad89
+> Stitch DesignSystem: 2047482829824847747
 > DO NOT redeclare colors / fonts / spacing — they live in DESIGN.md.
 
 ↓↓↓ MOCKUP PROMPT
@@ -42,19 +42,19 @@ craft_rules_version: v1.0.0
 - responsive: any multi-column region MUST be mobile-first and collapse to a single column at narrow/phone widths — never a fixed multi-column grid with no single-column fallback.
 
 ## Composition (top → bottom)
-1. **progress_indicator**
+1. **progress_circular**
 2. **icon_button** (#back_button) — icon: "arrow_back", on_click: { action: navigate_back, target: account-detail }
 3. **list** (#scheduled_payments_list) — "scheduled_payments_list"
    - **card** (#scheduled_payment_card) — "scheduled_payment_card"
-      - **text** (#sp_payee_name)
-      - **text** (#sp_amount)
-      - **text** (#sp_scheduled_date)
+      - **text** (#sp_payee_name) — content: "{item.CreditorAccount.Name}"
+      - **text** (#sp_amount) — content: "{item.InstructedAmount.Currency} {item.InstructedAmount.Amount}"
+      - **text** (#sp_scheduled_date) — content: "{strings.sp_due_prefix} {item.scheduledDateFormatted}"
       - **chip** (#sp_type_chip) — label: "{item.scheduledTypeLabel}", icon: "{item.scheduledTypeIcon}"
-      - **text** (#sp_account_id)
-      - **text** (#sp_reference)
+      - **text** (#sp_account_id) — content: "{strings.sp_account_prefix} {item.CreditorAccount.Identification}"
+      - **text** (#sp_reference) — content: "{strings.sp_ref_prefix} {item.Reference}"
 4. **empty_state** (#empty_scheduled_payments) — title: "{strings.sp_empty_title}", icon: "schedule"
 5. **empty_state** (#unsupported_scheduled_payments) — title: "{strings.sp_unsupported_title}", icon: "info_outline"
-6. **empty_state** (#error_state) — "{strings.sp_error_title}"
+6. **error_state** (#error_state) — "{strings.sp_error_title}"
    - **button** (#retry_button) — label: "{strings.action_retry}", on_click: { action: retry_load }
 
 ## State-specific behavior
@@ -69,7 +69,7 @@ craft_rules_version: v1.0.0
 ## Shell (app-shell resolved for this state)
 - Home: navigates to home
 - Accounts: navigates to accounts
-- Pay: navigates to send-money
+- Pay: navigates to payments
 - More: navigates to settings
 - Render MUST keep nav/bar elements consistent with the list above — present or absent, never partial.
 

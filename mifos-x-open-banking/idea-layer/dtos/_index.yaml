@@ -37,67 +37,29 @@ dtos:
       - beneficiaries
     producers: []
     consumers: []
-  Card:
-    dto_id: Card
-    # Verified against GET /obp/v7.0.0/cards (sandbox, 2026-05-31). networks[] not card_network;
-    # account{} embedded; no card_id/customer_id on consumer payload.
-    fields:
-      - name: bank_id
-        type: String
-      - name: bank_card_number
-        type: String
-      - name: name_on_card
-        type: String
-      - name: card_type
-        type: String
-      - name: networks
-        type: List<String>
-      - name: allows
-        type: List<String>
-      - name: enabled
-        type: Boolean
-      - name: cancelled
-        type: Boolean
-      - name: on_hot_list
-        type: Boolean
-      - name: account
-        type: CardAccountRef
-    used_by:
-      - cards
-    producers: []
-    consumers: []
-  CardAccountRef:
-    dto_id: CardAccountRef
-    fields:
-      - name: id
-        type: String
-      - name: label
-        type: String
-      - name: bank_id
-        type: String
-    used_by:
-      - cards
-    producers: []
-    consumers: []
-  CardDetail:
-    dto_id: CardDetail
-    fields:
-      - name: id
-        type: String
-      - name: maskedNumber
-        type: String
-      - name: cardType
-        type: String
-      - name: status
-        type: String
-      - name: expiryDate
-        type: String
-      - name: creditLimit
-        type: String
-    used_by:
-      - card-detail
-    producers: []
-    consumers: []
+  # ── Card / CardAccountRef REMOVED 2026-08-06 (/idea-sync, OBP eviction) ──
+  # Both were verified against GET /obp/v7.0.0/cards on the Open Bank Project sandbox and
+  # modelled a snake_case payload (bank_id, bank_card_number, on_hot_list, allows[], networks[]).
+  #
+  # OBIE HAS NO CARD RESOURCE. A payment card surfaces only as an entry in the accounts list,
+  # identified by Account[].SchemeName == UK.OBIE.PAN. So a Card type was not merely
+  # mis-targeted — it duplicated Account.yaml while describing fields that do not exist.
+  #
+  # The 08-06 pass added: "The `cards` and `card-detail` SCREENS survive: filtering the accounts
+  # list to PAN entries is a legitimate product surface. Their response DTO is Account. 'Card'
+  # is a filter, not a type."
+  #
+  # ── SUPERSEDED 2026-08-07: the screens were deleted too, by the repository owner ──
+  # The feature came from the OLD OBP PLANNING and goes with it. Nothing now filters the accounts
+  # list under a card framing. The "Card is a filter, not a type" reading was correct and is what
+  # kept the screens alive for a day; it just was not a reason to keep them.
+  #
+  # CardDetail REMOVED in the same pass. It was an inline entry here with no dtos/CardDetail.yaml
+  # file behind it, and `card-detail` was its ONLY used_by — a genuine orphan the moment that
+  # screen went. Its seven fields (id, maskedNumber, cardType, status, expiryDate, creditLimit)
+  # were an OBP shape: OBIE returns none of them. `creditLimit` in particular has no OBIE source
+  # at all, which is the same absence that made the Spending Limits sections on card-detail
+  # unbuildable.
   DirectDebit:
     dto_id: DirectDebit
     fields:

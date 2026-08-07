@@ -10,19 +10,19 @@
 
 ## Screen Layout
 
-Top-to-bottom hierarchy on a scrollable column (background #FCF8FF):
+Top-to-bottom hierarchy on a scrollable column (background `surface`):
 
-1. **Page title** — "ATM & Branches" headline_large, #1800B1, padding top 24, horizontal 16
-2. **Location search input** — Pill-shaped search field (radius 28, background #F5F5F5), leading search icon, placeholder "Enter city, postcode or address...", margin horizontal 16, top 12
-3. **Location permission banner** *(location_denied state only)* — Blue-bordered box (#1800B1 border, #E8F4FD background), "Use my location for nearby ATMs" text with "Enable" text button
-4. **Map area** — 240dp tall rounded map (radius 12) displaying ATM/branch pins, margin horizontal 16, top 12
-5. **Filter chips row** — Horizontal scrollable row of radio chips: "All" (selected, filled #1800B1), "ATMs", "Branches", "24/7", padding horizontal 16, vertical 12
-6. **Results header** — "3 ATMs found within 500m" title_medium, #212121
-7. **Result cards** — Three elevated cards (elevation 2, radius 12, padding 16, margin horizontal 16, bottom 8):
+1. **Page title** — "ATM & Branches" `headlineLarge`, `primary`, padding top `spacing.lg`, horizontal `spacing.md`
+2. **Location search input** — Pill-shaped search field (radius `radius.xl`, background `surfaceContainerLow`), leading search icon, placeholder "Enter city, postcode or address...", margin horizontal `spacing.md`, top `spacing.md`
+3. **Location permission banner** *(location_denied state only)* — Bordered box (`primary` border, `primaryContainer` background), "Use my location for nearby ATMs" text with "Enable" text button
+4. **Map area** — 240 dp tall rounded map (radius `radius.md`) displaying ATM/branch pins, margin horizontal `spacing.md`, top `spacing.md`
+5. **Filter chips row** — Horizontal scrollable row of radio chips: "All" (selected, filled `primary`), "ATMs", "Branches", "24/7", padding horizontal `spacing.md`, vertical `spacing.md`
+6. **Results header** — "3 ATMs found within 500m" `titleMedium`, `onSurface`
+7. **Result cards** — Three elevated cards (elevation 2, radius `radius.md`, padding `spacing.md`, margin horizontal `spacing.md`, bottom `spacing.sm`):
    - Mifos ATM Oxford Street (0.2km, Open 24/7, £300 max withdrawal)
    - Mifos ATM Bond Street Station (0.5km, Open 24/7)
    - Mifos Branch Mayfair (0.8km, Mon–Fri 9am–5pm, Services: Cashier · FX · Safe Deposit)
-8. **Divider** — #E0E0E0, margin horizontal 16
+8. **Divider** — `outlineVariant`, margin horizontal `spacing.md`
 
 ---
 
@@ -30,36 +30,36 @@ Top-to-bottom hierarchy on a scrollable column (background #FCF8FF):
 
 ### Location Search Input
 - **Position:** Directly below page title
-- **Style:** Radius 28, background #F5F5F5, leading "search" icon, padding horizontal 16 vertical 12
+- **Style:** Radius `radius.xl`, background `surfaceContainerLow`, leading "search" icon, padding horizontal `spacing.md` vertical `spacing.md`
 - **Interaction:** Tap opens text entry; triggers location search on text change
 
 ### Filter Chips Row
 - **Position:** Below map area, horizontal scrollable
-- **Style:** Chips with radius 16, padding horizontal 16 vertical 8; selected chip fills #1800B1 with white text; unselected chips use border-only style
+- **Style:** Chips with radius `radius.lg`, padding horizontal `spacing.md` vertical `spacing.sm`; selected chip fills `primary` with `onPrimary` text; unselected chips use border-only style with `outline` stroke
 - **Default selected:** "All" chip
 
 ### ATM Result Card — Oxford Street
-- **Background:** #FFFFFF, radius 12, elevation 2, padding 16
-- **Name:** "Mifos ATM — Oxford Street" title_small, weight 600, #212121
-- **Distance:** "0.2km away" body_small, #757575
-- **Hours:** "Open 24/7" body_small, #4CAF50 (green), weight 500
-- **Limit:** "£300 max withdrawal" body_small, #616161
-- **Directions link:** "Get Directions" label_medium, #1800B1, trailing directions icon
+- **Background:** `surfaceContainerLowest`, radius `radius.md`, elevation 2, padding `spacing.md`
+- **Name:** "Mifos ATM — Oxford Street" `titleSmall`, weight 600, `onSurface`
+- **Distance:** "0.2km away" `bodySmall`, `onSurfaceVariant`
+- **Hours:** "Open 24/7" `bodySmall`, `primary`, weight 500, with check_circle icon
+- **Limit:** "£300 max withdrawal" `bodySmall`, `onSurfaceVariant`
+- **Directions link:** "Get Directions" `labelMedium`, `primary`, trailing directions icon
 
 ### ATM Result Card — Bond Street Station
-- **Background:** #FFFFFF, radius 12, elevation 2, padding 16
-- **Name:** "Mifos ATM — Bond Street Station" title_small, weight 600, #212121
-- **Distance:** "0.5km away" body_small, #757575
-- **Hours:** "Open 24/7" body_small, #4CAF50 (green)
-- **Directions link:** "Get Directions" label_medium, #1800B1
+- **Background:** `surfaceContainerLowest`, radius `radius.md`, elevation 2, padding `spacing.md`
+- **Name:** "Mifos ATM — Bond Street Station" `titleSmall`, weight 600, `onSurface`
+- **Distance:** "0.5km away" `bodySmall`, `onSurfaceVariant`
+- **Hours:** "Open 24/7" `bodySmall`, `primary`, with check_circle icon
+- **Directions link:** "Get Directions" `labelMedium`, `primary`
 
 ### Branch Result Card — Mayfair
-- **Background:** #FFFFFF, radius 12, elevation 2, padding 16
-- **Name:** "Mifos Branch — Mayfair" title_small, weight 600, #212121
-- **Distance:** "0.8km away" body_small, #757575
-- **Hours:** "Mon–Fri 9am–5pm" body_small, #FF8F00 (amber), weight 500
-- **Services:** "Services: Cashier · FX · Safe Deposit" body_small, #616161
-- **Directions link:** "Get Directions" label_medium, #1800B1
+- **Background:** `surfaceContainerLowest`, radius `radius.md`, elevation 2, padding `spacing.md`
+- **Name:** "Mifos Branch — Mayfair" `titleSmall`, weight 600, `onSurface`
+- **Distance:** "0.8km away" `bodySmall`, `onSurfaceVariant`
+- **Hours:** "Mon–Fri 9am–5pm" `bodySmall`, `tertiary`, weight 500, with schedule icon
+- **Services:** "Services: Cashier · FX · Safe Deposit" `bodySmall`, `onSurfaceVariant`
+- **Directions link:** "Get Directions" `labelMedium`, `primary`
 
 ---
 
@@ -97,23 +97,24 @@ Top-to-bottom hierarchy on a scrollable column (background #FCF8FF):
 ## Design Notes
 
 **Color Usage:**
-- Primary #1800B1 used for title, selected filter chip, "Enable" banner button, and all "Get Directions" links
-- Green #4CAF50 signals 24/7 availability — instantly communicates "always open"
-- Amber #FF8F00 for limited-hours branches distinguishes them from always-open ATMs without using error red
+- `primary` used for title, selected filter chip, "Enable" banner button, and all "Get Directions" links.
+- **Always-open availability uses `primary`, not green** — this palette ships no green family, and DESIGN.md maps the success/available semantic onto the primary blue.
+- **Limited-hours branches use `tertiary`, not amber** — DESIGN.md 1.3.0 assigns the warning / attention-needed semantic to the soft-violet tertiary. It distinguishes a restricted-hours branch from an always-open ATM without reaching for error red, which stays reserved for states where access is actually gone.
+- Both hours treatments carry an icon (check_circle / schedule) alongside the text, so availability is never conveyed by colour alone (WCAG 1.4.1).
 
 **Typography:**
-- Page title: headline_large — consistent with app's screen identity pattern
-- Result card names: title_small weight 600 — prominent but contained within the card hierarchy
-- Distance and hours: body_small — secondary metadata that doesn't compete with the name
+- Page title: `headlineLarge` — consistent with the app's screen identity pattern.
+- Result card names: `titleSmall` weight 600 — prominent but contained within the card hierarchy.
+- Distance and hours: `bodySmall` — secondary metadata that doesn't compete with the name.
 
 **Map Area:**
-- 240dp fixed height prevents the map from dominating the screen; scrollable result list gives access to more results below
-- Radius 12 matches the result card radius, creating a cohesive visual family
+- 240 dp fixed height prevents the map from dominating the screen; the scrollable result list gives access to more results below.
+- Radius `radius.md` matches the result card radius, creating a cohesive visual family.
 
 **Accessibility:**
-- Result cards are full-width tappable targets with aria listitem role
-- "Get Directions" links have explicit role="link" and describe the full destination in the a11y label
-- Location permission banner reads out the full request context for screen readers
-- Filter chips use role="radio" with clear group label "Filter ATMs and branches by type"
+- Result cards are full-width tappable targets with aria listitem role.
+- "Get Directions" links have explicit role="link" and describe the full destination in the a11y label.
+- Location permission banner reads out the full request context for screen readers.
+- Filter chips use role="radio" with clear group label "Filter ATMs and branches by type".
 
-*Generated by /idea export | 2026-05-25*
+*Generated by /idea export | 2026-08-03*

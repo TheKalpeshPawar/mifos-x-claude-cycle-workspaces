@@ -1,95 +1,62 @@
-# API Reference — Transaction Detail
+# API — Transaction Detail
 
-| Field    | Value                                  |
-|----------|----------------------------------------|
-| Feature  | transaction-detail                     |
-| Base URL | https://apisandbox.openbankproject.com |
-
----
-
-## GET /obp/v5.1.0/banks/{bankId}/accounts/{accountId}/owner/transactions/{transactionId}/transaction
-
-**Auth:** DirectLogin
-**Tag:** Transactions
-**Trigger:** `loadTransactionDetail(transactionId)` on ScreenOpened / RetryLoad event
-
-### Path Parameters
-
-| Name          | Type   | Value          | Description                                |
-|---------------|--------|----------------|--------------------------------------------|
-| bankId        | String | gh.29.uk       | OBP bank identifier                        |
-| accountId     | String | (from session) | Account owning this transaction            |
-| transactionId | String | (from nav args)| Unique transaction identifier              |
-
-### Response Fields
-
-| Field                              | Type                   | Description                                   |
-|------------------------------------|------------------------|-----------------------------------------------|
-| id                                 | String                 | Transaction identifier                        |
-| this_account                       | Object                 | Source account reference                      |
-| this_account.id                    | String                 | Account ID                                    |
-| this_account.account_routings      | List\<AccountRouting\> | IBAN / sort code routings                     |
-| other_account                      | Object                 | Counterparty / beneficiary reference          |
-| other_account.id                   | String                 | Counterparty ID                               |
-| other_account.holder.name          | String                 | Beneficiary display name (e.g. "Tesco PLC")   |
-| other_account.holder.is_alias      | Boolean                | true if counterparty name is an alias         |
-| other_account.account_routings     | List\<AccountRouting\> | Beneficiary IBAN / routing                    |
-| other_account.metadata.image_url   | String?                | Merchant logo URL (if available)              |
-| details.type                       | String                 | Transaction type (e.g. "SEPA Credit Transfer")|
-| details.description                | String                 | Merchant / reference description              |
-| details.posted                     | String                 | ISO-8601 posted timestamp                     |
-| details.completed                  | String                 | ISO-8601 completed timestamp                  |
-| details.new_balance.currency       | String                 | Account balance currency after transaction    |
-| details.new_balance.amount         | String                 | Account balance after transaction             |
-| details.value.currency             | String                 | Transaction currency (e.g. "GBP")             |
-| details.value.amount               | String                 | Signed amount (e.g. "-42.50")                 |
-| metadata.narrative                 | String?                | User-set narrative / note                     |
-| metadata.comments                  | List\<Comment\>        | User comments on the transaction              |
-| metadata.tags                      | List\<Tag\>            | User-applied tags                             |
-
-### Sample Response
-
-```json
-{
-  "id": "txn_20260525_001",
-  "this_account": {
-    "id": "acc-primary-0130",
-    "account_routings": [
-      { "scheme": "IBAN", "address": "GB29 NWBK 6016 1331 9268 19" }
-    ]
-  },
-  "other_account": {
-    "id": "counterparty_tesco_001",
-    "holder": { "name": "Tesco PLC", "is_alias": false },
-    "account_routings": [
-      { "scheme": "IBAN", "address": "DE89 3704 0044 0532 0130 00" }
-    ],
-    "metadata": { "image_url": "https://cdn.obp.io/logos/tesco.png" }
-  },
-  "details": {
-    "type": "SEPA Credit Transfer",
-    "description": "SEPA-2026051500123",
-    "posted": "2026-05-25T14:32:00Z",
-    "completed": "2026-05-25T14:32:00Z",
-    "new_balance": { "currency": "GBP", "amount": "4207.50" },
-    "value": { "currency": "GBP", "amount": "-42.50" }
-  },
-  "metadata": {
-    "narrative": null,
-    "comments": [],
-    "tags": []
-  }
-}
-```
-
-### Error Codes
-
-| Code | Message                                      | UI Behaviour                                    |
-|------|----------------------------------------------|-------------------------------------------------|
-| 401  | Unauthorized — DirectLogin token expired     | Redirect to login screen                        |
-| 404  | Transaction not found                        | Show error state: "Transaction not found"       |
-| 500  | OBP server error                             | Show error state with retry action              |
+Client contract for `transaction-detail`. This project owns no backend: this is a Ktorfit contract
+against the HSBC UK/CE sandbox (OBIE Read/Write Standard), not owned schema.
+Consumer: `TransactionDetailRepository`.
 
 ---
 
-_Generated by /idea export | 2026-05-29_
+## There is no single-transaction endpoint
+
+**OBIE v4.0 AIS provides none.** This is the single most important fact about the screen, and the
+reason its data flow looks indirect.
+
+| | |
+|---|---|
+| Endpoint | `GET /accounts/{AccountId}/transactions` |
+| Permission | `ReadTransactionsDetail` |
+
+The client resolves the transaction by **filtering the account's transaction list** by the
+`transactionId` passed as a route param. If the list is already cached, it is reused; otherwise it is
+fetched fresh.
+
+### What follows from that
+
+**`TransactionNotFoundError` is reachable, not defensive.** An id that no longer appears in the
+list — because the window moved, a filter narrowed it, or a pending entry settled under a new id —
+has nothing to render. That maps to the `empty` state, and it is why the empty state offers a way
+back to the list rather than a retry.
+
+**Freshness is inherited.** The screen is exactly as current as the list it reads. It cannot
+independently refresh one transaction, so a stale list yields a stale detail view.
+
+**Deep-linking is constrained.** Anything opening this screen must supply an `accountId` as well as
+a `transactionId`, because the account is what actually gets fetched. Notifications and list rows
+both pass the pair.
+
+---
+
+## Errors
+
+| Type                       | Cause                              | Recoverable by retry |
+|----------------------------|------------------------------------|----------------------|
+| `TokenExpiredError`        | PSU token expired                  | after re-auth        |
+| `ConsentWithdrawnError`    | Consent revoked or scope lost      | **no**               |
+| `TransactionNotFoundError` | Id absent from the resolved list   | **no** — renders `empty` |
+| `NetworkError`             | Offline / transport                | yes                  |
+
+Two of the four cannot be fixed by retrying, which is why the error state pairs Retry with a Go Back
+CTA. A screen whose only affordance is a retry that cannot succeed is a dead end.
+
+---
+
+## CopyReference
+
+`CopyReference` copies the payment reference to the clipboard. It is a declared action rather than
+an incidental long-press because the reference is the value customers most often need to quote — to
+a merchant, a landlord, or their own bank — and it must be reliably copyable rather than
+transcribed by eye.
+
+---
+
+<!-- Generated 2026-08-04 by /idea-feature-export --all --force from screens/transaction-detail/api.yaml. -->

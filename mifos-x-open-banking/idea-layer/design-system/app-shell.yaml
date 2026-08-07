@@ -34,31 +34,42 @@ bottom_navigation:
       target_screen: accounts
       order: 1
     # Reverse-synced 2026-07-28: source ships a "Pay" tab here, not "Transactions".
-    # Updated 2026-07-30 (/idea-evolve STEP 4.a2 CONNECT): the PISP scope reversal
-    # materialized the send-money feature this tab was already pointing at, so the
-    # ingress edge is now specified rather than dangling. NO new nav edge was added —
-    # target_screen already read send-money; only its status and binding change.
+    # Updated 2026-07-30 (/idea-evolve): PISP scope reversal materialized send-money.
+    # ── CORRECTED 2026-08-07 (/idea-sync) ──
+    # target_screen read `send-money`, a screen DELETED by the 2026-08-06 seven-type rewrite.
+    # This was a LIVE nav edge from the bottom navigation to a non-existent screen — the same
+    # defect class fixed the same day in payment-consent/flow.yaml and payment-status/flow.yaml,
+    # and it was missed by the first sweep because that scan covered screens/ and not
+    # design-system/. The app shell is exactly where a dangling tab target hurts most.
     - id: pay
       label: "Pay"
       icon: "payments"
-      target_screen: send-money
+      target_screen: payments
       order: 2
       implementation_status: specified
       source_binding: "AuthenticatedNavBarTabItem.PayTab -> SendMoneyRoute"
+      retarget_2026_08_07:
+        was: send-money
+        now: payments
+        why: >-
+          FR-012a makes the payments grid hub the Pay tab's landing destination, replacing the
+          SendMoneyRoute placeholder. The hub is the only screen that presents all seven rails
+          as distinct choices, which is the whole reason the single send-money form was retired:
+          the rails differ in ways one generic form cannot express.
+        verified: "screens/payments/ exists; its 7 tiles all resolve (checked 2026-08-07)."
       target_binding_pending: >-
         SendMoneyRoute must be repointed off bankingPlaceholderDestinations() to the
-        feature/send-money module, exactly as settings replaced the MoreRoute placeholder:
-        repoint graphRoute and startDestinationRoute, then delete the placeholder route and
-        its bankingPlaceholderDestinations() line in the SAME commit. PayTab is flat
+        feature/payments module (the hub), exactly as settings replaced the MoreRoute
+        placeholder: repoint graphRoute and startDestinationRoute, then delete the placeholder
+        route and its bankingPlaceholderDestinations() line in the SAME commit. PayTab is flat
         (graphRoute == startDestinationRoute), so the navigateToTab graph-route trap that
         affects the Home tab does not apply here.
+        NOTE the source symbol is still named SendMoneyRoute; renaming it to PaymentsRoute is
+        part of the same change, not a follow-up.
       drift_note: >-
-        RESOLVED 2026-07-30. This tab previously rendered PlaceholderScreen("Pay") while
-        idea-plan.yaml declared PISP out of scope, even though core/network shipped a complete
-        PISP wire-model surface the tab pointed toward. The scope reversal moved PISP domestic
-        single payment in_scope and materialized send-money, payment-consent and payment-status.
-        The tab still renders the placeholder in source until P3 is implemented — the idea-layer
-        is now ahead of source here, which is the intended direction.
+        The tab still renders PlaceholderScreen("Pay") in source until P3 is implemented — the
+        idea-layer is ahead of source here, which is the intended direction. What changed on
+        2026-08-07 is only WHICH screen it is ahead toward: the hub, not the deleted form.
     - id: more
       label: "More"
       icon: "more_horiz"

@@ -3,6 +3,9 @@ schema_version: "2.1.0"
 feature_id: login
 
 screen_id: login
+models: wire
+maps_to_dto: [HSBCCreateConsentResponse, HSBCCreateConsentData]
+_models_note: "The consent-create request and response examples are the OBIE wire envelope (Data / Links / Meta / Risk); the snake_case keys elsewhere are UI copy and staging notes, not DTO items. DD5 compares the payload blocks against the wire contract."
 _content_policy: "RULE-PROTO-CONTENT-001 — zero placeholders; real HSBC-sandbox-style data only."
 
 requested_permissions:
@@ -79,3 +82,34 @@ consent_create_response_example:
     Self: "https://api.hsbc.com/open-banking/v4.0/account-access-consents/aac-fb2c4e8a-7d31-4c9e-9f2a-1b3c5d7e9f01"
   Meta:
     TotalPages: 1
+
+# ── Per-state fixtures (added 2026-08-02 via /idea-sync) ─────────────────────
+# ui.yaml declares states: [content, loading, authorising, error, empty]. Only the happy-path
+# consent staging was fixtured, so authorising / error / empty bound to nothing.
+states:
+  - scope: content
+    requested_permissions: all
+    _note: "The pre-consent screen — what access is about to be requested, before the user taps Continue."
+
+  - scope: loading
+    requested_permissions: all
+
+  - scope: authorising
+    consent_id: "aac-fb2c4e8a-7d31-4c9e-9f2a-1b3c5d7e9f01"
+    message: "Taking you to your bank to approve access…"
+    _handoff_note: >-
+      The browser hand-off is in flight. This state must not offer a retry — re-issuing the
+      authorise call while the first redirect is live creates a second consent the user never
+      asked for.
+
+  - scope: empty
+    requested_permissions: []
+    message: "No permissions requested."
+    detail: "This app has not asked for access to any account data."
+    _when_this_happens: "A misconfigured consent request. Rendering an approve button over an empty permission list is how a user grants access to something unstated — so the CTA is suppressed here."
+
+  - scope: error
+    error_type: ConsentStagingFailed
+    message: "Could not start the connection to your bank"
+    recovery: "Try again."
+    recoverable: true

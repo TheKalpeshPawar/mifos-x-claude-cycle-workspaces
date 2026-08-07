@@ -3,6 +3,9 @@ schema_version: "2.1.0"
 feature_id: consent-list
 
 screen_id: consent-list
+models: wire
+maps_to_dto: [ConsentSummary]
+_models_note: "Fixtures are the OBIE wire envelope, not the domain projection. api.yaml#response_dto names the domain DTO the repository yields; the mapper sits between. RULE-DEMO-DATA-001 DD5 compares against the wire contract for this file."
 _content_policy: "RULE-PROTO-CONTENT-001 — zero placeholders; real HSBC-sandbox-style OBReadConsentResponse1 data only. Three fixtures cover every OBIE consent status (Authorised / Authorised-near-expiry / Expired) to exercise all content-state rendering paths."
 
 # ── Fixture 1: Authorised — 89 days until expiry ─────────────────────────────
@@ -110,3 +113,44 @@ Links:
   Self: "https://api.hsbc.com/open-banking/v4.0/account-access-consents"
 Meta:
   TotalPages: 1
+
+# ── Per-state fixtures (added 2026-08-02 via /idea-sync) ─────────────────────
+# ui.yaml declares states: [loading, content, empty, error, error_auth]. `empty` had no fixture.
+states:
+  - scope: content
+    consents: all
+    has_active_consents: true
+    has_history_consents: true
+
+  - scope: loading
+    consents: all
+
+  - scope: empty
+    consents: []
+    active_consents: []
+    history_consents: []
+    has_active_consents: false
+    has_history_consents: false
+    has_near_expiry_consents: false
+    message: "No connected apps."
+    detail: "Apps you give access to your account data will appear here."
+    _both_sections_empty: >-
+      This screen renders an Active section and a History section below a divider. The empty
+      state must clear BOTH — an empty Active list above a populated History would read as
+      "you have no connections" directly above a list of connections.
+
+  - scope: error
+    error_type: ConsentsLoadFailed
+    message: "Could not load your connected apps"
+    recovery: "Check your connection and try again."
+    recoverable: true
+
+  - scope: error_auth
+    error_type: SessionExpired
+    http_status: 401
+    message: "Sign in again to manage your connected apps."
+    recoverable: false
+    _distinct_from_error: >-
+      error_auth is a separate declared state because the recovery differs: a failed fetch
+      retries, an expired session re-authenticates. Offering "try again" on a 401 loops the
+      user forever.

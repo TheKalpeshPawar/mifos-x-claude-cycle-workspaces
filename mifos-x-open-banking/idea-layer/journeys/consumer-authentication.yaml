@@ -55,18 +55,34 @@ tier: maximum
 preconditions:
   - "app is installed"
   - "device is online"
-  - "valid OBP credentials exist"
+  - "the PSU holds an HSBC sandbox account and can authenticate on HSBC's own site"
+  - "the app's mTLS transport certificate and signing key are provisioned"
 
 failure_modes:
-  - cause: "wrong credentials"
+  # "wrong credentials" removed 2026-08-06 — the app has no credential fields. A bad password
+  # is rejected by HSBC on HSBC's site, and this app never sees it.
+  - cause: "PSU abandons authorisation at HSBC"
     recovery_screen: login
-    notes: "Inline error shown; user retries"
+    notes: "No token is issued and no consent is authorised. Restart the journey."
+  - cause: "PSU denies the consent at HSBC"
+    recovery_screen: login
+    notes: "Consent reaches Rejected. Offer a fresh consent, not a retry of the denied one."
+  - cause: "redirect state or nonce mismatch"
+    recovery_screen: login
+    notes: >-
+      Rejected BEFORE the single-use authorisation code is spent. Restart the journey — the
+      code cannot be reused.
   - cause: "network offline"
     recovery_screen: login
     notes: "Error toast; retry button"
-  - cause: "OBP server unreachable"
+  - cause: "bank endpoint unreachable"
     recovery_screen: login
     notes: "Error message with retry CTA"
+  - cause: "mTLS handshake fails (certificate missing, expired or not enrolled)"
+    recovery_screen: login
+    notes: >-
+      Not user-recoverable — a deployment fault. Surface a support reference rather than a
+      Retry, because retrying cannot fix it.
 
 tags: [auth, consumer, onboarding]
 deprecated: false

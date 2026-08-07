@@ -1,113 +1,92 @@
-# API Reference — Direct Debit Detail
+# API — Direct Debit Detail
 
-| Field    | Value                                     |
-|----------|-------------------------------------------|
-| Feature  | direct-debit-detail                       |
-| Base URL | https://apisandbox.openbankproject.com    |
+Client contract for `direct-debit-detail`. This project owns no backend: these are Ktorfit contracts
+against the OBP sandbox, not owned schema.
+
+## `api: []` — this screen makes no network call of its own
+
+**OBP has no direct-debit detail endpoint and no direct-debit cancel endpoint, at any version.**
+The originally specified `GET /obp/v5.0.0/.../direct-debit/{directDebitId}` and the matching
+`DELETE` were **live-verified 404 and dropped** on 2026-06-11, along with some stray Standing-Order
+v7.0.0 entries the file had picked up.
+
+Everything this screen shows is re-derived from data another call already fetched, and its one
+mutation is local.
 
 ---
 
-## GET /obp/v5.0.0/banks/{bankId}/accounts/{accountId}/direct-debit/{directDebitId}
+## Derived reads
 
-**Auth:** DirectLogin
-**Tag:** DirectDebits
-**Trigger:** `loadMandate(mandateId)` on screen entry and `OnRetryClicked` event
+### direct_debit_detail_by_id
 
-### Path Parameters
-
-| Name          | Type   | Value                         |
-|---------------|--------|-------------------------------|
-| bankId        | String | gh.29.uk                      |
-| accountId     | String | (from navigation arguments — linked account ID) |
-| directDebitId | String | (from navigation arguments — mandate ID)        |
-
-### Response Fields
-
-| Field              | Type    | Description                                                        |
-|--------------------|---------|-------------------------------------------------------------------|
-| direct_debit_id    | String  | Unique mandate identifier — maps to mandateReference              |
-| bank_id            | String  | Bank identifier                                                   |
-| account_id         | String  | Linked account identifier — maps to linkedAccountMasked           |
-| date_signed        | String  | ISO-8601 date the mandate was authorised — maps to mandateStartDate |
-| date_starts        | String  | ISO-8601 date mandate becomes active                              |
-| date_expires       | String? | ISO-8601 expiry date; null if perpetual                           |
-| date_cancelled     | String? | ISO-8601 cancellation date; null if active                        |
-| date_updated       | String  | ISO-8601 last update timestamp                                    |
-| date_of_next_payment | String| ISO-8601 next scheduled collection — maps to nextPaymentDate      |
-| period             | String  | Frequency code: "MONTHLY", "WEEKLY", "QUARTERLY", "ANNUAL"       |
-| amount             | Object  | Contains `value` (String e.g. "15.99") + `currency` (e.g. "GBP") |
-| amount.value       | String  | Mandate amount — maps to mandateAmount display                    |
-| amount.currency    | String  | Currency code — prepended to formatted amount                     |
-| virtual_account    | Object  | Merchant virtual account reference                                |
-
-### Derived Fields (ViewModel)
-
-| ViewModel Field        | Derived From                                      |
-|------------------------|---------------------------------------------------|
-| merchantName           | virtual_account.label or mandate counterparty name|
-| merchantLogoUrl        | domain-based favicon lookup from merchant name    |
-| mandateStatus          | Derived: null date_cancelled + not expired = "Active"; date_cancelled set = "Cancelled" |
-| mandateFrequency       | period → formatted label ("Monthly" etc.)         |
-| linkedAccountMasked    | account_id last 4 chars prefixed with "****"      |
-
-### Sample Response
-
-```json
-{
-  "direct_debit_id": "MDT-2024-00947",
-  "bank_id": "gh.29.uk",
-  "account_id": "acc-4521",
-  "date_signed": "2024-01-12",
-  "date_starts": "2024-01-15",
-  "date_expires": null,
-  "date_cancelled": null,
-  "date_updated": "2026-05-01T00:00:00Z",
-  "date_of_next_payment": "2026-06-15",
-  "period": "MONTHLY",
-  "amount": { "value": "15.99", "currency": "GBP" },
-  "virtual_account": { "label": "Netflix Entertainment" }
-}
+```
+DirectDebitsRepository.listMandates(bankId, accountId)
+    .firstOrNull { it.id == mandateId }
 ```
 
-### Error Codes
+Output DTO: `DirectDebitMandate`.
 
-| Code | Message                                             |
-|------|-----------------------------------------------------|
-| 403  | INSUFFICIENT_PERMISSIONS — user lacks mandate view  |
-| 404  | MANDATE_NOT_FOUND — directDebitId does not exist    |
-| 500  | OBP server error                                    |
+Re-derives the account's mandates using the same `TXN_TYPE=DD` derivation the list screen uses, then
+locates this one by id. There is no per-mandate fetch to make.
 
----
+A `mandateId` that no longer resolves — already cancelled or expired before the screen opened —
+renders the **empty** state (`event_busy`, "Mandate not available"), not an error. Nothing failed;
+the mandate simply is not there any more.
 
-## DELETE /obp/v5.0.0/banks/{bankId}/accounts/{accountId}/direct-debit/{directDebitId}
+### linked_account_name
 
-**Auth:** DirectLogin
-**Tag:** DirectDebits
-**Trigger:** `onCancelClicked()` after user confirms the cancellation confirmation dialog
+```
+AccountsRepository.accountDetail(bankId, accountId)
+```
 
-### Path Parameters
+Output DTO: `Account`.
 
-| Name          | Type   | Value                        |
-|---------------|--------|------------------------------|
-| bankId        | String | gh.29.uk                     |
-| accountId     | String | (from screen state)          |
-| directDebitId | String | (from screen state mandateId)|
-
-### Response Fields
-
-| Field   | Type    | Description                                    |
-|---------|---------|------------------------------------------------|
-| success | Boolean | `true` on successful cancellation              |
-
-### Error Codes
-
-| Code | Message                                                       |
-|------|---------------------------------------------------------------|
-| 403  | INSUFFICIENT_PERMISSIONS — user cannot cancel this mandate    |
-| 404  | MANDATE_NOT_FOUND                                             |
-| 409  | MANDATE_ALREADY_CANCELLED — already in cancelled state        |
-| 500  | OBP server error                                              |
+Best-effort lookup of the funding account's display name — label, else type, else the literal
+`"Account"`. **Resolution is non-blocking**: a failure still renders the mandate with the fallback
+name rather than blocking or erroring the screen. This is why `linkedAccountName` is documented with
+a fallback rather than as a guaranteed value.
 
 ---
 
-_Generated by /idea export | 2026-05-29_
+## Local mutation
+
+### cancel_direct_debit_local
+
+```
+DirectDebitsRepository.cancel(accountId, mandateId)
+```
+
+**This never reaches the server.** OBP has no cancel endpoint, so confirming the dialog records the
+cancellation **locally** in the Room JSON cache and re-fetches the mandate: it flips to `CANCELLED`
+and the next-payment date clears to an em dash.
+
+The local record **persists across restarts**.
+
+Implementers must not read the confirm dialog as a server call. The customer sees the mandate marked
+cancelled; the bank does not know. Anything that depends on the mandate actually being cancelled at
+the bank — a collection that still lands next month, say — will contradict this screen, and that gap
+is a product decision recorded here, not a bug to patch client-side.
+
+---
+
+## Deferred, deliberately
+
+`GET /direct-debit/{id}` and `DELETE /direct-debit/{id}` were in the original design and **do not
+exist on OBP**. There is also **no edit affordance**: direct debits are merchant-initiated, so the
+consumer surface is view + (local) cancel only.
+
+Re-add a server cancel **only if OBP ships a DELETE endpoint**. Until then, adding one means calling
+a URL that 404s.
+
+---
+
+<!--
+Regenerated 2026-08-04 by /idea-feature-export --all --force from screens/direct-debit-detail/api.yaml.
+
+The previous revision of this file documented
+`GET /obp/v5.0.0/banks/{bankId}/accounts/{accountId}/direct-debit/{directDebitId}` and the matching
+DELETE — complete with path parameters, response fields, a sample response and an error-code table.
+Both endpoints were live-verified 404 and removed from api.yaml on 2026-06-11; the export was never
+regenerated, so it went on instructing implementers to call URLs that do not exist. api.yaml now
+declares `api: []` with derived_reads + local_mutations, and this file reflects that.
+-->

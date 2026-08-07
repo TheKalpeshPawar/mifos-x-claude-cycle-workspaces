@@ -13,11 +13,13 @@ endpoints:
   - id: party
     method: GET
     path: "/accounts/{AccountId}/party"
-    # Retargeted 2026-07-30 (/idea-data-flow F5). Was `PartyResponse`, the SOURCE-side
-    # class name (core/network/model/ais/party/PartyResponse.kt). Every other dto ref in
-    # the idea-layer — 23 of 24 — uses the OBIE wire name, which is what dtos/ registers.
-    # OBReadParty2 carries the source_binding back to PartyResponse.kt, so nothing is lost.
-    response_dto: OBReadParty2
+    # RE-RETARGETED 2026-08-04 (/idea-data-dtos), reversing the 2026-07-30 change.
+    # That change moved this ref from a source class name to `OBReadParty2` on the grounds
+    # that the OBIE wire name "is what dtos/ registers". It was not: dtos/ held 55 entries in
+    # OBP-sandbox vocabulary and no OBIE name at all, so the retarget moved a resolvable ref
+    # to an unresolvable one and D2 has failed here ever since. The registry is now bound to
+    # source, so this names the domain model ProfileRepository actually streams.
+    response_dto: PartyProfile
     permission: ReadParty
     requires_auth: true
     path_params:

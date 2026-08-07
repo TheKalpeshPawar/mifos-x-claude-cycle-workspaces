@@ -5,7 +5,8 @@ feature_id: statement-detail
 screen_id: statement-detail
 archetype: detail_screen
 name: "Statement Detail"
-status: implemented
+# status: REMOVED 2026-08-04 (CROSS_LEAK repair — sibling-layout.json assigns `status` to
+# the docs sibling). This copy held `implemented`; docs.yaml is the single owner.
 quality_score: 95
 initial_state: loading
 
@@ -150,7 +151,7 @@ components:
       - type: text
         id: statement_reference
         role: overline
-        value: "{statement.StatementReference}"
+        content: "{statement.StatementReference}"
         style: labelMedium
         color: "secondary"
         test_context:
@@ -161,7 +162,7 @@ components:
       - type: text
         id: statement_period
         role: title
-        value: "{statement.StartDateTime} – {statement.EndDateTime}"
+        content: "{statement.StartDateTime} – {statement.EndDateTime}"
         style: titleMedium
         test_context:
           purpose: "Statement period range in ISO-8601; formatted by ViewModel to 'dd MMM yyyy – dd MMM yyyy'"
@@ -171,7 +172,7 @@ components:
       - type: text
         id: statement_type
         role: body
-        value: "{statement.Type}"
+        content: "{statement.Type}"
         style: bodySmall
         color: "onSurfaceVariant"
         test_context:
@@ -182,7 +183,7 @@ components:
       - type: text
         id: statement_created
         role: caption
-        value: "{strings.stmt_detail.created_prefix} {statement.CreationDateTime}"
+        content: "{strings.stmt_detail.created_prefix} {statement.CreationDateTime}"
         style: labelSmall
         color: "onSurfaceVariant"
         test_context:
@@ -217,7 +218,7 @@ components:
     children:
       - type: list_item
         id: balance_row
-        supporting_text: "{item.Type}"
+        headline: "{item.Type}"
         trailing_content: "{item.CreditDebitIndicator == 'Credit' ? '' : '-'}{item.Amount.Amount} {item.Amount.Currency}"
         trailing_style: titleMedium
         trailing_color: "{item.CreditDebitIndicator == 'Credit' ? 'primary' : 'error'}"
@@ -262,7 +263,7 @@ components:
     children:
       - type: list_item
         id: fee_row
-        supporting_text: "{item.Description}"
+        headline: "{item.Description}"
         trailing_content: "{item.Amount.Amount} {item.Amount.Currency}"
         trailing_style: bodyMedium
         accessibility_label: "{strings.stmt_detail.a11y.fee_prefix} {item.Description}: {item.Amount.Amount} {item.Amount.Currency}"
@@ -300,7 +301,7 @@ components:
     children:
       - type: list_item
         id: interest_row
-        supporting_text: "{item.Description}"
+        headline: "{item.Description}"
         trailing_content: "{item.Amount.Amount} {item.Amount.Currency}"
         trailing_style: bodyMedium
         trailing_color: "{item.CreditDebitIndicator == 'Credit' ? 'primary' : 'error'}"
@@ -337,12 +338,14 @@ components:
       data_driven: true
     children:
       - type: list_item
+        keyboard:
+          focusable: true
         id: statement_txn_row
         # Note the convention break — the flat consts read "statementDetail:camelCase" but this
         # one builder emits "statementDetail_txn_$id" with underscores. Source truth; preserved.
         test_tag: "statementDetail_txn_{item.TransactionId}"   # fun txnRow(id) @ StatementDetailContent.kt
         overline: "{item.BookingDateTime}"
-        supporting_text: "{item.TransactionInformation}"
+        headline: "{item.TransactionInformation}"
         trailing_content: "{item.CreditDebitIndicator == 'Credit' ? '+' : '-'}{item.Amount.Amount} {item.Amount.Currency}"
         trailing_style: titleSmall
         trailing_color: "{item.CreditDebitIndicator == 'Credit' ? 'primary' : 'error'}"
@@ -379,6 +382,8 @@ components:
 
   # ── Download PDF button ────────────────────────────────────────────────────────
   - type: button
+    keyboard:
+      focusable: true
     id: download_pdf_button
     test_tag: "statementDetail:downloadButton"
     variant: outlined
@@ -428,10 +433,9 @@ components:
       data_driven: true
 
   # ── Error state ────────────────────────────────────────────────────────────────
-  - type: empty_state
+  - type: error_state
     id: error_state
     test_tag: "statementDetail:errorState"
-    variant: error
     state_binding: [error]
     icon: error_outline
     title: "{strings.stmt_detail.error.title}"
@@ -444,6 +448,8 @@ components:
       data_driven: true
     children:
       - type: button
+        keyboard:
+          focusable: true
         id: retry_button
         test_tag: "statementDetail:retryButton"
         variant: filled

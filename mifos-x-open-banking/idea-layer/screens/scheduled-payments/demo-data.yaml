@@ -3,6 +3,9 @@ schema_version: "2.1.0"
 feature_id: scheduled-payments
 
 screen_id: scheduled-payments
+models: wire
+maps_to_dto: [ScheduledPaymentItem]
+_models_note: "Fixtures are the OBIE wire envelope, not the domain projection. api.yaml#response_dto names the domain DTO the repository yields; the mapper sits between. RULE-DEMO-DATA-001 DD5 compares against the wire contract for this file."
 _content_policy: "RULE-PROTO-CONTENT-001 — zero placeholders; real HSBC-sandbox-style OBIE data only."
 
 # ViewModel-derived display fields are denoted with # (computed at runtime from OBIE raw fields)
@@ -79,3 +82,34 @@ scheduledPayments:
       SchemeName: "UK.OBIE.SortCodeAccountNumber"
       Identification: "23-69-72 10001289"
       Name: "Amazon Payments UK"
+
+# ── Per-state fixtures (added 2026-08-02 via /idea-sync) ─────────────────────
+# ui.yaml declares states: [loading, content, empty, unsupported, error]. This file held only
+# the populated collection, so four of the five states bound to nothing.
+states:
+  - scope: content
+    scheduled_payments: all
+
+  - scope: loading
+    scheduled_payments: all
+
+  - scope: empty
+    scheduled_payments: []
+    message: "No scheduled payments."
+    detail: "Payments you schedule will appear here until they are sent."
+
+  - scope: unsupported
+    scheduled_payments: []
+    message: "Your bank does not support scheduled payments here."
+    detail: "You can still see them in your bank's own app."
+    _why_distinct_from_empty: >-
+      Same distinction standing-orders draws: empty means "you have none", unsupported means
+      "we cannot read them". OBIE makes scheduled-payments an optional endpoint, so a bank
+      returning 404 for the resource is a real and common case — telling that customer they
+      have no scheduled payments would be a false statement about money already committed.
+
+  - scope: error
+    error_type: ScheduledPaymentsLoadFailed
+    message: "Could not load your scheduled payments"
+    recovery: "Check your connection and try again."
+    recoverable: true

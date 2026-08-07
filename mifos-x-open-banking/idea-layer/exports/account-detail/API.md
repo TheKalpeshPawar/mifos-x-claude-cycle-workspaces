@@ -1,93 +1,69 @@
-# API Reference — Account Detail
+# API — Account Detail
 
-| Field    | Value                                       |
-|----------|---------------------------------------------|
-| Feature  | account-detail                              |
-| Base URL | https://apisandbox.openbankproject.com      |
+Client contracts for `account-detail`. This project owns no backend: these are Ktorfit contracts
+against the HSBC UK/CE sandbox (OBIE Read/Write Standard), not owned schema.
+Consumer: `AccountDetailRepository`.
 
----
-
-## GET /obp/v5.1.0/banks/{bankId}/accounts/{accountId}/owner/account
-
-**Auth:** DirectLogin
-**Tag:** Accounts
-**Trigger:** `loadAccountDetail(accountId)` on screen open / `RetryLoad` event
-
-### Path Parameters
-
-| Name      | Type   | Value            |
-|-----------|--------|------------------|
-| bankId    | String | gh.29.uk         |
-| accountId | String | (from navigation)|
-
-### Response Fields
-
-| Field                           | Type                   | Description                                       |
-|---------------------------------|------------------------|---------------------------------------------------|
-| id                              | String                 | Account identifier                                |
-| label                           | String                 | Account display name e.g. "Primary Checking"       |
-| account_type                    | String                 | e.g. "CHECKING", "SAVINGS"                        |
-| balance.currency                | String                 | e.g. "GBP"                                        |
-| balance.amount                  | String                 | e.g. "4250.00"                                    |
-| account_routings[].scheme       | String                 | e.g. "IBAN", "BIC"                                |
-| account_routings[].address      | String                 | e.g. "DE89 3704 0044 0532 0130 00", "COBADEFFXXX" |
-
-### Error Codes
-
-| Code | Message                                              |
-|------|------------------------------------------------------|
-| 401  | Unauthorized — DirectLogin token missing or expired  |
-| 404  | Account not found                                    |
-| 500  | OBP server error                                     |
+Both calls are account-scoped and take `AccountId` — supplied by `SavedStateHandle` from the
+navigation argument, originally sourced from `accounts-list`.
 
 ---
 
-## GET /obp/v5.1.0/my/banks/{bankId}/accounts/{accountId}/transactions
+## account-detail
 
-**Auth:** DirectLogin
-**Tag:** Transactions
-**Trigger:** `loadAccountDetail(accountId)` on screen open / `RetryLoad` event (fetches 5 most recent)
+| | |
+|---|---|
+| Endpoint | `GET /accounts/{AccountId}` |
+| Response DTO | `AccountDetail` |
+| Permission | **ReadAccountsDetail** |
+| Requires auth | yes |
+| Path params | `AccountId: string` |
 
-### Path + Query Parameters
+Returns single-account metadata: subtype, identification, currency, servicer.
 
-| Name           | Type   | In    | Value            | Description                      |
-|----------------|--------|-------|------------------|----------------------------------|
-| bankId         | String | path  | gh.29.uk         | Bank identifier                  |
-| accountId      | String | path  | (from navigation)| Account identifier               |
-| limit          | Int    | query | 5                | Return only the 5 most recent    |
-| sort_direction | String | query | DESC             | Newest first                     |
+These populate the header card — `AccountSubType`, `Nickname`, `Account.Identification`,
+`Currency`, `Servicer.Identification` and `Description`.
 
-### Response Fields
-
-| Field                       | Type   | Description                              |
-|-----------------------------|--------|------------------------------------------|
-| id                          | String | Transaction identifier                   |
-| details.type                | String | Transaction type e.g. "DEBIT", "CREDIT"  |
-| details.description         | String | Merchant or reference description        |
-| details.posted              | String | ISO-8601 posted timestamp                |
-| details.value.currency      | String | e.g. "GBP"                              |
-| details.value.amount        | String | Signed amount e.g. "-42.50", "3200.00"   |
-| other_account.holder        | Object | Counterparty holder reference            |
-| other_account.metadata      | Object | Counterparty metadata (name, logo, etc.) |
-
-### Sample Transactions (demo data)
-
-| Merchant          | Amount    | Date        |
-|-------------------|-----------|-------------|
-| Tesco Supermarket | -£42.50   | 23 May 2026 |
-| Salary Payment    | +£3,200.00| 22 May 2026 |
-| EDF Energy        | -£94.20   | 20 May 2026 |
-| Amazon Prime      | -£8.99    | 18 May 2026 |
-| Costa Coffee      | -£3.75    | 17 May 2026 |
-
-### Error Codes
-
-| Code | Message                                              |
-|------|------------------------------------------------------|
-| 401  | Unauthorized — DirectLogin token missing or expired  |
-| 404  | Account not found                                    |
-| 500  | OBP server error                                     |
+Note the permission is the **detail** scope. `ReadAccountsBasic` would return the account without
+the identification and servicer fields the header renders, so a consent granted at basic scope
+leaves this screen underpopulated rather than failing outright.
 
 ---
 
-_Generated by /idea export | 2026-05-29_
+## balances
+
+| | |
+|---|---|
+| Endpoint | `GET /accounts/{AccountId}/balances` |
+| Response DTO | `AccountBalanceLine` |
+| Permission | **ReadBalances** |
+| Requires auth | yes |
+| Path params | `AccountId: string` |
+
+Returns **all** balance types for the account — `InterimAvailable`, `InterimBooked`,
+`OpeningBooked` and others.
+
+This screen renders every type as its own `balance_row`, rather than selecting one. That is a
+deliberate difference from the `accounts` list, which must pick a single figure per card and
+applies a preference order (`InterimAvailable → InterimBooked → OpeningBooked`). Here the customer
+is looking at one account in depth, so the distinction between available and booked is information
+worth showing rather than collapsing.
+
+An account that returns no balances renders `balances_empty_state` **within** the loaded screen —
+the balances section is empty, the screen is not.
+
+---
+
+## Permissions summary
+
+| Endpoint       | Permission           | If absent                                              |
+|----------------|----------------------|--------------------------------------------------------|
+| account-detail | `ReadAccountsDetail` | Header fields unavailable                              |
+| balances       | `ReadBalances`       | Balances section cannot populate                       |
+
+Both are distinct from `ReadParty`, which gates the `chip_party` destination (`account-holder`) —
+a consent can satisfy this screen fully and still refuse the account holder.
+
+---
+
+<!-- Generated 2026-08-04 by /idea-feature-export --all --force from screens/account-detail/api.yaml. -->

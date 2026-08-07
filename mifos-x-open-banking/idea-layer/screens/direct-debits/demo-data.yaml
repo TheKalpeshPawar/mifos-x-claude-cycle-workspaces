@@ -3,6 +3,9 @@ schema_version: "2.1.0"
 feature_id: direct-debits
 
 screen_id: direct-debits
+models: wire
+maps_to_dto: [DirectDebitsSummary, DirectDebitItem]
+_models_note: "Fixtures are the OBIE wire envelope, not the domain projection. api.yaml#response_dto names the domain DTO the repository yields; the mapper sits between. RULE-DEMO-DATA-001 DD5 compares against the wire contract for this file."
 _content_policy: "RULE-PROTO-CONTENT-001 — zero placeholders; real HSBC-sandbox-style OBIE OBReadDirectDebit2 data only."
 
 # Computed summary (derived by ViewModel from directDebits list; mirrored here for demo fixture)
@@ -81,3 +84,37 @@ error_fixtures:
     http_status: null
     userMessage: "No network connection. Check your connection and retry."
     isRetriable: true
+
+# ── Per-state fixtures (added 2026-08-02 via /idea-sync) ─────────────────────
+# ui.yaml declares states: [loading, content, empty, unsupported, error]. error_fixtures above
+# covered `error` well; `empty` and `unsupported` had nothing.
+states:
+  - scope: content
+    direct_debits: all
+    activeCount: 3
+    inactiveCount: 1
+
+  - scope: loading
+    direct_debits: all
+
+  - scope: empty
+    direct_debits: []
+    activeCount: 0
+    inactiveCount: 0
+    message: "No direct debits."
+    detail: "Direct debits set up with companies you pay will appear here."
+    _counts_must_zero: "The Active/Inactive summary is derived from the list — it has to zero with it or the header contradicts the body."
+
+  - scope: unsupported
+    direct_debits: []
+    message: "Your bank does not support viewing direct debits here."
+    detail: "You can still see them in your bank's own app."
+    _why_distinct_from_empty: >-
+      OBIE makes the direct-debits resource optional, so a 404 means "not readable", not "none
+      exist". Telling a customer with four live mandates that they have none would be a false
+      statement about money leaving their account. Same reasoning as standing-orders and
+      scheduled-payments, which share this state.
+
+  - scope: error
+    error_fixtures: all
+    _cross_ref: "Full per-scenario error shapes are in error_fixtures above — this entry just binds the state to them."

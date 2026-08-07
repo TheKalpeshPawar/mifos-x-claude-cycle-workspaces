@@ -11,15 +11,19 @@
 
 schema_version: "1.0.0"
 project: mifos-x-open-banking
-generated_at: "2026-08-02T05:29:21Z"
-generated_by: "/idea-sync STEP 0.TRAIN.GEN (source-truth reverse pass)"
+generated_at: "2026-08-04T16:05:00Z"
+generated_by: "/idea-sync STEP 0.TRAIN.GEN (roster re-measure)"
 previous_generation:
-  at: "2026-07-31T19:50:00Z"
+  at: "2026-08-02T05:29:21Z"
   what_changed: >-
-    component_inventory re-measured (414 -> 430, plus the walker/components[] reconciliation),
-    action_contract.coverage_holes closed, and a new test_tags section added recording the
-    259 source-derived bindings this pass wrote across 20 features.
-roster_size: 23
+    Re-measured against the live 46-feature idea-layer. The prior generation recorded
+    roster_size 23 / 430 components / navigation_graph{nodes: 23, flows: 9} while the roster had
+    already grown to 46 features / 1033 components / 47 APP_FLOW nodes / 3 flow files — the file
+    had been half-refreshed (its dto_registry section was rewritten 2026-08-04, the roster,
+    component, state and navigation sections were not). RULE-TRAINING-001 makes this the O(1)
+    read before any project-layer Write/Edit, so every generator reading it was being handed a
+    roster half the real size and a flow list naming 9 files none of which exist.
+roster_size: 46
 sources:
   - idea-layer/screens/*/ui.yaml          # component + state inventory
   - idea-layer/screens/*/api.yaml         # operation verbs
@@ -33,57 +37,73 @@ sources:
 # Frequency across all 23 ui.yaml files. Reuse the established type before
 # inventing one; a new type needs a registry row (see registry_tiers below).
 component_inventory:
-  # Re-measured 2026-08-02 by /idea-sync (source-truth pass). The prior figures were one pass
-  # behind: they predated the 07-31 design-validate fixes (6 components added to send-money,
-  # transactions#search_field retyped text_field -> search_bar), the 07-31 CROSS_LEAK sibling
-  # repairs, and the account_description_card this pass added to account-detail.
-  total_typed_components: 430
-  walker_block_count: 431               # G-ACTION-CONTRACT, re-run 2026-08-02: 23 files, 0 violations
+  # Re-measured 2026-08-04 by /idea-sync across all 46 features. The prior figures (430 typed
+  # components, 36 types) were measured when the roster was 23 features and were never re-run
+  # as the roster doubled.
+  total_typed_components: 1033
+  walker_block_count: 1033              # action-contract-walk.ts, re-run 2026-08-04: 46 files, 0 violations
+  distinct_types: 51
   count_reconciliation: >-
-    The two numbers differ by one and both are correct. action-contract-walk.ts counts EVERY
-    node declaring a string `type:` anywhere in the document, which sweeps in two nodes that
-    are not components: settings/ui.yaml#preferences[dark_theme_config].type (a value type,
-    "string") and statements/ui.yaml#layout.content.type (a per-state layout hint,
-    "lazy_column"). by_type below counts components[] entries only. Recorded because
-    "total_typed_components: 414 # == G-ACTION-CONTRACT block count" asserted the two were the
-    same measure, and they are not.
+    action-contract-walk.ts and by_type below now agree at 1033: both count every node declaring
+    a string `type:`, reached by full recursive descent rather than a components[]-only walk.
+    The separate bash gate (framework-verify-action-contract.sh) reports 1334 for the same files
+    because it opens a buffer on any `- <key>:` list item and keeps those carrying a `type:`,
+    which additionally sweeps in typed nodes outside components[] (validation rules such as
+    `min`/`max_length`/`pattern`/`required`, and per-state layout hints). That is a superset, so
+    nothing is skipped; it is not the same measure as this inventory.
   by_type:
-    text: 82
-    button: 53
+    text: 332
+    stack: 104
+    button: 94
+    card: 55
+    box: 52
     empty_state: 45
-    list_item: 35
-    chip: 27
-    list: 25
-    progress_indicator: 21
+    list_item: 39
+    chip: 30
+    icon: 30
+    input: 28
+    divider: 27
+    list: 27
     section_header: 19
-    card: 19
-    stack: 16
-    divider: 10
-    shimmer: 9
-    icon_button: 8
-    column: 7
-    image: 5
-    icon: 5
-    text_field: 4                       # was 5 — transactions#search_field retyped to search_bar (07-31)
-    spacer: 4
-    row: 4
-    info_row: 4                         # new 2026-07-31 — the four send-money review rows
+    progress_circular: 18
+    image: 14
+    banner: 9
+    icon_button: 9
+    shimmer: 8
+    skeleton: 8
+    spacer: 8
+    link: 7
+    badge: 6
+    status_chip: 6
+    chip_group: 5
+    text_field: 5
     error_state: 4
-    badge: 4
-    chip_group: 3
-    skeleton: 2
-    search_bar: 2                       # was 1 — beneficiaries + transactions
-    chip_row: 2
+    info_row: 4
+    row: 4
+    loading_indicator: 3
+    progress_linear: 3
     avatar: 2
-    text_button: 1
-    step_indicator: 1                   # new 2026-07-31 — send-money#form_step_indicator
-    stat_block: 1
-    snackbar: 1
+    bottom_sheet: 2
+    chip_row: 2
+    date_picker: 2
+    dialog: 2
+    search_bar: 2
+    menu: 1
+    progress: 1
+    progress_bar: 1
+    review_card: 1
     select: 1
-    review_card: 1                      # new 2026-07-31 — send-money#review_summary
-    dialog: 1
-    bottom_sheet: 1
-    banner: 1
+    snackbar: 1
+    stat_block: 1
+    step_indicator: 1
+    tab_bar: 1
+    text_button: 1
+  non_component_typed_nodes:
+    note: >-
+      These `type:` values are field-validation vocabulary, not renderable components. They are
+      inside the 1033 because the walker is a recursive `type:` scan. Do NOT treat them as
+      component types or add registry rows for them.
+    values: [required, pattern, max_length, max_dynamic, min]
 
   registry_tiers:
     note: >-
@@ -117,14 +137,40 @@ component_inventory:
       / dynamic content / coming soon) even when describing a genuinely unbuilt
       route — record that fact in implementation_status instead.
     coverage_holes:
-      # CLOSED 2026-07-31 framework-side, removed from this file 2026-08-02.
-      # The block used to list home#view_all_transactions_link (text_button) and
-      # settings#theme_row (select) as unevaluated. action-contract-walk.ts widened its
-      # INTERACTIVE set on 2026-07-31 to include text_button, select and the other types
-      # registered in layers/idea/templates/registry/actions.yaml; both now evaluate and PASS.
-      # Verified 2026-08-02 by re-running the walker: 431 blocks, 0 violations, 0 unevaluated.
-      status: none
-      last_verified: "2026-08-02"
+      # REOPENED 2026-08-04. The 2026-08-02 entry recorded "status: none, 0 unevaluated" — true
+      # for the 23-feature roster it was measured on, stale for the 46-feature roster since.
+      status: open
+      last_verified: "2026-08-04"
+      unevaluated_on_click: 95
+      detail: >-
+        95 components carry on_click but their `type` sits outside the walker's INTERACTIVE set,
+        so a severity:error no-waiver rule SKIPS them. Every one of the 10 types is genuinely
+        interactive (tappable containers, icons, pickers, sheets, tab bars) — this is a coverage
+        hole, not a correct exclusion. Measured by widening the set in a scratch copy: all 95
+        become AC1 failures, i.e. all 95 have on_click and NO action_contract block at all.
+      by_type: {box: 44, stack: 31, icon: 9, text: 3, chip_group: 2, date_picker: 2,
+                bottom_sheet: 1, image: 1, menu: 1, tab_bar: 1}
+      by_feature: {consent-manager: 23, notifications: 23, transaction-tags: 12,
+                   fx-rates: 7, send-money-confirm: 7, standing-order-create: 5, products: 4,
+                   atm-locator: 3, send-money-amount: 1}
+      by_feature_correction_2026_08_07: >-
+        card-detail (8) and cards (2) removed — both screens were DELETED by the repository
+        owner on 2026-08-07, so those 10 components no longer exist and cannot be given an
+        action_contract. That drops the reachable work from 95 to 85. card-detail was the
+        fourth-largest offender on this list; its 8 were the freeze/reveal/limit affordances,
+        which is a fitting last word — they were tappable containers wired to a card write OBIE
+        does not have. `unevaluated_on_click: 95` and `by_type` above are NOT hand-adjusted:
+        by_type cannot be re-derived per feature without re-walking, and the count is stale for
+        a second reason anyway (transaction-tags 12, fx-rates 7, send-money-confirm 7,
+        standing-order-create 5 and send-money-amount 1 name features deleted on 2026-08-06 and
+        were never corrected — another 32 unreachable). Honest reachable total is ~53 across
+        consent-manager, notifications, products and atm-locator. Re-run
+        `--report-untyped` before acting on any figure here.
+      sequencing: >-
+        Do NOT widen the framework INTERACTIVE set before the blocks exist — that turns a
+        severity:error gate red across every project with no data to satisfy it. Author the 95
+        action_contract blocks first; the widening is then a no-op-safe tightening.
+      inspect_with: "deno run -A .claude-runtime/scripts/action-contract-walk.ts --report-untyped"
 
 # ─── Test tags ────────────────────────────────────────────────────────────────
 # Added 2026-08-02 by /idea-sync (source-truth pass). Before that pass only 7 of 23 features
@@ -133,8 +179,12 @@ component_inventory:
 test_tags:
   rule: RULE-KMP-COMPOSE-UITEST-001
   direction: source-is-truth
-  bound_across_roster: 259
-  coverage: "20 of 23 features bound; the 3 PISP features are deferred until their modules exist"
+  bound_across_roster: 254           # re-counted 2026-08-04 across all 46 features
+  coverage: >-
+    20 of 46 features carry at least one test_tag. The 2026-08-02 entry read "20 of 23", which
+    was near-complete coverage; the same 20 features against a 46-feature roster is 43%. The 26
+    unbound features are the roster growth since — they have no *TestTags.kt in source to copy
+    from yet, so binding them is blocked on implementation, not on this file.
   contract: >-
     Copy the tag string VERBATIM from feature/{f}/.../{F}TestTags.kt onto the matching
     ui.yaml component's `test_tag:`. The value is what onNodeWithTag asserts on, so a
@@ -174,14 +224,18 @@ state_patterns:
   note: >-
     BaseViewModel<S,E,A> + ScreenDataStream + Store5. Screens declare states in ui.yaml
     and each declared state gets a rendered preview under screens/{f}/preview/{state}.html.
+  shape: >-
+    `states:` is a MAP keyed by state name, not a list, and some files carry a scalar
+    `initial_state:` inside that map while others put it at document level. A reader that
+    assumes a list silently counts zero states.
   canonical_four:
     description: The baseline every data-backed screen carries.
     states: [loading, content, error, empty]
-    coverage:
-      content: 21    # of 23 screens
-      error: 21
-      loading: 19
-      empty: 17
+    coverage:                  # re-measured 2026-08-04 over 46 screens
+      content: 41
+      error: 38
+      loading: 36
+      empty: 30
   domain_states:
     description: >-
       Consent- and payment-journey screens add states beyond the canonical four. These
@@ -189,7 +243,10 @@ state_patterns:
       same stage recurs rather than coining a synonym.
     consent_journey: [intro, checking, awaiting, authorising, authorised, exchanging,
                       access_denied, error_auth, security_error, revoke_confirm, revoking]
-    payment_journey: [validating, submitting, success]
+    payment_journey: [validating, submitting, success, created, failed, review]
+    connectivity: [no_network, unauthenticated]   # 7 screens each — added since the 08-02 pass
+    editing: [edit_mode, view_tags, save_success, cancel_confirm, populated, idle, navigating]
+    card_lifecycle: [frozen]
     platform: [unsupported]   # 3 screens — capability not available on the target platform
 
 # ─── API patterns ─────────────────────────────────────────────────────────────
@@ -199,10 +256,15 @@ api_patterns:
     This project OWNS NO backend and NO database. idea-layer/server/apis/* are CLIENT
     contracts for Ktorfit codegen against the HSBC UK/CE sandbox (OBIE Read/Write
     Standard) — never owned schema. RULE-IDEA-SERVER-DATA-001 owned-DB checks SKIP here.
-  operations_by_verb:
-    GET: 28        # AIS read surface — accounts, balances, transactions, standing orders, ...
-    POST: 5        # PIS write surface — payment consent + submission (PSU instruction only)
-    DELETE: 1      # consent revocation
+  shape: >-
+    Operations live under `api:` (a list), NOT `operations:`, and the HTTP verb is the first
+    token of the `endpoint:` string ("GET /obp/v5.1.0/..."), not a separate `method:` field.
+    17 of 46 features declare a non-empty api[].
+  operations_by_verb:            # re-measured 2026-08-04 over 46 features
+    GET: 20        # AIS read surface — accounts, balances, transactions, standing orders, ...
+    POST: 10       # PIS write surface + consent creation (PSU instruction only)
+    DELETE: 3      # consent revocation, standing-order + tag deletion
+    PUT: 3         # standing-order edit, card controls, profile update
   role:
     AISP: read-only account information
     PISP: >-
@@ -213,6 +275,51 @@ api_patterns:
       consent check as an explicit state, not an implicit precondition.
     - requires_permission on an operation drives platform permission codegen
       (RULE-PERMISSION-CODEGEN-001).
+
+# ─── DTO registry ─────────────────────────────────────────────────────────────
+# Captured 2026-08-04 by /idea-data-dtos Step 7 (RULE-TRAINING-EVOLVE-001). This section was
+# owed on the 08-04 run that grew the registry 55 -> 90 and was not written then; the gap was
+# flagged by /idea-verify-e2e as TRAINING-CAPTURE-SKIPPED across two runs before being closed.
+dto_registry:
+  total: 90
+  authority: source
+  authority_note: >-
+    The registry is bound to SOURCE, not to the OBIE wire vocabulary. Bindings came from
+    core/network/api/Aisp.kt return types and core/data/banking/*Repository.kt stream types.
+    A DTO name in api.yaml#response_dto names the DOMAIN model the repository yields, not the
+    envelope the bank sends — the mapper sits between them.
+  cohorts:
+    source_bound:
+      count: 35
+      detail: >-
+        Every one carries source.source_binding naming the Kotlin file it was derived from.
+        These are what screens/*/api.yaml resolves against.
+    obp_era:
+      count: 55
+      detail: >-
+        Pre-existing, consumed by screens/*/data-flow.yaml. 40 of their used_by[].api_id values
+        name OBP-vocabulary operations that exist in no api.yaml — live D5 drift, left visible
+        rather than papered over. Do NOT treat these as a naming precedent for new work.
+  before_authoring_a_dto:
+    - Check whether the shape already exists in core/model/banking (domain) or
+      core/network/model (wire). Author from source; do not invent a name.
+    - Prefer the DOMAIN model where a repository yields one. Fall back to the wire type only
+      where no domain model exists — that is why the PISP and consent-create entries are wire.
+    - "A DTO with no Kotlin counterpart MUST declare source.spec_ahead_of_source: true and say
+      in source_binding_note where its fields actually came from. Six entries do."
+  naming_lesson: >-
+    The 2026-07-28 reverse-sync wrote 17 OBIE names (OBReadAccount6, OBWriteDomesticConsent4, …)
+    into api.yaml. Those names appear in ZERO Kotlin files — `rg 'OBRead|OBWrite' --type kt`
+    returns nothing — and no field schema for them existed anywhere in the project, so they
+    could be neither resolved nor authored. RULE-DTO-REGISTRY-001 D2 failed on 21 features for
+    a week. The lesson is not "OBIE names are bad"; it is that a spec name with no source
+    counterpart and no field schema is unresolvable by construction.
+  worked_example:
+    endpoint: "GET /open-banking/v3.1/aisp/accounts"
+    wire: "AccountsResponse (core/network/model/ais/accounts/) — the OBIE Data.Account[] envelope"
+    domain: "BankAccount (core/model/banking/BankAccount.kt) — what AccountsRepository.accountsStream yields"
+    registered_as: BankAccount
+    why: "response_dto names what the consumer receives after mapping, which is the domain model."
 
 # ─── Design tokens ────────────────────────────────────────────────────────────
 design_tokens:
@@ -251,27 +358,30 @@ design_tokens:
 
 # ─── Navigation graph ─────────────────────────────────────────────────────────
 navigation_graph:
+  # Re-measured 2026-08-04. The prior entry recorded nodes: 23 and a 9-name flow list; the
+  # roster is 46 screens and the flows were consolidated into 3 files. NONE of the 9 names
+  # recorded there exists as a file — they were the pre-consolidation flow slugs.
   source: idea-layer/APP_FLOW.mmd
-  nodes: 23
-  unique_edges: 80
-  non_screen_endpoints: 8
-  unreachable_screens: 0
+  nodes: 47                    # 46 screens + 1 non-screen endpoint node
+  edges: 73
+  unreachable_screens: 0       # G-ORPHAN-ROUTE PASS 2026-08-04
   flows:
-    count: 9
+    count: 3
+    source_dir: idea-layer/flows/
     names:
-      - account-browsing
-      - consent-expired
-      - consent-management
-      - home-dashboard
-      - onboarding-consent
-      - recurring-and-statements
+      - app-main
+      - consumer-banking
       - send-money-payment
-      - settings-and-profile
-      - transaction-review
+    note: >-
+      The 9 pre-consolidation flow slugs (account-browsing, consent-expired,
+      consent-management, home-dashboard, onboarding-consent, recurring-and-statements,
+      settings-and-profile, transaction-review, and the surviving send-money-payment) are now
+      journeys WITHIN consumer-banking.yaml and app-main.yaml. Do not author against the old
+      slugs — only send-money-payment still names a file.
   conventions:
     - home and settings are reachable via the app-shell bottom nav, not a screen edge.
-    - consent-callback is reachable only via flows/onboarding-consent.yaml (an external
-      redirect return), so orphan-screen checks must count flow reachability, not just nav.
+    - consent-callback is an external redirect return, reachable only via flow entry, so
+      orphan-screen checks must count flow reachability, not just nav edges.
 
 # ─── Tech stack ───────────────────────────────────────────────────────────────
 tech_stack:
@@ -289,7 +399,7 @@ tech_stack:
   gradle: "9.5"
   android_gradle_plugin: "8.12.3"
   platforms: [android, ios, desktop, web]
-  primary_flavor: consumer      # fieldOfficer agent-banking flavor is OUT OF SCOPE
+  primary_flavor: consumer      # single variant — no product flavors since 2026-08-02
   template_derived_modules:
     note: >-
       core/**, core-base/** and deployment/** derive from mifos-x/kmp-project-template.

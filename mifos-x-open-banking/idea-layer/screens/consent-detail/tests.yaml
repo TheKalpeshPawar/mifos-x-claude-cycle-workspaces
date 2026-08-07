@@ -101,15 +101,23 @@ scenarios:
       - "Local ConsentId and PSU token cleared"
       - "App navigates to consent-list screen"
 
+  # Corrected 2026-08-03 (/idea-sync "fix the issues"). This scenario asserted the Expired chip
+  # renders in `warning`. Two faults in one token: (a) `warning` is not a colour role in this
+  # design system — design-tokens.yaml 2.1.0 ships the M3 role set and there is no warning role
+  # and no amber; (b) DESIGN.md 1.3.0 maps Expired -> `error`, "reserved for Revoked, Rejected
+  # and Expired, where access is actually gone". `tertiary` is the EXPIRING tone (act soon, still
+  # live), which TC-CDETAIL-010 three rows below already spells correctly as tertiaryContainer.
+  # Same correction consent-list took on this date (TC-CLIST-007) and statement-detail took for
+  # its green/tertiary money roles; neither reached this file at the time.
   - id: TC-CDETAIL-009
     priority: medium
-    description: "Expired consent renders status chip in warning colour"
+    description: "Expired consent renders status chip in the error colour"
     state: content
     given: "consent-status GET returns Status=Expired"
     when: "Screen mounts"
     then:
       - "Status chip label shows 'Expired'"
-      - "Status chip colour is 'warning' (not primary)"
+      - "Status chip colour is 'error' (not primary, and not the tertiary expiring tone)"
       - "'Reconfirm before expiry' button still visible"
 
   - id: TC-CDETAIL-010

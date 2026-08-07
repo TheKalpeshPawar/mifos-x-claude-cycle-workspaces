@@ -1,90 +1,90 @@
----
-ui_yaml_sha: 54a097fb67c3115dd7ba3cc68bc7e927709831cbacc5a9ed03ce54409ef99cb3
-design_md_hash: f734ecfba28b3b0688cbd7ca6f3d7fca27febb15fd021d72a4518ae0e3a4200d
-app_shell_hash: 7b9c63f9aee4f5b5005b1d7533e7f5feab6427f398954987c34ee0f382b0ed69
-design_read_hash: 513c061d12f3a90e84d6e98e1e037b131e59fa3ca5c5f3c0abfc6ba87d24bcaf
-content_hash: b15845f6e90ed77e18e05be23399eb5a63fb60b674db2b7de46c2b5f59b71fb4
+# payment-consent · state: checking
 
-design_read_aesthetic: minimalist-ui
-design_read_dials: {variance: 3, motion: 2, density: 5}
-aesthetic_variant_override: null
-archetype: empty_state
+> Feature: payment-consent · State role: loading (step 3 of 3)
+> Archetype: headless / transitional
+> Design system: Open Banking — Trust Blue (Material 3, seed #266489)
+> Every quoted string is VERBATIM from `_strings/strings.yaml`. Do not paraphrase.
 
-feature: payment-consent
-state: checking
-state_visibility: checking
-
-project_id: 'null'
-design_system_id: 'null'
-
-generated_by: stitch-prompt-build.ts v2.0.0
-prompt_template_version: stitch-per-state-v3.0.0
-craft_rules_version: v1.0.0
 ---
 
-# payment-consent — checking state
+## What This State Is
 
-> Auto-generated from screens/payment-consent/ui.yaml @ SHA ad57b1b6002abc74
-> Stitch DesignSystem: (pending DESIGN.md upload — run /idea-feature-stitch sub-plan 02)
-> DO NOT redeclare colors / fonts / spacing — they live in DESIGN.md.
+The app polls the consent endpoint with a client-credentials token until `Data.Status` reaches
+`AUTH`. The poll is load-bearing: submitting against a consent that is not Authorised returns
+`400 U009` on every family.
 
-↓↓↓ MOCKUP PROMPT
+Schedule: initial 2 000ms, backoff 1.5×, max interval 15 000ms, max total 180 000ms. At the
+deadline the state stays rendered — the PSU may still be at the bank — and `check_again_button`
+becomes the primary affordance.
 
-> DO NOT invent navigation, tabs, or screens beyond the declared app-shell (Home, Accounts, Pay, More) plus the composition below. Every nav item you render MUST come from that list.
-> Only elements that navigate or perform an action may look tappable (cursor, ripple, pressed state). DO NOT add tap affordances to decorative content — page titles, section headings, avatars, standalone icons, badges, and static labels are NOT interactive.
+**Critical poll rule**: `StatusUpdateDateTime` is NEVER the poll signal. All five authorised
+consents in the corpus went `AWAU → AUTH` with it unchanged. Read `Data.Status` only.
 
-## Archetype: empty_state
+---
 
-## Layout
-- type: scrollable_column
-- padding: default
-- alignment: start
-- responsive: any multi-column region MUST be mobile-first and collapse to a single column at narrow/phone widths — never a fixed multi-column grid with no single-column fallback.
+## Visual Layout
 
-## Composition (top → bottom)
-1. **progress_indicator** (#authorising_indicator)
-2. **text** (#progress_detail) — content: "{strings.payment_consent.progress_detail}"
-3. **button** (#check_again_button) — label: "{strings.payment_consent.check_again}", on_click: { action: check_again }
-4. **empty_state** (#authorised_state) — title: "{strings.payment_consent.authorised_title}", icon: "verified_user"
-5. **empty_state** (#error_state) — "{strings.payment_consent.error_title}"
-   - **button** (#restart_authorisation_button) — label: "{strings.payment_consent.restart}", on_click: { action: retry_authorisation }
-   - **button** (#abandon_button) — label: "{strings.payment_consent.abandon}", on_click: { action: abandon_payment }
+**Shell**: identical to `validating` and `exchanging` — `TopAppBar` titled "Authorising
+payment", no bottom navigation, no leading icon.
+**Content**: vertically centred column, padding `spacing.md`, gap `spacing.lg`.
 
-## State-specific behavior
-- Custom state "Checking" — render per the composition below.
+1. **`CircularProgressIndicator`** (`authorising_indicator`) — indeterminate, 48 × 48dp,
+   stroke 4dp, `colors.primary`. contentDescription: "Authorising your payment"
+2. **`Text`** (`progress_detail`) — `bodyLarge`, `colors.on_surface`, centred, max 280dp.
+   Content: "Confirming with your bank. This usually takes a few seconds."
+3. **`TextButton`** (`check_again_button`) — unique to this state. Label "Check again",
+   `labelLarge`, `colors.primary`, min height 48dp, padding horizontal `spacing.lg` / vertical
+   `spacing.sm`, radius `radius.full`. Action `check_again` → one immediate re-poll.
+   contentDescription: "Check with your bank again for the authorisation result"
 
-## Content source manifest
-- (no demo collections bound for this state)
+It is the ONLY interactive component across the three loading states. The automatic poll
+continues in parallel — tapping it adds a single immediate call on top.
 
-## Components (vocabulary used in this prompt)
-- (no named components extracted — see composition)
+**One string, three states**: `ui.yaml` binds the SAME `progress_detail` and `progress_label`
+keys across `validating`, `exchanging` and `checking`, and the catalogue holds ONE value for
+each. Per-phase wording ("Waiting for your bank to confirm…") is UNSOURCED — no key exists.
 
-## Shell (app-shell resolved for this state)
-- Home: navigates to home
-- Accounts: navigates to accounts
-- Pay: navigates to send-money
-- More: navigates to settings
-- Render MUST keep nav/bar elements consistent with the list above — present or absent, never partial.
+---
 
-## Tokens (design-tokens roles consumed)
-- Colors: primary / secondary / surface / on-surface / on-surface-variant / error (M3 standard roles).
-- Typography: body-large / title-large (M3 standard roles).
-- Spacing: gap.sm / gap.md / gap.lg.
-- ALL token references are by name from the uploaded design system — no hex literals, no inline size values.
+## Token Reference
 
-## Self-Validation Checklist (MANDATORY)
+`colors.surface` (background) · `colors.on_surface` (top bar title, progress label) ·
+`colors.primary` (indicator stroke, check-again label) · `spacing.md/.lg/.sm` 16/24/8dp ·
+`radius.full` 9999dp · `icon.xl` 48dp. All by name — no hex literals.
 
-Before returning the rendered mockup, verify ALL of these are true. If any fails, FIX the output and re-render.
+---
 
-- [ ] **Per-state shape:** the render shows ONLY this state ("checking"). Do not blend multiple states into one mockup.
-- [ ] **Real content:** every text label, image, and data point reflects the content source manifest above — no numbered generic items, no filler text, no dummy text, no empty strings.
-- [ ] **Token fidelity:** colors come from the uploaded design system (primary/secondary/surface/etc.) by name; spacing comes from declared scale tokens. No invented hex codes, no invented size literals.
-- [ ] **Component vocabulary:** every component in the render maps to a named design-system component (Card, FAB, BottomBar, etc.) — no invented or off-system components.
-- [ ] **Archetype honored:** the layout follows the "empty_state" archetype skeleton — composition order top → bottom matches the Composition section.
-- [ ] **App-shell parity:** if a bottom nav, top app bar, or FAB appears in the render, it matches the resolved shell from the app-shell config. Shell elements are either present-and-consistent OR absent — never partial.
+## Strings — verbatim from `_strings/strings.yaml`
 
-If any of these fail and the fix isn't clear → halt rendering and surface "Self-validation failed at: {checkpoint}."
+| Key | Value |
+|---|---|
+| `payment_consent.screen_title` | "Authorising payment" |
+| `payment_consent.progress_label` | "Authorising your payment" |
+| `payment_consent.progress_detail` | "Confirming with your bank. This usually takes a few seconds." |
+| `payment_consent.check_again` | "Check again" |
+| `payment_consent.check_again_a11y` | "Check with your bank again for the authorisation result" |
 
-Return ONLY when all 6 checkpoints pass.
+---
 
-↑↑↑ MOCKUP PROMPT
+## Poll Family Resolution
+
+Path resolves from the `paymentFamily` nav param over `/obie/open-banking/v4.0/pisp/{path}/
+{consentId}`, `{path}` ∈ `{domestic,international}-payment-consents`,
+`{domestic,international}-scheduled-payment-consents`,
+`{domestic,international}-standing-order-consents`, `domestic-vrp-consents`.
+
+---
+
+## Transitions Out
+
+`AUTH` → `authorised` · `RJCT` → `error(ConsentRejected)` · deadline reached still `AWAU` →
+stays `checking` with check-again prominent · network failure → `error(NetworkError)`.
+
+---
+
+## What This State Must NOT Do
+
+- Do NOT poll `StatusUpdateDateTime`.
+- Do NOT call a different family's consent path — `paymentFamily` resolves it.
+- Do NOT abandon the consent on deadline. Timeout is non-terminal.
+- Do NOT add a progress percentage or countdown. The bank exposes no reliable timeline.

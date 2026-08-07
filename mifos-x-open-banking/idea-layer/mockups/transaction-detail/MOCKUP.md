@@ -12,13 +12,13 @@ Vertical scroll with top app bar ("Transaction Details" + back + share); no bott
 │ ← Transaction Details        [↗]  │  ← top app bar
 ├────────────────────────────────────┤
 │                                    │
-│           -£42.50                  │  ← amount_hero_section (bg #1800B1)
-│        ✓ Completed                 │  ← status_badge (green pill)
+│           -£42.50                  │  ← amount_hero_section (bg `primary`)
+│        ✓ Settled                   │  ← status_badge (`primaryContainer` pill)
 │                                    │
 ├────────────────────────────────────┤
 │ ┌──────────────────────────────┐   │
 │ │ [Tesco Logo] Tesco Supermarket│  │  ← merchant_card (elevation 4,
-│ │             [Groceries]       │  │    margin_top -20 overlap)
+│ │             [Groceries]       │  │    negative top margin overlap)
 │ └──────────────────────────────┘   │
 │                                    │
 │ ┌──────────────────────────────┐   │
@@ -35,8 +35,8 @@ Vertical scroll with top app bar ("Transaction Details" + back + share); no bott
 │ │                DE89 3704...0044 │ │
 │ └──────────────────────────────┘   │
 │                                    │
-│ [Download Receipt]                 │  ← outlined button #1800B1
-│      🚩 Report an Issue            │  ← #FF5252 link
+│ [Download Receipt]                 │  ← outlined button `primary`
+│      🚩 Report an Issue            │  ← `error` link
 └────────────────────────────────────┘
 ```
 
@@ -45,46 +45,46 @@ Vertical scroll with top app bar ("Transaction Details" + back + share); no bott
 ## Components
 
 ### amount_hero_section — Hero
-- **Background:** #1800B1, full width, padding h/v: 24/28 top, 36 bottom, align: center
-- **amount_hero_value:** "-£42.50" — typography: display_large, color: #FF8A80 (soft red on dark for contrast), font_weight: 700, text_align: center
+- **Background:** `primary`, full width, padding horizontal `spacing.lg`, top `spacing.lg`, bottom `spacing.xl`, align: center
+- **amount_hero_value:** "-£42.50" — typography: `displayLarge`, color: `onPrimary`, Roboto Mono, font_weight: 700, text_align: center
 - **status_badge_row:** centered horizontally below amount
-  - Pill: background #4CAF5033 (20% green), border_radius 20, padding h/v 16/6
-  - Inner row: check_circle icon (14px, #69F0AE) + "Completed" text (label_medium, #69F0AE)
+  - Pill: background `primaryContainer`, border_radius `radius.lg`, padding horizontal `spacing.md` vertical `spacing.xs`
+  - Inner row: check_circle icon (`icon.xs`, `onPrimaryContainer`) + "Settled" text (`labelMedium`, `onPrimaryContainer`)
 
 ### merchant_card
-- **Position:** margin_horizontal 20, margin_top -20 (overlaps hero), margin_bottom 16
-- **Style:** background #FFFFFF, border_radius 20, padding 20, elevation 4
-- **merchant_row (horizontal, spacing 16):**
-  - **merchant_logo:** 56×56 circle, background #E8F5E9, border_radius 28 — Tesco logo image
+- **Position:** margin_horizontal `spacing.md`, negative top margin of `spacing.md` (overlaps hero), margin_bottom `spacing.md`
+- **Style:** background `surfaceContainerLowest`, border_radius `radius.lg`, padding `spacing.md`, elevation 4
+- **merchant_row (horizontal, spacing `spacing.md`):**
+  - **merchant_logo:** 56×56 circle, background `primaryContainer`, border_radius `radius.full` — Tesco logo image
   - **merchant_info (vertical, flex 1):**
-    - "Tesco Supermarket" — title_large, #1A1A1A, weight 600
-    - category_badge: "Groceries" chip — background #E8F5E9, border_radius 6, padding h/v 8/4, text label_small, color #2E7D32, align_self flex_start, margin_top 4
+    - "Tesco Supermarket" — `titleLarge`, `onSurface`, weight 600
+    - category_badge: "Groceries" chip — background `secondaryContainer`, border_radius `radius.xs`, padding horizontal `spacing.sm` vertical `spacing.xs`, text `labelSmall`, color `onSecondaryContainer`, align_self flex_start, margin_top `spacing.xs`
 
 ### details_card
-- **Style:** background #FFFFFF, border_radius 16, padding 20, margin_horizontal 20, elevation 1
-- **Each field row:** horizontal layout, space-between, padding_bottom 16 (except last row)
-- **Between each row:** #F0F0F0 divider, margin_bottom 16
-- **Label style:** label_small, #666666, letter_spacing 0.4
-- **Value style:** body_medium, #1A1A1A, weight 500
+- **Style:** background `surfaceContainerLowest`, border_radius `radius.lg`, padding `spacing.md`, margin_horizontal `spacing.md`, elevation 1
+- **Each field row:** horizontal layout, space-between, padding_bottom `spacing.md` (except last row)
+- **Between each row:** `outlineVariant` divider (`border.thin`), margin_bottom `spacing.md`
+- **Label style:** `labelSmall`, `onSurfaceVariant`, letter_spacing 0.4
+- **Value style:** `bodyMedium`, `onSurface`, weight 500
 
 | Row | Label | Value |
 |---|---|---|
 | detail_date_row | "Date & Time" | "25 May 2026, 14:32" |
-| detail_reference_row | "Reference" | "SEPA-2026051500123" (monospace, body_small) + copy icon |
+| detail_reference_row | "Reference" | "SEPA-2026051500123" (Roboto Mono, `bodySmall`) + copy icon |
 | detail_type_row | "Transaction Type" | "SEPA Credit Transfer" |
-| detail_from_row | "From Account" | "Primary Checking" (weight 500) + "...0130" (body_small, #888888, monospace) |
-| detail_to_row | "To Beneficiary" | "Tesco PLC" (weight 500) + "DE89 3704...0044" (body_small, #888888, monospace) |
+| detail_from_row | "From Account" | "Primary Checking" (weight 500) + "...0130" (`bodySmall`, `onSurfaceVariant`, Roboto Mono) |
+| detail_to_row | "To Beneficiary" | "Tesco PLC" (weight 500) + "DE89 3704...0044" (`bodySmall`, `onSurfaceVariant`, Roboto Mono) |
 
 ### download_receipt_button
-- **Style:** variant=outlined, border_color #1800B1, text_color #1800B1, border_radius 12
-- **Padding:** vertical 14, margin_horizontal 20, margin_bottom 12
-- **Label:** "Download Receipt", typography label_large
-- **Leading icon:** download
+- **Style:** variant=outlined, border_color `outline` (`border.thin`), text_color `primary`, border_radius `radius.md`
+- **Padding:** vertical `spacing.md`, margin_horizontal `spacing.md`, margin_bottom `spacing.md`
+- **Label:** "Download Receipt", typography `labelLarge`
+- **Leading icon:** download (`icon.sm`)
 
 ### report_issue_row
-- **Layout:** horizontal, centered, padding_bottom 24
-- **flag icon:** 16px, #FF5252, padding_right 6
-- **"Report an Issue" link:** label_medium, #FF5252 — taps open dispute form
+- **Layout:** horizontal, centered, padding_bottom `spacing.lg`
+- **flag icon:** `icon.xs`, `error`, padding_right `spacing.xs`
+- **"Report an Issue" link:** `labelMedium`, `error` — taps open dispute form
 
 ---
 
@@ -105,7 +105,7 @@ Vertical scroll with top app bar ("Transaction Details" + back + share); no bott
 | Element | Value |
 |---|---|
 | Transaction amount | -£42.50 |
-| Status | Completed |
+| Status | Settled |
 | Merchant | Tesco Supermarket |
 | Category | Groceries |
 | Date & Time | 25 May 2026, 14:32 |
@@ -118,14 +118,14 @@ Vertical scroll with top app bar ("Transaction Details" + back + share); no bott
 
 ## Design Notes
 
-- **Amount color on hero:** #FF8A80 (a lighter red) is used instead of #FF5252 on the #1800B1 dark background to meet WCAG AA contrast (ratio ~4.8:1 vs ~3.1:1 for the darker red).
-- **Hero overlap pattern:** merchant_card uses margin_top -20 to float above the hero bottom edge — the elevation 4 shadow makes it feel physically lifted off the hero. This is the same technique used on account-detail for visual continuity across the banking flow.
-- **Status badge:** Translucent green (#4CAF5033) pill with #69F0AE (Material Design "tertiary" on dark) gives a "payment cleared" signal without harsh full-saturation green on the brand purple.
-- **Reference monospace:** SEPA-2026051500123 displayed in monospace body_small allows digit grouping to read as a code, distinct from prose text.
-- **Masked IBANs:** Source shows "...0130" (last 4 chars), destination shows "DE89 3704...0044" — partial disclosure protects counterparty privacy while giving enough context for recognition.
-- **No bottom nav:** This is a leaf screen — removing the nav bar maximises vertical space for the structured details and signals there is no lateral navigation from this context.
-- **Loading skeleton:** Hero stays purple (background persists); merchant card and details card replaced by grey blocks to prevent layout jump on data arrival.
+- **Amount colour on hero:** the hero fills with `primary`, so the amount is set in `onPrimary` — the role the palette guarantees meets AA against it. The debit direction is carried by the leading minus sign and the screen's "money out" framing, not by hue. Painting a red amount onto the blue hero was the previous approach; `error` red on `primary` blue cannot reach AA, and DESIGN.md is explicit that this palette never signals money direction with a red/green pair.
+- **Status vocabulary:** the badge reads **Settled**, not "Completed". Per DESIGN.md's payment-disposition table a settled payment is `primary` with `primaryContainer` / `onPrimaryContainer` and a `check_circle` icon (7.27:1). An `AcceptedSettlementInProcess` result would instead render as **In progress** in `secondary` with a `schedule` icon — never as success.
+- **Hero overlap pattern:** merchant_card uses a negative top margin of `spacing.md` to float above the hero bottom edge — the elevation 4 shadow makes it feel physically lifted off the hero. Same technique as account-detail, for visual continuity across the banking flow.
+- **Reference monospace:** SEPA-2026051500123 is set in Roboto Mono at `bodySmall` so digit grouping reads as a code, distinct from prose text — the same `typography.mono` contract the `amount` component uses.
+- **Masked IBANs:** source shows "...0130" (last 4 chars), destination shows "DE89 3704...0044" — partial disclosure protects counterparty privacy while giving enough context for recognition.
+- **No bottom nav:** this is a leaf screen — removing the nav bar maximises vertical space for the structured details and signals there is no lateral navigation from this context.
+- **Loading skeleton:** hero keeps its `primary` fill (background persists); merchant card and details card are replaced by `surfaceVariant` blocks to prevent layout jump on data arrival.
 
 ---
 
-_Generated by /idea export | 2026-05-25_
+_Generated by /idea export | 2026-08-03_

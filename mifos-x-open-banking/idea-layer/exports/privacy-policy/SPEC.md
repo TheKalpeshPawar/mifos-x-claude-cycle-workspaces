@@ -4,7 +4,7 @@
 |---------------|----------------------------|
 | Feature       | privacy-policy             |
 | Flavor        | shared                     |
-| Status        | approved                   |
+| Status        | enriched                   |
 | Quality Score | 92                         |
 | ViewModel     | PrivacyPolicyViewModel     |
 

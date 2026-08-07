@@ -5,7 +5,8 @@ feature_id: transaction-detail
 screen_id: transaction-detail
 archetype: detail_screen
 name: "Transaction Detail"
-status: implemented
+# status: REMOVED 2026-08-04 (CROSS_LEAK repair — sibling-layout.json assigns `status` to
+# the docs sibling). This copy held `implemented`; docs.yaml is the single owner.
 initial_state: loading
 quality_score: 95
 
@@ -143,6 +144,8 @@ components:
 
   # ── NAVIGATION (always visible) ───────────────────────────────────────────────
   - type: icon_button
+    keyboard:
+      focusable: true
     id: back_button
     icon: arrow_back
     accessibility_label: "{strings.transaction_detail_back_a11y}"
@@ -163,7 +166,7 @@ components:
     id: amount_header
     test_tag: "transactionDetail:amount"
     state_binding: [content]
-    value: "{transaction.CreditDebitIndicator == 'Credit' ? '+' : '-'}£{transaction.Amount.Amount}"
+    content: "{transaction.CreditDebitIndicator == 'Credit' ? '+' : '-'}£{transaction.Amount.Amount}"
     style: displaySmall
     color: "{transaction.CreditDebitIndicator == 'Credit' ? 'primary' : 'error'}"
     accessibility_label: "{strings.transaction_detail_amount_a11y_prefix}: {transaction.Amount.Amount} {transaction.Amount.Currency}"
@@ -177,7 +180,7 @@ components:
     id: transaction_currency_meta
     test_tag: "transactionDetail:currency"
     state_binding: [content]
-    value: "{transaction.Amount.Currency}"
+    content: "{transaction.Amount.Currency}"
     style: labelMedium
     color: onSurfaceVariant
     accessibility_label: "Currency: {transaction.Amount.Currency}"
@@ -192,7 +195,7 @@ components:
     id: merchant_name
     test_tag: "transactionDetail:merchant"
     state_binding: [content]
-    value: "{transaction.MerchantDetails.MerchantName || transaction.TransactionInformation}"
+    content: "{transaction.MerchantDetails.MerchantName || transaction.TransactionInformation}"
     style: headlineMedium
     accessibility_label: "{strings.transaction_detail_merchant_a11y_prefix}: {transaction.MerchantDetails.MerchantName}"
     test_context:
@@ -233,7 +236,7 @@ components:
     children:
       - type: text
         id: detail_card_header
-        value: "{strings.transaction_detail_card_title}"
+        content: "{strings.transaction_detail_card_title}"
         style: titleSmall
         color: onSurfaceVariant
         accessibility_label: "{strings.transaction_detail_card_title}"
@@ -241,7 +244,7 @@ components:
       - type: list_item
         id: booking_date_row
         test_tag: "transactionDetail:bookingDateRow"
-        label: "{strings.transaction_detail_booking_date}"
+        headline: "{strings.transaction_detail_booking_date}"
         supporting_text: "{transaction.BookingDateTime}"
         accessibility_label: "{strings.transaction_detail_booking_date}: {transaction.BookingDateTime}"
         test_context:
@@ -255,7 +258,7 @@ components:
       - type: list_item
         id: value_date_row
         test_tag: "transactionDetail:valueDateRow"
-        label: "{strings.transaction_detail_value_date}"
+        headline: "{strings.transaction_detail_value_date}"
         supporting_text: "{transaction.ValueDateTime}"
         accessibility_label: "{strings.transaction_detail_value_date}: {transaction.ValueDateTime}"
         test_context:
@@ -269,7 +272,7 @@ components:
       - type: list_item
         id: category_row
         test_tag: "transactionDetail:categoryRow"
-        label: "{strings.transaction_detail_category}"
+        headline: "{strings.transaction_detail_category}"
         supporting_text: "{transaction.Category}"
         accessibility_label: "{strings.transaction_detail_category}: {transaction.Category}"
         test_context:
@@ -283,7 +286,7 @@ components:
       - type: list_item
         id: mcc_row
         test_tag: "transactionDetail:mccRow"
-        label: "{strings.transaction_detail_mcc}"
+        headline: "{strings.transaction_detail_mcc}"
         supporting_text: "{transaction.MerchantDetails.MerchantCategoryCode}"
         visible: "{transaction.MerchantDetails.MerchantCategoryCode != null}"
         accessibility_label: "{strings.transaction_detail_mcc}: {transaction.MerchantDetails.MerchantCategoryCode}"
@@ -298,7 +301,7 @@ components:
       - type: list_item
         id: balance_after_row
         test_tag: "transactionDetail:balanceAfterRow"
-        label: "{strings.transaction_detail_balance_after}"
+        headline: "{strings.transaction_detail_balance_after}"
         trailing_content: "{transaction.Balance.CreditDebitIndicator == 'Credit' ? '' : '-'}£{transaction.Balance.Amount.Amount}"
         trailing_style: bodyMedium
         accessibility_label: "{strings.transaction_detail_balance_after}: {transaction.Balance.CreditDebitIndicator == 'Credit' ? '' : 'negative '}£{transaction.Balance.Amount.Amount}"
@@ -311,9 +314,11 @@ components:
       - type: divider
 
       - type: list_item
+        keyboard:
+          focusable: true
         id: reference_row
         test_tag: "transactionDetail:referenceRow"
-        label: "{strings.transaction_detail_reference}"
+        headline: "{strings.transaction_detail_reference}"
         supporting_text: "{transaction.TransactionInformation}"
         trailing_icon: content_copy
         on_click:
@@ -335,7 +340,7 @@ components:
       - type: list_item
         id: bank_code_row
         test_tag: "transactionDetail:bankCodeRow"
-        label: "{strings.transaction_detail_bank_code}"
+        headline: "{strings.transaction_detail_bank_code}"
         supporting_text: "{transaction.ProprietaryBankTransactionCode.Code} · {transaction.ProprietaryBankTransactionCode.Issuer}"
         accessibility_label: "{strings.transaction_detail_bank_code}: {transaction.ProprietaryBankTransactionCode.Code} {strings.transaction_detail_bank_code_issued_by} {transaction.ProprietaryBankTransactionCode.Issuer}"
         test_context:
@@ -345,10 +350,9 @@ components:
           data_driven: true
 
   # ── ERROR STATE ───────────────────────────────────────────────────────────────
-  - type: empty_state
+  - type: error_state
     id: error_state
     test_tag: "transactionDetail:errorState"
-    variant: error
     state_binding: [error]
     icon: error_outline
     title: "{strings.transaction_detail_error_title}"
@@ -361,6 +365,8 @@ components:
       data_driven: true
     children:
       - type: button
+        keyboard:
+          focusable: true
         id: retry_button
         test_tag: "transactionDetail:retryButton"
         variant: filled
@@ -381,6 +387,8 @@ components:
           data_driven: true
 
       - type: button
+        keyboard:
+          focusable: true
         id: go_back_button
         test_tag: "transactionDetail:goBackButton"
         variant: outlined
@@ -415,6 +423,8 @@ components:
       data_driven: false
     children:
       - type: button
+        keyboard:
+          focusable: true
         id: transaction_empty_back_button
         test_tag: "transactionDetail:emptyBackButton"
         variant: outlined

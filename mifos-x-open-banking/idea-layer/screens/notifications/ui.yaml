@@ -1,9 +1,17 @@
+sibling: ui
+schema_version: "4.0"
+feature_id: notifications
+
 id: notifications
 name: Notifications
 feature: notifications
 flavor: consumer
-status: approved
-quality_score: 95
+# status: REMOVED 2026-08-04 (CROSS_LEAK repair — sibling-layout.json assigns `status` to
+# the docs sibling). This copy held `approved`; docs.yaml is the single owner.
+# RECONCILED 2026-08-07 (/idea-sync): was 95, disagreed with docs.yaml `quality_score: 91`.
+# The matrix averages every top-level quality_score under screens/notifications/**.
+# docs.yaml is the owner sibling.
+quality_score: 91
 contract_version: "1.1.0"
 approve_hash: "sha256:10af12bd8c96e4f037af12bd8c96e4f037af12bd8c96e4f037af12bd8c96e4f0"
 approved_at: "2026-05-25T13:45:00Z"
@@ -64,6 +72,8 @@ archetype: index_list
 components:
   # ── Header row ──────────────────────────────────────────────────────────────
   - type: stack
+    keyboard:
+      focusable: true
     id: title_action_row
     label: "Notifications header row"
     style:
@@ -73,9 +83,6 @@ components:
       padding_horizontal: 20
       padding_top: 16
       padding_bottom: 8
-    on_click:
-      action: dismiss
-      target: ""
     a11y:
       label: "Notifications header"
       role: row
@@ -87,8 +94,8 @@ components:
     label: "Notifications"
     content: "Notifications"
     style:
-      typography: "Outfit/headline_large"
-      color: "#4C662B"
+      typography: headlineLarge
+      color: primary
       font_weight: bold
     a11y:
       label: "Notifications screen title"
@@ -103,12 +110,19 @@ components:
     supported_states: [idle, hover, focus_visible, pressed, disabled]
     style:
       variant: text
-      text_color: "#386663"
-      typography: "Outfit/label_medium"
+      text_color: secondary
+      typography: labelMedium
       padding_horizontal: 0
     on_click:
       action: mark_all_read
       target: ""
+      action_contract:
+        effect: persist_db
+        writes_to: ["notifications.readState", "notifications.unreadCount"]
+        external_library_refs: ["androidx.datastore"]
+        description: >-
+          Writes the read flag for every listed notification to androidx.datastore and clears the
+          unread count. Local-only: this app has no server-side notification read state.
     a11y:
       label: "Mark all notifications as read"
       role: button
@@ -124,8 +138,8 @@ components:
     label: "Today"
     content: "Today"
     style:
-      typography: "Outfit/label_medium"
-      color: "#44483D"
+      typography: labelMedium
+      color: onSurfaceVariant
       font_weight: semibold
       padding_horizontal: spacing.md
       padding_top: spacing.sm
@@ -145,17 +159,23 @@ components:
     category: payment
     read_state: unread
     style:
-      background: "#CDEDA3"
+      background: primaryContainer
       corner_radius: 16
       padding_horizontal: 16
       padding_vertical: 14
       margin_horizontal: 20
       margin_bottom: 8
-      border_color: "#CDEDA3"
+      border_color: primaryContainer
       border_width: 1
     on_click:
       action: open_notification
       target: transaction-detail
+      action_contract:
+        effect: navigate
+        description: >-
+          Opens the transaction behind this payment-category notification on transaction-detail,
+          passing the transaction id the notification carries, and marks the notification read
+          as it opens so the unread indicator clears on return.
     a11y:
       label: "Unread payment notification: Payment of £50.00 received from James Wilson. 10 minutes ago."
       role: button
@@ -173,9 +193,6 @@ components:
       orientation: horizontal
       spacing: 12
       align: flex_start
-    on_click:
-      action: dismiss
-      target: ""
     a11y:
       label: ""
       role: row
@@ -187,15 +204,12 @@ components:
     label: "Payment received icon background"
     content: ""
     style:
-      background: "#4C662B"
+      background: primary
       corner_radius: 22
       width: 44
       height: 44
       align_items: center
       justify_content: center
-    on_click:
-      action: dismiss
-      target: ""
     a11y:
       label: ""
       role: none
@@ -203,16 +217,14 @@ components:
       tag: payment_james_icon_bg
 
   - type: icon
+    decorative: true   # the notification headline states the payment and payee
     id: payment_james_icon
     label: "Incoming payment"
     supported_states: [idle, hover, focus_visible, pressed, disabled]
     style:
       icon_name: arrow_downward
       size: 22
-      color: "#FFFFFF"
-    on_click:
-      action: dismiss
-      target: ""
+      color: onPrimary
     a11y:
       label: ""
       role: none
@@ -225,9 +237,6 @@ components:
     style:
       orientation: vertical
       flex: 1
-    on_click:
-      action: dismiss
-      target: ""
     a11y:
       label: ""
       role: group
@@ -239,8 +248,8 @@ components:
     label: "Payment received"
     content: "Payment received"
     style:
-      typography: "Outfit/body_medium"
-      color: "#1A1C16"
+      typography: bodyMedium
+      color: onSurface
       font_weight: semibold
     a11y:
       label: "Notification title: Payment received"
@@ -254,8 +263,8 @@ components:
     label: "Payment of £50.00 received from James Wilson"
     content: "Payment of £50.00 received from James Wilson"
     style:
-      typography: "Outfit/body_small"
-      color: "#44483D"
+      typography: bodySmall
+      color: onSurfaceVariant
       padding_top: spacing.xs
       padding_bottom: spacing.xs
     a11y:
@@ -270,8 +279,8 @@ components:
     label: "10 min ago"
     content: "10 min ago"
     style:
-      typography: "Outfit/label_small"
-      color: "#44483D"
+      typography: labelSmall
+      color: onSurfaceVariant
     a11y:
       label: "Received 10 minutes ago"
       role: text
@@ -280,19 +289,18 @@ components:
       assert_text: "10 min ago"
 
   - type: box
+    keyboard:
+      focusable: true
     id: unread_dot_payment_james
     label: "Unread indicator"
     content: ""
     style:
-      background: "#4C662B"
+      background: primary
       corner_radius: 5
       width: 10
       height: 10
       align_self: flex_start
       margin_top: 4
-    on_click:
-      action: dismiss
-      target: ""
     a11y:
       label: "Unread notification"
       role: status
@@ -307,17 +315,25 @@ components:
     category: security
     read_state: unread
     style:
-      background: "#CDEDA3"
+      background: primaryContainer
       corner_radius: 16
       padding_horizontal: 16
       padding_vertical: 14
       margin_horizontal: 20
       margin_bottom: 8
-      border_color: "#CDEDA3"
+      border_color: primaryContainer
       border_width: 1
     on_click:
+      # Retargeted 2026-08-02: this deep-linked into kyc-review, a field-officer screen that
+      # no longer exists. For a consumer, an identity-verification result belongs on profile.
       action: open_notification
-      target: kyc-review
+      target: profile
+      action_contract:
+        effect: navigate
+        description: >-
+          Opens profile, where an identity-verification result belongs for a consumer, and marks
+          the notification read as it opens. Retargeted from the removed field-officer kyc-review
+          screen, so security-category notifications land on a screen the customer can reach.
     a11y:
       label: "Unread security notification: KYC verification approved. Your identity has been verified. 1 hour ago."
       role: button
@@ -335,9 +351,6 @@ components:
       orientation: horizontal
       spacing: 12
       align: flex_start
-    on_click:
-      action: dismiss
-      target: ""
     a11y:
       label: ""
       role: row
@@ -349,15 +362,12 @@ components:
     label: "KYC approved icon background"
     content: ""
     style:
-      background: "#4C662B"
+      background: primary
       corner_radius: 22
       width: 44
       height: 44
       align_items: center
       justify_content: center
-    on_click:
-      action: dismiss
-      target: ""
     a11y:
       label: ""
       role: none
@@ -365,16 +375,14 @@ components:
       tag: kyc_approved_icon_bg
 
   - type: icon
+    decorative: true   # the notification headline states the KYC outcome
     id: kyc_approved_icon
     label: "Identity verified"
     supported_states: [idle, hover, focus_visible, pressed, disabled]
     style:
       icon_name: verified_user
       size: 22
-      color: "#FFFFFF"
-    on_click:
-      action: dismiss
-      target: ""
+      color: onPrimary
     a11y:
       label: ""
       role: none
@@ -387,9 +395,6 @@ components:
     style:
       orientation: vertical
       flex: 1
-    on_click:
-      action: dismiss
-      target: ""
     a11y:
       label: ""
       role: group
@@ -401,8 +406,8 @@ components:
     label: "KYC verification approved"
     content: "KYC verification approved"
     style:
-      typography: "Outfit/body_medium"
-      color: "#1A1C16"
+      typography: bodyMedium
+      color: onSurface
       font_weight: semibold
     a11y:
       label: "Notification title: KYC verification approved"
@@ -416,8 +421,8 @@ components:
     label: "Your identity has been verified. You now have full access to all account features."
     content: "Your identity has been verified. You now have full access to all account features."
     style:
-      typography: "Outfit/body_small"
-      color: "#44483D"
+      typography: bodySmall
+      color: onSurfaceVariant
       padding_top: spacing.xs
       padding_bottom: spacing.xs
     a11y:
@@ -432,8 +437,8 @@ components:
     label: "1 hr ago"
     content: "1 hr ago"
     style:
-      typography: "Outfit/label_small"
-      color: "#44483D"
+      typography: labelSmall
+      color: onSurfaceVariant
     a11y:
       label: "Received 1 hour ago"
       role: text
@@ -442,19 +447,18 @@ components:
       assert_text: "1 hr ago"
 
   - type: box
+    keyboard:
+      focusable: true
     id: unread_dot_kyc
     label: "Unread indicator"
     content: ""
     style:
-      background: "#4C662B"
+      background: primary
       corner_radius: 5
       width: 10
       height: 10
       align_self: flex_start
       margin_top: 4
-    on_click:
-      action: dismiss
-      target: ""
     a11y:
       label: "Unread notification"
       role: status
@@ -467,8 +471,8 @@ components:
     label: "Earlier"
     content: "Earlier"
     style:
-      typography: "Outfit/label_medium"
-      color: "#44483D"
+      typography: labelMedium
+      color: onSurfaceVariant
       font_weight: semibold
       padding_horizontal: spacing.md
       padding_top: spacing.sm
@@ -488,17 +492,23 @@ components:
     category: system
     read_state: read
     style:
-      background: "#FFFFFF"
+      background: surface
       corner_radius: 16
       padding_horizontal: 16
       padding_vertical: 14
       margin_horizontal: 20
       margin_bottom: 8
-      border_color: "#F9FAEF"
+      border_color: background
       border_width: 1
     on_click:
       action: open_notification
       target: accounts
+      action_contract:
+        effect: navigate
+        description: >-
+          Opens accounts for a system-category notification about a mandate or direct debit, so
+          the customer lands where the affected account and its recurring payments are listed.
+          Marks the notification read as it opens.
     a11y:
       label: "Read system notification: Direct debit mandate created for Netflix. £15.99 per month from Current Account. 3 hours ago."
       role: button
@@ -516,9 +526,6 @@ components:
       orientation: horizontal
       spacing: 12
       align: flex_start
-    on_click:
-      action: dismiss
-      target: ""
     a11y:
       label: ""
       role: row
@@ -530,15 +537,12 @@ components:
     label: "Direct debit mandate icon background"
     content: ""
     style:
-      background: "#386663"
+      background: secondary
       corner_radius: 22
       width: 44
       height: 44
       align_items: center
       justify_content: center
-    on_click:
-      action: dismiss
-      target: ""
     a11y:
       label: ""
       role: none
@@ -546,16 +550,14 @@ components:
       tag: netflix_mandate_icon_bg
 
   - type: icon
+    decorative: true   # the notification headline names the mandate
     id: netflix_mandate_icon
     label: "Direct debit"
     supported_states: [idle, hover, focus_visible, pressed, disabled]
     style:
       icon_name: autorenew
       size: 22
-      color: "#FFFFFF"
-    on_click:
-      action: dismiss
-      target: ""
+      color: onSecondary
     a11y:
       label: ""
       role: none
@@ -568,9 +570,6 @@ components:
     style:
       orientation: vertical
       flex: 1
-    on_click:
-      action: dismiss
-      target: ""
     a11y:
       label: ""
       role: group
@@ -582,8 +581,8 @@ components:
     label: "Direct debit mandate created"
     content: "Direct debit mandate created"
     style:
-      typography: "Outfit/body_medium"
-      color: "#44483D"
+      typography: bodyMedium
+      color: onSurfaceVariant
       font_weight: semibold
     a11y:
       label: "Notification title: Direct debit mandate created"
@@ -597,8 +596,8 @@ components:
     label: "Direct debit mandate created for Netflix — £15.99/month from your Current Account."
     content: "Direct debit mandate created for Netflix — £15.99/month from your Current Account."
     style:
-      typography: "Outfit/body_small"
-      color: "#44483D"
+      typography: bodySmall
+      color: onSurfaceVariant
       padding_top: spacing.xs
       padding_bottom: spacing.xs
     a11y:
@@ -613,8 +612,8 @@ components:
     label: "3 hr ago"
     content: "3 hr ago"
     style:
-      typography: "Outfit/label_small"
-      color: "#44483D"
+      typography: labelSmall
+      color: onSurfaceVariant
     a11y:
       label: "Received 3 hours ago"
       role: text
@@ -630,17 +629,23 @@ components:
     category: payment
     read_state: read
     style:
-      background: "#FFFFFF"
+      background: surface
       corner_radius: 16
       padding_horizontal: 16
       padding_vertical: 14
       margin_horizontal: 20
       margin_bottom: 8
-      border_color: "#F9FAEF"
+      border_color: background
       border_width: 1
     on_click:
       action: open_notification
       target: transaction-detail
+      action_contract:
+        effect: navigate
+        description: >-
+          Opens the transaction behind this payment-category notification on transaction-detail,
+          passing the transaction id the notification carries, and marks the notification read
+          as it opens so the unread indicator clears on return.
     a11y:
       label: "Read payment notification: Salary credited. £3,200.00 from Acme Ltd has been credited to your account. Yesterday."
       role: button
@@ -658,9 +663,6 @@ components:
       orientation: horizontal
       spacing: 12
       align: flex_start
-    on_click:
-      action: dismiss
-      target: ""
     a11y:
       label: ""
       role: row
@@ -672,15 +674,12 @@ components:
     label: "Salary credited icon background"
     content: ""
     style:
-      background: "#4C662B"
+      background: primary
       corner_radius: 22
       width: 44
       height: 44
       align_items: center
       justify_content: center
-    on_click:
-      action: dismiss
-      target: ""
     a11y:
       label: ""
       role: none
@@ -688,16 +687,14 @@ components:
       tag: salary_credited_icon_bg
 
   - type: icon
+    decorative: true   # the notification headline states the credit
     id: salary_credited_icon
     label: "Incoming payment"
     supported_states: [idle, hover, focus_visible, pressed, disabled]
     style:
       icon_name: arrow_downward
       size: 22
-      color: "#FFFFFF"
-    on_click:
-      action: dismiss
-      target: ""
+      color: onPrimary
     a11y:
       label: ""
       role: none
@@ -710,9 +707,6 @@ components:
     style:
       orientation: vertical
       flex: 1
-    on_click:
-      action: dismiss
-      target: ""
     a11y:
       label: ""
       role: group
@@ -724,8 +718,8 @@ components:
     label: "Salary credited"
     content: "Salary credited"
     style:
-      typography: "Outfit/body_medium"
-      color: "#44483D"
+      typography: bodyMedium
+      color: onSurfaceVariant
       font_weight: semibold
     a11y:
       label: "Notification title: Salary credited"
@@ -739,8 +733,8 @@ components:
     label: "£3,200.00 from Acme Ltd has been credited to your Current Account."
     content: "£3,200.00 from Acme Ltd has been credited to your Current Account."
     style:
-      typography: "Outfit/body_small"
-      color: "#44483D"
+      typography: bodySmall
+      color: onSurfaceVariant
       padding_top: spacing.xs
       padding_bottom: spacing.xs
     a11y:
@@ -755,8 +749,8 @@ components:
     label: "Yesterday"
     content: "Yesterday"
     style:
-      typography: "Outfit/label_small"
-      color: "#44483D"
+      typography: labelSmall
+      color: onSurfaceVariant
     a11y:
       label: "Received yesterday"
       role: text
@@ -890,30 +884,31 @@ state_model:
     - open_notification_settings
   di:
     - NotificationRepository
-    - SignalRepository
+  di_note: >-
+    SignalRepository dropped 2026-08-06 — it wrapped the Open Bank Project signal-channels
+    endpoint, which has no OBIE equivalent.
 
-api:
+# ─────────────────────────────────────────────────────────────────────────
+# NO API. Rewritten 2026-08-06 by /idea-sync (OBP eviction).
+#
+# This block declared `GET /obp/v6.0.0/signal/channels` — the Open Bank Project push-channel
+# list. OBIE has no notification resource of any kind: no channel list, no per-transaction
+# alert, no per-payment alert.
+#
+# Notifications are delivered by Firebase Cloud Messaging, client-side, from records this app
+# derives by polling AIS resources itself. The bank pushes this app nothing.
+#
+# NOT TO BE CONFUSED with OBIE event notification (POST /v4.0/events). That carries
+# consent-lifecycle events only and is consumed by pay-vrp-mandate and consent-manager. See
+# server/apis/events.yaml.
+# ─────────────────────────────────────────────────────────────────────────
+api: []
+
+removed_operations_2026_08_06:
   - id: obp_signal_channels
-    endpoint: "GET /obp/v6.0.0/signal/channels"
-    tag: Signal
-    description: "List real-time push notification channels (FCM)"
-    response:
-      fields:
-        - name: channels
-          type: "List<SignalChannel>"
-        - name: channel_id
-          type: String
-        - name: name
-          type: String
-        - name: description
-          type: String
-        - name: created_at
-          type: String
-    errors:
-      - code: 401
-        message: "USER_NOT_LOGGED_IN"
-      - code: 403
-        message: "INSUFFICIENT_AUTHORISATION"
+    was: "GET /obp/v6.0.0/signal/channels"
+    reason: "No OBIE notification resource."
+    consequence: "SignalChannel DTO deleted; SignalRepository dropped from DI; the 401/403 error paths went with it."
 
 dependencies:
   tier: feature
@@ -921,7 +916,7 @@ dependencies:
     - transactions
     - accounts
     - transaction-detail
-    - kyc-review
+    - profile
 
 navigation:
   - action: open_notification
@@ -929,8 +924,8 @@ navigation:
     description: "Navigate to transaction detail for payment-category notifications"
     category: payment
   - action: open_notification
-    target: kyc-review
-    description: "Navigate to KYC review screen for security/identity notifications (cross-persona deep link)"
+    target: profile
+    description: "Navigate to profile for security/identity notifications"
     category: security
   - action: open_notification
     target: accounts

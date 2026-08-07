@@ -3,6 +3,9 @@ schema_version: "2.1.0"
 feature_id: consent-callback
 
 screen_id: consent-callback
+models: wire
+maps_to_dto: [PsuTokenResponse, ConsentSummary]
+_models_note: "Fixtures are the OBIE wire envelope, not the domain projection. api.yaml#response_dto names the domain DTO the repository yields; the mapper sits between. RULE-DEMO-DATA-001 DD5 compares against the wire contract for this file."
 _content_policy: "RULE-PROTO-CONTENT-001 — zero placeholders; real HSBC-sandbox-style data only."
 
 # ── Success scenario ───────────────────────────────────────────────────────────
@@ -100,3 +103,24 @@ token_exchange_error_example:
   body:
     error: "invalid_grant"
     error_description: "The provided authorization grant is invalid, expired, revoked, does not match the redirection URI used in the authorization request, or was issued to another client."
+
+# ── State index (added 2026-08-02 via /idea-data) ────────────────────────────
+# ui.yaml declares states: [loading, awaiting, content, access_denied, security_error, error].
+# Like payment-consent this is an OAuth return leg, so it carries no `empty` — already recorded
+# as a dismissal in DESIGN_VALIDATION ("neither renders a collection"). Every state below had a
+# fixture under an ad-hoc *_example key; this block is the index over them.
+states:
+  - { scope: loading,  fixture: redirect_success_example }
+  - { scope: awaiting, fixture: consent_awaiting_example,
+      _meaning: "The bank accepted the redirect but has not finished authorising — poll, do not fail." }
+  - { scope: content,  fixture: consent_authorised_example,
+      _terminal: "Authorised. The token from token_response_example is now usable." }
+  - { scope: access_denied, fixture: redirect_access_denied_example,
+      recoverable: false,
+      _meaning: "The PSU declined at their bank. NOT an error — a decision. The copy must not read as a failure or a retry prompt." }
+  - { scope: security_error, fixture: redirect_state_mismatch_example,
+      recoverable: false,
+      _meaning: "The returned state parameter did not match the one we sent. Treated as a possible tampering signal: the flow is abandoned, never retried, and the consent is not used." }
+  - { scope: error, fixture: token_exchange_error_example,
+      recoverable: false,
+      _meaning: "invalid_grant — the code was already spent, expired, or issued to another client. A retry re-sends the same dead code." }

@@ -1,188 +1,81 @@
-# API Reference — Login
+# API — Connect with HSBC
 
-| Field    | Value                                       |
-|----------|---------------------------------------------|
-| Feature  | login                                       |
-| Base URL | https://apisandbox.openbankproject.com      |
+Client contract for `login`. This project owns no backend: this is a Ktorfit contract against the
+HSBC UK/CE sandbox (OBIE Read/Write Standard, FAPI 1.0 Advanced), not owned schema.
+Consumer: `LoginRepository`.
 
----
-
-## POST /my/logins/direct
-
-**Auth:** DirectLogin (credentials in Authorization header)
-**Tag:** Authentication
-**Trigger:** `onDirectLoginClicked()`
-
-### Request Headers
-
-| Header        | Value                                                                                           |
-|---------------|-------------------------------------------------------------------------------------------------|
-| Authorization | `DirectLogin username="{username}", password="{password}", consumer_key="{consumer_key}"` |
-
-No request body — all credential data is in the Authorization header.
-
-### Response Fields
-
-| Field | Type   | Stored As     |
-|-------|--------|---------------|
-| token | String | session_token |
-
-### Error Codes
-
-| Code | Name                | UI Message                                                                     |
-|------|---------------------|--------------------------------------------------------------------------------|
-| 400  | INVALID_CREDENTIALS | "Invalid username or password. Please check your credentials and try again."  |
-| 401  | UNAUTHORIZED        | "You are not authorized to access this account."                               |
-| 500  | SERVER_ERROR        | "Something went wrong on our end. Please try again in a moment."               |
+This screen makes **one** call. The rest of the authorisation journey — the FAPI redirect and the
+token exchange — happens in the browser and on `consent-callback`.
 
 ---
 
-## GET /obp/v5.1.0/well-known
+## consent-create
 
-**Auth:** None
-**Tag:** Authentication
-**Trigger:** App startup (once, result cached for session)
+| | |
+|---|---|
+| Endpoint | `POST /account-access-consents` |
+| Auth | **client_credentials** grant — *not* a PSU token |
+| Requires auth | yes |
+| Response DTO | `HSBCCreateConsentResponse` |
 
-### Response Fields
+Stages the consent the PSU is about to authorise.
 
-| Field          | Type   | Example                                                                                  |
-|----------------|--------|------------------------------------------------------------------------------------------|
-| provider_id    | String | "obp-oidc"                                                                               |
-| well_known_url | String | "https://apisandbox-oidc.openbankproject.com/obp-oidc/.well-known/openid-configuration" |
+The auth model is the point to get right: there is no PSU token yet — that is what the whole journey
+exists to obtain. The consent resource is created at TPP level with the client-credentials grant,
+and only then does the PSU authorise it at the bank.
 
----
+**Request body:** an `OBReadConsent1` carrying the full `Permissions[]` array (ten OBIE read scopes,
+including `ReadAccountsDetail`, `ReadBalances`, `ReadTransactionsDetail`) and a 90-day
+`ExpirationDateTime`.
 
-## GET https://apisandbox-oidc.openbankproject.com/obp-oidc/auth
+The permission list matters downstream: several screens degrade or refuse based on scopes granted
+here. `ReadParty` gates `account-holder`; `ReadBeneficiariesDetail` gates `beneficiaries`;
+`ReadDirectDebits` must be present at creation because it cannot be added to a live consent;
+`ReadStatementsDetail` (not the narrower `ReadStatements`) is what makes statement balances readable.
+A scope omitted here cannot be recovered without a new consent.
 
-**Auth:** None (opens system browser)
-**Tag:** Authentication
-**Trigger:** `onOAuthLoginClicked()` — opens system browser with authorization URL
+**Response key fields**
 
-### Query Parameters
+| Field                       | Purpose                                       |
+|-----------------------------|-----------------------------------------------|
+| `Data.ConsentId`            | Used to construct the FAPI authorisation URL  |
+| `Data.Status`               | Initial consent status                        |
+| `Data.ExpirationDateTime`   | Drives `consent_expiry_display`               |
+| `Data.Permissions`          | Renders `permissions_list`                    |
 
-| Parameter             | Type   | Value                                              |
-|-----------------------|--------|----------------------------------------------------|
-| response_type         | String | "code"                                             |
-| client_id             | String | {consumer_key}                                     |
-| redirect_uri          | String | "org.mifos.openbanking://oauth/callback"           |
-| scope                 | String | "openid profile email"                             |
-| state                 | String | {csrf_state} (generated per request)               |
-| code_challenge        | String | {pkce_code_challenge} — SHA-256 of code_verifier   |
-| code_challenge_method | String | "S256"                                             |
-
-### Redirect Response Parameters
-
-| Field | Type   | Description            |
-|-------|--------|------------------------|
-| code  | String | Authorization code     |
-| state | String | CSRF state (must match)|
-
-### Error Codes
-
-| Code | Name            | UI Message                                                        |
-|------|-----------------|-------------------------------------------------------------------|
-| 302  | OAUTH_CANCELLED | "Sign-in was cancelled. You can try again or use DirectLogin."   |
+`permissions_list` is populated from the **response**, not from the request — the customer is shown
+what the bank recorded, not what the app asked for.
 
 ---
 
-## POST https://apisandbox-oidc.openbankproject.com/obp-oidc/token
+## Errors
 
-**Auth:** None
-**Tag:** Authentication
-**Trigger:** `onOAuthCallback(code, state)` — token exchange after browser redirect
-**Content-Type:** application/x-www-form-urlencoded
+| Code | Cause | Handling |
+|------|-------|----------|
+| 400 | Malformed `OBReadConsent1` — invalid `Permissions[]` enum values or datetime format; HSBC returns an `OBErrorResponse1` body | `error` state, retry |
+| 401 | Client-credentials bearer invalid or expired | App must re-request a token before retrying |
+| 500 | HSBC upstream error — transient | Eligible for **one** automatic retry with 2-second exponential back-off |
+| `NetworkException` | Device offline or DNS failure | "Check your connection and try again" |
+| `FapiRedirectException` | HSBC app not installed, or the TPP `redirect_uri` scheme is not registered on this device | Prompt the PSU to install the HSBC app |
 
-### Request Body
-
-| Field         | Type   | Value / Source                              |
-|---------------|--------|---------------------------------------------|
-| grant_type    | String | "authorization_code"                        |
-| code          | String | oauth_callback_code                         |
-| redirect_uri  | String | "org.mifos.openbanking://oauth/callback"    |
-| client_id     | String | OBP_CONSUMER_KEY                            |
-| code_verifier | String | pkce_code_verifier                          |
-
-### Response Fields
-
-| Field         | Type   | Stored As     | Notes                                                  |
-|---------------|--------|---------------|--------------------------------------------------------|
-| access_token  | String | session_token |                                                        |
-| id_token      | String | —             | JWT RS256; contains sub, name, email, email_verified   |
-| refresh_token | String | refresh_token |                                                        |
-| token_type    | String | —             | "Bearer"                                               |
-| expires_in    | Int    | —             | 3600 (seconds)                                         |
-
-### Error Codes
-
-| Code | Name                      | UI Message                                              |
-|------|---------------------------|---------------------------------------------------------|
-| 400  | OAUTH_TOKEN_EXCHANGE_FAILED| "Authentication failed. Please try signing in again." |
-| 401  | UNAUTHORIZED              | "Invalid authorization. Please try again."              |
+`FapiRedirectException` is the one worth designing for: it is not a network problem and not a bank
+problem — the app-to-app redirect has nowhere to land. Telling the customer to check their
+connection would send them chasing the wrong fault.
 
 ---
 
-## GET https://apisandbox-oidc.openbankproject.com/obp-oidc/userinfo
+## After this call
 
-**Auth:** Bearer {access_token}
-**Tag:** Authentication
-**Trigger:** After successful token exchange
+`StartOAuth` continues past the response without another API call from this screen:
 
-### Request Headers
+1. build a FAPI 1.0 Advanced `/authorize` URL (`response_type=code id_token`, `scope=openid accounts`)
+   with a PS256-signed request object (jose4j, `private_key_jwt`) carrying the `ConsentId`, a nonce and state
+2. persist the in-flight authorisation in `PendingAuthStore` so it survives the redirect
+3. launch the app-to-app redirect via `BrowserLauncher` (expect/actual per platform)
+4. move to `authorising` until the PSU returns through the `consent-callback` deep link
 
-| Header        | Value                  |
-|---------------|------------------------|
-| Authorization | Bearer {access_token}  |
-
-### Response Fields
-
-| Field          | Type    | Description              |
-|----------------|---------|--------------------------|
-| sub            | String  | User subject identifier  |
-| name           | String  | Display name             |
-| email          | String  | Email address            |
-| email_verified | Boolean | Email verification status|
+The token exchange itself is `consent-callback`'s `fapi-token-exchange` — see that feature's `API.md`.
 
 ---
 
-## POST https://apisandbox-oidc.openbankproject.com/obp-oidc/token (refresh)
-
-**Auth:** None
-**Tag:** Authentication
-**Trigger:** `token_expired` — silent background refresh
-**Content-Type:** application/x-www-form-urlencoded
-
-### Request Body
-
-| Field         | Type   | Value / Source       |
-|---------------|--------|----------------------|
-| grant_type    | String | "refresh_token"      |
-| refresh_token | String | stored_refresh_token |
-| client_id     | String | OBP_CONSUMER_KEY     |
-
-### Response Fields
-
-| Field         | Type   | Description              |
-|---------------|--------|--------------------------|
-| access_token  | String | New access token         |
-| refresh_token | String | New refresh token        |
-| expires_in    | Int    | Expiry in seconds (3600) |
-
----
-
-## POST https://apisandbox-oidc.openbankproject.com/obp-oidc/revoke
-
-**Auth:** None
-**Tag:** Authentication
-**Trigger:** `on_logout`
-**Content-Type:** application/x-www-form-urlencoded
-
-### Request Body
-
-| Field     | Type   | Source           |
-|-----------|--------|------------------|
-| token     | String | session_token    |
-| client_id | String | OBP_CONSUMER_KEY |
-
----
-
-_Generated by /idea export | 2026-06-02_
+<!-- Generated 2026-08-04 by /idea-feature-export --all --force from screens/login/api.yaml. -->

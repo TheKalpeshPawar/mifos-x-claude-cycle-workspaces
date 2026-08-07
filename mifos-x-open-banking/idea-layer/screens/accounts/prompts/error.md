@@ -1,9 +1,9 @@
 ---
-ui_yaml_sha: a83644c564f57763479fd61f951702a4dee9eda3eb15517c033574970019ade6
-design_md_hash: f734ecfba28b3b0688cbd7ca6f3d7fca27febb15fd021d72a4518ae0e3a4200d
-app_shell_hash: 7b9c63f9aee4f5b5005b1d7533e7f5feab6427f398954987c34ee0f382b0ed69
-design_read_hash: 513c061d12f3a90e84d6e98e1e037b131e59fa3ca5c5f3c0abfc6ba87d24bcaf
-content_hash: 7f0747bae9477baa4c5785b530ba5d7316be5050a5807fbe3953a90bcdbbef31
+ui_yaml_sha: e9e7a60f5fa9c739a8fc883ab0e4b04b3a061642f48cbbb3373322260ddf762f
+design_md_hash: dad4a3ee16afd9663516aa33ebf1647c1d6ede5dc90a1c9bb2c448cd63c225fb
+app_shell_hash: e267a146a693f7d8b57131c73d180b6010ff34beca799edb4ca3c85c5879e0b4
+design_read_hash: 8f83034d22434d75ef7d377035c51c37ef557f4bbb2e0bf510409a4804964a50
+content_hash: 2b8157f946b15bdbfc273d0ee99776f3b6e21a6414b9bb144a86c81938b0772a
 
 design_read_aesthetic: minimalist-ui
 design_read_dials: {variance: 3, motion: 2, density: 5}
@@ -14,8 +14,8 @@ feature: accounts
 state: error
 state_visibility: error
 
-project_id: 'null'
-design_system_id: 'null'
+project_id: '17153754672098888646'
+design_system_id: '2047482829824847747'
 
 generated_by: stitch-prompt-build.ts v2.0.0
 prompt_template_version: stitch-per-state-v3.0.0
@@ -24,8 +24,8 @@ craft_rules_version: v1.0.0
 
 # accounts — error state
 
-> Auto-generated from screens/accounts/ui.yaml @ SHA 942fec36b38b67ec
-> Stitch DesignSystem: (pending DESIGN.md upload — run /idea-feature-stitch sub-plan 02)
+> Auto-generated from screens/accounts/ui.yaml @ SHA 23ab47e856016ab9
+> Stitch DesignSystem: 2047482829824847747
 > DO NOT redeclare colors / fonts / spacing — they live in DESIGN.md.
 
 ↓↓↓ MOCKUP PROMPT
@@ -52,11 +52,11 @@ craft_rules_version: v1.0.0
       - **stack**
          - **icon** (#account_type_icon)
          - **stack** (#account_text_column) — "account_text_column"
-            - **text** (#account_subtype)
-            - **text** (#account_nickname)
-            - **text** (#account_number)
+            - **text** (#account_subtype) — content: "{item.accountSubType}"
+            - **text** (#account_nickname) — content: "{item.nickname}"
+            - **text** (#account_number) — content: "{item.identifier}"
          - **stack** (#balance_column) — "balance_column"
-            - **text** (#balance_amount)
+            - **text** (#balance_amount) — content: "{item.balanceLabel}"
             - **badge** (#balance_owed_badge) — label: "{strings.accounts.card.balance.owed_label}"
 4. **empty_state** (#empty_accounts) — title: "{strings.accounts.empty.title}", icon: "account_balance_wallet"
 5. **error_state** (#error_accounts) — "{strings.accounts.error.title}"
@@ -74,7 +74,7 @@ craft_rules_version: v1.0.0
 ## Shell (app-shell resolved for this state)
 - Home: navigates to home
 - Accounts: navigates to accounts
-- Pay: navigates to send-money
+- Pay: navigates to payments
 - More: navigates to settings
 - Render MUST keep nav/bar elements consistent with the list above — present or absent, never partial.
 

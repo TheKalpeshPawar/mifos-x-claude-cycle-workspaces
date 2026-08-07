@@ -4,7 +4,7 @@
 |---------------|----------------------------|
 | Feature       | terms-of-service           |
 | Flavor        | shared                     |
-| Status        | approved                   |
+| Status        | enriched                   |
 | Quality Score | 92                         |
 | ViewModel     | TermsOfServiceViewModel    |
 

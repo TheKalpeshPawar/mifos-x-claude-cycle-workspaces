@@ -1,7 +1,552 @@
 schema_version: "1.0"
-last_run: "2026-08-02T18:05:00Z"
+last_run: "2026-08-04T15:05:00Z"
 last_run_by: "claude"
-command: "/idea-verify — 12 checks; 9 parse-blocking errors found and healed, 2 warns carried"
+command: "/idea-verify — cold full pass, 46 features / 315 sibling YAMLs. 0 error-severity findings. G-IDEA-WR (19) and G-CAP-001 both CLOSED."
+
+# ═══════════════════════════════════════════════════════════════════════════
+# 2026-08-04T15:05 /idea-verify (LATEST)
+# Full record: state/PIPELINE_STATE.yaml#capabilities.idea-verify.findings_2026_08_04_1505_verify
+# READ-ONLY run — no idea-layer file was written, no auto-heal tail executed.
+# ═══════════════════════════════════════════════════════════════════════════
+run_2026_08_04_1505_verify:
+  status: partial          # partial == warnings present; zero errors
+  scope: "46 features, 315 sibling YAMLs (cold — 66 files changed since the 00:00Z run, so the <24h cache was rejected)"
+  errors: 0
+  warnings: 4
+  gates_green:
+    - "G-IDEA-SCHEMA-CLOSURE — all 9 sub-checks (WRITABLE DFR PC WR PAG CAPS KM CT CSS)"
+    - "G-ACTION-CONTRACT — 46 ui.yaml, 87 component blocks, 0 violations"
+    - "G-I18N — 546 references, all resolve"
+    - "G-ILC state-coherence — SC-1/SC-2/SC-3"
+    - "compose-dead-clicks — 197 source files, DC1/DC2/DC3 all 0"
+    - "dead-nav-target — 0 dead screen navigations (computed independently, per-action)"
+    - "flow-entry-points — 23 declaring files, 0 dead entries"
+    - "orphan-screen — 0 orphans under OR-1 (nav OR flow)"
+    - "yaml-parse — 315/315, executed not asserted"
+    - "render-coverage — 46/46 screens have preview/, 181 HTML"
+  closed_this_run:
+    - id: G-IDEA-WR
+      was: "error, 19 action_contract blocks across 17 features missing writes_to[]/reads_from[]"
+      how: "closed by the 2026-08-04 13:35 ui.yaml edits; re-verified by RUNNING the evaluator, not by trusting the fix report"
+    - id: G-CAP-001
+      was: "error, open since 2026-07-31 — no feature declared a top-level capabilities[], leaving 147 capability-gated rules dormant"
+      how: "69 files now declare capabilities[]; G-IDEA-CAPS PASS. The rule iterator no longer gates vacuously."
+  warnings_open:
+    - id: PLAN-LINEAGE-7
+      severity: warn
+      detail: >-
+        Read at the correct schema-1.1 path, idea-plan.yaml holds 18 feature rows against 46
+        screen dirs. Most uncovered dirs are sub-screens that would clear via `scaffolded_as`,
+        but 7 have no plan lineage under any reading: splash, login, forgot-password, cards,
+        card-detail, atm-locator, fx-rates.
+      fix_hint: "/idea-plan-add (sole docset SoT writer) — add rows or scaffolded_as mappings"
+    - id: SIBLING-COMPLETENESS-7
+      severity: warn
+      detail: >-
+        Sharply improved — tests.yaml now present on ALL 46 features (was missing on 22).
+        7 absences remain: about + splash lack api/demo-data/data-flow (static screens),
+        payment-result lacks demo-data.
+    - id: SCHEMA-VERSION-MIXED
+      severity: warn
+      detail: "43 ui.yaml at 4.0, 3 at 3.1 (privacy-policy, standing-order-detail, terms-of-service). 3.1 still accepted — advisory."
+    - id: STITCH-ROSTER-STALE
+      severity: warn
+      detail: >-
+        STITCH_STATUS covers 18 of 46 features (was 13), several states in error.
+        STITCH_STATE#tokens_hash_stale: true — design-tokens 2.0.0 -> 2.1.0 on 2026-07-30
+        with no Stitch re-upload.
+  evaluator_defects:
+    - id: G-IPS-SCHEMA-1.0-ONLY
+      scope: framework
+      severity: error
+      detail: >-
+        framework-verify-idea-plan-feature-align.sh (lines 62 + 121) queries
+        `.features.content.features`, which yq resolves to NULL on any _schema_version 1.1
+        idea-plan.yaml (rows nest under `sections.features.content.features`). REFERENCED
+        resolves empty, so every screen dir reports SCAFFOLD_ORPHAN — 46 here. IPS-1's
+        "0 violations" is vacuous for the same reason. CONFIRMED independently this run by
+        running yq at both paths, not inherited from the prior run's classification.
+      excluded_from_project_count: true
+    - id: EVALUATOR-ARG-CONTRACT-DRIFT
+      scope: framework
+      severity: warn
+      detail: >-
+        Five project-selector spellings across the idea-layer evaluators: --project-root
+        (schema suite, action-contract), --project (orphan-route, dead-destination, G-IPS),
+        --project-path (state-coherence), --source-root (compose-dead-clicks, which rejects
+        --project-root outright). A wrong guess yields "unknown arg" — or a silent scan of
+        the wrong root.
+
+# ═══════════════════════════════════════════════════════════════════════════
+# 2026-08-03T20:15 /idea-render-mockup (LATEST)
+# Full record: state/PIPELINE_STATE.yaml#capabilities.idea-render-mockup.run_2026_08_03_2015
+# ═══════════════════════════════════════════════════════════════════════════
+run_2026_08_03_2015_render:
+  status: partial
+  cells_rendered: 48
+  features: 12
+
+  closed:
+    - id: ZERO-PREVIEW-12
+      was: >-
+        "12 features have NO rendered preview HTML at all — account-holder, consent-callback,
+        consent-detail, consent-list, licences, payment-consent, payment-status, product,
+        scheduled-payments, statement-detail, statements, user-onboarding. 48 states between them."
+      now: "48 / 48 rendered. All 12 features have a complete preview set and a .cache.json."
+      verified:
+        - "structural gate 48/48 — render-hash marker, 3-level runtime path, single <script>, dark block, viewport meta"
+        - "declared-state parity 12/12 — file count == ui.yaml#states[] length, no orphans, no gaps"
+        - "0 files contain #4C662B / Outfit / GHS — the markers of the superseded generation"
+      note: >-
+        The escalation record said "48 LLM-rendered HTML states is a generation tranche, not a
+        heal step" and delegated to /idea-feature-render. That is exactly the tranche this run
+        executed.
+
+  reduced:
+    - id: PREVIEW-CONTENT-STALE-ALL
+      severity: error
+      was: "every rendered preview in the project predates the 2026-07-28 source-truth reverse sync"
+      still_true_for: "45 cohort-B stale cells across 11 screens + 86 cohort-A stale cells"
+      no_longer_true_for: "the 48 cells above — first previews in the project on Trust Blue #266489 / Roboto / tokens 2.1.0"
+      mechanism_unchanged: >-
+        preview/.cache.json still stores the render-time hash and nothing re-derives it against
+        the current ui.yaml, so it still cannot report staleness. The 48 new caches are honest
+        TODAY; they will go silently stale the same way unless a content-level detector lands.
+
+  interrupted_and_resumed: >-
+    A forced machine shutdown killed the pass mid-scheduled-payments. Resumed from disk, not from
+    memory: the per-screen cache write is the last step, so a screen with HTML and no cache was
+    the one in flight. scheduled-payments (2 cells + cache), user-onboarding's cache and all of
+    payment-consent (5 cells + cache) were outstanding and are now complete.
+
+  new_findings:
+    - id: CONSENT-EXPIRED-CHIP-DIVERGENCE-VISIBLE
+      severity: warn
+      detail: >-
+        consent-list renders the Expired history chip muted (onSurfaceVariant, per its demo-data);
+        consent-detail maps Expired -> error (per DESIGN.md 1.3.0). Both rendered as declared
+        rather than unified. demo-data.yaml records the divergence as possibly intentional — a
+        History section below a divider de-emphasises terminated consents by design. It is now a
+        side-by-side A/B rather than a YAML comment.
+    - id: PAYMENT-CONSENT-ERROR-VARIANTS
+      severity: warn
+      detail: >-
+        One declared `error` state has three legitimate renderings: AuthorisationTimedOut and
+        CodeExpired offer Restart; StateMismatch and ConsentRejected must withhold it. Only the
+        timed-out variant is rendered; the file carries data-restart-offered so which variant it
+        represents is explicit rather than implied.
+
+  carried_unchanged:
+    - { id: TWO-GENERATIONS, note: "blocked on product decision; still gates NAV-ORPHAN-13 and the cohort-A render tranche" }
+    - { id: SIB-TESTS-22, note: "unchanged — authoring belongs to /idea-feature-enrich" }
+    - { id: STITCH-ALL-ERROR, note: "unchanged — blocked on MCP availability" }
+    - { id: NAV-ORPHAN-13, note: "unchanged" }
+    - { id: REGISTRY-GAPS-310, note: "unchanged — framework blast radius" }
+
+  remaining_render_work:
+    cohort_b: 47
+    cohort_a_missing: 15
+    cohort_a_stale: 86
+    orphan_previews: 39
+    orphan_note: >-
+      39 files render states their ui.yaml no longer declares (profile 8 for 3 declared,
+      send-money-confirm 7 for 3, splash 5 for 2, about/privacy-policy/terms-of-service 4 each
+      for 1). Untouched — deletion is out of scope for a missing+stale action and is a separate
+      decision.
+
+# ═══════════════════════════════════════════════════════════════════════════
+# 2026-08-03T16:45 /idea-feature-test-export --all (superseded as latest)
+# ═══════════════════════════════════════════════════════════════════════════
+
+# ═══════════════════════════════════════════════════════════════════════════
+# 2026-08-03T16:45 /idea-feature-test-export --all (LATEST) — COMPLETE.
+# Full record: state/PIPELINE_STATE.yaml#capabilities.idea-feature-test-export
+#              .run_2026_08_03_1645
+# ═══════════════════════════════════════════════════════════════════════════
+run_2026_08_03_1645_test_export:
+  status: success
+  written_this_run: 19
+  written_prior_run: 5
+  total: 24
+  scenarios_rendered: 233
+  remaining: 0
+
+  supersedes_below: >-
+    The 11:40 block that follows is left in place rather than edited — its two wrong numbers are
+    themselves the useful signal. Read the corrections here first.
+
+  correction_1_roster_size:
+    was: "processable: 23 · scenarios_total: 225"
+    now: "processable: 24 · scenarios_total: 233"
+    missed: standing-order-edit
+    why: >-
+      It HAS a tests.yaml with 8 scenarios, under a `tests:` key instead of `scenarios:`. This
+      command's declared input is tests.yaml#scenarios[], so the walk found nothing and the
+      feature landed in neither bucket — not counted processable, not listed among the 22 with no
+      tests.yaml. A silent false negative, not a loud skip.
+    also_divergent: "assertion OBJECTS not prose · no `state:` on any scenario · `type: ui|service` · trailing `coverage_target: 80`"
+    disposition: "EXPORTED with the divergence recorded at the head of its TEST_SPEC.md; restructuring is an /idea-feature-enrich call"
+
+  correction_2_then_shape_RETRACTED:
+    target: "run_2026_08_03_test_export.corpus_data_findings[THEN-SHAPE-DIVERGENCE] (below)"
+    verdict: NOT REPRODUCED
+    detail: >-
+      The claim was that 23 scenarios declare `then:` as a scalar string. Every cited scenario was
+      opened in source this run; all are `then:` followed by a single `- "..."` item — one-element
+      LISTS, not scalars. Verified directly on 20 of 23. Likely a scanner treating a one-element
+      sequence as a scalar. The finding also prescribed a workaround ("treat string as a
+      1-element list") for a shape that is already a 1-element list.
+    still_standing: "SCENARIO-MISSING-PRIORITY (41) · SCENARIO-MISSING-GIVEN (16) · TESTS-DESIGN-DRIFT (fixed at source)"
+
+  new_findings:
+    - { id: PRIORITY-VOCABULARY-FIVEFOLD, severity: warn,
+        detail: "5 incompatible priority vocabularies across 24 files (critical/high/medium/low · high/medium/low · critical/normal · P0/P1/P2 · p0/p1/p2), plus 2 files declaring none. No consumer can order a run by priority across features." }
+    - { id: RETRY-ON-403-SPLIT, severity: warn, count: 7,
+        detail: "7 features specify a 403 path and split 4-3 on offering Retry with no distinguishing rule. Sharpest case: direct-debits and scheduled-payments sit on adjacent account-detail chips, fail on the same revoked consent, and decide oppositely." }
+    - { id: CDETAIL-009-COLOUR-DRIFT-OPEN, severity: warn,
+        detail: "consent-detail TC-CDETAIL-009 asserts `warning` for the Expired chip. No `warning` role exists in this palette, and DESIGN.md maps Expired -> `error`. Same class as the consent-list and statement-detail drifts fixed at source today; the fix did not reach this file." }
+    - { id: STMTD-006-SCOPE-NAME-MISMATCH, severity: warn,
+        detail: "statement-detail TC-STMTD-006 says the missing scope is ReadStatementsDetail but asserts body text naming ReadStatements — two distinct OBIE scopes. The message names the wrong permission." }
+
+  sib_tests_22_unchanged: >-
+    22 features still have no tests.yaml and this command cannot close them — it CONSUMES
+    scenarios, it does not author them. Recorded in EXPORT_MATRIX as not_applicable rather than
+    pending, so the ledger does not imply an artifact this command owes. Routing is unchanged:
+    /idea-feature-enrich authors, then /idea-feature-test-export renders.
+
+# ═══════════════════════════════════════════════════════════════════════════
+# 2026-08-03T11:40 /idea-feature-test-export --all (superseded — see above)
+# ═══════════════════════════════════════════════════════════════════════════
+run_2026_08_03_test_export:
+  status: partial
+  written_count: 5
+  processable: 23
+  remaining: 18
+  scenarios_total: 225
+  scenarios_covered: 28
+  scenarios_remaining: 197
+
+  ROUTING_CORRECTION:
+    finding_id: SIB-TESTS-22
+    previously_recorded_as: "tests.yaml absent on 22 of 46 — /idea-feature-test-export owns it"
+    correction: >-
+      WRONG. This command CONSUMES tests.yaml#scenarios[] — it renders test specs FROM declared
+      scenarios. It does not author tests.yaml. The 22 features without a tests.yaml therefore
+      cannot be closed by this command at any invocation, --all included. Authoring scenarios for
+      them belongs to enrichment / the sibling scaffold, not to the export step.
+    affected_22: >-
+      about atm-locator card-detail cards change-password consent-manager direct-debit-detail
+      forgot-password fx-rates notifications payment-result privacy-policy products profile
+      sca-challenge send-money-amount send-money-confirm splash standing-order-create
+      standing-order-detail terms-of-service transaction-tags
+    reroute_to: "/idea-feature-enrich (author scenarios) THEN /idea-feature-test-export"
+
+  corpus_data_findings:
+    - id: THEN-SHAPE-DIVERGENCE
+      severity: warn
+      count: 23
+      detail: >-
+        23 of 225 scenarios declare `then:` as a SCALAR STRING rather than a list — 10 of them in
+        account-detail alone. Any consumer iterating `then[]` gets individual characters. Read as
+        prose they are single coherent assertions, so this is a shape divergence to handle
+        (treat string as a 1-element list), NOT malformed content. Handled that way in this run;
+        the source files were not rewritten.
+      affected: >-
+        account-detail TC-ACCTDTL-006..010,016..020; account-holder-004; accounts-005;
+        consent-list-005; direct-debits-005; home-006,013; licences-002; login-004; product-007;
+        settings-004; statement-detail-005; transaction-detail-005; transactions-009
+    - id: SCENARIO-MISSING-PRIORITY
+      severity: warn
+      count: 41
+      detail: "41 of 225 scenarios declare no `priority`. Surfaced in the coverage tables rather than defaulted."
+    - id: SCENARIO-MISSING-GIVEN
+      severity: warn
+      count: 16
+      detail: "16 of 225 scenarios declare no `given`. A scenario without preconditions is not independently runnable."
+    - id: TESTS-DESIGN-DRIFT
+      severity: warn
+      count: 2
+      detail: >-
+        consent-list TC-CLIST-006 and TC-CLIST-007 assert status colours that INVERT DESIGN.md
+        1.3.0: expiring (7 days) is asserted as `error` with a `warning_amber` icon (the palette
+        ships no amber; DESIGN.md maps expiring -> `tertiary`), while `Expired` is asserted as
+        `onSurfaceVariant` (DESIGN.md maps it -> `error`, "where access is actually gone"). The
+        scenarios colour the LIVE consent as failed and the DEAD one as neutral. Transcribed
+        verbatim with a drift warning at the head of the file — tests.yaml is the export's source
+        of truth and amending it is a separate decision.
+        statement-detail carries 2 further colour-literal hits, unreviewed.
+
+  framework_findings:
+    - id: FW-6-TEST-EXPORT-OUTPUT-CONFLICT
+      severity: warn
+      scope: framework
+      detail: >-
+        The capsule's `produces:` and the runtime's STEP MATRIX both declare
+        `idea-layer/screens/{feature}/TEST_SPEC.md`, while the runtime's Procedure and Contract
+        sections describe emitting Kotlin `.kt` files into testing-layer modules with a
+        `compileKotlin{Target}Test` obligation. Two different artifacts, two different repos.
+      resolved_as: >-
+        Followed the capsule (authoring SoT per RULE-CAPSULE-FIRST-001) + STEP MATRIX, which
+        agree. Writing 225 test methods into the live Kotlin source repo carries a build-green
+        obligation unverifiable from here, and source/ is outside this command's declared
+        idea-layer output tree.
+    - id: FW-7-TEST-EXPORT-INPUT-PATH
+      severity: warn
+      scope: framework
+      detail: >-
+        The runtime documents its input as `screens/{feature}.yaml.testing.scenarios[]` — the
+        v3.1 MONOLITH path. In the v4.0 sibling layout this project uses, tests.yaml carries
+        `scenarios:` at TOP LEVEL, not under a `testing:` key. A literal reader of the documented
+        path finds nothing on any sibling-format project. Same class as the monolith-only walk
+        repaired in validate-component-types.ts earlier today.
+
+  written:
+    - { feature: licences, scenarios: 3, note: "E1-blocked for SPEC.md; scenarios still exportable" }
+    - { feature: user-onboarding, scenarios: 4, note: "E1-blocked for SPEC.md; TC-ONB-003 documents why" }
+    - { feature: account-holder, scenarios: 7, note: "all 3 declared error kinds covered 1:1" }
+    - { feature: consent-callback, scenarios: 6, note: "6 states / 6 scenarios; 2 assert NO token exchange" }
+    - { feature: consent-list, scenarios: 8, note: "carries the TESTS-DESIGN-DRIFT warning" }
+
+  remaining_18:
+    scenarios: 197
+    features: >-
+      account-detail(20) accounts(9) beneficiaries(10) consent-detail(11) direct-debits(10)
+      home(13) login(8) payment-consent(11) payment-status(9) product(9) scheduled-payments(9)
+      send-money(14) settings(9) standing-orders(14) statement-detail(9) statements(9)
+      transaction-detail(11) transactions(12)
+
+# ═══════════════════════════════════════════════════════════════════════════
+# 2026-08-03T11:05 /idea-heal — two infra blockers cleared.
+# ═══════════════════════════════════════════════════════════════════════════
+
+# ═══════════════════════════════════════════════════════════════════════════
+# 2026-08-03T11:05 /idea-heal (LATEST) — two infra blockers cleared.
+# ═══════════════════════════════════════════════════════════════════════════
+run_2026_08_03_heal_infra:
+  mode: inline
+  rounds: 1
+  halt_reason: k-dry-terminated
+  augmentations_applied: 2
+  escalated_gaps: 6
+
+  fixed:
+    - id: DESIGN-ICON-LIBRARY-ABSENT
+      severity: warn
+      gap_class: gate-silently-bypassed
+      detail: >-
+        PROJECT_CONFIG.yaml had no `design:` block at all. RULE-PROTO-RENDER-LLM-001 RV-016 locks
+        renders to a single icon library declared at `design.icon_library`, and four consumers gate
+        on it — the rule itself, idea-feature-render.md, project-verify.md and
+        IDEA_CAPABILITY_REGISTRY.yaml. With the key absent the /idea-verify-e2e render check
+        scored `—` and redistributed its 15 pts, so the 12 features with NO rendered previews were
+        INVISIBLE in the health score rather than penalised. The project's own VERIFY_LOG has
+        carried this since the 07-28 sync with the exact fix written out.
+      fix: 'design: { icon_library: material-icons }'
+      evidence: >-
+        Not a guess. Every icon name across the 46 screens is Material Symbols vocabulary —
+        cloud_off, warning_amber, credit_card_off, receipt_long_outlined, calendar_today,
+        expand_more, link_off, camera_alt — and the `_outlined` suffix is the Compose
+        `Icons.Outlined.*` convention this CMP Material 3 app already compiles against.
+      self_correction: >-
+        This heal was first written as `design: { n: material-icons }` on the belief that
+        `design.n` was the canonical key. It is not — `design.n` appears NOWHERE in the framework.
+        The error was mine: I read the framework with `rg -rn 'icon_library'`, where `-r n` is
+        ripgrep's REPLACE flag, so every match was substituted with the literal `n` in the output
+        and `design.icon_library` rendered as `design.n`. Corrected before any consumer read it;
+        verified `design.n` is absent from every project file.
+
+    - id: STITCH-ACTIVE-YAML-ABSENT
+      severity: warn
+      gap_class: missing-binding-pointer
+      detail: >-
+        idea-layer/.stitch/active.yaml did not exist, so preflight-stitch-project-state exited 2
+        with "active.yaml has no project_id; first-time setup?" and Phase 0.5 stitch-reconcile
+        skipped itself via its "no active.yaml (pre-Stitch project)" clause — on a project that is
+        demonstrably not pre-Stitch.
+      fix: 'wrote .stitch/active.yaml with project_id + design_system_id'
+      evidence: >-
+        Nothing invented. Three on-disk sources already agreed: .stitch/shared_project_id
+        (17153754672098888646), .stitch/design_system_id (2005644667042354169), and
+        PROJECTS_INDEX.yaml, whose every feature entry carries the same pair. The index also
+        records SUCCESSFUL generations (about: 4/4 `result: success` with real screen_ids,
+        2026-05-30), so the binding worked historically and only the pointer went missing.
+      result: 'preflight-stitch-project-state ERROR -> WARN (project_id resolves; MCP probe unreachable here, degrades to local-state-trusted)'
+      ledger_disagreement_noted: >-
+        PROJECTS_INDEX records successful 2026-05-30 runs that STITCH_STATUS.yaml does not
+        reflect (it holds 0 success / 15 error). Which ledger is authoritative was NOT established
+        and is not assumed — restoring the pointer does not by itself resolve STITCH-ALL-ERROR.
+
+  not_a_gap_after_investigation:
+    - id: EMPTY-PROMPTS-DIRS
+      claimed_by: "/idea-feature-export --all (this session)"
+      claimed_as: "46 prompts/ dirs exist, all empty"
+      verdict: NOT A GAP
+      detail: >-
+        The per-state Stitch prompts exist — 235 .md files across the 46 features (home alone has
+        content/empty/error/loading). The earlier count of 0 came from an fd glob that did not
+        match, not from an empty corpus. Retracted rather than left standing as a phantom gap.
+
+  escalated:
+    - id: ZERO-PREVIEW-12
+      severity: warn
+      newly_visible: true
+      detail: >-
+        12 features have NO rendered preview HTML at all — account-holder, consent-callback,
+        consent-detail, consent-list, licences, payment-consent, payment-status, product,
+        scheduled-payments, statement-detail, statements, user-onboarding. 48 states between them.
+        All 12 are the older implemented generation plus the 2 PISP screens.
+      became_visible_because: 'the design.icon_library fix un-bypasses the render gate that was hiding them'
+      delegated_to: /idea-feature-render
+      why_not_healed: '48 LLM-rendered HTML states is a generation tranche, not a heal step'
+    - id: MOCKUPS-PENDING
+      severity: warn
+      detail: '22 MOCKUP.md + 44 PROMPTS_FIGMA.md — declared output of /idea-feature-export, tranche not started'
+      delegated_to: /idea-feature-export
+    - id: STITCH-ALL-ERROR
+      severity: warn
+      detail: 'STITCH_STATUS 0 success / 15 error. Local binding now restored; MCP probe unreachable in this environment.'
+      blocked_on: 'Stitch MCP availability + resolving the PROJECTS_INDEX vs STITCH_STATUS disagreement'
+    - id: TWO-GENERATIONS
+      severity: warn
+      blocked_on: product-decision
+      detail: 'unchanged — still blocks NAV-ORPHAN-13 and explains all 12 ZERO-PREVIEW features'
+    - id: NAV-ORPHAN-13
+      severity: warn
+      blocked_on: TWO-GENERATIONS
+    - id: SIB-TESTS-22
+      severity: warn
+      detail: 'tests.yaml absent on 22 of 46 — /idea-feature-test-export owns it'
+    - id: REGISTRY-GAPS-310
+      severity: warn
+      scope: framework
+      detail: '~13 registry entries; framework blast radius'
+
+# ═══════════════════════════════════════════════════════════════════════════
+# 2026-08-03T09:25 /idea-heal — _list.json + screen-order generator.
+# ═══════════════════════════════════════════════════════════════════════════
+
+# ═══════════════════════════════════════════════════════════════════════════
+# 2026-08-03T09:25 /idea-heal (LATEST)
+# ═══════════════════════════════════════════════════════════════════════════
+run_2026_08_03_heal:
+  mode: inline            # fanout unavailable: cannot dispatch subagents in this session
+  rounds: 1
+  halt_reason: k-dry-terminated
+  findings_initial: 6
+  findings_final: 4
+  augmentations_applied: 2
+  escalated_gaps: 4
+
+  roster_correction:
+    was: "roster_size: 23, features_evaluated: 23"
+    now: "roster_size: 46, features_evaluated: 46"
+    why: >-
+      The prior block recorded 23 and cited `idea-layer/_list.json` as the canonical count.
+      That file did not exist, and the project holds 46 screen directories — so every
+      coherence figure in this artifact before today was computed over half the corpus.
+
+  fixed:
+    - id: LIST-JSON-ABSENT
+      severity: warn
+      gap_class: missing-canonical-enumeration
+      delegated_to: core/scripts/screen-order-from-flows.ts --write   # D7: shipped generator, not hand-rolled
+      detail: >-
+        The canonical enumeration is `idea-layer/screens/_list.json` — NOT `idea-layer/_list.json`,
+        which is only a legacy fallback. The /idea-sync run on 08-03 checked the root path and
+        reported it absent; it is absent at BOTH, but the canonical one is the one that matters.
+        Written with all 46 screens; re-check is idempotent (exit 0).
+      verification: "46/46 ids match screens/ directory listing exactly, both directions"
+
+    - id: FW-4-SCREEN-ORDER-READS-NONEXISTENT-FIELD
+      severity: warn
+      gap_class: framework-producer-out-of-contract
+      scope: framework
+      detail: >-
+        First --write produced `flow-ordered=0  flowless-appended=46` and exited 0 — a silent
+        degradation to plain alphabetical order while reporting success. Root cause:
+        screen-order-from-flows.ts derives order by walking each flow's `happy_path[]`, but
+        FLOW_SCHEMA.schema.yaml REQUIRES `screens` + `entry_screen` + `connections` and does not
+        define `happy_path` at a flow group at all (it is a journeys concept, per
+        RULE-IDEA-HAPPY-PATH-COVERAGE-001). The generator's core algorithm could therefore never
+        fire on ANY schema-conformant project.
+      fix: >-
+        Added deriveOrderFromConnections() — BFS from `entry_screen` across `connections[{from,to}]`,
+        with declared-but-unreachable screens appended in sorted order so nothing loses a slot.
+        happy_path is still preferred when a flow declares it (older hand-authored flows do).
+      result: "flow-ordered=46, flowless-appended=0. Order is now splash -> login -> home -> ... (real journey) instead of about -> account-detail -> ... (alphabetical)."
+
+  not_a_gap_after_investigation:
+    - id: PAYMENT-RESULT-DEMO-DATA
+      claimed_by: "/idea-sync 08-03 (this session)"
+      claimed_as: "a genuine gap"
+      verdict: NOT A GAP
+      detail: >-
+        payment-result declares 0 api endpoints and 0 data-bound components — it is a static
+        result screen driven by nav args. splash and about are in the same position and also
+        carry no demo-data.yaml. Its absence matches this project's own convention, so
+        generating one would add an unused file. The earlier claim was wrong and is retracted
+        here rather than silently dropped.
+
+  escalated:
+    # Per-gap cap not reached — these are escalated because they are BLOCKED on a decision
+    # or exceed this command's blast radius, not because a fix was attempted and failed.
+    - id: TWO-GENERATIONS
+      severity: warn
+      blocked_on: product-decision
+      detail: >-
+        The corpus carries two overlapping generations of the same app. consent-list/consent-detail
+        vs consent-manager; product vs products; scheduled-payments vs standing-orders+standing-order-*;
+        send-money vs send-money-amount/send-money-confirm. The older set is status:implemented and
+        is what nav points at; the newer set is status:approved, has the mockups and previews, and is
+        barely wired in.
+      why_not_healed: >-
+        Every candidate fix presupposes the answer. Declaring settings -> consent-manager assumes
+        consent-manager supersedes consent-list; declaring nothing assumes it does not. An auto-heal
+        that guesses here silently makes a product decision.
+      unblocks_if_answered: [NAV-ORPHAN-13, ZERO-PREVIEW-12]
+
+    - id: NAV-ORPHAN-13
+      severity: warn
+      blocked_on: TWO-GENERATIONS
+      detail: >-
+        16 screens carry no inbound nav edge. 3 are deliberate and documented (splash = entry point;
+        change-password = profile's button ships disabled with disabled_until; atm-locator = registered
+        in idea-plan.yaml#deferred_routes). The other 13 are a one-directional declaration gap — the
+        child declares its return edge, the parent never declares the forward one — and 11 of the 13
+        are from the newer generation.
+
+    - id: SIB-TESTS-22
+      severity: warn
+      blocked_on: scope-decision
+      detail: >-
+        tests.yaml absent on 22 of 46 features. Authoring test specs is /idea-feature-test-export's
+        contract, not a heal delegation, and 22 features of specs is a deliverable the user should
+        scope rather than have appear as a side effect of "fix the issues".
+
+    - id: REGISTRY-GAPS-310
+      severity: warn
+      scope: framework
+      blocked_on: framework-blast-radius
+      detail: >-
+        310 validator findings, all registry-level, collapsing to ~13 registry entries:
+        RESP-001 (180) -> 8 types with no `responsive` block; REG-002 (107) -> `stack` declares
+        variants vertical/horizontal while screens author the Compose-idiomatic column/row, and
+        `empty_state` declares no variants at all; A11Y-001 (15) -> icon_button/search_bar/text_field
+        lack keyboard.focusable; A11Y-005 (8) -> icon_button lacks focus_visible.
+      why_not_healed: >-
+        Editing the shipped component registry changes rendering and validation for every project
+        on this framework. That is a framework decision, not an idea-layer heal.
+
+  standing_framework_defects_found_this_session:
+    # Recorded for continuity — all are framework-scope, none are project findings.
+    - FW-1: "framework-verify-action-contract.sh defect (pre-existing)"
+    - FW-2: "idea-preview declares the prototype viewer removed 2026-05-14, but idea-sync-artifacts STEP 4b still generates prototype/index.html and STEP 4.VERIFY still requires it"
+    - FW-3: "validate-component-types.ts — stale registry root, monolith-only project walk, and unimplemented extends-chain resolution (all three repaired this session)"
+    - FW-4: "screen-order-from-flows.ts read a field the flow schema does not define (repaired this session)"
+
+# ═══════════════════════════════════════════════════════════════════════════
+# 2026-08-02T18:05 /idea-verify — collapsed-key corruption found and healed.
+# ═══════════════════════════════════════════════════════════════════════════
 
 # ═══════════════════════════════════════════════════════════════════════════
 # 2026-08-02T18:05 /idea-verify — collapsed-key corruption found and healed.
@@ -1121,8 +1666,15 @@ open_decisions:
       fixture. Both now evaluate and PASS, and --report-untyped returns empty. Verified this run:
       G-ACTION-CONTRACT scans 428 blocks with 0 violations and 0 unevaluated.
 project: "mifos-x/mifos-x-open-banking"
-roster_size: 23                 # canonical count from idea-layer/_list.json
-features_evaluated: 23
+# CORRECTED 2026-08-03 (/idea-heal). These read 23 and cited idea-layer/_list.json as the
+# canonical source — but that file did not exist, and the project holds 46 screen directories.
+# The 23 was the pre-2026-07-28 roster; every figure in the run blocks BELOW this line was
+# therefore computed over half the current corpus and should be read with that caveat.
+# The canonical enumeration now exists at screens/_list.json and lists all 46.
+roster_size: 46                 # canonical count from idea-layer/screens/_list.json
+features_evaluated: 46
+roster_size_history:
+  - { value: 23, until: "2026-08-03", note: "pre-reverse-sync roster; stale after the corpus grew to 46" }
 
 # ═══════════════════════════════════════════════════════════════════════════
 # 2026-07-31 /idea-verify — full pass, all 23 features
@@ -1567,3 +2119,48 @@ deferred_by_design:
 # API.md for 23/23 features (69 files incl. .meta.yaml sidecars). The artifacts it
 # described as absent now exist, so retaining the entry would suppress a real
 # regression if they went missing again.
+
+run_2026_08_04_heal:
+  seeded_by: /idea-verify
+  drained_by: /idea-heal
+  mode: inline
+  rounds: 1
+  halt_reason: success
+  findings_initial: 19
+  findings_final: 0
+  resolved:
+    rule_id: RULE-IDEA-SCHEMA-CLOSURE-001
+    sub_check: SCH-4
+    gate: G-IDEA-WR
+    count: 19
+    features: 17
+    detail: >-
+      Every action_contract with effect in {call_api, delete, persist_db} now declares the
+      writes_to[]/reads_from[] target it mutates or reads. Per-fix provenance is one line each in
+      state/CAPABILITY_AUGMENTATIONS.jsonl (run_2026_08_04_heal).
+  escalated:
+    - finding_id: CARD-WRITE-UNBACKED
+      rule_id: RULE-IDEA-API-CONTRACT-001
+      gap_class: action-declares-unbacked-endpoint
+      severity: error
+      screen: card-detail
+      evidence:
+        - "card-detail/ui.yaml:219 toggle_card_status — effect: call_api"
+        - "card-detail/ui.yaml:447 freeze_card — effect: call_api"
+        - "card-detail/ui.yaml:478 report_lost — effect: call_api"
+        - "card-detail/api.yaml declares exactly one operation: obp_get_card_detail (GET)"
+        - "OBP Card tag catalogue (14 endpoints, live-checked 2026-08-04): the only card-state
+           write is PUT /obp/v3.1.0/management/banks/{bankId}/cards/{cardId} — admin-tier, not PSU-scoped"
+        - "no card feature module exists under source/mifos-x-open-banking"
+      confidence: 95
+      auto_fixable: false
+      reason_not_auto_fixable: >-
+        Declaring an endpoint that does not exist for this consumer would be a fabricated contract.
+        The two precedents in this project (standing-order-detail, direct-debit-detail) each resolved
+        the same shape by dropping the endpoints and documenting the 404 in api.yaml#note — that is a
+        product decision about whether card controls ship at all, not a mechanical repair.
+      suggested_paths:
+        - "Drop the three actions and mark card-detail read-only (mirrors the SO/DD reconciliations)"
+        - "Declare the actions deferred in api.yaml#note with the admin-tier endpoint recorded as the
+           blocker, and add card-detail to idea-plan.yaml#deferred_routes[]"
+      status: open-awaiting-user-decision

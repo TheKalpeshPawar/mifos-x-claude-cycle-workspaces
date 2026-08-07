@@ -28,7 +28,7 @@ data_types:
       purposes:
         - app_functionality          # Display account overview, transactions
       ephemeral: false               # Cached locally in encrypted Room KMP DB
-      user_visible_notes: "Account numbers are masked (last 4 digits shown). Accessed via OBP API; not transmitted to any party other than your bank's OBP API."
+      user_visible_notes: "Account numbers are masked (last 4 digits shown). Read from your own bank under a UK Open Banking consent you grant at the bank; not transmitted to any party other than your bank."
 
     - type: credit_debit_card_number
       collected: true
@@ -37,7 +37,7 @@ data_types:
       purposes:
         - app_functionality          # Card management screen
       ephemeral: false
-      user_visible_notes: "Card PANs are masked. Accessed via OBP API."
+      user_visible_notes: "Card numbers are masked on account records. Read from your own bank under a UK Open Banking consent, and only where the ReadPAN permission was granted."
 
     - type: purchase_history
       collected: true
@@ -64,7 +64,7 @@ data_types:
       shared: false
       required_or_optional: required
       purposes:
-        - app_functionality          # Profile display, Field Officer customer records
+        - app_functionality          # Profile display
       ephemeral: false
 
     - type: email_address
@@ -76,7 +76,7 @@ data_types:
       ephemeral: false
 
     - type: user_ids
-      description: "OBP user ID, Firebase Installation ID (anonymous)"
+      description: "Bank-issued consent identifier, Firebase Installation ID (anonymous). There is no app-level user account."
       collected: true
       shared: false
       required_or_optional: required
@@ -85,28 +85,14 @@ data_types:
         - analytics                  # Firebase crash/performance aggregation (anonymous)
       ephemeral: false
 
-    - type: address
-      description: "Customer address — Field Officer persona only during KYC onboarding"
-      collected: true
-      shared: false
-      required_or_optional: optional
-      purposes:
-        - app_functionality          # KYC compliance workflow
-      ephemeral: false
-
-    - type: phone_number
-      description: "Customer phone — Field Officer persona only during KYC onboarding"
-      collected: true
-      shared: false
-      required_or_optional: optional
-      purposes:
-        - app_functionality
-      ephemeral: false
+    # address + phone_number entries removed 2026-08-02: both existed only for the
+    # field-officer KYC onboarding workflow, which no longer exists. This app collects
+    # no third-party customer personal data.
 
   # --- Authentication ---
   authentication:
     - type: auth_or_account_credentials
-      description: "OBP Direct Login token (session token post-authentication)"
+      description: "OAuth access and refresh tokens scoped to the consent, obtained after you authenticate at your bank. The app never receives or stores a password."
       collected: true
       shared: false
       required_or_optional: required
@@ -178,7 +164,7 @@ data_types:
 security_practices:
   data_encrypted_in_transit:
     applies: true
-    notes: "All OBP API calls use HTTPS (TLS 1.2+). Firebase SDKs use TLS."
+    notes: "All bank API calls use mutual TLS (mTLS, TLS 1.2+) under the FAPI 1.0 Advanced profile; payment writes are additionally signed with a detached JWS. Firebase SDKs use TLS."
 
   data_encrypted_at_rest:
     applies: true
@@ -186,7 +172,7 @@ security_practices:
 
   users_can_request_data_deletion:
     applies: true
-    how: "Users can delete their local data by logging out (clears cache and session token). For OBP account data deletion, contact the banking institution. Email privacy@mifos.org for Firebase telemetry deletion requests."
+    how: "Revoking the Open Banking consent — in this app or in your bank's app — stops all data access immediately and clears the cached data and tokens. Logging out has the same local effect. For deletion of data held by the bank itself, contact the bank. Email privacy@mifos.org for Firebase telemetry deletion requests."
 
   follows_families_policy:
     applies: false
@@ -212,7 +198,8 @@ google_play_form:
 
   # Data safety section short description (50 words max for Play Console)
   short_description: >
-    Mifos-X Open Banking accesses your financial data (accounts, transactions, cards)
-    via your bank's Open Bank Project API to provide banking services. Crash and
-    performance diagnostics are collected via Firebase on Android only — no financial
-    data is included. All data is encrypted in transit and at rest.
+    Mifos-X Open Banking reads your account data and initiates payments through your
+    bank's UK Open Banking API, under a consent you grant at your bank. It never asks
+    for your banking password. Crash and performance diagnostics are collected via
+    Firebase on Android only — no financial data is included. All data is encrypted in
+    transit and at rest, and you can revoke access at any time.

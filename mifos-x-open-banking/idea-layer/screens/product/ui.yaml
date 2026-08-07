@@ -5,7 +5,8 @@ feature_id: product
 screen_id: product
 archetype: detail_screen
 name: "Product Terms"
-status: implemented
+# status: REMOVED 2026-08-04 (CROSS_LEAK repair — sibling-layout.json assigns `status` to
+# the docs sibling). This copy held `implemented`; docs.yaml is the single owner.
 quality_score: 95
 initial_state: loading
 
@@ -141,7 +142,7 @@ components:
         id: product_type_label
         test_tag: "product:typeBadge"
         role: overline
-        value: "{product.ProductType}"
+        content: "{product.ProductType}"
         i18n: skip  # fully dynamic — OBProduct2 enum value (PCA / BCA / Other)
         style: labelMedium
         color: "secondary"
@@ -154,7 +155,7 @@ components:
         id: product_name
         test_tag: "product:productName"
         role: title
-        value: "{product.ProductName}"
+        content: "{product.ProductName}"
         i18n: skip  # fully dynamic — e.g. "HSBC Advance Account"
         style: headlineMedium
         test_context:
@@ -166,7 +167,7 @@ components:
         id: product_id
         test_tag: "product:productId"
         role: caption
-        value: "{strings.product_id_label}"
+        content: "{strings.product_id_label}"
         style: labelSmall
         color: "onSurfaceVariant"
         test_context:
@@ -191,7 +192,7 @@ components:
     id: monthly_max_charge_row
     test_tag: "product:monthlyMaxChargeRow"
     state_binding: [content]
-    supporting_text: "{strings.product_monthly_max_charge_label}"
+    headline: "{strings.product_monthly_max_charge_label}"
     trailing_content: "{strings.product_monthly_max_charge_amount}"
     trailing_style: titleMedium
     accessibility_label: "{strings.product_monthly_max_charge_a11y}"
@@ -237,7 +238,7 @@ components:
             id: tier_band_row
             test_tag: "product:creditTier:{index}"      # fun creditTier(index: Int) — keyed by POSITION, not id
 
-            supporting_text: "{strings.product_tier_band_info}"
+            headline: "{strings.product_tier_band_info}"
             trailing_content: "{strings.product_tier_aer}"
             trailing_style: titleMedium
             accessibility_label: "{strings.product_credit_band_a11y}"
@@ -283,7 +284,7 @@ components:
             id: overdraft_tier_row
             test_tag: "product:overdraftTier:{index}"   # fun overdraftTier(index: Int)
 
-            supporting_text: "{strings.product_overdraft_type_label}"
+            headline: "{strings.product_overdraft_type_label}"
             trailing_content: "{strings.product_overdraft_ear}"
             trailing_style: titleMedium
             accessibility_label: "{strings.product_overdraft_band_a11y}"
@@ -322,7 +323,7 @@ components:
 
         leading_icon: check_circle
         leading_icon_color: "primary"
-        supporting_text: "{item}"
+        headline: "{item}"
         i18n: skip  # fully dynamic — feature strings are data from OBProduct2
         accessibility_label: "{strings.product_feature_a11y}"
         test_context:
@@ -348,10 +349,9 @@ components:
       data_driven: false
 
   # ── ERROR ─────────────────────────────────────────────────────────────────────
-  - type: empty_state
+  - type: error_state
     id: error_state
     test_tag: "product:error"
-    variant: error
     state_binding: [error]
     icon: error_outline
     title: "{strings.product_error_title}"
@@ -365,6 +365,8 @@ components:
       data_driven: true
     children:
       - type: button
+        keyboard:
+          focusable: true
         id: retry_button
         test_tag: "product:retryButton"
         variant: filled

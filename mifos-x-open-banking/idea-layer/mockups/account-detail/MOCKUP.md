@@ -9,15 +9,15 @@ Full-screen vertical scroll with a top app bar ("Account Details" + back arrow) 
 
 ```
 ┌────────────────────────────────────┐
-│ ← Account Details                  │  ← top app bar (#1800B1 bg)
+│ ← Account Details                  │  ← top app bar (`primary` bg)
 ├────────────────────────────────────┤
 │  Primary Checking                  │
-│  £4,250.00                         │  ← account_header_card (bg #1800B1)
+│  £4,250.00                         │  ← account_header_card (bg `primary`)
 │  [GBP] [CHECKING]                  │
 ├────────────────────────────────────┤
 │ ┌──────────────────────────────┐   │
 │ │ IBAN                    [⎘] │   │  ← account_info_card (elevation 3,
-│ │ DE89 3704 0044 0532 0130 00  │   │    margin_top -16 overlapping hero)
+│ │ DE89 3704 0044 0532 0130 00  │   │    negative top margin overlapping hero)
 │ │──────────────────────────────│   │
 │ │ BIC / SWIFT             [⎘] │   │
 │ │ COBADEFFXXX                  │   │
@@ -56,40 +56,35 @@ Full-screen vertical scroll with a top app bar ("Account Details" + back arrow) 
 ## Components
 
 ### account_header_card — Hero Section
-- **Background:** #1800B1 (Mifos deep purple), full width, no border radius
-- **Padding:** horizontal 24, top 20, bottom 32
-- **account_header_label:** "Primary Checking" — label_large, color #FFFFFFB3 (70% white), padding_bottom 4
-- **account_header_balance:** "£4,250.00" — display_large, #FFFFFF, font_weight 700, padding_bottom 4
-- **Badges (horizontal stack, spacing 8):**
-  - GBP badge: background #FFFFFF1A, border_radius 6, padding h/v 8/4, text label_small #FFFFFF
+- **Background:** `primary`, full width, no border radius
+- **Padding:** horizontal `spacing.lg`, top `spacing.md`, bottom `spacing.xl`
+- **account_header_label:** "Primary Checking" — `labelLarge`, color `onPrimary` at reduced emphasis (`opacity.loading`), padding_bottom `spacing.xs`
+- **account_header_balance:** "£4,250.00" — `displayLarge`, `onPrimary`, Roboto Mono, font_weight 700, padding_bottom `spacing.xs`
+- **Badges (horizontal stack, spacing `spacing.sm`):**
+  - GBP badge: background `onPrimary` at `opacity.hover`, border_radius `radius.xs`, padding horizontal `spacing.sm` vertical `spacing.xs`, text `labelSmall` `onPrimary`
   - CHECKING badge: same pill style
 
 ### account_info_card — Routing Information
-- **Position:** margin_top -16 (overlaps hero for visual continuity), margin_horizontal 20
-- **Background:** #FFFFFF, border_radius 16, elevation 3, padding 20
+- **Position:** negative top margin of `spacing.md` (overlaps hero for visual continuity), margin_horizontal `spacing.md`
+- **Background:** `surfaceContainerLowest`, border_radius `radius.lg`, elevation 3, padding `spacing.md`
 - **IBAN row (space-between):**
-  - Left col: "IBAN" label (label_small, #666666, letter_spacing 0.5) above "DE89 3704 0044 0532 0130 00" (body_medium, #1A1A1A, monospace)
-  - Right: content_copy icon 22px, #1800B1 (tappable)
-- **Divider:** #F0F0F0 horizontal rule, margin_bottom 16
+  - Left col: "IBAN" label (`labelSmall`, `onSurfaceVariant`, letter_spacing 0.5) above "DE89 3704 0044 0532 0130 00" (`bodyMedium`, `onSurface`, Roboto Mono)
+  - Right: content_copy icon `icon.md`, `primary` (tappable)
+- **Divider:** `outlineVariant` horizontal rule (`border.thin`), margin_bottom `spacing.md`
 - **BIC row:** same layout — "BIC / SWIFT" / "COBADEFFXXX" / copy icon
 
 ### action_row
-- **Layout:** horizontal, spacing 10, padding_horizontal 20, padding_bottom 24
-- **btn_send_money:** variant=tonal, bg #E8E4FF, text #1800B1, icon send, border_radius 12, flex 1
-- **btn_request_payment:** variant=outlined, border #1800B1, text #1800B1, icon request_quote, flex 1
-- **btn_download_statement:** variant=outlined, border #1800B1, text #1800B1, icon download, flex 1
+- **Layout:** horizontal, spacing `spacing.sm`, padding_horizontal `spacing.md`, padding_bottom `spacing.lg`
+- **btn_send_money:** variant=tonal, container `primaryContainer`, label `onPrimaryContainer`, icon send, border_radius `radius.md`, flex 1
+- **btn_request_payment:** variant=outlined, border `outline` (`border.thin`), text `primary`, icon request_quote, flex 1
+- **btn_download_statement:** variant=outlined, border `outline` (`border.thin`), text `primary`, icon download, flex 1
 
 ### Transaction Rows (detail_txn_row_1..5)
-- **Background:** #FFFFFF, border_radius 12, padding 16, margin_horizontal 20, elevation 1
-- **Layout:** horizontal, align center, spacing 12
-- **Icon avatars (44×44 circles):**
-  - Tesco: shopping_basket icon on #FFEBEE, icon color #FF5252
-  - Salary: payments icon on #E8F5E9, icon color #4CAF50
-  - EDF: bolt icon on #FFF3E0, icon color #FF9800
-  - Amazon: subscriptions icon on #EDE7F6, icon color #673AB7
-  - Costa: local_cafe icon on #FBE9E7, icon color #BF360C
-- **Center stack:** merchant name (body_medium, #1A1A1A) / date (body_small, #888888)
-- **Right:** signed amount — debits: #FF5252; credits: #4CAF50; body_large, weight 600
+- **Background:** `surfaceContainerLowest`, border_radius `radius.md`, padding `spacing.md`, margin_horizontal `spacing.md`, elevation 1
+- **Layout:** horizontal, align center, spacing `spacing.md`
+- **Icon avatars (44×44 circles):** all five use the same neutral treatment — `surfaceContainerHigh` fill with the merchant glyph in `onSurfaceVariant` at `icon.md`. The glyph alone carries the category (shopping_basket / payments / bolt / subscriptions / local_cafe); it is not colour-coded.
+- **Center stack:** merchant name (`bodyMedium`, `onSurface`) / date (`bodySmall`, `onSurfaceVariant`)
+- **Right:** signed amount in Roboto Mono, `bodyLarge`, weight 600 — debits `error`; credits `primary`
 
 ---
 
@@ -128,13 +123,14 @@ Full-screen vertical scroll with a top app bar ("Account Details" + back arrow) 
 
 ## Design Notes
 
-- **Hero overlap:** The info card uses margin_top -16 to visually bridge the hero to the scrollable content — creates a floating card effect that is a Material Design 3 elevation pattern.
-- **Color contrast:** White text on #1800B1 hero exceeds WCAG AA. Badge backgrounds (#FFFFFF1A = 10% white) provide subtle grouping without disrupting legibility.
-- **Copy affordance:** content_copy icons in #1800B1 are intentionally larger (22px with 8px padding) to meet 44dp minimum tap target.
-- **Transaction direction coding:** Debit amounts (#FF5252 red) vs credit amounts (#4CAF50 green) follow universal banking convention — no text prefix needed beyond +/- sign.
-- **Skeleton loading:** Hero block remains full purple during load; info card and actions skeleton with #E0E0E0 grey blocks maintaining spatial layout.
-- **Typography ladder:** display_large (balance) → title_large (section heading) → body_medium (routing values) → body_small (dates/secondary) — 4 distinct steps ensuring clear hierarchy.
+- **Hero overlap:** the info card uses a negative top margin of `spacing.md` to visually bridge the hero to the scrollable content — a floating-card effect that is a Material Design 3 elevation pattern.
+- **Colour contrast:** `onPrimary` text on the `primary` hero is the pair the palette guarantees at AA. Badge backgrounds use `onPrimary` at `opacity.hover` (8%) for subtle grouping without disrupting legibility.
+- **Merchant avatars are neutral, not category-coloured:** the previous spec gave each merchant its own hue (red/green/orange/violet/deep-orange). This palette ships M3's five families and no more, and DESIGN.md retired the category-accent role when the PFM screens were removed. All avatars therefore share `surfaceContainerHigh` with an `onSurfaceVariant` glyph — the icon carries the category, and no invented tonal family has to be kept accessible across two themes and two contrast variants.
+- **Copy affordance:** content_copy icons in `primary` are sized `icon.md` with `spacing.sm` padding to clear the 44 dp `touch_targets.minimum` floor.
+- **Transaction direction coding:** debits use `error`, credits use `primary` — the palette's money pair. There is no green here by design ("never green-on-red, to stay calm and colour-blind-safe"), and the +/- sign carries the direction independently of hue.
+- **Skeleton loading:** the hero keeps its `primary` fill during load; info card and actions skeleton with `surfaceVariant` blocks, maintaining spatial layout.
+- **Typography ladder:** `displayLarge` (balance) → `titleLarge` (section heading) → `bodyMedium` (routing values) → `bodySmall` (dates/secondary) — four distinct steps ensuring clear hierarchy. Balance and routing numbers are set in Roboto Mono per the `amount` component contract.
 
 ---
 
-_Generated by /idea export | 2026-05-25_
+_Generated by /idea export | 2026-08-03_

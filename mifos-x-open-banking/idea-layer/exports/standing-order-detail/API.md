@@ -1,106 +1,76 @@
-# API Reference — Standing Order Detail
+# API — Standing Order Detail
 
-| Field    | Value                                      |
-|----------|--------------------------------------------|
-| Feature  | standing-order-detail                      |
-| Base URL | https://apisandbox.openbankproject.com     |
+Client contract for `standing-order-detail`. This project owns no backend: these are Ktorfit
+contracts against the OBP sandbox, not owned schema.
 
----
+## `api: []` — this screen makes no network call of its own
 
-## GET /v4.0.0/banks/{bank_id}/accounts/{account_id}/standing-orders/{standing_order_id}
+**OBP has no standing-order detail, pause, resume or delete endpoint at any version.** The
+originally specified `GET /standing-orders/{id}`, `POST .../pause`, `POST .../resume` and
+`DELETE .../{id}` were all **live-verified 404** and dropped on 2026-06-11.
 
-**Auth:** DirectLogin
-**Tag:** Standing-Orders
-**Trigger:** `loadDetail(standingOrderId)` on screen entry and `RetryLoad` event
-
-### Path Parameters
-
-| Name              | Type   | Description                                             |
-|-------------------|--------|---------------------------------------------------------|
-| bank_id           | String | OBP bank identifier (e.g., `rbs`)                      |
-| account_id        | String | Source account ID from navigation params                |
-| standing_order_id | String | Standing order ID from navigation params                |
-
-### Response Fields
-
-| Field              | Type                       | Description                              |
-|--------------------|----------------------------|------------------------------------------|
-| id                 | String                     | Standing order identifier                |
-| bank_id            | String                     | Bank identifier                          |
-| account_id         | String                     | Source account identifier                |
-| beneficiary_name   | String                     | Recipient display name                   |
-| beneficiary_iban   | String                     | Recipient IBAN                           |
-| beneficiary_bank   | String                     | Recipient bank name                      |
-| amount_value       | String                     | Payment amount (e.g., "1200.00")         |
-| amount_currency    | String                     | ISO 4217 currency code (e.g., "GBP")    |
-| frequency          | String                     | DAILY / WEEKLY / MONTHLY / YEARLY        |
-| start_date         | String                     | ISO-8601 date string                     |
-| next_payment_date  | String                     | ISO-8601 next scheduled date             |
-| final_date         | String?                    | ISO-8601 final date; null = Ongoing      |
-| status             | String                     | ACTIVE / PAUSED / CANCELLED              |
-| execution_history  | List\<StandingOrderExecution\> | Last 5 execution entries              |
-
-### Error Codes
-
-| Code | OBP Message               | UI Response                              |
-|------|---------------------------|------------------------------------------|
-| 401  | USER_NOT_LOGGED_IN        | Navigate to login                        |
-| 403  | INSUFFICIENT_AUTHORISATION| Error state — "not found" message        |
-| 404  | STANDING_ORDER_NOT_FOUND  | Error state — "Standing Order Not Found" |
+Everything shown here is re-derived from data the list screen already fetched.
 
 ---
 
-## POST /v4.0.0/banks/{bank_id}/accounts/{account_id}/standing-orders/{standing_order_id}/pause
+## Derived reads
 
-**Auth:** DirectLogin
-**Tag:** Standing-Orders
-**Trigger:** `PauseClicked` event
+### standing_order_detail_by_series
 
-Idempotent. Returns the updated standing order with `status: PAUSED`.
+```
+StandingOrdersRepository.detail(bankId, accountId, standingOrderId)
+```
 
-### Error Codes
+Output DTO: `StandingOrderDetail`.
 
-| Code | OBP Message                     | UI Response                                        |
-|------|----------------------------------|----------------------------------------------------|
-| 401  | USER_NOT_LOGGED_IN              | Navigate to login                                  |
-| 404  | STANDING_ORDER_NOT_FOUND        | Snackbar: "Could not pause. Order not found."      |
-| 409  | STANDING_ORDER_ALREADY_PAUSED   | Silently reload — label already shows "Resume"     |
+Finds the order by **series id** within the derived/created set — the same `TXN_TYPE=SO` derivation
+the list uses — and builds the detail from it.
 
----
+An unknown id fails to the **error** state ("Standing Order Not Found"), not to empty. This differs
+from `direct-debit-detail`, where an unresolvable mandate renders empty; here an id that does not
+resolve is treated as a lookup failure.
 
-## POST /v4.0.0/banks/{bank_id}/accounts/{account_id}/standing-orders/{standing_order_id}/resume
+### standing_order_executions
 
-**Auth:** DirectLogin
-**Tag:** Standing-Orders
-**Trigger:** `ResumeClicked` event
+```
+deriveExecutions(transactions, standingOrderId)
+```
 
-Idempotent. Returns updated standing order with `status: ACTIVE`. Button label toggles based on current `status` field.
+Output DTO: `List<StandingOrderExecution>`.
 
-### Error Codes
+Filter: `TXN_TYPE=SO` transactions of that series, **newest first, capped at 5**.
 
-| Code | OBP Message                   | UI Response                                |
-|------|--------------------------------|--------------------------------------------|
-| 401  | USER_NOT_LOGGED_IN            | Navigate to login                          |
-| 404  | STANDING_ORDER_NOT_FOUND      | Snackbar error                             |
-| 409  | STANDING_ORDER_NOT_PAUSED     | Silently reload                            |
+Each `StandingOrderExecution` carries a `transactionId`, which is what makes the history rows
+drillable into `transaction-detail`. Without it the executions would be display-only.
 
----
-
-## DELETE /v4.0.0/banks/{bank_id}/accounts/{account_id}/standing-orders/{standing_order_id}
-
-**Auth:** DirectLogin
-**Tag:** Standing-Orders
-**Trigger:** `DeleteConfirmed` event (after user confirms in sod_delete_dialog)
-
-Soft-deletes the standing order. No further payments will be initiated. On 200 the app navigates back to the standing-orders list.
-
-### Error Codes
-
-| Code | OBP Message             | UI Response                                         |
-|------|-------------------------|-----------------------------------------------------|
-| 401  | USER_NOT_LOGGED_IN      | Navigate to login                                   |
-| 404  | STANDING_ORDER_NOT_FOUND| Snackbar: "Could not cancel. Order not found."      |
+The cap is why the card is titled "RECENT EXECUTIONS" rather than presenting itself as a full
+history.
 
 ---
 
-_Generated by /idea export | 2026-05-29_
+## Deferred — pause, resume, cancel
+
+`POST .../pause`, `POST .../resume` and `DELETE .../{id}` **do not exist on OBP**.
+
+The screen still shows `sod_pause_resume_button` and `sod_cancel_button`, and they surface
+**"coming soon" snackbars**. There is deliberately **no delete dialog** — offering a confirmation
+step for an action that cannot be performed would be worse than the snackbar, because it implies the
+operation is real and merely needs confirming.
+
+Note the contrast with `direct-debit-detail`, which has no cancel endpoint either but records
+cancellation **locally**. Standing orders do not take that route: nothing is written, and the
+buttons are honest about being unavailable.
+
+Re-add these only if OBP ships the endpoints.
+
+---
+
+<!--
+Regenerated 2026-08-04 by /idea-feature-export --all --force from screens/standing-order-detail/api.yaml.
+
+The previous revision documented four endpoints — GET the standing order, POST pause, POST resume,
+and DELETE — with auth notes and response shapes. All four were live-verified 404 and removed from
+api.yaml on 2026-06-11; the export was never regenerated, so it went on describing an API surface
+that does not exist. api.yaml now declares `api: []` with derived_reads + a deferred block, and this
+file reflects that. This is the same drift class found in exports/direct-debit-detail/API.md.
+-->

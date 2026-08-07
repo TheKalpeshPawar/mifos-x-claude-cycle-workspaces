@@ -1,72 +1,85 @@
-# API Reference — My Accounts
+# API — Accounts
 
-| Field    | Value                                       |
-|----------|---------------------------------------------|
-| Feature  | accounts                                    |
-| Base URL | https://apisandbox.openbankproject.com      |
-
----
-
-## GET /obp/v3.0.0/banks/{bankId}/accounts
-
-**Auth:** DirectLogin
-**Tag:** Accounts
-**Trigger:** `loadAccounts()` on screen open / `RetryLoad` event
-
-Fetches all accounts for the specified bank. The `AccountsViewModel` maps the response to `List<BankAccount>`, populates `accounts` and `filteredAccounts` (initially unfiltered), computes `totalBalance` by summing all `balance.amount` values, and groups accounts into `groupedByBank: Map<String, List<BankAccount>>` for bank-section rendering. Client-side `searchAccounts(query)` filters `filteredAccounts` by name, number, or label without issuing additional network calls; `groupedByBank` is recomputed from `filteredAccounts` on each query change.
-
-### Path Parameters
-
-| Name   | Type   | In   | Value    | Description                         |
-|--------|--------|------|----------|-------------------------------------|
-| bankId | String | path | gh.29.uk | Mifos X sandbox bank identifier     |
-
-### Request Headers
-
-| Header        | Value                           | Description                    |
-|---------------|---------------------------------|--------------------------------|
-| Authorization | DirectLogin token=`<token>`     | Session token from auth flow   |
-| Content-Type  | application/json                |                                |
-
-### Response Fields
-
-| Field                         | Type                   | Description                                                                       |
-|-------------------------------|------------------------|-----------------------------------------------------------------------------------|
-| id                            | String                 | Unique account identifier                                                         |
-| label                         | String                 | Human-readable account name (e.g. `"Primary Checking"`)                          |
-| account_type                  | String                 | Account category: `"CHECKING"`, `"SAVINGS"`, `"BUSINESS"`, `"CURRENT"`           |
-| balance                       | Object                 | Balance wrapper                                                                   |
-| balance.currency              | String                 | ISO 4217 currency code (e.g. `"GBP"`, `"USD"`)                                   |
-| balance.amount                | String                 | Decimal balance as string (e.g. `"4250.00"`)                                      |
-| account_routings              | List\<AccountRouting\> | One or more routing entries for the account                                       |
-| account_routings[].scheme     | String                 | Routing scheme: `"IBAN"`, `"AccountNumber"`                                       |
-| account_routings[].address    | String                 | Routing value (IBAN string or account number)                                     |
-
-### Demo Data
-
-| id                   | label              | account_type | balance.currency | balance.amount | routing[0].scheme | routing[0].address              |
-|----------------------|--------------------|--------------|------------------|----------------|-------------------|---------------------------------|
-| acc_checking_primary | Primary Checking   | CHECKING     | GBP              | 4250.00        | IBAN              | DE89 3704 0044 0532 0130 00     |
-| acc_savings_goal     | Holiday Savings    | SAVINGS      | GBP              | 6180.50        | IBAN              | DE89 3704 0044 0532 0131 00     |
-| acc_business_main    | Business Current   | BUSINESS     | GBP              | 2050.00        | IBAN              | DE89 3704 0044 0532 0132 00     |
-
-### Computed Values (AccountsViewModel — client-side)
-
-| Computation      | Logic                                                                  | Demo Result         |
-|------------------|------------------------------------------------------------------------|---------------------|
-| totalBalance     | Sum of all `balance.amount.toBigDecimal()`                            | £12,480.50          |
-| filteredAccounts | Filter `accounts` by `searchQuery` (name, number, label; empty → all) | Varies by query     |
-| groupedByBank    | Group `filteredAccounts` by bank institution name                      | 2 groups (3 cards)  |
-| bankSubtotal     | Sum of `balance.amount` per group key                                  | £10,430.50 / £2,050.00 |
-
-### Error Codes
-
-| Code | Message                                           | UI Handling                                                          |
-|------|---------------------------------------------------|----------------------------------------------------------------------|
-| 401  | Unauthorized — DirectLogin token missing or expired | Show `error` state; display `auth_error` message; redirect to login |
-| 404  | Bank not found                                    | Show `error` state; show retry button                                |
-| 500  | OBP server error                                  | Show `error` state; show retry button                                |
+Client contracts for `accounts`. This project owns no backend: these are Ktorfit contracts against
+the HSBC UK/CE sandbox (OBIE Read/Write Standard), not owned schema.
+Consumer: `AccountsOverviewRepository`.
 
 ---
 
-_Generated by /idea export | 2026-06-02_
+## accounts-list
+
+| | |
+|---|---|
+| Endpoint | `GET /accounts` |
+| Response DTO | `BankAccount` (path `Data.Account[]`) |
+| Permission | **ReadAccountsDetail** |
+| Requires auth | yes |
+| Network policy | `cellular_allowed` |
+
+Returns every account the PSU authorised. **Always the first resource call after consent** — the
+whole account journey is keyed off the `AccountId`s it returns.
+
+An empty `Data.Account[]` is a successful response and renders `empty_accounts`, not an error: the
+consent was granted, it simply covers no accounts.
+
+**Errors**
+
+| Code | Cause | Recovery |
+|------|-------|----------|
+| 401 | Access token expired or invalid | Clear token store → navigate to login |
+| 403 | Consent rejected/revoked, or `ReadAccountsDetail` absent | Navigate to consent-list for re-authorisation |
+| 429 | HSBC rate-limit exceeded (OBIE mandates a 500-calls/5-min PSU limit) | Exponential back-off + retry CTA |
+| 503 | HSBC sandbox unavailable | Retry CTA after a brief delay |
+
+The 429 recovery is back-off *before* the CTA, not a bare retry button — an immediate retry against
+a PSU rate limit makes the situation worse.
+
+---
+
+## balances
+
+| | |
+|---|---|
+| Endpoint | `GET /accounts/{AccountId}/balances` |
+| Response DTO | `AccountBalance` (path `Data.Balance[]`) |
+| Permission | **ReadBalances** |
+| Requires auth | yes |
+| Network policy | `cellular_allowed` |
+| Path param | `AccountId` — `OBAccount6.AccountId`, from `accounts-list` |
+
+**Called once per account**, fanned out in parallel via `coroutineScope` async/awaitAll. This is
+why a card can render before its balance arrives, and why one account's balance failure does not
+take down the list.
+
+### Balance type preference
+
+OBIE returns several balance types per account. This screen must show one figure per card, so it
+takes the first available in order:
+
+`InterimAvailable → InterimBooked → OpeningBooked`
+
+Available is preferred over booked because it is the figure a customer can actually spend.
+(`account-detail` makes the opposite choice and lists *all* types — one account in depth warrants
+the distinction; a list does not.)
+
+### Multi-currency accounts
+
+`GlobalWallet` accounts return a **native-currency** balance. Display as-is — **no GBP conversion**.
+Converting would invent a rate the bank did not quote and put a number on screen the customer
+cannot reconcile against their statement.
+
+**Errors — all degrade per-account, none is fatal to the list**
+
+| Code | Cause | Recovery |
+|------|-------|----------|
+| 401 | Access token expired | Mark all accounts `balance_unavailable`; surface session-expired error |
+| 403 | `ReadBalances` not granted in consent | Show the account card **without** a balance row; surface an advisory chip |
+| 404 | `AccountId` not found — stale reference (consent revoked mid-session) | Remove the stale card; snackbar advisory |
+
+The 403 path is the important one: a consent can authorise accounts without authorising balances.
+The cards still render with identity and type; only the balance column is withheld. Treating that
+as a load failure would hide accounts the customer is entitled to see.
+
+---
+
+<!-- Generated 2026-08-04 by /idea-feature-export --all --force from screens/accounts/api.yaml. -->

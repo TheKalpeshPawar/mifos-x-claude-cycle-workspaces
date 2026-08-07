@@ -1,90 +1,108 @@
----
-ui_yaml_sha: 54a097fb67c3115dd7ba3cc68bc7e927709831cbacc5a9ed03ce54409ef99cb3
-design_md_hash: f734ecfba28b3b0688cbd7ca6f3d7fca27febb15fd021d72a4518ae0e3a4200d
-app_shell_hash: 7b9c63f9aee4f5b5005b1d7533e7f5feab6427f398954987c34ee0f382b0ed69
-design_read_hash: 513c061d12f3a90e84d6e98e1e037b131e59fa3ca5c5f3c0abfc6ba87d24bcaf
-content_hash: 96b609d40c74d84a7c4aeeebe90fe9e26b0b2b299cf9e6224e03ebe15438d6a8
+# payment-consent · state: authorised
 
-design_read_aesthetic: minimalist-ui
-design_read_dials: {variance: 3, motion: 2, density: 5}
-aesthetic_variant_override: null
-archetype: empty_state
+> Feature: payment-consent · State role: content (terminal success)
+> Archetype: headless / transitional
+> Design system: Open Banking — Trust Blue (Material 3, seed #266489)
+> Every quoted string is VERBATIM from `_strings/strings.yaml`. Do not paraphrase.
 
-feature: payment-consent
-state: authorised
-state_visibility: authorised
-
-project_id: 'null'
-design_system_id: 'null'
-
-generated_by: stitch-prompt-build.ts v2.0.0
-prompt_template_version: stitch-per-state-v3.0.0
-craft_rules_version: v1.0.0
 ---
 
-# payment-consent — authorised state
+## What This State Is
 
-> Auto-generated from screens/payment-consent/ui.yaml @ SHA 42bbd3450d612959
-> Stitch DesignSystem: (pending DESIGN.md upload — run /idea-feature-stitch sub-plan 02)
-> DO NOT redeclare colors / fonts / spacing — they live in DESIGN.md.
+The consent has reached `Data.Status == "AUTH"`. The app emits
+`PaymentConsentEvent.Authorised(consentId, psuToken, authorisedInitiation)` and the originating
+type screen proceeds to submit.
 
-↓↓↓ MOCKUP PROMPT
+This state is transient — the originator usually dismisses the feature immediately — but it
+MUST render as a discrete state rather than flashing blank: the originator may take a moment to
+act, the gap is perceptible under memory pressure, and a blank flash between "waiting" and
+"payment submitted" reads as a crash.
 
-> DO NOT invent navigation, tabs, or screens beyond the declared app-shell (Home, Accounts, Pay, More) plus the composition below. Every nav item you render MUST come from that list.
-> Only elements that navigate or perform an action may look tappable (cursor, ripple, pressed state). DO NOT add tap affordances to decorative content — page titles, section headings, avatars, standalone icons, badges, and static labels are NOT interactive.
+The copy confirms what happened at the bank. The payment is authorised, not yet submitted.
 
-## Archetype: empty_state
+---
 
-## Layout
-- type: scrollable_column
-- padding: default
-- alignment: start
-- responsive: any multi-column region MUST be mobile-first and collapse to a single column at narrow/phone widths — never a fixed multi-column grid with no single-column fallback.
+## Visual Layout
 
-## Composition (top → bottom)
-1. **progress_indicator** (#authorising_indicator)
-2. **text** (#progress_detail) — content: "{strings.payment_consent.progress_detail}"
-3. **button** (#check_again_button) — label: "{strings.payment_consent.check_again}", on_click: { action: check_again }
-4. **empty_state** (#authorised_state) — title: "{strings.payment_consent.authorised_title}", icon: "verified_user"
-5. **empty_state** (#error_state) — "{strings.payment_consent.error_title}"
-   - **button** (#restart_authorisation_button) — label: "{strings.payment_consent.restart}", on_click: { action: retry_authorisation }
-   - **button** (#abandon_button) — label: "{strings.payment_consent.abandon}", on_click: { action: abandon_payment }
+**Shell**: `TopAppBar` titled "Authorising payment", no bottom navigation, no leading icon.
 
-## State-specific behavior
-- Custom state "Authorised" — render per the composition below.
+**Content area**: vertically centred column, padding `spacing.md`, gap `spacing.lg`.
 
-## Content source manifest
-- (no demo collections bound for this state)
+**Component 1 — Icon container** (part of `EmptyState` id: `authorised_state`, `variant: success`)
+- 64 × 64dp, radius `radius.md` (12dp)
+- Fill `colors.primary_container` (#C9E6FF light / #004B6F dark)
+- Icon `verified_user`, `icon.xl` (48dp), `colors.on_primary_container`
+- Contrast 7.3:1 — WCAG AA pass
 
-## Components (vocabulary used in this prompt)
-- (no named components extracted — see composition)
+**Component 2 — Title**
+- Content: "Payment authorised"
+- `headlineSmall`, `colors.on_surface`, centred
 
-## Shell (app-shell resolved for this state)
-- Home: navigates to home
-- Accounts: navigates to accounts
-- Pay: navigates to send-money
-- More: navigates to settings
-- Render MUST keep nav/bar elements consistent with the list above — present or absent, never partial.
+**Component 3 — Body**
+- Content: "Your bank has approved this payment. Sending it now."
+- `bodyMedium`, `colors.on_surface_variant`, centred, max width 280dp
 
-## Tokens (design-tokens roles consumed)
-- Colors: primary / secondary / surface / on-surface / on-surface-variant / error (M3 standard roles).
-- Typography: body-large / title-large (M3 standard roles).
-- Spacing: gap.sm / gap.md / gap.lg.
-- ALL token references are by name from the uploaded design system — no hex literals, no inline size values.
+No buttons. This state resolves when the originating screen acts on the event.
 
-## Self-Validation Checklist (MANDATORY)
+---
 
-Before returning the rendered mockup, verify ALL of these are true. If any fails, FIX the output and re-render.
+## Why `semantic.status.success` and not a celebration layout
 
-- [ ] **Per-state shape:** the render shows ONLY this state ("authorised"). Do not blend multiple states into one mockup.
-- [ ] **Real content:** every text label, image, and data point reflects the content source manifest above — no numbered generic items, no filler text, no dummy text, no empty strings.
-- [ ] **Token fidelity:** colors come from the uploaded design system (primary/secondary/surface/etc.) by name; spacing comes from declared scale tokens. No invented hex codes, no invented size literals.
-- [ ] **Component vocabulary:** every component in the render maps to a named design-system component (Card, FAB, BottomBar, etc.) — no invented or off-system components.
-- [ ] **Archetype honored:** the layout follows the "empty_state" archetype skeleton — composition order top → bottom matches the Composition section.
-- [ ] **App-shell parity:** if a bottom nav, top app bar, or FAB appears in the render, it matches the resolved shell from the app-shell config. Shell elements are either present-and-consistent OR absent — never partial.
+The `success` semantic maps to `primary` — `primaryContainer` / `onPrimaryContainer`, the same
+pair as `payment_disposition.terminal_success`. It reads as confirmation without excitement.
 
-If any of these fail and the fix isn't clear → halt rendering and surface "Self-validation failed at: {checkpoint}."
+No confetti. No green tick. No large celebratory animation. Calm, regulated banking: "this is
+done" is carried by the `verified_user` icon and the title. Trust-blue, not celebration-green.
 
-Return ONLY when all 6 checkpoints pass.
+---
 
-↑↑↑ MOCKUP PROMPT
+## Token Reference
+
+| Token | Light | Dark | Applied to |
+|---|---|---|---|
+| `colors.surface` | #F7F9FF | #101417 | Screen background |
+| `colors.on_surface` | #181C20 | #E0E3E8 | Top bar title, state title |
+| `colors.on_surface_variant` | #41474D | #C1C7CE | Body text |
+| `colors.primary_container` | #C9E6FF | #004B6F | Icon container fill |
+| `colors.on_primary_container` | #004B6F | #C9E6FF | Icon glyph |
+| `spacing.md` / `.lg` | 16 / 24dp | — | Padding, gap |
+| `radius.md` | 12dp | — | Icon container radius |
+| `icon.xl` | 48dp | — | Icon size |
+
+---
+
+## Strings — verbatim from `_strings/strings.yaml`
+
+| Key | Value |
+|---|---|
+| `payment_consent.screen_title` | "Authorising payment" |
+| `payment_consent.authorised_title` | "Payment authorised" |
+| `payment_consent.authorised_body` | "Your bank has approved this payment. Sending it now." |
+
+---
+
+## Hand-Back Contract
+
+On entering this state the ViewModel emits:
+
+```
+PaymentConsentEvent.Authorised(
+    consentId = state.consentId,
+    psuToken  = state.psuToken,
+    authorisedInitiation = lastPollResponse.Data.Initiation,
+)
+```
+
+The originating screen MUST use `authorisedInitiation` when constructing the submit body — not
+its own locally staged `Initiation`. Where the TPP omitted `DebtorAccount` the bank has
+overwritten it with the PSU's picker choice; submitting the local copy returns `U008`.
+
+The `psuToken` MUST NOT be written to `ConsentSession` at any point, including by the
+originating screen. It is used immediately for funds-confirmation and submission, then discarded.
+
+---
+
+## Transitions Out
+
+None from this screen. The originating screen acts on `PaymentConsentEvent.Authorised` and
+dismisses the feature. There is nothing for the PSU to tap.

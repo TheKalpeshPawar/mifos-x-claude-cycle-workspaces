@@ -9,12 +9,12 @@
 
 ## Screen Layout
 
-The profile screen is a scrollable column on a light grey background (#F5F5F5), padded spacing.lg (24 dp) on all sides. It is divided into four distinct visual sections from top to bottom:
+The profile screen is a scrollable column on a `surfaceContainerLow` background, padded `spacing.lg` (24 dp) on all sides. It is divided into four distinct visual sections from top to bottom:
 
 1. **Avatar section** — centered column with circular avatar, overlaid edit icon, and display name
-2. **Personal Information card** — white card with three editable input fields
+2. **Personal Information card** — card with three editable input fields
 3. **Action section** — Save Changes (filled) + Change Password (outlined) buttons
-4. **Danger section** — white card containing the Log Out text button
+4. **Danger section** — card containing the Log Out text button
 
 ---
 
@@ -23,36 +23,36 @@ The profile screen is a scrollable column on a light grey background (#F5F5F5), 
 ### profile_avatar_section
 - **Description:** Centered column containing the user's avatar, an edit badge, and their display name
 - **Position:** Top of screen, below top app bar
-- **Style tokens:** alignment=center, padding-bottom spacing.xl (32 dp)
+- **Style tokens:** alignment=center, padding-bottom `spacing.xl` (32 dp)
 
 ### profile_avatar_image
 - **Description:** Circular portrait image `user_avatar_placeholder`; falls back to initials on placeholder background when no `avatarUrl` is set
 - **Position:** Center-aligned in avatar section
-- **Style tokens:** width/height 96 dp, border-color #1800B1, border-width 2 dp, background #E8EAF6 (placeholder)
+- **Style tokens:** width/height 96 dp, border-color `primary`, border-width `border.medium`, background `primaryContainer` (placeholder), initials in `onPrimaryContainer`
 - **Accessibility:** role=image, label="Your profile photo"
 
 ### profile_avatar_edit_icon
 - **Description:** Circular badge icon `edit_photo` overlaid at the bottom-right of the avatar; tapping opens the photo picker
-- **Position:** Offset { x: 32 dp, y: -16 dp } relative to avatar bottom-right corner
-- **Style tokens:** background #1800B1, icon color #FFFFFF, size 28 dp
+- **Position:** Offset relative to avatar bottom-right corner
+- **Style tokens:** background `primary`, icon color `onPrimary`, size 28 dp
 - **Accessibility:** role=button, label="Change profile photo"
 
 ### profile_display_name
 - **Description:** Current user's full name rendered from `ProfileUiState.fullName`; sample value "Maria Santos"
-- **Position:** Below avatar image; padding-top spacing.sm (8 dp)
-- **Style tokens:** Inter/headline_small (24 sp), color #1800B1, alignment=center
+- **Position:** Below avatar image; padding-top `spacing.sm` (8 dp)
+- **Style tokens:** `headlineSmall` (24 sp, Roboto), color `primary`, alignment=center
 
 ### profile_form_section
-- **Description:** White card with rounded corners containing Personal Information section header and three input fields
-- **Style tokens:** background #FFFFFF, border-radius 12 dp, padding spacing.lg, margin-bottom spacing.md
+- **Description:** Card with rounded corners containing the Personal Information section header and three input fields
+- **Style tokens:** background `surfaceContainerLowest`, border-radius `radius.md`, padding `spacing.lg`, margin-bottom `spacing.md`
 
 ### profile_section_header
 - **Content:** "Personal Information"
-- **Style tokens:** Inter/title_medium (16 sp, weight 500), color #1800B1, padding-bottom spacing.md
+- **Style tokens:** `titleMedium` (16 sp, weight 500, Roboto), color `primary`, padding-bottom `spacing.md`
 
 ### profile_full_name_input
 - **Description:** Outlined text field, label "Full Name", placeholder "e.g. Maria Santos"; pre-filled from `ProfileUiState.fullName`
-- **Style tokens:** background #F5F5F5, Manrope/body_large, border #BDBDBD (rest) / #1800B1 (focused), margin-bottom spacing.md
+- **Style tokens:** background `surfaceContainerLow`, `bodyLarge`, border `outline` (rest, `border.thin`) / `primary` (focused, `border.focus`), radius `radius.sm`, margin-bottom `spacing.md`
 - **Behavior:** keyboard_type=text, ime_action=next
 
 ### profile_email_input
@@ -67,28 +67,28 @@ The profile screen is a scrollable column on a light grey background (#F5F5F5), 
 
 ### profile_save_button
 - **Description:** Full-width filled button "Save Changes"
-- **Style tokens:** background #1800B1, text #FFFFFF, Inter/label_large, border-radius 8 dp, margin-bottom spacing.sm
-- **Behavior:** Disabled when `uiState==Viewing` or `!hasUnsavedChanges`; shows loading spinner when `uiState==Saving`
+- **Style tokens:** container `primary`, label `onPrimary`, `labelLarge`, border-radius `radius.sm`, margin-bottom `spacing.sm`
+- **Behavior:** Disabled at `opacity.disabled` when `uiState==Viewing` or `!hasUnsavedChanges`; shows loading spinner when `uiState==Saving`
 
 ### profile_change_password_button
 - **Description:** Full-width outlined button "Change Password"
-- **Style tokens:** border #1800B1, text #1800B1, Inter/label_large, border-radius 8 dp
+- **Style tokens:** border `outline` (`border.thin`), text `primary`, `labelLarge`, border-radius `radius.sm`
 
 ### profile_save_success_banner
-- **Description:** Green confirmation card visible only in `saved` state
+- **Description:** Confirmation card visible only in `saved` state
 - **Position:** Top of scroll content, above avatar section, when visible
-- **Style tokens:** background #E8F5E9, border #4CAF50, border-radius 8 dp, padding spacing.md
-- **Content:** check_circle icon (#4CAF50, 20 dp) + "Your profile has been updated successfully." (Manrope/body_small, #1B5E20)
+- **Style tokens:** background `primaryContainer`, border `primary` (`border.thin`), border-radius `radius.sm`, padding `spacing.md`
+- **Content:** check_circle icon (`onPrimaryContainer`, `icon.sm`) + "Your profile has been updated successfully." (`bodySmall`, `onPrimaryContainer`)
 - **Behavior:** Auto-transitions to `viewing` state after 2 seconds
 
 ### profile_danger_section
-- **Description:** White card at the bottom of the form, visually isolated from the action section by margin-top
-- **Style tokens:** background #FFFFFF, border-radius 12 dp, padding spacing.lg, margin-top spacing.md
+- **Description:** Card at the bottom of the form, visually isolated from the action section by margin-top
+- **Style tokens:** background `surfaceContainerLowest`, border-radius `radius.md`, padding `spacing.lg`, margin-top `spacing.md`
 - **Contents:** `profile_logout_button` only
 
 ### profile_logout_button
 - **Description:** Full-width text-variant button "Log Out"
-- **Style tokens:** Inter/label_large, color #FF5252 (danger red), padding spacing.md
+- **Style tokens:** `labelLarge`, color `error`, padding `spacing.md`
 - **Behavior:** Clears session token via `SessionManager`, navigates to login
 
 ---
@@ -98,9 +98,9 @@ The profile screen is a scrollable column on a light grey background (#F5F5F5), 
 | Element                      | Gesture | Outcome                                                              |
 |------------------------------|---------|----------------------------------------------------------------------|
 | profile_avatar_edit_icon     | Tap     | Opens system photo picker (ACTION_PICK intent)                       |
-| profile_full_name_input      | Focus   | Border turns #1800B1; sets `hasUnsavedChanges=true` on text change  |
-| profile_email_input          | Focus   | Border turns #1800B1; sets `hasUnsavedChanges=true` on text change  |
-| profile_phone_input          | Focus   | Border turns #1800B1; sets `hasUnsavedChanges=true` on text change  |
+| profile_full_name_input      | Focus   | Border turns `primary`; sets `hasUnsavedChanges=true` on text change |
+| profile_email_input          | Focus   | Border turns `primary`; sets `hasUnsavedChanges=true` on text change |
+| profile_phone_input          | Focus   | Border turns `primary`; sets `hasUnsavedChanges=true` on text change |
 | profile_save_button          | Tap     | Fires `onSaveClicked()`; transitions to `saving` state              |
 | profile_change_password_button| Tap    | Navigates to `change-password` screen                               |
 | profile_logout_button        | Tap     | Shows confirmation dialog → `onLogoutClicked()` → navigate to login |
@@ -134,28 +134,29 @@ The profile screen is a scrollable column on a light grey background (#F5F5F5), 
 ## Design Notes
 
 **Color usage:**
-- Primary #1800B1 applied to avatar border, display name, section headers, focused input borders, and Save button — the entire "identity and action" layer uses brand purple.
-- #FF5252 (error/danger red) exclusively for Log Out — creates an unmistakable visual signal for a destructive action without requiring a dialog prompt for recognition.
-- Success triad: #E8F5E9 (background) / #4CAF50 (border + icon) / #1B5E20 (text) — green spectrum, unambiguous confirmation.
-- Placeholder avatar background #E8EAF6 (light indigo) is a tinted variant of primary that gives initials-based fallbacks brand coherence.
+- `primary` is applied to the avatar border, display name, section headers, focused input borders, and Save button — the entire "identity and action" layer carries the brand trust-blue.
+- `error` is used exclusively for Log Out — an unmistakable visual signal for a destructive action.
+- **Success uses the primary family, not green:** the saved-confirmation banner is `primaryContainer` / `primary` / `onPrimaryContainer`. This palette ships no green, and DESIGN.md maps the terminal-success semantic onto primary — the same pair used for a settled payment, so a successful save and a successful payment read alike.
+- The placeholder avatar background is `primaryContainer`, giving initials-based fallbacks brand coherence.
 
 **Typography:**
-- headline_small (Inter, 24 sp) for the display name — prominent but subordinate to the avatar image in visual weight.
-- title_medium (Inter, 16 sp, 500 weight) for section headers — clear structural wayfinding without competing with the form content.
-- body_large (Manrope, 16 sp) in inputs for maximum legibility of personal data at default font sizes.
-- label_large (Inter, 14 sp, 500 weight) for button labels — uniform with the design system button spec.
+- `headlineSmall` (24 sp) for the display name — prominent but subordinate to the avatar image in visual weight.
+- `titleMedium` (16 sp, 500 weight) for section headers — clear structural wayfinding without competing with the form content.
+- `bodyLarge` (16 sp) in inputs for maximum legibility of personal data at default font sizes.
+- `labelLarge` (14 sp, 500 weight) for button labels — uniform with the design system button spec.
+- Roboto throughout; the previous Inter/Manrope pairing was outside the declared `typography.font_family`.
 
 **Spacing:**
-- Avatar section padding-bottom spacing.xl (32 dp) creates a clear visual break between avatar identity block and the form card.
-- White cards use border-radius 12 dp, consistent with the MD3 large-component shape spec.
-- margin-top spacing.md (16 dp) above the danger section creates spatial isolation from the main action buttons.
+- Avatar section padding-bottom `spacing.xl` (32 dp) creates a clear visual break between the avatar identity block and the form card.
+- Cards use `radius.md`, consistent with the MD3 large-component shape spec.
+- `spacing.md` (16 dp) above the danger section creates spatial isolation from the main action buttons.
 
 **Accessibility:**
-- Edit icon on avatar carries `role=button` with explicit label "Change profile photo" — the small 28 dp visual size is compensated by a touch-target expansion to 48 dp.
-- Success banner message carries `role=alert` so TalkBack announces the confirmation automatically.
+- The edit icon on the avatar carries `role=button` with the explicit label "Change profile photo" — its 28 dp visual size is compensated by a touch-target expansion to `touch_targets.comfortable` (48 dp).
+- The success banner message carries `role=alert` so TalkBack announces the confirmation automatically, and pairs its tone with a `check_circle` icon so the outcome is not colour-only.
 - All three inputs carry role=textbox with descriptive labels including the field name.
-- Log Out button color #FF5252 meets 4.5:1 contrast ratio against the white card background.
+- The Log Out label in `error` meets 4.5:1 against the card background.
 
 ---
 
-_Generated by /idea export | 2026-05-25_
+_Generated by /idea export | 2026-08-03_

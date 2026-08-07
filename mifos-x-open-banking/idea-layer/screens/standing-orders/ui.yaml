@@ -5,7 +5,8 @@ feature_id: standing-orders
 screen_id: standing-orders
 archetype: index_list
 name: "Standing Orders"
-status: implemented
+# status: REMOVED 2026-08-04 (CROSS_LEAK repair — sibling-layout.json assigns `status` to
+# the docs sibling). This copy held `implemented`; docs.yaml is the single owner.
 initial_state: loading
 quality_score: 95
 
@@ -77,6 +78,16 @@ implementation:
     - "loadStandingOrders and navigateBack actions — StandingOrdersAction declares only RetryLoad"
     - "NavigationController DI — navigation is callback-based via the nav host"
   note: "StandingOrdersErrorKind carries no isRetriable flag (unlike DirectDebitsErrorKind), so the retry CTA is not conditionally hidden on this screen."
+  owed_to_source:
+    opened_at: "2026-08-04"
+    opened_by: "/idea-sync"
+    reason: >-
+      Three spec changes landed on this implemented screen. The idea-layer is the source of
+      truth (RULE-GAP-IDEA-FIRST-001), so the module now trails it until /implement catches up.
+    items:
+      - "empty_create_button — new filled CTA on the empty state navigating to standing-order-create with accountId. Needs the composable, the TestTag const (standingOrders:emptyCreateButton), and the nav callback wired at the Route callsite."
+      - "hasNextPayment — new StandingOrderRowUi field, false when NextPaymentDateTime is null. so_next_date must become conditional on it, mirroring the existing hasFinalPayment guard."
+      - "Inactive badge variant secondary -> outline, to stop colliding with the payment-disposition vocabulary's in-progress container. (Was written as a 'triad'; that vocabulary became FOUR values on 2026-08-07 with instruction_established. The collision being avoided is unchanged — it is with in-progress's secondary-container.)"
 
 state_model:
   StandingOrdersViewModel:
@@ -131,6 +142,13 @@ state_model:
           type: String
         - name: nextDateLabel
           type: String
+        - name: hasNextPayment
+          type: Boolean
+          notes: >-
+            False when NextPaymentDateTime is null, which is the normal shape for an Inactive
+            order — a cancelled mandate has no next collection. Added 2026-08-04: so_next_date
+            previously had no visibility guard, so an Inactive row rendered a "Next:" label over
+            a null date. Mirrors hasFinalPayment exactly.
         - name: finalDateLabel
           type: String
         - name: hasFinalPayment
@@ -167,6 +185,8 @@ components:
 
   # ── NAVIGATION ───────────────────────────────────────────────────
   - type: icon_button
+    keyboard:
+      focusable: true
     id: back_button
     icon: arrow_back
     accessibility_label: "{strings.standing_orders_nav_back_a11y}"
@@ -188,7 +208,7 @@ components:
     test_tag: "standingOrders:summaryRow"
     state_binding: [content]
     role: subtitle
-    value: "{strings.standing_orders_summary_format}"
+    content: "{strings.standing_orders_summary_format}"
     style: labelMedium
     color: "onSurfaceVariant"
     accessibility_label: "{strings.standing_orders_summary_format}"
@@ -231,7 +251,7 @@ components:
           - type: text
             id: so_payee_name
             role: title
-            value: "{item.payeeName}"
+            content: "{item.payeeName}"
             style: titleMedium
             accessibility_label: "{strings.standing_orders_payee_a11y_prefix} {item.payeeName}"
             test_context:
@@ -240,14 +260,27 @@ components:
               interaction_type: display
               data_driven: true
 
-          - type: badge
+          # Retyped badge -> status_chip 2026-08-04 (/idea-sync, findings N-1 + R-1c).
+          - type: status_chip
             id: so_status_badge
             test_tag: "standingOrders:statusBadge:{item.standingOrderId}"
-            value: "{item.statusLabel}"
-            variant: "{item.isActive}"
+            label: "{item.statusLabel}"
+            variant: "{item.isActive ? 'active' : 'inactive'}"
             accessibility_label: "{strings.standing_orders_status_prefix} {item.statusLabel}"
             test_context:
-              purpose: "Active (variant=primary) / Inactive (variant=secondary) badge; variant mapped in ViewModel from StandingOrderStatusCode enum"
+              purpose: >-
+                Active (variant=primary) / Inactive (variant=outline) badge; variant mapped in
+                ViewModel from StandingOrderStatusCode enum. Inactive was `secondary` until
+                2026-08-04 — changed to `outline` to match direct-debits and to stop colliding
+                with DESIGN.md's payment-disposition vocabulary, which reserves
+                secondary-container (#D3E5F5) for "In progress". A cancelled mandate rendered in
+                the in-progress colour reads as a payment in flight. (That vocabulary was a triad
+                when this was written; it became FOUR values 2026-08-07 with
+                instruction_established, which takes hue-less surfaceVariant. The reservation of
+                secondary-container for In progress is unchanged, so the `outline` choice stands.
+                This badge is a MANDATE lifecycle state, not a payment disposition — an inactive
+                standing order must not borrow instruction_established either, which describes a
+                live instruction that has simply not executed yet.)
               required_fields: ["item.StandingOrderStatusCode", "item.status_variant"]
               interaction_type: display
               data_driven: true
@@ -257,7 +290,7 @@ components:
             id: so_amount
             test_tag: "standingOrders:amount:{item.standingOrderId}"
             role: amount
-            value: "{item.amountLabel} {item.currencyLabel}"
+            content: "{item.amountLabel} {item.currencyLabel}"
             style: headlineSmall
             color: "onSurface"
             accessibility_label: "{strings.standing_orders_amount_a11y_prefix} {item.amountLabel} {item.currencyLabel}"
@@ -272,7 +305,7 @@ components:
             id: so_frequency
             test_tag: "standingOrders:frequency:{item.standingOrderId}"
             role: body
-            value: "{item.frequencyLabel}"
+            content: "{item.frequencyLabel}"
             style: bodySmall
             color: "onSurfaceVariant"
             accessibility_label: "{strings.standing_orders_frequency_a11y_prefix} {item.frequencyLabel}"
@@ -287,13 +320,14 @@ components:
             id: so_next_date
             test_tag: "standingOrders:nextDate:{item.standingOrderId}"
             role: body
-            value: "{strings.standing_orders_next_prefix} {item.nextDateLabel}"
+            content: "{strings.standing_orders_next_prefix} {item.nextDateLabel}"
             style: bodySmall
             color: "onSurfaceVariant"
+            visibility: "{item.hasNextPayment}"
             accessibility_label: "{strings.standing_orders_next_date_a11y_prefix} {item.nextDateLabel}"
             test_context:
-              purpose: "ISO-8601 NextPaymentDateTime with localised 'Next:' prefix; ViewModel formats to dd MMM yyyy"
-              required_fields: ["item.NextPaymentDateTime"]
+              purpose: "ISO-8601 NextPaymentDateTime with localised 'Next:' prefix; ViewModel formats to dd MMM yyyy. Hidden when hasNextPayment is false — an Inactive order has a null NextPaymentDateTime, and rendering 'Next:' over nothing states something false about a scheduled payment."
+              required_fields: ["item.NextPaymentDateTime", "item.hasNextPayment"]
               interaction_type: display
               data_driven: true
 
@@ -302,7 +336,7 @@ components:
             id: so_final_date
             test_tag: "standingOrders:finalDate:{item.standingOrderId}"
             role: body
-            value: "{strings.standing_orders_final_prefix} {item.finalDateLabel}"
+            content: "{strings.standing_orders_final_prefix} {item.finalDateLabel}"
             style: bodySmall
             color: "onSurfaceVariant"
             visibility: "{item.hasFinalPayment}"
@@ -318,7 +352,7 @@ components:
             id: so_sort_code
             test_tag: "standingOrders:sortCode:{item.standingOrderId}"
             role: body
-            value: "{item.sortCodeLabel}"
+            content: "{item.sortCodeLabel}"
             style: bodySmall
             color: "onSurfaceVariant"
             accessibility_label: "{strings.standing_orders_sort_code_a11y_prefix} {item.sortCodeLabel}"
@@ -333,7 +367,7 @@ components:
             id: so_payment_ref
             test_tag: "standingOrders:reference:{item.standingOrderId}"
             role: body
-            value: "{strings.standing_orders_ref_prefix} {item.referenceLabel}"
+            content: "{strings.standing_orders_ref_prefix} {item.referenceLabel}"
             style: bodySmall
             color: "onSurfaceVariant"
             accessibility_label: "{strings.standing_orders_ref_a11y_prefix} {item.referenceLabel}"
@@ -357,6 +391,37 @@ components:
       required_fields: []
       interaction_type: display
       data_driven: false
+    children:
+      # Added 2026-08-04 by /idea-sync. demo-data#states[empty] had declared this CTA since
+      # 2026-08-02 but no component existed for it, so it rendered nowhere. Adding it also gives
+      # standing-order-create its FIRST inbound route — that screen is status:approved yet no
+      # screen navigated to it, leaving it unreachable.
+      #
+      # Creation is genuinely supported: data-flow.yaml#server_capability_gap lists
+      # missing: [GET, PUT, DELETE, pause, resume] — POST is NOT missing — and the HSBC sandbox
+      # exposes /pisp/domestic-standing-order-consents + /pisp/domestic-standing-orders on
+      # UK Personal v4.0, the brand this app targets.
+      - type: button
+        keyboard:
+          focusable: true
+        id: empty_create_button
+        variant: filled
+        label: "{strings.standing_orders_empty_cta}"
+        test_tag: "standingOrders:emptyCreateButton"
+        accessibility_label: "{strings.standing_orders_empty_cta_a11y}"
+        on_click:
+          action: navigate
+          target: standing-order-create
+          action_contract:
+            effect: navigate
+            description: >-
+              Navigates to standing-order-create carrying the current accountId, so a customer
+              with no standing orders has a path to create one instead of a dead-end empty state.
+        test_context:
+          purpose: "Route from the zero-result state to standing-order-create; the only inbound route that screen has"
+          required_fields: []
+          interaction_type: navigate
+          data_driven: false
 
   # ── UNSUPPORTED STATE ────────────────────────────────────────────
   # StandingOrdersUiState.Unsupported(message) — rendered by StandingOrdersUnsupported.kt.
@@ -378,9 +443,8 @@ components:
       data_driven: true
 
   # ── ERROR STATE ──────────────────────────────────────────────────
-  - type: empty_state
+  - type: error_state
     id: error_state
-    variant: error
     state_binding: [error]
     icon: error_outline
     title: "{strings.standing_orders_error_title}"
@@ -394,6 +458,8 @@ components:
       data_driven: true
     children:
       - type: button
+        keyboard:
+          focusable: true
         id: retry_button
         variant: filled
         label: "{strings.standing_orders_retry}"

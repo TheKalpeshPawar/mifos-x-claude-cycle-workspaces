@@ -3,6 +3,9 @@ schema_version: "2.1.0"
 feature_id: transaction-detail
 
 screen_id: transaction-detail
+models: wire
+maps_to_dto: [TransactionDetail]
+_models_note: "Fixtures are the OBIE wire envelope, not the domain projection. api.yaml#response_dto names the domain DTO the repository yields; the mapper sits between. RULE-DEMO-DATA-001 DD5 compares against the wire contract for this file."
 _content_policy: "RULE-PROTO-CONTENT-001 — zero placeholders; real HSBC-sandbox-style OBTransaction6 data only."
 
 # ── CANONICAL FIXTURE (primary binding: {transaction.*}) ─────────────────────
@@ -143,3 +146,29 @@ error_network:
   http_status: null
   message: "No network connection. Please check your connection and retry."
   recoverable: true
+
+# ── Per-state fixtures (added 2026-08-02 via /idea-sync) ─────────────────────
+# ui.yaml declares states: [loading, content, error, empty]. The four error_* fixtures above
+# cover `error` thoroughly; `empty` had nothing.
+states:
+  - scope: content
+    transaction: transaction
+
+  - scope: loading
+    transaction: transaction
+
+  - scope: empty
+    transaction: null
+    message: "This transaction is no longer available."
+    detail: "It may have fallen outside the period your consent covers."
+    _empty_on_a_detail_screen: >-
+      A detail screen's empty state is a resolution failure, not an absent list. The realistic
+      cause here is consent scope: OBIE consents carry TransactionFromDateTime /
+      TransactionToDateTime (see screens/login/demo-data.yaml), so a deep link or a back-stack
+      entry pointing at a transaction outside that window resolves to nothing even though the
+      transaction exists. Saying "no longer available" rather than "not found" is the honest
+      framing — the app cannot see it, which is not the same as it not existing.
+
+  - scope: error
+    error_fixtures: [error_token_expired, error_consent_withdrawn, error_not_found, error_network]
+    _cross_ref: "Full shapes above. error_consent_withdrawn and error_token_expired are non-retriable — they re-authenticate rather than retry."

@@ -1,9 +1,17 @@
+sibling: ui
+schema_version: "4.0"
+feature_id: splash
+
 id: splash
 name: "Splash Screen"
 feature: splash
 flavor: shared
-status: approved
-quality_score: 92
+# status: REMOVED 2026-08-04 (CROSS_LEAK repair — sibling-layout.json assigns `status` to
+# the docs sibling). This copy held `approved`; docs.yaml is the single owner.
+# RECONCILED 2026-08-07 (/idea-sync): was 92, disagreed with docs.yaml `quality_score: 85`.
+# The matrix averages every top-level quality_score under screens/splash/**.
+# docs.yaml is the owner sibling.
+quality_score: 85
 contract_version: "1.1.0"
 approve_hash: "sha256:c1170816b39ae352970a1dd8361c173ac40dbb6597679d9bf4f4d5b884d111ce"
 approved_at: "2026-05-30T00:00:00Z"
@@ -37,7 +45,7 @@ archetype: loading
 components:
   - type: stack
     id: splash_root
-    variant: column
+    variant: vertical
     style:
       background: surface
       alignment: center
@@ -54,7 +62,7 @@ components:
     style:
       width: "120dp"
       height: "120dp"
-      tint: "#4C662B"
+      tint: primary
     a11y:
       role: image
       label: "Mifos X application logo"
@@ -69,8 +77,8 @@ components:
     id: splash_app_name
     content: "Mifos X Open Banking"
     style:
-      typography: "Outfit/display_small"
-      color: "#4C662B"
+      typography: displaySmall
+      color: primary
       padding_top: spacing.lg
     a11y:
       role: heading
@@ -86,8 +94,8 @@ components:
     id: splash_tagline
     content: "Banking for Everyone"
     style:
-      typography: "Outfit/body_large"
-      color: "#386663"
+      typography: bodyLarge
+      color: secondary
       padding_top: spacing.sm
     a11y:
       role: text
@@ -101,9 +109,9 @@ components:
 
   - type: loading_indicator
     id: splash_loading_indicator
-    variant: circular_indeterminate  # fix: MOTION-variant — circular→circular_indeterminate (M3 canonical)
+    variant: spinner  # `spinner` is loading_indicator's registered name for the circular indeterminate form
     style:
-      color: "#4C662B"
+      color: primary
       size: "40dp"
       padding_top: spacing.xl
     motion:
@@ -141,7 +149,7 @@ state_model:
     # (cmp-navigation/rootnav) via RootNavState (Splash/Auth/ShowOnboarding/UserLocked/
     # UserUnlocked). SplashViewModel is a thin VISUAL HOST only — it drives the branded
     # loading visual + reduced-motion fallback. It does NOT read auth state, hold
-    # ObpAuthRepository/SessionManager, or decide navigation targets.
+    # LoginRepository/SessionManager, or decide navigation targets.
     state:
       - field: reducedMotion
         type: Boolean
@@ -162,23 +170,20 @@ navigation:
     delay_ms: 2000
     a11y:
       label: "Proceeding to login"
+  # Role conditions dropped 2026-08-02 (/idea-sync): there is one persona, so there is
+  # nothing to branch on. Post-splash routing is a plain authenticated / unauthenticated split.
   - id: nav_to_consumer_home
     target: home
-    condition: "hasValidToken == true && userRole == CONSUMER"
+    condition: "hasValidToken == true"
     trigger: auto
     delay_ms: 0
   - id: nav_to_home_authenticated
     target: home
     trigger: token_exists
-    condition: "isAuthenticated == true && userRole == CONSUMER"
+    condition: "isAuthenticated == true"
     on_click:
       action: navigate
       target: home
-  - id: nav_to_fo_dashboard
-    target: fo-dashboard
-    condition: "hasValidToken == true && userRole == FIELD_OFFICER"
-    trigger: auto
-    delay_ms: 0
 
 api: []
 

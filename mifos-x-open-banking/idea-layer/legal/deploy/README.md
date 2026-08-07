@@ -46,7 +46,7 @@ Ensure the server returns `Content-Type: text/html; charset=utf-8`.
    - Data Linked to You: Financial Info, Contact Info, Identifiers, Credentials
    - Data Not Linked to You: None (no iOS crash/performance telemetry)
    - Data Used to Track You: None
-3. Review the conditional note for KYC document upload (Field Officer persona)
+3. No camera / photo-library declaration is needed — the app requests neither.
 
 ### In-App Links
 
@@ -78,7 +78,7 @@ Source hash tracking is recorded in `legal-config.json#regeneration.source_hash_
 |---|---|
 | GDPR (EEA/UK/Switzerland) | Covered — Arts. 6, 13, 14, 15-21 rights, DPA contact |
 | CCPA (California) | Covered — Know, Delete, Opt-Out, Non-Discrimination |
-| AML/KYC (Field Officer) | Covered — Section 13 of Terms; banking institution responsible |
+| AML/KYC | Covered — Section 13 of Terms; banking institution responsible |
 | COPPA | Not applicable — app is 18+ |
 | Firebase / Google DPA | Covered — Firebase referenced in Privacy Policy §4 |
 

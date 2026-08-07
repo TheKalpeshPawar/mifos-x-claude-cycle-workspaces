@@ -1,9 +1,9 @@
 ---
-ui_yaml_sha: 9ae3e4ee4e560932e67b388e5006f62b6c9e4d842f6c389dd69dd6217ff5f108
-design_md_hash: f734ecfba28b3b0688cbd7ca6f3d7fca27febb15fd021d72a4518ae0e3a4200d
-app_shell_hash: 7b9c63f9aee4f5b5005b1d7533e7f5feab6427f398954987c34ee0f382b0ed69
-design_read_hash: 513c061d12f3a90e84d6e98e1e037b131e59fa3ca5c5f3c0abfc6ba87d24bcaf
-content_hash: 36f408ecf50a0f8636bf4c488381226838eb7c753c42a205c90e3077e98e136b
+ui_yaml_sha: 540a080783e58249414d730539dc09a72e3621efe763e7172cf365c7e209b939
+design_md_hash: dad4a3ee16afd9663516aa33ebf1647c1d6ede5dc90a1c9bb2c448cd63c225fb
+app_shell_hash: e267a146a693f7d8b57131c73d180b6010ff34beca799edb4ca3c85c5879e0b4
+design_read_hash: 8f83034d22434d75ef7d377035c51c37ef557f4bbb2e0bf510409a4804964a50
+content_hash: 966518f6c415542bc19e30a6bc8cc6e3c134efbc543fb79ded9c4e2ef2a0c9b3
 
 design_read_aesthetic: minimalist-ui
 design_read_dials: {variance: 3, motion: 2, density: 5}
@@ -14,8 +14,8 @@ feature: consent-detail
 state: loading
 state_visibility: loading
 
-project_id: 'null'
-design_system_id: 'null'
+project_id: '17153754672098888646'
+design_system_id: '2047482829824847747'
 
 generated_by: stitch-prompt-build.ts v2.0.0
 prompt_template_version: stitch-per-state-v3.0.0
@@ -24,8 +24,8 @@ craft_rules_version: v1.0.0
 
 # consent-detail — loading state
 
-> Auto-generated from screens/consent-detail/ui.yaml @ SHA a82092edaf4de0a3
-> Stitch DesignSystem: (pending DESIGN.md upload — run /idea-feature-stitch sub-plan 02)
+> Auto-generated from screens/consent-detail/ui.yaml @ SHA 55e5da5be0c4741d
+> Stitch DesignSystem: 2047482829824847747
 > DO NOT redeclare colors / fonts / spacing — they live in DESIGN.md.
 
 ↓↓↓ MOCKUP PROMPT
@@ -42,17 +42,17 @@ craft_rules_version: v1.0.0
 - responsive: any multi-column region MUST be mobile-first and collapse to a single column at narrow/phone widths — never a fixed multi-column grid with no single-column fallback.
 
 ## Composition (top → bottom)
-1. **progress_indicator** (#load_progress)
-2. **progress_indicator** (#revoke_progress) — label: "{strings.consent_detail.revoking_label}"
+1. **progress_circular** (#load_progress)
+2. **progress_circular** (#revoke_progress) — label: "{strings.consent_detail.revoking_label}"
 3. **card** (#status_header_card) — "status_header_card"
    - **row** (#bank_identity_row) — "bank_identity_row"
       - **image** (#bank_logo)
-      - **chip** (#status_chip) — label: "{consent.Data.Status}", icon: "check_circle"
-   - **text** (#consent_id_label)
+      - **chip** (#status_chip) — label: "{consent.Data.Status}"
+   - **text** (#consent_id_label) — content: "{strings.consent_detail.consent_id_prefix}: {consent.Data.ConsentId}"
 4. **card** (#expiry_warning_banner) — "expiry_warning_banner"
    - **row** (#expiry_warning_row) — "expiry_warning_row"
       - **icon** (#expiry_warning_icon)
-      - **text** (#expiry_warning_text)
+      - **text** (#expiry_warning_text) — content: "{strings.consent_detail.expiry_warning}"
 5. **section_header** (#dates_header) — label: "{strings.consent_detail.section.access_period}"
 6. **list** (#dates_list) — "dates_list"
    - **list_item** (#created_date_row) — icon: "event"
@@ -67,7 +67,7 @@ craft_rules_version: v1.0.0
 11. **dialog** (#revoke_confirm_dialog) — "{strings.consent_detail.revoke_dialog.title}"
    - **button** (#dialog_cancel_button) — label: "{strings.consent_detail.revoke_dialog.cancel}", on_click: { action: dismiss_revoke_confirm }
    - **button** (#dialog_confirm_button) — label: "{strings.consent_detail.revoke_dialog.confirm}", on_click: { action: execute_revoke }
-12. **empty_state** (#error_state) — "{strings.consent_detail.error.title}"
+12. **error_state** (#error_state) — "{strings.consent_detail.error.title}"
    - **button** (#retry_button) — label: "{strings.consent_detail.error.retry}", on_click: { action: retry_load }
 13. **empty_state** (#empty_state) — "{strings.consent_detail.empty.title}"
    - **button** (#empty_go_back_button) — label: "{strings.consent_detail.empty.go_back}", on_click: { action: navigate_back, target: consent-list }
@@ -84,7 +84,7 @@ craft_rules_version: v1.0.0
 ## Shell (app-shell resolved for this state)
 - Home: navigates to home
 - Accounts: navigates to accounts
-- Pay: navigates to send-money
+- Pay: navigates to payments
 - More: navigates to settings
 - Render MUST keep nav/bar elements consistent with the list above — present or absent, never partial.
 

@@ -2,7 +2,15 @@ name: StandingOrderDetail
 version: "1.0.0"
 source:
   origin: project
-  api_path: "GET /obp/v4.0.0/banks/{bank_id}/accounts/{account_id}/standing-orders/{standing_order_id}"
+  api_path: "GET /obie/open-banking/v4.0/aisp/accounts/{AccountId}/standing-orders"
+  api_ref: API-001
+  spec: "OBIE Read/Write v4.0"
+  # Retargeted 2026-08-06 (OBP eviction). Two structural facts about this read:
+  #   - There is NO single-standing-order endpoint. The detail screen filters the list response.
+  #   - StandingOrderId is ABSENT from every element. Conformant (0..1), but it means an
+  #     AIS-read mandate carries no resource identifier and cannot be correlated with a
+  #     PIS-created one. Tested directly: standing order 19936 never appeared in this read.
+  #   - This read RETURNS Frequency.PointInTime, which the PIS write side refuses with U005.
 description: "Full read-side detail of a standing order, including beneficiary info, schedule, lifecycle status, and the last 5 execution records. Distinct from StandingOrder (create/list payload) — this shape is returned by the GET detail endpoint from standing-orders-detail.yaml."
 fields:
   - name: id
@@ -11,11 +19,14 @@ fields:
     pii: false
     description: "Unique identifier for the standing order"
     primary_key: true
+  # DEPRECATED 2026-08-07 (OBP eviction): field retained, not deleted, because consumers still
+  # reference it. Under OBIE there is exactly one ASPSP (HSBC UK) and no {bankId} path segment,
+  # so this identifier carries no information and has no wire counterpart on the OBIE response.
   - name: bank_id
     type: String
     required: true
     pii: false
-    description: "OBP bank identifier the standing order belongs to"
+    description: "DEPRECATED — meaningless under OBIE. The OBIE Read/Write API addresses a single ASPSP and has no bank identifier in either the path or the standing-order payload, so this field has no source on the wire. Retained only until its remaining consumers drop it; do not populate from a response."
     primary_key: false
   - name: account_id
     type: String
@@ -90,10 +101,12 @@ fields:
     description: "Last 5 execution records, newest first"
     primary_key: false
 used_by:
-  - feature: standing-order-detail
-    api_id: get_standing_order
-  - feature: standing-order-edit
-    api_id: obp_update_standing_order
+  # standing-order-edit entry REMOVED 2026-08-06 (/idea-sync). That feature was deleted: a PISP
+  # may not amend a standing order — OBL's Customer Experience Guidelines prohibit it and make
+  # redirecting the PSU to their bank a MANDATORY obligation. obp_update_standing_order has no
+  # OBIE successor to repoint at, because no such write exists at any version.
+  - { feature: standing-order-detail, api_id: get_direct_debits }
+  - { feature: standing-orders, api_id: get_standing_orders }
 enums:
   - field: frequency
     values: [WEEKLY, MONTHLY, QUARTERLY, ANNUALLY]

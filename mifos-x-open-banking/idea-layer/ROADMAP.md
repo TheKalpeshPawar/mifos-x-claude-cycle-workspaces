@@ -33,23 +33,63 @@ Goal: define the actual open-banking product roster.
 
 39 features defined · 3 personas · 6-phase 16-week release plan · all sections approved at quality ≥85%.
 
-## v0.3.0 — FO MVP
+> **Superseded 2026-08-02.** The roster is now 26 features and a single consumer persona.
+> See the scope change below.
 
-**Status**: pending · target: W10
+## v0.3.0 — Consumer-only scope reset
 
-Milestone: field officer persona functional end-to-end on Android + Desktop.
+**Status**: complete · completed: 2026-08-02
 
-Features: `fo-dashboard`, `customer-search`, `customer-detail`, `customer-profile`, `customer-onboarding`, `corporate-onboarding`, `kyc-review`, `account-applications`, `application-detail`
+Milestone: the product is a consumer-only Open Banking app.
 
-Exit criteria: Field officer can search customers, onboard new ones, review KYC, process applications.
+The field-officer persona was removed in full — 12 screens (`fo-dashboard`,
+`customer-search`, `customer-detail`, `customer-profile`, `customer-onboarding`,
+`corporate-onboarding`, `kyc-review`, `account-applications`, `application-detail`,
+`customer-messages`, `meetings`, `agent-registration`), `flows/field-officer.yaml`,
+3 `fo-*` journeys, 7 API groups and 10 DTOs. PFM went with it: `pfm-dashboard`,
+`pfm-settings` and `business-insights`.
+
+There is no `fieldOfficer` product flavor and no flavor-aware navigation.
 
 ## v0.4.0 — Feature Complete
 
 **Status**: pending · target: W15
 
-Milestone: all 45 features shipped; iOS + Web (Wasm) builds passing.
+Milestone: the consumer roster ships; iOS + Web (Wasm) builds passing.
 
-Features: `standing-order-edit`, `standing-orders`, `direct-debits`, `direct-debit-detail`, `atm-locator`, `fx-rates`, `consent-manager`, `notifications`, `pfm-dashboard`, `products`, `transaction-tags`, `customer-messages`, `meetings`, `agent-registration`
+Features: `standing-orders`, `standing-order-detail`, `direct-debits`, `direct-debit-detail`,
+`atm-locator`, `branch-locator`, `consent-manager`, `notifications`, `products`
+
+> **Corrected 2026-08-07.** This list named three screens deleted in the 2026-08-06 OBIE
+> migration:
+> `standing-order-edit` (a PISP may not amend or cancel a standing order — OBL Customer
+> Experience Guidelines), `transaction-tags` (an OBP v1.2.1 metadata API with no OBIE
+> counterpart) and `fx-rates` (OBIE exposes no FX rate endpoint, so the screen had no data
+> source at all). None can be built, so none can be a Feature-Complete exit criterion.
+>
+> **Updated 2026-08-07.** `branch-locator` added — HSBC UK Branch Locator, Open Data on
+> `api.hsbc.com`, unauthenticated. `products` here means the HSBC UK **Product Finder**
+> catalogue (four families: personal-current-accounts, business-current-accounts,
+> unsecured-sme-loans, commercial-credit-cards), not the per-account `product` terms screen,
+> which already ships.
+>
+> **Also 2026-08-07.** `cards` and `card-detail` were deleted outright (roster 44 → 42), decided
+> by the repository owner. Neither appeared in this milestone's Features list, so nothing is
+> removed from it here — the note is recorded so the roster count reconciles. OBIE has no card
+> resource: a card is an `Account` with `SchemeName == UK.OBIE.PAN`. The
+> **commercial-credit-cards** family named above is the Open Data Product Finder catalogue, a
+> different resource on a different host, and is unaffected.
+
+`atm-locator` is specified but not yet built — `AtmLocatorRoute` currently resolves to a
+placeholder screen. Its idea-layer spec, exports, mockups, `atm` API group and 7 DTOs are
+retained as the input to `/implement`.
+
+`branch-locator` is newer (2026-08-07) and is spec-only: `screens/branch-locator/` exists, but it
+has no `exports/` or `mockups/` entry yet. It needs `/idea-feature-export` before `/implement`.
+
+PISP payment initiation — the payments hub and the seven per-type rails — is phased separately
+as P3–P5 in `IDEA.md#feature-roadmap` and `idea-plan.yaml#release_phases`, and is not folded into
+this milestone.
 
 Platforms: Android · iOS · Desktop · Web
 

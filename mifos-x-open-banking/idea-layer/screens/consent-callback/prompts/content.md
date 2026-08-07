@@ -1,9 +1,9 @@
 ---
-ui_yaml_sha: a8b0526aa1f643ab128c0fb59bc8d9c0c06ea8adbcff9b2c90c0875fefe2d7b9
-design_md_hash: f734ecfba28b3b0688cbd7ca6f3d7fca27febb15fd021d72a4518ae0e3a4200d
-app_shell_hash: 7b9c63f9aee4f5b5005b1d7533e7f5feab6427f398954987c34ee0f382b0ed69
-design_read_hash: 513c061d12f3a90e84d6e98e1e037b131e59fa3ca5c5f3c0abfc6ba87d24bcaf
-content_hash: c25866c0142856748fe9cf262664fa6053e6bfc97313a41ab3a11c863e099249
+ui_yaml_sha: c2f6f937de1106fab0c56bcefec63f1872fbcc86957e913aeffb7712571854b1
+design_md_hash: dad4a3ee16afd9663516aa33ebf1647c1d6ede5dc90a1c9bb2c448cd63c225fb
+app_shell_hash: e267a146a693f7d8b57131c73d180b6010ff34beca799edb4ca3c85c5879e0b4
+design_read_hash: 8f83034d22434d75ef7d377035c51c37ef557f4bbb2e0bf510409a4804964a50
+content_hash: 5a3a5c5e16e7c1dec5b7d081f5aa3662449492fb01982b7db97877d095f48c10
 
 design_read_aesthetic: minimalist-ui
 design_read_dials: {variance: 3, motion: 2, density: 5}
@@ -14,8 +14,8 @@ feature: consent-callback
 state: content
 state_visibility: content
 
-project_id: 'null'
-design_system_id: 'null'
+project_id: '17153754672098888646'
+design_system_id: '2047482829824847747'
 
 generated_by: stitch-prompt-build.ts v2.0.0
 prompt_template_version: stitch-per-state-v3.0.0
@@ -24,8 +24,8 @@ craft_rules_version: v1.0.0
 
 # consent-callback — content state
 
-> Auto-generated from screens/consent-callback/ui.yaml @ SHA b605fc397c6219a2
-> Stitch DesignSystem: (pending DESIGN.md upload — run /idea-feature-stitch sub-plan 02)
+> Auto-generated from screens/consent-callback/ui.yaml @ SHA 9314fc9e289122a0
+> Stitch DesignSystem: 2047482829824847747
 > DO NOT redeclare colors / fonts / spacing — they live in DESIGN.md.
 
 ↓↓↓ MOCKUP PROMPT
@@ -43,24 +43,24 @@ craft_rules_version: v1.0.0
 
 ## Composition (top → bottom)
 1. **stack** (#loading_layout) — "loading_layout"
-   - **progress_indicator** (#loading_spinner)
+   - **progress_circular** (#loading_spinner)
    - **spacer**
-   - **text** (#loading_headline)
+   - **text** (#loading_headline) — content: "{strings.consent_callback_loading_title}"
    - **spacer**
-   - **text** (#loading_body)
+   - **text** (#loading_body) — content: "{strings.consent_callback_loading_body}"
 2. **stack** (#success_layout) — "success_layout"
    - **icon** (#success_icon)
    - **spacer**
-   - **text** (#success_headline)
+   - **text** (#success_headline) — content: "{strings.consent_callback_success_title}"
    - **spacer**
-   - **text** (#success_body)
+   - **text** (#success_body) — content: "{strings.consent_callback_success_body}"
 3. **empty_state** (#awaiting_state) — "{strings.consent_callback_awaiting_title}"
    - **button** (#poll_again_button) — label: "{strings.consent_callback_poll_again}", on_click: { action: poll_consent_status }
-4. **empty_state** (#error_state) — "{strings.consent_callback_error_title}"
+4. **error_state** (#error_state) — "{strings.consent_callback_error_title}"
    - **button** (#retry_button) — label: "{strings.consent_callback_retry}", on_click: { action: navigate_retry, target: login }
-5. **empty_state** (#access_denied_state) — "{strings.consent_callback_denied_title}"
+5. **error_state** (#access_denied_state) — "{strings.consent_callback_denied_title}"
    - **button** (#denied_cta_button) — label: "{strings.consent_callback_denied_cta}", on_click: { action: navigate_retry, target: login }
-6. **empty_state** (#security_error_state) — "{strings.consent_callback_security_error_title}"
+6. **error_state** (#security_error_state) — "{strings.consent_callback_security_error_title}"
    - **button** (#security_retry_button) — label: "{strings.consent_callback_security_cta}", on_click: { action: navigate_login, target: login }
 
 ## State-specific behavior
@@ -75,7 +75,7 @@ craft_rules_version: v1.0.0
 ## Shell (app-shell resolved for this state)
 - Home: navigates to home
 - Accounts: navigates to accounts
-- Pay: navigates to send-money
+- Pay: navigates to payments
 - More: navigates to settings
 - Render MUST keep nav/bar elements consistent with the list above — present or absent, never partial.
 

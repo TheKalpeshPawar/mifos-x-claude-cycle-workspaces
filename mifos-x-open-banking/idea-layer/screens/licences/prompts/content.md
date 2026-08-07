@@ -1,9 +1,9 @@
 ---
-ui_yaml_sha: 4db6a9567dfa6792c472eeb2067ac6b2c9b29d960ea490e86963aecea1fd4d1c
-design_md_hash: f734ecfba28b3b0688cbd7ca6f3d7fca27febb15fd021d72a4518ae0e3a4200d
-app_shell_hash: 7b9c63f9aee4f5b5005b1d7533e7f5feab6427f398954987c34ee0f382b0ed69
-design_read_hash: 513c061d12f3a90e84d6e98e1e037b131e59fa3ca5c5f3c0abfc6ba87d24bcaf
-content_hash: 5851a7578546b90ba40dca27a1c0c0df6de0169691a89b868f8e16b6cc35c4ea
+ui_yaml_sha: 7100c25614bdf9baac8b03494d268c90f5d49769d39db9e2ada36c706b5f6063
+design_md_hash: dad4a3ee16afd9663516aa33ebf1647c1d6ede5dc90a1c9bb2c448cd63c225fb
+app_shell_hash: e267a146a693f7d8b57131c73d180b6010ff34beca799edb4ca3c85c5879e0b4
+design_read_hash: 8f83034d22434d75ef7d377035c51c37ef557f4bbb2e0bf510409a4804964a50
+content_hash: 30e11154fe3f19d93bd952b7c19e8d6b07d6eb778823014d8bd980dbd1e6c480
 
 design_read_aesthetic: minimalist-ui
 design_read_dials: {variance: 3, motion: 2, density: 5}
@@ -14,8 +14,8 @@ feature: licences
 state: content
 state_visibility: content
 
-project_id: 'null'
-design_system_id: 'null'
+project_id: '17153754672098888646'
+design_system_id: '2047482829824847747'
 
 generated_by: stitch-prompt-build.ts v2.0.0
 prompt_template_version: stitch-per-state-v3.0.0
@@ -24,8 +24,8 @@ craft_rules_version: v1.0.0
 
 # licences — content state
 
-> Auto-generated from screens/licences/ui.yaml @ SHA 25e8796abb999ea1
-> Stitch DesignSystem: (pending DESIGN.md upload — run /idea-feature-stitch sub-plan 02)
+> Auto-generated from screens/licences/ui.yaml @ SHA ac14bb49faf3f5a7
+> Stitch DesignSystem: 2047482829824847747
 > DO NOT redeclare colors / fonts / spacing — they live in DESIGN.md.
 
 ↓↓↓ MOCKUP PROMPT
@@ -43,8 +43,8 @@ craft_rules_version: v1.0.0
 
 ## Composition (top → bottom)
 1. **stack** (#licences_screen) — "licences_screen"
-   - **text** (#licences_intro)
-   - **text** (#licences_body)
+   - **text** (#licences_intro) — content: "{strings.licences.intro}"
+   - **text** (#licences_body) — content: "{licence}"
 
 ## State-specific behavior
 - Fully populated with the real demo content listed below. This is the screen's initial state.
@@ -58,7 +58,7 @@ craft_rules_version: v1.0.0
 ## Shell (app-shell resolved for this state)
 - Home: navigates to home
 - Accounts: navigates to accounts
-- Pay: navigates to send-money
+- Pay: navigates to payments
 - More: navigates to settings
 - Render MUST keep nav/bar elements consistent with the list above — present or absent, never partial.
 

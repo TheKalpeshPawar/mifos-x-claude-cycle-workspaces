@@ -1,74 +1,89 @@
-# API Reference — Products
+# API — Products
 
-| Field    | Value                                       |
-|----------|---------------------------------------------|
-| Feature  | products                                    |
-| Base URL | https://apisandbox.openbankproject.com      |
-
----
-
-## GET /obp/v5.0.0/banks/{bankId}/products
-
-**Auth:** DirectLogin
-**Tag:** Product
-**Trigger:** `ProductsLoaded` on screen open / `RetryLoad` event
-
-Fetches the full list of banking products offered by the bank from OBP v5.0.0. The `ProductsViewModel` transforms the response into `List<BankProduct>` and maps `category` to `ProductCategory` for filter-chip state management. The four products rendered in the UI (Instant Access Savings, Fixed Rate Bond 1yr, Personal Loan, Platinum Credit Card) are constructed from this endpoint's response combined with feature-specific display metadata.
-
-### Path Parameters
-
-| Name   | Type   | Required | Description                              |
-|--------|--------|----------|------------------------------------------|
-| bankId | String | Yes      | Bank identifier — e.g. `gh.29.uk`        |
-
-### Response Fields
-
-| Field                        | Type                | Description                                                       |
-|------------------------------|---------------------|-------------------------------------------------------------------|
-| products                     | List\<Product\>     | Array of product objects for the given bank                       |
-| products[].code              | String              | Unique product code — e.g. `"EQB-SAV-001"`                        |
-| products[].name              | String              | Human-readable product name                                       |
-| products[].category          | String              | Product category enum: `SAVINGS`, `LOANS`, `CARDS`, `MORTGAGES`, `CURRENT` |
-| products[].family            | String              | Product family grouping — e.g. `"Personal Banking"`               |
-| products[].super_family      | String              | Super-family grouping — e.g. `"Deposits"`, `"Credit"`             |
-| products[].more_info_url     | String              | Canonical URL for full product detail page                        |
-| products[].details           | ProductDetails      | Product-specific attributes (rate, term, min deposit, etc.)       |
-| products[].meta              | ProductMeta         | Regulatory metadata (licence ID + name)                           |
-| products[].meta.license.id   | String              | Regulatory licence identifier — e.g. `"CBK-DTL-2019-001"`        |
-| products[].meta.license.name | String              | Regulatory licence full name                                      |
-
-### Demo Data
-
-The following five items represent a realistic OBP products response for the `gh.29.uk` sandbox bank. The UI renders four of them (filtered by category):
-
-| code              | name                           | category  | family           | super_family        | details summary                                              |
-|-------------------|--------------------------------|-----------|------------------|---------------------|--------------------------------------------------------------|
-| EQB-SAV-001       | Equity Jijenge Savings Account | SAVINGS   | Personal Banking | Deposits            | 3.5% p.a. on balances > KES 10,000; min KES 1,000; fee KES 0 |
-| EQB-CUR-001       | Equity Current Account         | CURRENT   | Personal Banking | Transactional       | Overdraft up to KES 100,000; min KES 0; fee KES 250/mo       |
-| EQB-LN-SME-002    | Equity Biashara Loan           | LOANS     | Business Banking | Credit              | Max KES 5,000,000; up to 60 months; 14% p.a. reducing        |
-| EQB-CARD-VISA-001 | Equity Visa Debit Card         | CARDS     | Cards            | Payment Instruments | Daily limit KES 200,000; international; fee KES 500 issuance |
-| EQB-MTG-001       | Equity Home Loan               | MORTGAGES | Personal Banking | Credit              | Max KES 50,000,000; up to 25 years; 12.5% p.a. fixed 3yr    |
-
-**UI card ↔ API category mapping:**
-
-| UI Product Card        | API category | Displayed rate     | Demo product code  |
-|------------------------|--------------|--------------------|---------------------|
-| Instant Access Savings | SAVINGS      | 4.5% AER           | EQB-SAV-001         |
-| Fixed Rate Bond 1yr    | SAVINGS      | 5.1% AER           | EQB-SAV-001 (FRB variant) |
-| Personal Loan          | LOANS        | From 6.9% APR      | EQB-LN-SME-002      |
-| Platinum Credit Card   | CARDS        | 0% for 20 months   | EQB-CARD-VISA-001   |
-
-> The display rates shown in the UI are enriched values from the UI layer spec. The `details` block in demo-data.yaml carries raw OBP sandbox values; the `ProductsViewModel` augments them with display-formatted strings for `ias_rate`, `frb_rate`, `pl_rate`, and `pcc_rate` components.
-
-### Error Codes
-
-| Code | OBP Message         | UI Handling                                                     |
-|------|---------------------|-----------------------------------------------------------------|
-| 400  | INVALID_BANK_ID     | Show error state; log `LOAD_FAILED`; display retry button       |
-| 401  | USER_NOT_LOGGED_IN  | Navigate to login screen; clear session                         |
-| 404  | BANK_NOT_FOUND      | Show error state ("Unable to load products"); display retry     |
-| 503  | SERVICE_UNAVAILABLE | Show error state with `cloud_off` icon; `NETWORK_TIMEOUT` event |
+Client contracts for `products`. This project owns no backend: these are Ktorfit contracts against
+the OBP sandbox, not owned schema.
+Consumers: `ProductsRepository`, `AccountsRepository`.
 
 ---
 
-_Generated by /idea export | 2026-05-30_
+## obp_get_my_accounts
+
+| | |
+|---|---|
+| Endpoint | `GET /obp/v3.0.0/my/accounts` |
+| Tag | Account |
+| Trigger | On load — `AccountsRepository.myAccounts` |
+
+The user's accounts. **The distinct `bank_id` values determine which bank catalogues are offered** in
+the selector — this screen does not list every ASPSP, only the banks the customer actually holds
+accounts with.
+
+| Field      | Type            |
+|------------|-----------------|
+| `accounts` | `List<Account>` |
+| `bank_id`  | `String`        |
+
+Errors: `401 USER_NOT_LOGGED_IN`.
+
+---
+
+## obp_products
+
+| | |
+|---|---|
+| Endpoint | `GET /obp/v3.0.0/banks/{bankId}/products` |
+| Tag | Product |
+| Trigger | On load per bank held, and on `onRetry` — `ProductsRepository.listProducts(bankId)` |
+
+**Fetched per bank, in parallel, once per session.** Per-bank fetching is why a single bank's
+failure degrades to the inline `products_bank_load_failed` row rather than emptying the screen — the
+other banks' catalogues are unaffected.
+
+| Field         | Type            |
+|---------------|-----------------|
+| `products`    | `List<Product>` |
+| `code`        | `String`        |
+| `name`        | `String`        |
+| `description` | `String`        |
+| `category`    | `String`        |
+| `family`      | `String`        |
+
+---
+
+## Both enums are derived client-side
+
+Neither `ProductScope` nor `ProductCategory` comes from the API as a usable value.
+
+**`ProductScope`** — `PERSONAL` / `BUSINESS`. Derived from `code`/`name` keywords via
+`BUSINESS_MARKERS` / `scopeOf`. The audience tabs filter on this derived value, not on a server field.
+
+**`ProductCategory`** — `EVERYDAY` / `SAVINGS` / `CARDS` / `LOANS`. Derived via `categoryOf`
+**because `category` is null on the sandbox**. The response carries the field; it just has no value,
+so the badge is computed from code and name instead.
+
+Note there is **no MORTGAGES bucket** — no mortgage product exists in the catalogue, and `LOANS`
+covers what does. Adding a mortgage category would create an always-empty filter.
+
+Both derivations are heuristics over text. They are recorded here so that a future implementer does
+not "fix" the badge by binding it to `category` and get nulls, or add a scope field the API never
+returns.
+
+---
+
+## search_products — DEFERRED
+
+Declared with `deferred: true`. Product search was never wired on this screen and the top-bar search
+action was removed. **No endpoint is called.** It is kept in `api.yaml` so the intent survives, not
+because there is anything to call.
+
+---
+
+## Outbound
+
+The only outbound affordance is `more_info_url`, opened in the platform browser via
+`compose.ui.platform.LocalUriHandler`. There is no in-app apply or details journey, and
+`flow.yaml#navigates_to` is `[]` accordingly — full terms live on the bank's own site.
+
+---
+
+<!-- Generated 2026-08-04 by /idea-feature-export --all --force from screens/products/api.yaml. -->

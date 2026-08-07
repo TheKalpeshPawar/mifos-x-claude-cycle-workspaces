@@ -1,9 +1,17 @@
+sibling: ui
+schema_version: "4.0"
+feature_id: direct-debit-detail
+
 id: direct-debit-detail
 name: "Direct Debit Detail"
 feature: direct-debit-detail
 flavor: consumer
-status: approved
-quality_score: 95
+# status: REMOVED 2026-08-04 (CROSS_LEAK repair — sibling-layout.json assigns `status` to
+# the docs sibling). This copy held `approved`; docs.yaml is the single owner.
+# RECONCILED 2026-08-07 (/idea-sync): was 95, disagreed with docs.yaml `quality_score: 91`.
+# The matrix averages every top-level quality_score under screens/direct-debit-detail/**.
+# docs.yaml is the owner sibling.
+quality_score: 91
 contract_version: "1.1.0"
 approve_hash: "sha256:c3d4e5f6a7b8c9d0e1f2a3b4c5d6e7f8a9b0c1d2e3f4a5b6c7d8e9f0a1b2c3d4"
 approved_at: "2026-06-11T14:45:00Z"
@@ -64,9 +72,9 @@ shell:
 components:
   - type: stack
     id: ddd_root
-    variant: column
+    variant: vertical
     style:
-      background: "#F9FAEF"
+      background: background
       padding_horizontal: spacing.lg
     children:
       - ddd_merchant_hero
@@ -77,7 +85,7 @@ components:
   # ── Merchant hero (text-only: name + status + amount + frequency) ─────────────
   - type: stack
     id: ddd_merchant_hero
-    variant: column
+    variant: vertical
     style:
       alignment: center
       padding_top: spacing.sm
@@ -95,8 +103,8 @@ components:
     content: "Netflix"
     variant: headline_small
     style:
-      typography: "Outfit/headline_small"
-      color: "#1A1C16"
+      typography: headlineSmall
+      color: onSurface
       alignment: center
       font_weight: semibold
     a11y:
@@ -108,24 +116,21 @@ components:
       interaction_type: display
       data_driven: true
 
-  - type: badge
+  - type: status_chip
     id: ddd_mandate_status_badge
-    content: "Active"
-    variant: tonal
-    style:
-      background: "#CDEDA3"
-      color: "#4C662B"
-      typography: "Outfit/label_medium"
-      border_radius: "20dp"
-      padding_horizontal: "12dp"
-      padding_vertical: "4dp"
-      alignment: center
+    # badge -> status_chip 2026-08-04 (/idea-sync, N-1-SYSTEMIC). The hardcoded style block is
+    # removed with it: the `active` variant resolves container and icon from design-tokens.yaml,
+    # so this row can no longer drift from the palette the way the literal primaryContainer did.
+    label: "{mandate.statusLabel}"
+    variant: "{mandate.isActive ? 'active' : 'inactive'}"
     a11y:
       role: status
       label: "Mandate status"
     test_context:
       tag: ddd_mandate_status_badge
-      purpose: "Status pill: Active (green) / Cancelled (grey). Derived from mandate.isActive."
+      # Corrected 2026-08-03 (/idea-sync): said "Active (green)". This palette ships no green;
+      # DESIGN.md maps the healthy/success semantic onto `primary`.
+      purpose: "Status pill: Active (primary + check_circle) / Cancelled (surfaceContainerHigh + cancel icon). Derived from mandate.isActive."
       interaction_type: display
       data_driven: true
 
@@ -134,8 +139,8 @@ components:
     content: "£15.99"
     variant: display_small
     style:
-      typography: "Outfit/display_small"
-      color: "#1A1C16"
+      typography: displaySmall
+      color: onSurface
       alignment: center
       font_weight: "700"
     a11y:
@@ -152,8 +157,8 @@ components:
     content: "Monthly"
     variant: body_medium
     style:
-      typography: "Outfit/body_medium"
-      color: "#44483D"
+      typography: bodyMedium
+      color: onSurfaceVariant
       alignment: center
     a11y:
       role: text
@@ -170,9 +175,9 @@ components:
     variant: outlined
     supported_states: [idle]
     style:
-      background: "#FFFFFF"
+      background: surface
       border_radius: "16dp"
-      border_color: "#E1E4D5"
+      border_color: surfaceVariant
       border_width: 1
       padding: spacing.md
       margin_top: spacing.lg
@@ -192,8 +197,8 @@ components:
     content: "Mandate Details"
     variant: title_medium
     style:
-      typography: "Outfit/title_medium"
-      color: "#1A1C16"
+      typography: titleMedium
+      color: onSurface
       font_weight: semibold
       padding_bottom: spacing.xs
     a11y:
@@ -207,7 +212,7 @@ components:
 
   - type: stack
     id: ddd_next_payment_row
-    variant: row
+    variant: horizontal
     style: { alignment: center_space_between, padding_vertical: spacing.sm }
     children: [ddd_next_payment_label, ddd_next_payment_value]
 
@@ -215,7 +220,7 @@ components:
     id: ddd_next_payment_label
     content: "Next Payment"
     variant: body_medium
-    style: { typography: "Outfit/body_medium", color: "#44483D" }
+    style: { typography: bodyMedium, color: onSurfaceVariant }
     a11y: { role: text, label: "Next payment label" }
     test_context: { purpose: "Row label for the upcoming collection date", interaction_type: display, data_driven: false }
 
@@ -223,7 +228,7 @@ components:
     id: ddd_next_payment_value
     content: "15 Jun 2026"
     variant: body_medium
-    style: { typography: "Outfit/body_medium", color: "#1A1C16", font_weight: "600" }
+    style: { typography: bodyMedium, color: onSurface, font_weight: "600" }
     a11y: { role: text, label: "Next payment date" }
     test_context:
       purpose: "Derived next-collection date for active mandates; em dash (—) when cancelled or underivable."
@@ -232,13 +237,13 @@ components:
 
   - type: divider
     id: ddd_divider_1
-    style: { color: "#E1E4D5", margin_top: spacing.xs, margin_bottom: spacing.xs }
+    style: { color: surfaceVariant, margin_top: spacing.xs, margin_bottom: spacing.xs }
     a11y: { role: separator, label: "Divider" }
     test_context: { purpose: "Separator between next payment and account rows", interaction_type: display, data_driven: false }
 
   - type: stack
     id: ddd_account_row
-    variant: row
+    variant: horizontal
     style: { alignment: center_space_between, padding_vertical: spacing.sm }
     children: [ddd_account_label, ddd_account_value_group]
 
@@ -246,13 +251,13 @@ components:
     id: ddd_account_label
     content: "Account"
     variant: body_medium
-    style: { typography: "Outfit/body_medium", color: "#44483D" }
+    style: { typography: bodyMedium, color: onSurfaceVariant }
     a11y: { role: text, label: "Linked account label" }
     test_context: { purpose: "Row label for the account this mandate collects from", interaction_type: display, data_driven: false }
 
   - type: stack
     id: ddd_account_value_group
-    variant: column
+    variant: vertical
     style: { alignment: end }
     children: [ddd_account_name, ddd_account_number]
 
@@ -260,7 +265,7 @@ components:
     id: ddd_account_name
     content: "Current Account"
     variant: body_medium
-    style: { typography: "Outfit/body_medium", color: "#1A1C16", font_weight: "600" }
+    style: { typography: bodyMedium, color: onSurface, font_weight: "600" }
     a11y: { role: text, label: "Linked account name" }
     test_context:
       purpose: "Best-effort account display name (label, else type, else 'Account'); resolution never blocks the screen."
@@ -271,7 +276,7 @@ components:
     id: ddd_account_number
     content: "••••4521"
     variant: body_small
-    style: { typography: "Outfit/body_small", color: "#44483D" }
+    style: { typography: bodySmall, color: onSurfaceVariant }
     a11y: { role: text, label: "Masked account number" }
     test_context:
       purpose: "Last 4 alphanumerics of the route accountId, prefixed ••••."
@@ -280,13 +285,13 @@ components:
 
   - type: divider
     id: ddd_divider_2
-    style: { color: "#E1E4D5", margin_top: spacing.xs, margin_bottom: spacing.xs }
+    style: { color: surfaceVariant, margin_top: spacing.xs, margin_bottom: spacing.xs }
     a11y: { role: separator, label: "Divider" }
     test_context: { purpose: "Separator between account and reference rows", interaction_type: display, data_driven: false }
 
   - type: stack
     id: ddd_mandate_ref_row
-    variant: row
+    variant: horizontal
     style: { alignment: center_space_between, padding_vertical: spacing.sm }
     children: [ddd_mandate_ref_label, ddd_mandate_ref_value]
 
@@ -294,7 +299,7 @@ components:
     id: ddd_mandate_ref_label
     content: "Mandate Ref"
     variant: body_medium
-    style: { typography: "Outfit/body_medium", color: "#44483D" }
+    style: { typography: bodyMedium, color: onSurfaceVariant }
     a11y: { role: text, label: "Mandate reference label" }
     test_context: { purpose: "Row label for the mandate reference", interaction_type: display, data_driven: false }
 
@@ -302,7 +307,7 @@ components:
     id: ddd_mandate_ref_value
     content: "DD-NF-20240301"
     variant: body_medium
-    style: { typography: "Outfit/body_medium", color: "#1A1C16", font_family: monospace, font_weight: "600" }
+    style: { typography: bodyMedium, color: onSurface, font_family: monospace, font_weight: "600" }
     a11y: { role: text, label: "Mandate reference" }
     test_context:
       purpose: "Stable derived reference (DD-{initials}-{first collection yyyyMMdd}); monospace. Em dash when blank."
@@ -311,13 +316,13 @@ components:
 
   - type: divider
     id: ddd_divider_3
-    style: { color: "#E1E4D5", margin_top: spacing.xs, margin_bottom: spacing.xs }
+    style: { color: surfaceVariant, margin_top: spacing.xs, margin_bottom: spacing.xs }
     a11y: { role: separator, label: "Divider" }
     test_context: { purpose: "Separator between reference and start date rows", interaction_type: display, data_driven: false }
 
   - type: stack
     id: ddd_start_date_row
-    variant: row
+    variant: horizontal
     style: { alignment: center_space_between, padding_vertical: spacing.sm }
     children: [ddd_start_date_label, ddd_start_date_value]
 
@@ -325,7 +330,7 @@ components:
     id: ddd_start_date_label
     content: "Start Date"
     variant: body_medium
-    style: { typography: "Outfit/body_medium", color: "#44483D" }
+    style: { typography: bodyMedium, color: onSurfaceVariant }
     a11y: { role: text, label: "Start date label" }
     test_context: { purpose: "Row label for the mandate's effective start", interaction_type: display, data_driven: false }
 
@@ -333,7 +338,7 @@ components:
     id: ddd_start_date_value
     content: "1 Mar 2024"
     variant: body_medium
-    style: { typography: "Outfit/body_medium", color: "#1A1C16", font_weight: "600" }
+    style: { typography: bodyMedium, color: onSurface, font_weight: "600" }
     a11y: { role: text, label: "Start date" }
     test_context:
       purpose: "First observed collection date (the mandate's effective start); em dash when underivable."
@@ -346,9 +351,9 @@ components:
     variant: outlined
     supported_states: [idle]
     style:
-      background: "#FFFFFF"
+      background: surface
       border_radius: "16dp"
-      border_color: "#E1E4D5"
+      border_color: surfaceVariant
       border_width: 1
       padding: spacing.md
       margin_bottom: spacing.md
@@ -358,7 +363,7 @@ components:
 
   - type: stack
     id: ddd_history_header_row
-    variant: row
+    variant: horizontal
     style: { alignment: center_space_between, padding_bottom: spacing.xs }
     children: [ddd_history_header, ddd_history_view_all_link]
 
@@ -366,7 +371,7 @@ components:
     id: ddd_history_header
     content: "Recent Payments"
     variant: title_medium
-    style: { typography: "Outfit/title_medium", color: "#1A1C16", font_weight: semibold }
+    style: { typography: titleMedium, color: onSurface, font_weight: semibold }
     a11y: { role: heading, label: "Recent payments section" }
     test_context: { purpose: "Section header for the derived collection history", interaction_type: display, data_driven: false }
 
@@ -374,10 +379,14 @@ components:
     id: ddd_history_view_all_link
     label: "View all"
     variant: inline
-    style: { typography: "Outfit/label_medium", color: "#4C662B" }
+    style: { typography: labelMedium, color: primary }
     on_click:
       action: navigate
       target: transactions
+      action_contract:
+        effect: navigate
+        description: >-
+          Opens the transactions list filtered to collections from this direct-debit originator.
     a11y: { role: link, label: "View all payments for this account" }
     keyboard: { focusable: true }
     test_context:
@@ -388,7 +397,7 @@ components:
 
   - type: list
     id: ddd_history_list
-    variant: column
+    variant: vertical
     style: { padding: 0 }
     a11y: { role: list, label: "Recent collected payments" }
     test_context:
@@ -398,7 +407,7 @@ components:
 
   - type: list_item
     id: ddd_history_row
-    variant: row
+    variant: one_line
     style: { padding_vertical: spacing.sm }
     children: [ddd_history_row_date, ddd_history_row_amount]
     a11y: { role: listitem, label: "Collected payment" }
@@ -411,7 +420,7 @@ components:
     id: ddd_history_row_date
     content: "15 May 2026"
     variant: body_medium
-    style: { typography: "Outfit/body_medium", color: "#1A1C16" }
+    style: { typography: bodyMedium, color: onSurface }
     a11y: { role: text, label: "Payment date" }
     test_context: { purpose: "Collection date label", interaction_type: display, data_driven: true }
 
@@ -419,7 +428,7 @@ components:
     id: ddd_history_row_amount
     content: "-£15.99"
     variant: body_medium
-    style: { typography: "Outfit/body_medium", color: "#1A1C16", font_weight: "600" }
+    style: { typography: bodyMedium, color: onSurface, font_weight: "600" }
     a11y: { role: text, label: "Amount collected" }
     test_context: { purpose: "Signed collection amount (-{symbol}{value})", interaction_type: display, data_driven: true }
 
@@ -430,15 +439,21 @@ components:
     variant: outlined
     supported_states: [idle, hover, focus_visible, pressed]
     style:
-      border_color: "#BA1A1A"
-      color: "#BA1A1A"
-      typography: "Outfit/label_large"
+      border_color: error
+      color: error
+      typography: labelLarge
       border_radius: "12dp"
       full_width: true
       margin_top: spacing.lg
     on_click:
       action: cancel_requested
       target: ddd_cancel_dialog
+      action_contract:
+        effect: transform_state
+        external_library_refs: [kotlinx-coroutines]
+        description: >-
+          Opens the cancel-mandate confirmation dialog; the mandate is untouched until the confirm CTA
+          is pressed.
     a11y:
       role: button
       label: "Cancel this direct debit mandate"
@@ -458,7 +473,7 @@ components:
     message: "{merchant} ({reference}) will stop collecting payments. This cannot be undone."
     supported_states: [idle, visible, dismissed]
     style:
-      background: "#FFFFFF"
+      background: surface
       border_radius: 16
       padding: spacing.lg
     a11y:
@@ -479,12 +494,20 @@ components:
     variant: filled
     supported_states: [idle, hover, focus_visible, pressed]
     style:
-      background: "#BA1A1A"
-      text_color: "#FFFFFF"
+      background: error
+      text_color: onError
       border_radius: 12
     on_click:
       action: cancel_confirmed
       target: direct-debit-detail
+      action_contract:
+        effect: delete
+        writes_to: ["direct_debit_cancellations"]
+        external_library_refs: [ktorfit, "hsbc-obie-ais-v4.0:direct-debits"]
+        description: >-
+          Dispatches the mandate cancellation through ktorfit. Note the AISP consent this screen reads
+          under is read-only, so this path depends on a servicer that exposes mandate cancellation —
+          where it does not, the failure must surface rather than appear to succeed.
     a11y: { role: button, label: "Confirm cancellation" }
     keyboard: { focusable: true }
     test_context:
@@ -500,12 +523,17 @@ components:
     variant: outlined
     supported_states: [idle, hover, focus_visible, pressed]
     style:
-      border_color: "#4C662B"
-      text_color: "#4C662B"
+      border_color: primary
+      text_color: primary
       border_radius: 12
     on_click:
       action: cancel_dismissed
       target: ""
+      action_contract:
+        effect: transform_state
+        external_library_refs: [kotlinx-coroutines]
+        description: >-
+          Closes the cancel dialog and leaves the mandate active.
     a11y: { role: button, label: "Keep the mandate active" }
     keyboard: { focusable: true }
     test_context:
@@ -519,20 +547,20 @@ components:
   - type: skeleton
     id: ddd_loading_skeleton
     variant: detail
-    style: { background: "#F9FAEF", padding: spacing.lg }
+    style: { background: background, padding: spacing.lg }
     a11y: { role: progressbar, label: "Loading mandate details" }
     test_context: { purpose: "Centered progress while listMandates() resolves the mandate", interaction_type: display, data_driven: false }
 
   - type: stack
     id: ddd_error_state
-    variant: column
+    variant: vertical
     style: { alignment: center, padding: spacing.xl }
     children: [ddd_error_icon, ddd_error_title, ddd_error_message, ddd_retry_button]
 
   - type: icon
     id: ddd_error_icon
     content: "cloud_off"
-    style: { color: "#44483D", size: "48dp", alignment: center }
+    style: { color: onSurfaceVariant, size: "48dp", alignment: center }
     a11y: { role: image, label: "Error loading mandate" }
     test_context: { purpose: "Error icon", interaction_type: display, data_driven: false }
 
@@ -540,7 +568,7 @@ components:
     id: ddd_error_title
     content: "Unable to load mandate"
     variant: title_large
-    style: { typography: "Outfit/title_large", color: "#1A1C16", alignment: center }
+    style: { typography: titleLarge, color: onSurface, alignment: center }
     a11y: { role: text, label: "Unable to load mandate" }
     test_context: { purpose: "Error/no-network/unauthenticated heading", interaction_type: display, data_driven: false }
 
@@ -548,7 +576,7 @@ components:
     id: ddd_error_message
     content: "Check your connection and try again"
     variant: body_medium
-    style: { typography: "Outfit/body_medium", color: "#44483D", alignment: center }
+    style: { typography: bodyMedium, color: onSurfaceVariant, alignment: center }
     a11y: { role: text, label: "Error description" }
     test_context: { purpose: "Error copy", interaction_type: display, data_driven: false }
 
@@ -557,10 +585,17 @@ components:
     label: "Retry"
     variant: text
     supported_states: [idle, hover, focus_visible, pressed]
-    style: { color: "#4C662B", typography: "Outfit/label_large", alignment: center }
+    style: { color: primary, typography: labelLarge, alignment: center }
     on_click:
       action: retry
       target: direct-debit-detail
+      action_contract:
+        effect: call_api
+        reads_from: [direct-debits-list, transactions]
+        external_library_refs: [ktorfit, "hsbc-obie-ais-v4.0:direct-debits"]
+        description: >-
+          Re-fetches this mandate through ktorfit against hsbc-obie-ais-v4.0:direct-debits after a
+          failed load.
     a11y: { role: button, label: "Retry loading mandate" }
     keyboard: { focusable: true }
     test_context:
@@ -571,14 +606,14 @@ components:
 
   - type: stack
     id: ddd_empty_state
-    variant: column
+    variant: vertical
     style: { alignment: center, padding: spacing.xl }
     children: [ddd_empty_icon, ddd_empty_title, ddd_empty_message, ddd_empty_back_button]
 
   - type: icon
     id: ddd_empty_icon
     content: "event_busy"
-    style: { color: "#C5C8BA", size: "48dp", alignment: center }
+    style: { color: outlineVariant, size: "48dp", alignment: center }
     a11y: { role: image, label: "Mandate not available" }
     test_context: { purpose: "Empty-state icon", interaction_type: display, data_driven: false }
 
@@ -586,7 +621,7 @@ components:
     id: ddd_empty_title
     content: "Mandate not available"
     variant: title_large
-    style: { typography: "Outfit/title_large", color: "#1A1C16", alignment: center }
+    style: { typography: titleLarge, color: onSurface, alignment: center }
     a11y: { role: text, label: "Mandate not available" }
     test_context: { purpose: "Empty-state heading (mandateId no longer resolves)", interaction_type: display, data_driven: false }
 
@@ -594,7 +629,7 @@ components:
     id: ddd_empty_message
     content: "This direct debit could not be found. It may have already been cancelled or expired."
     variant: body_medium
-    style: { typography: "Outfit/body_medium", color: "#44483D", alignment: center }
+    style: { typography: bodyMedium, color: onSurfaceVariant, alignment: center }
     a11y: { role: text, label: "Empty-state message" }
     test_context: { purpose: "Empty-state copy", interaction_type: display, data_driven: false }
 
@@ -604,13 +639,17 @@ components:
     variant: filled
     supported_states: [idle, hover, focus_visible, pressed]
     style:
-      background: "#4C662B"
-      text_color: "#FFFFFF"
+      background: primary
+      text_color: onPrimary
       border_radius: "12dp"
     on_click:
       action: navigate_back
       target: direct-debits
       intent: target
+      action_contract:
+        effect: navigate
+        description: >-
+          Returns to the direct-debits list when the requested mandate resolves to nothing.
     a11y: { role: button, label: "Back to direct debits list" }
     keyboard: { focusable: true }
     test_context:

@@ -1,138 +1,96 @@
-# API Reference — Home Dashboard
+# API — Home
 
-| Field    | Value                                       |
-|----------|---------------------------------------------|
-| Feature  | home                                        |
-| Base URL | https://apisandbox.openbankproject.com      |
+Client contracts for `home`. This project owns no backend: these are Ktorfit contracts against the
+HSBC UK/CE sandbox (OBIE Read/Write Standard), not owned schema.
 
----
-
-## GET /obp/v3.0.0/banks/{bankId}/accounts
-
-**Auth:** DirectLogin
-**Tag:** Accounts
-**Trigger:** `loadDashboardData()` on screen open / `RetryLoad` event
-
-Fetches all accounts for the bank to identify the primary checking account for the hero card. The first account of type "CHECKING" is used as `primaryAccount`.
-
-### Path Parameters
-
-| Name   | Type   | Value    | Description     |
-|--------|--------|----------|-----------------|
-| bankId | String | gh.29.uk | Bank identifier |
-
-### Response Fields
-
-| Field                    | Type                   | Description                       |
-|--------------------------|------------------------|-----------------------------------|
-| id                       | String                 | Account identifier                |
-| label                    | String                 | Account display label             |
-| account_type             | String                 | e.g. "CHECKING", "SAVINGS"        |
-| balance                  | Object                 | Contains currency + amount        |
-| balance.currency         | String                 | e.g. "GBP"                        |
-| balance.amount           | String                 | e.g. "4250.00"                    |
-| account_routings         | List\<AccountRouting\> | Routing numbers / IBAN            |
-
-### Demo Data
-
-| id         | label             | account_type | balance.amount | account_routing |
-|------------|-------------------|--------------|----------------|-----------------|
-| acc-0130   | Primary Checking  | CHECKING     | 4250.00        | •••• 0130       |
-| acc-0245   | Savings           | SAVINGS      | 7840.25        | •••• 0245       |
-| acc-0391   | Joint Current     | CHECKING     | 390.25         | •••• 0391       |
-
-### Error Codes
-
-| Code | Message                                      | UI Handling                  |
-|------|----------------------------------------------|------------------------------|
-| 401  | Unauthorized — DirectLogin token expired     | Navigate to login            |
-| 404  | Bank not found                               | Show error state, retry      |
-| 500  | OBP server error                             | Show error state, retry      |
+Three calls, in two stages: `accounts-list` on mount, then **balances and transactions in parallel**
+(`coroutineScope` async/awaitAll) for the selected account.
 
 ---
 
-## GET /obp/v3.0.0/banks/{bankId}/accounts/{accountId}/owner/transactions
+## accounts-list
 
-**Auth:** DirectLogin
-**Tag:** Transactions
-**Trigger:** `loadDashboardData()` on screen open / `RetryLoad` event
+| | |
+|---|---|
+| Endpoint | `GET /accounts` |
+| Permission | `ReadAccountsDetail` |
+| Trigger | On mount — populates the account-switcher |
 
-Fetches the 5 most recent transactions for the primary account via the `owner` view, displayed in the Recent Transactions section (up to 3 shown in the home view).
+**Same resource as the Accounts screen, cached in memory** to avoid redundant round-trips when
+navigating back and forth. Home and Accounts should not each issue their own fetch.
 
-### Path + Query Parameters
+Empty `Data.Account[]` → `empty` state with `reason=no_accounts`.
 
-| Name           | Type   | In    | Value                    | Description                          |
-|----------------|--------|-------|--------------------------|--------------------------------------|
-| bankId         | String | path  | gh.29.uk                 | Bank identifier                      |
-| accountId      | String | path  | (from accounts response) | Primary account ID                   |
-| limit          | Int    | query | 5                        | Return only the 5 most recent        |
-| sort_direction | String | query | DESC                     | Newest first                         |
-
-### Response Fields
-
-| Field                  | Type   | Description                             |
-|------------------------|--------|-----------------------------------------|
-| id                     | String | Transaction identifier                  |
-| this_account           | Object | Account reference                       |
-| other_account          | Object | Counterparty reference                  |
-| details.type           | String | Transaction type e.g. "DEBIT", "CREDIT" |
-| details.description    | String | Merchant or reference description       |
-| details.posted         | String | ISO-8601 posted timestamp               |
-| details.value.currency | String | e.g. "GBP"                             |
-| details.value.amount   | String | Signed amount e.g. "−42.50", "3200.00" |
-
-### Demo Data
-
-| id     | details.description | details.type | details.value.amount | details.posted            |
-|--------|---------------------|--------------|----------------------|---------------------------|
-| txn-1  | Tesco Supermarket   | DEBIT        | -42.50               | 2026-05-23T14:32:00Z      |
-| txn-2  | Salary Payment      | CREDIT       | 3200.00              | 2026-05-22T09:00:00Z      |
-| txn-3  | EDF Energy          | DEBIT        | -94.20               | 2026-05-20T10:15:00Z      |
-
-### Error Codes
-
-| Code | Message          | UI Handling              |
-|------|------------------|--------------------------|
-| 401  | Unauthorized     | Navigate to login        |
-| 404  | Account not found| Show error state, retry  |
+| Code | Cause | Recovery |
+|------|-------|----------|
+| 401 | Access token expired | Clear token store → login |
+| 403 | `ReadAccountsDetail` absent from consent | **Non-recoverable** — navigate to consent-list |
+| 429 | Rate-limit exceeded | Exponential back-off + retry CTA |
+| 503 | Sandbox unavailable | Retry CTA after a delay |
 
 ---
 
-## GET /obp/v3.0.0/my/accounts
+## selected-account-balances
 
-**Auth:** DirectLogin
-**Tag:** Accounts
-**Trigger:** `loadDashboardData()` on screen open — cross-bank aggregation for total balance chip
+| | |
+|---|---|
+| Endpoint | `GET /accounts/{AccountId}/balances` |
+| Permission | `ReadBalances` |
+| Fetched | In parallel with transactions |
 
-Returns account summaries across all connected banks. The HomeViewModel sums `balance.amount` values to compute `totalBalance` and `totalAccountCount` for the total balance chip ("Total across 3 accounts: £12,480.50").
+**Balance preference:** `InterimAvailable → InterimBooked → OpeningBooked`.
 
-### Response Fields
+Unlike the Accounts list, home surfaces **two** figures: the preferred type as the hero balance, and
+the second-best type as the "available" label. Where booked and available differ, that difference is
+exactly what a customer opens the app to see.
 
-| Field           | Type   | Description                      |
-|-----------------|--------|----------------------------------|
-| id              | String | Account identifier               |
-| label           | String | Account display name             |
-| balance.currency| String | Currency code                    |
-| balance.amount  | String | Account balance                  |
-| bank_id         | String | Bank identifier                  |
+**Credit accounts invert the meaning of a balance.** `CreditCard` with
+`CreditDebitIndicator=Debit` renders in the error colour — on a credit account the figure is money
+owed, and showing it in the same treatment as a positive current-account balance would misread as
+funds available.
 
-### Aggregated Demo Values
+**Multi-currency (`GlobalWallet`) displays the native currency code with no GBP conversion** —
+converting would put a rate on screen the bank never quoted.
 
-| Metric              | Value      |
-|---------------------|------------|
-| totalAccountCount   | 3          |
-| totalBalance        | £12,480.50 |
-| Primary Checking    | £4,250.00  |
-| Savings             | £7,840.25  |
-| Joint Current       | £390.25    |
-
-### Error Codes
-
-| Code | Message                                      | UI Handling             |
-|------|----------------------------------------------|-------------------------|
-| 401  | Unauthorized — DirectLogin token expired     | Navigate to login       |
-| 500  | OBP server error                             | Show error state, retry |
+| Code | Cause | Recovery |
+|------|-------|----------|
+| 401 | Access token expired | Error state → login |
+| 403 | `ReadBalances` not in consent | **Non-recoverable**; message directs the PSU to consent-list |
+| 404 | `AccountId` stale — consent revoked mid-session | Clear selected account; reload `/accounts` |
 
 ---
 
-_Generated by /idea export | 2026-06-02 (endpoints resynced to v3.0.0 owner-transactions paths per api.yaml)_
+## recent-transactions
+
+| | |
+|---|---|
+| Endpoint | `GET /accounts/{AccountId}/transactions` |
+| Permission | `ReadTransactionsDetail` |
+| Fetched | In parallel with balances |
+
+**Only the 5 most-recent Booked transactions**, sorted descending by `BookingDateTime`, sliced
+client-side.
+
+**Pending transactions are excluded here** — deliberately, and only here: they remain visible on the
+full transactions screen. A pending amount has not moved yet, so listing it beside a balance invites
+the customer to reconcile two numbers that are not meant to agree. The full list is the place where
+pending status can be labelled and understood.
+
+`View all` routes to the transactions screen, where the unsliced list lives.
+
+Category icon derives from `ProprietaryBankTransactionCode.Code`, falling back to
+`MerchantCategoryCode`.
+
+| Code | Cause | Recovery |
+|------|-------|----------|
+| 401 | Access token expired | Error state → login |
+| 403 | `ReadTransactionsDetail` not in consent | **Non-recoverable**; advisory shown in the recent-transactions section only |
+| 429 | Rate-limit exceeded | Recoverable; retry CTA |
+
+The 403 here degrades **within** the screen: the hero balance still renders and only the
+transactions section carries the advisory. A consent can permit balances without permitting
+transaction detail, and losing the whole dashboard to that would be wrong.
+
+---
+
+<!-- Generated 2026-08-04 by /idea-feature-export --all --force from screens/home/api.yaml. -->

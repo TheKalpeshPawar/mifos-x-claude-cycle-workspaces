@@ -2,8 +2,20 @@ name: Transaction
 version: "1.0.0"
 source:
   origin: project
-  api_path: "GET /obp/v5.1.0/my/banks/{bankId}/accounts/{accountId}/transactions"
-description: "Top-level transaction object returned by the OBP transactions list and single-transaction endpoints. Composes the source account, counterparty, financial details, and metadata sub-objects."
+  api_path: "GET /obie/open-banking/v4.0/aisp/accounts/{AccountId}/transactions"
+  api_ref: API-001
+  spec: "OBIE Read/Write v4.0"
+description: >-
+  Top-level transaction object returned by the OBIE transactions resource. OBIE has NO
+  counterparty resource: it names the other party by DIRECTION — CreditorAccount and
+  DebtorAccount, each carrying a Name and a SchemeName/Identification pair. The
+  `other_account` / TransactionCounterparty references below are legacy naming that predates
+  the OBIE retarget, describing OBIE data under a vocabulary the API does not use, and are
+  owed a rename.
+
+  ⚠ UNMASKED PAN: this resource returns the credit card number in full
+  ("SchemeName":"UK.OBIE.PAN","Identification":"1234567890123456") where the `account` resource
+  masks it. Anything that logs, caches or exports these records is handling a full PAN.
 fields:
   - name: id
     type: String
@@ -40,6 +52,10 @@ fields:
     description: "User-generated metadata attached to the transaction (narrative, comments, tags)"
     primary_key: false
 used_by:
-  - feature: pfm-dashboard
-    api_id: obp_transactions_list
+  # Repointed 2026-08-02 (/idea-sync): used_by listed only pfm-dashboard, which was deleted
+  # with the PFM removal. The real consumers are the transaction surfaces.
+  - feature: transactions
+    api_id: get_transactions
+  - feature: transaction-detail
+    api_id: get_transactions
 enums: []

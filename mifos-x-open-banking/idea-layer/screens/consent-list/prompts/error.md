@@ -1,9 +1,9 @@
 ---
-ui_yaml_sha: f533b8247388336b430d05fec5bb72627e5afdd82853e80e2a07d7591f0f4409
-design_md_hash: f734ecfba28b3b0688cbd7ca6f3d7fca27febb15fd021d72a4518ae0e3a4200d
-app_shell_hash: 7b9c63f9aee4f5b5005b1d7533e7f5feab6427f398954987c34ee0f382b0ed69
-design_read_hash: 513c061d12f3a90e84d6e98e1e037b131e59fa3ca5c5f3c0abfc6ba87d24bcaf
-content_hash: 3e6f201087da2b17f8d00eef3b882aa753a0eabc32d66bb62cbc778f67d8a4ce
+ui_yaml_sha: ee1240b9da7ef5f6b0b547af7c1520884e5c0222a57bea3c341e39c009915c27
+design_md_hash: dad4a3ee16afd9663516aa33ebf1647c1d6ede5dc90a1c9bb2c448cd63c225fb
+app_shell_hash: e267a146a693f7d8b57131c73d180b6010ff34beca799edb4ca3c85c5879e0b4
+design_read_hash: 8f83034d22434d75ef7d377035c51c37ef557f4bbb2e0bf510409a4804964a50
+content_hash: e5ebf36f50eb76b2c1e2537e321ecbd8a23db47f1262a46e050911f36e708d83
 
 design_read_aesthetic: minimalist-ui
 design_read_dials: {variance: 3, motion: 2, density: 5}
@@ -14,8 +14,8 @@ feature: consent-list
 state: error
 state_visibility: error
 
-project_id: 'null'
-design_system_id: 'null'
+project_id: '17153754672098888646'
+design_system_id: '2047482829824847747'
 
 generated_by: stitch-prompt-build.ts v2.0.0
 prompt_template_version: stitch-per-state-v3.0.0
@@ -24,8 +24,8 @@ craft_rules_version: v1.0.0
 
 # consent-list — error state
 
-> Auto-generated from screens/consent-list/ui.yaml @ SHA aca9494897550036
-> Stitch DesignSystem: (pending DESIGN.md upload — run /idea-feature-stitch sub-plan 02)
+> Auto-generated from screens/consent-list/ui.yaml @ SHA f0af0537fec13f8f
+> Stitch DesignSystem: 2047482829824847747
 > DO NOT redeclare colors / fonts / spacing — they live in DESIGN.md.
 
 ↓↓↓ MOCKUP PROMPT
@@ -42,32 +42,32 @@ craft_rules_version: v1.0.0
 - responsive: any multi-column region MUST be mobile-first and collapse to a single column at narrow/phone widths — never a fixed multi-column grid with no single-column fallback.
 
 ## Composition (top → bottom)
-1. **progress_indicator**
+1. **progress_circular**
 2. **banner** (#reconfirm_banner) — title: "{strings.consent_list_reconfirm_banner_title}", icon: "warning_amber"
-3. **text** (#active_section_label)
+3. **text** (#active_section_label) — content: "{strings.consent_list_section_active}"
 4. **list** (#active_consents_list) — "active_consents_list"
    - **card** (#consent_card) — "consent_card"
       - **row** (#consent_card_header_row) — "consent_card_header_row"
          - **image** (#bank_logo)
          - **chip** (#status_chip) — label: "{item.Data.Status}", icon: "{item.status_icon}"
       - **chip** (#reconfirm_urgency_chip) — label: "{strings.consent_list_reconfirm_chip}", icon: "warning_amber"
-      - **text** (#permission_summary)
-      - **text** (#expiry_countdown)
-      - **text** (#granted_since)
+      - **text** (#permission_summary) — content: "{strings.consent_list_permissions}"
+      - **text** (#expiry_countdown) — content: "{strings.consent_list_expires_in}"
+      - **text** (#granted_since) — content: "{strings.consent_list_connected_on}"
 5. **divider** (#section_divider)
-6. **text** (#history_section_label)
+6. **text** (#history_section_label) — content: "{strings.consent_list_section_history}"
 7. **list** (#history_consents_list) — "history_consents_list"
    - **card** (#history_consent_card) — "history_consent_card"
       - **row** (#history_card_header_row) — "history_card_header_row"
          - **image** (#bank_logo_history)
          - **chip** (#history_status_chip) — label: "{item.Data.Status}", icon: "{item.status_icon}"
-      - **text** (#history_expiry_label)
-      - **text** (#history_connected_on)
+      - **text** (#history_expiry_label) — content: "{strings.consent_list_expired_on}"
+      - **text** (#history_connected_on) — content: "{strings.consent_list_connected_on}"
 8. **empty_state** (#empty_state) — "{strings.consent_list_empty_title}"
-   - **button** (#connect_button) — label: "{strings.consent_list_connect}", on_click: { action: navigate_connect, target: user-onboarding }
-9. **empty_state** (#error_state) — "{strings.consent_list_error_title}"
+   - **button** (#connect_button) — label: "{strings.consent_list_connect}", on_click: { action: navigate_connect, target: login }
+9. **error_state** (#error_state) — "{strings.consent_list_error_title}"
    - **button** (#retry_button) — label: "{strings.consent_list_retry}", on_click: { action: retry_load }
-10. **empty_state** (#auth_error_state) — "{strings.consent_list_auth_error_title}"
+10. **error_state** (#auth_error_state) — "{strings.consent_list_auth_error_title}"
    - **button** (#reauth_button) — label: "{strings.consent_list_reauth}", on_click: { action: navigate_reauth, target: login }
 
 ## State-specific behavior
@@ -82,7 +82,7 @@ craft_rules_version: v1.0.0
 ## Shell (app-shell resolved for this state)
 - Home: navigates to home
 - Accounts: navigates to accounts
-- Pay: navigates to send-money
+- Pay: navigates to payments
 - More: navigates to settings
 - Render MUST keep nav/bar elements consistent with the list above — present or absent, never partial.
 

@@ -1,149 +1,128 @@
 # SPEC — Beneficiaries
 
-| Field         | Value                    |
-|---------------|--------------------------|
-| Feature       | beneficiaries            |
-| Flavor        | consumer                 |
-| Status        | designed                 |
-| Quality Score | 93                       |
-| ViewModel     | BeneficiariesViewModel   |
+| Field         | Value                     |
+|---------------|---------------------------|
+| Feature       | beneficiaries             |
+| Flavor        | consumer                  |
+| Status        | approved                  |
+| Quality Score | 95                        |
+| ViewModel     | BeneficiariesViewModel    |
+| Archetype     | index_list                |
 
 ---
 
 ## Overview
 
-The Beneficiaries screen is the counterparty management hub of the Mifos X Open Banking consumer app. Recently-used payees appear in a high-glance section at the top for fast re-payment access, followed by an alphabetical full beneficiary list with masked account numbers and last payment dates. A search bar filters by name or account number across both sections; a sort control reorders the full list; and a fixed "Add Beneficiary" FAB opens the add-beneficiary bottom sheet. Each beneficiary row shows an avatar (initials circle or bank logo), bank name, and last payment metadata. Tapping any row navigates to send-money pre-filled with that counterparty. The screen sources live counterparty data from the OBP Counterparties API (v4.0.0, owner view), resolves the beneficiary's bank display name via the OBP Banks API, and derives last-payment amount/date plus recency by joining the account's owner transactions on counterparty name. Bank names resolve only for OBP-scheme routing; BIC/IBAN-scheme rows fall back to the routing code. Add Beneficiary creates a counterparty via POST. Supports loading, content, empty, searching, and error states.
+The saved payees authorised under the PSU consent for one account, reached from account-detail.
+A search bar filters the loaded list; rows are read-only — this screen lists payees, it does not
+create or edit them.
+
+Its distinguishing design decision is in the error state: alongside Retry it offers **View
+Consents**. Most failures here are consent failures rather than transport failures — the payee list
+needs `ReadBeneficiariesDetail` in the active consent, and if that permission was never granted or
+has been revoked, retrying cannot help. The second CTA routes to `consent-list` where the customer
+can actually resolve it.
+
+Two empty states exist and they are not interchangeable: `empty_beneficiaries` means the account has
+no saved payees, `search_no_results` means the filter matched none of the payees that do exist.
 
 ---
 
 ## Screens
 
-| ID            | Name          | Route          | Layout     | Scroll   |
-|---------------|---------------|----------------|------------|----------|
-| beneficiaries | Beneficiaries | /beneficiaries | index_list | Vertical |
+| ID            | Name          | ViewModel              | Archetype  | Entry point    |
+|---------------|---------------|------------------------|------------|----------------|
+| beneficiaries | Beneficiaries | BeneficiariesViewModel | index_list | account-detail |
 
-**Shell:** Top app bar ("Beneficiaries") with back arrow + filter_list action. No bottom navigation bar.
-
-| Element          | Detail                                      |
-|------------------|---------------------------------------------|
-| top_bar.title    | "Beneficiaries"                             |
-| navigation_icon  | arrow_back                                  |
-| action           | filter_list icon → sort_beneficiaries       |
-| bottom_nav       | false                                       |
+**Shell:** top app bar, title `{strings.beneficiaries.screen_title}`, `back` leading icon. Bottom
+navigation visible. No FAB — no create path exists.
 
 ---
 
 ## Components
 
-| ID                               | Type    | Description                                                                                                |
-|----------------------------------|---------|------------------------------------------------------------------------------------------------------------|
-| beneficiary_search_bar           | input   | Outlined search field (radius 28, #F9FAEF bg) — placeholder "Search beneficiaries by name or IBAN...", leading search icon, trailing clear icon |
-| recently_used_header             | text    | "Recently Used" — Outfit/title_medium, #1A1C16, weight semibold, role heading                              |
-| recent_beneficiary_john          | box     | White card (radius 12, elevation 1, 14dp vertical padding) for John Smith; taps → send-money               |
-| recent_beneficiary_john_avatar   | box     | "JS" circle avatar (44dp diameter, #4C662B bg, #FFFFFF text, Outfit/title_medium, bold)                    |
-| recent_john_bank                 | text    | "Barclays UK" — Outfit/body_small, #44483D                                                                 |
-| recent_john_last_payment         | text    | "£500 · 2 days ago" — Outfit/body_small, #386663                                                           |
-| recent_beneficiary_sarah         | box     | White card (radius 12, elevation 1) for Sarah Williams; taps → send-money                                  |
-| recent_beneficiary_sarah_avatar  | box     | "SW" circle avatar (44dp, #386663 bg, #FFFFFF text, Outfit/title_medium, bold)                             |
-| recent_sarah_bank                | text    | "HSBC UK" — Outfit/body_small, #44483D                                                                     |
-| recent_sarah_last_payment        | text    | "£1,200 · 5 days ago" — Outfit/body_small, #386663                                                         |
-| recent_beneficiary_michael       | box     | White card (radius 12, elevation 1) for Michael Chen; taps → send-money                                    |
-| recent_beneficiary_michael_avatar| box     | "MC" circle avatar (44dp, #4C662B bg, #FFFFFF text, Outfit/title_medium, bold)                             |
-| recent_michael_bank              | text    | "Lloyds Bank" — Outfit/body_small, #44483D                                                                 |
-| section_divider                  | divider | Horizontal rule, #E1E4D5, 1px thickness, 8dp vertical padding                                             |
-| all_beneficiaries_header_row     | stack   | Horizontal row (space-between, align center): "All Beneficiaries" heading + sort icon button               |
-| all_beneficiaries_header         | text    | "All Beneficiaries" — Outfit/title_medium, #1A1C16, weight semibold, role heading                          |
-| sort_button                      | icon    | sort icon, 24dp, #4C662B; triggers sort action                                                             |
-| beneficiary_item_anderson        | box     | White card (radius 12, elevation 1) for James Anderson — NatWest, IBAN ending 8819                         |
-| natwest_logo                     | image   | NatWest logo, 32×32dp, radius 4, content_scale fit                                                         |
-| anderson_iban                    | text    | "GB29 NWBK ··· 8819" — Outfit/body_small, #44483D, monospace                                              |
-| anderson_last_payment            | text    | "Last: 12 May 2026" — Outfit/body_small, #44483D                                                           |
-| beneficiary_item_patel           | box     | White card (radius 12, elevation 1) for Priya Patel — Santander UK, IBAN ending 4421                       |
-| santander_logo                   | image   | Santander logo, 32×32dp, radius 4, content_scale fit                                                       |
-| patel_iban                       | text    | "GB72 ABBY ··· 4421" — Outfit/body_small, #44483D, monospace                                              |
-| add_beneficiary_fab              | button  | FAB: filled #4C662B, "Add Beneficiary", person_add icon, elevation 6, position floating_action_button      |
+| ID                   | Type        | Description                                             |
+|----------------------|-------------|----------------------------------------------------------|
+| back_button          | icon_button | Returns to account-detail                               |
+| beneficiary_search   | search_bar  | Filters the loaded list — no refetch                    |
+| beneficiaries_list   | list        | Semantic list of saved payees                           |
+| └ beneficiary_row    | list_item   | One payee                                               |
+| └ beneficiary_avatar | avatar      | Payee initial/avatar                                    |
+| search_no_results    | empty_state | Filter matched nothing — payees exist                   |
+| empty_beneficiaries  | empty_state | Account has no saved payees at all                      |
+| error_state          | error_state | Load failure — `role: alert`                            |
+| └ retry_button       | button      | `{strings.beneficiaries.retry}` → `RetryLoad`           |
+| └ view_consents_button | button    | `{strings.beneficiaries.view_consents}` → consent-list  |
 
 ---
 
 ## States
 
-| ID        | Trigger                              | Description                                                                                                                       |
-|-----------|--------------------------------------|-----------------------------------------------------------------------------------------------------------------------------------|
-| loading   | ScreenOpened / RefreshTriggered      | Search bar visible; shimmer skeleton list (6 items, 200ms shimmer duration); FAB hidden; Recently Used + All sections skeletonised |
-| content   | Beneficiaries loaded successfully    | Search bar + Recently Used section (3 cards: JS, SW, MC) + divider + All Beneficiaries section (Anderson, Patel) + FAB visible   |
-| empty     | No beneficiaries exist               | Search bar + FAB + empty state: person_off icon (48dp), "No beneficiaries yet", "Add a beneficiary to start sending money quickly" |
-| searching | User types in search bar             | Search bar (with trailing clear icon active) + dynamically filtered beneficiary results; section headers hidden                   |
-| error     | LOAD_FAILED from API                 | Search bar + FAB + cloud_off icon (48dp), "Unable to load beneficiaries", "Check your connection and try again", Retry button     |
+Initial state: `loading`. Four states, matching `BeneficiariesUiState` one-for-one.
+
+| State   | Rendering                                                       |
+|---------|------------------------------------------------------------------|
+| loading | Fetching                                                        |
+| content | Search bar + payee rows (or `search_no_results` when filtered)   |
+| empty   | `empty_beneficiaries` — no saved payees                         |
+| error   | `error_state` + Retry + View Consents                           |
+
+`search_no_results` renders **within** `content` — a filter that matches nothing has not emptied
+the account, so the search bar must stay on screen for the customer to clear it.
 
 ---
 
 ## State Model
 
-**ViewModel:** `BeneficiariesViewModel`
-**Screen State Type:** `BeneficiariesUiState`
+**ViewModel:** `BeneficiariesViewModel`.
 
-| Name                  | Type                    | Default          |
-|-----------------------|-------------------------|------------------|
-| beneficiaries         | List\<Counterparty\>    | emptyList()      |
-| recentBeneficiaries   | List\<Counterparty\>    | emptyList()      |
-| searchQuery           | String                  | ""               |
-| filteredBeneficiaries | List\<Counterparty\>    | emptyList()      |
-| sortOrder             | SortOrder               | AlphaAscending   |
-| uiState               | BeneficiariesUiState    | Loading          |
+**State:** `BeneficiariesState` — `accountId: String`, `uiState: BeneficiariesUiState`.
 
-**Events:** `SearchQueryChanged`, `BeneficiarySelected`, `AddBeneficiaryClicked`, `SortChanged`, `RefreshTriggered`
+**Screen state:** sealed `BeneficiariesUiState` — `Loading`, `Content`, `Empty`, `Error`.
 
-**Actions:** `search()`, `navigate()`, `open_add_beneficiary_sheet()`, `sort()`
+**Error types:** `TokenExpiredError`, `ConsentRevokedError`, `RateLimitedError`, `NetworkError`,
+`ServerError`.
 
-**DI Dependencies:** `PaymentsRepository`, `BanksRepository`, `TransactionsRepository`, `AccountsRepository`
+`ConsentRevokedError` is why the error state carries a second CTA — it is not recoverable by retry.
 
-**Errors:**
-- `LOAD_FAILED`: "Unable to load beneficiaries. Please try again."
+**Actions:** `RetryLoad`, `Search`.
+
+**Nav callbacks:** `onBack -> popBackStack()` returning to account-detail ·
+`onNavigateToConsents -> navigate(ConsentListRoute)`.
+
+**DI:** `SavedStateHandle` (carries `accountId`), `BeneficiariesRepository`.
 
 ---
 
 ## Navigation
 
-| From          | To                | Trigger                         | Type                        |
-|---------------|-------------------|---------------------------------|-----------------------------|
-| beneficiaries | send-money        | Tap any beneficiary row         | push (pre-fills counterparty) |
-| beneficiaries | (add-beneficiary) | add_beneficiary_fab tap         | bottom sheet                |
-| beneficiaries | (parent screen)   | Top app bar back arrow          | pop                         |
+| From          | To             | Trigger                 | Type |
+|---------------|----------------|-------------------------|------|
+| beneficiaries | consent-list   | `view_consents_button`  | push |
+| beneficiaries | account-detail | `onBack`                | pop  |
+
+The consent-list route from an error state is unusual and deliberate: it turns a dead end into a
+path to the actual fix.
 
 ---
 
 ## API Endpoints
 
-| Endpoint                                                                         | Auth        | Tag            | Purpose                                                   |
-|----------------------------------------------------------------------------------|-------------|----------------|-----------------------------------------------------------|
-| GET /obp/v4.0.0/banks/{bankId}/accounts/{accountId}/{viewId}/counterparties      | DirectLogin | Counterparties | Fetch all counterparties (beneficiaries) for the account  |
-| POST /obp/v4.0.0/banks/{bankId}/accounts/{accountId}/{viewId}/counterparties     | DirectLogin | Counterparties | Add Beneficiary — create an explicit counterparty         |
-| GET /obp/v4.0.0/banks/{bankId}                                                    | DirectLogin | Bank           | Resolve other_bank_routing_address (OBP scheme) → full_name |
-| GET /obp/v3.0.0/my/banks/{bankId}/accounts/{accountId}/transactions              | DirectLogin | Transaction    | Derive last-payment amount/date + recency (join on name)  |
+| ID                 | Endpoint                                    | DTO               | Permission                   |
+|--------------------|---------------------------------------------|-------------------|------------------------------|
+| beneficiaries-list | `GET /accounts/{AccountId}/beneficiaries`   | `BeneficiaryItem` | `ReadBeneficiariesDetail`    |
+
+Full detail: `API.md`.
 
 ---
 
 ## Design Tokens
 
-| Token                           | Value     | Usage                                                                       |
-|---------------------------------|-----------|-----------------------------------------------------------------------------|
-| colors.light.primary            | #4C662B   | John Smith avatar, Michael Chen avatar, sort icon, FAB background, search leading icon |
-| colors.light.secondary          | #386663   | Sarah Williams avatar bg, last payment amount+date text color               |
-| colors.light.on_primary         | #FFFFFF   | Avatar initials text (JS, SW, MC), FAB label + icon                        |
-| colors.light.surface            | #FFFFFF   | Beneficiary card backgrounds                                                |
-| colors.light.background         | #F9FAEF   | Screen background, search bar background                                    |
-| colors.light.on_surface         | #1A1C16   | "Recently Used" and "All Beneficiaries" section headers                     |
-| colors.light.on_surface_variant | #44483D   | Bank names, account routing text, last payment dates                        |
-| colors.light.surface_variant    | #E1E4D5   | Section divider, card border color                                          |
-| colors.light.outline_variant    | #C5C8BA   | Card borders (1px)                                                          |
-| typography.title_medium         | 16sp/500  | "Recently Used" and "All Beneficiaries" headers                             |
-| typography.body_small           | 12sp/400  | Bank name, account routing text, last payment metadata                      |
-| elevation.level1                | 1dp       | Beneficiary card elevation                                                  |
-| elevation.level3                | 6dp       | FAB elevation                                                               |
-| radius.md                       | 12dp      | Beneficiary card corners                                                    |
-| radius.lg                       | 16dp      | FAB corner radius                                                           |
-| motion.duration.short4          | 200ms     | Skeleton shimmer animation duration                                         |
+Material 3, seed `#266489` ("Open Banking — Trust Blue"), Roboto. Avatars sit on
+`primaryContainer`; the search bar uses the M3 `search_bar` surface role. Components reference
+semantic roles, so both theme modes resolve from `design-system/design-tokens.yaml`; `DESIGN.md` is
+the canonical brand spec.
 
 ---
 
-_Generated by /idea export | 2026-06-03_
+<!-- Generated 2026-08-04 by /idea-feature-export --all --force from screens/beneficiaries/{ui,api,flow,docs}.yaml. -->

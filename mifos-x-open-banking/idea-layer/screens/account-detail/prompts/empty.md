@@ -1,9 +1,9 @@
 ---
-ui_yaml_sha: b0a8906dc25b9f832385d9e739b65145e6c1da058133602996736d6c0ff0a54e
-design_md_hash: f734ecfba28b3b0688cbd7ca6f3d7fca27febb15fd021d72a4518ae0e3a4200d
-app_shell_hash: 7b9c63f9aee4f5b5005b1d7533e7f5feab6427f398954987c34ee0f382b0ed69
-design_read_hash: 513c061d12f3a90e84d6e98e1e037b131e59fa3ca5c5f3c0abfc6ba87d24bcaf
-content_hash: 06d640188affb9fe7fac372fe473b3464c57520e87413a51e237d23c7df7a3a8
+ui_yaml_sha: 3750313d0e3e4b069a1ea9038fa14749da04c25b496644b72c17ffeae356bacc
+design_md_hash: dad4a3ee16afd9663516aa33ebf1647c1d6ede5dc90a1c9bb2c448cd63c225fb
+app_shell_hash: e267a146a693f7d8b57131c73d180b6010ff34beca799edb4ca3c85c5879e0b4
+design_read_hash: 8f83034d22434d75ef7d377035c51c37ef557f4bbb2e0bf510409a4804964a50
+content_hash: 0e9872fc25ba4e34bf0cc8b339824567a2030388be7c3b5ca2cfd5ee19cf897a
 
 design_read_aesthetic: minimalist-ui
 design_read_dials: {variance: 3, motion: 2, density: 5}
@@ -14,8 +14,8 @@ feature: account-detail
 state: empty
 state_visibility: empty
 
-project_id: 'null'
-design_system_id: 'null'
+project_id: '17153754672098888646'
+design_system_id: '2047482829824847747'
 
 generated_by: stitch-prompt-build.ts v2.0.0
 prompt_template_version: stitch-per-state-v3.0.0
@@ -24,8 +24,8 @@ craft_rules_version: v1.0.0
 
 # account-detail — empty state
 
-> Auto-generated from screens/account-detail/ui.yaml @ SHA 32d58e09ebb23cf2
-> Stitch DesignSystem: (pending DESIGN.md upload — run /idea-feature-stitch sub-plan 02)
+> Auto-generated from screens/account-detail/ui.yaml @ SHA 6891e3f82625ae6c
+> Stitch DesignSystem: 2047482829824847747
 > DO NOT redeclare colors / fonts / spacing — they live in DESIGN.md.
 
 ↓↓↓ MOCKUP PROMPT
@@ -42,20 +42,20 @@ craft_rules_version: v1.0.0
 - responsive: any multi-column region MUST be mobile-first and collapse to a single column at narrow/phone widths — never a fixed multi-column grid with no single-column fallback.
 
 ## Composition (top → bottom)
-1. **progress_indicator** (#loading_spinner)
+1. **progress_circular** (#loading_spinner)
 2. **icon_button** (#back_button) — icon: "arrow_back", on_click: { action: navigate_back, target: accounts }
 3. **card** (#account_header_card) — "account_header_card"
-   - **text** (#account_subtype_label)
-   - **text** (#account_nickname)
-   - **text** (#account_identification)
-   - **text** (#account_currency)
-   - **text** (#account_servicer)
-   - **text** (#account_last_updated)
+   - **text** (#account_subtype_label) — content: "{account.AccountSubType}"
+   - **text** (#account_nickname) — content: "{account.Nickname}"
+   - **text** (#account_identification) — content: "{account.Account.Identification}"
+   - **text** (#account_currency) — content: "{account.Currency}"
+   - **text** (#account_servicer) — content: "{account.Servicer.Identification}"
+   - **text** (#account_last_updated) — content: "{strings.account_detail_last_updated} {account.StatusUpdateDateTime}"
 4. **card** (#open_banking_badge) — "open_banking_badge"
-   - **text** (#open_banking_badge_text)
+   - **text** (#open_banking_badge_text) — content: "{strings.account_detail_open_banking_badge}"
 5. **card** (#account_description_card) — "account_description_card"
-   - **text** (#account_description_label)
-   - **text** (#account_description_value)
+   - **text** (#account_description_label) — content: "{strings.account_detail_description_label}"
+   - **text** (#account_description_value) — content: "{account.Description}"
 6. **section_header** (#balances_header) — label: "{strings.account_detail_section_balances}"
 7. **list** (#balances_list) — "balances_list"
    - **list_item** (#balance_row)
@@ -71,7 +71,7 @@ craft_rules_version: v1.0.0
    - **chip** (#chip_atm_locator) — label: "{strings.account_detail.nav_chip_atm_label}", icon: "atm", on_click: { action: navigate_atm_locator, target: _placeholder-atm-locator }
    - **chip** (#chip_product) — label: "{strings.nav_chip_product}", icon: "description", on_click: { action: navigate_product, target: product }
    - **chip** (#chip_party) — label: "{strings.nav_chip_party}", icon: "person", on_click: { action: navigate_party, target: account-holder }
-11. **empty_state** (#error_state) — "{strings.account_detail_error_title}"
+11. **error_state** (#error_state) — "{strings.account_detail_error_title}"
    - **button** (#retry_button) — label: "{strings.account_detail_retry}", on_click: { action: retry_load }
 
 ## State-specific behavior
@@ -86,7 +86,7 @@ craft_rules_version: v1.0.0
 ## Shell (app-shell resolved for this state)
 - Home: navigates to home
 - Accounts: navigates to accounts
-- Pay: navigates to send-money
+- Pay: navigates to payments
 - More: navigates to settings
 - Render MUST keep nav/bar elements consistent with the list above — present or absent, never partial.
 

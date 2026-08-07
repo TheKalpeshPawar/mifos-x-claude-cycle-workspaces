@@ -1,404 +1,308 @@
-# server/api_manifest.yaml — OBP API manifest for mifos-x-open-banking
-# Generated 2026-05-25 by /idea sync STEP 4g
-# Updated 2026-05-30 by /idea sync STEP 4g — registered 6 screens, added field_officer+pfm groups
-# Updated 2026-06-02 by /idea sync — reconciled against updated source Ktor APIs:
-#   auth direct_login v4→v6 (my/logins/direct), +oauth2/token+revoke; accounts my/accounts v4→v3,
-#   +v7 myAccountDetail; transactions +owner/ view segment; cards +v7/cards hub;
-#   field_officer customers v5.1→v3, account-applications v5.1→v4.
-# Updated 2026-06-11 by /idea sync — pfm group now covers pfm-settings (base currency) + business-insights (cash flow); +fx +account-detail endpoints.
-# API: Open Bank Project Sandbox — https://apisandbox.openbankproject.com
+# server/api_manifest.yaml — HSBC UK Open Banking (OBIE v4.0) API manifest
+#
+# ═══════════════════════════════════════════════════════════════════════════
+# REWRITTEN 2026-08-06 by /idea-sync (PISP-tests research + full OBP eviction)
+#
+# This file previously described the OPEN BANK PROJECT sandbox
+# (apisandbox.openbankproject.com/obp, DirectLogin auth, snake_case {bank_id}/{account_id}/{view}
+# paths, SEPA and SANDBOX_TAN transaction-request rails, counterparties). None of that describes
+# the app that ships. The app was rebuilt against HSBC's OBIE v4.0 surface, and this manifest —
+# the contract every screens/*/api.yaml resolves against — was never migrated with it.
+#
+# What changed structurally:
+#   base_url          apisandbox.openbankproject.com/obp -> secure.sandbox.ob.hsbc.co.uk/obie/open-banking
+#   auth_scheme       DirectLogin (username + password + consumer_key) -> FAPI 1.0 Advanced
+#   path shape        /v4.0.0/banks/{bank_id}/accounts/{account_id}/{view}/... -> /v4.0/aisp/accounts/{AccountId}/...
+#   payments          SEPA / COUNTERPARTY / SANDBOX_TAN transaction-requests -> 7 OBIE PISP families
+#   beneficiaries     counterparties -> /aisp/accounts/{AccountId}/beneficiaries
+#   auth-recovery     password reset + change -> REMOVED. There is no in-app password under FAPI.
+#
+# Provenance: endpoint inventory taken from the HSBC-shipped Postman collection
+# (sandbox-prod-ob-ukce-postman-collection.json, UK Personal brand folder) and confirmed against
+# observed responses in /home/kalpesh/OpenBankingProject/HSBC_Sandbox/pisp-tests/captures/**.
+# ═══════════════════════════════════════════════════════════════════════════
 
-schema_version: "1.0"
-generated_at: "2026-06-11"
-base_url: "https://apisandbox.openbankproject.com/obp"
-default_version: "v4.0.0"
-version_policy: multi  # screens legitimately use v3-v7 OBP endpoints; default_version is the baseline
-auth_scheme: "DirectLogin"
-sandbox_bank_id: "rbs" # OBP sandbox default
+schema_version: "2.0"
+generated_at: "2026-08-06"
+api: "HSBC UK Open Banking — OBIE Read/Write API Specification v4.0"
 
+# ─────────────────────────────────────────────────────────────────────────
+# TWO HOSTS, NOT ONE — corrected 2026-08-06 from the shipped Postman environment
+# (sandbox-prod-ob-ukce-postman-environment.json, "HSBC Sandbox - OB UK/CE v20260305")
+#
+# The resource host and the authorize host are DIFFERENT, and the difference is not cosmetic:
+# the resource host is mTLS-protected and the authorize host is the one the PSU's browser is
+# sent to. Pointing the app at one base_url for both is a real defect — the authorize redirect
+# would go to a host that does not serve it.
+# ─────────────────────────────────────────────────────────────────────────
+hosts:
+  resource_mtls: "secure.sandbox.ob.hsbc.co.uk"
+  authorize: "sandbox.ob.hsbc.co.uk"
+  note: >-
+    Note the `secure.` prefix is present on the resource host and ABSENT on the authorize host.
+    Postman variables: bank_sandbox_ob_uk_personal_mtls_hostname and
+    bank_sandbox_ob_uk_personal_authorize_hostname.
+  other_brands_in_collection: >-
+    first direct, M&S Bank, HSBC Business, Kinetic, HSBCnet, MiVision and Malta each have their
+    own host pair. This app targets UK Personal only.
+
+base_url: "https://secure.sandbox.ob.hsbc.co.uk/obie/open-banking"
+authorize_base_url: "https://sandbox.ob.hsbc.co.uk/obie/open-banking"
+redirect_uri: "https://thekalpeshpawar.github.io/obp-callback/callback/"
+default_version: "v4.0"
+oauth_version: "v1.1"
+version_policy: >-
+  Resources are v4.0. OAuth is v1.1 — the token and authorize endpoints come from the OIDC
+  well-known config, not from the resource swagger. Both are correct simultaneously.
+auth_scheme: "FAPI 1.0 Advanced"
+brand: "HSBC UK Personal"
+environment: sandbox
+
+# ─────────────────────────────────────────────────────────────────────────
+# SECURITY — this is not an ordinary REST API and cannot be treated as one
+# ─────────────────────────────────────────────────────────────────────────
+security:
+  transport: "Mutual TLS (mTLS) with an HSBC-issued sandbox client certificate"
+  client_auth: "private_key_jwt (PS256)"
+  authorization: "OAuth 2.0 authorization_code with a signed request object and PKCE S256, via app-to-app redirect"
+  client_credentials: "used for consent staging and all status reads"
+  no_in_app_credentials: >-
+    The app has NO password field and never receives PSU credentials. The PSU authenticates on
+    HSBC's own site. This is why the OBP-era auth.yaml and auth-recovery.yaml were deleted rather
+    than migrated — DirectLogin, change-password and forgot-password describe an authentication
+    model this app architecturally cannot have.
+  scopes:
+    - { name: accounts, used_for: "all AIS reads" }
+    - { name: payments, used_for: "all PIS writes and reads, INCLUDING VRP — there is no separate VRP scope" }
+  detached_jws:
+    required_on: "every PISP write (consent staging and payment submission)"
+    algorithm: PS256
+    b64: false
+    crit: [iat, iss, tan]
+    typ: JOSE
+    cty: application/json
+    omission_error: "400 U019"
+    forbidden_on: >-
+      AIS consent creation. Sending x-jws-signature there returns
+      UK.OBIE.Header.Unexpected — verified by R18-A01 with control R18-A02.
+  idempotency:
+    header: x-idempotency-key
+    max_length: 40
+    required_on: "every PISP write"
+    rule: "generated once per staged payment, reused across the consent stage, the submit, and every retry"
+  headers_not_sent:
+    - { header: x-fapi-financial-id, note: "Not sent on any call in the capture corpus; nothing rejected its absence." }
+
+# ─────────────────────────────────────────────────────────────────────────
+# API GROUPS
+# ─────────────────────────────────────────────────────────────────────────
 api_groups:
-  - id: auth
-    name: Authentication
-    screens: [login, splash]
+
+  - id: oauth
+    name: "OAuth 2.0 / FAPI"
+    screens: [login, splash, consent-callback, payment-consent]
     spec_file: "server/apis/auth.yaml"
+    note: "v1.1, from the OIDC well-known config — NOT the v4.0 resource surface."
     endpoints:
-      - method: POST
-        path: "/v6.0.0/my/logins/direct"
-        description: "DirectLogin — exchange credentials for token (moved from v4.0.0/banks/{bank_id}/direct_login)"
-        request_fields: [username, password, consumer_key]
-        response_fields: [token]
-      - method: GET
-        path: "/v4.0.0/oauth2/authorize"
-        description: "OIDC authorization code flow (browser redirect — not a Ktor call)"
-      - method: POST
-        path: "/v4.0.0/oauth2/token"
-        description: "OIDC token exchange + silent refresh (grant_type=authorization_code | refresh_token)"
-      - method: POST
-        path: "/v4.0.0/oauth2/revoke"
-        description: "Revoke access/refresh tokens on logout"
+      - { method: POST, path: "/v1.1/oauth2/token", host: resource_mtls, description: "Token endpoint — client_credentials and authorization_code, private_key_jwt. On the mTLS host." }
+      - { method: GET, path: "/v1.1/oauth2/authorize", host: authorize, description: "PSU authorisation — signed request object, PKCE, app-to-app. On the AUTHORIZE host (sandbox.ob.hsbc.co.uk), NOT the mTLS one." }
+      - { method: POST, path: "/register", description: "Dynamic Client Registration v3.2.1, signed SSA. Separate spec." }
 
-  - id: accounts
-    name: Accounts
-    screens: [home, accounts, account-detail]
-    spec_file: "server/apis/accounts.yaml"
-    endpoints:
-      - method: GET
-        path: "/v3.0.0/banks/{bank_id}/accounts"
-        description: "List all accounts for authenticated user"
-        response_fields: [id, label, bank_id, account_type, balance, currency]
-      - method: GET
-        path: "/v3.0.0/banks/{bank_id}/accounts/{account_id}/account"
-        description: "Get account detail (bank-scoped)"
-        response_fields: [id, label, number, swift_bic, iban, owners, balance, currency, account_routings]
-      - method: GET
-        path: "/v7.0.0/my/banks/{bank_id}/accounts/{account_id}/account"
-        description: "Get account detail (consumer-scoped, offline-first canonical — source myAccountDetail)"
-        response_fields: [id, label, number, iban, account_type, balance, account_routings]
-      - method: GET
-        path: "/v4.0.0/banks/{bank_id}/balances"
-        description: "Get balances for all accounts"
-      - method: GET
-        path: "/v3.0.0/my/accounts"
-        description: "Fetch all consumer accounts for balance summary card (home)"
-        response_fields: [accounts, id, bank_id, label, balance.amount, balance.currency]
-      - method: GET
-        path: "/v3.0.0/banks/{bank_id}/accounts/{account_id}/owner/transactions"
-        description: "Fetch recent transactions for home activity section (limit=3)"
-        query_params: [limit, sort_direction]
-        response_fields: [transactions, id, this_account.id, other_account.holder.name, details.type, details.description, details.posted, details.value.amount, details.value.currency]
-
-  - id: transactions
-    name: Transactions
-    screens: [transactions, transaction-detail, transaction-tags]
-    spec_file: "server/apis/transactions.yaml"
-    endpoints:
-      - method: GET
-        path: "/v3.0.0/banks/{bank_id}/accounts/{account_id}/owner/transactions"
-        description: "List transactions for account (owner view)"
-        query_params: [limit, offset, from_date, to_date, sort_direction]
-        response_fields: [id, this_account, other_account, details, metadata]
-      - method: GET
-        path: "/v3.0.0/banks/{bank_id}/accounts/{account_id}/owner/transactions/{transaction_id}/transaction"
-        description: "Get transaction detail"
-      - method: POST
-        path: "/v3.0.0/banks/{bank_id}/accounts/{account_id}/owner/transactions/{transaction_id}/metadata/tags"
-        description: "Add tag to transaction"
-        request_fields: [value]
-      - method: DELETE
-        path: "/v3.0.0/banks/{bank_id}/accounts/{account_id}/owner/transactions/{transaction_id}/metadata/tags/{tag_id}"
-        description: "Remove tag from transaction"
-      - method: POST
-        path: "/v3.0.0/banks/{bank_id}/accounts/{account_id}/owner/transactions/{transaction_id}/metadata/comments"
-        description: "Add comment/note to transaction"
-
-  - id: payments
-    name: Payments & Transaction Requests
-    screens: [send-money, send-money-confirm, beneficiaries]
-    spec_file: "server/apis/payments.yaml"
-    endpoints:
-      - method: POST
-        path: "/v4.0.0/banks/{bank_id}/accounts/{account_id}/transaction-request-types/SEPA/transaction-requests"
-        description: "Initiate SEPA payment"
-        request_fields: [to.iban, value.amount, value.currency, description]
-      - method: POST
-        path: "/v4.0.0/banks/{bank_id}/accounts/{account_id}/transaction-request-types/SANDBOX_TAN/transaction-requests"
-        description: "Initiate sandbox transfer"
-      - method: GET
-        path: "/v3.0.0/banks/{bank_id}/accounts/{account_id}/counterparties"
-        description: "List beneficiaries/counterparties"
-      - method: POST
-        path: "/v3.0.0/banks/{bank_id}/accounts/{account_id}/counterparties"
-        description: "Create beneficiary"
-        request_fields: [name, description, other_bank_id, other_account_id, other_account_secondary_routing_scheme, other_account_secondary_routing_address, other_account_routing_scheme, other_account_routing_address, other_branch_routing_scheme, other_branch_routing_address, is_beneficiary]
-
-  - id: cards
-    name: Cards
-    screens: [cards, card-detail]
-    spec_file: "server/apis/cards.yaml"
-    endpoints:
-      - method: GET
-        path: "/v7.0.0/cards"
-        description: "List all cards for current user (My Cards hub — source getCardsForCurrentUser)"
-        response_fields: [cards, id, bank_id, bank_card_number, name_on_card, expires_date, enabled, card_type, card_network]
-      - method: GET
-        path: "/v3.0.0/banks/{bank_id}/accounts/{account_id}/cards"
-        description: "List cards for account"
-        response_fields: [id, bank_id, bank_card_number, name_on_card, issue_number, serial_number, valid_from_date, expires_date, enabled, cancelled, technology_type, networks, allows]
-      - method: GET
-        path: "/v3.0.0/banks/{bank_id}/accounts/{account_id}/cards/{card_id}"
-        description: "Get card detail"
-
-  - id: standing_orders
-    name: Standing Orders
-    screens: [standing-orders, standing-order-detail, standing-order-edit]
-    spec_file: "server/apis/standing-orders.yaml"
-    endpoints:
-      - method: GET
-        path: "/v3.0.0/banks/{bank_id}/accounts/{account_id}/standing-orders"
-        description: "List standing orders"
-        response_fields: [id, start_date, next_execution_date, amount, to]
-      - method: POST
-        path: "/v3.0.0/banks/{bank_id}/accounts/{account_id}/standing-orders"
-        description: "Create standing order"
-      - method: DELETE
-        path: "/v3.0.0/banks/{bank_id}/accounts/{account_id}/standing-orders/{standing_order_id}"
-        description: "Cancel standing order"
-      - method: GET
-        path: "/v4.0.0/banks/{bank_id}/accounts/{account_id}/standing-orders/{standing_order_id}"
-        description: "Get standing order detail with execution history"
-        spec_file: "server/apis/standing-orders-detail.yaml"
-        response_fields: [id, beneficiary_name, beneficiary_iban, beneficiary_bank, amount_value, amount_currency, frequency, start_date, next_payment_date, final_date, status, execution_history]
-      - method: POST
-        path: "/v4.0.0/banks/{bank_id}/accounts/{account_id}/standing-orders/{standing_order_id}/pause"
-        description: "Pause a standing order — idempotent"
-        spec_file: "server/apis/standing-orders-detail.yaml"
-      - method: POST
-        path: "/v4.0.0/banks/{bank_id}/accounts/{account_id}/standing-orders/{standing_order_id}/resume"
-        description: "Resume a paused standing order — idempotent"
-        spec_file: "server/apis/standing-orders-detail.yaml"
-      - method: DELETE
-        path: "/v4.0.0/banks/{bank_id}/accounts/{account_id}/standing-orders/{standing_order_id}"
-        description: "Soft-delete (cancel) a standing order"
-        spec_file: "server/apis/standing-orders-detail.yaml"
-      - method: PUT
-        path: "/v4.0.0/banks/{bank_id}/accounts/{account_id}/owner/standing-order/{standing_order_id}"
-        description: "Update mutable fields of an existing standing order (standing-order-edit) — beneficiary and currency are immutable"
-        request_fields: [amount_value, amount_currency, when.frequency, when.start_date, when.final_date]
-        response_fields: [id, bank_id, account_id, counterparty.name, amount_value, amount_currency, when.frequency, when.start_date, when.final_date, active]
-
-  - id: direct_debits
-    name: Direct Debits
-    screens: [direct-debits, direct-debit-detail]
-    spec_file: "server/apis/direct-debits.yaml"
-    endpoints:
-      - method: GET
-        path: "/v3.0.0/banks/{bank_id}/accounts/{account_id}/direct-debits"
-        description: "List direct debit mandates"
-        response_fields: [id, bank_id, date_signed, active, date_cancelled]
-      - method: DELETE
-        path: "/v3.0.0/banks/{bank_id}/accounts/{account_id}/direct-debits/{direct_debit_id}"
-        description: "Cancel direct debit mandate"
-      - method: GET
-        path: "/v7.0.0/banks/{bank_id}/accounts/{account_id}/standing-orders/{standing_order_id}"
-        description: "Retrieve full details of a specific direct debit mandate / standing order (direct-debit-detail)"
-        response_fields: [standing_order_id, bank_id, account_id, counterparty_name, amount_value, amount_currency, frequency, start_date, next_payment_date, status, reference, recent_payments]
-      - method: DELETE
-        path: "/v7.0.0/banks/{bank_id}/accounts/{account_id}/standing-orders/{standing_order_id}"
-        description: "Cancel an active direct debit mandate / standing order (direct-debit-detail)"
-        response_fields: [success, message]
-
-  - id: fx
-    name: Foreign Exchange
-    screens: [fx-rates]
-    spec_file: "server/apis/fx-rates.yaml"
-    endpoints:
-      - method: GET
-        path: "/v3.0.0/banks/{bank_id}/fx/{from_currency_code}/{to_currency_code}"
-        description: "Get exchange rate between two currencies"
-        response_fields: [bank_id, from_currency_code, to_currency_code, conversion_value, inverse_conversion_value, effective_date]
-
-  - id: atm
-    name: ATM & Branches
-    screens: [atm-locator]
-    spec_file: "server/apis/atm-locator.yaml"
-    endpoints:
-      - method: GET
-        path: "/v3.0.0/banks/{bank_id}/atms"
-        description: "List ATMs for bank"
-        response_fields: [id, bank_id, name, address, location, meta]
-      - method: GET
-        path: "/v3.0.0/banks/{bank_id}/branches"
-        description: "List bank branches"
-
-  - id: consents
-    name: Consents / Connected Apps
-    screens: [consent-manager]
+  - id: aisp_consent
+    name: "Account access consent"
+    screens: [login, consent-list, consent-detail, consent-manager]
     spec_file: "server/apis/consents.yaml"
     endpoints:
-      - method: GET
-        path: "/v4.0.0/consumers/{consumer_id}/consents"
-        description: "List active consents for consumer"
-        response_fields: [consent_id, jwt, status, valid_until, consumer_id]
-      - method: DELETE
-        path: "/v4.0.0/consumers/{consumer_id}/consents/{consent_id}"
-        description: "Revoke consent (connected app access)"
+      - { method: POST, path: "/v4.0/aisp/account-access-consents", description: "Create consent with an explicit Permissions array. NO x-jws-signature." }
+      - { method: GET, path: "/v4.0/aisp/account-access-consents/{ConsentId}", description: "Consent status." }
+      - { method: DELETE, path: "/v4.0/aisp/account-access-consents/{ConsentId}", description: "Revoke consent." }
 
-  - id: customers
-    name: Customers (Field Officer)
-    screens: [customer-search, customer-detail, customer-profile, customer-onboarding, corporate-onboarding]
-    spec_file: "server/apis/customers.yaml"
+  - id: accounts
+    name: "Accounts and balances"
+    screens: [accounts, account-detail, home]
+    spec_file: "server/apis/accounts.yaml"
     endpoints:
-      - method: GET
-        path: "/v3.0.0/banks/{bank_id}/customers"
-        description: "Search customers"
-        query_params: [customer_number, email, mobile_phone_number, legal_name]
-      - method: GET
-        path: "/v3.0.0/banks/{bank_id}/customers/{customer_id}"
-        description: "Get customer detail"
-        response_fields: [customer_id, legal_name, mobile_phone_number, email, face_image, date_of_birth, relationship_status, dependants, dob_of_dependants, highest_education_attained, employment_status, credit_rating, credit_limit, title, branch_id]
-      - method: POST
-        path: "/v3.0.0/banks/{bank_id}/customers"
-        description: "Create new customer"
-        request_fields: [legal_name, mobile_phone_number, email, face_image, date_of_birth, relationship_status, employment_status, credit_rating, credit_limit, title, branch_id]
-      - method: PUT
-        path: "/v3.0.0/banks/{bank_id}/customers/{customer_id}"
-        description: "Update customer information"
+      - { method: GET, path: "/v4.0/aisp/accounts", description: "List authorised accounts." }
+      - { method: GET, path: "/v4.0/aisp/accounts/{AccountId}", description: "Account detail." }
+      - { method: GET, path: "/v4.0/aisp/accounts/{AccountId}/balances", description: "Account balances." }
+      - { method: GET, path: "/v4.0/aisp/accounts/{AccountId}/product", description: "Account product terms. 400 on Global Money." }
+      - { method: GET, path: "/v4.0/aisp/accounts/{AccountId}/party", description: "Account holder — OBReadParty2. 400 on Global Money." }
+      - { method: GET, path: "/v4.0/aisp/accounts/{AccountId}/parties", description: "Account parties — OBReadParty3." }
 
-  - id: kyc
-    name: KYC
-    screens: [kyc-review]
-    spec_file: "server/apis/kyc.yaml"
+  - id: transactions
+    name: "Transactions"
+    screens: [transactions, transaction-detail, home]
+    spec_file: "server/apis/transactions.yaml"
     endpoints:
-      - method: GET
-        path: "/v3.0.0/banks/{bank_id}/customers/{customer_id}/kyc_documents"
-        description: "List KYC documents for customer"
-        response_fields: [id, customer_id, type, number, issue_date, issue_place, expiry_date]
-      - method: PUT
-        path: "/v3.0.0/banks/{bank_id}/customers/{customer_id}/kyc_documents/{kyc_document_id}"
-        description: "Update KYC document status"
-      - method: GET
-        path: "/v3.0.0/banks/{bank_id}/customers/{customer_id}/kyc_checks"
-        description: "List KYC checks"
-      - method: POST
-        path: "/v3.0.0/banks/{bank_id}/customers/{customer_id}/kyc_checks"
-        description: "Submit KYC check result"
-        request_fields: [customer_id, date, how, staff_user_id, staff_name, satisfied, comments]
+      - { method: GET, path: "/v4.0/aisp/accounts/{AccountId}/transactions", description: "Transactions with date and credit/debit filters." }
 
-  - id: account_applications
-    name: Account Applications
-    screens: [account-applications, application-detail]
-    spec_file: "server/apis/account-applications.yaml"
+  - id: payments_context
+    name: "Payment-context read surfaces"
+    screens: [beneficiaries, standing-orders, standing-order-detail, scheduled-payments, direct-debits, direct-debit-detail]
+    spec_file: "server/apis/payments-context.yaml"
     endpoints:
-      - method: GET
-        path: "/v4.0.0/banks/{bank_id}/account-applications"
-        description: "List account applications"
-        response_fields: [account_application_id, product_code, user, date_of_application, status]
-      - method: GET
-        path: "/v4.0.0/banks/{bank_id}/account-applications/{account_application_id}"
-        description: "Get application detail"
-      - method: PUT
-        path: "/v4.0.0/banks/{bank_id}/account-applications/{account_application_id}"
-        description: "Update application status"
-        request_fields: [status]
+      - { method: GET, path: "/v4.0/aisp/accounts/{AccountId}/beneficiaries", description: "Saved payees. 400 on the credit card." }
+      - { method: GET, path: "/v4.0/aisp/accounts/{AccountId}/standing-orders", description: "Standing orders. 400 on savings, Global Money and the card." }
+      - { method: GET, path: "/v4.0/aisp/accounts/{AccountId}/scheduled-payments", description: "Scheduled payments. 400 on Global Money and the card." }
+      - { method: GET, path: "/v4.0/aisp/accounts/{AccountId}/direct-debits", description: "Direct debits. 400 on savings, Global Money and the card." }
+    read_side_caveats:
+      standing_order_id_absent: >-
+        StandingOrderId is absent from every element of the standing-orders read. Conformant
+        (0..1), but it means write-to-read correlation with a PIS-created mandate is impossible
+        by construction.
+      point_in_time_asymmetry: >-
+        This read RETURNS Frequency.PointInTime, which the PIS write side refuses with U005. An
+        AIS-read mandate cannot be replayed as a PIS consent without stripping it first.
+      sca_recency_gate: >-
+        beneficiaries, standing-orders, scheduled-payments, direct-debits and party return 403
+        with an EMPTY BODY when the token's SCA is stale (~7.4h observed); balances and
+        transactions still return 200. Exactly the PSD2 RTS Article 10 boundary. There is no
+        error code to key on. Provisional — the 403 column is prose, not a captured artefact.
 
-  - id: customer_messages
-    name: Customer Messages
-    screens: [customer-messages]
-    spec_file: "server/apis/customer-messages.yaml"
+  - id: statements
+    name: "Statements"
+    screens: [statements, statement-detail]
+    spec_file: "server/apis/statements.yaml"
     endpoints:
-      - method: GET
-        path: "/v3.0.0/banks/{bank_id}/customers/{customer_id}/messages"
-        description: "List messages for customer"
-        response_fields: [id, date, description, message, from_department, from_person]
-      - method: POST
-        path: "/v3.0.0/banks/{bank_id}/customers/{customer_id}/messages"
-        description: "Send message to customer"
-        request_fields: [message, from_department, from_person]
+      - { method: GET, path: "/v4.0/aisp/accounts/{AccountId}/statements", description: "Statement list. 400 on every account except the credit card." }
+      - { method: GET, path: "/v4.0/aisp/accounts/{AccountId}/statements/{StatementId}", description: "Statement detail." }
+      - { method: GET, path: "/v4.0/aisp/accounts/{AccountId}/statements/{StatementId}/transactions", description: "Transactions within one statement." }
 
-  - id: meetings
-    name: Meetings
-    screens: [meetings]
-    spec_file: "server/apis/meetings.yaml"
+  # ── PISP — added 2026-08-06 with the seven-type rewrite ─────────────────
+  - id: pisp_domestic_payment
+    name: "Domestic single payment"
+    screens: [pay-domestic-single]
+    spec_file: "server/apis/pisp.yaml"   # shared contract; per-family detail in the screen api.yaml for pay-domestic-payment
     endpoints:
-      - method: POST
-        path: "/v4.0.0/banks/{bank_id}/meetings"
-        description: "Schedule a meeting"
-        request_fields: [provider, provider_id, date, date_string, purpose_message, staff_user_id, customer_token]
-      - method: GET
-        path: "/v4.0.0/banks/{bank_id}/meetings"
-        description: "List meetings for bank staff"
+      - { method: POST, path: "/v4.0/pisp/domestic-payment-consents", description: "Stage. JWS + idempotency key. Charges 0.05 GBP." }
+      - { method: GET, path: "/v4.0/pisp/domestic-payment-consents/{ConsentId}", description: "Consent status. AWAU -> AUTH -> COND." }
+      - { method: GET, path: "/v4.0/pisp/domestic-payment-consents/{ConsentId}/funds-confirmation", description: "Funds check. PSU token." }
+      - { method: POST, path: "/v4.0/pisp/domestic-payments", description: "Submit. PSU token, same idempotency key, byte-identical Initiation." }
+      - { method: GET, path: "/v4.0/pisp/domestic-payments/{DomesticPaymentId}", description: "Payment status. ACSP -> ACCC." }
 
-  - id: products
-    name: Bank Products
-    screens: [products]
-    spec_file: "server/apis/products.yaml"
+  - id: pisp_domestic_scheduled
+    name: "Domestic scheduled payment"
+    screens: [pay-domestic-scheduled]
+    spec_file: "server/apis/pisp.yaml"   # shared contract; per-family detail in the screen api.yaml for pay-domestic-scheduled
     endpoints:
-      - method: GET
-        path: "/v3.0.0/banks/{bank_id}/products"
-        description: "List bank products"
-        response_fields: [code, parent_product_code, bank_id, label, category, family, super_family, more_info_url, details, description, meta]
+      - { method: POST, path: "/v4.0/pisp/domestic-scheduled-payment-consents", description: "Stage. Permission 'Create' + RequestedExecutionDateTime mandatory." }
+      - { method: GET, path: "/v4.0/pisp/domestic-scheduled-payment-consents/{ConsentId}", description: "Consent status." }
+      - { method: POST, path: "/v4.0/pisp/domestic-scheduled-payments", description: "Submit. No funds-confirmation on this family." }
+      - { method: GET, path: "/v4.0/pisp/domestic-scheduled-payments/{DomesticScheduledPaymentId}", description: "Status. PDNG -> INCO." }
 
-  - id: profile
-    name: User Profile
-    screens: [profile]
-    spec_file: "server/apis/profile.yaml"
+  - id: pisp_domestic_standing_order
+    name: "Domestic standing order"
+    screens: [pay-domestic-standing-order]
+    spec_file: "server/apis/pisp.yaml"   # shared contract; per-family detail in the screen api.yaml for pay-domestic-standing-order
     endpoints:
-      - method: GET
-        path: "/v4.0.0/users/current"
-        description: "Get authenticated user profile — user_id, username, email, provider, entitlements, date_joined, last_login_at"
-        response_fields: [user_id, username, email, provider, entitlements, date_joined, last_login_at]
-      - method: PUT
-        path: "/v4.0.0/users/current"
-        description: "Update mutable profile fields — email, language_preference"
-        request_fields: [email, language_preference]
+      - { method: POST, path: "/v4.0/pisp/domestic-standing-order-consents", description: "Stage. FirstPaymentAmount, NOT InstructedAmount. Risk {}." }
+      - { method: GET, path: "/v4.0/pisp/domestic-standing-order-consents/{ConsentId}", description: "Consent status." }
+      - { method: POST, path: "/v4.0/pisp/domestic-standing-orders", description: "Create the mandate." }
+      - { method: GET, path: "/v4.0/pisp/domestic-standing-orders/{DomesticStandingOrderId}", description: "Status. PDNG -> INCO. No per-execution status." }
 
+  - id: pisp_international_payment
+    name: "International single payment"
+    screens: [pay-international-single]
+    spec_file: "server/apis/pisp.yaml"   # shared contract; per-family detail in the screen api.yaml for pay-international-payment
+    endpoints:
+      - { method: POST, path: "/v4.0/pisp/international-payment-consents", description: "Stage. CurrencyOfTransfer + ChargeBearer mandatory; RemittanceInformation refused. NO charges ever." }
+      - { method: GET, path: "/v4.0/pisp/international-payment-consents/{ConsentId}", description: "Consent status." }
+      - { method: GET, path: "/v4.0/pisp/international-payment-consents/{ConsentId}/funds-confirmation", description: "Funds check. PSU token." }
+      - { method: POST, path: "/v4.0/pisp/international-payments", description: "Submit." }
+      - { method: GET, path: "/v4.0/pisp/international-payments/{InternationalPaymentId}", description: "Status. ACSP -> ACCC." }
+
+  - id: pisp_international_scheduled
+    name: "International scheduled payment"
+    screens: [pay-international-scheduled]
+    spec_file: "server/apis/pisp.yaml"   # shared contract; per-family detail in the screen api.yaml for pay-international-scheduled
+    endpoints:
+      - { method: POST, path: "/v4.0/pisp/international-scheduled-payment-consents", description: "Stage." }
+      - { method: GET, path: "/v4.0/pisp/international-scheduled-payment-consents/{ConsentId}", description: "Consent status." }
+      - { method: POST, path: "/v4.0/pisp/international-scheduled-payments", description: "Submit. Charge 0.50 in the INSTRUCTED currency appears here." }
+      - { method: GET, path: "/v4.0/pisp/international-scheduled-payments/{InternationalScheduledPaymentId}", description: "Status. INCO -> INCO; never PDNG." }
+
+  - id: pisp_international_standing_order
+    name: "International standing order"
+    screens: [pay-international-standing-order]
+    spec_file: "server/apis/pisp.yaml"   # shared contract; per-family detail in the screen api.yaml for pay-international-standing-order
+    endpoints:
+      - { method: POST, path: "/v4.0/pisp/international-standing-order-consents", description: "Stage. InstructedAmount, NOT FirstPaymentAmount." }
+      - { method: GET, path: "/v4.0/pisp/international-standing-order-consents/{ConsentId}", description: "Consent status." }
+      - { method: POST, path: "/v4.0/pisp/international-standing-orders", description: "Create the mandate." }
+      - { method: GET, path: "/v4.0/pisp/international-standing-orders/{InternationalStandingOrderId}", description: "Status. INCO throughout." }
+
+  - id: pisp_vrp
+    name: "Variable Recurring Payments"
+    screens: [pay-vrp-mandate]
+    spec_file: "server/apis/pisp.yaml"   # shared contract; per-family detail in the screen api.yaml for pay-vrp-mandate
+    note: "Domestic only. No separate scope and no separate TPP role — a PISP calls VRP with scope=payments."
+    endpoints:
+      - { method: POST, path: "/v4.0/pisp/domestic-vrp-consents", description: "Create the mandate ONCE. ControlParameters mandatory, GBP only, SortCodeAccountNumber both sides." }
+      - { method: GET, path: "/v4.0/pisp/domestic-vrp-consents/{ConsentId}", description: "Consent status. AWAU -> AUTH forever; never COND. 400 U011 once deleted." }
+      - { method: DELETE, path: "/v4.0/pisp/domestic-vrp-consents/{ConsentId}", description: "Revoke. 204. The ONLY delete in the payment surface." }
+      - { method: POST, path: "/v4.0/pisp/domestic-vrp-consents/{ConsentId}/funds-confirmation", description: "Funds check. A POST carrying an explicit amount. PSU token — client-credentials returns 401." }
+      - { method: POST, path: "/v4.0/pisp/domestic-vrps", description: "Pay under the mandate. No re-authentication." }
+      - { method: GET, path: "/v4.0/pisp/domestic-vrps/{DomesticVRPId}", description: "Status. Returns the v3.1 LONG form, unlike every other endpoint." }
+
+  - id: events
+    name: "Event notification"
+    screens: [pay-vrp-mandate, consent-list]
+    spec_file: "server/apis/events.yaml"
+    note: "The only mechanism that surfaces an out-of-band consent revocation."
+    endpoints:
+      - { method: POST, path: "/v4.0/event-subscriptions", description: "Subscribe to UK.OBIE.Consent-Authorization-Revoked. Requires x-jws-signature." }
+      - { method: GET, path: "/v4.0/event-subscriptions", description: "List subscriptions." }
+      - { method: DELETE, path: "/v4.0/event-subscriptions/{EventSubscriptionId}", description: "Remove a subscription." }
+      - { method: POST, path: "/v4.0/events", description: "Poll events. Body carries returnImmediately + maxEvents." }
+
+  - id: atm
+    name: "ATM and branch locator"
+    screens: [atm-locator]
+    spec_file: "server/apis/atm-locator.yaml"
+    note: "HSBC Open Data — unauthenticated, outside the OBIE consent surface. Planned work, not built."
+
+# ─────────────────────────────────────────────────────────────────────────
+# GROUPS REMOVED 2026-08-06
+# ─────────────────────────────────────────────────────────────────────────
+removed_groups:
   - id: auth_recovery
-    name: Auth Recovery
-    screens: [forgot-password, change-password]
-    spec_file: "server/apis/auth-recovery.yaml"
-    endpoints:
-      - method: POST
-        path: "/v4.0.0/auth/password/reset/initiate"
-        description: "Initiate password reset — sends time-limited token to registered email"
-        request_fields: [email]
-        response_fields: [message]
-      - method: POST
-        path: "/v4.0.0/auth/password/reset/confirm"
-        description: "Complete password reset with emailed token and new password"
-        request_fields: [token, new_password]
-        response_fields: [message]
-      - method: POST
-        path: "/v4.0.0/users/current/password"
-        description: "Change password for authenticated user — invalidates all sessions on success"
-        auth_required: true
-        request_fields: [current_password, new_password]
-        response_fields: [message]
+    was: "server/apis/auth-recovery.yaml — password reset + change on /obp/v4.0.0/auth/password/*"
+    reason: >-
+      There is no in-app password under FAPI. The PSU authenticates at HSBC. Both screens
+      (forgot-password, change-password) were deleted in the same pass.
+  - id: payments_obp
+    was: "server/apis/payments.yaml — SEPA / COUNTERPARTY / SANDBOX_TAN transaction-requests, counterparty CRUD, IBAN check"
+    reason: >-
+      Open Bank Project payment model. Replaced by the seven OBIE PISP groups above. There is no
+      counterparty concept in OBIE — the read-side equivalent is beneficiaries, and it is
+      read-only.
+  - id: cards_obp
+    was: "server/apis/cards.yaml — /obp/v7.0.0/cards"
+    reason: >-
+      No OBIE equivalent. The credit card appears only as an account in the AIS accounts list,
+      with a masked UK.OBIE.PAN identification.
+    followed_2026_08_07: >-
+      The `cards` and `card-detail` SCREENS were deleted too, by the repository owner. When this
+      group went, the screens were retargeted onto the accounts group they were already a
+      projection of; that reprieve is now reversed and the feature is removed with the rest of
+      the OBP planning it came from. No screens entry anywhere in this manifest named them, so
+      nothing else changes here. Unaffected: the Open Data Product Finder's commercial-credit-
+      cards family, which is a public catalogue on api.hsbc.com, not a PSU resource.
 
-  - id: field_officer
-    name: "Field Officer Dashboard & Agent Registration"
-    screens: [fo-dashboard, agent-registration]
-    spec_file: "server/apis/field-officer.yaml"
-    endpoints:
-      - method: GET
-        path: "/v3.0.0/banks/{bank_id}/customers"
-        description: "List customers assigned to field officer — used in fo-dashboard customer roster"
-        query_params: [bankId]
-        response_fields: [customers, customer_id, legal_name, kyc_status, customer_number, mobile_phone_number, date_of_birth]
-      - method: GET
-        path: "/v4.0.0/banks/{bank_id}/account-applications"
-        description: "List pending account applications for field officer review — fo-dashboard"
-        query_params: [bankId]
-        response_fields: [account_applications, account_application_id, product_code, proposed_balance, status, date_of_application]
-      - method: POST
-        path: "/v5.1.0/banks/{bank_id}/agents"
-        description: "Register the field officer as an OBP bank agent (agent-registration)"
-        request_fields: [legal_name, mobile_phone_number, agent_number, currency, supported_services, commission_rate]
-        response_fields: [agent_id, is_pending_agent, is_confirmed_agent, legal_name, mobile_phone_number]
-
-  - id: pfm
-    name: "Personal Finance Management & Insights"
-    screens: [pfm-dashboard, pfm-settings, business-insights]
-    spec_file: "server/apis/pfm.yaml"
-    endpoints:
-      - method: GET
-        path: "/v6.0.0/my/personal-data-fields"
-        description: "Read PFM personal data fields — budgets (pfm_budget_<categoryId>) and the pfm-settings base currency (pfm_base_currency; append-only, newest row wins)"
-        response_fields: [personal_data_fields, name, value]
-      - method: POST
-        path: "/v6.0.0/my/personal-data-fields"
-        description: "Create or update a PFM personal data field — a budget entry by category, or the pfm_base_currency selection (pfm-settings)"
-        request_fields: [name, value]
-        response_fields: [name, value]
-      - method: GET
-        path: "/v6.0.0/my/accounts/{account_id}/transactions"
-        description: "Fetch transactions for PFM spending analysis (pfm-dashboard) and business cash-flow analysis (business-insights) — sandbox caps at 50 newest; period filtering + categorisation run client-side"
-        query_params: [from_date, to_date, limit]
-        response_fields: [transactions, transaction_id, this_account, details, value]
-      - method: GET
-        path: "/v5.1.0/my/banks/{bank_id}/accounts/{account_id}/account"
-        description: "Per-account detail — product_code (CURRENT/SAVINGS/BUSINESS/WALLET) for business-insights account-scope classification (the list endpoint returns product_code null)"
-        response_fields: [label, product_code, balance]
-      - method: GET
-        path: "/v5.1.0/banks/{bank_id}/fx/{from_currency_code}/{to_currency_code}"
-        description: "Live FX conversion rate — re-denominates personal spending into the pfm-settings base currency"
-        response_fields: [conversion_value, inverse_conversion_value, effective_date]
+# ─────────────────────────────────────────────────────────────────────────
+# ERROR CODES — observed, and mostly undocumented
+# ─────────────────────────────────────────────────────────────────────────
+error_codes:
+  documented_in_guide: [U001, U002, U005, U007, U014]
+  observed_but_undocumented: [U000, U003, U004, U008, U009, U011, U019, U021, U023, U027]
+  note: >-
+    HSBC's Implementation Guide §30 error catalogue is five bare hyperlinks to external pages.
+    U000, U021, U023 and U027 are HSBC-proprietary and appear nowhere in the 160-page document.
+  v4_recoding:
+    note: "v4.0 re-coded every UK.OBIE.* error string to a short code. Both generations are served."
+    mapping:
+      U003: UK.OBIE.Field.InvalidDate
+      U004: UK.OBIE.Field.Missing
+      U009: UK.OBIE.Resource.InvalidConsentStatus
+      U014: UK.OBIE.Rules.FailsControlParameters
+      U027: UK.OBIE.Unsupported.Scheme

@@ -1,9 +1,9 @@
 ---
-ui_yaml_sha: dc96d4cacfb47fc0a1330ee9b8857815311a8fc26866221878ce072281f45def
-design_md_hash: f734ecfba28b3b0688cbd7ca6f3d7fca27febb15fd021d72a4518ae0e3a4200d
-app_shell_hash: 7b9c63f9aee4f5b5005b1d7533e7f5feab6427f398954987c34ee0f382b0ed69
-design_read_hash: 513c061d12f3a90e84d6e98e1e037b131e59fa3ca5c5f3c0abfc6ba87d24bcaf
-content_hash: 6d3944e4719a12875a3502095cd799939c8699796ec9e429d5f60c5a77f7e4b6
+ui_yaml_sha: d12e75b67681b6679b10175fd57521fd220ccaff37b8ed05cb6705d09c96f19b
+design_md_hash: dad4a3ee16afd9663516aa33ebf1647c1d6ede5dc90a1c9bb2c448cd63c225fb
+app_shell_hash: e267a146a693f7d8b57131c73d180b6010ff34beca799edb4ca3c85c5879e0b4
+design_read_hash: 8f83034d22434d75ef7d377035c51c37ef557f4bbb2e0bf510409a4804964a50
+content_hash: 50ac2e09984e6aebcb0a5c0f7156e933031f1ad31067fde2794e4c1411f4533d
 
 design_read_aesthetic: minimalist-ui
 design_read_dials: {variance: 3, motion: 2, density: 5}
@@ -14,8 +14,8 @@ feature: settings
 state: empty
 state_visibility: empty
 
-project_id: 'null'
-design_system_id: 'null'
+project_id: '17153754672098888646'
+design_system_id: '2047482829824847747'
 
 generated_by: stitch-prompt-build.ts v2.0.0
 prompt_template_version: stitch-per-state-v3.0.0
@@ -24,8 +24,8 @@ craft_rules_version: v1.0.0
 
 # settings — empty state
 
-> Auto-generated from screens/settings/ui.yaml @ SHA 7ee580ad85f4aba9
-> Stitch DesignSystem: (pending DESIGN.md upload — run /idea-feature-stitch sub-plan 02)
+> Auto-generated from screens/settings/ui.yaml @ SHA c6ef1e044c265986
+> Stitch DesignSystem: 2047482829824847747
 > DO NOT redeclare colors / fonts / spacing — they live in DESIGN.md.
 
 ↓↓↓ MOCKUP PROMPT
@@ -45,11 +45,11 @@ craft_rules_version: v1.0.0
 1. **section_header** (#appearance_header) — label: "{strings.settings.section.appearance}"
 2. **select** (#theme_row) — label: "{strings.settings.theme.label}", on_click: { action: togglethememenu }
 3. **section_header** (#account_header) — label: "{strings.settings.section.account}"
-4. **list_item** (#consents_row) — title: "{strings.settings.consents.title}", subtitle: "{strings.settings.consents.subtitle}", on_click: { action: navigate_consent_list, target: consent-list }
+4. **list_item** (#consents_row) — on_click: { action: navigate_consent_list, target: consent-list }
 5. **section_header** (#about_header) — label: "{strings.settings.section.about_legal}"
-6. **list_item** (#privacy_row) — title: "{strings.settings.privacy.title}", on_click: { action: open_privacy_url }
-7. **list_item** (#licences_row) — title: "{strings.settings.licences.title}", on_click: { action: navigate_licences, target: licences }
-8. **list_item** (#app_version_row) — title: "{strings.settings.app_version.title}", subtitle: "{appVersionLabel}"
+6. **list_item** (#privacy_row) — on_click: { action: open_privacy_url }
+7. **list_item** (#licences_row) — on_click: { action: navigate_licences, target: licences }
+8. **list_item** (#app_version_row)
 9. **empty_state** (#settings_empty) — title: "{strings.settings.empty.title}"
 10. **error_state** (#settings_error) — "{strings.settings.error.title}"
    - **button** (#retry_button) — label: "{strings.settings.error.retry}", on_click: { action: retryload }
@@ -66,7 +66,7 @@ craft_rules_version: v1.0.0
 ## Shell (app-shell resolved for this state)
 - Home: navigates to home
 - Accounts: navigates to accounts
-- Pay: navigates to send-money
+- Pay: navigates to payments
 - More: navigates to settings
 - Render MUST keep nav/bar elements consistent with the list above — present or absent, never partial.
 

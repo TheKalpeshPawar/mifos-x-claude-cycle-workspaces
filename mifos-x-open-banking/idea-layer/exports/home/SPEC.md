@@ -1,177 +1,163 @@
-# SPEC — Home Dashboard
+# SPEC — Home
 
-| Field         | Value         |
-|---------------|---------------|
-| Feature       | home          |
-| Flavor        | consumer      |
-| Status        | approved      |
-| Quality Score | 95            |
-| ViewModel     | HomeViewModel |
+| Field         | Value             |
+|---------------|-------------------|
+| Feature       | home              |
+| Flavor        | consumer          |
+| Status        | approved          |
+| Quality Score | 95                |
+| ViewModel     | HomeViewModel     |
+| Archetype     | dashboard         |
 
 ---
 
 ## Overview
 
-The Home Dashboard is the primary landing screen for Consumer persona users after authentication. It shows a personalized greeting ("Good morning, Alex"), today's date, a hero primary checking account card (#4C662B fill) with the £4,250.00 balance, masked IBAN (•••• 0130), and three quick action buttons (Send Money, Beneficiaries, View Cards). A total balance chip (#CDEDA3) aggregates all 3 accounts to £12,480.50. Below this, a Recent Transactions section lists the 3 most recent entries: Tesco Supermarket (−£42.50 debit), Salary Payment (+£3,200.00 credit), EDF Energy (−£94.20 debit), each with a coloured icon container, merchant name, date/category, amount, and DEBIT/CREDIT badge. A Services section at the bottom provides tiles for Standing Orders, ATM & Branches, and FX Rates. The screen uses a 5-tab bottom navigation bar. Data is fetched from OBP Accounts and Transactions endpoints on screen entry and retry.
+The landing dashboard: a hero balance card for the selected account, an account switcher, and the
+five most recent transactions.
+
+Three things define its behaviour.
+
+**It is account-scoped with a switcher.** `selectedAccountId` drives the hero and the transaction
+list; the bottom sheet swaps it. The accounts themselves come from the same `GET /accounts` the
+Accounts screen uses, cached in memory rather than re-fetched.
+
+**Balances and transactions load in parallel** (`coroutineScope` async/awaitAll) once an account is
+selected — they are independent reads and serialising them would double the wait.
+
+**Only five transactions, and only Booked ones.** The list is a client-side slice of the most recent
+Booked transactions sorted descending by `BookingDateTime`. Pending transactions are excluded here —
+a pending amount is not yet a movement, and showing it on a balance dashboard invites the customer to
+reconcile two numbers that will not agree.
+
+No top app bar — the hero card is the header.
 
 ---
 
 ## Screens
 
-| ID           | Name           | Route | Layout | Scroll   |
-|--------------|----------------|-------|--------|----------|
-| home_content | Home Dashboard | /home | Column | Vertical |
+| ID   | Name | ViewModel     | Archetype |
+|------|------|---------------|-----------|
+| home | Home | HomeViewModel | dashboard |
 
-**Shell:** Bottom navigation bar with 5 items (Home active by default).
-
-| Nav Item | ID           | Icon            | Target    | Active |
-|----------|--------------|-----------------|-----------|--------|
-| Home     | nav_home     | home            | home      | true   |
-| Accounts | nav_accounts | account_balance | accounts  | false  |
-| Pay      | nav_pay      | send            | send-money| false  |
-| Cards    | nav_cards    | credit_card     | cards     | false  |
-| More     | nav_more     | more_horiz      | settings  | false  |
+**Shell:** no top app bar, bottom navigation visible, no FAB.
 
 ---
 
 ## Components
 
-| ID                          | Type   | Description                                                                                          |
-|-----------------------------|--------|------------------------------------------------------------------------------------------------------|
-| greeting_text               | text   | "Good morning, Alex" — Outfit/headline_medium, #4C662B, lg top padding, md horizontal padding       |
-| greeting_date               | text   | "Monday, 25 May 2026" — Outfit/body_medium, #44483D, md horizontal padding                         |
-| primary_account_card        | box    | #4C662B fill, 20dp radius, lg padding, md horizontal margin, 4dp elevation                         |
-| account_card_label          | text   | "Primary Checking" — Outfit/label_large, #FFFFFF                                                    |
-| account_card_balance        | text   | "£4,250.00" — Outfit/display_small, #FFFFFF, sm top pad, xs bottom pad                             |
-| account_card_iban           | text   | "•••• •••• •••• 0130" — Outfit/body_medium, #FFFFFF, md bottom pad                                |
-| quick_actions_row           | stack  | Horizontal, 8dp spacing — contains 3 quick action buttons                                           |
-| btn_send_money              | button | "Send Money" — filled, #FFFFFF fill + #4C662B text, 12dp radius, sm padding, Outfit/label_medium    |
-| btn_add_beneficiary         | button | "Beneficiaries" — outlined, #FFFFFF border + text, 12dp radius, sm padding                         |
-| btn_view_cards              | button | "View Cards" — outlined, #FFFFFF border + text, 12dp radius, sm padding                            |
-| total_balance_chip          | box    | #CDEDA3 fill, 12dp radius, md horizontal + 10dp vertical padding, md horizontal margin              |
-| total_balance_icon          | icon   | account_balance_wallet, 16dp, #4C662B                                                               |
-| total_balance_text          | text   | "Total across 3 accounts: £12,480.50" — Outfit/label_medium, #4C662B                               |
-| recent_transactions_header  | stack  | Horizontal, space-between, md padding — title + "View All" link                                     |
-| recent_transactions_title   | text   | "Recent Transactions" — Outfit/title_large, #1A1C16, heading level 2                               |
-| view_all_link               | link   | "View All" — Outfit/label_medium, #4C662B → navigates to transactions                              |
-| transaction_row_1           | box    | Tesco Supermarket: white card, 12dp radius, 1dp elevation; shopping_cart icon on #CDEDA3 circle    |
-| txn1_merchant               | text   | "Tesco Supermarket" — Outfit/body_large, #1A1C16                                                   |
-| txn1_date                   | text   | "23 May 2026 · Groceries" — Outfit/body_small, #44483D                                              |
-| txn1_amount                 | text   | "−£42.50" — Outfit/body_large, #BA1A1A, bold                                                       |
-| txn1_badge                  | box    | "DEBIT" badge — #CDEDA3 fill, 4dp radius, Outfit/label_small, #BA1A1A text                         |
-| transaction_row_2           | box    | Salary Payment: white card; payments icon on #CDEDA3 circle                                         |
-| txn2_merchant               | text   | "Salary Payment" — Outfit/body_large, #1A1C16                                                      |
-| txn2_date                   | text   | "22 May 2026 · Income" — Outfit/body_small, #44483D                                                 |
-| txn2_amount                 | text   | "+£3,200.00" — Outfit/body_large, #4C662B, bold                                                    |
-| txn2_badge                  | box    | "CREDIT" badge — #CDEDA3 fill, 4dp radius, Outfit/label_small, #4C662B text                        |
-| transaction_row_3           | box    | EDF Energy: white card; bolt icon on #CDEDA3 circle                                                 |
-| txn3_merchant               | text   | "EDF Energy" — Outfit/body_large, #1A1C16                                                          |
-| txn3_date                   | text   | "20 May 2026 · Utilities" — Outfit/body_small, #44483D                                              |
-| txn3_amount                 | text   | "−£94.20" — Outfit/body_large, #BA1A1A, bold                                                       |
-| txn3_badge                  | box    | "DEBIT" badge — #CDEDA3 fill, 4dp radius, Outfit/label_small, #BA1A1A text                         |
-| services_section_title      | text   | "Services" — Outfit/title_large, #1A1C16, heading level 2                                          |
-| services_grid               | stack  | Horizontal, 12dp spacing, md horizontal pad, flex_wrap — 3 service tiles                           |
-| service_standing_orders     | box    | #CDEDA3 fill, 16dp radius, 16dp pad — repeat icon (#4C662B) + "Standing Orders" label              |
-| service_atm_locator         | box    | #DCE7C8 fill, 16dp radius, 16dp pad — location_on icon (#386663) + "ATM & Branches" label          |
-| service_fx_rates            | box    | #CDEDA3 fill, 16dp radius, 16dp pad — currency_exchange icon (#386663) + "FX Rates" label          |
+| ID                          | Type           | Description                                        |
+|-----------------------------|----------------|-----------------------------------------------------|
+| loading_skeleton            | stack          | Skeleton mirroring the loaded composition          |
+| └ skeleton_hero             | shimmer        | Hero placeholder                                   |
+| └ skeleton_tx_header        | shimmer        | Section header placeholder                         |
+| └ skeleton_tx_1..3          | shimmer        | Three transaction row placeholders                 |
+| account_selector_sheet      | bottom_sheet   | Account switcher — overlay, not a route            |
+| └ account_selector_row      | list_item      | One selectable account                             |
+| hero_balance_card           | card           | Selected account hero                              |
+| └ hero_account_subtype      | text           | `{selectedAccount.AccountSubType}`                 |
+| └ hero_account_icon         | icon           | Account type glyph                                 |
+| └ hero_nickname             | text           | `{selectedAccount.Nickname}`                       |
+| └ hero_balance              | text           | Primary balance amount                             |
+| └ hero_available_label      | text           | "Available" label                                  |
+| └ hero_available_amount     | text           | Second-best balance type                           |
+| └ hero_identification       | text           | Account identification                             |
+| recent_transactions_section | stack          | Recent transactions block                          |
+| └ recent_tx_header          | section_header | Section heading                                    |
+| └ view_all_transactions_link| text_button    | → transactions                                     |
+| └ recent_transactions_list  | list           | The five most recent Booked transactions           |
+| &nbsp;&nbsp;└ recent_tx_row | card           | One transaction — opens transaction-detail         |
+| &nbsp;&nbsp;&nbsp;&nbsp;└ tx_category_icon | icon | Category glyph                            |
+| &nbsp;&nbsp;&nbsp;&nbsp;└ tx_description | text | `{item.TransactionInformation}`             |
+| &nbsp;&nbsp;&nbsp;&nbsp;└ tx_date | text  | `{item.BookingDateTime}` formatted                 |
+| &nbsp;&nbsp;&nbsp;&nbsp;└ tx_amount | text | `{item.amountFormatted}`                          |
+| empty_home                  | empty_state    | No accounts authorised                             |
+| error_home                  | error_state    | Load failure — `role: alert`                       |
+| └ retry_button              | button         | `{strings.home.error.retry}`                       |
+
+The skeleton mirrors the real composition — hero, header, three rows — so there is no layout shift
+when data arrives.
 
 ---
 
 ## States
 
-| ID      | Trigger                       | Description                                                                                   |
-|---------|-------------------------------|-----------------------------------------------------------------------------------------------|
-| loading | Screen entry / RetryLoad      | Greeting + date visible; account card replaced by skeleton box (200dp); 2 skeleton txn rows  |
-| content | Data load success             | Full screen: account card + balance chip + 3 transactions + services grid + bottom nav        |
-| error   | Network or auth failure       | Greeting + date + error card ("Could not load your account") with retry button                |
-| empty   | Account data returns empty    | Greeting + date + empty card ("No accounts yet") with "Set Up Account" CTA                   |
+Initial state: `loading`. The declared list is the canonical four; the sealed `ScreenState` carries
+six, with `NoNetwork` and `Unauthenticated` rendering through the error surface.
+
+| State   | Rendering                                              |
+|---------|---------------------------------------------------------|
+| loading | Skeleton hero + three row placeholders                 |
+| content | Hero card, switcher, recent transactions               |
+| empty   | `empty_home` — no accounts (`reason=no_accounts`)      |
+| error   | `error_home` + retry                                   |
 
 ---
 
 ## State Model
 
-**ViewModel:** `HomeViewModel`
-**Screen State Type:** `HomeScreenState`
+**ViewModel:** `HomeViewModel`.
 
-| Name               | Type                       | Default     |
-|--------------------|----------------------------|-------------|
-| isLoading          | Boolean                    | true        |
-| primaryAccount     | AccountSummary?            | null        |
-| totalBalance       | BigDecimal?                | null        |
-| totalAccountCount  | Int                        | 0           |
-| recentTransactions | List\<TransactionSummary\> | emptyList() |
-| error              | UiError?                   | null        |
-| greetingName       | String                     | "Alex"      |
+**State:** `HomeState` — `uiState: ScreenState<HomeData>`, `isAccountSelectorVisible: Boolean`,
+`accountId: String`.
 
-**Events:** `RetryLoad`, `NavigateToTransactions`, `NavigateToSendMoney`, `NavigateToAccounts`, `NavigateToBeneficiaries`, `NavigateToCards`
+**Data model:** `HomeData`
 
-**Actions:** `loadDashboardData()` (triggers: RetryLoad, ScreenOpened), `navigateTo(screen_id)`
+| Field                  | Type                    |
+|------------------------|-------------------------|
+| `accounts`             | `List<AccountChipUi>`   |
+| `selectedAccountId`    | `String`                |
+| `accountTypeLabel`     | `String`                |
+| `accountNickname`      | `String`                |
+| `accountSubType`       | `String`                |
+| `accountNumber`        | `String`                |
+| `rawIdentification`    | `String`                |
+| `balanceLabel`         | `String`                |
+| `availableAmountLabel` | `String`                |
+| `accountNumberLabel`   | `String`                |
+| `recentTransactions`   | `List<TransactionRowUi>`|
 
-**DI Dependencies:** `AccountsRepository`, `TransactionsRepository`, `SessionManager`
+Two balance labels, not one: the hero shows the preferred type and `availableAmountLabel` shows the
+second-best, so the customer sees both booked and available where they differ.
 
-**Errors:**
-- `network_error`: "Could not connect to banking services. Please try again."
-- `auth_error`: "Session expired. Please log in again."
-- `unknown_error`: "Something went wrong. Please try again."
+**Screen state:** sealed `ScreenState` — `Loading`, `Content`, `Empty`, `Error`, `NoNetwork`,
+`Unauthenticated`.
 
 ---
 
 ## Navigation
 
-| From | To             | Trigger                           | Type |
-|------|----------------|-----------------------------------|------|
-| home | send-money     | btn_send_money tap                | push |
-| home | beneficiaries  | btn_add_beneficiary tap           | push |
-| home | cards          | btn_view_cards tap                | push |
-| home | transactions   | view_all_link tap                 | push |
-| home | standing-orders| service_standing_orders tap       | push |
-| home | atm-locator    | service_atm_locator tap           | push |
-| home | fx-rates       | service_fx_rates tap              | push |
-| home | accounts       | nav_accounts bottom tab tap       | tab  |
-| home | send-money     | nav_pay bottom tab tap            | tab  |
-| home | cards          | nav_cards bottom tab tap          | tab  |
-| home | settings       | nav_more bottom tab tap           | tab  |
+| From | To                 | Trigger                       | Type    |
+|------|--------------------|-------------------------------|---------|
+| home | transactions       | `view_all_transactions_link`  | push    |
+| home | transaction-detail | `recent_tx_row` tap           | push    |
+| home | (self)             | `account_selector_sheet`      | overlay |
+
+The account switcher is a bottom sheet, not a route — home keeps its scroll position when it closes.
 
 ---
 
 ## API Endpoints
 
-| Endpoint                                                                  | Auth        | Tag          | Purpose                                         |
-|---------------------------------------------------------------------------|-------------|--------------|-------------------------------------------------|
-| GET /obp/v3.0.0/banks/{bankId}/accounts                                   | DirectLogin | Accounts     | Fetch accounts for bank gh.29.uk                |
-| GET /obp/v3.0.0/banks/{bankId}/accounts/{accountId}/owner/transactions    | DirectLogin | Transactions | Fetch 5 most recent transactions DESC (limit=5) |
-| GET /obp/v3.0.0/my/accounts                                               | DirectLogin | Accounts     | Cross-bank aggregation for total balance chip   |
+| ID                        | Endpoint                                  | Permission              |
+|---------------------------|-------------------------------------------|-------------------------|
+| accounts-list             | `GET /accounts`                           | `ReadAccountsDetail`    |
+| selected-account-balances | `GET /accounts/{AccountId}/balances`      | `ReadBalances`          |
+| recent-transactions       | `GET /accounts/{AccountId}/transactions`  | `ReadTransactionsDetail`|
+
+Full detail including the parallel fetch, the balance preference order and the Booked-only rule:
+`API.md`.
 
 ---
 
 ## Design Tokens
 
-| Token                          | Value     | Usage                                                               |
-|--------------------------------|-----------|---------------------------------------------------------------------|
-| colors.light.primary           | #4C662B   | Account card fill, greeting text, total balance chip text+icon, "View All" link, credit amounts, service tile icons |
-| colors.light.primary_container | #CDEDA3   | Total balance chip fill, txn icon containers, DEBIT/CREDIT badge fill, Standing Orders + FX tile fill |
-| colors.light.nav_active_indicator | #DCE7C8 | ATM tile fill                                                      |
-| colors.light.secondary         | #386663   | ATM + FX service tile icon + label color                            |
-| colors.light.error             | #BA1A1A   | Debit amounts (−£42.50, −£94.20), DEBIT badge text                |
-| colors.light.surface           | #FFFFFF   | Transaction row card fill, Send Money button fill                   |
-| colors.light.background        | #F9FAEF   | Screen base                                                         |
-| colors.light.on_surface        | #1A1C16   | Merchant names, section headers                                     |
-| colors.light.on_surface_variant| #44483D   | Date/category text (23 May 2026 · Groceries), bolt icon (a11y fix)  |
-| typography.headline_medium     | Outfit 28sp | Greeting text                                                     |
-| typography.display_small       | Outfit 32sp/600 | Account balance                                               |
-| typography.title_large         | Outfit 22sp | "Recent Transactions" + "Services" section headers              |
-| typography.label_large         | Outfit 14sp/500 | Account card type label "Primary Checking"                  |
-| typography.label_medium        | Outfit 12sp/500 | Total balance chip, quick action button labels              |
-| typography.body_large          | Outfit 16sp/400 | Transaction merchant names, amounts                         |
-| typography.body_medium         | Outfit 14sp/400 | Greeting date, account IBAN                                 |
-| typography.body_small          | Outfit 12sp/400 | Transaction date/category lines                             |
-| typography.label_small         | Outfit 11sp/500 | DEBIT / CREDIT badge labels                                 |
-| radius.sm                      | 8dp       | Bottom nav active pill indicator                                    |
-| radius.md                      | 12dp      | Quick action buttons, total balance chip, transaction cards         |
-| radius.lg                      | 16dp      | Service tiles, FAB                                                  |
-| elevation.level1               | 1dp       | Transaction cards                                                   |
-| elevation.level2               | 3dp       | Account card (specified as 4dp in source)                          |
+Material 3, seed `#266489` ("Open Banking — Trust Blue"), Roboto, with `Roboto Mono` for the hero
+balance and transaction amounts so figures align. Debit/credit colour comes from the
+`payment_disposition` semantic pair rather than inline hex. Components reference semantic roles, so
+both theme modes resolve from `design-system/design-tokens.yaml`; `DESIGN.md` is the canonical brand
+spec.
 
 ---
 
-_Generated by /idea export | 2026-06-02 (API endpoints resynced to v3.0.0 owner-transactions paths per api.yaml)_
+<!-- Generated 2026-08-04 by /idea-feature-export --all --force from screens/home/{ui,api,flow,docs}.yaml. -->

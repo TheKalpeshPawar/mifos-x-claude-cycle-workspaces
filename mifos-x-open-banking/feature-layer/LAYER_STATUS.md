@@ -11,9 +11,10 @@
 
 ## Declared Features (from PROJECT_CONFIG.yaml)
 
-**Shared (both personas):** splash, login, profile, settings  
-**Consumer:** home, accounts, transactions, send-money, beneficiaries, cards, standing-orders, atm-locator, fx-rates  
-**Field Officer:** fo-dashboard, customer-search, customer-detail, customer-onboarding, corporate-onboarding, kyc-review, account-applications, customer-messages, meetings
+**App shell:** splash, login, profile, settings  
+**Consumer:** home, accounts, transactions, send-money, beneficiaries, cards, standing-orders, atm-locator, fx-rates
+
+> The Field Officer feature set was removed on 2026-08-02 — this is a consumer-only app.
 
 ## Notes
 

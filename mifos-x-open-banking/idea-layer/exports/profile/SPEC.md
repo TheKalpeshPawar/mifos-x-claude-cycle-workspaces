@@ -1,141 +1,142 @@
 # SPEC — User Profile
 
-| Field         | Value              |
-|---------------|--------------------|
-| Feature       | profile            |
-| Flavor        | shared             |
-| Status        | approved           |
-| Quality Score | 99                 |
-| ViewModel     | ProfileViewModel   |
+| Field         | Value             |
+|---------------|-------------------|
+| Feature       | profile           |
+| Flavor        | consumer          |
+| Status        | approved          |
+| Quality Score | 99                |
+| ViewModel     | ProfileViewModel  |
+| Archetype     | profile           |
 
 ---
 
 ## Overview
 
-The User Profile screen is a shared feature accessible from both Consumer and Field Officer personas via the top app bar profile icon or the Profile nav item. It allows the authenticated user to view and edit their personal information (full name, email address, phone number), upload or change their profile avatar, and navigate to the Change Password screen. A danger-zone card at the bottom provides a Log Out button that clears the session token and redirects to Login.
+A **read-only** account screen: avatar initials, display name, and three disabled fields showing
+the identity OBP holds for the signed-in user. There is no editing, no save, and no avatar upload —
+the pencil glyph and the Change Password button are both present but inert, the latter explicitly
+`enabled: false` until a change-password screen ships.
 
-Profile data is pre-filled from `GET /obp/v4.0.0/users/current` on load. On save, `PUT /obp/v4.0.0/users/current` is called with the updated fields. The Save Changes button is enabled only when `hasUnsavedChanges` is true and the form state is Editing. After a successful save, a green success banner is displayed for 2 seconds before auto-transitioning back to the Viewing state.
+Logout is the one live action and it is **reactive**: `onLogout()` sets
+`UserDataRepository.setIsAuthenticated(false)` and `RootNavViewModel`, observing `userData`, routes
+to the auth graph. The screen does not navigate itself.
+
+Two content fields are worth knowing before implementing against this: `displayName` falls back to
+the email local-part when `username` is blank, and `phone` is hardcoded `""` because OBP's
+UserProfile carries no phone field — the row renders, permanently empty.
 
 ---
 
 ## Screens
 
-| ID      | Name    | Route | Layout | Scroll   |
-|---------|---------|-------|--------|----------|
-| profile | Profile | —     | Column | Vertical |
-
-**Shell:** Top app bar ("Profile", back arrow). No bottom navigation bar.
+| ID      | Name    | ViewModel        | Archetype |
+|---------|---------|------------------|-----------|
+| profile | Profile | ProfileViewModel | profile   |
 
 ---
 
 ## Components
 
-| ID                          | Type   | Description                                                                                      |
-|-----------------------------|--------|--------------------------------------------------------------------------------------------------|
-| profile_root                | stack  | Column root, #F9FAEF bg, 24dp padding                                                           |
-| profile_avatar_section      | stack  | Centred column — avatar image + edit icon overlay + display name                                |
-| profile_avatar_image        | image  | Circle avatar, 96dp, #4C662B border 2dp, #CDEDA3 bg; data-driven from `obp_get_user_profile.avatar_url` |
-| profile_avatar_edit_icon    | icon   | edit_photo icon — 28dp, bg #4C662B, color #FFFFFF; overlaid offset (x:32dp, y:-16dp); opens photo picker |
-| profile_display_name        | text   | "Maria Santos" — Outfit/headline_small, #4C662B, centred; data-driven from `username`           |
-| profile_form_section        | stack  | White card (radius 12, 24dp padding) — Personal Information section                             |
-| profile_section_header      | text   | "Personal Information" — Outfit/title_medium, #4C662B, 16dp bottom padding                     |
-| profile_full_name_input     | input  | "Full Name" — text variant, bg #F9FAEF, border #C5C8BA → focused #4C662B; pre-filled from `username`; placeholder "e.g. Maria Santos" |
-| profile_email_input         | input  | "Email Address" — email variant, keyboard_type email; pre-filled from `email`; placeholder "e.g. maria.santos@example.com" |
-| profile_phone_input         | input  | "Phone Number" — tel variant, keyboard_type tel; pre-filled from `phone_number`; placeholder "e.g. +63 917 123 4567" |
-| profile_action_section      | stack  | Column with Save Changes + Change Password buttons                                               |
-| profile_save_button         | button | "Save Changes" — filled, bg #4C662B, text #FFFFFF, radius 8, full width; enabled when hasUnsavedChanges=true AND state≠Viewing; shows spinner when Saving |
-| profile_change_password_button | button | "Change Password" — outlined, border+text #4C662B, radius 8, full width; navigates to change-password |
-| profile_danger_section      | stack  | White card (radius 12, 24dp padding, 16dp margin-top) — danger zone                            |
-| profile_logout_button       | button | "Log Out" — text variant, color #BA1A1A, Outfit/label_large, full width; clears session → login |
-| profile_save_success_banner | card   | #CDEDA3 bg, #4C662B border, radius 8 — visible when uiState==Saved; check_circle icon + success text |
-| profile_success_icon        | icon   | check_circle, 20dp, color #4C662B                                                               |
-| profile_success_message     | text   | "Your profile has been updated successfully." — Outfit/body_small, #4C662B                     |
+| ID                            | Type              | Description                                                        |
+|-------------------------------|-------------------|--------------------------------------------------------------------|
+| profile_root                  | stack             | Column, `spacing.lg` padding — the state container                  |
+| profile_avatar_section        | stack             | Avatar block                                                        |
+| profile_avatar_initials       | box               | Up to two uppercase initials from `displayName` (`initialsOf`)      |
+| profile_avatar_edit_icon      | icon              | `edit` glyph — decorative; no upload path exists                    |
+| profile_display_name          | text              | `displayName`                                                       |
+| profile_form_section          | stack             | Personal Information block                                          |
+| profile_section_header        | text              | "Personal Information"                                              |
+| profile_full_name_field       | input             | Full Name — **disabled**, bound to `fullName`, not focusable         |
+| profile_email_field           | input             | Email Address — **disabled**, bound to `email`, not focusable        |
+| profile_phone_field           | input             | Phone Number — **disabled**, bound to `phone` (always blank)         |
+| profile_change_password_button| button            | `enabled: false` until the change-password screen ships; not focusable while disabled |
+| profile_logout_button         | button            | The only live affordance — `onLogout()`                             |
+| profile_error_icon            | icon              | `error_outline` (error state)                                       |
+| profile_error_title           | text              | "Could not load your profile"                                       |
+| profile_error_body            | text              | "Check your connection and try again."                              |
+| profile_error_retry_button    | button            | Retry → `onRetry()`                                                 |
+| profile_loading_spinner       | loading_indicator | `spinner` variant (loading state)                                   |
+
+The three disabled inputs and the disabled button declare `focusable: false` — a permanently
+disabled control must not sit in the tab order.
 
 ---
 
 ## States
 
-| ID      | Trigger                                  | Description                                                                       |
-|---------|------------------------------------------|-----------------------------------------------------------------------------------|
-| loading | Screen entry — profile data being fetched| Skeleton shimmer on avatar, display name, and all 3 input fields                  |
-| viewing | Profile data loaded, no edits made       | All fields pre-filled; Save Changes button disabled                               |
-| editing | User modifies any input field            | Fields editable; Save Changes button enabled; hasUnsavedChanges=true              |
-| saving  | User taps Save Changes                   | Save button shows spinner; inputs disabled; PUT request in flight                 |
-| saved   | PUT request succeeds                     | Success banner visible; auto-transitions to viewing after 2 seconds               |
-| content | Alias for viewing (default loaded state) | Same layout as viewing                                                            |
-| empty   | No profile data available                | Avatar + actions visible; form fields absent; "No profile data" note             |
-| error   | GET /users/current fails                 | Fields may be blank; error state shown with retry option                          |
+Initial state: `loading`. Three states, matching `ScreenState<ProfileContent>` exactly.
+
+| State   | Layout                                           | Rendering                                    |
+|---------|--------------------------------------------------|----------------------------------------------|
+| loading | column, `spacing.lg`, centred both axes          | `profile_loading_spinner`                    |
+| content | column, `spacing.lg`                             | Avatar block + Personal Information + buttons |
+| error   | column, `spacing.lg`, centred both axes          | icon + title + body + Retry                  |
+
+There is no `empty` state: a signed-in user always has a profile, so an empty result is an error,
+not an empty set.
 
 ---
 
 ## State Model
 
-**ViewModel:** `ProfileViewModel`
-**Screen State Type:** `ProfileUiState`
+**ViewModel:** `ProfileViewModel`, extending `androidx.lifecycle.ViewModel`, exposing
+`StateFlow<ScreenState<ProfileContent>>`.
 
-| Name              | Type    | Default |
-|-------------------|---------|---------|
-| fullName          | String  | ""      |
-| email             | String  | ""      |
-| phoneNumber       | String  | ""      |
-| avatarUrl         | String? | null    |
-| hasUnsavedChanges | Boolean | false   |
-| isLoading         | Boolean | false   |
-| errorMessage      | String? | null    |
+**Wrapper variants:** `Loading` · `Content(ProfileContent, DataFreshness)` · `Error(throwable, isNetworkError)`.
 
-**Events:** `LoadProfile`, `OnFullNameChanged`, `OnEmailChanged`, `OnPhoneChanged`, `OnSaveClicked`, `OnChangePasswordClicked`, `OnLogoutClicked`, `OnProfileSaved`, `OnProfileError`
+**Content fields**
 
-**DI Dependencies:** `ObpAuthRepository`, `UserProfileRepository`, `SessionManager`
+| Field         | Type   | Note                                                        |
+|---------------|--------|-------------------------------------------------------------|
+| `displayName` | String | `username`, or the email local-part when username is blank  |
+| `initials`    | String | Up to two uppercase initials from `displayName`             |
+| `fullName`    | String | Same as `displayName` in shipped — bound to the read-only Full Name field |
+| `email`       | String |                                                             |
+| `phone`       | String | Hardcoded `""` — OBP UserProfile has no phone field         |
 
-**Errors:**
-- `NETWORK_ERROR`: "Could not load your profile. Please check your connection."
-- `VALIDATION_ERROR`: "Please correct the errors in the form before saving."
-- `AUTH_ERROR`: "Session expired. Please sign in again."
+**Actions**
+- `onRetry()` — reloads via `load()`
+- `onLogout()` — `UserDataRepository.setIsAuthenticated(false)`; routing is reactive via `RootNavViewModel`
+
+**DI:** `ProfileRepository`, `UserDataRepository`.
 
 ---
 
 ## Navigation
 
-| From    | To              | Trigger                          | Type  |
-|---------|-----------------|----------------------------------|-------|
-| profile | change-password | Change Password button tap       | push  |
-| profile | login           | Log Out button tap (after confirm)| root |
-| profile | (back)          | Back arrow tap                   | pop   |
+| From    | To    | Trigger                                            | Type    |
+|---------|-------|----------------------------------------------------|---------|
+| profile | login | `onLogout()` → auth-state change observed by RootNavViewModel | reactive |
+
+Flows: `app-main`, `consumer-banking`. Journey: `consumer-profile-settings`.
+
+The transition is not a NavController call from this screen — the screen only flips auth state, and
+the root nav graph reacts. Nothing else navigates away from here.
 
 ---
 
 ## API Endpoints
 
-| Endpoint                            | Auth        | Tag         | Purpose                                      |
-|-------------------------------------|-------------|-------------|----------------------------------------------|
-| GET /obp/v4.0.0/users/current       | DirectLogin | UserProfile | Fetch current user profile for pre-fill      |
-| PUT /obp/v4.0.0/users/current       | DirectLogin | UserProfile | Save updated email and phone_number          |
+| ID                     | Endpoint                        | Trigger          | Wired |
+|------------------------|---------------------------------|------------------|-------|
+| obp_get_user_profile   | `GET /obp/v4.0.0/users/current` | `on_screen_load` | yes   |
+| obp_update_user_profile| `PUT /obp/v4.0.0/users/current` | `deferred`       | **no** |
+
+The PUT is declared but deferred — it is the endpoint an editable profile would need, and it is why
+the screen is described as read-only rather than as missing a feature.
+
+Full field and error detail: `API.md`.
 
 ---
 
 ## Design Tokens
 
-| Token                           | Value   | Usage                                                           |
-|---------------------------------|---------|-----------------------------------------------------------------|
-| colors.light.primary            | #4C662B | Avatar border, display name, section headers, Save button bg, edit icon bg, success banner border/icon/text |
-| colors.light.primary_container  | #CDEDA3 | Avatar placeholder background, success banner background       |
-| colors.light.on_primary         | #FFFFFF | Save button text, edit icon color                              |
-| colors.light.error              | #BA1A1A | Log Out button text                                            |
-| colors.light.surface            | #FFFFFF | Form section card, danger section card                         |
-| colors.light.background         | #F9FAEF | Screen root bg, input field backgrounds                        |
-| colors.light.outline_variant    | #C5C8BA | Input field default border                                     |
-| colors.light.outline            | #75796C | Change Password outlined button border                         |
-| colors.light.on_surface_variant | #44483D | (secondary text)                                               |
-| typography.headline_small       | —       | Display name below avatar (24sp, SemiBold)                     |
-| typography.title_medium         | —       | "Personal Information" section header                          |
-| typography.body_large           | —       | Input field values                                             |
-| typography.body_small           | —       | Success banner message                                         |
-| typography.label_large          | —       | Save Changes, Change Password, Log Out button text             |
-| radius.md                       | 12dp    | Form section card, danger section card, success banner         |
-| spacing.lg                      | 24dp    | Root padding, form card padding                                |
-| spacing.md                      | 16dp    | Input bottom margin, section header bottom padding             |
-| spacing.sm                      | 8dp     | Save button bottom margin                                      |
+Material 3, seed `#266489` ("Open Banking — Trust Blue"), Roboto. Disabled fields use the M3
+disabled container/content roles rather than a bespoke grey; the avatar initials sit on
+`primaryContainer`. Components reference semantic roles, so both theme modes resolve from
+`design-system/design-tokens.yaml`; `DESIGN.md` is the canonical brand spec.
 
 ---
 
-_Generated by /idea export | 2026-05-29_
+<!-- Generated 2026-08-04 by /idea-feature-export --all --force from screens/profile/{ui,api,flow,docs}.yaml. -->

@@ -5,7 +5,8 @@ feature_id: transactions
 screen_id: transactions
 archetype: index_list
 name: "{strings.transactions.title}"
-status: implemented
+# status: REMOVED 2026-08-04 (CROSS_LEAK repair — sibling-layout.json assigns `status` to
+# the docs sibling). This copy held `implemented`; docs.yaml is the single owner.
 initial_state: loading
 quality_score: 95
 
@@ -217,6 +218,8 @@ components:
       data_driven: false
     children:
       - type: chip
+        keyboard:
+          focusable: true
         id: filter_all
         # filterChip(filter) renders FILTER_PREFIX + filter.name.lowercase(), so the suffix is
         # the TransactionFilter enum case LOWERCASED: ALL/MONEY_IN/MONEY_OUT -> all/money_in/money_out.
@@ -241,6 +244,8 @@ components:
           data_driven: false
 
       - type: chip
+        keyboard:
+          focusable: true
         id: filter_money_in
         test_tag: "transactions_filter_money_in"
         label: "{strings.transactions.filter.money_in}"
@@ -262,6 +267,8 @@ components:
           data_driven: false
 
       - type: chip
+        keyboard:
+          focusable: true
         id: filter_money_out
         test_tag: "transactions_filter_money_out"
         label: "{strings.transactions.filter.money_out}"
@@ -283,6 +290,8 @@ components:
           data_driven: false
 
       - type: chip
+        keyboard:
+          focusable: true
         id: filter_date_range
         test_tag: "transactions_filter_date_range"   # flat const FILTER_DATE_RANGE @ TransactionFilterChips.kt:80
         label: "{strings.transactions.filter.date_range}"
@@ -356,6 +365,8 @@ components:
           data_driven: true
 
       - type: list_item
+        keyboard:
+          focusable: true
         id: transaction_row
         # fun row(key) = ROW_PREFIX + key @ components/TransactionRow.kt:73. The key is NOT
         # raw TransactionId: TransactionsViewModel.kt:228 builds it as
@@ -395,7 +406,7 @@ components:
         children:
           - type: text
             id: tx_merchant
-            value: "{item.TransactionInformation}"
+            supporting_text: "{item.TransactionInformation}"
             style: bodyMedium
             test_context:
               purpose: "Transaction merchant or narrative from OBTransaction6.TransactionInformation"
@@ -405,7 +416,7 @@ components:
 
           - type: chip
             id: tx_category_tag
-            label: "{item.Category}"
+            headline: "{item.Category}"
             variant: assist
             style: labelSmall
             test_context:
@@ -414,12 +425,19 @@ components:
               interaction_type: display
               data_driven: true
 
-          - type: badge
+          # badge -> status_chip 2026-08-04 (/idea-sync, N-1-SYSTEMIC). variant `warning` was not
+          # a declared badge variant and this palette ships no warning hue anyway; a Pending
+          # transaction is an unsettled one, which is the payment-disposition vocabulary's
+          # in_progress. (Written when that vocabulary was a triad; it became FOUR values
+          # 2026-08-07. in_progress remains correct here — an AIS pending transaction is money
+          # actually in flight, not a deferred instruction, so instruction_established does not
+          # apply to this badge.)
+          - type: status_chip
             id: tx_pending_badge
             # Same rowKey as the parent row — fun pendingBadge(key) @ TransactionRow.kt:142.
             test_tag: "transactions_pending_{item.rowKey}"
             label: "{strings.transactions.status.pending}"
-            variant: warning
+            variant: in_progress
             visible_when: "{item.Status == 'Pending'}"
             accessibility_label: "{strings.transactions.a11y.pending_status}"
             test_context:
@@ -431,6 +449,8 @@ components:
   # ─── Content: pagination footer ────────────────────────────────────────────
 
   - type: button
+    keyboard:
+      focusable: true
     id: load_more_button
     test_tag: "transactions_load_more"       # TestTags.LOAD_MORE @ components/LoadMoreButton.kt:38
     variant: text
@@ -480,6 +500,8 @@ components:
       data_driven: false
     children:
       - type: button
+        keyboard:
+          focusable: true
         id: clear_filters_button
         test_tag: "transactions_clear_filters"   # TestTags.CLEAR_FILTERS @ TransactionsEmpty.kt:71
         variant: outlined
@@ -499,10 +521,9 @@ components:
 
   # ─── Error state ───────────────────────────────────────────────────────────
 
-  - type: empty_state
+  - type: error_state
     id: error_state
     test_tag: "transactions_error"           # TestTags.ERROR @ TransactionsError.kt:68
-    variant: error
     state_binding: [error]
     icon: error_outline
     title: "{strings.transactions.error.title}"
@@ -549,7 +570,7 @@ components:
           data_driven: true
       - type: text
         id: error_consent_hint
-        value: "{strings.transactions.error.consent_hint}"
+        content: "{strings.transactions.error.consent_hint}"
         style: bodySmall
         color: "onSurfaceVariant"
         test_context:
@@ -558,6 +579,8 @@ components:
           interaction_type: display
           data_driven: false
       - type: button
+        keyboard:
+          focusable: true
         id: retry_button
         test_tag: "transactions_error_retry"     # TestTags.ERROR_RETRY @ TransactionsError.kt:106
         variant: filled

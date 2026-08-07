@@ -9,7 +9,7 @@
 
 ## Screen Layout
 
-The login screen is a single scrollable column on a light grey background (#F5F5F5), padded spacing.lg (24 dp) on all sides. The hierarchy from top to bottom is:
+The login screen is a single scrollable column on a `surfaceContainerLow` background, padded `spacing.lg` (24 dp) on all sides. The hierarchy from top to bottom is:
 
 1. Mifos X logo (80×80 dp, centered)
 2. "Welcome Back" headline
@@ -31,60 +31,60 @@ The login screen is a single scrollable column on a light grey background (#F5F5
 
 ### login_header_logo
 - **Description:** Mifos X brand mark asset `mifos_logo` scaled to 80×80 dp
-- **Position:** Top-center of scroll area, padding-bottom = spacing.md (16 dp)
-- **Style tokens:** tint #1800B1, alignment=center
+- **Position:** Top-center of scroll area, padding-bottom = `spacing.md` (16 dp)
+- **Style tokens:** tint `primary`, alignment=center
 
 ### login_header_title
 - **Description:** Static text "Welcome Back"
 - **Position:** Below logo
-- **Style tokens:** Inter/headline_large (32 sp, weight 400), color #1800B1, alignment=center, padding-bottom spacing.xs (4 dp)
+- **Style tokens:** `headlineLarge` (32 sp, weight 400, Roboto), color `primary`, alignment=center, padding-bottom `spacing.xs` (4 dp)
 
 ### login_header_subtitle
 - **Description:** Static text "Sign in to your Mifos X account"
-- **Style tokens:** Manrope/body_medium (14 sp), color #757575, alignment=center, padding-bottom spacing.xl (32 dp)
+- **Style tokens:** `bodyMedium` (14 sp, Roboto), color `onSurfaceVariant`, alignment=center, padding-bottom `spacing.xl` (32 dp)
 
 ### login_username_input
 - **Description:** Outlined text field, label "Username", placeholder "Enter your username"
 - **Position:** Below subtitle
-- **Style tokens:** background #FFFFFF, border #BDBDBD (rest) / #1800B1 (focused), Manrope/body_large, padding spacing.md
+- **Style tokens:** background `surfaceContainerLowest`, border `outline` (rest) / `primary` (focused, `border.focus`), `bodyLarge`, radius `radius.sm`, padding `spacing.md`
 - **Behavior:** keyboard_type=text, ime_action=next (tab focus to password field)
 
 ### login_password_input
 - **Description:** Outlined password field, label "Password", placeholder "Enter your password"; trailing visibility toggle icon
-- **Style tokens:** Same as username input; trailing icon `visibility_toggle`
+- **Style tokens:** Same as username input; trailing icon `visibility_toggle` (`icon.md`, `onSurfaceVariant`)
 - **Behavior:** keyboard_type=text, ime_action=done; toggle shows/hides password characters
 
 ### login_remember_me_row
 - **Description:** Horizontal row — checkbox on left, "Keep me signed in" label on right
-- **Style tokens:** Checkbox color #1800B1; label Manrope/body_medium, color #424242, padding-start spacing.sm
+- **Style tokens:** Checkbox color `primary`; label `bodyMedium`, color `onSurface`, padding-start `spacing.sm`
 - **Behavior:** Checkbox state persists session token in CredentialStore
 
 ### login_error_banner
 - **Description:** Filled card visible only in `error` state; shows error_outline icon + error message in a row
 - **Position:** Below remember-me row, above CTA button
-- **Style tokens:** background #FFEBEE, border #FF5252, border-radius 8 dp, padding spacing.md, margin-bottom spacing.md
-- **Content:** "Invalid username or password. Please check your credentials and try again." (Manrope/body_small, color #B71C1C)
+- **Style tokens:** background `errorContainer`, border `error` (`border.thin`), border-radius `radius.sm`, padding `spacing.md`, margin-bottom `spacing.md`
+- **Content:** "Invalid username or password. Please check your credentials and try again." (`bodySmall`, color `onErrorContainer`)
 
 ### login_cta_button
 - **Description:** Full-width filled button "Sign In"
-- **Style tokens:** background #1800B1, text #FFFFFF, Inter/label_large, border-radius 8 dp, margin-top spacing.lg
-- **Behavior:** Disabled when username or password fields are empty; shows circular loading spinner during `authenticating` state
+- **Style tokens:** container `primary`, label `onPrimary`, `labelLarge`, border-radius `radius.sm`, margin-top `spacing.lg`
+- **Behavior:** Disabled at `opacity.disabled` when username or password fields are empty; shows circular loading spinner during `authenticating` state
 
 ### OR divider row
-- **Description:** Horizontal row — full-width divider (#E0E0E0, flex=1) / "OR" label (#9E9E9E, Manrope/label_medium) / divider
-- **Position:** Below CTA, padding-top and padding-bottom spacing.lg
+- **Description:** Horizontal row — full-width divider (`outlineVariant`, flex=1) / "OR" label (`onSurfaceVariant`, `labelMedium`) / divider
+- **Position:** Below CTA, padding-top and padding-bottom `spacing.lg`
 
 ### login_oauth_button
 - **Description:** Full-width outlined button "Sign in with OBP Account" with leading `open_in_browser` icon
-- **Style tokens:** border #1800B1, text #1800B1, Inter/label_large, border-radius 8 dp
+- **Style tokens:** border `outline` (`border.thin`), text `primary`, `labelLarge`, border-radius `radius.sm`
 
 ### login_oauth_hint
 - **Description:** Static text "Redirects to Open Bank Project for secure authentication"
-- **Style tokens:** Manrope/body_small (12 sp), color #9E9E9E, alignment=center
+- **Style tokens:** `bodySmall` (12 sp, Roboto), color `onSurfaceVariant`, alignment=center
 
 ### login_forgot_password_link
 - **Description:** Inline link "Forgot Password?"
-- **Style tokens:** Manrope/body_medium, color #008B8B (accent teal), alignment=center
+- **Style tokens:** `bodyMedium`, color `secondary`, alignment=center
 - **Behavior:** Navigates to `forgot-password` screen on tap
 
 ---
@@ -98,8 +98,8 @@ The login screen is a single scrollable column on a light grey background (#F5F5
 | login_password_input trailing icon | Tap | Toggles password character visibility                       |
 | login_remember_me_checkbox | Tap    | Toggles `rememberMe` boolean in ViewModel state                      |
 | login_forgot_password_link | Tap    | Navigates to `forgot-password` screen                               |
-| Username field            | Focus   | Input border turns #1800B1 (focused_border_color)                   |
-| Password field            | Focus   | Input border turns #1800B1                                           |
+| Username field            | Focus   | Input border turns `primary` at `border.focus` width                |
+| Password field            | Focus   | Input border turns `primary` at `border.focus` width                |
 
 **State transitions:**
 - `idle` → `authenticating` on Sign In tap
@@ -131,27 +131,26 @@ The login screen is a single scrollable column on a light grey background (#F5F5
 ## Design Notes
 
 **Color usage:**
-- Primary #1800B1 dominates interactive elements (logo tint, headline, focused borders, CTA background, checkbox, OAuth border/text) — creates a consistent "brand = action" visual language.
-- Error surface #FFEBEE + error border #FF5252 + error text #B71C1C form a red-spectrum triad that is visually distinct from brand purple, avoiding ambiguity.
-- Accent teal #008B8B exclusively on the Forgot Password link — keeps the secondary escape path visually subordinate to primary CTAs.
+- `primary` dominates interactive elements (logo tint, headline, focused borders, CTA container, checkbox, OAuth text) — creating a consistent "brand = action" visual language.
+- The error banner uses the palette's own error family end-to-end: `errorContainer` surface, `error` border, `onErrorContainer` text. That triad is guaranteed at AA and is visually distinct from the trust-blue brand, so a failed sign-in is never ambiguous.
+- `secondary` (neutral slate) carries the Forgot Password link — keeping the secondary escape path visually subordinate to the primary CTA. `tertiary` is deliberately avoided here: as of DESIGN.md 1.3.0 it means warning / attention-needed, and a password-reset link is neither.
 
 **Typography:**
-- Inter for display/button labels (geometric, high legibility at large sizes).
-- Manrope for body/input/helper text (humanist, better legibility at small sizes in form contexts).
-- Label hierarchy: headline_large > body_medium > label_large (buttons) > body_small (hints/errors).
+- Roboto throughout — the single brand and plain face declared in `typography.font_family`. The previous Inter/Manrope pairing was outside the system entirely.
+- Hierarchy is carried by the type scale, not by mixing families: `headlineLarge` > `bodyMedium` > `labelLarge` (buttons) > `bodySmall` (hints/errors).
 
 **Spacing:**
-- Generous padding-bottom spacing.xl (32 dp) below subtitle creates clear separation between the brand header block and the form inputs.
-- Consistent spacing.md (16 dp) padding inside all input fields for comfortable touch targets.
-- OR divider spacing.lg (24 dp) top and bottom creates visual breathing room between auth method blocks.
+- Generous padding-bottom `spacing.xl` (32 dp) below the subtitle creates clear separation between the brand header block and the form inputs.
+- Consistent `spacing.md` (16 dp) padding inside all input fields for comfortable touch targets.
+- OR divider `spacing.lg` (24 dp) top and bottom creates visual breathing room between auth method blocks.
 
 **Accessibility:**
 - Error banner uses `role=alert` on the message text, ensuring TalkBack announces the error immediately when it appears.
 - CTA button `label="Sign In with DirectLogin"` disambiguates from the OAuth button for screen reader users.
 - Password field `label="Password, hidden"` communicates that content is obscured.
 - OAuth button label "Sign in using your Open Bank Project account via OAuth" is descriptive for screen readers.
-- Minimum touch target 48×48 dp met by all interactive elements.
+- Minimum touch target `touch_targets.comfortable` (48×48 dp) met by all interactive elements.
 
 ---
 
-_Generated by /idea export | 2026-05-25_
+_Generated by /idea export | 2026-08-03_

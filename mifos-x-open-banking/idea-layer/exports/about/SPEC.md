@@ -4,7 +4,7 @@
 |---------------|----------------|
 | Feature       | about          |
 | Flavor        | shared         |
-| Status        | approved       |
+| Status        | enriched       |
 | Quality Score | 95             |
 | ViewModel     | AboutViewModel |
 
@@ -59,7 +59,7 @@ The About screen is a shared-flavor informational screen accessible from any per
 | about_privacy_chevron  | icon     | `open_in_new` — #C5C8BA, 18dp; decorative                                                                     |
 | about_divider_3        | divider  | color #E1E4D5, margin_top + margin_bottom 4dp — separates Privacy Policy and Open Source Licenses rows         |
 | about_licenses_row     | stack    | Row, space-between, padding_top + padding_bottom 8dp                                                          |
-| about_licenses_link    | link     | "Open Source Licenses" — Outfit/body_large, color #1A1C16, inline; `open_external → licenses`                 |
+| about_licenses_link    | link     | "Open Source Licences" — Outfit/body_large, color #1A1C16, inline; `push → licences`                          |
 | about_licenses_chevron | icon     | `chevron_right` — #C5C8BA, 20dp; decorative                                                                   |
 | about_rate_button      | button   | "Rate This App" — outlined, border + text #4C662B, Outfit/label_large (14sp/500), padding_horizontal 32dp, centered, margin_top 24dp; `rate_app` action via ReviewManager API |
 | about_loading_skeleton | skeleton | settings variant — background #F9FAEF, padding 24dp; shimmer_duration short4 (200ms), reduced_motion: static_placeholder; 3 items; a11y "Loading app information" |
@@ -107,7 +107,7 @@ The About screen is a shared-flavor informational screen accessible from any per
 |-------|-------------------------|-----------------------------------|----------|
 | about | terms-of-service        | `about_tos_link` tap              | external |
 | about | privacy-policy          | `about_privacy_link` tap          | external |
-| about | licenses                | `about_licenses_link` tap         | external |
+| about | licences                | `about_licenses_link` tap         | push     |
 | about | (previous screen)       | Top app bar `arrow_back` tap      | pop      |
 | about | (Play Store / App Store)| `about_rate_button` tap           | system   |
 

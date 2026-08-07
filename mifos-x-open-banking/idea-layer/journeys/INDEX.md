@@ -1,78 +1,119 @@
 # Journeys Index — mifos-x-open-banking
 
 Schema: `core/schemas/journeys/journey.schema.json` (x-contract-version: 1.0.0)
-Reverse-synced: 2026-07-28 by `/gap-analysis-project` against the shipped source.
-Refreshed: 2026-08-02 by `/idea-sync` (source-truth pass) — roster 20 → 23, `send-money-payment` journey added.
+Regenerated: 2026-08-06 by `/idea-sync` — seven-type payments rewrite + OBP eviction.
 Flow linkage: run `/idea journey link` to wire `flows[]` bidirectional refs to `idea-layer/flows/*.yaml`.
+
+**This app is consumer-only.** The field-officer persona and its journeys were removed on
+2026-08-02; see the "Removed" section below.
 
 ---
 
 ## Journey Inventory
 
-| id | persona | archetype | # screens | tier | release phase | features covered |
-|----|---------|-----------|-----------|------|---------------|-----------------|
-| [onboarding-consent](onboarding-consent.yaml) | Priya | first-time user | 4 | maximum | P0 | consent-onboarding, accounts |
-| [account-browsing](account-browsing.yaml) | Priya | returning account checker | 2 | medium | P0 | accounts, balances |
-| [transaction-review](transaction-review.yaml) | Priya | transaction investigator | 2 | medium | P0 | transactions |
-| [consent-management](consent-management.yaml) | Priya | consent steward | 2 | maximum | P0 | consent-dashboard |
-| [home-overview](home-overview.yaml) | Priya | daily pulse check | 1 | minimal | P0 | home |
-| [recurring-and-statements](recurring-and-statements.yaml) | Priya | commitments reviewer | 6 | medium | P1 | standing-orders, direct-debits, scheduled-payments, statements, accounts (account-detail entry) |
-| [settings-and-profile](settings-and-profile.yaml) | Priya | personalisation manager | 2 | minimal | P0 | settings, licences |
-| [developer-full-surface](developer-full-surface.yaml) | Sam | expert AISP auditor | 5 | maximum | P2 | account-holder, product, beneficiaries, accounts (entry) |
-| [send-money-payment](send-money-payment.yaml) | Priya | first-time payer | 6 | maximum | P3 | send-money, payment-consent, payment-status |
+| id | archetype | # screens | tier | success metric kind |
+|----|-----------|-----------|------|---------------------|
+| [consumer-authentication](consumer-authentication.yaml) | first-time consumer | 3 | maximum | task_completion |
+| [consumer-accounts-payments](consumer-accounts-payments.yaml) | returning consumer | 11 | maximum | task_completion |
+| [consumer-cards-financing](consumer-cards-financing.yaml) | returning consumer | 6 | maximum | task_completion |
+| [consumer-insights-utilities](consumer-insights-utilities.yaml) | returning consumer | 6 | medium | activation |
+| [consumer-profile-settings](consumer-profile-settings.yaml) | returning consumer | 7 | maximum | task_completion |
 
-Total: 9 journeys, 30 screen-sequence slots.
+Total: 5 journeys.
 
-**Added 2026-08-02:** `send-money-payment` — `flows/send-money-payment.yaml` is `type: happy`
-and was the only happy-path flow with no journey counterpart. Its narrative screen_sequence
-had been authored INTO the flow file (a key that belongs to the journey schema); it is
-preserved verbatim in the new journey and the flow was reshaped to match its eight siblings.
-It describes a **specified, not shipped** surface — all three features carry
-`docs.yaml#spec_ahead_of_source`.
-
-`consent-expired` still has no journey deliberately: it is `type: error`, and journeys model
-happy-path persona narratives.
-
-**Removed 2026-07-28:** `pfm-review` — all four of its screens (pfm-dashboard,
-spending-by-category, budgets, recurring-subscriptions) were spec-only and have been
-deleted. `settings-and-profile` lost its profile step and gained licences;
-`developer-full-surface` lost its atm-locator step and renamed party → account-holder.
+> **`consumer-cards-financing` is no longer about cards** (2026-08-07). Its two opening steps,
+> `cards` and `card-detail`, were removed with those screens; it is now
+> **"Consumer Recurring Payments Review"**, 8 → 6 steps, entering on `transactions`. The `id` was
+> deliberately **not** renamed — `screens/standing-order-detail/flow.yaml` and
+> `screens/direct-debit-detail/flow.yaml` both reference it, and renaming would break those refs
+> to buy a better label. Read the `name`, not the `id`. See "Removed 2026-08-07" below.
 
 ---
 
-## Screen Coverage (23 / 23)
+## Removed 2026-08-06 (`/idea-sync` — seven-type payments rewrite + OBP eviction)
 
-| screen | covered by journey(s) |
-|--------|-----------------------|
-| user-onboarding | onboarding-consent |
-| login | onboarding-consent |
-| consent-callback | onboarding-consent |
-| accounts | onboarding-consent, account-browsing, developer-full-surface |
-| account-detail | account-browsing, recurring-and-statements, developer-full-surface |
-| transactions | transaction-review |
-| transaction-detail | transaction-review |
-| consent-list | consent-management |
-| consent-detail | consent-management |
-| home | home-overview |
-| standing-orders | recurring-and-statements |
-| direct-debits | recurring-and-statements |
-| scheduled-payments | recurring-and-statements |
-| statements | recurring-and-statements |
-| statement-detail | recurring-and-statements |
-| settings | settings-and-profile |
-| licences | settings-and-profile |
-| account-holder | developer-full-surface |
-| product | developer-full-surface |
-| beneficiaries | developer-full-surface |
-| send-money | send-money-payment |
-| payment-consent | send-money-payment |
-| payment-status | send-money-payment |
+| Journey | Why |
+|---|---|
+| `consumer-forgot-password` | **There is no in-app password under FAPI.** The PSU authenticates on HSBC's own site; this app never receives a credential, so there is nothing to recover. The whole journey described a capability the architecture cannot have. |
+| `send-money-payment` | Superseded. It walked the linear `send-money → amount → confirm → result` form, which no longer exists. Its coverage now lives inside `consumer-accounts-payments`, extended with the app-to-app authorisation step. |
 
-Coverage: **23 / 23** (100%).
+Edits to surviving journeys, all for the same reason — they walked screens that were deleted:
 
-The denominator was stale at 20 — it predated the 2026-07-30 PISP scope reversal that added
-the three payment-initiation screens. 20/20 read as complete while three roster members were
-outside the table entirely. The last three rows are covered by SPEC, not by shipped source.
+- **`consumer-accounts-payments`** — the `transaction-tags` and `send-money*` steps were replaced
+  by `payments → pay-domestic-single → beneficiaries → payment-consent → payment-status`. The
+  **`payment-consent` step is new and load-bearing**: the PSU leaves the app entirely to
+  authorise at HSBC, which is the single largest drop-off risk in the flow and did not exist in
+  the old journey at all. `has_payments` was also dropped from `capabilities_used` — that
+  capability means in-app-purchase / store-billing compliance, not bank payment initiation.
+- **`consumer-cards-financing`** — the `standing-order-edit` step was removed (a PISP may not
+  amend or cancel a standing order) and replaced with a hop to the payments hub to create a new
+  one. The `standing-order-detail` success signal no longer asks for "recent executions": OBIE
+  exposes **no per-execution status**, so that signal asked for data that cannot be obtained.
+- **`consumer-insights-utilities`** — the `fx-rates → send-money` pair was replaced by
+  `payments → pay-international-single`, and the success metric retargeted. OBIE has no FX rate
+  endpoint, so "live FX rates visible" was never a producible signal.
+- **`consumer-profile-settings`** — the `change-password` step and its failure mode were removed.
+  Its failure modes now cover the consent lifecycle instead: revoked-at-the-bank, and the
+  90-day reconfirmation lapse (which is the designed default, not a failure).
+- **`consumer-authentication`** — preconditions and failure modes rewritten off DirectLogin.
+  "Wrong credentials" is gone (the app has no credential fields); added state/nonce mismatch,
+  PSU-denies-at-bank, and mTLS handshake failure.
+
+---
+
+## Removed 2026-08-07 (repository owner — cards deleted)
+
+No journey was deleted. One was retargeted:
+
+- **`consumer-cards-financing`** — the opening `cards` → `card-detail` pair was removed with
+  those two screens. **OBIE has no card resource**: a card is an `Account` whose
+  `Account[].SchemeName` is `UK.OBIE.PAN`, which is why the `Card` and `CardAccountRef` DTOs were
+  already deleted on 2026-08-06. The screens were spared then on the argument that filtering the
+  accounts list to PAN entries is a legitimate surface; the repository owner has overruled it —
+  the feature came from the OLD OBP PLANNING and goes with it.
+
+  The journey survives because its remaining six steps were never card-scoped: `transactions`,
+  `standing-orders`, `direct-debits`, `direct-debit-detail`, `standing-order-detail`, `payments`.
+  What did not survive is the success metric, which was card-only
+  (`cards_opened → card_detail_viewed`); it is retargeted onto the direct-debit drill-down, the
+  same list→detail shape on a surface that still exists. The `card data load failure` mode is
+  replaced by the **403-with-empty-body on stale SCA**, which is the real load failure here:
+  `standing-orders` and `direct-debits` both sit behind the PSD2 RTS Article 10 boundary while
+  `transactions` keeps working, and there is no error code to key on.
+
+  `name` and `description` now read "Consumer Recurring Payments Review". The `id` is unchanged
+  and is the only thing still saying "cards".
+
+---
+
+## Coverage gaps owed
+
+The seven payment types now have one journey between them (`consumer-accounts-payments`, which
+walks domestic single only). Six type screens are journey-uncovered:
+
+`pay-domestic-scheduled` · `pay-domestic-standing-order` · `pay-international-scheduled` ·
+`pay-international-standing-order` · `pay-vrp-mandate`
+
+**`pay-vrp-mandate` is the most valuable gap.** It is the only feature with a lifecycle —
+create once, pay many times with no re-authentication, revoke — and three states that no other
+journey can exercise: the mandate that is *authorised but silently failing*
+(`UK.OBIE.ExemptionNotApplied` after the PSU deletes the payee at the bank), the mandate revoked
+*out-of-band*, and the `400 U011` that must render as "you revoked this" rather than as an error.
+
+Also still uncovered: `account-holder` · `consent-callback` · `consent-detail` · `consent-list` ·
+`product` · `scheduled-payments` · `statement-detail` · `statements` · `user-onboarding`.
+
+---
+
+## Removed 2026-08-02 (`/idea-sync` — consumer-only scope)
+
+The field-officer persona was dropped. Deleted journeys: `fo-authentication-registration`,
+`fo-customer-lifecycle`, `fo-operations-management`.
+
+`consumer-insights-utilities` was edited, not deleted: its opening `pfm-dashboard` step and the
+`pfm_engagement_rate` metric were removed (PFM was dropped in the same pass and never built).
+
+Earlier removal, recorded 2026-07-28: `pfm-review` — its four screens were spec-only.
 
 ---
 
@@ -80,27 +121,21 @@ outside the table entirely. The last three rows are covered by SPEC, not by ship
 
 | check | status | notes |
 |-------|--------|-------|
-| J1 — every journey YAML has required top-level fields | PASS | id, version, persona, goal, success_metric, screen_sequence, expected_outcome present in all 9 |
-| J2 — id matches filename stem | PASS | all 9 file stems match their `id:` value |
-| J3 — screen_sequence minItems=1 | PASS | minimum 1 screen (home-overview); maximum 6 (recurring-and-statements, send-money-payment) |
-| J4 — success_metric.kind ∈ enum | PASS | all use valid enum values (activation, task_completion, retention, satisfaction, time_to_value) |
-| J5 — tier ∈ enum | PASS | maximum / medium / minimal used correctly |
-| J6 — preconditions and failure_modes present on high-risk journeys | PASS | all maximum-tier journeys have both; minimal-tier journeys have failure_modes |
-| J7 — INDEX.md covers all journey ids | PASS | all 9 journeys listed above |
-
-The J1/J2 rows already read "all 9" before this pass while the inventory table listed 8 and
-the total said 8 — the compliance section had been written against a 9-journey roster that
-the rest of the file did not describe. Adding `send-money-payment` makes all three agree.
+| J1 — required top-level fields present | PASS | id, version, persona, goal, success_metric, screen_sequence, expected_outcome present in all 5 |
+| J2 — id matches filename stem | PASS | all 5 stems match their `id:` value |
+| J3 — screen_sequence minItems=1 | PASS | minimum 3; maximum 11 (consumer-accounts-payments) |
+| J4 — success_metric.kind ∈ enum | PASS | task_completion (4), activation (1) |
+| J5 — tier ∈ enum | PASS | maximum (4), medium (1) |
+| J6 — preconditions + failure_modes on high-risk journeys | PASS | present on all maximum-tier journeys |
+| J7 — INDEX.md covers all journey ids | PASS | all 5 on-disk journeys listed above |
 
 ---
 
 ## Known Schema Conflict (report-only, not a RULE-JOURNEY-001 failure)
 
-The schema pattern for `screen_id`, `feature_id`, `recovery_screen`, and `fallback_screen_id`
-is `^[a-z][a-zA-Z0-9]*$` (camelCase only, no hyphens). This project uses kebab-case screen
-IDs (e.g. `consent-detail`, `user-onboarding`) matching the `screens/` directory structure.
-Per the task directive ("screen_id is a free string, kebab is fine"), kebab IDs are used
-throughout. **Action required**: update the project's local `journey.schema.json` pattern
-to `^[a-z][a-z0-9-]*$` (matching the JourneyId pattern) so validators accept these IDs,
-OR add an `x-allow-kebab: true` annotation. Alternatively, run `sed` to convert screen_ids
-to camelCase once a canonical mapping is agreed.
+The schema pattern for `screen_id`, `feature_id`, `recovery_screen` and `fallback_screen_id` is
+`^[a-z][a-zA-Z0-9]*$` (camelCase only, no hyphens). This project uses kebab-case screen IDs
+matching the `screens/` directory structure. Per the standing directive ("screen_id is a free
+string, kebab is fine"), kebab IDs are used throughout. **Action required**: update the
+project's local `journey.schema.json` pattern to `^[a-z][a-z0-9-]*$`, or add an
+`x-allow-kebab: true` annotation.

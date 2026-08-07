@@ -1,9 +1,9 @@
 ---
-ui_yaml_sha: c36795ca8c8fa8dd5422e791622215153a0b133b94e0c9eaae9f77172b33187d
-design_md_hash: f734ecfba28b3b0688cbd7ca6f3d7fca27febb15fd021d72a4518ae0e3a4200d
-app_shell_hash: 7b9c63f9aee4f5b5005b1d7533e7f5feab6427f398954987c34ee0f382b0ed69
-design_read_hash: 513c061d12f3a90e84d6e98e1e037b131e59fa3ca5c5f3c0abfc6ba87d24bcaf
-content_hash: 02c0a664c8d2a532370bd567610c91146ad35069180cdb1169339d02165d7f63
+ui_yaml_sha: 2bb5d799cf0e1ebbbee3dc73ac5ea4e421ba891555c1b4be246901bc7d8be29c
+design_md_hash: dad4a3ee16afd9663516aa33ebf1647c1d6ede5dc90a1c9bb2c448cd63c225fb
+app_shell_hash: e267a146a693f7d8b57131c73d180b6010ff34beca799edb4ca3c85c5879e0b4
+design_read_hash: 8f83034d22434d75ef7d377035c51c37ef557f4bbb2e0bf510409a4804964a50
+content_hash: 29143133e799cfc8fb3f614354936f072b654e50417f98d12d874a098a9bc950
 
 design_read_aesthetic: minimalist-ui
 design_read_dials: {variance: 3, motion: 2, density: 5}
@@ -14,8 +14,8 @@ feature: standing-orders
 state: error
 state_visibility: error
 
-project_id: 'null'
-design_system_id: 'null'
+project_id: '17153754672098888646'
+design_system_id: '2047482829824847747'
 
 generated_by: stitch-prompt-build.ts v2.0.0
 prompt_template_version: stitch-per-state-v3.0.0
@@ -24,8 +24,8 @@ craft_rules_version: v1.0.0
 
 # standing-orders — error state
 
-> Auto-generated from screens/standing-orders/ui.yaml @ SHA 5c61d8edb6988076
-> Stitch DesignSystem: (pending DESIGN.md upload — run /idea-feature-stitch sub-plan 02)
+> Auto-generated from screens/standing-orders/ui.yaml @ SHA 483dec130d191aa2
+> Stitch DesignSystem: 2047482829824847747
 > DO NOT redeclare colors / fonts / spacing — they live in DESIGN.md.
 
 ↓↓↓ MOCKUP PROMPT
@@ -42,22 +42,23 @@ craft_rules_version: v1.0.0
 - responsive: any multi-column region MUST be mobile-first and collapse to a single column at narrow/phone widths — never a fixed multi-column grid with no single-column fallback.
 
 ## Composition (top → bottom)
-1. **progress_indicator**
+1. **progress_circular**
 2. **icon_button** (#back_button) — icon: "arrow_back", on_click: { action: navigate_back, target: account-detail }
-3. **text** (#summary_row)
+3. **text** (#summary_row) — content: "{strings.standing_orders_summary_format}"
 4. **list** (#standing_orders_list) — "standing_orders_list"
    - **card** (#standing_order_card) — "standing_order_card"
-      - **text** (#so_payee_name)
-      - **badge** (#so_status_badge)
-      - **text** (#so_amount)
-      - **text** (#so_frequency)
-      - **text** (#so_next_date)
-      - **text** (#so_final_date)
-      - **text** (#so_sort_code)
-      - **text** (#so_payment_ref)
-5. **empty_state** (#empty_standing_orders) — title: "{strings.standing_orders_empty_title}", icon: "autorenew"
+      - **text** (#so_payee_name) — content: "{item.payeeName}"
+      - **status_chip** (#so_status_badge) — label: "{item.statusLabel}"
+      - **text** (#so_amount) — content: "{item.amountLabel} {item.currencyLabel}"
+      - **text** (#so_frequency) — content: "{item.frequencyLabel}"
+      - **text** (#so_next_date) — content: "{strings.standing_orders_next_prefix} {item.nextDateLabel}"
+      - **text** (#so_final_date) — content: "{strings.standing_orders_final_prefix} {item.finalDateLabel}"
+      - **text** (#so_sort_code) — content: "{item.sortCodeLabel}"
+      - **text** (#so_payment_ref) — content: "{strings.standing_orders_ref_prefix} {item.referenceLabel}"
+5. **empty_state** (#empty_standing_orders) — "{strings.standing_orders_empty_title}"
+   - **button** (#empty_create_button) — label: "{strings.standing_orders_empty_cta}", on_click: { action: navigate, target: standing-order-create }
 6. **empty_state** (#unsupported_standing_orders) — title: "{strings.standing_orders_unsupported_title}", icon: "info_outline"
-7. **empty_state** (#error_state) — "{strings.standing_orders_error_title}"
+7. **error_state** (#error_state) — "{strings.standing_orders_error_title}"
    - **button** (#retry_button) — label: "{strings.standing_orders_retry}", on_click: { action: retryload }
 
 ## State-specific behavior
@@ -72,7 +73,7 @@ craft_rules_version: v1.0.0
 ## Shell (app-shell resolved for this state)
 - Home: navigates to home
 - Accounts: navigates to accounts
-- Pay: navigates to send-money
+- Pay: navigates to payments
 - More: navigates to settings
 - Render MUST keep nav/bar elements consistent with the list above — present or absent, never partial.
 

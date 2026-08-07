@@ -5,7 +5,8 @@ feature_id: account-holder
 screen_id: account-holder
 archetype: detail_screen
 name: "Account Holder"
-status: implemented
+# status: REMOVED 2026-08-04 (CROSS_LEAK repair — sibling-layout.json assigns `status` to
+# the docs sibling). This copy held `implemented`; docs.yaml is the single owner.
 quality_score: 96
 initial_state: loading
 
@@ -155,7 +156,7 @@ components:
   - type: text
     id: loading_caption
     state_binding: [loading]
-    value: "{strings.account_holder.loading_caption}"
+    content: "{strings.account_holder.loading_caption}"
     style: bodyMedium
     color: "onSurfaceVariant"
     test_tag: "accountHolder:loadingCaption"
@@ -179,7 +180,10 @@ components:
     children:
       - type: avatar
         id: avatar
-        value: "{profile.initials}"
+        # `value` -> `initials` 2026-08-04 (/idea-sync, finding R-1c). media.yaml declares
+        # avatar props [src, alt, initials, icon]; there is no value slot, and the binding
+        # already resolved profile.initials, so the key was simply misnamed.
+        initials: "{profile.initials}"
         test_tag: "accountHolder:avatar"
         accessibility_label: "{strings.account_holder.avatar_accessibility}"
         test_context:
@@ -190,7 +194,7 @@ components:
       - type: text
         id: display_name
         role: title
-        value: "{profile.displayName}"
+        content: "{profile.displayName}"
         style: headlineMedium
         test_tag: "accountHolder:displayName"
         accessibility_label: "{strings.account_holder.name_prefix}: {profile.displayName}"
@@ -202,7 +206,7 @@ components:
       - type: text
         id: role_label
         role: subtitle
-        value: "{profile.roleLabel}"
+        content: "{profile.roleLabel}"
         style: bodyMedium
         color: "onSurfaceVariant"
         test_tag: "accountHolder:roleLabel"
@@ -238,7 +242,7 @@ components:
       - type: list_item
         id: email_row
         leading_icon: email
-        supporting_text: "{strings.account_holder.label_email}"
+        headline: "{strings.account_holder.label_email}"
         trailing_content: "{profile.email}"
         trailing_style: bodyMedium
         test_tag: "accountHolder:emailRow"
@@ -252,7 +256,7 @@ components:
       - type: list_item
         id: mobile_row
         leading_icon: phone_android
-        supporting_text: "{strings.account_holder.label_mobile}"
+        headline: "{strings.account_holder.label_mobile}"
         trailing_content: "{profile.mobile}"
         trailing_style: bodyMedium
         test_tag: "accountHolder:mobileRow"
@@ -266,7 +270,7 @@ components:
       - type: list_item
         id: address_row
         leading_icon: home
-        supporting_text: "{strings.account_holder.label_address}"
+        headline: "{strings.account_holder.label_address}"
         trailing_content: "{profile.addressLine}"
         trailing_style: bodyMedium
         test_tag: "accountHolder:addressRow"
@@ -310,6 +314,8 @@ components:
       data_driven: true
     children:
       - type: button
+        keyboard:
+          focusable: true
         id: retry_button
         variant: filled
         label: "{strings.account_holder.action_retry}"

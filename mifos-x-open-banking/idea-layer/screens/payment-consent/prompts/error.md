@@ -1,90 +1,70 @@
----
-ui_yaml_sha: 54a097fb67c3115dd7ba3cc68bc7e927709831cbacc5a9ed03ce54409ef99cb3
-design_md_hash: f734ecfba28b3b0688cbd7ca6f3d7fca27febb15fd021d72a4518ae0e3a4200d
-app_shell_hash: 7b9c63f9aee4f5b5005b1d7533e7f5feab6427f398954987c34ee0f382b0ed69
-design_read_hash: 513c061d12f3a90e84d6e98e1e037b131e59fa3ca5c5f3c0abfc6ba87d24bcaf
-content_hash: 2aea0c263b37e05be8fe2603ac18cd9a22a6098aedab9b665765a253e0ab4dd4
+# payment-consent · state: error
 
-design_read_aesthetic: minimalist-ui
-design_read_dials: {variance: 3, motion: 2, density: 5}
-aesthetic_variant_override: null
-archetype: error_state
+> payment-consent · error · headless/transitional · Open Banking — Trust Blue (M3, seed #266489)
+> Every quoted string is VERBATIM from `_strings/strings.yaml`. Do not paraphrase or invent.
+> SCA return leg: wrong copy tells a PSU to retry what cannot be retried, or implies money moved.
 
-feature: payment-consent
-state: error
-state_visibility: error
-
-project_id: 'null'
-design_system_id: 'null'
-
-generated_by: stitch-prompt-build.ts v2.0.0
-prompt_template_version: stitch-per-state-v3.0.0
-craft_rules_version: v1.0.0
 ---
 
-# payment-consent — error state
+## Layout — one shape for all six error types
 
-> Auto-generated from screens/payment-consent/ui.yaml @ SHA d1ae91a9066cfecb
-> Stitch DesignSystem: (pending DESIGN.md upload — run /idea-feature-stitch sub-plan 02)
-> DO NOT redeclare colors / fonts / spacing — they live in DESIGN.md.
+**Shell**: `TopAppBar` titled "Authorising payment", no bottom navigation, no leading icon.
+**Content**: vertically centred column, padding `spacing.md`, gap `spacing.lg`.
 
-↓↓↓ MOCKUP PROMPT
+1. **Icon** — `error_outline`, `icon.xl` (48dp), `colors.error`. Contrast 6.1:1, AA pass.
+2. **Title** — "Authorisation could not be completed" (`headlineSmall`, `colors.on_surface`,
+   centred). ONE title key covers every error type; per-type titles are UNSOURCED.
+3. **Body** — `{error.message}` (`bodyMedium`, `colors.on_surface_variant`, centred, max 280dp).
+4. **`FilledButton` (`restart_authorisation_button`)** — conditional. "Start again",
+   `labelLarge`, `colors.primary`/`colors.on_primary`, `radius.full`, min 48dp, padding
+   horizontal `spacing.xl`. a11y: "Start the payment authorisation again".
+5. **`TextButton` (`abandon_button`)** — always visible. "Discard payment", `labelLarge`,
+   `colors.on_surface_variant`, min 48dp, padding horizontal `spacing.lg`.
+   a11y: "Discard this payment. No money will be sent."
 
-> DO NOT invent navigation, tabs, or screens beyond the declared app-shell (Home, Accounts, Pay, More) plus the composition below. Every nav item you render MUST come from that list.
-> Only elements that navigate or perform an action may look tappable (cursor, ripple, pressed state). DO NOT add tap affordances to decorative content — page titles, section headings, avatars, standalone icons, badges, and static labels are NOT interactive.
+---
 
-## Archetype: empty_state
+## The six error types
 
-## Layout
-- type: scrollable_column
-- padding: default
-- alignment: start
-- responsive: any multi-column region MUST be mobile-first and collapse to a single column at narrow/phone widths — never a fixed multi-column grid with no single-column fallback.
+| Type | Cause | Body copy (verbatim) | Restart CTA |
+|---|---|---|:---:|
+| `StateMismatch` | returned `state` ≠ pending authorisation | "This authorisation could not be verified, so the payment was stopped. Please start again." | Hidden |
+| `NoPendingAuthorisation` | app restarted mid-authorisation | "There's no payment waiting to be authorised. Please start again." | Hidden |
+| `CodeExpired` | `400 invalid_grant` | "The authorisation took too long and expired. No money was sent." | Shown |
+| `ConsentRejected` | `Data.Status == "RJCT"` | "You declined this payment at your bank. Nothing has been sent." | Hidden |
+| `AuthorisationTimedOut` | still `AWAU` past the 180 000ms deadline | "Your bank hasn't confirmed this payment yet. You can check again or start over." | Shown |
+| `NetworkError` | IOException / timeout | "No network connection. The payment was not authorised." | Shown |
 
-## Composition (top → bottom)
-1. **progress_indicator** (#authorising_indicator)
-2. **text** (#progress_detail) — content: "{strings.payment_consent.progress_detail}"
-3. **button** (#check_again_button) — label: "{strings.payment_consent.check_again}", on_click: { action: check_again }
-4. **empty_state** (#authorised_state) — title: "{strings.payment_consent.authorised_title}", icon: "verified_user"
-5. **empty_state** (#error_state) — "{strings.payment_consent.error_title}"
-   - **button** (#restart_authorisation_button) — label: "{strings.payment_consent.restart}", on_click: { action: retry_authorisation }
-   - **button** (#abandon_button) — label: "{strings.payment_consent.abandon}", on_click: { action: abandon_payment }
+`abandon_button` is shown for all six.
 
-## State-specific behavior
-- Show an error illustration, a short message, and a single Retry action. No content rails visible.
+---
 
-## Content source manifest
-- (no demo collections bound for this state)
+## Copy rules
 
-## Components (vocabulary used in this prompt)
-- (no named components extracted — see composition)
+- Every body states plainly that nothing was sent, or that the payment was stopped. Do not drop
+  or soften that clause — it is the whole point of the screen.
+- No blame. "This authorisation could not be verified", not "your security check failed".
+- `StateMismatch` does not explain the attack vector.
+- `CodeExpired` and `ConsentRejected` are UNRECOVERABLE against the existing consent. The
+  restart CTA offered on `CodeExpired` stages a NEW consent — it never re-authorises the old
+  one. Copy must never suggest re-trying this payment; "Start again" is the accurate framing.
 
-## Shell (app-shell resolved for this state)
-- Home: navigates to home
-- Accounts: navigates to accounts
-- Pay: navigates to send-money
-- More: navigates to settings
-- Render MUST keep nav/bar elements consistent with the list above — present or absent, never partial.
+Body keys: `error.payment_consent.{state_mismatch, no_pending, code_expired, rejected,
+timed_out, network_error}`. Shell/CTA keys: `payment_consent.{screen_title, error_title,
+restart, restart_a11y, abandon, abandon_a11y}` — values as quoted above.
 
-## Tokens (design-tokens roles consumed)
-- Colors: primary / secondary / surface / on-surface / on-surface-variant / error (M3 standard roles).
-- Typography: body-large / title-large (M3 standard roles).
-- Spacing: gap.sm / gap.md / gap.lg.
-- ALL token references are by name from the uploaded design system — no hex literals, no inline size values.
+Tokens: `colors.{surface, on_surface, on_surface_variant, error, primary, on_primary}` ·
+`spacing.md/.lg/.xl` 16/24/32dp · `radius.full` · 48dp touch target · `icon.xl` 48dp.
 
-## Self-Validation Checklist (MANDATORY)
+---
 
-Before returning the rendered mockup, verify ALL of these are true. If any fails, FIX the output and re-render.
+## Restart semantics — load-bearing
 
-- [ ] **Per-state shape:** the render shows ONLY this state ("error"). Do not blend multiple states into one mockup.
-- [ ] **Real content:** every text label, image, and data point reflects the content source manifest above — no numbered generic items, no filler text, no dummy text, no empty strings.
-- [ ] **Token fidelity:** colors come from the uploaded design system (primary/secondary/surface/etc.) by name; spacing comes from declared scale tokens. No invented hex codes, no invented size literals.
-- [ ] **Component vocabulary:** every component in the render maps to a named design-system component (Card, FAB, BottomBar, etc.) — no invented or off-system components.
-- [ ] **Archetype honored:** the layout follows the "empty_state" archetype skeleton — composition order top → bottom matches the Composition section.
-- [ ] **App-shell parity:** if a bottom nav, top app bar, or FAB appears in the render, it matches the resolved shell from the app-shell config. Shell elements are either present-and-consistent OR absent — never partial.
+"Start again" emits `PaymentConsentEvent.RestartAuthorisation` carrying **no `consentId`** by
+design. The originating type screen MUST stage a FRESH consent, build a new `oauth2/authorize`
+URL from the NEW ConsentId, and relaunch. It MUST NOT reuse the handed `consentId` — a consent
+already at `AUTH` cannot be sent back through the authorise leg. The previous staged consent is
+left to expire; no revocation call, since an unauthorised consent cannot be submitted against.
 
-If any of these fail and the fix isn't clear → halt rendering and surface "Self-validation failed at: {checkpoint}."
-
-Return ONLY when all 6 checkpoints pass.
-
-↑↑↑ MOCKUP PROMPT
+Both CTAs are events to the originating screen; there is no self-managed transition out of
+`error`.

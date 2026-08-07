@@ -1,9 +1,9 @@
 ---
-ui_yaml_sha: dc96d4cacfb47fc0a1330ee9b8857815311a8fc26866221878ce072281f45def
-design_md_hash: f734ecfba28b3b0688cbd7ca6f3d7fca27febb15fd021d72a4518ae0e3a4200d
-app_shell_hash: 7b9c63f9aee4f5b5005b1d7533e7f5feab6427f398954987c34ee0f382b0ed69
-design_read_hash: 513c061d12f3a90e84d6e98e1e037b131e59fa3ca5c5f3c0abfc6ba87d24bcaf
-content_hash: fc8d2c37dd575e26c2b5bd0bb4251845a5231ce24f8e426e992358e8cb705024
+ui_yaml_sha: d12e75b67681b6679b10175fd57521fd220ccaff37b8ed05cb6705d09c96f19b
+design_md_hash: dad4a3ee16afd9663516aa33ebf1647c1d6ede5dc90a1c9bb2c448cd63c225fb
+app_shell_hash: e267a146a693f7d8b57131c73d180b6010ff34beca799edb4ca3c85c5879e0b4
+design_read_hash: 8f83034d22434d75ef7d377035c51c37ef557f4bbb2e0bf510409a4804964a50
+content_hash: ada11dac6f0f5ef0cfde42a6dd3f68f20f8f2c29d9b1798f560ffb74ca77151a
 
 design_read_aesthetic: minimalist-ui
 design_read_dials: {variance: 3, motion: 2, density: 5}
@@ -14,8 +14,8 @@ feature: settings
 state: content
 state_visibility: content
 
-project_id: 'null'
-design_system_id: 'null'
+project_id: '17153754672098888646'
+design_system_id: '2047482829824847747'
 
 generated_by: stitch-prompt-build.ts v2.0.0
 prompt_template_version: stitch-per-state-v3.0.0
@@ -24,8 +24,8 @@ craft_rules_version: v1.0.0
 
 # settings — content state
 
-> Auto-generated from screens/settings/ui.yaml @ SHA a0f1926d8480dc70
-> Stitch DesignSystem: (pending DESIGN.md upload — run /idea-feature-stitch sub-plan 02)
+> Auto-generated from screens/settings/ui.yaml @ SHA f6d5a5d44fdd77c9
+> Stitch DesignSystem: 2047482829824847747
 > DO NOT redeclare colors / fonts / spacing — they live in DESIGN.md.
 
 ↓↓↓ MOCKUP PROMPT
@@ -45,11 +45,11 @@ craft_rules_version: v1.0.0
 1. **section_header** (#appearance_header) — label: "{strings.settings.section.appearance}"
 2. **select** (#theme_row) — label: "{strings.settings.theme.label}", on_click: { action: togglethememenu }
 3. **section_header** (#account_header) — label: "{strings.settings.section.account}"
-4. **list_item** (#consents_row) — "{strings.settings.consents.title}" (horizontal content rail)
+4. **list_item** (#consents_row) — 3 items: "content", "empty", "error"
 5. **section_header** (#about_header) — label: "{strings.settings.section.about_legal}"
-6. **list_item** (#privacy_row) — "{strings.settings.privacy.title}" (horizontal content rail)
-7. **list_item** (#licences_row) — "{strings.settings.licences.title}" (horizontal content rail)
-8. **list_item** (#app_version_row) — "{strings.settings.app_version.title}" (horizontal content rail)
+6. **list_item** (#privacy_row) — 3 items: "content", "empty", "error"
+7. **list_item** (#licences_row) — 3 items: "content", "empty", "error"
+8. **list_item** (#app_version_row) — 3 items: "content", "empty", "error"
 9. **empty_state** (#settings_empty) — title: "{strings.settings.empty.title}"
 10. **error_state** (#settings_error) — "{strings.settings.error.title}"
    - **button** (#retry_button) — label: "{strings.settings.error.retry}", on_click: { action: retryload }
@@ -58,7 +58,10 @@ craft_rules_version: v1.0.0
 - Fully populated with the real demo content listed below. This is the screen's initial state.
 
 ## Content source manifest
-- (no demo collections bound for this state)
+- demo-data.states[0..2]
+- demo-data.states[0..2]
+- demo-data.states[0..2]
+- demo-data.states[0..2]
 
 ## Components (vocabulary used in this prompt)
 - (no named components extracted — see composition)
@@ -66,7 +69,7 @@ craft_rules_version: v1.0.0
 ## Shell (app-shell resolved for this state)
 - Home: navigates to home
 - Accounts: navigates to accounts
-- Pay: navigates to send-money
+- Pay: navigates to payments
 - More: navigates to settings
 - Render MUST keep nav/bar elements consistent with the list above — present or absent, never partial.
 

@@ -1,92 +1,77 @@
----
-ui_yaml_sha: 3b39a920489b8b3036a1fa0fd455a1a61de717381518373fa30017be9c33fd8f
-design_md_hash: f734ecfba28b3b0688cbd7ca6f3d7fca27febb15fd021d72a4518ae0e3a4200d
-app_shell_hash: 7b9c63f9aee4f5b5005b1d7533e7f5feab6427f398954987c34ee0f382b0ed69
-design_read_hash: 513c061d12f3a90e84d6e98e1e037b131e59fa3ca5c5f3c0abfc6ba87d24bcaf
-content_hash: acead0c7ab2f2b4e35b7ca440ebb98c7b7dd19a9f5a0febfb0b252023097b35c
+# Payment Status — Error State Prompt
 
-design_read_aesthetic: minimalist-ui
-design_read_dials: {variance: 3, motion: 2, density: 5}
-aesthetic_variant_override: null
-archetype: error_state
+> Feature: payment-status · State: error
+> Design system: Open Banking — Trust Blue (Material 3, seed #266489)
+> Every quoted string below is VERBATIM from `_strings/strings.yaml`. Do not paraphrase.
 
-feature: payment-status
-state: error
-state_visibility: error
+## Shell
 
-project_id: 'null'
-design_system_id: 'null'
-
-generated_by: stitch-prompt-build.ts v2.0.0
-prompt_template_version: stitch-per-state-v3.0.0
-craft_rules_version: v1.0.0
----
-
-# payment-status — error state
-
-> Auto-generated from screens/payment-status/ui.yaml @ SHA a4984d6d05389a92
-> Stitch DesignSystem: (pending DESIGN.md upload — run /idea-feature-stitch sub-plan 02)
-> DO NOT redeclare colors / fonts / spacing — they live in DESIGN.md.
-
-↓↓↓ MOCKUP PROMPT
-
-> DO NOT invent navigation, tabs, or screens beyond the declared app-shell (Home, Accounts, Pay, More) plus the composition below. Every nav item you render MUST come from that list.
-> Only elements that navigate or perform an action may look tappable (cursor, ripple, pressed state). DO NOT add tap affordances to decorative content — page titles, section headings, avatars, standalone icons, badges, and static labels are NOT interactive.
-
-## Archetype: detail_screen
+Top app bar: leading `back_button` (arrow_back), title "Payment status". Bottom nav visible,
+Pay tab active. Error content centred vertically in the scrollable zone.
 
 ## Layout
-- type: scrollable_column
-- padding: default
-- alignment: start
-- responsive: any multi-column region MUST be mobile-first and collapse to a single column at narrow/phone widths — never a fixed multi-column grid with no single-column fallback.
 
-## Composition (top → bottom)
-1. **progress_indicator**
-2. **icon_button** (#back_button) — icon: "arrow_back", on_click: { action: navigate_back, target: send-money }
-3. **chip** (#status_chip) — label: "{content.statusLabel}"
-4. **card** (#payment_summary)
-5. **text** (#in_progress_note) — content: "{strings.payment_status.in_progress_note}"
-6. **button** (#refresh_button) — label: "{strings.payment_status.refresh}", on_click: { action: refresh_status }
-7. **button** (#new_payment_button) — label: "{strings.payment_status.new_payment}", on_click: { action: navigate, target: send-money }
-8. **empty_state** (#error_state) — "{strings.payment_status.error_title}"
-   - **button** (#retry_button) — label: "{strings.payment_status.retry}", on_click: { action: refresh_status }
+```
+error_state (Fill, Auto Layout Vertical, centred, padding=spacing/md, gap=spacing/md)
+  ├─ Icon: error_outline (icon/xl = 48dp, color/error)
+  ├─ Title: "Could not load payment" (headlineSmall, color/onSurface, centre-aligned)
+  ├─ Message: {error.message} (bodyMedium, color/onSurfaceVariant, centre-aligned)
+  └─ retry_button (Hug × 48dp, filled, radius/full, color/primary / color/onPrimary)
+        Label: "Try again"
+        Visible only when error.type is retryable
+```
 
-## State-specific behavior
-- Show an error illustration, a short message, and a single Retry action. No content rails visible.
+`ui.yaml` binds ONE title key for every error type. Per-type titles ("Payment not found",
+"Session expired", "Connection unavailable", "Something went wrong") are **UNSOURCED — no key
+exists for them.** Render the single title above on every sub-variant.
 
-## Content source manifest
-- (no demo collections bound for this state)
+## Error types — only the message varies
 
-## Components (vocabulary used in this prompt)
-- (no named components extracted — see composition)
+| Type | Trigger | Message (verbatim) | retry_button |
+|---|---|---|---|
+| `PaymentNotFound` | 404 / 400 U011 | "This payment could not be found." | hidden — the resource does not exist |
+| `TokenExpired` | 401 | "Your session has expired. Sign in again to view this payment." | shown |
+| `ConsentRevoked` | 403 | "Permission for this payment was withdrawn. Payments already completed are not affected." | hidden — a retry returns another 403 |
+| `NetworkError` | IOException / timeout | "No network connection. Check your connection and try again." | shown |
 
-## Shell (app-shell resolved for this state)
-- Home: navigates to home
-- Accounts: navigates to accounts
-- Pay: navigates to send-money
-- More: navigates to settings
-- Render MUST keep nav/bar elements consistent with the list above — present or absent, never partial.
+Copy rule for `ConsentRevoked`: the clause "Payments already completed are not affected" is
+load-bearing. A revoked consent does not reverse a payment that settled before revocation.
+Do not shorten or reword it.
 
-## Tokens (design-tokens roles consumed)
-- Colors: primary / secondary / surface / on-surface / on-surface-variant / error (M3 standard roles).
-- Typography: body-large / title-large (M3 standard roles).
-- Spacing: gap.sm / gap.md / gap.lg.
-- ALL token references are by name from the uploaded design system — no hex literals, no inline size values.
+## Tokens
 
-## Self-Validation Checklist (MANDATORY)
+Error icon `color/error` · title `color/onSurface` · message `color/onSurfaceVariant` ·
+retry container `color/primary`, retry label `color/onPrimary` · background `color/surface` ·
+button radius `radius/full` · touch target 48dp.
 
-Before returning the rendered mockup, verify ALL of these are true. If any fails, FIX the output and re-render.
+## Accessibility
 
-- [ ] **Per-state shape:** the render shows ONLY this state ("error"). Do not blend multiple states into one mockup.
-- [ ] **Real content:** every text label, image, and data point reflects the content source manifest above — no numbered generic items, no filler text, no dummy text, no empty strings.
-- [ ] **Token fidelity:** colors come from the uploaded design system (primary/secondary/surface/etc.) by name; spacing comes from declared scale tokens. No invented hex codes, no invented size literals.
-- [ ] **Component vocabulary:** every component in the render maps to a named design-system component (Card, FAB, BottomBar, etc.) — no invented or off-system components.
-- [ ] **Archetype honored:** the layout follows the "detail_screen" archetype skeleton — composition order top → bottom matches the Composition section.
-- [ ] **App-shell parity:** if a bottom nav, top app bar, or FAB appears in the render, it matches the resolved shell from the app-shell config. Shell elements are either present-and-consistent OR absent — never partial.
+- `error_state` announces its title to screen readers on render.
+- `retry_button` contentDescription: "Retry loading this payment"
+- `back_button` is always reachable as the exit from every sub-variant.
 
-If any of these fail and the fix isn't clear → halt rendering and surface "Self-validation failed at: {checkpoint}."
+## Copy index — verbatim from `_strings/strings.yaml`
 
-Return ONLY when all 6 checkpoints pass.
+| Key | Value |
+|---|---|
+| `payment_status.error_title` | "Could not load payment" |
+| `payment_status.retry` | "Try again" |
+| `payment_status.retry_a11y` | "Retry loading this payment" |
+| `error.payment_status.not_found` | "This payment could not be found." |
+| `error.payment_status.token_expired` | "Your session has expired. Sign in again to view this payment." |
+| `error.payment_status.consent_revoked` | "Permission for this payment was withdrawn. Payments already completed are not affected." |
+| `error.payment_status.network_error` | "No network connection. Check your connection and try again." |
 
-↑↑↑ MOCKUP PROMPT
+## Removed — unsourced VRP sub-variant
+
+An earlier version of this prompt specified a `MandateRevoked` / VRP sub-variant with a
+"Mandate cancelled" chip, a "Set up a new mandate" CTA and a `strings.error.vrp.revoked` key.
+`payment-status` declares exactly four error types and none is `MandateRevoked`; none of that
+copy exists in `_strings/strings.yaml`. It has been removed rather than rendered as finished
+copy. If the VRP rail needs this treatment, add the keys first.
+
+## Retry safety
+
+Every error here comes from a GET, so retrying has no side effects. The retry_button is hidden
+only where a retry would always fail (404 resource absent, 403 consent terminated) — not
+because retrying would be harmful.

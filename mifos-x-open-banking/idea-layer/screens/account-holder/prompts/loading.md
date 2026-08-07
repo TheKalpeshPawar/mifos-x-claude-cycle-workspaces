@@ -1,9 +1,9 @@
 ---
-ui_yaml_sha: 65f1fedd4b2b56ed2018d06d3add3aaf231333bc85136d75d0e3b6e72317ef66
-design_md_hash: f734ecfba28b3b0688cbd7ca6f3d7fca27febb15fd021d72a4518ae0e3a4200d
-app_shell_hash: 7b9c63f9aee4f5b5005b1d7533e7f5feab6427f398954987c34ee0f382b0ed69
-design_read_hash: 513c061d12f3a90e84d6e98e1e037b131e59fa3ca5c5f3c0abfc6ba87d24bcaf
-content_hash: 2790b8ac0f44eaa94c54498257b7d9a7f0859da1751d4d6e284750e96b483eba
+ui_yaml_sha: e0522b2940cb5c3e0bf4b37561d46261985ad9f937ee66f3a912331fd040ba44
+design_md_hash: dad4a3ee16afd9663516aa33ebf1647c1d6ede5dc90a1c9bb2c448cd63c225fb
+app_shell_hash: e267a146a693f7d8b57131c73d180b6010ff34beca799edb4ca3c85c5879e0b4
+design_read_hash: 8f83034d22434d75ef7d377035c51c37ef557f4bbb2e0bf510409a4804964a50
+content_hash: 278297d683064ef205dddca35fdc3bd3d5d717df03ad113823c83936c92f1147
 
 design_read_aesthetic: minimalist-ui
 design_read_dials: {variance: 3, motion: 2, density: 5}
@@ -14,8 +14,8 @@ feature: account-holder
 state: loading
 state_visibility: loading
 
-project_id: 'null'
-design_system_id: 'null'
+project_id: '17153754672098888646'
+design_system_id: '2047482829824847747'
 
 generated_by: stitch-prompt-build.ts v2.0.0
 prompt_template_version: stitch-per-state-v3.0.0
@@ -24,8 +24,8 @@ craft_rules_version: v1.0.0
 
 # account-holder — loading state
 
-> Auto-generated from screens/account-holder/ui.yaml @ SHA 8570aeb406c8013d
-> Stitch DesignSystem: (pending DESIGN.md upload — run /idea-feature-stitch sub-plan 02)
+> Auto-generated from screens/account-holder/ui.yaml @ SHA 4a480259397f1163
+> Stitch DesignSystem: 2047482829824847747
 > DO NOT redeclare colors / fonts / spacing — they live in DESIGN.md.
 
 ↓↓↓ MOCKUP PROMPT
@@ -42,12 +42,12 @@ craft_rules_version: v1.0.0
 - responsive: any multi-column region MUST be mobile-first and collapse to a single column at narrow/phone widths — never a fixed multi-column grid with no single-column fallback.
 
 ## Composition (top → bottom)
-1. **progress_indicator** (#loading_indicator)
-2. **text** (#loading_caption)
+1. **progress_circular** (#loading_indicator)
+2. **text** (#loading_caption) — content: "{strings.account_holder.loading_caption}"
 3. **card** (#identity_card) — "identity_card"
    - **avatar** (#avatar)
-   - **text** (#display_name)
-   - **text** (#role_label)
+   - **text** (#display_name) — content: "{profile.displayName}"
+   - **text** (#role_label) — content: "{profile.roleLabel}"
 4. **section_header** (#identity_section_header) — label: "{strings.account_holder.section_identity}"
 5. **stack** (#identity_section) — "identity_section"
    - **list_item** (#email_row)
@@ -69,7 +69,7 @@ craft_rules_version: v1.0.0
 ## Shell (app-shell resolved for this state)
 - Home: navigates to home
 - Accounts: navigates to accounts
-- Pay: navigates to send-money
+- Pay: navigates to payments
 - More: navigates to settings
 - Render MUST keep nav/bar elements consistent with the list above — present or absent, never partial.
 

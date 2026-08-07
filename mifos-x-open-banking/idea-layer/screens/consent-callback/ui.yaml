@@ -5,7 +5,8 @@ feature_id: consent-callback
 screen_id: consent-callback
 archetype: empty_state
 name: "Authorisation Callback"
-status: implemented
+# status: REMOVED 2026-08-04 (CROSS_LEAK repair — sibling-layout.json assigns `status` to
+# the docs sibling). This copy held `implemented`; docs.yaml is the single owner.
 quality_score: 95
 i18n_coverage: true
 initial_state: loading
@@ -79,7 +80,7 @@ components:
 
       - type: text
         id: loading_headline
-        value: "{strings.consent_callback_loading_title}"
+        content: "{strings.consent_callback_loading_title}"
         style: titleMedium
         color: "onSurface"
         test_context:
@@ -93,7 +94,7 @@ components:
 
       - type: text
         id: loading_body
-        value: "{strings.consent_callback_loading_body}"
+        content: "{strings.consent_callback_loading_body}"
         style: bodySmall
         color: "onSurfaceVariant"
         test_context:
@@ -136,7 +137,7 @@ components:
 
       - type: text
         id: success_headline
-        value: "{strings.consent_callback_success_title}"
+        content: "{strings.consent_callback_success_title}"
         style: headlineSmall
         color: "onSurface"
         test_context:
@@ -150,7 +151,7 @@ components:
 
       - type: text
         id: success_body
-        value: "{strings.consent_callback_success_body}"
+        content: "{strings.consent_callback_success_body}"
         style: bodyMedium
         color: "onSurfaceVariant"
         test_context:
@@ -179,6 +180,8 @@ components:
       data_driven: false
     children:
       - type: button
+        keyboard:
+          focusable: true
         id: poll_again_button
         test_tag: "callback_check_again"   # ConsentCallbackTestTags.CHECK_AGAIN_BUTTON
         variant: filled
@@ -198,10 +201,9 @@ components:
           data_driven: false
 
   # ── Error state — token exchange failure or Rejected consent ──────────
-  - type: empty_state
+  - type: error_state
     id: error_state
     test_tag: "callback_error"          # ConsentCallbackTestTags.ERROR_STEP
-    variant: error
     state_binding: [error]
     icon: cancel
     title: "{strings.consent_callback_error_title}"
@@ -214,6 +216,8 @@ components:
       data_driven: false
     children:
       - type: button
+        keyboard:
+          focusable: true
         id: retry_button
         test_tag: "callback_error_retry"  # ConsentCallbackTestTags.ERROR_RETRY_BUTTON
         variant: filled
@@ -232,10 +236,9 @@ components:
           data_driven: false
 
   # ── Access Denied state — PSU explicitly declined at HSBC portal ──────
-  - type: empty_state
+  - type: error_state
     id: access_denied_state
     test_tag: "callback_access_denied"  # ConsentCallbackTestTags.ACCESS_DENIED_STEP
-    variant: error
     state_binding: [access_denied]
     icon: block
     title: "{strings.consent_callback_denied_title}"
@@ -248,6 +251,8 @@ components:
       data_driven: false
     children:
       - type: button
+        keyboard:
+          focusable: true
         id: denied_cta_button
         test_tag: "callback_start_over"   # ConsentCallbackTestTags.START_OVER_BUTTON
         variant: outlined
@@ -266,10 +271,9 @@ components:
           data_driven: false
 
   # ── Security Error state — FAPI state/nonce mismatch (CSRF/replay) ────
-  - type: empty_state
+  - type: error_state
     id: security_error_state
     test_tag: "callback_security_error"  # ConsentCallbackTestTags.SECURITY_ERROR_STEP
-    variant: error
     state_binding: [security_error]
     icon: security
     title: "{strings.consent_callback_security_error_title}"
@@ -282,6 +286,8 @@ components:
       data_driven: false
     children:
       - type: button
+        keyboard:
+          focusable: true
         id: security_retry_button
         test_tag: "callback_start_again"  # ConsentCallbackTestTags.START_AGAIN_BUTTON
         variant: filled

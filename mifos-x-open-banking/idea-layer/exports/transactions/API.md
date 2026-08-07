@@ -1,98 +1,70 @@
-# API Reference — Transaction History
+# API — Transactions
 
-| Field    | Value                                  |
-|----------|----------------------------------------|
-| Feature  | transactions                           |
-| Base URL | https://apisandbox.openbankproject.com |
-
----
-
-## GET /obp/v5.1.0/my/banks/{bankId}/accounts/{accountId}/transactions
-
-**Auth:** DirectLogin
-**Tag:** Transactions
-**Trigger:** `loadTransactions()` on ScreenOpened / RetryLoad / ClearFilters; `searchTransactions(query)` on SearchQueryChanged; `filterByType(filter)` on FilterTypeChanged; `filterByDateRange(range)` on DateRangeChanged; `loadNextPage()` on LoadMore
-
-### Path Parameters
-
-| Name      | Type   | Value          | Description                  |
-|-----------|--------|----------------|------------------------------|
-| bankId    | String | gh.29.uk       | OBP bank identifier          |
-| accountId | String | (from session) | Account to fetch history for |
-
-### Query Parameters
-
-| Name           | Type   | In    | Required | Value / Example                      | Description                                |
-|----------------|--------|-------|----------|--------------------------------------|--------------------------------------------|
-| limit          | Int    | query | No       | 20                                   | Page size — default 20 rows per request    |
-| offset         | Int    | query | No       | 0                                    | Pagination offset (0-indexed)              |
-| from_date      | String | query | No       | 2026-04-25T00:00:00.000Z             | ISO-8601 start of date range               |
-| to_date        | String | query | No       | 2026-05-25T23:59:59.999Z             | ISO-8601 end of date range                 |
-| type           | String | query | No       | DEBIT, CREDIT, SEPA_CREDIT_TRANSFERS, UK_FASTER_PAYMENTS_SEND | Transaction type filter (omit for ALL) |
-| sort_direction | String | query | No       | DESC                                 | Newest-first (default DESC)                |
-
-### Response Fields
-
-| Field                      | Type    | Description                                   |
-|----------------------------|---------|-----------------------------------------------|
-| id                         | String  | Transaction identifier                        |
-| this_account               | Object  | Source account reference                      |
-| other_account              | Object  | Counterparty reference                        |
-| other_account.holder       | Object  | Counterparty name / alias info                |
-| other_account.metadata     | Object  | Optional merchant metadata (logo URL)         |
-| details.type               | String  | Transaction type (e.g. "DEBIT")               |
-| details.description        | String  | Merchant or reference description             |
-| details.posted             | String  | ISO-8601 posted timestamp                     |
-| details.completed          | String  | ISO-8601 completed timestamp                  |
-| details.new_balance.currency | String| Account balance currency after transaction    |
-| details.new_balance.amount | String  | Account balance after transaction             |
-| details.value.currency     | String  | Transaction currency (e.g. "GBP")             |
-| details.value.amount       | String  | Signed amount (e.g. "-42.50", "3200.00")      |
-| metadata                   | Object  | User metadata (tags, comments, narrative)     |
-
-### Sample Response (single item)
-
-```json
-{
-  "id": "txn_20260525_001",
-  "this_account": { "id": "acc-primary-0130" },
-  "other_account": {
-    "holder": { "name": "Tesco PLC", "is_alias": false },
-    "metadata": { "image_url": "https://cdn.obp.io/logos/tesco.png" }
-  },
-  "details": {
-    "type": "DEBIT",
-    "description": "TESCO STORES 1234",
-    "posted": "2026-05-25T14:32:00Z",
-    "completed": "2026-05-25T14:32:00Z",
-    "new_balance": { "currency": "GBP", "amount": "4207.50" },
-    "value": { "currency": "GBP", "amount": "-42.50" }
-  },
-  "metadata": { "narrative": null, "comments": [], "tags": [] }
-}
-```
-
-### Error Codes
-
-| Code | Message                              | UI Behaviour                                      |
-|------|--------------------------------------|---------------------------------------------------|
-| 400  | Invalid date range or filter params  | Show error card: "Could not load transactions"    |
-| 401  | Unauthorized                         | Redirect to login screen                          |
-| 404  | Account not found                    | Show error card with retry                        |
-| 500  | OBP server error                     | Show error card with retry                        |
+Client contract for `transactions`. This project owns no backend: this is a Ktorfit contract against
+the HSBC UK/CE sandbox (OBIE Read/Write Standard), not owned schema.
+Consumer: `TransactionsRepository`.
 
 ---
 
-## Demo Data Shown in UI
+## transactions
 
-| Row | Merchant           | Date        | Category  | Amount     | Type   |
-|-----|--------------------|-------------|-----------|------------|--------|
-| 1   | Tesco Supermarket  | 25 May 2026 | Groceries | -£42.50    | DEBIT  |
-| 2   | Salary Payment     | 24 May 2026 | Income    | +£3,200.00 | CREDIT |
-| 3   | EDF Energy         | 23 May 2026 | Utilities | -£94.20    | DEBIT  |
+| | |
+|---|---|
+| Endpoint | `GET /accounts/{AccountId}/transactions` |
+| Permission | `ReadTransactionsDetail` |
 
-Monthly summary (Last 30 Days): Spent £1,240.30 | Received £3,200.00
+Returns **booked and pending** transactions for the account within the optional date range.
+
+Pending entries are included and rendered here with `tx_pending_badge`. That is the difference from
+`home`, which slices to five Booked transactions only — a pending amount beside a balance invites
+reconciling two numbers that are not meant to agree, whereas a labelled row in a full list is
+informative.
 
 ---
 
-_Generated by /idea export | 2026-05-29_
+## Pagination — `Links.Next` cursor
+
+OBIE-standard cursor pagination, not page numbers.
+
+The client stores `Links.Next` from each response as `next_link` state and presents Load More while
+it is non-null. `hasNextPage` mirrors that, and `isPaginating` tracks the in-flight append —
+separate fields so an append never blanks the list being read.
+
+**A date-range change resets the cursor** and triggers a fresh first page. It cannot do otherwise:
+the cursor encodes a position in the previous result set, so reusing it across a different range
+would page through the wrong sequence.
+
+---
+
+## What is server-side vs client-side
+
+| Operation           | Where       | Note                                              |
+|---------------------|-------------|----------------------------------------------------|
+| Date range          | **server**  | Sent as request params; resets pagination         |
+| Pagination          | **server**  | `Links.Next` cursor                               |
+| Credit/debit filter | **client**  | Applied to the accumulated in-memory list         |
+| Text search         | **client**  | Applied to the accumulated in-memory list         |
+
+This split has a consequence worth stating plainly: **filter and search only see what has been
+paged in.** A match on an unloaded page will not appear until Load More reaches it. Narrowing by
+date range — which *is* server-side — is the reliable way to find something older, and that is why
+the date-range chip sits alongside search rather than being buried.
+
+It is also why `empty_transactions` offers Clear Filters: an empty result is more often a
+client-side filter over a short loaded window than a genuine absence.
+
+---
+
+## Errors
+
+Failures resolve to `TransactionsUiState.Error`, which renders a status chip, a **consent hint** and
+Retry.
+
+The consent hint is there because the most common failure on this screen is a scope problem rather
+than a network one: `ReadTransactionsDetail` is a distinct permission, and a consent granted without
+it refuses this call identically on every retry. Naming that possibility in the error surface is the
+difference between a customer retrying forever and a customer re-consenting.
+
+---
+
+<!-- Generated 2026-08-04 by /idea-feature-export --all --force from screens/transactions/api.yaml. -->

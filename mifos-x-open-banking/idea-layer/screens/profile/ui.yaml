@@ -1,9 +1,16 @@
+sibling: ui
+schema_version: "4.0"
+feature_id: profile
+
 id: profile
 name: "User Profile"
 feature: profile
 flavor: shared
-status: approved
-quality_score: 99
+# status: REMOVED 2026-08-04 (CROSS_LEAK repair — sibling-layout.json assigns `status` to
+# the docs sibling). This copy held `approved`; docs.yaml is the single owner.
+# RECONCILED 2026-08-07 (/idea-sync): was 99, disagreed with docs.yaml `quality_score: 98`.
+# The matrix averages every top-level quality_score under screens/profile/**. docs.yaml owns it.
+quality_score: 98
 contract_version: "1.1.0"
 approve_hash: "sha256:16af12bd8c96e4f037af12bd8c96e4f037af12bd8c96e4f037af12bd8c96e4f0"
 approved_at: "2026-06-11T14:45:00Z"
@@ -53,9 +60,9 @@ archetype: profile
 components:
   - type: stack
     id: profile_root
-    variant: column
+    variant: vertical
     style:
-      background: "#F9FAEF"
+      background: background
       padding: spacing.lg
     children:
       - profile_avatar_section
@@ -65,7 +72,7 @@ components:
 
   - type: stack
     id: profile_avatar_section
-    variant: column
+    variant: vertical
     style:
       alignment: center
       padding_bottom: spacing.xl
@@ -76,17 +83,17 @@ components:
 
   - type: box
     id: profile_avatar_initials
-    content: "MS"
+    content: "AW"   # DR-1: was "MS" (Maria Santos) while demo-data resolves Amina Wanjiru. demo-data is SoT for data_driven fields.
     style:
       width: "96dp"
       height: "96dp"
       shape: circle
-      border_color: "#4C662B"
+      border_color: primary
       border_width: "2dp"
-      background: "#CDEDA3"
-      typography: "Outfit/headline_medium"
+      background: primaryContainer
+      typography: headlineMedium
       font_weight: 700
-      color: "#4C662B"
+      color: primary
       alignment: center
     a11y:
       role: image
@@ -101,8 +108,8 @@ components:
     content: "edit"
     variant: filled
     style:
-      background: "#4C662B"
-      color: "#FFFFFF"
+      background: primary
+      color: onPrimary
       size: "32dp"
       offset: "{ x: 2dp, y: 2dp }"
     a11y:
@@ -115,11 +122,11 @@ components:
 
   - type: text
     id: profile_display_name
-    content: "Maria Santos"
+    content: "amina.wanjiru"   # DR-1: was "Maria Santos". displayName is username per shipped ProfileContent.displayName; demo-data resolves usr-amina-wanjiru-ke-001.
     variant: title_large
     style:
-      typography: "Outfit/title_large"
-      color: "#4C662B"
+      typography: titleLarge
+      color: primary
       font_weight: 600
       alignment: center
       padding_top: spacing.sm
@@ -133,9 +140,9 @@ components:
 
   - type: stack
     id: profile_form_section
-    variant: column
+    variant: vertical
     style:
-      background: "#FFFFFF"
+      background: surface
       border_radius: "12dp"
       padding: spacing.lg
       margin_bottom: spacing.md
@@ -150,8 +157,8 @@ components:
     content: "Personal Information"
     variant: title_medium
     style:
-      typography: "Outfit/title_medium"
-      color: "#4C662B"
+      typography: titleMedium
+      color: primary
       font_weight: 600
       padding_bottom: spacing.md
     a11y:
@@ -163,14 +170,16 @@ components:
       data_driven: false
 
   - type: input
+    keyboard:
+      focusable: false   # disabled read-only field — must not be a tab stop
     id: profile_full_name_field
     label: "Full Name"
     variant: text
     supported_states: [disabled]
     style:
-      background: "#FFFFFF"
-      typography: "Outfit/body_large"
-      border_color: "#C5C8BA"
+      background: surface
+      typography: bodyLarge
+      border_color: outline  # A11Y-002 / WCAG 1.4.11: a control's boundary needs 3.0. outlineVariant is 1.62:1; outline is 4.24:1 and is what form.field.outline_default declares.
       padding: spacing.md
       margin_bottom: spacing.md
     prefill: "fullName"
@@ -184,14 +193,16 @@ components:
       data_driven: true
 
   - type: input
+    keyboard:
+      focusable: false   # disabled read-only field — must not be a tab stop
     id: profile_email_field
     label: "Email Address"
     variant: email
     supported_states: [disabled]
     style:
-      background: "#FFFFFF"
-      typography: "Outfit/body_large"
-      border_color: "#C5C8BA"
+      background: surface
+      typography: bodyLarge
+      border_color: outline  # A11Y-002 / WCAG 1.4.11: a control's boundary needs 3.0. outlineVariant is 1.62:1; outline is 4.24:1 and is what form.field.outline_default declares.
       padding: spacing.md
       margin_bottom: spacing.md
     prefill: "email"
@@ -205,14 +216,16 @@ components:
       data_driven: true
 
   - type: input
+    keyboard:
+      focusable: false   # disabled read-only field — must not be a tab stop
     id: profile_phone_field
     label: "Phone Number"
     variant: text
     supported_states: [disabled]
     style:
-      background: "#FFFFFF"
-      typography: "Outfit/body_large"
-      border_color: "#C5C8BA"
+      background: surface
+      typography: bodyLarge
+      border_color: outline  # A11Y-002 / WCAG 1.4.11: a control's boundary needs 3.0. outlineVariant is 1.62:1; outline is 4.24:1 and is what form.field.outline_default declares.
       padding: spacing.md
     prefill: "phone"
     a11y:
@@ -220,11 +233,13 @@ components:
       label: "Phone Number"
       label_source: visible_label
     test_context:
-      purpose: "READ-ONLY phone. Disabled OutlinedTextField bound to ProfileContent.phone, which is hardcoded blank \"\" — OBP UserProfile has no phone field. Renders empty."
+      purpose: "READ-ONLY phone. Disabled OutlinedTextField bound to ProfileContent.phone, which is hardcoded blank \"\" — the screen has no bound source for a phone number. Renders empty."
       interaction_type: display
       data_driven: true
 
   - type: button
+    keyboard:
+      focusable: false   # enabled: false until the change-password screen ships — not a tab stop while disabled
     id: profile_change_password_button
     label: "Change Password"
     variant: outlined
@@ -232,9 +247,9 @@ components:
     disabled_until: "change-password screen implemented"
     supported_states: [disabled]
     style:
-      border_color: "#4C662B"
-      typography: "Outfit/label_large"
-      color: "#4C662B"
+      border_color: primary
+      typography: labelLarge
+      color: primary
       font_weight: 600
       border_radius: "8dp"
       padding: spacing.md
@@ -254,14 +269,22 @@ components:
     variant: text
     supported_states: [idle, hover, focus_visible, pressed]
     style:
-      typography: "Outfit/label_large"
-      color: "#BA1A1A"
+      typography: labelLarge
+      color: error
       font_weight: 600
       padding: spacing.md
       width: "match_parent"
       margin_top: spacing.md
     on_click:
       action: logout
+      action_contract:
+        effect: delete
+        writes_to: ["session.credentials", "session.consentIds"]
+        external_library_refs: ["encrypted-shared-preferences"]
+        description: >-
+          Clears the stored session and consent identifiers from encrypted-shared-preferences and
+          returns to the unauthenticated entry point. Local credential material only — the bank-side
+          consent survives and must be revoked separately from consent-manager.
     a11y:
       role: button
       label: "Log out of your account"
@@ -279,7 +302,7 @@ components:
     content: "error_outline"
     variant: default
     style:
-      color: "#BA1A1A"
+      color: error
       size: "40dp"
       alignment: center
     a11y:
@@ -295,8 +318,8 @@ components:
     content: "Could not load your profile"
     variant: title_medium
     style:
-      typography: "Outfit/title_medium"
-      color: "#1A1C16"
+      typography: titleMedium
+      color: onSurface
       alignment: center
     a11y:
       role: heading
@@ -311,8 +334,8 @@ components:
     content: "Check your connection and try again."
     variant: body_medium
     style:
-      typography: "Outfit/body_medium"
-      color: "#44483D"
+      typography: bodyMedium
+      color: onSurfaceVariant
       alignment: center
     a11y:
       role: text
@@ -328,11 +351,18 @@ components:
     variant: text
     supported_states: [idle, hover, focus_visible, pressed]
     style:
-      typography: "Outfit/label_large"
-      color: "#4C662B"
+      typography: labelLarge
+      color: primary
       alignment: center
     on_click:
       action: retry
+      action_contract:
+        effect: call_api
+        reads_from: ["party"]
+        external_library_refs: [ktorfit, "hsbc-obie-ais-v4.0:party"]
+        description: >-
+          Re-fetches the account-holder profile through ktorfit against hsbc-obie-ais-v4.0:party after
+          a failed load.
     a11y:
       role: button
       label: "Retry loading your profile"
@@ -345,16 +375,16 @@ components:
 
   - type: loading_indicator
     id: profile_loading_spinner
-    variant: circular_indeterminate
+    variant: spinner
     style:
-      color: "#4C662B"
+      color: primary
       size: "40dp"
       alignment: center
     a11y:
       role: progressbar
       label: "Loading your profile"
     test_context:
-      purpose: "Centered CircularProgressIndicator shown while the OBP profile loads (ScreenState.Loading)"
+      purpose: "Centered CircularProgressIndicator shown while the profile loads (ScreenState.Loading)"
       interaction_type: display
       data_driven: false
 
@@ -367,7 +397,7 @@ states:
   loading:
     layout: { type: column, padding: spacing.lg, align: center, justify: center }
     visible_components: [profile_loading_spinner]
-    note: "ScreenState.Loading — centered CircularProgressIndicator while the OBP profile fetches."
+    note: "ScreenState.Loading — centered CircularProgressIndicator while the profile fetches."
   content:
     layout: { type: column, padding: spacing.lg }
     visible_components: [profile_avatar_section, profile_form_section, profile_change_password_button, profile_logout_button]
@@ -395,7 +425,7 @@ state_model:
         type: String
       - field: phone
         type: String
-        note: "hardcoded blank \"\" — OBP UserProfile has no phone field"
+        note: "hardcoded blank \"\" — the screen has no bound source for a phone number"
     state_wrapper:
       type: "ScreenState<ProfileContent>"
       variants: [Loading, "Content(ProfileContent, DataFreshness)", "Error(throwable, isNetworkError)"]
@@ -404,42 +434,54 @@ state_model:
       - "onLogout() — UserDataRepository.setIsAuthenticated(false); routing is reactive via RootNavViewModel"
     di: [ProfileRepository, UserDataRepository]
     base: "androidx.lifecycle.ViewModel (exposes StateFlow<ScreenState<ProfileContent>>)"
-    note: "READ-ONLY screen. No editing, no save, no avatar upload. Logout is reactive — RootNavViewModel observes UserDataRepository.userData and routes to the auth graph; the screen never navigates to login imperatively. ProfileApi.updateCurrentUser (PUT v4.0.0/users/current) is NOT consumed."
+    note: "READ-ONLY screen. No editing, no save, no avatar upload. Logout is reactive — RootNavViewModel observes UserDataRepository.userData and routes to the auth graph; the screen never navigates to login imperatively. There is no write path at all: the OBP-era ProfileApi.updateCurrentUser was struck on 2026-08-06 and OBIE party data is read-only, so no write endpoint exists to consume."
 
 navigation:
   - id: profile_logout_reactive
     trigger: on_logout_clicked
     note: "No imperative navigation. onLogout() flips UserDataRepository.setIsAuthenticated(false); RootNavViewModel observes the session and routes back to the auth graph. change-password is NOT reachable — its button is rendered disabled."
 
-api:
-  - id: obp_get_user_profile
-    endpoint: "GET /obp/v4.0.0/users/current"
-    tag: UserProfile
-    trigger: on_screen_load
-    description: "Shipped ProfileApi.getCurrentUser — the only endpoint consumed by Profile. phone is NOT in the response."
-    response:
-      fields:
-        - name: user_id
-          type: String
-        - name: username
-          type: String
-        - name: email
-          type: String
-    errors:
-      - code: 401
-        name: AUTH_ERROR
-        ui_message: "Could not load your profile"
-      - code: 500
-        name: NETWORK_ERROR
-        ui_message: "Could not load your profile"
+# ═══════════════════════════════════════════════════════════════════════════
+# ⚠ NO API — FLAGGED 2026-08-06 by /idea-sync (OBP eviction)
+#
+# This block declared obp_get_user_profile (GET /obp/v4.0.0/users/current) and
+# obp_update_user_profile (PUT). Both returned an Open Bank Project USER: a DirectLogin
+# username, a user_id, and editable profile fields.
+#
+# THERE IS NO USER UNDER OBIE. This app has no account, no username, no password and no
+# profile of its own. The PSU is identified solely by the consent they granted at their bank.
+# The `username` field in particular has no possible source — the app never learns one.
+#
+# The nearest OBIE concept is the ACCOUNT HOLDER, read from
+# GET /aisp/accounts/{AccountId}/party under the ReadParty permission — and that is already a
+# separate, shipped screen (`account-holder`). It is read-only; OBIE has no party write, so
+# obp_update_user_profile has no counterpart either.
+#
+# DECISION OWED: this screen is OBP-era, has no OBIE data source, and its function is already
+# covered by account-holder. It is a deletion candidate in the same class as fx-rates and the
+# four features removed this pass. Not deleted here because it was not in that decision's
+# scope. Until then it renders no data, because there is none to render.
+# ═══════════════════════════════════════════════════════════════════════════
+api: []
+status: orphaned-pending-decision
 
-  - id: obp_update_user_profile
-    endpoint: "PUT /obp/v4.0.0/users/current"
-    tag: UserProfile
-    trigger: deferred
-    status: deferred
-    description: "ProfileApi.updateCurrentUser exists but is NOT consumed — Profile is read-only and never calls it. Listed for contract completeness only."
+obie_equivalent:
+  screen: account-holder
+  endpoint: "GET /obie/open-banking/v4.0/aisp/accounts/{AccountId}/party"
+  permission: [ReadParty]
+  writable: false
+  fields_available: [Name, EmailAddress, Mobile, Address]
+  availability_note: >-
+    400 on Global Money, and one of the five resources gated by SCA recency — returns 403 with
+    an empty body on a stale-SCA token.
+
+removed_operations_2026_08_06:
+  - { id: obp_get_user_profile, was: "GET /obp/v4.0.0/users/current", reason: "No user concept under OBIE." }
+  - { id: obp_update_user_profile, was: "PUT /obp/v4.0.0/users/current", reason: "No user concept, and party data is read-only." }
+  - { dto: UserProfile, reason: "Deleted — carried a DirectLogin username and an obp_consumer_key provider field." }
 
 dependencies:
   tier: feature
-  features: [shared-core, obp-auth]
+  features: [shared-core]
+  removed_2026_08_06:
+    - { feature: obp-auth, reason: "The Open Bank Project auth module. Authentication is FAPI OAuth against HSBC." }

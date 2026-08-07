@@ -5,7 +5,8 @@ feature_id: home
 screen_id: home
 archetype: dashboard
 name: "{strings.home.screen.title}"
-status: implemented
+# status: REMOVED 2026-08-04 (CROSS_LEAK repair — sibling-layout.json assigns `status` to
+# the docs sibling). This copy held `implemented`; docs.yaml is the single owner.
 quality_score: 95
 initial_state: loading
 i18n: true
@@ -252,6 +253,8 @@ components:
       interaction_type: action
     children:
       - type: list_item
+        keyboard:
+          focusable: true
         id: account_selector_row
         headline: "{item.Nickname}"
         selected_when: "{item.AccountId == selectedAccountId}"
@@ -271,6 +274,8 @@ components:
             external_library_refs: [ktorfit, "hsbc-obie-ais-v4.0:balances", "hsbc-obie-ais-v4.0:transactions"]
             description: "Persists the selected AccountId to DataStore, closes the sheet, then re-fetches balances and recent transactions for the newly selected account, returning the home screen to loading then content state."
   - type: card
+    keyboard:
+      focusable: true
     id: hero_balance_card
     state_binding: [content]
     elevation: 2
@@ -324,7 +329,7 @@ components:
             children:
               - type: text
                 id: hero_account_subtype
-                value: "{selectedAccount.AccountSubType}"
+                content: "{selectedAccount.AccountSubType}"
                 style: labelMedium
                 color: "onPrimaryContainer"
                 weight: 1
@@ -338,13 +343,13 @@ components:
           # Row 2: account nickname
           - type: text
             id: hero_nickname
-            value: "{selectedAccount.Nickname}"
+            content: "{selectedAccount.Nickname}"
             style: titleLarge
             color: "onPrimaryContainer"
           # Row 3: big balance (InterimAvailable)
           - type: text
             id: hero_balance
-            value: "{selectedAccountBalance.Amount.Amount | formatCurrency(GBP)}"
+            content: "{selectedAccountBalance.Amount.Amount | formatCurrency(GBP)}"
             style: displaySmall
             color: "onPrimaryContainer"
             accessibility_label: "{strings.home.hero.balance.accessibility}"
@@ -356,19 +361,19 @@ components:
             children:
               - type: text
                 id: hero_available_label
-                value: "{strings.home.hero.available_label}"
+                content: "{strings.home.hero.available_label}"
                 style: bodySmall
                 color: "onPrimaryContainer"
               - type: text
                 id: hero_available_amount
-                value: "{availableBalance.Amount.Amount | formatCurrency(GBP)}"
+                content: "{availableBalance.Amount.Amount | formatCurrency(GBP)}"
                 style: bodySmall
                 color: "onPrimaryContainer"
                 accessibility_label: "{strings.home.hero.available.accessibility}"
           # Row 5: masked account identifier
           - type: text
             id: hero_identification
-            value: "{selectedAccount.Account[0].Identification}"
+            content: "{selectedAccount.Account[0].Identification}"
             style: bodySmall
             color: "onPrimaryContainer"
             accessibility_label: "{strings.home.hero.identification.accessibility}"
@@ -404,6 +409,8 @@ components:
             style: titleSmall
             weight: 1
           - type: text_button
+            keyboard:
+              focusable: true
             id: view_all_transactions_link
             label: "{strings.home.recent_transactions.view_all}"
             accessibility_label: "{strings.home.recent_transactions.view_all.accessibility}"
@@ -432,6 +439,8 @@ components:
           interaction_type: navigate
         children:
           - type: card
+            keyboard:
+              focusable: true
             id: recent_tx_row
             elevation: 0
             corner_radius: radius.sm
@@ -458,19 +467,19 @@ components:
                     children:
                       - type: text
                         id: tx_description
-                        value: "{item.TransactionInformation}"
+                        content: "{item.TransactionInformation}"
                         style: bodyMedium
                         max_lines: 1
                         overflow: ellipsis
                       - type: text
                         id: tx_date
-                        value: "{item.BookingDateTime | formatDate(dd MMM)}"
+                        content: "{item.BookingDateTime | formatDate(dd MMM)}"
                         style: bodySmall
                         color: "onSurfaceVariant"
                   # Amount + credit/debit indicator
                   - type: text
                     id: tx_amount
-                    value: "{item.amountFormatted}"
+                    content: "{item.amountFormatted}"
                     style: bodyMedium
                     color: "{item.amountColor}"
                     alignment: end
@@ -528,6 +537,8 @@ components:
     accessibility_label: "{strings.home.error.title}"
     children:
       - type: button
+        keyboard:
+          focusable: true
         id: retry_button
         variant: filled
         label: "{strings.home.error.retry_button}"

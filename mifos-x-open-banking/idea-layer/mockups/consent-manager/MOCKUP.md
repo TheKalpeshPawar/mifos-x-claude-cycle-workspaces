@@ -13,51 +13,51 @@
 
 ```
 ┌──────────────────────────────────────────────┐
-│ ←  Connected Apps                        ⓘ  │  ← Top App Bar, #1800B1 nav+action icons
+│ ←  Connected Apps                        ⓘ  │  ← Top App Bar, `primary` nav+action icons
 ├──────────────────────────────────────────────┤
 │                                              │
-│  Connected Apps                              │  ← headline_large, #1800B1, bold, px 20
-│  Manage third-party apps that have           │  ← body_medium, #666666, px 20
+│  Connected Apps                              │  ← headlineLarge, `primary`, px spacing.md
+│  Manage third-party apps that have           │  ← bodyMedium, `on_surface_variant`
 │  access to your account data                 │
 │                                              │
 │ ┌──────────────────────────────────────────┐ │  ← consent_moneymanager card
-│ │ [MM]  MoneyManager Pro          [ACTIVE] │ │    #FFFFFF bg, radius 16, elevation 2
-│ │       Granted 1 Mar 2026 ·               │ │    [MM]: 40×40, #E3F2FD bg, radius 10
-│ │       Expires 1 Mar 2027                 │ │    [ACTIVE]: #E8F5E9 bg, #2E7D32 text
+│ │ [MM]  MoneyManager Pro          [ACTIVE] │ │    `surface` bg, radius.lg, elevation 2
+│ │       Granted 1 Mar 2026 ·               │ │    [MM]: 40×40, `surface_container` bg
+│ │       Expires 1 Mar 2027                 │ │    [ACTIVE]: `primary_container` bg
 │ │                                          │ │
-│ │  [Read Accounts][View Transactions]      │ │  ← scope chips: #EDE7F6 bg, #4527A0 text
-│ │  [Check Balances]                        │ │    radius 8, label_small
+│ │  [Read Accounts][View Transactions]      │ │  ← scope chips: `secondary` family
+│ │  [Check Balances]                        │ │    radius.sm, labelSmall
 │ │                                          │ │
-│ │                       [Revoke Access ↗]  │ │  ← outlined, #FF5252, radius 10, align_end
+│ │                       [Revoke Access ↗]  │ │  ← outlined, `error`, align_end
 │ └──────────────────────────────────────────┘ │
 │                                              │
 │ ┌──────────────────────────────────────────┐ │  ← consent_taxhelper card
-│ │ [TH]  TaxHelper                 [ACTIVE] │ │    #FFFFFF bg, radius 16, elevation 2
-│ │       Granted 15 Jan 2026 ·              │ │    [TH]: 40×40, #FFF3E0 bg, radius 10
-│ │       Expires 15 Jan 2027                │ │    [ACTIVE]: #E8F5E9 bg, #2E7D32 text
+│ │ [TH]  TaxHelper           [EXPIRES SOON] │ │    `surface` bg, radius.lg, elevation 2
+│ │       Granted 15 Jan 2026 ·              │ │    [TH]: 40×40, `surface_container` bg
+│ │       Expires 15 Jan 2027                │ │    badge: `tertiary` family + schedule
 │ │                                          │ │
-│ │  [View Transactions][Read Accounts]      │ │  ← scope chips: #EDE7F6 bg, #4527A0 text
+│ │  [View Transactions][Read Accounts]      │ │  ← scope chips: `secondary` family
 │ │                                          │ │
-│ │                       [Revoke Access ↗]  │ │  ← outlined, #FF5252, radius 10, align_end
+│ │              [Reconfirm] [Revoke Access] │ │  ← reconfirm: `primary`; revoke: `error`
 │ └──────────────────────────────────────────┘ │
 │                                              │
-│ ┌──────────────────────────────────────────┐ │  ← consent_budgetwise card (dimmed)
-│ │ [BW]  BudgetWise               [EXPIRED] │ │    #FAFAFA bg, radius 16, elevation 1
-│ │       Granted 10 Oct 2025 ·              │ │    [BW]: 40×40, #E8F5E9 bg, radius 10
-│ │       Expired 10 Apr 2026                │ │    [EXPIRED]: #FFF3E0 bg, #E65100 text
-│ │                                          │ │    name text: #888888 (greyed)
-│ │  [Check Balances]                        │ │  ← scope chip: #F0F0F0 bg, #9E9E9E text
+│ ┌──────────────────────────────────────────┐ │  ← consent_budgetwise card (receded)
+│ │ [BW]  BudgetWise               [EXPIRED] │ │    `surface_container` bg, elevation 1
+│ │       Granted 10 Oct 2025 ·              │ │    [BW]: 40×40, `surface_container` bg
+│ │       Expired 10 Apr 2026                │ │    [EXPIRED]: `error` family + error icon
+│ │                                          │ │    name text: `on_surface_variant`
+│ │  [Check Balances]                        │ │  ← scope chip: neutral, muted
 │ │                                          │ │
-│ │                              [Remove]    │ │  ← text variant, #9E9E9E, align_end
+│ │                              [Remove]    │ │  ← text variant, `on_surface_variant`
 │ └──────────────────────────────────────────┘ │
 │                                              │
 └──────────────────────────────────────────────┘
 ```
 
 **Layout notes:**
-- Cards: mx 20, mb 12 between cards.
-- Active cards: #FFFFFF bg, elevation 2, 1dp border #F0F0F0.
-- Expired card: #FAFAFA bg, elevation 1, 1dp border #EEEEEE.
+- Cards: margin-x `spacing.md`, margin-bottom `spacing.md` between cards.
+- Active cards: `surface` bg, elevation 2, `border.thin` `outline` border.
+- Expired card: `surface_container` bg, elevation 1, `border.thin` `outline` border.
 - Scope chip row overflows horizontally with scroll on narrow viewports.
 
 ---
@@ -70,7 +70,7 @@
 ├──────────────────────────────────────────────┤
 │ ▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒ │
 │ ▒  Connected Apps                         ▒ │  ← background list still visible,
-│ ▒  Manage third-party apps...             ▒ │    dimmed under scrim #80000000
+│ ▒  Manage third-party apps...             ▒ │    dimmed under `scrim`
 │ ▒                                         ▒ │
 │ ▒ ┌── MoneyManager Pro card (dimmed) ───┐ ▒ │
 │ ▒ │  [MM]  MoneyManager Pro  [ACTIVE]  │ ▒ │
@@ -79,23 +79,23 @@
 │ ▒                                         ▒ │
 │ ▒     ┌──────────────────────────────┐    ▒ │
 │ ▒     │                              │    ▒ │  ← revoke_confirm_dialog
-│ ▒     │  Revoke access?              │    ▒ │    #FFFFFF bg, radius 24, elevation 8
-│ ▒     │                              │    ▒ │    px 24, py 28, mx 32
+│ ▒     │  Revoke access?              │    ▒ │    `surface` bg, radius.xl, elevation 8
+│ ▒     │                              │    ▒ │    padding spacing.lg, margin-x spacing.xl
 │ ▒     │  This will immediately       │    ▒ │
 │ ▒     │  remove this app's access    │    ▒ │
 │ ▒     │  to your account data. You   │    ▒ │
 │ ▒     │  can reconnect it at any     │    ▒ │
 │ ▒     │  time.                       │    ▒ │
 │ ▒     │                              │    ▒ │
-│ ▒     │          [Cancel]  [Revoke]  │    ▒ │  ← Cancel: text, #1800B1
-│ ▒     │                              │    ▒ │    Revoke: filled, #FF5252 bg, #FFF text
+│ ▒     │          [Cancel]  [Revoke]  │    ▒ │  ← Cancel: text, `primary`
+│ ▒     │                              │    ▒ │    Revoke: filled `error` / `on_error`
 │ ▒     └──────────────────────────────┘    ▒ │
 │ ▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒ │
 └──────────────────────────────────────────────┘
 ```
 
 **Interaction notes:**
-- Scrim: #80000000 (50% black) over full screen behind dialog.
+- Scrim: `scrim` at 50% over full screen behind dialog.
 - "Cancel" fires `dismiss_revoke_dialog` → list returns to `populated`.
 - "Revoke" fires `confirm_revoke_consent` → DELETE API call → removes card from list.
 - Back gesture = Cancel behaviour.
@@ -109,18 +109,18 @@
 │ ←  Connected Apps                        ⓘ  │
 ├──────────────────────────────────────────────┤
 │                                              │
-│  Connected Apps                              │  ← headline_large, #1800B1
-│  Manage third-party apps that have           │  ← body_medium, #666666
+│  Connected Apps                              │  ← headlineLarge, `primary`
+│  Manage third-party apps that have           │  ← bodyMedium, `on_surface_variant`
 │  access to your account data                 │
 │                                              │
 │                                              │
 │                                              │
-│                  [🔗✕]                       │  ← ic_link_off, 80×80, #CCCCCC tint
+│                  [🔗✕]                       │  ← ic_link_off, 80×80, `outline` tint
 │                                              │    (centered)
-│            No apps connected                 │  ← title_medium, #444444, semibold
+│            No apps connected                 │  ← titleMedium, `on_surface`, semibold
 │                                              │
-│   Third-party apps you authorise will        │  ← body_medium, #888888, center, px 32
-│   appear here. Visit your bank's app         │
+│   Third-party apps you authorise will        │  ← bodyMedium, `on_surface_variant`,
+│   appear here. Visit your bank's app         │    center, px spacing.xl
 │   marketplace to connect apps.               │
 │                                              │
 │                                              │
@@ -141,19 +141,19 @@
 │ ←  Connected Apps                        ⓘ  │
 ├──────────────────────────────────────────────┤
 │                                              │
-│  Connected Apps                              │  ← headline_large, #1800B1
-│  Manage third-party apps that have           │  ← body_medium, #666666
+│  Connected Apps                              │  ← headlineLarge, `primary`
+│  Manage third-party apps that have           │  ← bodyMedium, `on_surface_variant`
 │  access to your account data                 │
 │                                              │
 │                                              │
 │                                              │
-│                  [☁✕]                        │  ← cloud_off icon, centred, #CCCCCC
+│                  [☁✕]                        │  ← cloud_off icon, centred, `outline`
 │                                              │
-│       Unable to load connected apps          │  ← error_title, title_medium, #444444
+│       Unable to load connected apps          │  ← error_title, titleMedium, `on_surface`
 │                                              │
-│     Check your connection and try again      │  ← error_message, body_medium, #888888
-│                                              │
-│                  [ Try Again ]               │  ← filled button, #1800B1 bg, #FFF text
+│     Check your connection and try again      │  ← error_message, bodyMedium,
+│                                              │    `on_surface_variant`
+│                  [ Try Again ]               │  ← filled, `primary` / `on_primary`
 │                                              │
 └──────────────────────────────────────────────┘
 ```
@@ -167,33 +167,42 @@
 
 ## Permission Badge Reference
 
-| Badge Label | Background | Text Colour | Trigger |
-|---|---|---|---|
-| ACTIVE | #E8F5E9 | #2E7D32 | consent status = ACCEPTED |
-| EXPIRED | #FFF3E0 | #E65100 | consent status = EXPIRED |
-| REVOKED | #F5F5F5 | #9E9E9E | consent status = REVOKED |
-| PENDING | #E3F2FD | #1565C0 | consent status = INITIATED |
+Every badge pairs its role with an icon and its text label, so status is never carried by colour alone (WCAG 1.4.1).
+
+| Badge Label | Role | Container / on-container | Icon | Trigger |
+|---|---|---|---|---|
+| ACTIVE | `primary` | `primary_container` / `on_primary_container` | `check_circle` | consent status = ACCEPTED |
+| EXPIRES SOON | `tertiary` | `tertiary_container` / `on_tertiary_container` | `schedule` | ACCEPTED and expiry within 30 days |
+| PENDING | `secondary` | `secondary_container` / `on_secondary_container` | `schedule` | consent status = INITIATED |
+| EXPIRED | `error` | `error_container` / `on_error_container` | `error` | consent status = EXPIRED |
+| REVOKED | `error` | `error_container` / `on_error_container` | `error` | consent status = REVOKED |
 
 ## Scope Chip Reference
 
 | Scope Label | Active (ACCEPTED) | Expired/Revoked |
 |---|---|---|
-| Read Accounts | #EDE7F6 bg / #4527A0 text | #F0F0F0 bg / #9E9E9E text |
-| View Transactions | #EDE7F6 bg / #4527A0 text | #F0F0F0 bg / #9E9E9E text |
-| Check Balances | #EDE7F6 bg / #4527A0 text | #F0F0F0 bg / #9E9E9E text |
+| Read Accounts | `secondary_container` bg / `on_secondary_container` text | `surface_container` bg / `on_surface_variant` text |
+| View Transactions | `secondary_container` bg / `on_secondary_container` text | `surface_container` bg / `on_surface_variant` text |
+| Check Balances | `secondary_container` bg / `on_secondary_container` text | `surface_container` bg / `on_surface_variant` text |
 
 ---
 
 ## Design Notes
 
-**Visual Differentiation — Active vs. Expired:**
-- Active card: #FFFFFF bg, elevation 2, purple scope chips (#EDE7F6 / #4527A0), green ACTIVE badge — visually prominent.
-- Expired card: #FAFAFA bg, elevation 1, grey scope chips (#F0F0F0 / #9E9E9E), orange EXPIRED badge — visually receded. Name text greyed to #888888.
-- Differential treatment lets users scan instantly to identify live data-access risks.
+**Status colour follows DESIGN.md's live-vs-gone rule, and this screen is the reason the rule exists.**
+- **ACTIVE is `primary`** — the terminal-success role. This palette ships no green, and success maps to the trust-blue.
+- **EXPIRES SOON is `tertiary`** — the warning / attention-needed role added in DESIGN.md 1.3.0. A consent expiring in seven days has not failed: the customer still has full access and a working reconfirm path, so the card offers **Reconfirm** alongside Revoke. Dressing that state in error-red would frame a live, healthy connection as broken.
+- **EXPIRED and REVOKED are `error`** — access is actually gone. This corrects the previous spec, which rendered EXPIRED in the same amber it used for warnings; "act soon" and "too late" must not share a colour.
+- The previous purple scope chips belonged to a palette this system no longer uses. Scopes are neutral facts about what an app can read, not a status, so they take the `secondary` container family and mute to `surface_container` once the consent is dead.
 
-**Revoke vs. Remove Actions:**
-- "Revoke Access" uses #FF5252 red on an outlined button — a deliberate danger signal to prevent accidental taps.
-- "Remove" for expired consents uses text variant with #9E9E9E — no danger signal because access is already gone; the action is housekeeping.
+**Visual differentiation — active vs. expired:**
+- Active card: `surface` bg, elevation 2, `secondary` scope chips, `primary` ACTIVE badge — visually prominent.
+- Expired card: `surface_container` bg, elevation 1, muted scope chips, `error` EXPIRED badge, name text in `on_surface_variant` — visually receded.
+- The differential treatment lets users scan instantly to identify live data-access risks. Tone recession carries the "inactive" reading even before the badge is read.
+
+**Revoke vs. Remove actions:**
+- "Revoke Access" uses `error` on an outlined button — a deliberate danger signal to prevent accidental taps on a live consent.
+- "Remove" for expired consents uses the text variant in `on_surface_variant` — no danger signal, because access is already gone; the action is housekeeping.
 
 **Dialog UX:**
 - The confirmation dialog requires an explicit "Revoke" tap. The destructive action is right-aligned per Material 3 convention. Cancel is always the safer default path.
@@ -205,4 +214,4 @@
 
 ---
 
-*Generated by /idea export | 2026-05-25*
+*Generated by /idea export | 2026-08-03*

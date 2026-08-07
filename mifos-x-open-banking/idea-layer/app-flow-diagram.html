@@ -229,14 +229,19 @@
       <div class="brand-dot"></div>
       <div>
         <div class="brand-title">Mifos X Open Banking</div>
-        <div class="brand-sub">App Navigation Flow · 35 screens</div>
+        <div class="brand-sub">App Navigation Flow · 42 screens</div>
       </div>
     </div>
 
+    <!-- Legend rebuilt 2026-08-07. The old one named Shared / Consumer / Field Officer
+         personas; there is no Field Officer persona in this app and never was one in the
+         42-screen roster — it came in with the OBP-era diagram this page used to embed.
+         The axis is now lifecycle status, matching APP_FLOW.mmd's classDefs. -->
     <div class="legend">
-      <div class="legend-item"><div class="legend-dot shared"></div>Shared</div>
-      <div class="legend-item"><div class="legend-dot consumer"></div>Consumer</div>
-      <div class="legend-item"><div class="legend-dot fo"></div>Field Officer</div>
+      <div class="legend-item"><div class="legend-dot" style="background:#8a8fa8"></div>Implemented</div>
+      <div class="legend-item"><div class="legend-dot" style="background:#EBEEF3"></div>Approved</div>
+      <div class="legend-item"><div class="legend-dot" style="background:#F1F4F9"></div>Enriched</div>
+      <div class="legend-item"><div class="legend-dot" style="background:transparent;border:2px solid #BA1A1A"></div>No inbound edge</div>
     </div>
 
     <div class="controls">
@@ -250,159 +255,172 @@
   <div id="canvas-wrap">
     <div id="canvas-inner">
       <pre class="mermaid">
-flowchart TB
+%% SOURCE OF TRUTH: this block is a verbatim copy of idea-layer/APP_FLOW.mmd
+%% (rebuilt 2026-08-07). Do not hand-edit here — edit APP_FLOW.mmd and re-copy.
 
-  %% ──────────── Entry ────────────
-  Launch([App Launch]) --> Splash
+flowchart TD
+    app_shell_bottom_nav["app shell · bottom nav"]:::shell
 
-  subgraph shared_group ["Shared Screens"]
-    direction TB
-    Splash[Splash\nbootstrap]
-    Login[Login\nDirectLogin / OIDC]
-    Profile[Profile]
-    Settings[Settings]
-  end
+    %% ─── nodes ───
+    about["about"]:::enriched
+    account_detail["account-detail"]
+    account_holder["account-holder"]
+    accounts["accounts"]
+    atm_locator["atm-locator"]:::approved
+    beneficiaries["beneficiaries"]
+    branch_locator["branch-locator"]:::enriched
+    consent_callback["consent-callback"]
+    consent_detail["consent-detail"]
+    consent_list["consent-list"]
+    consent_manager["consent-manager"]:::approved
+    direct_debit_detail["direct-debit-detail"]:::approved
+    direct_debits["direct-debits"]
+    home["home"]
+    licences["licences"]
+    login["login"]
+    notifications["notifications"]:::approved
+    payment_consent["payment-consent"]:::enriched
+    payments["payments"]:::enriched
+    payment_status["payment-status"]:::enriched
+    pay_vrp_mandate["pay-vrp-mandate"]:::enriched
+    privacy_policy["privacy-policy"]:::enriched
+    product["product"]
+    products["products"]:::enriched
+    profile["profile"]:::approved
+    scheduled_payments["scheduled-payments"]
+    settings["settings"]
+    splash["splash"]:::approved
+    standing_order_detail["standing-order-detail"]:::approved
+    standing_orders["standing-orders"]
+    statement_detail["statement-detail"]
+    statements["statements"]
+    terms_of_service["terms-of-service"]:::enriched
+    transaction_detail["transaction-detail"]
+    transactions["transactions"]
+    user_onboarding["user-onboarding"]
 
-  Splash -->|consumer| Home
-  Splash -->|field officer| FoDashboard
-  Splash -->|unauthenticated| Login
-  Login -->|consumer| Home
-  Login -->|field officer| FoDashboard
-
-  %% ──────────── Consumer Banking ────────────
-  subgraph consumer_group ["Consumer Persona"]
-    direction TB
-
-    subgraph core_banking ["Core Banking"]
-      Home[Home\nDashboard]
-      Accounts[Accounts]
-      AccountDetail[Account\nDetail]
-      Transactions[Transactions]
-      TransactionDetail[Transaction\nDetail]
-      SendMoney[Send Money]
-      SendMoneyConfirm[Send Money\nConfirm]
-      Beneficiaries[Beneficiaries]
-      Cards[Cards]
-      CardDetail[Card Detail]
-      StandingOrders[Standing\nOrders]
+    %% ─── the six form rails ───
+    subgraph pay_rails["the six form rails — the originating type screen"]
+        pay_domestic_single["pay-domestic-single"]:::enriched
+        pay_domestic_scheduled["pay-domestic-scheduled"]:::enriched
+        pay_domestic_standing_order["pay-domestic-standing-order"]:::enriched
+        pay_international_single["pay-international-single"]:::enriched
+        pay_international_scheduled["pay-international-scheduled"]:::enriched
+        pay_international_standing_order["pay-international-standing-order"]:::enriched
     end
 
-    subgraph enhancements ["Enhancement Features"]
-      AtmLocator[ATM Locator]
-      FxRates[FX Rates]
-      Notifications[Notifications]
-      DirectDebits[Direct Debits]
-      PfmDashboard[Spending\nInsights]
-      Products[Products]
-      ConsentManager[Connected Apps]
-      TransactionTags[Transaction\nTags]
-    end
-  end
+    %% ─── app-shell ingress: FOUR tabs, not five ───
+    app_shell_bottom_nav -.->|"0 Home"| home
+    app_shell_bottom_nav -.->|"1 Accounts"| accounts
+    app_shell_bottom_nav -.->|"2 Pay"| payments
+    app_shell_bottom_nav -.->|"3 More"| settings
+    app_shell_bottom_nav -.->|"2 Pay — a payment is already in progress"| payment_status
 
-  %% Consumer navigation
-  Home --> Accounts
-  Home --> SendMoney
-  Home --> Transactions
-  Home --> Beneficiaries
-  Home --> Cards
-  Home --> StandingOrders
-  Home --> AtmLocator
-  Home --> FxRates
-  Home --> Notifications
-  Home --> PfmDashboard
+    %% ─── entry / auth ───
+    splash --> home
+    splash --> login
+    login -->|"HSBC authorisation redirect returns OAuth callback with auth code"| consent_callback
+    login -->|"User taps Cancel"| user_onboarding
+    user_onboarding -->|"Tap Connect with HSBC on step 3"| login
+    consent_callback -->|"Consent status confirmed Authorised"| accounts
+    consent_callback -->|"PSU rejected consent or token exchange failed"| login
 
-  Accounts --> AccountDetail
-  AccountDetail --> Transactions
-  AccountDetail --> SendMoney
+    %% ─── accounts spine ───
+    accounts -->|"Tap account card"| account_detail
+    accounts -->|"401 access token expired or no active consent"| login
+    accounts -->|"Tap Reconfirm access in the consent_expiring banner"| consent_detail
+    accounts -->|"403 consent revoked mid-session"| consent_list
+    account_detail -->|"Back button"| accounts
+    account_detail -->|"AccountDetailChip.Transactions"| transactions
+    account_detail -->|"AccountDetailChip.Statements"| statements
+    account_detail -->|"AccountDetailChip.StandingOrders"| standing_orders
+    account_detail -->|"AccountDetailChip.DirectDebits"| direct_debits
+    account_detail -->|"AccountDetailChip.ScheduledPayments"| scheduled_payments
+    account_detail -->|"AccountDetailChip.Beneficiaries"| beneficiaries
+    account_detail -->|"AccountDetailChip.Product"| product
+    account_detail -->|"AccountDetailChip.Party"| account_holder
+    account_detail -.->|"AccountDetailChip.AtmLocator — placeholder route"| atm_locator
+    account_holder -->|"Back navigation"| account_detail
+    product -->|"Back navigation"| account_detail
+    beneficiaries -->|"Back button"| account_detail
+    beneficiaries -->|"View Consents on 403 ConsentRevoked"| consent_list
+    scheduled_payments -->|"Back button"| account_detail
+    standing_orders -->|"Back button"| account_detail
+    direct_debits -->|"Back button"| account_detail
 
-  Transactions --> TransactionDetail
-  TransactionDetail --> TransactionTags
+    %% ─── transactions / statements ───
+    home -->|"Tap View all in recent transactions"| transactions
+    home -->|"Tap a recent transaction row"| transaction_detail
+    transactions -->|"Tap transaction row"| transaction_detail
+    transactions -->|"Back button"| account_detail
+    transaction_detail -->|"Back button"| transactions
+    statements -->|"Tap statement row"| statement_detail
+    statements -->|"Back navigation"| account_detail
+    statement_detail -->|"Back navigation"| statements
+    statement_detail -->|"Tap transaction row in the statement list"| transaction_detail
 
-  SendMoney --> SendMoneyConfirm
-  SendMoneyConfirm -->|success| Home
-  SendMoneyConfirm -->|back| SendMoney
-  Beneficiaries --> SendMoney
+    %% ─── payments · hub -> the seven rails ───
+    payments -->|"Tap the Domestic single tile"| pay_domestic_single
+    payments -->|"Tap the Domestic scheduled tile"| pay_domestic_scheduled
+    payments -->|"Tap the Domestic standing order tile"| pay_domestic_standing_order
+    payments -->|"Tap the International single tile"| pay_international_single
+    payments -->|"Tap the International scheduled tile"| pay_international_scheduled
+    payments -->|"Tap the International standing order tile"| pay_international_standing_order
+    payments -->|"Tap the VRP mandate tile — opens the mandate LIST"| pay_vrp_mandate
 
-  Cards --> CardDetail
-  CardDetail --> Transactions
-  Cards --> TransactionDetail
+    %% ─── payments · the shared legs ───
+    pay_rails ==>|"Confirm on the Review step, consent stages 201 — each rail declares this"| payment_consent
+    payment_consent ==>|"Consent reaches AUTH — returns to the ORIGINATING rail, resolved at runtime"| pay_rails
+    pay_rails ==>|"Submit returns 201 — Tap View status"| payment_status
+    payment_status ==>|"Back — to the rail that produced the payment, resolved from paymentFamily"| pay_rails
+    pay_rails ==>|"Back from the first step, or Cancel"| payments
 
-  FxRates --> SendMoney
-  DirectDebits --> Accounts
-  PfmDashboard --> Accounts
-  PfmDashboard --> Transactions
-  ConsentManager --> Settings
-  Products --> Accounts
+    payment_consent -->|"Consent reaches RJCT — PSU denied it at the bank"| pay_international_single
+    payment_consent -->|"Consent reaches RJCT"| pay_international_scheduled
 
-  %% ──────────── Field Officer ────────────
-  subgraph fo_group ["Field Officer Persona"]
-    direction TB
+    %% ─── payments · VRP, the asymmetric rail ───
+    pay_vrp_mandate -->|"Create: Confirm on Review step 4 of 4 — fires ONCE per mandate"| payment_consent
+    payment_consent -->|"Consent reaches AUTH — lands on the mandate detail"| pay_vrp_mandate
+    pay_vrp_mandate -->|"Pay now, funds confirmed, POST domestic-vrps 201 — no re-authentication"| payment_status
+    payment_status -->|"Manage mandate, when paymentFamily is domestic-vrp"| pay_vrp_mandate
+    pay_vrp_mandate -->|"Pay now refused 400 U021 — mandate marked unpayable, no retry"| pay_vrp_mandate
 
-    subgraph fo_core ["Core Agent Banking"]
-      FoDashboard[FO Dashboard]
-      CustomerSearch[Customer Search]
-      CustomerDetail[Customer Detail]
-      CustomerProfile[Customer Profile]
-      CustomerOnboarding[Customer\nOnboarding]
-      CorporateOnboarding[Corporate\nOnboarding]
-      KycReview[KYC Review]
-      AccountApplications[Account\nApplications]
-      ApplicationDetail[Application\nDetail]
-      CustomerMessages[Customer\nMessages]
-      Meetings[Meetings]
-    end
+    payment_status -->|"New payment on a Rejected status — to the HUB, so the PSU may pick another rail"| payments
 
-    subgraph fo_setup ["FO Setup"]
-      AgentRegistration[Agent\nRegistration]
-    end
-  end
+    %% ─── recurring payments ───
+    direct_debit_detail -->|"ddd_empty_back — the mandate no longer resolves"| direct_debits
+    direct_debit_detail -->|"ddd_view_all — the funding account history"| transactions
+    standing_order_detail -->|"sod_history_row — a Recent Executions row"| transaction_detail
 
-  %% FO navigation
-  FoDashboard --> CustomerSearch
-  FoDashboard --> AccountApplications
-  FoDashboard --> KycReview
-  FoDashboard --> Meetings
+    %% ─── branch locator (Open Data, no session required) ───
+    settings -->|"Find a branch"| branch_locator
+    atm_locator -->|"Branch reference on an ATM record"| branch_locator
+    beneficiaries -->|"Sort code on a saved payee"| branch_locator
+    standing_order_detail -->|"Sort code on the destination account"| branch_locator
+    transaction_detail -->|"Sort code on the counterparty account"| branch_locator
 
-  CustomerSearch --> CustomerDetail
-  CustomerSearch --> CustomerOnboarding
-  CustomerSearch --> CorporateOnboarding
+    %% ─── consents ───
+    consent_list -->|"Tap a consent card"| consent_detail
+    consent_list -->|"Tap Connect HSBC on empty state"| login
+    consent_list -->|"Tap Sign in again on auth error state, 401"| login
+    consent_detail -->|"Consent successfully revoked"| consent_list
+    consent_detail -->|"Tap Reconfirm before expiry"| login
+    consent_manager --> settings
 
-  CustomerDetail --> CustomerProfile
-  CustomerDetail --> CustomerMessages
-  CustomerDetail --> KycReview
-  CustomerDetail --> AccountApplications
+    %% ─── settings / profile / legal ───
+    settings -->|"Tap Manage Consents row"| consent_list
+    settings -->|"Tap Licences row"| licences
+    licences -->|"Back navigation"| settings
+    profile --> login
 
-  CustomerOnboarding --> KycReview
-  CorporateOnboarding --> AccountApplications
+    %% ─── orphan marking (no inbound edge) ───
+    class splash,privacy_policy,terms_of_service,about,profile orphan
+    class products,notifications,consent_manager,direct_debit_detail,standing_order_detail orphan
 
-  KycReview --> CustomerDetail
-  KycReview --> CustomerMessages
-
-  AccountApplications --> ApplicationDetail
-  AccountApplications --> CustomerOnboarding
-
-  ApplicationDetail --> CustomerDetail
-  ApplicationDetail --> CustomerMessages
-
-  AgentRegistration --> FoDashboard
-
-  %% Shared nav (accessible from both personas via bottom nav More)
-  Home -.->|more| Profile
-  Home -.->|more| Settings
-  FoDashboard -.->|more| Profile
-  FoDashboard -.->|more| Settings
-  Profile -->|logout| Login
-
-  %% Styling
-  classDef shared_style fill:#575899,stroke:#403CD8,color:#fff
-  classDef consumer_style fill:#1800B1,stroke:#403CD8,color:#fff
-  classDef fo_style fill:#5C0068,stroke:#403CD8,color:#fff
-  classDef entry fill:#FCF8FF,stroke:#1B1B24,color:#1B1B24
-
-  class Splash,Login,Profile,Settings shared_style
-  class Home,Accounts,AccountDetail,Transactions,TransactionDetail,SendMoney,SendMoneyConfirm,Beneficiaries,Cards,CardDetail,StandingOrders,AtmLocator,FxRates,Notifications,DirectDebits,PfmDashboard,Products,ConsentManager,TransactionTags consumer_style
-  class FoDashboard,CustomerSearch,CustomerDetail,CustomerProfile,CustomerOnboarding,CorporateOnboarding,KycReview,AccountApplications,ApplicationDetail,CustomerMessages,Meetings,AgentRegistration fo_style
-  class Launch entry
+    classDef approved fill:#EBEEF3,stroke:#50606E,stroke-dasharray:4 3
+    classDef enriched fill:#F1F4F9,stroke:#72787E,stroke-dasharray:2 2
+    classDef shell fill:#FFFFFF,stroke:#72787E,stroke-dasharray:6 3
+    classDef orphan stroke:#BA1A1A,stroke-width:2px
       </pre>
     </div>
   </div>

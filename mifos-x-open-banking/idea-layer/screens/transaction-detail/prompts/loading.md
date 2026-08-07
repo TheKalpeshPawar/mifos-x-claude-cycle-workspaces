@@ -1,9 +1,9 @@
 ---
-ui_yaml_sha: 665c79cd80277398aafe72b729e55732ce546cd4fac43f61b83ec45e21148ea4
-design_md_hash: f734ecfba28b3b0688cbd7ca6f3d7fca27febb15fd021d72a4518ae0e3a4200d
-app_shell_hash: 7b9c63f9aee4f5b5005b1d7533e7f5feab6427f398954987c34ee0f382b0ed69
-design_read_hash: 513c061d12f3a90e84d6e98e1e037b131e59fa3ca5c5f3c0abfc6ba87d24bcaf
-content_hash: 328fa5081bf040c49366ab5adbdd087f4be318d438f5e579215e47b21a8e9585
+ui_yaml_sha: 1728f27ae1921438ccd1d2ca80e96675aeff04cf130add8429476eedb3d5c86b
+design_md_hash: dad4a3ee16afd9663516aa33ebf1647c1d6ede5dc90a1c9bb2c448cd63c225fb
+app_shell_hash: e267a146a693f7d8b57131c73d180b6010ff34beca799edb4ca3c85c5879e0b4
+design_read_hash: 8f83034d22434d75ef7d377035c51c37ef557f4bbb2e0bf510409a4804964a50
+content_hash: d2f5e980e0508eb7350e80616e553c0ef68f841a1cb6f48ee3c691a66d298e94
 
 design_read_aesthetic: minimalist-ui
 design_read_dials: {variance: 3, motion: 2, density: 5}
@@ -14,8 +14,8 @@ feature: transaction-detail
 state: loading
 state_visibility: loading
 
-project_id: 'null'
-design_system_id: 'null'
+project_id: '17153754672098888646'
+design_system_id: '2047482829824847747'
 
 generated_by: stitch-prompt-build.ts v2.0.0
 prompt_template_version: stitch-per-state-v3.0.0
@@ -24,8 +24,8 @@ craft_rules_version: v1.0.0
 
 # transaction-detail — loading state
 
-> Auto-generated from screens/transaction-detail/ui.yaml @ SHA 1e8a42309f0caef0
-> Stitch DesignSystem: (pending DESIGN.md upload — run /idea-feature-stitch sub-plan 02)
+> Auto-generated from screens/transaction-detail/ui.yaml @ SHA 282a089eb96802fe
+> Stitch DesignSystem: 2047482829824847747
 > DO NOT redeclare colors / fonts / spacing — they live in DESIGN.md.
 
 ↓↓↓ MOCKUP PROMPT
@@ -42,29 +42,29 @@ craft_rules_version: v1.0.0
 - responsive: any multi-column region MUST be mobile-first and collapse to a single column at narrow/phone widths — never a fixed multi-column grid with no single-column fallback.
 
 ## Composition (top → bottom)
-1. **progress_indicator**
+1. **progress_circular**
 2. **icon_button** (#back_button) — icon: "arrow_back", on_click: { action: navigate_back, target: transactions }
-3. **text** (#amount_header)
-4. **text** (#transaction_currency_meta)
-5. **text** (#merchant_name)
+3. **text** (#amount_header) — content: "{transaction.CreditDebitIndicator == 'Credit' ? '+' : '-'}£{transaction.Amount.A"
+4. **text** (#transaction_currency_meta) — content: "{transaction.Amount.Currency}"
+5. **text** (#merchant_name) — content: "{transaction.MerchantDetails.MerchantName || transaction.TransactionInformation}"
 6. **chip** (#status_badge) — label: "{transaction.Status}"
 7. **divider** (#header_separator)
 8. **card** (#detail_card) — "detail_card"
-   - **text** (#detail_card_header)
-   - **list_item** (#booking_date_row) — label: "{strings.transaction_detail_booking_date}"
+   - **text** (#detail_card_header) — content: "{strings.transaction_detail_card_title}"
+   - **list_item** (#booking_date_row)
    - **divider**
-   - **list_item** (#value_date_row) — label: "{strings.transaction_detail_value_date}"
+   - **list_item** (#value_date_row)
    - **divider**
-   - **list_item** (#category_row) — label: "{strings.transaction_detail_category}"
+   - **list_item** (#category_row)
    - **divider**
-   - **list_item** (#mcc_row) — label: "{strings.transaction_detail_mcc}"
+   - **list_item** (#mcc_row)
    - **divider**
-   - **list_item** (#balance_after_row) — label: "{strings.transaction_detail_balance_after}"
+   - **list_item** (#balance_after_row)
    - **divider**
-   - **list_item** (#reference_row) — label: "{strings.transaction_detail_reference}", on_click: { action: copy_to_clipboard }
+   - **list_item** (#reference_row) — on_click: { action: copy_to_clipboard }
    - **divider**
-   - **list_item** (#bank_code_row) — label: "{strings.transaction_detail_bank_code}"
-9. **empty_state** (#error_state) — "{strings.transaction_detail_error_title}"
+   - **list_item** (#bank_code_row)
+9. **error_state** (#error_state) — "{strings.transaction_detail_error_title}"
    - **button** (#retry_button) — label: "{strings.transaction_detail_retry}", on_click: { action: retry_load }
    - **button** (#go_back_button) — label: "{strings.transaction_detail_go_back}", on_click: { action: navigate_back }
 10. **empty_state** (#transaction_empty_state) — "{strings.transaction_detail_empty_title}"
@@ -82,7 +82,7 @@ craft_rules_version: v1.0.0
 ## Shell (app-shell resolved for this state)
 - Home: navigates to home
 - Accounts: navigates to accounts
-- Pay: navigates to send-money
+- Pay: navigates to payments
 - More: navigates to settings
 - Render MUST keep nav/bar elements consistent with the list above — present or absent, never partial.
 

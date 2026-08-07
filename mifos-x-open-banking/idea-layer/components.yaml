@@ -132,6 +132,72 @@ components:
         emphasis: { type: boolean, default: false }
 
   # ────────────────────────────────────────────────────────────────
+  # Status Chip — the disposition label. Registered 2026-08-04 (/idea-sync, finding N-1).
+  #
+  # DESIGN.md has named this component in two places since 1.1.0 — the front-matter component
+  # list and the catalog entry "Status chip — the disposition triad above; icon + label always,
+  # colour never alone" — but NO registry declared it: not a Tier-1 primitive, not a Tier-2
+  #
+  # [The word "triad" in that quoted catalog line is now stale: the payment disposition
+  # vocabulary became FOUR values on 2026-08-07 when instruction_established was added for INCO.
+  # The quote is left verbatim because it is a quote; DESIGN.md's own disposition table already
+  # carries four rows.]
+  # pattern, not here. Screens needing a status label therefore reached for `badge`, which
+  # feedback.yaml defines as a NUMERIC count badge (props: count / max / variant) with no text
+  # slot at all. Two consequences followed, both real: `value:` was passed to a type that has no
+  # value slot (finding R-1c), and the "icon + label always" contract was silently unreachable,
+  # so every shipped status badge renders label-only.
+  #
+  # Extends chip rather than badge: a chip is a labelled affordance, a badge is a count.
+  # ────────────────────────────────────────────────────────────────
+  - name: status_chip
+    type: status_chip
+    tier: project
+    extends: chip
+    category: feedback
+    description: >
+      Non-interactive disposition label: an icon plus a text label, tinted by role. Used for
+      payment disposition (in progress / settled / rejected / instruction established) and for
+      lifecycle status on list rows (Active / Inactive mandates and standing orders). The fourth
+      payment variant is the odd one out on purpose: it is the ONLY variant with no hue, because
+      a deferred instruction at INCO supports no claim about money and a tint would make one.
+      Never carries colour alone — the icon and the label both encode the state, so the chip
+      survives greyscale and colour blindness.
+    a11y:
+      role: status
+      semantic_html: span
+      label_source: "{label}"
+      contrast_required: true
+    default_style:
+      background: secondaryContainer
+      padding: "0 12dp"
+      corner_radius: radius.full
+      elevation: elevation.level0
+    supported_states: [idle]
+    variants:
+      # Roles mirror DESIGN.md's disposition table exactly. Containers are NOT restated here —
+      # they resolve from design-tokens.yaml, so this file cannot drift from the token SoT.
+      in_progress: { default_style: { background: secondaryContainer, color: onSecondaryContainer }, icon: schedule }
+      settled:     { default_style: { background: primaryContainer,   color: onPrimaryContainer },   icon: check_circle }
+      rejected:    { default_style: { background: errorContainer,     color: onErrorContainer },     icon: error }
+      # ADDED 2026-08-07 — the FOURTH payment disposition, for INCO on the four deferred rails.
+      # Deliberately NEUTRAL rather than tonal. check_circle would claim the money moved and
+      # schedule would claim something is happening now; neither is true of an instruction whose
+      # first payment may be months away. See design-system/components/status_chip.yaml SC-5,
+      # which forbids a tick glyph or any tonal container on this variant.
+      instruction_established: { default_style: { background: surfaceVariant, color: onSurfaceVariant }, icon: event_repeat }
+      active:      { default_style: { background: primaryContainer,   color: onPrimaryContainer },   icon: check_circle }
+      inactive:    { default_style: { background: transparent,        color: onSurfaceVariant, border: outline }, icon: pause_circle }
+    properties_schema:
+      type: object
+      required: [label, variant]
+      properties:
+        label:   { type: string }
+        variant: { type: string, enum: [in_progress, settled, rejected, instruction_established, active, inactive] }
+        icon:    { type: string, note: "defaults from variant; override only to say something the variant does not" }
+        accessibility_label: { type: string }
+
+  # ────────────────────────────────────────────────────────────────
   # Review Card — the confirmation surface on send-money step 3.
   # Trust-critical: the last thing the PSU reads before money moves. Registered
   # 2026-07-31; send-money previously rendered this as a generic `card`, which

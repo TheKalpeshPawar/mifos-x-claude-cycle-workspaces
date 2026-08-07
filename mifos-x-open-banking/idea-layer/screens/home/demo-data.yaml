@@ -3,6 +3,9 @@ schema_version: "2.1.0"
 feature_id: home
 
 screen_id: home
+models: wire
+maps_to_dto: [BankAccount, AccountBalance, TransactionListItem]
+_models_note: "Fixtures are the OBIE wire envelope, not the domain projection. api.yaml#response_dto names the domain DTO the repository yields; the mapper sits between. RULE-DEMO-DATA-001 DD5 compares against the wire contract for this file."
 _content_policy: "RULE-PROTO-CONTENT-001 — zero placeholders; real HSBC-sandbox-style data only."
 
 # PSU persona: Priya Sharma (from idea-plan.yaml#personas).
@@ -162,3 +165,18 @@ error_state_demo:
   code: 401
   userMessage: "Your session has expired. Please sign in again."
   recoverable: true
+
+# ── State index (added 2026-08-02 via /idea-data) ────────────────────────────
+# Coverage was already complete via empty_state_demo / error_state_demo. This block adds the
+# uniform `states:` index the rest of the corpus now carries.
+states:
+  - scope: content
+    accounts: allAccounts
+    selected: selectedAccountId
+    transactions: recentTransactions
+    spend: spendThisMonth
+  - scope: loading
+    accounts: allAccounts
+    _skeleton_note: "Mirrors the 3-component content layout — F-013 confirmed this closed 2026-08-02."
+  - { scope: empty, fixture: empty_state_demo }
+  - { scope: error, fixture: error_state_demo, _note: "401 — session expired. Non-retriable; the recovery is re-authentication, not a retry." }

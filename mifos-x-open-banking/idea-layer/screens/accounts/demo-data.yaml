@@ -3,6 +3,9 @@ schema_version: "2.1.0"
 feature_id: accounts
 
 screen_id: accounts
+models: wire
+maps_to_dto: [BankAccount, AccountBalance]
+_models_note: "Fixtures are the OBIE wire envelope, not the domain projection. api.yaml#response_dto names the domain DTO the repository yields; the mapper sits between. RULE-DEMO-DATA-001 DD5 compares against the wire contract for this file."
 _content_policy: "RULE-PROTO-CONTENT-001 — zero placeholders; real HSBC-sandbox-style data only."
 
 # Demo data covers all 5 AccountSubTypes present in the HSBC UK Personal AIS sandbox:
@@ -132,3 +135,34 @@ totalBalanceAccountCount: 5
 # Consent expiry scenario (used for consent_expiring state demo):
 activeConsentId: "aac-7f3b9d2e-1a4c-4f8e-b3d1-9e2a5c6f0d4b"
 consentDaysRemaining: 14
+
+# ── Per-state fixtures (added 2026-08-02 via /idea-sync) ─────────────────────
+# ui.yaml declares states: [loading, content, empty, error]. The `empty` state had no fixture.
+states:
+  - scope: content
+    accounts: all
+    totalBalanceAccountCount: 5
+    activeConsentId: "aac-7f3b9d2e-1a4c-4f8e-b3d1-9e2a5c6f0d4b"
+    consentDaysRemaining: 14
+
+  - scope: loading
+    accounts: all
+
+  - scope: empty
+    accounts: []
+    totalBalanceAccountCount: 0
+    totalBalance: { Amount: "0.00", Currency: "GBP" }
+    message: "No accounts shared."
+    detail: "The consent you granted does not include any accounts, or they have since been removed."
+    cta: "Manage connections"
+    _empty_is_a_consent_outcome: >-
+      An AISP account list is never empty because the customer has no accounts — it is empty
+      because the CONSENT covers none. So the empty state points at consent management rather
+      than offering to open an account, and totalBalance must zero with the list or the header
+      will state a balance for accounts it is not showing.
+
+  - scope: error
+    error_type: AccountsLoadFailed
+    message: "Could not load your accounts"
+    recovery: "Check your connection and try again."
+    recoverable: true

@@ -1,9 +1,9 @@
 ---
-ui_yaml_sha: 10606eacf96bb4546025d80be9b0028a47285eff63bbf206884f9ae45e53a4c8
-design_md_hash: f734ecfba28b3b0688cbd7ca6f3d7fca27febb15fd021d72a4518ae0e3a4200d
-app_shell_hash: 7b9c63f9aee4f5b5005b1d7533e7f5feab6427f398954987c34ee0f382b0ed69
-design_read_hash: 513c061d12f3a90e84d6e98e1e037b131e59fa3ca5c5f3c0abfc6ba87d24bcaf
-content_hash: c4c454be5b3cccd6cdab79a7a4e8a8c4f4535a6d34cf5a50e8463177acd029fb
+ui_yaml_sha: d4b4fda497136be7a8fe2631977dcb122c95561eb29220d4765ea27f79fe1de2
+design_md_hash: dad4a3ee16afd9663516aa33ebf1647c1d6ede5dc90a1c9bb2c448cd63c225fb
+app_shell_hash: e267a146a693f7d8b57131c73d180b6010ff34beca799edb4ca3c85c5879e0b4
+design_read_hash: 8f83034d22434d75ef7d377035c51c37ef557f4bbb2e0bf510409a4804964a50
+content_hash: c108ae6f5da0309d66954d2cb31b51a5686dfd8e9cf52b8485c8de1318833517
 
 design_read_aesthetic: minimalist-ui
 design_read_dials: {variance: 3, motion: 2, density: 5}
@@ -14,8 +14,8 @@ feature: home
 state: content
 state_visibility: content
 
-project_id: 'null'
-design_system_id: 'null'
+project_id: '17153754672098888646'
+design_system_id: '2047482829824847747'
 
 generated_by: stitch-prompt-build.ts v2.0.0
 prompt_template_version: stitch-per-state-v3.0.0
@@ -24,8 +24,8 @@ craft_rules_version: v1.0.0
 
 # home — content state
 
-> Auto-generated from screens/home/ui.yaml @ SHA d442ca62f155748f
-> Stitch DesignSystem: (pending DESIGN.md upload — run /idea-feature-stitch sub-plan 02)
+> Auto-generated from screens/home/ui.yaml @ SHA 53e888c000af0f95
+> Stitch DesignSystem: 2047482829824847747
 > DO NOT redeclare colors / fonts / spacing — they live in DESIGN.md.
 
 ↓↓↓ MOCKUP PROMPT
@@ -44,7 +44,6 @@ craft_rules_version: v1.0.0
 ## Composition (top → bottom)
 1. **stack** (#loading_skeleton) — "loading_skeleton"
    - **shimmer** (#skeleton_hero)
-   - **shimmer** (#skeleton_actions)
    - **shimmer** (#skeleton_tx_header)
    - **shimmer** (#skeleton_tx_1)
    - **shimmer** (#skeleton_tx_2)
@@ -54,14 +53,14 @@ craft_rules_version: v1.0.0
 3. **card** (#hero_balance_card) — "hero_balance_card"
    - **stack**
       - **stack**
-         - **text** (#hero_account_subtype)
+         - **text** (#hero_account_subtype) — content: "{selectedAccount.AccountSubType}"
          - **icon** (#hero_account_icon)
-      - **text** (#hero_nickname)
-      - **text** (#hero_balance)
+      - **text** (#hero_nickname) — content: "{selectedAccount.Nickname}"
+      - **text** (#hero_balance) — content: "{selectedAccountBalance.Amount.Amount | formatCurrency(GBP)}"
       - **stack**
-         - **text** (#hero_available_label)
-         - **text** (#hero_available_amount)
-      - **text** (#hero_identification)
+         - **text** (#hero_available_label) — content: "{strings.home.hero.available_label}"
+         - **text** (#hero_available_amount) — content: "{availableBalance.Amount.Amount | formatCurrency(GBP)}"
+      - **text** (#hero_identification) — content: "{selectedAccount.Account[0].Identification}"
 4. **stack** (#recent_transactions_section) — "recent_transactions_section"
    - **stack**
       - **section_header** (#recent_tx_header) — 5 items: "TX-20260627-0002", "TX-20260627-0001", "TX-20260626-0001", "TX-20260626-0002", "TX-20260625-0001"
@@ -71,9 +70,9 @@ craft_rules_version: v1.0.0
          - **stack**
             - **icon** (#tx_category_icon)
             - **stack**
-               - **text** (#tx_description)
-               - **text** (#tx_date)
-            - **text** (#tx_amount)
+               - **text** (#tx_description) — content: "{item.TransactionInformation}"
+               - **text** (#tx_date) — content: "{item.BookingDateTime | formatDate(dd MMM)}"
+            - **text** (#tx_amount) — content: "{item.amountFormatted}"
 5. **empty_state** (#empty_home) — title: "{strings.home.empty.title}", icon: "account_balance_wallet"
 6. **error_state** (#error_home) — "{strings.home.error.title}"
    - **button** (#retry_button) — label: "{strings.home.error.retry_button}", on_click: { action: retry_load }
@@ -91,7 +90,7 @@ craft_rules_version: v1.0.0
 ## Shell (app-shell resolved for this state)
 - Home: navigates to home
 - Accounts: navigates to accounts
-- Pay: navigates to send-money
+- Pay: navigates to payments
 - More: navigates to settings
 - Render MUST keep nav/bar elements consistent with the list above — present or absent, never partial.
 
